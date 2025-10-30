@@ -1,0 +1,759 @@
+@use '../../../theme/variables' as vars;
+@use '../../../theme/mixins' as theme;
+
+.page-header {
+  margin-bottom: vars.$spacing-xl;
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: vars.$spacing-xl;
+
+    @include theme.mobile {
+      flex-direction: column;
+      gap: vars.$spacing-lg;
+    }
+
+    .title-section {
+      .page-title {
+        margin: 0 0 vars.$spacing-xs 0;
+        color: vars.$color-on-surface;
+        font: vars.$font-headline-small;
+        font-weight: 500;
+        line-height: 1.2;
+      }
+
+      .page-subtitle {
+        margin: 0;
+        color: vars.$color-on-surface-variant;
+        font: vars.$font-body-medium;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: vars.$spacing-md;
+      align-items: center;
+
+      @include theme.mobile {
+        width: 100%;
+        justify-content: stretch;
+        
+        .action-btn {
+          flex: 1;
+        }
+      }
+
+      .action-btn {
+        display: flex;
+        align-items: center;
+        gap: vars.$spacing-xs;
+        
+        mat-icon {
+          font-size: 1.125rem;
+          width: 1.125rem;
+          height: 1.125rem;
+        }
+
+        &.primary {
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: vars.$spacing-lg;
+
+    @include theme.mobile {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-card {
+      background-color: vars.$color-surface-container;
+      border: 1px solid vars.$color-outline-variant;
+      border-radius: vars.$border-radius-lg;
+      transition: vars.$transition-standard;
+
+      &:hover {
+        box-shadow: vars.$shadow-1;
+        transform: translateY(-1px);
+      }
+
+      mat-card-content {
+        padding: vars.$spacing-lg;
+
+        .stat-content {
+          display: flex;
+          align-items: center;
+          gap: vars.$spacing-md;
+
+          .stat-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: vars.$border-radius-md;
+            background-color: vars.$color-primary-container;
+            color: vars.$color-on-primary-container;
+            
+            &.system-icon {
+              background-color: vars.$color-secondary-container;
+              color: vars.$color-on-secondary-container;
+            }
+            
+            &.custom-icon {
+              background-color: vars.$color-surface-variant;
+              color: vars.$color-on-surface-variant;
+            }
+            
+            &.active-icon {
+              background-color: vars.$color-success;
+              color: white;
+            }
+          }
+
+          .stat-details {
+            display: flex;
+            flex-direction: column;
+
+            .stat-value {
+              font: vars.$font-title-medium;
+              font-weight: 600;
+              color: vars.$color-on-surface;
+              line-height: 1.2;
+            }
+
+            .stat-label {
+              font: vars.$font-label-medium;
+              color: vars.$color-on-surface-variant;
+              margin-top: 2px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.search-card {
+  margin-bottom: vars.$spacing-xl;
+  background-color: vars.$color-surface-container;
+  border: 1px solid vars.$color-outline-variant;
+
+  .search-form {
+    .search-row {
+      display: flex;
+      align-items: flex-end;
+      gap: vars.$spacing-lg;
+      flex-wrap: wrap;
+
+      @include theme.mobile {
+        flex-direction: column;
+        align-items: stretch;
+        gap: vars.$spacing-md;
+      }
+
+      .search-field {
+        flex: 2;
+        min-width: 300px;
+
+        @include theme.mobile {
+          min-width: unset;
+        }
+      }
+
+      .filter-field {
+        flex: 1;
+        min-width: 150px;
+
+        @include theme.mobile {
+          min-width: unset;
+        }
+      }
+
+      .filter-toggle {
+        display: flex;
+        align-items: center;
+        
+        mat-checkbox {
+          margin-bottom: vars.$spacing-xs;
+        }
+      }
+
+      .clear-btn {
+        margin-bottom: vars.$spacing-xs;
+        color: vars.$color-primary;
+      }
+    }
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: vars.$spacing-xxl;
+  gap: vars.$spacing-lg;
+
+  .loading-text {
+    color: vars.$color-on-surface-variant;
+    font: vars.$font-body-medium;
+    margin: 0;
+  }
+}
+
+.error-card {
+  background-color: vars.$color-error-container;
+  color: vars.$color-on-error-container;
+  border: 1px solid vars.$color-error;
+
+  .error-content {
+    display: flex;
+    align-items: flex-start;
+    gap: vars.$spacing-lg;
+
+    .error-icon {
+      color: vars.$color-error;
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      margin-top: vars.$spacing-xs;
+    }
+
+    .error-details {
+      flex: 1;
+
+      h3 {
+        margin: 0 0 vars.$spacing-xs 0;
+        font: vars.$font-body-large;
+      }
+
+      p {
+        margin: 0 0 vars.$spacing-md 0;
+        opacity: 0.8;
+      }
+    }
+  }
+}
+
+.roles-card {
+  background-color: vars.$color-surface;
+  border: 1px solid vars.$color-outline-variant;
+
+  .tabs-container {
+    padding: 0;
+
+    .roles-tabs {
+      ::ng-deep {
+        .mat-mdc-tab-header {
+          border-bottom: 1px solid vars.$color-outline-variant;
+        }
+
+        .mat-mdc-tab-label {
+          min-width: 120px;
+          
+          .tab-label {
+            display: flex;
+            align-items: center;
+            gap: vars.$spacing-xs;
+            
+            .tab-badge {
+              background-color: vars.$color-primary-container;
+              color: vars.$color-on-primary-container;
+              border-radius: vars.$border-radius-round;
+              padding: 2px vars.$spacing-xs;
+              font: vars.$font-label-small;
+              font-weight: 600;
+              min-width: 20px;
+              text-align: center;
+              
+              &.system-badge {
+                background-color: vars.$color-secondary-container;
+                color: vars.$color-on-secondary-container;
+              }
+              
+              &.custom-badge {
+                background-color: vars.$color-surface-variant;
+                color: vars.$color-on-surface-variant;
+              }
+              
+              &.template-badge {
+                background-color: vars.$color-primary;
+                color: vars.$color-on-primary;
+              }
+            }
+          }
+        }
+      }
+
+      .tab-content {
+        padding: vars.$spacing-xl;
+        min-height: 400px;
+
+        @include theme.mobile {
+          padding: vars.$spacing-lg;
+        }
+      }
+    }
+  }
+}
+
+.bulk-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: vars.$spacing-md vars.$spacing-lg;
+  background-color: vars.$color-primary-container;
+  color: vars.$color-on-primary-container;
+  border-radius: vars.$border-radius-md;
+  margin-bottom: vars.$spacing-lg;
+
+  @include theme.mobile {
+    flex-direction: column;
+    gap: vars.$spacing-md;
+    align-items: stretch;
+  }
+
+  .selection-info {
+    font-weight: 500;
+    font: vars.$font-body-medium;
+  }
+
+  .bulk-actions {
+    display: flex;
+    gap: vars.$spacing-sm;
+
+    @include theme.mobile {
+      justify-content: space-between;
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: vars.$spacing-xs;
+    }
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: vars.$spacing-xxl;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+    color: vars.$color-outline;
+    margin-bottom: vars.$spacing-lg;
+  }
+
+  h3 {
+    margin: 0 0 vars.$spacing-md 0;
+    color: vars.$color-on-surface;
+    font: vars.$font-title-medium;
+  }
+
+  p {
+    margin: 0 0 vars.$spacing-xl 0;
+    color: vars.$color-on-surface-variant;
+    font: vars.$font-body-medium;
+    max-width: 400px;
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  border: 1px solid vars.$color-outline-variant;
+  border-radius: vars.$border-radius-lg;
+
+  .roles-table {
+    width: 100%;
+    background-color: vars.$color-surface;
+
+    th {
+      background-color: vars.$color-surface-container-low;
+      color: vars.$color-on-surface-variant;
+      font-weight: 500;
+      font: vars.$font-label-medium;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid vars.$color-outline-variant;
+    }
+
+    td {
+      color: vars.$color-on-surface;
+      border-bottom: 1px solid vars.$color-outline-variant;
+      padding: vars.$spacing-lg vars.$spacing-md;
+    }
+
+    tr:hover {
+      background-color: vars.$color-surface-container-low;
+    }
+
+    .role-info {
+      display: flex;
+      align-items: center;
+      gap: vars.$spacing-md;
+
+      .role-icon {
+        font-size: 1.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+
+      .role-details {
+        display: flex;
+        flex-direction: column;
+
+        .role-name {
+          font-weight: 500;
+          color: vars.$color-on-surface;
+          font: vars.$font-body-medium;
+        }
+
+        .role-type,
+        .role-description {
+          font: vars.$font-label-medium;
+          color: vars.$color-on-surface-variant;
+          margin-top: 2px;
+          
+          &.role-description {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
+    }
+
+    .base-role-chip {
+      background-color: vars.$color-secondary-container;
+      color: vars.$color-on-secondary-container;
+      font: vars.$font-label-medium;
+      
+      mat-icon {
+        font-size: 1rem;
+        width: 1rem;
+        height: 1rem;
+      }
+    }
+
+    .permissions-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: vars.$spacing-xs;
+      max-width: 300px;
+
+      .permission-chip {
+        background-color: vars.$color-surface-variant;
+        color: vars.$color-on-surface-variant;
+        font: vars.$font-label-small;
+        padding: vars.$spacing-xs;
+        
+        mat-icon {
+          font-size: 0.875rem;
+          width: 0.875rem;
+          height: 0.875rem;
+        }
+      }
+    }
+
+    .member-count {
+      display: flex;
+      align-items: center;
+      gap: vars.$spacing-xs;
+
+      .count-icon {
+        font-size: 1rem;
+        width: 1rem;
+        height: 1rem;
+        color: vars.$color-on-surface-variant;
+      }
+    }
+
+    .status-text {
+      margin-left: vars.$spacing-sm;
+      font: vars.$font-label-medium;
+      color: vars.$color-on-surface-variant;
+
+      &.active {
+        color: vars.$color-success;
+      }
+    }
+  }
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: vars.$spacing-lg;
+
+  @include theme.mobile {
+    grid-template-columns: 1fr;
+  }
+
+  .template-card {
+    background-color: vars.$color-surface-container;
+    border: 1px solid vars.$color-outline-variant;
+    border-radius: vars.$border-radius-lg;
+    transition: vars.$transition-standard;
+    height: fit-content;
+
+    &:hover {
+      box-shadow: vars.$shadow-2;
+      transform: translateY(-2px);
+    }
+
+    &.popular {
+      border-color: vars.$color-primary;
+      
+      mat-card-header {
+        background-color: vars.$color-primary-container;
+        
+        mat-card-title {
+          color: vars.$color-on-primary-container;
+        }
+        
+        mat-card-subtitle {
+          color: vars.$color-on-primary-container;
+          opacity: 0.8;
+        }
+      }
+    }
+
+    mat-card-header {
+      padding: vars.$spacing-lg;
+      border-bottom: 1px solid vars.$color-outline-variant;
+
+      mat-card-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: vars.$spacing-xs;
+        font: vars.$font-body-large;
+        font-weight: 500;
+
+        .popular-chip {
+          background-color: vars.$color-warning;
+          color: white;
+          font: vars.$font-label-small;
+          
+          mat-icon {
+            font-size: 0.875rem;
+            width: 0.875rem;
+            height: 0.875rem;
+          }
+        }
+      }
+
+      mat-card-subtitle {
+        font: vars.$font-label-medium;
+        color: vars.$color-on-surface-variant;
+        line-height: 1.4;
+      }
+    }
+
+    mat-card-content {
+      padding: vars.$spacing-lg;
+
+      .template-info {
+        display: flex;
+        flex-direction: column;
+        gap: vars.$spacing-lg;
+
+        .label {
+          font-weight: 500;
+          color: vars.$color-on-surface;
+          font: vars.$font-label-medium;
+          margin-bottom: vars.$spacing-xs;
+          display: block;
+        }
+
+        .base-role {
+          .base-role-chip {
+            background-color: vars.$color-secondary-container;
+            color: vars.$color-on-secondary-container;
+            
+            mat-icon {
+              font-size: 1rem;
+              width: 1rem;
+              height: 1rem;
+            }
+          }
+        }
+
+        .business-types,
+        .permissions-preview,
+        .template-tags {
+          .chip-list,
+          .permission-groups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: vars.$spacing-xs;
+            margin-top: vars.$spacing-xs;
+          }
+        }
+
+        .business-type-chip {
+          background-color: vars.$color-surface-variant;
+          color: vars.$color-on-surface-variant;
+          font: vars.$font-label-small;
+        }
+
+        .permission-group-chip {
+          background-color: vars.$color-primary-container;
+          color: vars.$color-on-primary-container;
+          font: vars.$font-label-small;
+          
+          mat-icon {
+            font-size: 0.875rem;
+            width: 0.875rem;
+            height: 0.875rem;
+          }
+        }
+
+        .template-stats {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: vars.$spacing-md;
+          background-color: vars.$color-surface-container-low;
+          border-radius: vars.$border-radius-md;
+
+          .stat-item {
+            display: flex;
+            align-items: center;
+            gap: vars.$spacing-xs;
+            color: vars.$color-on-surface-variant;
+            font: vars.$font-label-medium;
+
+            mat-icon {
+              font-size: 1rem;
+              width: 1rem;
+              height: 1rem;
+            }
+
+            .popularity {
+              font-weight: 500;
+            }
+          }
+        }
+
+        .tag-chip {
+          background-color: vars.$color-outline-variant;
+          color: vars.$color-on-surface-variant;
+          font: vars.$font-label-small;
+        }
+      }
+    }
+
+    mat-card-actions {
+      padding: vars.$spacing-lg;
+      border-top: 1px solid vars.$color-outline-variant;
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: vars.$spacing-xs;
+
+        mat-icon {
+          font-size: 1rem;
+          width: 1rem;
+          height: 1rem;
+        }
+      }
+    }
+  }
+}
+
+// Action menu styles
+::ng-deep .mat-mdc-menu-panel {
+  .mat-mdc-menu-item {
+    &.activate {
+      color: vars.$color-success;
+      
+      mat-icon {
+        color: vars.$color-success;
+      }
+    }
+
+    &.deactivate {
+      color: vars.$color-warning;
+      
+      mat-icon {
+        color: vars.$color-warning;
+      }
+    }
+
+    &.delete-action {
+      color: vars.$color-error;
+      
+      mat-icon {
+        color: vars.$color-error;
+      }
+
+      &[disabled] {
+        opacity: 0.5;
+        color: vars.$color-on-surface-variant;
+        
+        mat-icon {
+          color: vars.$color-on-surface-variant;
+        }
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@include theme.mobile {
+  .page-header .stats-grid {
+    gap: vars.$spacing-md;
+    
+    .stat-card mat-card-content {
+      padding: vars.$spacing-md;
+      
+      .stat-content {
+        .stat-icon {
+          width: 2rem;
+          height: 2rem;
+          font-size: 1.5rem;
+        }
+        
+        .stat-details .stat-value {
+          font: vars.$font-body-large;
+        }
+      }
+    }
+  }
+
+  .table-container .roles-table {
+    th, td {
+      padding: vars.$spacing-md vars.$spacing-sm;
+      font: vars.$font-label-medium;
+    }
+  }
+
+  .templates-grid .template-card {
+    mat-card-header,
+    mat-card-content,
+    mat-card-actions {
+      padding: vars.$spacing-md;
+    }
+
+    .template-info {
+      gap: vars.$spacing-md;
+    }
+  }
+}

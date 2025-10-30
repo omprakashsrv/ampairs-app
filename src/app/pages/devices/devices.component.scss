@@ -1,0 +1,20 @@
+// M3 Material Design Devices Page
+@use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as variables;
+
+.devices-page {
+  padding: variables.$spacing-xl;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+
+  @include theme.mobile {
+    padding: variables.$spacing-lg;
+  }
+}
+
+// Center the device management card in the dedicated page
+.devices-page ::ng-deep .device-management-card {
+  margin: 0 auto;
+  max-width: 800px;
+}

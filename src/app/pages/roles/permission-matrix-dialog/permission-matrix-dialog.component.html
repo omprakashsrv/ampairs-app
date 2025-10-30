@@ -1,0 +1,329 @@
+<!-- Dialog Header -->
+<div class="dialog-header">
+  <h2 mat-dialog-title>Permission Matrix</h2>
+  <div class="header-actions">
+    <button mat-button 
+            (click)="exportMatrix()"
+            [disabled]="loading() || !matrix()">
+      <mat-icon>download</mat-icon>
+      Export
+    </button>
+    <button mat-icon-button 
+            mat-dialog-close 
+            class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+</div>
+
+<!-- Loading State -->
+@if (loading()) {
+  <div mat-dialog-content class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p class="loading-text">Loading permission matrix...</p>
+  </div>
+}
+
+<!-- Error State -->
+@if (error(); as errorMessage) {
+  <div mat-dialog-content class="error-container">
+    <mat-card class="error-card">
+      <mat-card-content>
+        <div class="error-content">
+          <mat-icon class="error-icon">error</mat-icon>
+          <div class="error-details">
+            <h3>Failed to load permission matrix</h3>
+            <p>{{ errorMessage }}</p>
+            <button mat-button color="primary" (click)="loadMatrix()">
+              Retry
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}
+
+<!-- Matrix Content -->
+@if (!loading() && !error() && matrix()) {
+  <div mat-dialog-content class="matrix-content">
+    
+    <!-- Filter Controls -->
+    <div class="filter-controls">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Permission Group</mat-label>
+        <mat-select [formControl]="selectedGroup">
+          <mat-option value="all">All Groups</mat-option>
+          @for (group of PERMISSION_GROUPS; track group.id) {
+            <mat-option [value]="group.id">
+              <div class="group-option">
+                <mat-icon>{{ group.icon }}</mat-icon>
+                {{ group.name }}
+              </div>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Role</mat-label>
+        <mat-select [formControl]="selectedRole">
+          <mat-option value="all">All Roles</mat-option>
+          @for (role of allRoles(); track role) {
+            <mat-option [value]="role">
+              <div class="role-option">
+                <mat-icon [style.color]="getRoleColor(role)">{{ getRoleIcon(role) }}</mat-icon>
+                {{ ROLE_DISPLAY_NAMES[role] }}
+              </div>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <!-- View Tabs -->
+    <mat-tab-group [selectedIndex]="selectedView() === 'matrix' ? 0 : selectedView() === 'inheritance' ? 1 : 2"
+                   (selectedTabChange)="onViewChange($event.index === 0 ? 'matrix' : $event.index === 1 ? 'inheritance' : 'conflicts')"
+                   class="matrix-tabs">
+      
+      <!-- Permission Matrix Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>grid_view</mat-icon>
+          Permission Matrix
+        </ng-template>
+        
+        @if (matrixData(); as data) {
+          <div class="matrix-view">
+            <!-- Legend -->
+            <div class="legend">
+              <h4>Legend</h4>
+              <div class="legend-items">
+                <div class="legend-item">
+                  <mat-icon class="access-granted">check_circle</mat-icon>
+                  <span>Directly Granted</span>
+                </div>
+                <div class="legend-item">
+                  <mat-icon class="access-inherited">trending_up</mat-icon>
+                  <span>Inherited</span>
+                </div>
+                <div class="legend-item">
+                  <mat-icon class="access-conditional">help</mat-icon>
+                  <span>Conditional</span>
+                </div>
+                <div class="legend-item">
+                  <mat-icon class="access-denied">block</mat-icon>
+                  <span>Denied</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Matrix Table -->
+            <div class="matrix-table-container">
+              <table class="matrix-table">
+                <thead>
+                  <tr>
+                    <th class="permission-header">Permission</th>
+                    @for (role of data.roles; track role) {
+                      <th class="role-header">
+                        <div class="role-header-content">
+                          <mat-icon [style.color]="getRoleColor(role)">{{ getRoleIcon(role) }}</mat-icon>
+                          <span class="role-name">{{ ROLE_DISPLAY_NAMES[role] }}</span>
+                        </div>
+                      </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (group of data.permissionGroups; track group.id) {
+                    <tr class="group-header-row">
+                      <td class="group-header-cell" [attr.colspan]="data.roles.length + 1">
+                        <div class="group-header-content">
+                          <mat-icon class="group-icon">{{ group.icon }}</mat-icon>
+                          <span class="group-name">{{ group.name }}</span>
+                          <span class="group-description">{{ group.description }}</span>
+                        </div>
+                      </td>
+                    </tr>
+                    @for (permission of group.permissions; track permission) {
+                      <tr class="permission-row">
+                        <td class="permission-cell">
+                          <div class="permission-info">
+                            <span class="permission-name">{{ PERMISSION_DISPLAY_NAMES[permission] }}</span>
+                          </div>
+                        </td>
+                        @for (role of data.roles; track role) {
+                          <td class="access-cell">
+                            @if (getPermissionAccess(role, permission); as access) {
+                              <div class="access-indicator" 
+                                   [class]="'access-' + access.toLowerCase()"
+                                   [matTooltip]="getAccessLabel(access)">
+                                <mat-icon>{{ getAccessIcon(access) }}</mat-icon>
+                              </div>
+                            }
+                          </td>
+                        }
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </mat-tab>
+
+      <!-- Role Inheritance Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>account_tree</mat-icon>
+          Role Inheritance
+        </ng-template>
+        
+        <div class="inheritance-view">
+          @if (inheritanceData().length === 0) {
+            <div class="empty-state">
+              <mat-icon class="empty-icon">account_tree</mat-icon>
+              <h3>No Role Inheritance</h3>
+              <p>Role inheritance information is not available or configured.</p>
+            </div>
+          } @else {
+            <div class="inheritance-list">
+              @for (inheritance of inheritanceData(); track $index) {
+                <mat-card class="inheritance-card">
+                  <mat-card-content>
+                    <div class="inheritance-header">
+                      <div class="parent-role">
+                        <mat-icon [style.color]="getRoleColor(inheritance.parent_role)">
+                          {{ getRoleIcon(inheritance.parent_role) }}
+                        </mat-icon>
+                        <span>{{ ROLE_DISPLAY_NAMES[inheritance.parent_role] }}</span>
+                        <span class="inheritance-label">inherits to</span>
+                      </div>
+                      <mat-icon class="inheritance-arrow">arrow_forward</mat-icon>
+                      <div class="child-role">
+                        <mat-icon [style.color]="getRoleColor(inheritance.child_role)">
+                          {{ getRoleIcon(inheritance.child_role) }}
+                        </mat-icon>
+                        <span>{{ ROLE_DISPLAY_NAMES[inheritance.child_role] }}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="inheritance-details">
+                      <div class="inherited-permissions">
+                        <h4>Inherited Permissions ({{ inheritance.inherited_permissions.length }})</h4>
+                        <div class="permission-chips">
+                          @for (permission of inheritance.inherited_permissions; track permission) {
+                            <mat-chip class="inherited-chip">
+                              <mat-icon matChipAvatar>{{ getPermissionGroupIcon(permission) }}</mat-icon>
+                              {{ PERMISSION_DISPLAY_NAMES[permission] }}
+                            </mat-chip>
+                          }
+                        </div>
+                      </div>
+                      
+                      @if (inheritance.overridden_permissions.length > 0) {
+                        <div class="overridden-permissions">
+                          <h4>Overridden Permissions ({{ inheritance.overridden_permissions.length }})</h4>
+                          <div class="permission-chips">
+                            @for (permission of inheritance.overridden_permissions; track permission) {
+                              <mat-chip class="overridden-chip">
+                                <mat-icon matChipAvatar>{{ getPermissionGroupIcon(permission) }}</mat-icon>
+                                {{ PERMISSION_DISPLAY_NAMES[permission] }}
+                              </mat-chip>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              }
+            </div>
+          }
+        </div>
+      </mat-tab>
+
+      <!-- Permission Conflicts Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>warning</mat-icon>
+          Conflicts
+          @if (conflictData().length > 0) {
+            <span class="conflict-badge">{{ conflictData().length }}</span>
+          }
+        </ng-template>
+        
+        <div class="conflicts-view">
+          @if (conflictData().length === 0) {
+            <div class="empty-state success">
+              <mat-icon class="empty-icon success">check_circle</mat-icon>
+              <h3>No Conflicts Detected</h3>
+              <p>Your permission matrix doesn't have any detected conflicts or dangerous permission combinations.</p>
+            </div>
+          } @else {
+            <div class="conflicts-list">
+              @for (conflict of conflictData(); track $index) {
+                <mat-card class="conflict-card" [class]="'severity-' + conflict.severity">
+                  <mat-card-content>
+                    <div class="conflict-header">
+                      <mat-icon [class]="'severity-icon severity-' + conflict.severity">
+                        {{ getSeverityIcon(conflict.severity) }}
+                      </mat-icon>
+                      <div class="conflict-info">
+                        <h4 class="conflict-title">{{ conflict.description }}</h4>
+                        <div class="conflict-meta">
+                          <span class="conflict-type">{{ conflict.type.replace('_', ' ') | titlecase }}</span>
+                          <span class="conflict-severity" [class]="'severity-' + conflict.severity">
+                            {{ conflict.severity.toUpperCase() }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="conflict-details">
+                      <div class="affected-roles">
+                        <h5>Affected Roles</h5>
+                        <div class="role-chips">
+                          @for (role of conflict.roles; track role) {
+                            <mat-chip class="role-chip">
+                              <mat-icon matChipAvatar [style.color]="getRoleColor(role)">
+                                {{ getRoleIcon(role) }}
+                              </mat-icon>
+                              {{ ROLE_DISPLAY_NAMES[role] }}
+                            </mat-chip>
+                          }
+                        </div>
+                      </div>
+                      
+                      <div class="involved-permissions">
+                        <h5>Involved Permissions</h5>
+                        <div class="permission-chips">
+                          @for (permission of conflict.permissions; track permission) {
+                            <mat-chip class="permission-chip">
+                              <mat-icon matChipAvatar>{{ getPermissionGroupIcon(permission) }}</mat-icon>
+                              {{ PERMISSION_DISPLAY_NAMES[permission] }}
+                            </mat-chip>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              }
+            </div>
+          }
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+}
+
+<!-- Dialog Actions -->
+<div mat-dialog-actions class="dialog-actions">
+  <button mat-raised-button 
+          color="primary"
+          (click)="onClose()">
+    Close
+  </button>
+</div>

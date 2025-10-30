@@ -1,0 +1,58 @@
+/*
+ * Ampairs Material Design 3 System
+ * Modern theming with M3 color tokens, typography, and density support
+ */
+
+// Angular Material core
+@use '@angular/material' as mat;
+
+// Import comprehensive M3 theme system from src/theme
+@use 'theme/theme' as theme;
+@use 'theme/variables' as vars;
+@use 'theme/fonts' as fonts;
+@use 'theme/spacing' as spacing;
+@use 'theme/colors' as colors;
+@use 'theme/common' as common;
+@use 'theme/density' as density;
+
+// Include Material core (M3 compatible)
+@include mat.core();
+
+// ================================
+// Base Styles
+// ================================
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family, 'Roboto', 'Helvetica Neue', sans-serif), serif;
+  font-size: var(--font-size-medium, 14px);
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  // M3 typography is handled by the theme system
+}
+
+// Apply common theme utilities
+body {
+  @extend .common-theme, .light-theme;
+}
+
+// Apply font system by default (font-m is the baseline)
+body {
+  @extend .font-common, .font-m;
+}
+
+// Apply spacing system by default (spacing-m is the baseline)
+body {
+  @extend .spacing-m;
+}
+
+// Apply density system by default (density-m is the baseline)
+body {
+  @extend .density--2;
+}

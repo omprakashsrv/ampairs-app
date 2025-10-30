@@ -1,0 +1,318 @@
+// M3 Material Design Module Store Dialog Component
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
+
+.module-store-container {
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+// Dialog Header
+.store-header {
+  background-color: variables.$color-surface-container;
+  border-bottom: 1px solid variables.$color-outline-variant;
+  color: variables.$color-on-surface;
+
+  .header-main {
+    .title-icon {
+      font-size: 1.5rem;
+      color: variables.$color-primary;
+      margin-right: variables.$spacing-md;
+    }
+
+    .dialog-title {
+      font: variables.$font-headline-small;
+      color: variables.$color-on-surface;
+    }
+
+    .spacer {
+      flex: 1 1 auto;
+    }
+
+    .close-button {
+      color: variables.$color-on-surface-variant;
+
+      &:hover {
+        background-color: variables.$color-surface-container-high;
+      }
+    }
+  }
+
+  .header-subtitle {
+    padding: 0 variables.$spacing-lg variables.$spacing-md variables.$spacing-lg;
+    min-height: auto;
+    height: auto;
+
+    .dialog-subtitle {
+      font: variables.$font-body-medium;
+      color: variables.$color-on-surface-variant;
+    }
+  }
+}
+
+// Store Content
+.store-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  .store-tabs {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+
+    .tab-icon {
+      margin-right: variables.$spacing-sm;
+    }
+
+    ::ng-deep {
+      .mat-mdc-tab-group {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .mat-mdc-tab-body-wrapper {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .mat-mdc-tab-body {
+        height: 100%;
+      }
+
+      .mat-mdc-tab-body-content {
+        height: 100%;
+        overflow: hidden;
+      }
+    }
+  }
+}
+
+.tab-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: variables.$spacing-lg variables.$spacing-lg variables.$spacing-xxl variables.$spacing-lg;
+}
+
+// Filters Section
+.filters {
+  margin-bottom: variables.$spacing-lg;
+
+  .category-filter {
+    min-width: 250px;
+
+    .option-icon {
+      margin-right: variables.$spacing-sm;
+      font-size: 1.2rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+// Loading and Empty States
+.loading-state,
+.empty-state {
+  @include theme.flex-column;
+  @include theme.flex-center;
+  gap: variables.$spacing-lg;
+  padding: variables.$spacing-xxl;
+  text-align: center;
+  min-height: 300px;
+
+  .loading-text {
+    font: variables.$font-body-medium;
+    color: variables.$color-on-surface-variant;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    color: variables.$color-on-surface-variant;
+    opacity: 0.6;
+  }
+
+  h3 {
+    font: variables.$font-headline-small;
+    color: variables.$color-on-surface;
+    margin: 0;
+  }
+
+  p {
+    font: variables.$font-body-medium;
+    color: variables.$color-on-surface-variant;
+    margin: 0;
+  }
+}
+
+// Modules Grid
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: variables.$spacing-lg;
+  padding-bottom: variables.$spacing-xl;
+}
+
+// Module Card
+.module-card {
+  position: relative;
+  transition: variables.$transition-standard;
+  background-color: variables.$color-surface-container-low;
+  border-radius: variables.$border-radius-lg;
+
+  &:hover {
+    box-shadow: variables.$shadow-2;
+    transform: translateY(-2px);
+  }
+
+  &.featured-module {
+    border: 1px solid variables.$color-primary-container;
+  }
+}
+
+// Module Avatar
+.module-avatar {
+  @include theme.flex-center;
+  width: 48px;
+  height: 48px;
+  border-radius: variables.$border-radius-round;
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+// Featured Badge
+.featured-badge {
+  position: absolute;
+  top: variables.$spacing-sm;
+  right: variables.$spacing-sm;
+  font-size: 20px;
+}
+
+// Module Content
+.module-description {
+  font: variables.$font-body-medium;
+  color: variables.$color-on-surface-variant;
+  margin: 0 0 variables.$spacing-md 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.module-meta {
+  @include theme.flex-between;
+  align-items: center;
+  margin-bottom: variables.$spacing-md;
+  font: variables.$font-label-medium;
+
+  .module-rating {
+    @include theme.flex-center;
+    gap: variables.$spacing-xs;
+    color: variables.$color-warning;
+
+    .rating-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .module-installs {
+    color: variables.$color-on-surface-variant;
+  }
+}
+
+.module-details {
+  @include theme.flex-between;
+  align-items: center;
+  margin-bottom: variables.$spacing-md;
+
+  .complexity-chip {
+    @include theme.flex-center;
+    gap: variables.$spacing-xs;
+    font-size: 0.75rem;
+    height: 24px;
+
+    .chip-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  .module-size {
+    font: variables.$font-label-small;
+    color: variables.$color-on-surface-variant;
+  }
+}
+
+// Module Actions
+.module-actions {
+  @include theme.flex-center;
+  justify-content: center;
+  padding: variables.$spacing-md variables.$spacing-lg;
+}
+
+// Responsive Design
+@include theme.tablet {
+
+  .modules-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: variables.$spacing-md;
+  }
+
+  .store-header .header-subtitle {
+    padding: 0 variables.$spacing-lg variables.$spacing-sm variables.$spacing-lg;
+    min-height: auto;
+  }
+}
+
+@include theme.mobile {
+  .module-store-container {
+    width: 95vw;
+    max-height: 90vh;
+  }
+
+  .tab-content {
+    padding: variables.$spacing-md variables.$spacing-md variables.$spacing-xl variables.$spacing-md;
+  }
+
+  .modules-grid {
+    grid-template-columns: 1fr;
+    gap: variables.$spacing-md;
+  }
+
+  .store-header {
+    .header-main .title-icon {
+      font-size: 1.25rem;
+    }
+
+    .header-main .dialog-title {
+      font: variables.$font-headline-small;
+    }
+
+    .header-subtitle {
+      padding: 0 variables.$spacing-md variables.$spacing-sm variables.$spacing-md;
+      min-height: auto;
+
+      .dialog-subtitle {
+        font: variables.$font-body-small;
+      }
+    }
+  }
+
+  .filters {
+    .category-filter {
+      width: 100%;
+      min-width: unset;
+    }
+  }
+}

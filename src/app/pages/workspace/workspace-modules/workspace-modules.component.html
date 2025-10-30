@@ -1,0 +1,61 @@
+<div class="workspace-modules-container">
+
+  <!-- Header Section -->
+  <div class="modules-header">
+    <div class="header-content">
+      <div class="header-text">
+        @if (currentWorkspace) {
+          <p class="page-subtitle">
+            My Apps
+          </p>
+        }
+      </div>
+
+      <div class="header-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="goToModuleStore()"
+          class="store-button">
+          <mat-icon>store</mat-icon>
+          Browse Module Store
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Installed Modules -->
+  <div class="modules-content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="48"></mat-spinner>
+        <span class="loading-text">Loading installed modules...</span>
+      </div>
+    } @else {
+      @if (installedModules().length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">extension_off</mat-icon>
+          <h2>No Modules Installed</h2>
+          <p>Get started by installing your first business module.</p>
+          <button mat-raised-button color="primary" (click)="goToModuleStore()">
+            Browse Available Modules
+          </button>
+        </div>
+      } @else {
+        <!-- Module Grid -->
+        <div class="modules-grid">
+          @for (module of installedModules(); track module.id) {
+            <mat-card class="module-card" (click)="openModule(module)">
+              <mat-card-content class="module-content">
+                <div class="module-avatar" [style.background-color]="module.primary_color">
+                  <mat-icon [style.color]="'white'">{{ module.icon || getCategoryIcon(module.category) }}</mat-icon>
+                </div>
+                <h3 class="module-name">{{ module.name }}</h3>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

@@ -1,0 +1,460 @@
+@use '../../../../theme/variables' as vars;
+@use '../../../../theme/mixins' as theme;
+
+.invite-dialog {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+// ========== HEADER ==========
+
+.dialog-header {
+  border-bottom: 1px solid vars.$color-outline-variant;
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: vars.$spacing-lg;
+
+    .header-icon {
+      background: linear-gradient(135deg, vars.$color-primary, vars.$color-secondary);
+      color: vars.$color-on-primary;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .header-text {
+      flex: 1;
+
+      h2 {
+        margin: 0 0 4px;
+        font: vars.$font-title-medium;
+        color: vars.$color-on-surface;
+      }
+
+      p {
+        margin: 0;
+        font: vars.$font-body-medium;
+        color: vars.$color-on-surface-variant;
+      }
+    }
+  }
+}
+
+// ========== CONTENT ==========
+
+.dialog-content {
+  flex: 1;
+  overflow: hidden;
+
+  .mat-mdc-tab-group {
+    height: 100%;
+
+    .mat-mdc-tab-body-wrapper {
+      flex: 1;
+      overflow-y: auto;
+
+      .mat-mdc-tab-body {
+        overflow-y: auto;
+        height: 100%;
+
+        .mat-mdc-tab-body-content {
+          overflow-y: auto;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+      }
+    }
+  }
+}
+
+.tab-content {
+  padding: vars.$spacing-xl;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+// ========== FORMS ==========
+
+.invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-lg;
+
+  .full-width {
+    width: 100%;
+  }
+
+  // ========== PHONE FIELD STYLES ==========
+
+  .phone-field-container {
+    display: flex;
+    gap: vars.$spacing-md;
+    align-items: flex-start;
+    margin-bottom: vars.$spacing-sm;
+
+    .country-code-field {
+      flex: 0 0 120px;
+    }
+
+    .phone-number-field {
+      flex: 1;
+    }
+  }
+
+  .phone-hint {
+    font: vars.$font-label-medium;
+    color: vars.$color-on-surface-variant;
+    margin-bottom: vars.$spacing-lg;
+    padding-left: vars.$spacing-md;
+  }
+
+  mat-form-field {
+    margin-bottom: vars.$spacing-sm;
+  }
+}
+
+// ========== ROLE OPTION ==========
+
+.role-option {
+  padding: vars.$spacing-sm 0;
+
+  .role-header {
+    display: flex;
+    align-items: center;
+    gap: vars.$spacing-sm;
+    margin-bottom: 4px;
+
+    .role-icon {
+      font-size: 1.125rem;
+      width: 1.125rem;
+      height: 1.125rem;
+      color: vars.$color-primary;
+    }
+
+    .role-name {
+      font-weight: 500;
+      color: vars.$color-on-surface;
+    }
+  }
+
+  .role-description {
+    font: vars.$font-label-medium;
+    color: vars.$color-on-surface-variant;
+    line-height: 1.3;
+    margin-left: 1.625rem; // Icon width + gap
+  }
+}
+
+// ========== ROLE TRIGGER ==========
+
+.role-trigger-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: vars.$spacing-sm;
+  width: 100%;
+
+  .role-icon {
+    font-size: 1.125rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    color: vars.$color-primary;
+  }
+
+  .role-name {
+    font-weight: 500;
+    color: vars.$color-on-surface;
+  }
+}
+
+// ========== PREVIEW ==========
+
+.invitation-preview {
+  margin-top: vars.$spacing-lg;
+  padding: vars.$spacing-lg;
+  background-color: vars.$color-surface-container-low;
+  border-radius: vars.$border-radius-lg;
+  border: 1px solid vars.$color-outline-variant;
+
+  h4 {
+    margin: 0 0 vars.$spacing-md;
+    font: vars.$font-body-large;
+    color: vars.$color-on-surface;
+  }
+
+  .preview-card {
+    background-color: vars.$color-surface;
+    border-radius: vars.$border-radius-md;
+    border: 1px solid vars.$color-outline-variant;
+    overflow: hidden;
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: vars.$spacing-sm;
+      padding: vars.$spacing-md;
+      background-color: vars.$color-surface-container;
+      border-bottom: 1px solid vars.$color-outline-variant;
+
+      mat-icon {
+        font-size: 1rem;
+        width: 1rem;
+        height: 1rem;
+        color: vars.$color-on-surface-variant;
+      }
+
+      span {
+        font: vars.$font-label-medium;
+        font-weight: 500;
+        color: vars.$color-on-surface;
+      }
+    }
+
+    .preview-content {
+      padding: vars.$spacing-md;
+
+      p {
+        margin: 0 0 vars.$spacing-sm;
+        font: vars.$font-label-medium;
+        line-height: 1.4;
+        color: vars.$color-on-surface;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        strong {
+          color: vars.$color-on-surface;
+        }
+      }
+    }
+  }
+}
+
+// ========== BULK INVITE SPECIFIC ==========
+
+.bulk-email-section {
+  h4 {
+    margin: 0 0 vars.$spacing-sm;
+    font: vars.$font-body-large;
+    color: vars.$color-on-surface;
+  }
+
+  .section-description {
+    margin: 0 0 vars.$spacing-lg;
+    font: vars.$font-label-medium;
+    color: vars.$color-on-surface-variant;
+    line-height: 1.4;
+  }
+
+  .section-divider {
+    margin: vars.$spacing-lg 0;
+  }
+
+  .email-fields {
+    margin: vars.$spacing-lg 0;
+
+    .email-field-row {
+      display: flex;
+      align-items: flex-start;
+      gap: vars.$spacing-sm;
+      margin-bottom: vars.$spacing-md;
+
+      .email-input {
+        flex: 1;
+      }
+
+      button[mat-icon-button] {
+        margin-top: 8px; // Align with input field
+      }
+    }
+  }
+
+  .add-email-btn {
+    color: vars.$color-primary;
+    border: 1px dashed vars.$color-primary;
+    border-radius: vars.$border-radius-md;
+    padding: vars.$spacing-sm vars.$spacing-lg;
+    transition: vars.$transition-standard;
+
+    &:hover {
+      background-color: rgba(vars.$color-primary, 0.04);
+    }
+
+    mat-icon {
+      margin-right: vars.$spacing-sm;
+    }
+  }
+}
+
+.bulk-settings {
+  margin-top: vars.$spacing-xl;
+  padding-top: vars.$spacing-xl;
+  border-top: 1px solid vars.$color-outline-variant;
+
+  h4 {
+    margin: 0 0 vars.$spacing-lg;
+    font: vars.$font-body-large;
+    color: vars.$color-on-surface;
+  }
+}
+
+.bulk-summary {
+  margin-top: vars.$spacing-xl;
+  padding-top: vars.$spacing-xl;
+  border-top: 1px solid vars.$color-outline-variant;
+
+  h4 {
+    margin: 0 0 vars.$spacing-md;
+    font: vars.$font-body-large;
+    color: vars.$color-on-surface;
+  }
+
+  .summary-card {
+    background-color: vars.$color-surface-container-low;
+    border-radius: vars.$border-radius-md;
+    padding: vars.$spacing-lg;
+    border: 1px solid vars.$color-outline-variant;
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: vars.$spacing-sm;
+      margin-bottom: vars.$spacing-sm;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      mat-icon {
+        font-size: 1.125rem;
+        width: 1.125rem;
+        height: 1.125rem;
+        color: vars.$color-primary;
+      }
+
+      span {
+        font: vars.$font-body-medium;
+        color: vars.$color-on-surface;
+      }
+    }
+  }
+}
+
+// ========== ACTIONS ==========
+
+.dialog-actions {
+  padding: vars.$spacing-lg vars.$spacing-xl !important;
+  border-top: 1px solid vars.$color-outline-variant;
+  gap: vars.$spacing-md;
+  justify-content: flex-end;
+
+  button {
+    min-width: 120px;
+
+    .button-spinner {
+      margin-right: vars.$spacing-sm;
+    }
+
+    mat-icon {
+      margin-right: vars.$spacing-sm;
+    }
+  }
+}
+
+// ========== RESPONSIVE ==========
+
+@include theme.mobile {
+  .invite-dialog {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+
+  .dialog-header {
+
+    .header-content {
+      .header-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+      }
+
+      .header-text {
+        h2 {
+          font: vars.$font-body-large;
+        }
+
+        p {
+          font: vars.$font-label-medium;
+        }
+      }
+    }
+  }
+
+  .tab-content {
+    padding: vars.$spacing-lg;
+  }
+
+  .dialog-content {
+    .mat-mdc-tab-body-wrapper {
+      max-height: 60vh;
+    }
+  }
+
+  .bulk-email-section {
+    .email-field-row {
+      flex-direction: column;
+      gap: vars.$spacing-sm;
+
+      .email-input {
+        width: 100%;
+      }
+
+      button[mat-icon-button] {
+        align-self: flex-end;
+        margin-top: 0;
+      }
+    }
+  }
+
+  .dialog-actions {
+    padding: vars.$spacing-md !important;
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+      min-width: unset;
+    }
+  }
+}
+
+// ========== ANIMATION ==========
+
+.mat-mdc-tab-body-content {
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

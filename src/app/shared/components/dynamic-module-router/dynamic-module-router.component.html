@@ -1,0 +1,127 @@
+<div class="dynamic-module-router">
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading module...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <mat-card class="error-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>error</mat-icon>
+          Module Not Available
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p>{{ error() }}</p>
+        <p class="error-details">
+          Module: <strong>{{ moduleCode() }}</strong>
+        </p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="primary" (click)="goToModules()">
+          <mat-icon>apps</mat-icon>
+          View All Modules
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+
+  @if (moduleRoute() && !loading() && !error()) {
+    <div class="module-content">
+      <div class="module-header" [style.--module-color]="moduleRoute()!.primaryColor">
+        <div class="module-info">
+          <mat-icon [style.color]="moduleRoute()!.primaryColor">{{ moduleRoute()!.icon }}</mat-icon>
+          <h1>{{ moduleRoute()!.displayName }}</h1>
+        </div>
+
+        <!-- Module Menu Items -->
+        <div class="module-actions">
+          @for (menuItem of moduleRoute()!.menuItems; track menuItem.id) {
+            <button
+              mat-button
+              [class.active]="isActiveMenuItem(menuItem.routePath)"
+              (click)="navigateToMenuItem(menuItem)"
+              [title]="menuItem.label">
+              <mat-icon>{{ menuItem.icon }}</mat-icon>
+              {{ menuItem.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Dynamic Module Content Placeholder -->
+      <div class="module-body">
+        <ng-container [ngSwitch]="moduleCode()">
+          <!-- Customer Management -->
+          <div *ngSwitchCase="'customer-management'">
+            <ng-container [ngSwitch]="currentPath()">
+              <div *ngSwitchCase="'/customers'">
+                <!-- Placeholder for Customer List -->
+                <mat-card>
+                  <mat-card-content>
+                    <h2>Customer List</h2>
+                    <p>This will load the customer list component dynamically.</p>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+              <div *ngSwitchCase="'/customers/create'">
+                <!-- Placeholder for Create Customer -->
+                <mat-card>
+                  <mat-card-content>
+                    <h2>Create Customer</h2>
+                    <p>This will load the create customer component dynamically.</p>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+              <div *ngSwitchDefault>
+                <mat-card>
+                  <mat-card-content>
+                    <h2>{{ moduleRoute()!.displayName }}</h2>
+                    <p>Dynamic content for: {{ currentPath() }}</p>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- Product Management -->
+          <div *ngSwitchCase="'product-catalog'">
+            <mat-card>
+              <mat-card-content>
+                <h2>Product Catalog</h2>
+                <p>This will load product management components dynamically.</p>
+                <p>Current path: {{ currentPath() }}</p>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Order Management -->
+          <div *ngSwitchCase="'order-management'">
+            <mat-card>
+              <mat-card-content>
+                <h2>Order Management</h2>
+                <p>This will load order management components dynamically.</p>
+                <p>Current path: {{ currentPath() }}</p>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Default/Unknown Module -->
+          <div *ngSwitchDefault>
+            <mat-card>
+              <mat-card-content>
+                <h2>{{ moduleRoute()!.displayName }}</h2>
+                <p>This module is available but not yet implemented.</p>
+                <p>Module Code: <code>{{ moduleCode() }}</code></p>
+                <p>Current Path: <code>{{ currentPath() }}</code></p>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  }
+</div>

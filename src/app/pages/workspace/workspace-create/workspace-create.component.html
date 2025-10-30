@@ -1,0 +1,397 @@
+<!-- Workspace Creation Content (toolbar now handled by app-header) -->
+<div class="workspace-create-container">
+
+  <!-- M3 Content Container -->
+  <div class="content-container">
+    <!-- M3 Horizontal Stepper -->
+    <mat-stepper #stepper [selectedIndex]="currentStep" class="workspace-stepper" orientation="horizontal">
+
+      <!-- Step 1: Basic Information -->
+      <mat-step [optional]="false" [stepControl]="getStepFormGroup(0)" label="Basic Info">
+        <ng-template matStepContent>
+          <mat-card class="step-card">
+            <mat-card-header>
+              <div class="step-avatar" mat-card-avatar>
+                <mat-icon>info</mat-icon>
+              </div>
+              <mat-card-title>Basic Information</mat-card-title>
+              <mat-card-subtitle>Set up the foundation of your workspace</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <form [formGroup]="step1FormGroup" class="step-form">
+                <!-- M3 Workspace Name Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Workspace Name</mat-label>
+                  <input formControlName="name" matInput placeholder="Enter workspace name">
+                  <mat-icon matSuffix>business</mat-icon>
+                  @if (nameField?.hasError('required')) {
+                    <mat-error>
+                      Workspace name is required
+                    </mat-error>
+                  }
+                  @if (nameField?.hasError('minlength')) {
+                    <mat-error>
+                      Name must be at least 2 characters long
+                    </mat-error>
+                  }
+                  @if (nameField?.hasError('maxlength')) {
+                    <mat-error>
+                      Name cannot exceed 100 characters
+                    </mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- M3 Workspace URL Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Workspace URL</mat-label>
+                  <input formControlName="slug" matInput placeholder="workspace-url">
+                  <mat-icon [class]="getSlugIconClass()" matSuffix>
+                    {{ getSlugIcon() }}
+                  </mat-icon>
+                  <mat-hint>{{ getSlugPreview() }}</mat-hint>
+                  @if (slugField?.hasError('required')) {
+                    <mat-error>
+                      URL is required
+                    </mat-error>
+                  }
+                  @if (slugField?.hasError('pattern')) {
+                    <mat-error>
+                      URL can only contain lowercase letters, numbers, and hyphens
+                    </mat-error>
+                  }
+                  @if (slugField?.hasError('minlength')) {
+                    <mat-error>
+                      URL must be at least 3 characters long
+                    </mat-error>
+                  }
+                  @if (slugField?.hasError('unavailable')) {
+                    <mat-error>
+                      This URL is already taken
+                    </mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- M3 Workspace Type Selection -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Workspace Type</mat-label>
+                  <mat-select formControlName="workspace_type">
+                    <mat-select-trigger>
+                      @if (workspaceTypeField?.value) {
+                        @for (type of workspaceTypes; track type.value) {
+                          @if (type.value === workspaceTypeField?.value) {
+                            <div class="selected-type">
+                              <mat-icon>{{ type.icon }}</mat-icon>
+                              <span>{{ type.label }}</span>
+                            </div>
+                          }
+                        }
+                      }
+                    </mat-select-trigger>
+                    @for (type of workspaceTypes; track type.value) {
+                      <mat-option [value]="type.value">
+                        <div class="type-option">
+                          <mat-icon>{{ type.icon }}</mat-icon>
+                          <div class="type-content">
+                            <span class="type-name">{{ type.label }}</span>
+                            <span class="type-desc">{{ type.description }}</span>
+                          </div>
+                        </div>
+                      </mat-option>
+                    }
+                  </mat-select>
+                  @if (workspaceTypeField?.hasError('required')) {
+                    <mat-error>
+                      Please select a workspace type
+                    </mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- M3 Description Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Description (Optional)</mat-label>
+                  <textarea formControlName="description" matInput placeholder="Brief description of your workspace..."
+                            rows="3"></textarea>
+                  <mat-hint>{{ descriptionField?.value?.length || 0 }}/500 characters</mat-hint>
+                  @if (descriptionField?.hasError('maxlength')) {
+                    <mat-error>Description cannot exceed 500 characters</mat-error>
+                  }
+                </mat-form-field>
+              </form>
+            </mat-card-content>
+
+            <mat-card-actions class="step-actions">
+              <button (click)="goBack()" mat-button type="button">Cancel</button>
+              <span class="action-spacer"></span>
+              <button (click)="nextStep()" [disabled]="!isStepValid(0)" color="primary" mat-raised-button>
+                Next
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </ng-template>
+      </mat-step>
+
+      <!-- Step 2: Business Details -->
+      <mat-step [optional]="true" [stepControl]="getStepFormGroup(1)" label="Business Details">
+        <ng-template matStepContent>
+          <mat-card class="step-card">
+            <mat-card-header>
+              <div class="step-avatar" mat-card-avatar>
+                <mat-icon>business</mat-icon>
+              </div>
+              <mat-card-title>Business Information</mat-card-title>
+              <mat-card-subtitle>Add business details for your workspace (optional)</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <form [formGroup]="step2FormGroup" class="step-form">
+                
+                <!-- Contact Information Section -->
+                <div class="form-section">
+                  <h3 class="section-title">Contact Information</h3>
+                  
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>Phone Number</mat-label>
+                      <input matInput formControlName="phone" placeholder="+1 234 567 8900">
+                      @if (phoneField?.hasError('pattern')) {
+                        <mat-error>Phone number format is invalid</mat-error>
+                      }
+                      @if (phoneField?.hasError('maxlength')) {
+                        <mat-error>Phone number must not exceed 20 characters</mat-error>
+                      }
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>Email Address</mat-label>
+                      <input matInput formControlName="email" type="email" placeholder="contact@company.com">
+                      @if (emailField?.hasError('email')) {
+                        <mat-error>Email format is invalid</mat-error>
+                      }
+                      @if (emailField?.hasError('maxlength')) {
+                        <mat-error>Email must not exceed 255 characters</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>Website</mat-label>
+                      <input matInput formControlName="website" placeholder="https://www.company.com">
+                      @if (websiteField?.hasError('maxlength')) {
+                        <mat-error>Website URL must not exceed 255 characters</mat-error>
+                      }
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>Registration Number</mat-label>
+                      <input matInput formControlName="registration_number" placeholder="Company registration number">
+                      @if (registrationNumberField?.hasError('maxlength')) {
+                        <mat-error>Registration number must not exceed 100 characters</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <!-- Address Information Section -->
+                <div class="form-section">
+                  <h3 class="section-title">Business Address</h3>
+                  
+                  <mat-form-field appearance="outline" class="full-width-field">
+                    <mat-label>Address Line 1</mat-label>
+                    <input matInput formControlName="address_line1" placeholder="Street address">
+                    @if (addressLine1Field?.hasError('maxlength')) {
+                      <mat-error>Address line 1 must not exceed 255 characters</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="full-width-field">
+                    <mat-label>Address Line 2</mat-label>
+                    <input matInput formControlName="address_line2" placeholder="Apartment, suite, unit, building, floor, etc.">
+                    @if (addressLine2Field?.hasError('maxlength')) {
+                      <mat-error>Address line 2 must not exceed 255 characters</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>City</mat-label>
+                      <input matInput formControlName="city" placeholder="City">
+                      @if (cityField?.hasError('maxlength')) {
+                        <mat-error>City must not exceed 100 characters</mat-error>
+                      }
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>State/Province</mat-label>
+                      <input matInput formControlName="state" placeholder="State or Province">
+                      @if (stateField?.hasError('maxlength')) {
+                        <mat-error>State must not exceed 100 characters</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>Postal Code</mat-label>
+                      <input matInput formControlName="postal_code" placeholder="ZIP/Postal Code">
+                      @if (postalCodeField?.hasError('maxlength')) {
+                        <mat-error>Postal code must not exceed 20 characters</mat-error>
+                      }
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>Country</mat-label>
+                      <input matInput formControlName="country" placeholder="Country">
+                      @if (countryField?.hasError('maxlength')) {
+                        <mat-error>Country must not exceed 100 characters</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <!-- Business Hours Section -->
+                <div class="form-section">
+                  <h3 class="section-title">Business Hours</h3>
+                  
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>Opening Time</mat-label>
+                      <input matInput formControlName="business_hours_start" placeholder="09:00">
+                      <mat-hint>24-hour format (HH:MM)</mat-hint>
+                      @if (businessHoursStartField?.hasError('pattern')) {
+                        <mat-error>Business hours start must be in HH:MM format</mat-error>
+                      }
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="half-width-field">
+                      <mat-label>Closing Time</mat-label>
+                      <input matInput formControlName="business_hours_end" placeholder="17:00">
+                      <mat-hint>24-hour format (HH:MM)</mat-hint>
+                      @if (businessHoursEndField?.hasError('pattern')) {
+                        <mat-error>Business hours end must be in HH:MM format</mat-error>
+                      }
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <!-- M3 Info Card -->
+                <mat-card appearance="outlined" class="info-card">
+                  <mat-card-content>
+                    <div class="info-content">
+                      <mat-icon color="primary">info</mat-icon>
+                      <div class="info-text">
+                        <h4>Optional Information</h4>
+                        <p>All business details are optional and can be added or updated later in workspace settings.</p>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </form>
+            </mat-card-content>
+
+            <mat-card-actions class="step-actions">
+              <button (click)="prevStep()" mat-button type="button">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <span class="action-spacer"></span>
+              <button (click)="nextStep()" mat-button type="button">Skip</button>
+              <button (click)="nextStep()" color="primary" mat-raised-button type="button">
+                Next
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </ng-template>
+      </mat-step>
+
+      <!-- Step 3: Preferences -->
+      <mat-step [optional]="false" [stepControl]="getStepFormGroup(2)" label="Preferences">
+        <ng-template matStepContent>
+          <mat-card class="step-card">
+            <mat-card-header>
+              <div class="step-avatar" mat-card-avatar>
+                <mat-icon>settings</mat-icon>
+              </div>
+              <mat-card-title>Preferences</mat-card-title>
+              <mat-card-subtitle>Configure your workspace settings</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <form [formGroup]="step3FormGroup" class="step-form">
+                <!-- M3 Timezone Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Timezone</mat-label>
+                  <mat-select formControlName="timezone">
+                    @for (tz of timezones; track tz.value) {
+                      <mat-option [value]="tz.value">
+                        {{ tz.label }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                  <mat-icon matSuffix>schedule</mat-icon>
+                  @if (timezoneField?.hasError('required')) {
+                    <mat-error>
+                      Please select a timezone
+                    </mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- M3 Language Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Language</mat-label>
+                  <mat-select formControlName="language">
+                    @for (lang of languages; track lang.value) {
+                      <mat-option [value]="lang.value">
+                        {{ lang.label }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                  <mat-icon matSuffix>language</mat-icon>
+                  @if (languageField?.hasError('required')) {
+                    <mat-error>
+                      Please select a language
+                    </mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- M3 Success Info Card -->
+                <mat-card appearance="outlined" class="success-card">
+                  <mat-card-content>
+                    <div class="info-content">
+                      <mat-icon color="primary">check_circle</mat-icon>
+                      <div class="info-text">
+                        <h4>Ready to Create!</h4>
+                        <p>You can change these preferences anytime in your workspace settings.</p>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </form>
+            </mat-card-content>
+
+            <mat-card-actions class="step-actions">
+              <button (click)="prevStep()" mat-button type="button">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <span class="action-spacer"></span>
+              <button (click)="onSubmit()" [disabled]="!workspaceForm.valid || isLoading || !slugAvailable"
+                      color="primary" extended
+                      mat-fab>
+                @if (!isLoading) {
+                  <mat-icon>add</mat-icon>
+                } @else {
+                  <mat-spinner diameter="20"></mat-spinner>
+                }
+                Create Workspace
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </ng-template>
+      </mat-step>
+    </mat-stepper>
+  </div>
+</div>

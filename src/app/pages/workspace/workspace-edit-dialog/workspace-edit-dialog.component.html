@@ -1,0 +1,218 @@
+<div class="edit-dialog-container">
+  <h2 mat-dialog-title>Edit Workspace</h2>
+
+  <mat-dialog-content>
+    <form [formGroup]="workspaceForm" class="edit-form">
+      
+      <!-- Workspace Name -->
+      <mat-form-field appearance="outline" class="full-width-field">
+        <mat-label>Workspace Name</mat-label>
+        <input matInput formControlName="name" placeholder="Enter workspace name">
+        @if (nameField?.hasError('required')) {
+          <mat-error>Workspace name is required</mat-error>
+        }
+        @if (nameField?.hasError('minlength')) {
+          <mat-error>Name must be at least 2 characters</mat-error>
+        }
+        @if (nameField?.hasError('maxlength')) {
+          <mat-error>Name cannot exceed 100 characters</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Workspace Description -->
+      <mat-form-field appearance="outline" class="full-width-field">
+        <mat-label>Description (Optional)</mat-label>
+        <textarea 
+          matInput 
+          formControlName="description" 
+          rows="3" 
+          placeholder="Describe what this workspace is for...">
+        </textarea>
+        @if (descriptionField?.hasError('maxlength')) {
+          <mat-error>Description cannot exceed 500 characters</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Workspace Type -->
+      <mat-form-field appearance="outline" class="full-width-field">
+        <mat-label>Workspace Type</mat-label>
+        <mat-select formControlName="workspace_type">
+          <mat-select-trigger>
+            @if (workspaceTypeField?.value) {
+              @for (type of workspaceTypes; track type.value) {
+                @if (type.value === workspaceTypeField?.value) {
+                  <div class="selected-type">
+                    <mat-icon>{{ type.icon }}</mat-icon>
+                    <span>{{ type.label }}</span>
+                  </div>
+                }
+              }
+            }
+          </mat-select-trigger>
+          @for (type of workspaceTypes; track type.value) {
+            <mat-option [value]="type.value">
+              <div class="type-option">
+                <mat-icon>{{ type.icon }}</mat-icon>
+                <div class="type-content">
+                  <span class="type-name">{{ type.label }}</span>
+                  <span class="type-desc">{{ type.description }}</span>
+                </div>
+              </div>
+            </mat-option>
+          }
+        </mat-select>
+        @if (workspaceTypeField?.hasError('required')) {
+          <mat-error>Please select a workspace type</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Business Contact Details Section -->
+      <div class="form-section">
+        <h3 class="section-title">Contact Information</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>Phone Number</mat-label>
+            <input matInput formControlName="phone" placeholder="+1 234 567 8900">
+            @if (phoneField?.hasError('pattern')) {
+              <mat-error>Phone number format is invalid</mat-error>
+            }
+            @if (phoneField?.hasError('maxlength')) {
+              <mat-error>Phone number must not exceed 20 characters</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>Email Address</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="contact@company.com">
+            @if (emailField?.hasError('email')) {
+              <mat-error>Email format is invalid</mat-error>
+            }
+            @if (emailField?.hasError('maxlength')) {
+              <mat-error>Email must not exceed 255 characters</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>Website</mat-label>
+            <input matInput formControlName="website" placeholder="https://www.company.com">
+            @if (websiteField?.hasError('maxlength')) {
+              <mat-error>Website URL must not exceed 255 characters</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>Registration Number</mat-label>
+            <input matInput formControlName="registration_number" placeholder="Company registration number">
+            @if (registrationNumberField?.hasError('maxlength')) {
+              <mat-error>Registration number must not exceed 100 characters</mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Business Address Section -->
+      <div class="form-section">
+        <h3 class="section-title">Business Address</h3>
+        
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Address Line 1</mat-label>
+          <input matInput formControlName="address_line1" placeholder="Street address">
+          @if (addressLine1Field?.hasError('maxlength')) {
+            <mat-error>Address line 1 must not exceed 255 characters</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Address Line 2</mat-label>
+          <input matInput formControlName="address_line2" placeholder="Apartment, suite, unit, building, floor, etc.">
+          @if (addressLine2Field?.hasError('maxlength')) {
+            <mat-error>Address line 2 must not exceed 255 characters</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>City</mat-label>
+            <input matInput formControlName="city" placeholder="City">
+            @if (cityField?.hasError('maxlength')) {
+              <mat-error>City must not exceed 100 characters</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>State/Province</mat-label>
+            <input matInput formControlName="state" placeholder="State or Province">
+            @if (stateField?.hasError('maxlength')) {
+              <mat-error>State must not exceed 100 characters</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>Postal Code</mat-label>
+            <input matInput formControlName="postal_code" placeholder="ZIP/Postal Code">
+            @if (postalCodeField?.hasError('maxlength')) {
+              <mat-error>Postal code must not exceed 20 characters</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>Country</mat-label>
+            <input matInput formControlName="country" placeholder="Country">
+            @if (countryField?.hasError('maxlength')) {
+              <mat-error>Country must not exceed 100 characters</mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Business Hours Section -->
+      <div class="form-section">
+        <h3 class="section-title">Business Hours</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>Opening Time</mat-label>
+            <input matInput formControlName="business_hours_start" placeholder="09:00">
+            <mat-hint>24-hour format (HH:MM)</mat-hint>
+            @if (businessHoursStartField?.hasError('pattern')) {
+              <mat-error>Business hours start must be in HH:MM format</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width-field">
+            <mat-label>Closing Time</mat-label>
+            <input matInput formControlName="business_hours_end" placeholder="17:00">
+            <mat-hint>24-hour format (HH:MM)</mat-hint>
+            @if (businessHoursEndField?.hasError('pattern')) {
+              <mat-error>Business hours end must be in HH:MM format</mat-error>
+            }
+          </mat-form-field>
+        </div>
+      </div>
+
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()" [disabled]="isLoading()">
+      Cancel
+    </button>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="onSave()" 
+      [disabled]="isLoading() || workspaceForm.invalid">
+      @if (isLoading()) {
+        <mat-spinner diameter="16"></mat-spinner>
+        Updating...
+      } @else {
+        Save Changes
+      }
+    </button>
+  </mat-dialog-actions>
+</div>

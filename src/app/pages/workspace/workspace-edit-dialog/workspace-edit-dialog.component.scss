@@ -1,0 +1,119 @@
+// M3 Material Design Workspace Edit Dialog
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
+
+.edit-dialog-container {
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.edit-form {
+  @include theme.flex-column;
+  gap: variables.$spacing-lg;
+  padding: variables.$spacing-md 0;
+}
+
+.full-width-field {
+  width: 100%;
+}
+
+.half-width-field {
+  width: 48%;
+}
+
+// Form Organization
+.form-section {
+  margin-bottom: variables.$spacing-xxl;
+
+  .section-title {
+    font: variables.$font-headline-small;
+    color: variables.$color-on-surface;
+    margin: 0 0 variables.$spacing-lg 0;
+    padding-bottom: variables.$spacing-sm;
+    border-bottom: 1px solid variables.$color-outline-variant;
+  }
+}
+
+.form-row {
+  @include theme.flex-between;
+  gap: variables.$spacing-lg;
+  
+  @include theme.mobile {
+    flex-direction: column;
+    gap: 0;
+    
+    .half-width-field {
+      width: 100%;
+    }
+  }
+}
+
+// Type Option Styling (same as workspace create)
+.type-option {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  align-items: flex-start;
+  padding: variables.$spacing-sm 0;
+}
+
+.type-content {
+  @include theme.flex-column;
+  gap: variables.$spacing-xs;
+}
+
+.type-name {
+  font: variables.$font-label-medium;
+  font-weight: 500;
+  color: variables.$color-on-surface;
+}
+
+.type-desc {
+  font: variables.$font-label-small;
+  color: variables.$color-on-surface-variant;
+  line-height: variables.$line-height-tight;
+}
+
+.selected-type {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  font: variables.$font-label-medium;
+  color: variables.$color-on-surface;
+}
+
+// Dialog Actions
+mat-dialog-actions {
+  gap: variables.$spacing-md;
+  padding: variables.$spacing-lg variables.$spacing-xl;
+
+  button {
+    min-width: 80px;
+  }
+}
+
+// Loading Spinner in Button
+button mat-spinner {
+  margin-right: variables.$spacing-sm;
+}
+
+// Mobile Responsive
+@include theme.mobile {
+  .edit-dialog-container {
+    max-width: 100%;
+  }
+
+  .edit-form {
+    gap: variables.$spacing-md;
+  }
+
+  mat-dialog-actions {
+    flex-direction: column;
+    gap: variables.$spacing-sm;
+    align-items: stretch;
+
+    button {
+      width: 100%;
+    }
+  }
+}

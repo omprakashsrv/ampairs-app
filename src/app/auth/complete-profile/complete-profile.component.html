@@ -1,0 +1,79 @@
+<div [class.in-layout]="isInLayout" class="complete-profile-container">
+  <mat-card class="profile-card">
+    <mat-card-header>
+      <mat-card-title class="profile-title">
+        {{ isEditMode ? 'Edit Profile' : 'Complete Your Profile' }}
+      </mat-card-title>
+      <mat-card-subtitle class="profile-subtitle">
+        {{ isEditMode ? 'Update your profile information' : 'Please provide your name to complete your account setup' }}
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form (ngSubmit)="onSubmit()" [formGroup]="profileForm" class="profile-form">
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>First Name</mat-label>
+          <input
+            autocomplete="given-name"
+            formControlName="firstName"
+            matInput
+            maxlength="100"
+            placeholder="Enter your first name"
+          />
+          @if (profileForm.get('firstName')?.hasError('required') && profileForm.get('firstName')?.touched) {
+            <mat-error>First name is required</mat-error>
+          }
+          @if (profileForm.get('firstName')?.hasError('whitespace') && profileForm.get('firstName')?.touched) {
+            <mat-error>First name cannot be only whitespace</mat-error>
+          }
+          @if (profileForm.get('firstName')?.hasError('maxlength')) {
+            <mat-error>First name must not exceed 100 characters</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Last Name (Optional)</mat-label>
+          <input
+            autocomplete="family-name"
+            formControlName="lastName"
+            matInput
+            maxlength="100"
+            placeholder="Enter your last name (optional)"
+          />
+          @if (profileForm.get('lastName')?.hasError('maxlength')) {
+            <mat-error>Last name must not exceed 100 characters</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="form-actions">
+          @if (isEditMode) {
+            <button
+              mat-button
+              type="button"
+              (click)="goBack()"
+              [disabled]="isSubmitting"
+            >
+              <mat-icon>arrow_back</mat-icon>
+              Back to Home
+            </button>
+          }
+
+          <button
+            [disabled]="profileForm.invalid || isSubmitting"
+            class="submit-button"
+            color="primary"
+            mat-raised-button
+            type="submit"
+          >
+            @if (isSubmitting) {
+              <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+              {{ isEditMode ? 'Updating...' : 'Saving...' }}
+            } @else {
+              {{ isEditMode ? 'Update Profile' : 'Complete Profile' }}
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

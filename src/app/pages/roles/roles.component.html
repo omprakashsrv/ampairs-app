@@ -1,0 +1,544 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div class="header-content">
+    <div class="title-section">
+      <h1 class="page-title">Role Management</h1>
+      <p class="page-subtitle">Manage roles and permissions for workspace members</p>
+    </div>
+    
+    <div class="header-actions">
+      <button mat-outlined-button 
+              (click)="openPermissionMatrix()"
+              class="action-btn">
+        <mat-icon>grid_view</mat-icon>
+        Permission Matrix
+      </button>
+      
+      <button mat-raised-button 
+              color="primary"
+              (click)="createCustomRole()"
+              class="action-btn primary">
+        <mat-icon>add</mat-icon>
+        Create Custom Role
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  @if (roleStatistics(); as stats) {
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon">security</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ stats.total_roles }}</span>
+              <span class="stat-label">Total Roles</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon system-icon">admin_panel_settings</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ stats.system_roles }}</span>
+              <span class="stat-label">System Roles</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon custom-icon">tune</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ stats.custom_roles }}</span>
+              <span class="stat-label">Custom Roles</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <mat-icon class="stat-icon active-icon">check_circle</mat-icon>
+            <div class="stat-details">
+              <span class="stat-value">{{ stats.active_roles }}</span>
+              <span class="stat-label">Active Roles</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>
+
+<!-- Search and Filter Section -->
+<mat-card class="search-card">
+  <mat-card-content>
+    <form [formGroup]="searchForm" class="search-form">
+      <div class="search-row">
+        <mat-form-field class="search-field" appearance="outline">
+          <mat-label>Search roles</mat-label>
+          <input matInput formControlName="searchQuery" placeholder="Search by name or description">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field class="filter-field" appearance="outline">
+          <mat-label>Role Type</mat-label>
+          <mat-select formControlName="roleType">
+            <mat-option value="">All Types</mat-option>
+            <mat-option [value]="RoleType.SYSTEM">System</mat-option>
+            <mat-option [value]="RoleType.CUSTOM">Custom</mat-option>
+            <mat-option [value]="RoleType.TEMPLATE">Template</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field class="filter-field" appearance="outline">
+          <mat-label>Base Role</mat-label>
+          <mat-select formControlName="baseRole">
+            <mat-option value="">All Roles</mat-option>
+            <mat-option [value]="WorkspaceRole.OWNER">Owner</mat-option>
+            <mat-option [value]="WorkspaceRole.ADMIN">Admin</mat-option>
+            <mat-option [value]="WorkspaceRole.MANAGER">Manager</mat-option>
+            <mat-option [value]="WorkspaceRole.MEMBER">Member</mat-option>
+            <mat-option [value]="WorkspaceRole.GUEST">Guest</mat-option>
+            <mat-option [value]="WorkspaceRole.VIEWER">Viewer</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="filter-toggle">
+          <mat-checkbox formControlName="showInactive">
+            Show inactive roles
+          </mat-checkbox>
+        </div>
+
+        <button mat-button 
+                type="button"
+                (click)="clearFilters()"
+                class="clear-btn">
+          Clear Filters
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+<!-- Loading State -->
+@if (roleLoading()) {
+  <div class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p class="loading-text">Loading role information...</p>
+  </div>
+}
+
+<!-- Error State -->
+@if (roleError(); as error) {
+  <mat-card class="error-card">
+    <mat-card-content>
+      <div class="error-content">
+        <mat-icon class="error-icon">error</mat-icon>
+        <div class="error-details">
+          <h3>Failed to load roles</h3>
+          <p>{{ error }}</p>
+          <button mat-button color="primary" (click)="loadData()">
+            Retry
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+}
+
+<!-- Role Management Tabs -->
+@if (!roleLoading() && !roleError()) {
+  <mat-card class="roles-card">
+    <mat-card-header>
+      <mat-card-title>Role & Permission Management</mat-card-title>
+    </mat-card-header>
+    
+    <mat-card-content class="tabs-container">
+      <mat-tab-group [selectedIndex]="selectedTab()" 
+                     (selectedTabChange)="onTabChange($event.index)"
+                     class="roles-tabs">
+        
+        <!-- System Roles Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <span class="tab-label">
+              System Roles
+              <span class="tab-badge system-badge">{{ systemRoles().length }}</span>
+            </span>
+          </ng-template>
+          
+          <div class="tab-content">
+            @if (systemRoles().length === 0) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">admin_panel_settings</mat-icon>
+                <h3>No System Roles</h3>
+                <p>System roles are automatically managed by the application.</p>
+              </div>
+            } @else {
+              <div class="table-container">
+                <table mat-table [dataSource]="systemRoles()" class="roles-table">
+                  <!-- Role Column -->
+                  <ng-container matColumnDef="role">
+                    <th mat-header-cell *matHeaderCellDef>Role</th>
+                    <td mat-cell *matCellDef="let role">
+                      <div class="role-info">
+                        <mat-icon [style.color]="getRoleColor(role)" class="role-icon">
+                          {{ getRoleIcon(role) }}
+                        </mat-icon>
+                        <div class="role-details">
+                          <span class="role-name">{{ getRoleDisplayName(role) }}</span>
+                          <span class="role-type">System Role</span>
+                        </div>
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <!-- Permissions Column -->
+                  <ng-container matColumnDef="permissions">
+                    <th mat-header-cell *matHeaderCellDef>Permissions</th>
+                    <td mat-cell *matCellDef="let role">
+                      <div class="permissions-summary">
+                        @for (group of permissionGroups(); track group.id) {
+                          @if (hasGroupPermissions(group, role)) {
+                            <mat-chip class="permission-chip">
+                              <mat-icon matChipTrailingIcon>{{ group.icon }}</mat-icon>
+                              {{ group.name }}
+                            </mat-chip>
+                          }
+                        }
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <!-- Members Column -->
+                  <ng-container matColumnDef="members">
+                    <th mat-header-cell *matHeaderCellDef>Members</th>
+                    <td mat-cell *matCellDef="let role">
+                      <div class="member-count">
+                        <mat-icon class="count-icon">people</mat-icon>
+                        <span>{{ getRoleUsageCount(role) }}</span>
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <!-- Actions Column -->
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Actions</th>
+                    <td mat-cell *matCellDef="let role">
+                      <button mat-icon-button [matMenuTriggerFor]="systemRoleMenu">
+                        <mat-icon>more_vert</mat-icon>
+                      </button>
+                      <mat-menu #systemRoleMenu="matMenu">
+                        <button mat-menu-item disabled>
+                          <mat-icon>info</mat-icon>
+                          View Details
+                        </button>
+                      </mat-menu>
+                    </td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="systemRoleColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: systemRoleColumns;"></tr>
+                </table>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Custom Roles Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <span class="tab-label">
+              Custom Roles
+              <span class="tab-badge custom-badge">{{ customRoles().length }}</span>
+            </span>
+          </ng-template>
+          
+          <div class="tab-content">
+            <!-- Bulk Actions Bar -->
+            @if (hasSelectedCustomRoles()) {
+              <div class="bulk-actions-bar">
+                <div class="selection-info">
+                  <span>{{ customRoleSelection.selected.length }} role(s) selected</span>
+                </div>
+                <div class="bulk-actions">
+                  <button mat-button 
+                          (click)="bulkActivateRoles()"
+                          color="primary">
+                    <mat-icon>play_arrow</mat-icon>
+                    Activate
+                  </button>
+                  <button mat-button 
+                          (click)="bulkDeactivateRoles()">
+                    <mat-icon>pause</mat-icon>
+                    Deactivate
+                  </button>
+                  <button mat-button 
+                          (click)="bulkDeleteRoles()"
+                          color="warn">
+                    <mat-icon>delete</mat-icon>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (customRoles().length === 0) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">tune</mat-icon>
+                <h3>No Custom Roles</h3>
+                <p>Create custom roles to define specific permissions for your workspace members.</p>
+                <button mat-raised-button 
+                        color="primary"
+                        (click)="createCustomRole()">
+                  <mat-icon>add</mat-icon>
+                  Create First Custom Role
+                </button>
+              </div>
+            } @else {
+              <div class="table-container">
+                <table mat-table [dataSource]="customRoles()" class="roles-table">
+                  <!-- Selection Column -->
+                  <ng-container matColumnDef="select">
+                    <th mat-header-cell *matHeaderCellDef>
+                      <mat-checkbox (change)="masterToggleCustomRoles()"
+                                    [checked]="isAllCustomRolesSelected()"
+                                    [indeterminate]="customRoleSelection.hasValue() && !isAllCustomRolesSelected()">
+                      </mat-checkbox>
+                    </th>
+                    <td mat-cell *matCellDef="let role">
+                      <mat-checkbox (click)="$event.stopPropagation()"
+                                    (change)="$event ? customRoleSelection.toggle(role) : null"
+                                    [checked]="customRoleSelection.isSelected(role)">
+                      </mat-checkbox>
+                    </td>
+                  </ng-container>
+
+                  <!-- Role Column -->
+                  <ng-container matColumnDef="role">
+                    <th mat-header-cell *matHeaderCellDef>Role</th>
+                    <td mat-cell *matCellDef="let role">
+                      <div class="role-info">
+                        <mat-icon [style.color]="getRoleColor(role.base_role, role)" class="role-icon">
+                          {{ getRoleIcon(role.base_role, role) }}
+                        </mat-icon>
+                        <div class="role-details">
+                          <span class="role-name">{{ role.name }}</span>
+                          <span class="role-description">{{ role.description }}</span>
+                        </div>
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <!-- Base Role Column -->
+                  <ng-container matColumnDef="baseRole">
+                    <th mat-header-cell *matHeaderCellDef>Base Role</th>
+                    <td mat-cell *matCellDef="let role">
+                      <mat-chip class="base-role-chip">
+                        <mat-icon matChipAvatar>{{ getRoleIcon(role.base_role) }}</mat-icon>
+                        {{ getRoleDisplayName(role.base_role) }}
+                      </mat-chip>
+                    </td>
+                  </ng-container>
+
+                  <!-- Permissions Column -->
+                  <ng-container matColumnDef="permissions">
+                    <th mat-header-cell *matHeaderCellDef>Permissions</th>
+                    <td mat-cell *matCellDef="let role">
+                      <div class="permissions-summary">
+                        @for (group of permissionGroups(); track group.id) {
+                          @if (hasCustomRoleGroupPermissions(group, role)) {
+                            <mat-chip class="permission-chip">
+                              <mat-icon matChipTrailingIcon>{{ group.icon }}</mat-icon>
+                              {{ group.name }}
+                            </mat-chip>
+                          }
+                        }
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <!-- Members Column -->
+                  <ng-container matColumnDef="members">
+                    <th mat-header-cell *matHeaderCellDef>Members</th>
+                    <td mat-cell *matCellDef="let role">
+                      <div class="member-count">
+                        <mat-icon class="count-icon">people</mat-icon>
+                        <span>{{ role.member_count }}</span>
+                      </div>
+                    </td>
+                  </ng-container>
+
+                  <!-- Status Column -->
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let role">
+                      <mat-slide-toggle [checked]="role.is_active"
+                                        (change)="toggleCustomRoleStatus(role)"
+                                        [color]="role.is_active ? 'primary' : 'warn'">
+                      </mat-slide-toggle>
+                      <span class="status-text" [class.active]="role.is_active">
+                        {{ role.is_active ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                  </ng-container>
+
+                  <!-- Actions Column -->
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Actions</th>
+                    <td mat-cell *matCellDef="let role">
+                      <button mat-icon-button [matMenuTriggerFor]="customRoleMenu">
+                        <mat-icon>more_vert</mat-icon>
+                      </button>
+                      <mat-menu #customRoleMenu="matMenu">
+                        <button mat-menu-item (click)="editCustomRole(role)">
+                          <mat-icon>edit</mat-icon>
+                          Edit Role
+                        </button>
+                        <button mat-menu-item (click)="duplicateCustomRole(role)">
+                          <mat-icon>content_copy</mat-icon>
+                          Duplicate
+                        </button>
+                        <mat-divider></mat-divider>
+                        <button mat-menu-item 
+                                (click)="toggleCustomRoleStatus(role)"
+                                [class.activate]="!role.is_active"
+                                [class.deactivate]="role.is_active">
+                          <mat-icon>{{ role.is_active ? 'pause' : 'play_arrow' }}</mat-icon>
+                          {{ role.is_active ? 'Deactivate' : 'Activate' }}
+                        </button>
+                        <button mat-menu-item 
+                                (click)="deleteCustomRole(role)"
+                                [disabled]="role.member_count > 0"
+                                class="delete-action">
+                          <mat-icon>delete</mat-icon>
+                          Delete
+                        </button>
+                      </mat-menu>
+                    </td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="customRoleColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: customRoleColumns;"></tr>
+                </table>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Role Templates Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <span class="tab-label">
+              Role Templates
+              <span class="tab-badge template-badge">{{ roleTemplates().length }}</span>
+            </span>
+          </ng-template>
+          
+          <div class="tab-content">
+            @if (roleTemplates().length === 0) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">template_add</mat-icon>
+                <h3>No Role Templates</h3>
+                <p>Role templates provide pre-configured roles for common business scenarios.</p>
+              </div>
+            } @else {
+              <div class="templates-grid">
+                @for (template of roleTemplates(); track template.id) {
+                  <mat-card class="template-card" [class.popular]="template.is_popular">
+                    <mat-card-header>
+                      <mat-card-title>
+                        {{ template.name }}
+                        @if (template.is_popular) {
+                          <mat-chip class="popular-chip">
+                            <mat-icon matChipAvatar>star</mat-icon>
+                            Popular
+                          </mat-chip>
+                        }
+                      </mat-card-title>
+                      <mat-card-subtitle>{{ template.description }}</mat-card-subtitle>
+                    </mat-card-header>
+
+                    <mat-card-content>
+                      <div class="template-info">
+                        <div class="base-role">
+                          <span class="label">Base Role:</span>
+                          <mat-chip class="base-role-chip">
+                            <mat-icon matChipAvatar>{{ getRoleIcon(template.base_role) }}</mat-icon>
+                            {{ ROLE_DISPLAY_NAMES[template.base_role] }}
+                          </mat-chip>
+                        </div>
+
+                        <div class="business-types">
+                          <span class="label">Business Types:</span>
+                          <div class="chip-list">
+                            @for (type of template.business_type; track type) {
+                              <mat-chip class="business-type-chip">{{ type }}</mat-chip>
+                            }
+                          </div>
+                        </div>
+
+                        <div class="permissions-preview">
+                          <span class="label">Key Permissions:</span>
+                          <div class="permission-groups">
+                            @for (group of permissionGroups(); track group.id) {
+                              @if (hasTemplateGroupPermissions(group, template)) {
+                                <mat-chip class="permission-group-chip">
+                                  <mat-icon matChipAvatar>{{ group.icon }}</mat-icon>
+                                  {{ group.name }}
+                                </mat-chip>
+                              }
+                            }
+                          </div>
+                        </div>
+
+                        <div class="template-stats">
+                          <div class="stat-item">
+                            <mat-icon>trending_up</mat-icon>
+                            <span class="popularity">{{ getPopularityText(template.use_count) }}</span>
+                          </div>
+                          <div class="stat-item">
+                            <mat-icon>people</mat-icon>
+                            <span>{{ template.use_count }} uses</span>
+                          </div>
+                        </div>
+
+                        <div class="template-tags">
+                          @for (tag of template.tags; track tag) {
+                            <mat-chip class="tag-chip">{{ tag }}</mat-chip>
+                          }
+                        </div>
+                      </div>
+                    </mat-card-content>
+
+                    <mat-card-actions align="end">
+                      <button mat-button (click)="viewTemplateDetails(template)">
+                        <mat-icon>info</mat-icon>
+                        Details
+                      </button>
+                      <button mat-raised-button 
+                              color="primary"
+                              (click)="createRoleFromTemplate(template)">
+                        <mat-icon>add</mat-icon>
+                        Use Template
+                      </button>
+                    </mat-card-actions>
+                  </mat-card>
+                }
+              </div>
+            }
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </mat-card-content>
+  </mat-card>
+}

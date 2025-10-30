@@ -1,0 +1,358 @@
+// M3 Material Design Workspace Select Component
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
+
+.workspace-select-container {
+  // Remove min-height since header is now at layout level
+  background-color: variables.$color-background;
+}
+
+// M3 Toolbar Header
+.header-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: variables.$z-index-sticky;
+  box-shadow: variables.$shadow-1;
+}
+
+.header-title {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  font: variables.$font-headline-small;
+}
+
+.header-icon {
+  font-size: 1.5rem;
+  width: 24px;
+  height: 24px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+// M3 User Menu
+.user-avatar-button {
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.user-menu {
+  min-width: 280px;
+}
+
+.user-info {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  padding: variables.$spacing-lg;
+  align-items: flex-start;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  margin: 0 0 4px 0;
+  font: variables.$font-body-medium;
+  color: variables.$color-on-surface;
+}
+
+.user-mobile,
+.user-email {
+  margin: 2px 0;
+  font: variables.$font-label-medium;
+  color: variables.$color-on-surface-variant;
+}
+
+// M3 Content Container
+.content-container {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: variables.$spacing-xxl;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// M3 Loading State
+.loading-state {
+  @include theme.flex-column-center;
+  gap: variables.$spacing-lg;
+  padding: variables.$spacing-xxl 0;
+  color: variables.$color-on-surface;
+}
+
+.loading-text {
+  font: variables.$font-body-medium;
+}
+
+// M3 Invitations Section
+.invitations-section {
+  margin-bottom: variables.$spacing-xxl;
+}
+
+.invitations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: variables.$spacing-lg;
+  margin-bottom: variables.$spacing-xl;
+}
+
+// M3 Workspaces Section
+.workspaces-section {
+  margin-bottom: variables.$spacing-xxl;
+}
+
+.section-header {
+  margin-bottom: variables.$spacing-xl;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin: 0 0 variables.$spacing-sm 0;
+  color: variables.$color-on-surface;
+}
+
+.section-subtitle {
+  font: variables.$font-body-medium;
+  color: variables.$color-on-surface-variant;
+  margin: 0;
+}
+
+.workspaces-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: variables.$spacing-xl;
+}
+
+// M3 Workspace Card
+.workspace-card {
+  cursor: pointer;
+  transition: variables.$transition-standard;
+  background-color: variables.$color-surface-container;
+  border-radius: variables.$border-radius-lg;
+  position: relative;
+
+  &:hover {
+    box-shadow: variables.$shadow-2;
+    transform: translateY(-2px);
+  }
+
+  &.selected {
+    background-color: variables.$color-surface-container-high;
+    border: 2px solid variables.$color-primary;
+  }
+
+  // Workspace Actions Menu
+  .workspace-menu-trigger {
+    position: absolute;
+    top: variables.$spacing-md;
+    right: variables.$spacing-md;
+    z-index: 1;
+    color: variables.$color-on-surface-variant;
+    opacity: 0;
+    transition: opacity variables.$transition-fast;
+
+    &:hover {
+      background-color: variables.$color-surface-container-high;
+      color: variables.$color-on-surface;
+    }
+  }
+
+  &:hover .workspace-menu-trigger {
+    opacity: 1;
+  }
+}
+
+// M3 Workspace Avatar
+.workspace-avatar {
+  width: 40px;
+  height: 40px;
+  @include theme.flex-center;
+  background-color: variables.$color-primary-container;
+  color: variables.$color-on-primary-container;
+  border-radius: variables.$border-radius-round;
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: variables.$border-radius-round;
+    object-fit: cover;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// M3 Workspace Description
+.workspace-description {
+  color: variables.$color-on-surface-variant;
+  font: variables.$font-label-medium;
+  margin: variables.$spacing-md 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: variables.$line-height-normal;
+}
+
+// M3 Workspace Stats
+.workspace-stats {
+  margin: variables.$spacing-md 0;
+
+  mat-list-item {
+    --mdc-list-list-item-one-line-height: 32px;
+    font: variables.$font-label-small;
+    color: variables.$color-on-surface-variant;
+  }
+}
+
+// M3 Selection Actions
+.selection-actions {
+  padding: 0;
+  flex-direction: column;
+
+  mat-progress-bar {
+    width: 100%;
+    height: 2px;
+  }
+
+  .selection-feedback {
+    @include theme.flex-center;
+    gap: variables.$spacing-xs;
+    padding: variables.$spacing-sm;
+    color: variables.$color-primary;
+    font: variables.$font-label-small;
+    font-weight: 400;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// M3 Empty State
+.empty-state {
+  @include theme.flex-center;
+  min-height: 400px;
+  padding: variables.$spacing-xxl;
+}
+
+.empty-state-card {
+  max-width: 400px;
+  text-align: center;
+  background-color: variables.$color-surface-container;
+}
+
+.empty-state-content {
+  @include theme.flex-column-center;
+  gap: variables.$spacing-xl;
+  padding: variables.$spacing-xxl;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+}
+
+.empty-state-title {
+  font: variables.$font-body-large;
+  margin: 0;
+  color: variables.$color-on-surface;
+}
+
+.empty-state-description {
+  font: variables.$font-body-medium;
+  color: variables.$color-on-surface-variant;
+  margin: 0;
+  line-height: variables.$line-height-normal;
+}
+
+.create-first-btn {
+  gap: variables.$spacing-xs;
+}
+
+// M3 Create New Section
+.create-new-section {
+  margin-top: variables.$spacing-xxl;
+}
+
+.section-divider {
+  margin-bottom: variables.$spacing-xl;
+  background-color: variables.$color-outline-variant;
+}
+
+.create-new-content {
+  text-align: center;
+  @include theme.flex-column-center;
+  gap: variables.$spacing-lg;
+}
+
+.create-new-text {
+  font: variables.$font-body-medium;
+  color: variables.$color-on-surface-variant;
+  margin: 0;
+}
+
+.create-new-btn {
+  gap: variables.$spacing-xs;
+}
+
+// M3 Responsive Design
+@include theme.tablet {
+  .content-container {
+    padding: variables.$spacing-xl;
+  }
+
+  .invitations-grid,
+  .workspaces-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+    gap: variables.$spacing-lg;
+  }
+
+  .section-title {
+    font: variables.$font-body-large;
+  }
+}
+
+@include theme.mobile {
+  .content-container {
+    padding: variables.$spacing-lg;
+  }
+
+  .invitations-grid,
+  .workspaces-grid {
+    grid-template-columns: 1fr;
+    gap: variables.$spacing-md;
+  }
+
+  .section-header {
+    margin-bottom: variables.$spacing-lg;
+  }
+
+  .section-title {
+    font: variables.$font-body-large;
+  }
+
+  .empty-state-content {
+    padding: variables.$spacing-xl;
+  }
+
+  .empty-state-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+}

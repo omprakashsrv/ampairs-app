@@ -1,0 +1,145 @@
+// M3 Material Design Home Component
+@use '../../theme/mixins' as theme;
+@use '../../theme/variables' as vars;
+
+.home-container {
+  // Remove min-height since header is now at layout level
+  background-color: vars.$color-background;
+}
+
+.main-content {
+  padding: vars.$spacing-xxl;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.welcome-card {
+  margin-bottom: vars.$spacing-xxl;
+  background-color: vars.$color-surface-container;
+  color: vars.$color-on-surface;
+}
+
+.welcome-icon {
+  margin-right: vars.$spacing-md;
+  color: vars.$color-primary;
+}
+
+.user-welcome {
+  margin-bottom: vars.$spacing-xxl;
+}
+
+.greeting {
+  font: vars.$font-headline-small;
+  font-weight: 400;
+  margin: 0 0 vars.$spacing-md 0;
+  color: vars.$color-on-surface;
+}
+
+.login-info {
+  margin: 0;
+  color: vars.$color-on-surface-variant;
+  font: vars.$font-label-medium;
+}
+
+.features-grid {
+  margin-top: vars.$spacing-xxl;
+}
+
+.feature-card {
+  height: 100%;
+  text-align: center;
+  background-color: vars.$color-surface-container;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    box-shadow: vars.$shadow-2;
+    transform: translateY(-2px);
+  }
+}
+
+.feature-icon {
+  font-size: 3rem; // M3 large icon size
+  width: 3rem;
+  height: 3rem;
+  color: vars.$color-primary;
+}
+
+.feature-card p {
+  margin: 0;
+  color: vars.$color-on-surface-variant;
+  font: vars.$font-label-medium;
+  line-height: vars.$line-height-normal;
+}
+
+.quick-actions {
+  margin-top: vars.$spacing-xxl;
+}
+
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: vars.$spacing-xl;
+}
+
+.action-button {
+  @include theme.flex-column-center;
+  gap: 4px;
+}
+
+.action-button mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+/* M3 Responsive Design */
+@include theme.tablet {
+  .main-content {
+    padding: vars.$spacing-xl;
+  }
+
+  .user-info {
+    @include theme.flex-column-center;
+    text-align: center;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@include theme.mobile {
+  .logo {
+    font: vars.$font-body-large;
+  }
+
+  .workspace-info {
+    margin-left: vars.$spacing-md;
+  }
+
+  .workspace-button {
+    min-width: 120px;
+    padding: vars.$spacing-sm vars.$spacing-md;
+  }
+
+  .workspace-name {
+    max-width: 100px;
+  }
+
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main-content {
+    padding: vars.$spacing-md;
+  }
+
+  .feature-card {
+    padding: vars.$spacing-lg;
+  }
+}

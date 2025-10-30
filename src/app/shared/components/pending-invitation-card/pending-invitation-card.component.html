@@ -1,0 +1,63 @@
+<mat-card class="invitation-card" [class.expired-card]="isExpired()">
+  <mat-card-content class="card-content">
+
+    <!-- Workspace Info -->
+    <div class="workspace-info">
+      <div class="workspace-header">
+        <mat-icon class="workspace-icon">business</mat-icon>
+        <div class="workspace-details">
+          <h4 class="workspace-name">{{ invitation().workspace_name || 'Unknown Workspace' }}</h4>
+          <span class="inviter-name">Invited by {{ invitation().inviter_name || 'Workspace Admin' }}</span>
+        </div>
+      </div>
+
+      <!-- Role Chip -->
+      <mat-chip [color]="getRoleColor(invitation().role)" class="role-chip">
+        <mat-icon class="chip-icon">admin_panel_settings</mat-icon>
+        <span>{{ getRoleDisplayName(invitation().role) }}</span>
+      </mat-chip>
+    </div>
+
+    <!-- Expiry Info -->
+    <div class="expiry-info" [class.warning]="isExpiringSoon()" [class.error]="isExpired()">
+      <mat-icon class="expiry-icon">{{ getExpiryIcon() }}</mat-icon>
+      <span class="expiry-text">{{ getExpiryText() }}</span>
+    </div>
+
+    <!-- Personal Message (if exists) -->
+    @if (invitation().message) {
+      <div class="message-section">
+        <mat-icon class="message-icon">message</mat-icon>
+        <p class="invitation-message">{{ invitation().message }}</p>
+      </div>
+    }
+
+  </mat-card-content>
+
+  <!-- Actions -->
+  <mat-card-actions class="card-actions">
+    @if (isExpired()) {
+      <button mat-button disabled class="expired-button">
+        <mat-icon>error</mat-icon>
+        <span>Expired</span>
+      </button>
+    } @else {
+      @if (isProcessing()) {
+        <div class="processing-state">
+          <mat-spinner diameter="16"></mat-spinner>
+          <span>Processing...</span>
+        </div>
+      } @else {
+        <button mat-button (click)="rejectInvitation()" class="decline-button">
+          <mat-icon>close</mat-icon>
+          <span>Decline</span>
+        </button>
+        <button mat-raised-button color="primary" (click)="acceptInvitation()" class="accept-button">
+          <mat-icon>check</mat-icon>
+          <span>Accept</span>
+        </button>
+      }
+    }
+  </mat-card-actions>
+
+</mat-card>

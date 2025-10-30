@@ -1,0 +1,297 @@
+{
+  "users": {
+    "validUser": {
+      "mobileNumber": "9876543210",
+      "countryCode": 91,
+      "otp": "123456",
+      "name": "Test User",
+      "email": "test@example.com"
+    },
+    "invalidUser": {
+      "mobileNumber": "1234567890",
+      "countryCode": 91,
+      "otp": "999999"
+    }
+  },
+  "authentication": {
+    "validOtpCodes": [
+      "123456",
+      "111111",
+      "000000"
+    ],
+    "invalidOtpCodes": [
+      "999999",
+      "555555",
+      "abcdef"
+    ],
+    "expiredOtp": "expired123",
+    "sessionTimeout": 300000,
+    "otpValidityMinutes": 10,
+    "maxResendAttempts": 3,
+    "resendCooldownSeconds": 60
+  },
+  "api": {
+    "endpoints": {
+      "authInit": "/auth/v1/init",
+      "authVerify": "/auth/v1/verify",
+      "authRefresh": "/auth/v1/refresh_token",
+      "authLogout": "/auth/v1/logout",
+      "authResend": "/auth/v1/resend",
+      "userProfile": "/user/v1",
+      "health": "/actuator/health"
+    },
+    "responseTimeouts": {
+      "fast": 1000,
+      "normal": 5000,
+      "slow": 10000
+    },
+    "errorCodes": {
+      "invalidMobile": "INVALID_MOBILE_NUMBER",
+      "invalidOtp": "INVALID_OTP",
+      "expiredOtp": "OTP_EXPIRED",
+      "expiredSession": "SESSION_EXPIRED",
+      "tooManyAttempts": "TOO_MANY_ATTEMPTS",
+      "rateLimited": "RATE_LIMITED",
+      "serverError": "INTERNAL_SERVER_ERROR"
+    }
+  },
+  "validation": {
+    "mobileNumber": {
+      "valid": [
+        "9876543210",
+        "8765432109",
+        "7654321098",
+        "6543210987",
+        "9123456789",
+        "8987654321"
+      ],
+      "invalid": [
+        "1234567890",
+        "987654321",
+        "98765432101",
+        "9876543a10",
+        "5876543210",
+        "abcdefghij",
+        "987 654 3210",
+        "+919876543210"
+      ]
+    },
+    "otp": {
+      "valid": [
+        "123456",
+        "000000",
+        "999999",
+        "111111",
+        "654321"
+      ],
+      "invalid": [
+        "12345",
+        "1234567",
+        "12345a",
+        "abcdef",
+        "123 456",
+        "12-34-56"
+      ]
+    },
+    "errorMessages": {
+      "mobileRequired": "Mobile number is required",
+      "mobileInvalid": "Enter a valid 10-digit mobile number",
+      "mobileFormat": "Mobile number should start with 6, 7, 8, or 9",
+      "otpRequired": "OTP is required",
+      "otpInvalid": "Enter a valid 6-digit OTP",
+      "otpExpired": "OTP has expired. Please request a new one.",
+      "sessionExpired": "Session has expired. Please start over.",
+      "tooManyAttempts": "Too many failed attempts. Please try again later.",
+      "networkError": "Network error. Please try again."
+    }
+  },
+  "ui": {
+    "selectors": {
+      "loginForm": "[data-cy='login-form']",
+      "mobileInput": "[data-cy='mobile-number-input']",
+      "loginSubmitBtn": "[data-cy='login-submit-btn']",
+      "otpForm": "[data-cy='otp-form']",
+      "otpInput": "[data-cy='otp-input']",
+      "otpSubmitBtn": "[data-cy='otp-submit-btn']",
+      "resendBtn": "[data-cy='resend-otp-btn']",
+      "resendTimer": "[data-cy='resend-timer']",
+      "errorMessage": "[data-cy='error-message']",
+      "successMessage": "[data-cy='success-message']",
+      "loadingSpinner": "[data-cy='loading-spinner']",
+      "logoutBtn": "[data-cy='logout-btn']",
+      "userProfile": "[data-cy='user-profile']",
+      "mobileDisplay": "[data-cy='mobile-display']",
+      "editMobileBtn": "[data-cy='edit-mobile-btn']"
+    },
+    "routes": {
+      "login": "/login",
+      "verifyOtp": "/verify-otp",
+      "home": "/home",
+      "dashboard": "/dashboard"
+    },
+    "timeouts": {
+      "pageLoad": 10000,
+      "elementVisible": 5000,
+      "apiCall": 15000,
+      "resendTimer": 65000
+    }
+  },
+  "test": {
+    "scenarios": {
+      "happyPath": {
+        "description": "Complete successful login flow",
+        "steps": [
+          "Navigate to login page",
+          "Enter valid mobile number",
+          "Submit login form",
+          "Navigate to OTP page",
+          "Enter valid OTP",
+          "Submit OTP form",
+          "Navigate to home page",
+          "Verify authentication"
+        ]
+      },
+      "invalidMobile": {
+        "description": "Invalid mobile number validation",
+        "mobileNumbers": [
+          "1234567890",
+          "987654321",
+          "98765432101",
+          "9876543a10"
+        ],
+        "expectedBehavior": "Show validation error and disable submit button"
+      },
+      "invalidOtp": {
+        "description": "Invalid OTP handling",
+        "otpCodes": [
+          "999999",
+          "555555",
+          "abcdef"
+        ],
+        "expectedBehavior": "Show error message and stay on OTP page"
+      },
+      "sessionTimeout": {
+        "description": "Session timeout handling",
+        "waitTime": 300000,
+        "expectedBehavior": "Redirect to login page with timeout message"
+      }
+    },
+    "performance": {
+      "loadTime": {
+        "target": 2000,
+        "acceptable": 5000,
+        "poor": 10000
+      },
+      "apiResponse": {
+        "target": 1000,
+        "acceptable": 3000,
+        "poor": 5000
+      }
+    },
+    "environments": {
+      "development": {
+        "apiUrl": "http://localhost:8080",
+        "webUrl": "http://localhost:4200",
+        "database": "munsi_app_dev"
+      },
+      "staging": {
+        "apiUrl": "https://staging-api.ampairs.com",
+        "webUrl": "https://staging.ampairs.com",
+        "database": "munsi_app_staging"
+      },
+      "production": {
+        "apiUrl": "https://api.ampairs.com",
+        "webUrl": "https://app.ampairs.com",
+        "database": "munsi_app_prod"
+      }
+    }
+  },
+  "mock": {
+    "responses": {
+      "authInitSuccess": {
+        "success": true,
+        "sessionId": "test-session-id-{{timestamp}}"
+      },
+      "authInitError": {
+        "success": false,
+        "error": {
+          "code": "INVALID_MOBILE_NUMBER",
+          "message": "Invalid mobile number format",
+          "timestamp": "{{timestamp}}"
+        }
+      },
+      "otpVerifySuccess": {
+        "access_token": "mock-access-token-{{timestamp}}",
+        "refresh_token": "mock-refresh-token-{{timestamp}}"
+      },
+      "otpVerifyError": {
+        "success": false,
+        "error": {
+          "code": "INVALID_OTP",
+          "message": "Invalid or expired OTP",
+          "timestamp": "{{timestamp}}"
+        }
+      },
+      "userProfile": {
+        "id": "test-user-id",
+        "mobileNumber": "9876543210",
+        "name": "Test User",
+        "email": "test@example.com",
+        "createdAt": "2023-01-01T00:00:00Z",
+        "updatedAt": "2023-01-01T00:00:00Z"
+      },
+      "refreshTokenSuccess": {
+        "access_token": "new-access-token-{{timestamp}}",
+        "refresh_token": "new-refresh-token-{{timestamp}}"
+      },
+      "logoutSuccess": {
+        "success": true,
+        "message": "Logged out successfully"
+      }
+    },
+    "delays": {
+      "fast": 100,
+      "normal": 500,
+      "slow": 2000,
+      "timeout": 10000
+    },
+    "networkErrors": {
+      "connectionRefused": "ECONNREFUSED",
+      "timeout": "TIMEOUT",
+      "networkError": "NETWORK_ERROR"
+    }
+  },
+  "accessibility": {
+    "requirements": {
+      "ariaLabels": true,
+      "keyboardNavigation": true,
+      "screenReaderSupport": true,
+      "colorContrast": true,
+      "focusManagement": true
+    },
+    "testCases": [
+      "Tab navigation through form elements",
+      "Enter key submission",
+      "ARIA label presence",
+      "Error announcement to screen readers",
+      "Focus management on page transitions"
+    ]
+  },
+  "security": {
+    "testCases": [
+      "JWT token validation",
+      "Session timeout handling",
+      "CSRF protection",
+      "XSS prevention",
+      "Sensitive data exposure",
+      "Rate limiting",
+      "Input sanitization"
+    ],
+    "headers": {
+      "contentType": "application/json",
+      "xContentTypeOptions": "nosniff",
+      "xFrameOptions": "DENY",
+      "xXssProtection": "1; mode=block"
+    }
+  }
+}

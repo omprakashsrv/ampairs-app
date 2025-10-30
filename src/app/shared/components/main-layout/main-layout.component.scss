@@ -1,0 +1,183 @@
+// Main Layout Styles
+@use '../../../../theme/variables' as vars;
+@use '../../../../theme/mixins' as theme;
+
+.main-layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+// Sidenav Container Styles
+.sidenav-container {
+  flex: 1;
+}
+
+// Module Sidenav Styles
+.module-sidenav {
+  width: 280px;
+  border-right: 1px solid vars.$color-outline-variant;
+
+  // Navigation Header
+  .nav-header {
+    display: flex;
+    align-items: center;
+    gap: vars.$spacing-lg;
+    margin: vars.$spacing-xl;
+
+    mat-icon {
+      color: vars.$color-primary;
+      font-size: 1.5rem;
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    h3 {
+      margin: 0;
+      font: vars.$font-title-medium;
+      color: vars.$color-on-surface;
+      font-weight: 500;
+    }
+  }
+
+  // No modules state
+  .no-modules {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: vars.$spacing-lg;
+    padding: vars.$spacing-xxl;
+    color: vars.$color-on-surface-variant;
+
+    mat-icon {
+      font-size: 3rem;
+      width: 3rem;
+      height: 3rem;
+      color: vars.$color-outline;
+    }
+
+    span {
+      font: vars.$font-body-medium;
+      text-align: center;
+    }
+  }
+
+  // Module Navigation
+  .module-navigation {
+    padding: vars.$spacing-md 0;
+  }
+
+  // Module Group
+  .module-group {
+    margin-bottom: vars.$spacing-md;
+
+    .module-header {
+      display: flex;
+      align-items: center;
+      gap: vars.$spacing-lg;
+      padding: vars.$spacing-lg vars.$spacing-xl;
+      background: vars.$color-surface-container-highest;
+      border-bottom: 1px solid vars.$color-outline-variant;
+
+      mat-icon {
+        font-size: 1.25rem;
+        width: 1.25rem;
+        height: 1.25rem;
+      }
+
+      span {
+        font: vars.$font-title-small;
+        font-weight: 500;
+        color: vars.$color-on-surface;
+      }
+    }
+
+    .module-menu-list {
+      padding: 0;
+
+      .module-menu-item {
+        transition: vars.$transition-standard;
+        cursor: pointer;
+
+        &:hover {
+          background-color: vars.$color-surface-container-high;
+        }
+
+        &:active {
+          background-color: vars.$color-surface-container-highest;
+        }
+
+        // Icon styling
+        mat-icon[matListItemIcon] {
+          font-size: 1rem;
+          width: 1rem;
+          height: 1rem;
+          margin-right: vars.$spacing-lg;
+        }
+
+        // Default badge
+        .default-badge {
+          color: vars.$color-tertiary;
+          font-size: 0.875rem;
+          width: 0.875rem;
+          height: 0.875rem;
+        }
+
+        // Text styling
+        span[matListItemTitle] {
+          font: vars.$font-body-medium;
+          color: vars.$color-on-surface;
+        }
+      }
+    }
+  }
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+
+  // Ensure proper scrolling behavior
+  &::-webkit-scrollbar {
+    width: vars.$spacing-md;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: vars.$color-surface-variant;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: vars.$color-outline-variant;
+    border-radius: vars.$border-radius-sm;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: vars.$color-outline;
+  }
+}
+
+// Responsive Design
+@include theme.mobile {
+  .module-sidenav {
+    width: 240px;
+
+    .nav-header {
+      padding: vars.$spacing-lg vars.$spacing-md;
+
+      h3 {
+        font: vars.$font-title-small;
+      }
+    }
+
+    .module-group {
+      .module-header {
+        padding: vars.$spacing-md vars.$spacing-lg;
+      }
+    }
+  }
+
+  .main-content {
+    -webkit-overflow-scrolling: touch;
+  }
+}

@@ -1,0 +1,15 @@
+<h2 mat-dialog-title>
+  <mat-icon>info</mat-icon>
+  Current Device Debug Information
+</h2>
+
+<mat-dialog-content class="debug-content">
+  <pre>{{ data | json }}</pre>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button (click)="onClose()" mat-button>
+    <mat-icon>close</mat-icon>
+    Close
+  </button>
+</mat-dialog-actions>

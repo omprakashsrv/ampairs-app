@@ -1,0 +1,98 @@
+@use '../../../../theme/variables' as vars;
+@use '../../../../theme/mixins' as theme;
+
+.dynamic-module-router {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: vars.$spacing-lg;
+}
+
+.error-card {
+  max-width: 500px;
+  margin: 2rem auto;
+}
+
+.error-card mat-card-title {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-sm;
+}
+
+.error-details {
+  color: vars.$color-on-surface-variant;
+  margin-top: vars.$spacing-sm;
+}
+
+.module-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.module-header {
+  background-color: vars.$color-surface-container;
+  padding: vars.$spacing-lg;
+  border-bottom: 1px solid vars.$color-outline-variant;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: vars.$spacing-lg;
+}
+
+.module-info {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-md;
+}
+
+.module-info h1 {
+  margin: 0;
+  color: vars.$color-on-surface;
+  font: vars.$font-headline-medium;
+  font-weight: 500;
+}
+
+.module-info mat-icon {
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+}
+
+.module-actions {
+  display: flex;
+  gap: vars.$spacing-sm;
+  flex-wrap: wrap;
+}
+
+.module-actions button.active {
+  background-color: var(--module-color, vars.$color-primary);
+  color: vars.$color-on-primary;
+}
+
+.module-body {
+  flex: 1;
+  padding: vars.$spacing-lg;
+  overflow: auto;
+}
+
+@include theme.mobile {
+  .module-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .module-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

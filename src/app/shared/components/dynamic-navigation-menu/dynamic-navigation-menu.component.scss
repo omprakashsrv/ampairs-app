@@ -1,0 +1,163 @@
+@use '../../../../theme/variables' as vars;
+@use '../../../../theme/mixins' as theme;
+
+.dynamic-navigation-menu {
+  padding: vars.$spacing-lg;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: vars.$spacing-xl;
+}
+
+.menu-header h2 {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-md;
+  margin: 0;
+  color: vars.$color-on-surface;
+  font: vars.$font-headline-medium;
+  font-weight: 500;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: vars.$spacing-lg;
+}
+
+.error-card {
+  text-align: center;
+}
+
+.error-card mat-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: vars.$spacing-md;
+}
+
+.modules-list {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-sm;
+}
+
+.module-panel {
+  box-shadow: vars.$shadow-1;
+}
+
+.module-title {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-md;
+}
+
+.module-icon {
+  font-size: 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.menu-item-count {
+  color: vars.$color-on-surface-variant;
+  font: vars.$font-label-medium;
+}
+
+.module-content {
+  padding-top: 0;
+}
+
+.menu-item {
+  transition: vars.$transition-standard;
+}
+
+.menu-item:hover {
+  background-color: vars.$color-surface-container-high;
+}
+
+.active-menu-item {
+  background-color: vars.$color-surface-container-high;
+  border-left: 4px solid vars.$color-primary;
+}
+
+.default-indicator {
+  color: vars.$color-tertiary;
+  font-size: 1rem;
+}
+
+.module-actions {
+  padding: vars.$spacing-lg;
+  border-top: 1px solid vars.$color-outline-variant;
+}
+
+.module-action-btn {
+  width: 100%;
+}
+
+.empty-state {
+  text-align: center;
+  margin-top: vars.$spacing-xxl;
+}
+
+.empty-state mat-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: vars.$spacing-lg;
+  padding: 3rem vars.$spacing-lg;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  width: 4rem;
+  height: 4rem;
+  color: vars.$color-outline;
+}
+
+.module-stats {
+  margin-top: vars.$spacing-xxl;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: vars.$spacing-lg;
+  text-align: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font: vars.$font-display-medium;
+  font-weight: 600;
+  color: vars.$color-primary;
+}
+
+.stat-label {
+  font: vars.$font-label-medium;
+  color: vars.$color-on-surface-variant;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@include theme.mobile {
+  .dynamic-navigation-menu {
+    padding: vars.$spacing-sm;
+  }
+
+  .menu-header h2 {
+    font: vars.$font-headline-small;
+  }
+}

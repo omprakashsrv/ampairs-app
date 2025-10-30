@@ -1,0 +1,146 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>Edit Member</h2>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <!-- Member Info Display -->
+    <div class="member-info-section">
+      <div class="member-avatar">
+        @if (data.member.user.profile_picture_url) {
+          <img [src]="data.member.user.profile_picture_url"
+               [alt]="data.member.user.display_name"
+               class="avatar">
+        } @else {
+          <div class="avatar-placeholder">
+            {{ data.member.user.display_name.charAt(0).toUpperCase() }}
+          </div>
+        }
+      </div>
+      <div class="member-details">
+        <h3>{{ data.member.user.display_name }}</h3>
+        <p>+ {{ data.member.user.country_code }} {{ data.member.user.phone }}</p>
+      </div>
+    </div>
+
+    <!-- Edit Form -->
+    <form [formGroup]="editForm" (ngSubmit)="onSubmit()">
+      <!-- Role Selection -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Role</mat-label>
+        <mat-select formControlName="role" [disabled]="isLoadingRoles()">
+          <mat-select-trigger>
+            {{ getRoleDisplayName(editForm.get('role')?.value) }}
+          </mat-select-trigger>
+          @if (isLoadingRoles()) {
+            <mat-option disabled>Loading roles...</mat-option>
+          }
+          @for (role of availableRoles; track role.name) {
+            <mat-option [value]="role.name">
+              <div class="role-option">
+                <strong>{{ role.display_name }}</strong>
+                <small class="role-description">{{ role.description }}</small>
+              </div>
+            </mat-option>
+          }
+        </mat-select>
+        <mat-hint>Select the member's role in this workspace</mat-hint>
+      </mat-form-field>
+
+
+      <!-- Status Selection -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="is_active">
+          @for (status of availableStatuses; track status.value) {
+            <mat-option [value]="status.value">
+              {{ status.label }}
+            </mat-option>
+          }
+        </mat-select>
+        <mat-hint>Set the member's account status</mat-hint>
+      </mat-form-field>
+
+      <!-- Permissions Selection -->
+      <div class="permissions-section">
+        <h4>Permissions</h4>
+        <p class="section-description">Select the specific permissions for this member</p>
+        
+        @if (isLoadingPermissions()) {
+          <div class="loading-permissions">
+            <mat-spinner diameter="24"></mat-spinner>
+            <span>Loading permissions...</span>
+          </div>
+        } @else {
+          <div class="permissions-grid">
+            @for (permission of availablePermissions; track permission.name) {
+              <mat-checkbox
+                [checked]="isPermissionSelected(permission)"
+                (change)="togglePermission(permission)"
+                class="permission-checkbox">
+                <div class="permission-label">
+                  <strong>{{ permission.permissionName }}</strong>
+                  <small class="permission-key">{{ permission.name }}</small>
+                  <small class="permission-description">{{ permission.description }}</small>
+                </div>
+              </mat-checkbox>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Current Role & Status Display -->
+      <div class="current-info">
+        <h4>Current Settings</h4>
+        <div class="current-chips">
+          <div class="setting-group">
+            <strong>Role & Status:</strong>
+            <mat-chip-listbox>
+              <mat-chip [class]="'role-chip-' + data.member.role.toLowerCase()">
+                {{ getRoleDisplayName(data.member.role) }}
+              </mat-chip>
+              <mat-chip [class]="data.member.is_active ? 'status-chip-active' : 'status-chip-inactive'">
+                {{ data.member.is_active ? 'Active' : 'Inactive' }}
+              </mat-chip>
+            </mat-chip-listbox>
+          </div>
+          
+          @if (data.member.permissions && data.member.permissions.length > 0) {
+            <div class="setting-group">
+              <strong>Current Permissions ({{ data.member.permissions.length }}):</strong>
+              <mat-chip-listbox>
+                @for (permission of data.member.permissions; track permission) {
+                  <mat-chip class="permission-chip">
+                    {{ getPermissionDisplayName(permission) }}
+                  </mat-chip>
+                }
+              </mat-chip-listbox>
+            </div>
+          }
+        </div>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="onCancel()" [disabled]="isLoading()">
+      Cancel
+    </button>
+    <button mat-raised-button
+            color="primary"
+            (click)="onSubmit()"
+            [disabled]="editForm.invalid || isLoading()">
+      @if (isLoading()) {
+        <ng-container>
+          <mat-spinner diameter="20"></mat-spinner>
+          Updating...
+        </ng-container>
+      } @else {
+        Save Changes
+      }
+    </button>
+  </mat-dialog-actions>
+</div>

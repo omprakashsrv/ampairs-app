@@ -1,0 +1,43 @@
+// M3 Material Design Device Debug Dialog Component
+@use '../../../../theme/variables' as variables;
+.debug-content {
+  min-width: 500px;
+  max-width: 80vw;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.debug-content pre {
+  background-color: variables.$color-surface-container-low;
+  padding: variables.$spacing-lg;
+  border-radius: 4px;
+  font: variables.$font-label-small;
+  line-height: variables.$line-height-normal;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  color: variables.$color-on-surface;
+  border: 1px solid variables.$color-outline-variant;
+}
+
+h2[mat-dialog-title] {
+  display: flex;
+  align-items: center;
+  gap: variables.$spacing-sm;
+  color: variables.$color-on-surface;
+}
+
+h2[mat-dialog-title] mat-icon {
+  color: variables.$color-primary;
+}
+
+@media (max-width: 768px) {
+  .debug-content {
+    min-width: 300px;
+    max-width: 95vw;
+  }
+
+  .debug-content pre {
+    font: variables.$font-label-small;
+  }
+}

@@ -1,0 +1,111 @@
+<mat-card class="device-management-card">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>devices</mat-icon>
+      Device Sessions
+    </mat-card-title>
+    <mat-card-subtitle>
+      Manage your active login sessions across different devices
+    </mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    @if (isLoading) {
+      <div class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading device sessions...</p>
+      </div>
+    }
+
+    @if (!isLoading && deviceSessions.length === 0) {
+      <div class="no-devices">
+        <mat-icon>device_unknown</mat-icon>
+        <p>No active device sessions found</p>
+      </div>
+    }
+
+    @if (!isLoading && deviceSessions.length > 0) {
+      <div class="devices-container">
+        @for (device of deviceSessions; track device.device_id) {
+          <mat-card class="device-item" [class.current-device]="device.is_current_device">
+            <mat-card-header>
+              <mat-icon mat-card-avatar class="device-icon">{{ getDeviceIcon(device.device_type) }}
+              </mat-icon>
+
+              <mat-card-title>{{ device.device_name }}</mat-card-title>
+
+              <mat-card-subtitle>
+                <mat-chip-set>
+                  @if (device.is_current_device) {
+                    <mat-chip color="accent">Current Device</mat-chip>
+                  }
+                  <mat-chip>{{ device.platform }}</mat-chip>
+                  <mat-chip>{{ device.browser }}</mat-chip>
+                </mat-chip-set>
+              </mat-card-subtitle>
+            </mat-card-header>
+
+            @if (!device.is_current_device) {
+              <div class="device-actions">
+                <button mat-icon-button
+                        color="warn"
+                        (click)="logoutDevice(device.device_id)"
+                        matTooltip="Logout from this device"
+                        [disabled]="isLoggingOut">
+                  <mat-icon>logout</mat-icon>
+                </button>
+              </div>
+            }
+
+            <mat-card-content class="device-metadata">
+              <div class="metadata-item">
+                <mat-icon>schedule</mat-icon>
+                <span>Last activity: {{ formatDate(device.last_activity) }}</span>
+              </div>
+              <div class="metadata-item">
+                <mat-icon>login</mat-icon>
+                <span>Login time: {{ formatDate(device.login_time) }}</span>
+              </div>
+              <div class="metadata-item">
+                <mat-icon>location_on</mat-icon>
+                <span>IP: {{ device.ip_address }}</span>
+                @if (device.location) {
+                  <span> • {{ device.location }}</span>
+                }
+              </div>
+              <div class="metadata-item">
+                <mat-icon>computer</mat-icon>
+                <span>{{ device.os }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    }
+
+    @if (deviceSessions.length > 1) {
+      <div class="actions-container">
+        <button mat-raised-button
+                color="warn"
+                (click)="logoutAllDevices()"
+                [disabled]="isLoggingOut">
+          <mat-icon>logout</mat-icon>
+          Logout All Devices
+        </button>
+      </div>
+    }
+  </mat-card-content>
+
+  <mat-card-actions>
+    <button (click)="refreshDevices()" [disabled]="isLoading" mat-button>
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+
+    <button (click)="showDebugInfo()" [disabled]="isLoading" mat-button>
+      <mat-icon>info</mat-icon>
+      Device Debug Info
+    </button>
+  </mat-card-actions>
+</mat-card>
+

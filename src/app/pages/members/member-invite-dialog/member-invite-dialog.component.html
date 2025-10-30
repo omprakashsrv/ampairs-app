@@ -1,0 +1,301 @@
+<div class="invite-dialog">
+  <!-- Header -->
+  <div mat-dialog-title class="dialog-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">person_add</mat-icon>
+      <div class="header-text">
+        <h2>Invite Members</h2>
+        <p>{{ data.workspaceName }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div mat-dialog-content class="dialog-content">
+    <mat-tab-group (selectedTabChange)="onTabChange($event.index)" [selectedIndex]="currentTab()">
+
+      <!-- Single Invite Tab -->
+      <mat-tab label="Single Invite">
+        <div class="tab-content">
+          <form [formGroup]="singleInviteForm" class="invite-form">
+
+            <!-- Phone Field -->
+            <div class="phone-field-container">
+              <mat-form-field appearance="outline" class="country-code-field">
+                <mat-label>Country</mat-label>
+                <input matInput
+                       value="+91"
+                       readonly>
+                <mat-icon matSuffix>flag</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="phone-number-field">
+                <mat-label>Phone Number</mat-label>
+                <input matInput
+                       type="tel"
+                       formControlName="phone"
+                       placeholder="9876543210"
+                       autocomplete="tel">
+                <mat-icon matSuffix>phone</mat-icon>
+                @if (singleInviteForm.get('phone')?.hasError('required')) {
+                  <mat-error>Phone number is required</mat-error>
+                }
+                @if (singleInviteForm.get('phone')?.hasError('pattern')) {
+                  <mat-error>Please enter a valid 10-digit phone number</mat-error>
+                }
+              </mat-form-field>
+            </div>
+            <mat-hint class="phone-hint">We'll send SMS notifications to this number</mat-hint>
+
+            <!-- Role Selection -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Role</mat-label>
+              <mat-select formControlName="role">
+                <mat-select-trigger>
+                  @if (singleInviteForm.get('role')?.value) {
+                    <div class="role-trigger-content">
+                      <mat-icon class="role-icon">{{ getRoleIcon(singleInviteForm.get('role')?.value) }}</mat-icon>
+                      <span class="role-name">{{ getRoleDisplayName(singleInviteForm.get('role')?.value) }}</span>
+                    </div>
+                  }
+                </mat-select-trigger>
+                @for (role of availableRoles; track role) {
+                  <mat-option [value]="role">
+                    <div class="role-option">
+                      <div class="role-header">
+                        <mat-icon class="role-icon">{{ getRoleIcon(role) }}</mat-icon>
+                        <span class="role-name">{{ ROLE_DISPLAY_NAMES[role] }}</span>
+                      </div>
+                      <div class="role-description">{{ getRoleDescription(role) }}</div>
+                    </div>
+                  </mat-option>
+                }
+              </mat-select>
+              @if (singleInviteForm.get('role')?.hasError('required')) {
+                <mat-error>Please select a role</mat-error>
+              }
+            </mat-form-field>
+
+            <!-- Expiry -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Invitation Expires</mat-label>
+              <mat-select formControlName="expires_in_days">
+                <mat-option [value]="1">1 day</mat-option>
+                <mat-option [value]="3">3 days</mat-option>
+                <mat-option [value]="7">7 days (recommended)</mat-option>
+                <mat-option [value]="14">14 days</mat-option>
+                <mat-option [value]="30">30 days</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+
+            <!-- Custom Message -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Personal Message (Optional)</mat-label>
+              <textarea matInput
+                        formControlName="custom_message"
+                        rows="3"
+                        placeholder="Add a personal note to your invitation..."></textarea>
+              <mat-hint>This message will be included in the invitation email</mat-hint>
+            </mat-form-field>
+          </form>
+
+          <!-- Preview -->
+          @if (singleInviteForm.get('phone')?.value) {
+            <div class="invitation-preview">
+              <h4>Preview</h4>
+              <div class="preview-card">
+                <div class="preview-header">
+                  <mat-icon>sms</mat-icon>
+                  <span>Invitation SMS</span>
+                </div>
+                <div class="preview-content">
+                  <p><strong>To:</strong> +91 {{ singleInviteForm.get('phone')?.value }}</p>
+                  <p><strong>Role:</strong> {{ ROLE_DISPLAY_NAMES[getCurrentRole()] }}</p>
+                  <p><strong>Expires:</strong> {{ singleInviteForm.get('expires_in_days')?.value }} day(s)</p>
+                  @if (singleInviteForm.get('custom_message')?.value) {
+                    <p>
+                      <strong>Message:</strong> {{ singleInviteForm.get('custom_message')?.value }}
+                    </p>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </mat-tab>
+
+      <!-- Bulk Invite Tab -->
+      <mat-tab label="Bulk Invite">
+        <div class="tab-content">
+          <form [formGroup]="bulkInviteForm" class="invite-form">
+
+            <!-- Email List Input -->
+            <div class="bulk-email-section">
+              <h4>Email Addresses</h4>
+              <p class="section-description">
+                Add multiple email addresses to invite several people at once
+              </p>
+
+              <!-- Quick Add Textarea -->
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Paste Email List</mat-label>
+                <textarea matInput
+                          rows="3"
+                          placeholder="Paste comma, semicolon, or newline separated emails..."
+                          (blur)="parseEmailList($event)"></textarea>
+                <mat-hint>Supports comma, semicolon, or newline separated formats</mat-hint>
+              </mat-form-field>
+
+              <mat-divider class="section-divider"></mat-divider>
+
+              <!-- Individual Email Fields -->
+              <div class="email-fields">
+                @for (emailControl of bulkEmailControls; track $index) {
+                  <div class="email-field-row">
+                    <mat-form-field appearance="outline" class="email-input">
+                      <mat-label>Email {{ $index + 1 }}</mat-label>
+                      <input matInput
+                             type="email"
+                             [formControl]="$any(emailControl)"
+                             placeholder="colleague@company.com">
+                      @if (emailControl.hasError('email') && emailControl.touched) {
+                        <mat-error>Please enter a valid email address</mat-error>
+                      }
+                    </mat-form-field>
+
+                    <button mat-icon-button
+                            type="button"
+                            (click)="removeEmailField($index)"
+                            [disabled]="bulkEmailControls.length <= 1"
+                            matTooltip="Remove email field">
+                      <mat-icon>remove_circle_outline</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+
+              <button mat-button
+                      type="button"
+                      (click)="addEmailField()"
+                      class="add-email-btn">
+                <mat-icon>add</mat-icon>
+                Add Another Email
+              </button>
+            </div>
+
+            <!-- Common Settings -->
+            <div class="bulk-settings">
+              <h4>Invitation Settings</h4>
+
+              <!-- Role Selection -->
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Role for All Invitees</mat-label>
+                <mat-select formControlName="role">
+                  <mat-select-trigger>
+                    @if (bulkInviteForm.get('role')?.value) {
+                      <div class="role-trigger-content">
+                        <mat-icon class="role-icon">{{ getRoleIcon(bulkInviteForm.get('role')?.value) }}</mat-icon>
+                        <span class="role-name">{{ getRoleDisplayName(bulkInviteForm.get('role')?.value) }}</span>
+                      </div>
+                    }
+                  </mat-select-trigger>
+                  @for (role of availableRoles; track role) {
+                    <mat-option [value]="role">
+                      <div class="role-option">
+                        <div class="role-header">
+                          <mat-icon class="role-icon">{{ getRoleIcon(role) }}</mat-icon>
+                          <span class="role-name">{{ ROLE_DISPLAY_NAMES[role] }}</span>
+                        </div>
+                      </div>
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Expiry -->
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Invitations Expire</mat-label>
+                <mat-select formControlName="expires_in_days">
+                  <mat-option [value]="1">1 day</mat-option>
+                  <mat-option [value]="3">3 days</mat-option>
+                  <mat-option [value]="7">7 days (recommended)</mat-option>
+                  <mat-option [value]="14">14 days</mat-option>
+                  <mat-option [value]="30">30 days</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Default Message -->
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Default Message (Optional)</mat-label>
+                <textarea matInput
+                          formControlName="default_message"
+                          rows="3"
+                          placeholder="Add a message that will be sent to all invitees..."></textarea>
+                <mat-hint>This message will be included in all invitation emails</mat-hint>
+              </mat-form-field>
+            </div>
+
+            <!-- Summary -->
+            @if (bulkEmails().length > 0) {
+              <div class="bulk-summary">
+                <h4>Summary</h4>
+                <div class="summary-card">
+                  <div class="summary-item">
+                    <mat-icon>group_add</mat-icon>
+                    <span>{{ bulkEmails().length }} invitation(s) will be sent</span>
+                  </div>
+                  <div class="summary-item">
+                    <mat-icon>{{ getRoleIcon(getBulkRole()) }}</mat-icon>
+                    <span>All as {{ ROLE_DISPLAY_NAMES[getBulkRole()] }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <mat-icon>schedule</mat-icon>
+                    <span>Expires in {{ bulkInviteForm.get('expires_in_days')?.value }} day(s)</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </form>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+
+  <!-- Actions -->
+  <div mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="cancel()" [disabled]="loading()">
+      Cancel
+    </button>
+
+    <!-- Single Invite Actions -->
+    @if (currentTab() === 0) {
+      <button mat-raised-button
+              color="primary"
+              (click)="sendSingleInvite()"
+              [disabled]="!canSubmitSingle()">
+        @if (loading()) {
+          <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+        } @else {
+          <mat-icon>send</mat-icon>
+        }
+        {{ loading() ? 'Sending...' : 'Send Invitation' }}
+      </button>
+    }
+
+    <!-- Bulk Invite Actions -->
+    @if (currentTab() === 1) {
+      <button mat-raised-button
+              color="primary"
+              (click)="sendBulkInvites()"
+              [disabled]="!canSubmitBulk()">
+        @if (loading()) {
+          <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+        } @else {
+          <mat-icon>send</mat-icon>
+        }
+        {{ loading() ? 'Sending...' : 'Send ' + bulkEmails().length + ' Invitation(s)' }}
+      </button>
+    }
+  </div>
+</div>

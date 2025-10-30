@@ -1,0 +1,317 @@
+@use '../../../../theme/variables' as vars;
+@use '../../../../theme/mixins' as theme;
+
+.dialog-container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: vars.$spacing-lg vars.$spacing-xl vars.$spacing-md;
+  border-bottom: 1px solid vars.$color-outline-variant;
+  margin-bottom: vars.$spacing-lg;
+
+  h2 {
+    margin: 0;
+    color: vars.$color-on-surface;
+    font: vars.$font-title-medium;
+  }
+}
+
+// ========== MEMBER INFO SECTION ==========
+
+.member-info-section {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-lg;
+  padding: vars.$spacing-lg;
+  background-color: vars.$color-surface-container-low;
+  border-radius: vars.$border-radius-md;
+  margin-bottom: vars.$spacing-xl;
+
+  .member-avatar {
+    position: relative;
+
+    .avatar,
+    .avatar-placeholder {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font: vars.$font-title-medium;
+      font-weight: 600;
+    }
+
+    .avatar {
+      object-fit: cover;
+      border: 3px solid vars.$color-outline-variant;
+    }
+
+    .avatar-placeholder {
+      background: linear-gradient(135deg, vars.$color-primary, vars.$color-secondary);
+      color: vars.$color-on-primary;
+      text-transform: uppercase;
+    }
+  }
+
+  .member-details {
+    flex: 1;
+
+    h3 {
+      margin: 0 0 vars.$spacing-xs 0;
+      color: vars.$color-on-surface;
+      font: vars.$font-body-large;
+      font-weight: 500;
+    }
+
+    p {
+      margin: 0;
+      color: vars.$color-on-surface-variant;
+      font: vars.$font-body-medium;
+    }
+  }
+}
+
+// ========== FORM STYLES ==========
+
+.full-width {
+  width: 100%;
+  margin-bottom: vars.$spacing-lg;
+}
+
+.role-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    color: vars.$color-on-surface;
+    font: vars.$font-label-medium;
+    font-weight: 500;
+  }
+
+  .role-description {
+    color: vars.$color-on-surface-variant;
+    font: vars.$font-label-small;
+    line-height: 1.3;
+  }
+}
+
+// ========== PERMISSIONS SECTION ==========
+
+.permissions-section {
+  margin-top: vars.$spacing-xl;
+
+  h4 {
+    margin: 0 0 vars.$spacing-sm 0;
+    color: vars.$color-on-surface;
+    font: vars.$font-body-large;
+    font-weight: 500;
+  }
+
+  .section-description {
+    margin: 0 0 vars.$spacing-lg 0;
+    color: vars.$color-on-surface-variant;
+    font: vars.$font-label-medium;
+  }
+
+  .loading-permissions {
+    display: flex;
+    align-items: center;
+    gap: vars.$spacing-md;
+    padding: vars.$spacing-lg;
+    justify-content: center;
+    color: vars.$color-on-surface-variant;
+    font: vars.$font-label-medium;
+  }
+
+  .permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: vars.$spacing-md;
+    margin-top: vars.$spacing-lg;
+
+    .permission-checkbox {
+      padding: vars.$spacing-sm;
+      border: 1px solid vars.$color-outline-variant;
+      border-radius: vars.$border-radius-sm;
+      transition: vars.$transition-standard;
+
+      &:hover {
+        background-color: vars.$color-surface-container;
+        border-color: vars.$color-outline;
+      }
+
+      .permission-label {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        strong {
+          color: vars.$color-on-surface;
+          font: vars.$font-label-medium;
+          font-weight: 600;
+        }
+
+        .permission-key {
+          color: vars.$color-on-surface-variant;
+          font: vars.$font-label-small;
+        }
+
+        .permission-description {
+          color: vars.$color-on-surface-variant;
+          font: vars.$font-label-small;
+          line-height: 1.3;
+          margin-top: 2px;
+        }
+      }
+    }
+  }
+}
+
+// ========== CURRENT INFO SECTION ==========
+
+.current-info {
+  margin-top: vars.$spacing-xl;
+  padding: vars.$spacing-lg;
+  background-color: vars.$color-surface-container-low;
+  border-radius: vars.$border-radius-md;
+
+  h4 {
+    margin: 0 0 vars.$spacing-md 0;
+    color: vars.$color-on-surface;
+    font: vars.$font-body-medium;
+    font-weight: 500;
+  }
+
+  .current-chips {
+    display: flex;
+    flex-direction: column;
+    gap: vars.$spacing-lg;
+
+    .setting-group {
+      strong {
+        display: block;
+        margin-bottom: vars.$spacing-sm;
+        color: vars.$color-on-surface;
+        font: vars.$font-label-medium;
+      }
+
+      mat-chip-listbox {
+        display: flex;
+        flex-wrap: wrap;
+        gap: vars.$spacing-sm;
+      }
+    }
+  }
+}
+
+// ========== ROLE CHIPS ==========
+
+.role-chip-admin {
+  background-color: vars.$color-error-container;
+  color: vars.$color-on-error-container;
+  border: 1px solid transparent;
+}
+
+.role-chip-manager {
+  background-color: vars.$color-tertiary-container;
+  color: vars.$color-on-tertiary-container;
+  border: 1px solid transparent;
+}
+
+.role-chip-member {
+  background-color: vars.$color-primary-container;
+  color: vars.$color-on-primary-container;
+  border: 1px solid transparent;
+}
+
+.role-chip-guest {
+  background-color: vars.$color-secondary-container;
+  color: vars.$color-on-secondary-container;
+  border: 1px solid transparent;
+}
+
+.role-chip-viewer {
+  background-color: vars.$color-surface-container-high;
+  color: vars.$color-on-surface-variant;
+  border: 1px solid vars.$color-outline-variant;
+}
+
+// ========== STATUS CHIPS ==========
+
+.status-chip-active {
+  background-color: vars.$color-primary-container;
+  color: vars.$color-on-primary-container;
+  border: 1px solid transparent;
+}
+
+.status-chip-inactive {
+  background-color: vars.$color-surface-container;
+  color: vars.$color-on-surface-variant;
+  border: 1px solid vars.$color-outline-variant;
+}
+
+.status-chip-suspended {
+  background-color: vars.$color-error-container;
+  color: vars.$color-on-error-container;
+  border: 1px solid transparent;
+}
+
+// ========== PERMISSION CHIPS ==========
+
+.permission-chip {
+  background-color: vars.$color-tertiary-container;
+  color: vars.$color-on-tertiary-container;
+  border: 1px solid transparent;
+  font: vars.$font-label-small;
+}
+
+// ========== DIALOG ACTIONS ==========
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: vars.$spacing-md;
+  padding: vars.$spacing-lg vars.$spacing-xl;
+  border-top: 1px solid vars.$color-outline-variant;
+  margin-top: vars.$spacing-lg;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: vars.$spacing-sm;
+
+    mat-spinner {
+      margin-right: vars.$spacing-sm;
+    }
+  }
+}
+
+// ========== RESPONSIVE ==========
+
+@include theme.mobile {
+  .dialog-container {
+    max-width: 100%;
+  }
+
+  .member-info-section {
+    flex-direction: column;
+    text-align: center;
+    gap: vars.$spacing-md;
+  }
+
+  .dialog-actions {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

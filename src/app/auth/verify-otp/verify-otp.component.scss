@@ -1,0 +1,102 @@
+// M3 Material Design Verify OTP Component
+@use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as vars;
+
+.auth-container {
+  min-height: 100vh;
+  @include theme.flex-center;
+  background-color: vars.$color-background;
+  padding: vars.$spacing-xl;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.logo-icon {
+  font-size: 3rem; // M3 icon size large
+  width: 3rem;
+  height: 3rem;
+  color: vars.$color-primary;
+  margin-bottom: vars.$spacing-md;
+}
+
+.auth-form {
+  @include theme.flex-column;
+  gap: vars.$spacing-xl;
+  margin-top: vars.$spacing-xl;
+}
+
+.otp-input {
+  text-align: center;
+  font: vars.$font-title-large;
+  letter-spacing: vars.$spacing-sm;
+  color: vars.$color-on-surface;
+}
+
+.auth-button {
+  margin-top: vars.$spacing-xl;
+  align-self: center;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: vars.$spacing-md;
+}
+
+.button-spinner {
+  margin: 0;
+}
+
+.card-actions {
+  @include theme.flex-column;
+  gap: vars.$spacing-md;
+  padding: vars.$spacing-xl vars.$spacing-xxl;
+}
+
+.resend-section {
+  @include theme.flex-center;
+}
+
+.timer-text {
+  @include theme.flex-center;
+  gap: vars.$spacing-md;
+  color: vars.$color-on-surface-variant;
+  font: vars.$font-label-medium;
+  margin: 0;
+}
+
+.timer-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: vars.$color-primary;
+}
+
+.back-button {
+  margin-top: vars.$spacing-md;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* M3 Responsive design */
+@include theme.mobile {
+  .auth-container {
+    padding: vars.$spacing-md;
+  }
+
+  .auth-card {
+    margin: 0;
+  }
+
+  .otp-input {
+    font: vars.$font-title-medium;
+    letter-spacing: vars.$spacing-sm;
+  }
+
+}

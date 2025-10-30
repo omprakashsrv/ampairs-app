@@ -1,0 +1,232 @@
+// M3 Material Design Pending Invitation Card Component
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
+
+.invitation-card {
+  border-left: 4px solid variables.$color-primary;
+  transition: variables.$transition-standard;
+
+  &:hover {
+    box-shadow: variables.$shadow-2;
+    transform: translateY(-1px);
+  }
+
+  &.expired-card {
+    border-left-color: variables.$color-error;
+    background-color: variables.$color-surface-container-low;
+    opacity: 0.8;
+  }
+
+  .card-content {
+    padding: variables.$spacing-lg;
+
+    // Workspace Info Section
+    .workspace-info {
+      @include theme.flex-column;
+      gap: variables.$spacing-md;
+      margin-bottom: variables.$spacing-lg;
+
+      .workspace-header {
+        @include theme.flex-center;
+        gap: variables.$spacing-md;
+        align-items: flex-start;
+
+        .workspace-icon {
+          color: variables.$color-primary;
+          font-size: 1.5rem;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .workspace-details {
+          flex: 1;
+
+          .workspace-name {
+            font: variables.$font-title-medium;
+            color: variables.$color-on-surface;
+            margin: 0 0 variables.$spacing-xs 0;
+          }
+
+          .inviter-name {
+            font: variables.$font-body-small;
+            color: variables.$color-on-surface-variant;
+          }
+        }
+      }
+
+      .role-chip {
+        align-self: flex-start;
+        @include theme.flex-center;
+        gap: variables.$spacing-xs;
+
+        .chip-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+          vertical-align: middle;
+        }
+      }
+    }
+
+    // Expiry Info Section
+    .expiry-info {
+      @include theme.flex-center;
+      gap: variables.$spacing-sm;
+      background-color: variables.$color-surface-container-low;
+      padding: variables.$spacing-sm variables.$spacing-md;
+      border-radius: variables.$border-radius-md;
+      margin-bottom: variables.$spacing-md;
+
+      .expiry-icon {
+        color: variables.$color-on-surface-variant;
+        vertical-align: middle;
+      }
+
+      .expiry-text {
+        font: variables.$font-label-medium;
+        color: variables.$color-on-surface-variant;
+      }
+
+      &.warning {
+        background-color: rgba(variables.$color-warning, 0.1);
+        border: 1px solid rgba(variables.$color-warning, 0.3);
+
+        .expiry-icon,
+        .expiry-text {
+          color: variables.$color-warning;
+        }
+      }
+
+      &.error {
+        background-color: rgba(variables.$color-error, 0.1);
+        border: 1px solid rgba(variables.$color-error, 0.3);
+
+        .expiry-icon,
+        .expiry-text {
+          color: variables.$color-error;
+        }
+      }
+    }
+
+    // Message Section
+    .message-section {
+      @include theme.flex-center;
+      gap: variables.$spacing-sm;
+      align-items: flex-start;
+      background-color: variables.$color-surface-container-low;
+      padding: variables.$spacing-md;
+      border-radius: variables.$border-radius-md;
+      border-left: 3px solid variables.$color-primary;
+
+      .message-icon {
+        color: variables.$color-primary;
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .invitation-message {
+        font: variables.$font-body-small;
+        color: variables.$color-on-surface-variant;
+        margin: 0;
+        line-height: 1.4;
+        font-style: italic;
+      }
+    }
+  }
+
+  // Card Actions
+  .card-actions {
+    @include theme.flex-between;
+    padding: variables.$spacing-md variables.$spacing-lg;
+    gap: variables.$spacing-sm;
+
+    .processing-state {
+      @include theme.flex-center;
+      gap: variables.$spacing-sm;
+      width: 100%;
+      justify-content: center;
+      padding: variables.$spacing-sm 0;
+
+      span {
+        font: variables.$font-body-small;
+        color: variables.$color-on-surface-variant;
+      }
+    }
+
+    .decline-button,
+    .accept-button,
+    .expired-button {
+      @include theme.flex-center;
+      gap: variables.$spacing-xs;
+      min-width: 100px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .expired-button {
+      opacity: 0.6;
+      cursor: not-allowed;
+
+      mat-icon {
+        color: variables.$color-error;
+      }
+    }
+
+    .accept-button {
+      flex: 1;
+      max-width: 140px;
+    }
+  }
+}
+
+// Responsive Design
+@include theme.mobile {
+  .invitation-card {
+    .card-content {
+      padding: variables.$spacing-md;
+
+      .workspace-info {
+        gap: variables.$spacing-sm;
+        margin-bottom: variables.$spacing-md;
+
+        .workspace-header {
+          .workspace-icon {
+            font-size: 1.25rem;
+          }
+
+          .workspace-details {
+            .workspace-name {
+              font: variables.$font-title-small;
+            }
+          }
+        }
+      }
+
+      .expiry-info {
+        padding: variables.$spacing-xs variables.$spacing-sm;
+        margin-bottom: variables.$spacing-sm;
+      }
+
+      .message-section {
+        padding: variables.$spacing-sm;
+      }
+    }
+
+    .card-actions {
+      flex-direction: column;
+      gap: variables.$spacing-sm;
+      padding: variables.$spacing-sm variables.$spacing-md;
+
+      .decline-button,
+      .accept-button {
+        width: 100%;
+        max-width: none;
+      }
+    }
+  }
+}

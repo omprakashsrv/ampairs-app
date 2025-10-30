@@ -1,0 +1,242 @@
+<div class="module-store-container">
+
+  <!-- Dialog Header -->
+  <mat-toolbar class="store-header">
+    <mat-toolbar-row class="header-main">
+      <mat-icon class="title-icon">store</mat-icon>
+      <span class="dialog-title">Module Store</span>
+      <span class="spacer"></span>
+      <button mat-icon-button (click)="close()" class="close-button">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-toolbar-row>
+    <mat-toolbar-row class="header-subtitle">
+      <span class="dialog-subtitle">
+        Discover and install business modules to extend your workspace
+      </span>
+    </mat-toolbar-row>
+  </mat-toolbar>
+
+  <!-- Store Content -->
+  <div class="store-content">
+    <mat-tab-group [(selectedIndex)]="selectedTab" (selectedTabChange)="onTabChange($event)" class="store-tabs">
+
+      <!-- Installed Modules Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">check_circle</mat-icon>
+          <span>Installed</span>
+        </ng-template>
+
+        <div class="tab-content">
+          @if (isLoading()) {
+            <div class="loading-state">
+              <mat-spinner diameter="48"></mat-spinner>
+              <span class="loading-text">Loading installed modules...</span>
+            </div>
+          } @else {
+            @if (filteredModules().length === 0) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">check_circle_outline</mat-icon>
+                <h3>No Installed Modules</h3>
+                <p>Browse the Available Modules tab to install modules.</p>
+              </div>
+            } @else {
+              <div class="modules-grid">
+                @for (module of filteredModules(); track module.module_code) {
+                  <mat-card class="module-card installed-module">
+                    <mat-card-header>
+                      <div class="module-avatar" [style.background-color]="module.primary_color" mat-card-avatar>
+                        <mat-icon [style.color]="'white'">{{ module.icon || getCategoryIcon(module.category) }}
+                        </mat-icon>
+                      </div>
+
+                      <mat-card-title>{{ module.name }}</mat-card-title>
+                      <mat-card-subtitle>{{ getCategoryDisplayName(module.category) }}</mat-card-subtitle>
+
+                      @if (module.featured) {
+                        <mat-icon class="featured-badge" color="warn">star</mat-icon>
+                      }
+                    </mat-card-header>
+
+                    <mat-card-content>
+                      @if (module.description) {
+                        <p class="module-description">{{ module.description }}</p>
+                      }
+
+                      <div class="module-meta">
+                        <div class="module-rating">
+                          <mat-icon class="rating-icon">star</mat-icon>
+                          <span>{{ module.rating | number:'1.1-1' }}</span>
+                        </div>
+                        <span class="module-installs">{{ module.install_count | number }} installs</span>
+                      </div>
+
+                      <div class="module-details">
+                        <mat-chip [color]="getComplexityColor(module.complexity)" class="complexity-chip">
+                          <mat-icon class="chip-icon">{{ getComplexityIcon(module.complexity) }}</mat-icon>
+                          {{ module.complexity }}
+                        </mat-chip>
+                        <span class="module-size">{{ module.size_mb }}MB</span>
+                      </div>
+                    </mat-card-content>
+
+                    <mat-card-actions class="module-actions">
+                      @if (module.installation_status.is_installed) {
+                        <button
+                          mat-raised-button
+                          (click)="uninstallModule(module)"
+                          [disabled]="isInstalling() === module.module_code">
+                          @if (isInstalling() === module.module_code) {
+                            <mat-spinner diameter="16"></mat-spinner>
+                            <span>Uninstalling...</span>
+                          } @else {
+                            <ng-container>
+                              <mat-icon>delete</mat-icon>
+                              Uninstall
+                            </ng-container>
+                          }
+                        </button>
+                      } @else {
+                        <button
+                          mat-raised-button
+                          color="primary"
+                          (click)="installModule(module)"
+                          [disabled]="isInstalling() === module.module_code">
+                          @if (isInstalling() === module.module_code) {
+                            <mat-spinner diameter="16"></mat-spinner>
+                            <span>Installing...</span>
+                          } @else {
+                            <ng-container>
+                              <mat-icon>download</mat-icon>
+                              <span>Install</span>
+                            </ng-container>
+                          }
+                        </button>
+                      }
+                    </mat-card-actions>
+                  </mat-card>
+                }
+              </div>
+            }
+          }
+        </div>
+      </mat-tab>
+
+      <!-- Available Modules Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">apps</mat-icon>
+          <span>Available Modules</span>
+        </ng-template>
+
+        <div class="tab-content">
+          <!-- Category Filter -->
+          <div class="filters">
+            <mat-form-field appearance="outline" class="category-filter">
+              <mat-label>Filter by Category</mat-label>
+              <mat-select [(value)]="selectedCategory" (selectionChange)="onCategoryChange($event.value)">
+                <mat-option [value]="null">All Categories</mat-option>
+                @for (category of catalog()?.categories || []; track category.code) {
+                  <mat-option [value]="category.code">
+                    <mat-icon class="option-icon">{{ category.icon }}</mat-icon>
+                    {{ category.display_name }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          @if (isLoading()) {
+            <div class="loading-state">
+              <mat-spinner diameter="48"></mat-spinner>
+              <span class="loading-text">Loading modules...</span>
+            </div>
+          } @else {
+            @if (filteredModules().length === 0) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">apps</mat-icon>
+                <h3>No Available Modules</h3>
+                <p>Try selecting a different category or check back later.</p>
+              </div>
+            } @else {
+              <div class="modules-grid">
+                @for (module of filteredModules(); track module.module_code) {
+                  <mat-card class="module-card">
+                    <mat-card-header>
+                      <div class="module-avatar" [style.background-color]="module.primary_color" mat-card-avatar>
+                        <mat-icon [style.color]="'white'">{{ module.icon || getCategoryIcon(module.category) }}
+                        </mat-icon>
+                      </div>
+
+                      <mat-card-title>{{ module.name }}</mat-card-title>
+                      <mat-card-subtitle>{{ getCategoryDisplayName(module.category) }}</mat-card-subtitle>
+                    </mat-card-header>
+
+                    <mat-card-content>
+                      @if (module.description) {
+                        <p class="module-description">{{ module.description }}</p>
+                      }
+
+                      <div class="module-meta">
+                        <div class="module-rating">
+                          <mat-icon class="rating-icon">star</mat-icon>
+                          <span>{{ module.rating | number:'1.1-1' }}</span>
+                        </div>
+                        <span class="module-installs">{{ module.install_count | number }} installs</span>
+                      </div>
+
+                      <div class="module-details">
+                        <mat-chip [color]="getComplexityColor(module.complexity)" class="complexity-chip">
+                          <mat-icon class="chip-icon">{{ getComplexityIcon(module.complexity) }}</mat-icon>
+                          {{ module.complexity }}
+                        </mat-chip>
+                        <span class="module-size">{{ module.size_mb }}MB</span>
+                      </div>
+                    </mat-card-content>
+
+                    <mat-card-actions class="module-actions">
+                      @if (module.installation_status.is_installed) {
+                        <button
+                          mat-button
+                          color="warn"
+                          (click)="uninstallModule(module)"
+                          [disabled]="isInstalling() === module.module_code">
+                          @if (isInstalling() === module.module_code) {
+                            <mat-spinner diameter="16"></mat-spinner>
+                            <span>Uninstalling...</span>
+                          } @else {
+                            <ng-container>
+                              <mat-icon>delete</mat-icon>
+                              <span>Uninstall</span>
+                            </ng-container>
+                          }
+                        </button>
+                      } @else {
+                        <button
+                          mat-raised-button
+                          color="primary"
+                          (click)="installModule(module)"
+                          [disabled]="isInstalling() === module.module_code">
+                          @if (isInstalling() === module.module_code) {
+                            <mat-spinner diameter="16"></mat-spinner>
+                            <span>Installing...</span>
+                          } @else {
+                            <ng-container>
+                              <mat-icon>download</mat-icon>
+                              <span>Install</span>
+                            </ng-container>
+                          }
+                        </button>
+                      }
+                    </mat-card-actions>
+                  </mat-card>
+                }
+              </div>
+            }
+          }
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

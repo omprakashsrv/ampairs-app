@@ -1,0 +1,170 @@
+<!-- Workspace Selection Content (toolbar now handled by app-header) -->
+<div class="workspace-select-container">
+
+  <!-- M3 Content Container -->
+  <div class="content-container">
+    <!-- M3 Loading State -->
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="48"></mat-spinner>
+        <span class="loading-text">Loading your workspaces...</span>
+      </div>
+    }
+
+    <!-- M3 Pending Invitations Section -->
+    @if (!isLoading() && !isLoadingInvitations() && pendingInvitations().length > 0) {
+      <div class="invitations-section">
+        <div class="section-header">
+          <h2 class="section-title">Pending Invitations</h2>
+          <p class="section-subtitle">You have workspace invitations waiting for your response</p>
+        </div>
+
+        <div class="invitations-grid">
+          @for (invitation of pendingInvitations(); track invitation.id) {
+            <app-pending-invitation-card
+              [invitation]="invitation"
+              (accepted)="onInvitationAccepted($event)"
+              (rejected)="onInvitationRejected($event)"
+              (error)="onInvitationError($event)" />
+          }
+        </div>
+      </div>
+
+      <mat-divider class="section-divider"></mat-divider>
+    }
+
+    <!-- M3 Workspaces Grid -->
+    @if (!isLoading() && workspaces().length > 0) {
+      <div class="workspaces-section">
+        <div class="section-header">
+          <h2 class="section-title">Your Workspaces</h2>
+          <p class="section-subtitle">Choose the workspace you want to work with</p>
+        </div>
+
+        <div class="workspaces-grid">
+          @for (workspace of workspaces(); track workspace.id) {
+            <mat-card
+              (click)="selectWorkspace(workspace)"
+              [class.selected]="selectedWorkspaceId() === workspace.id"
+              appearance="outlined"
+              class="workspace-card"
+              matRipple>
+
+              <mat-card-header>
+                <!-- M3 Avatar -->
+                <div class="workspace-avatar" mat-card-avatar>
+                  @if (workspace.avatar_url) {
+                    <img [alt]="workspace.name" [ngSrc]="workspace.avatar_url" width="40" height="40">
+                  } @else {
+                    <mat-icon>{{ getWorkspaceTypeIcon(workspace.workspace_type) }}</mat-icon>
+                  }
+                </div>
+
+                <mat-card-title>{{ workspace.name }}</mat-card-title>
+                <mat-card-subtitle>
+                  <mat-chip-set>
+                    <mat-chip>{{ workspace.workspace_type | titlecase }}</mat-chip>
+                    <mat-chip [color]="getSubscriptionColor(workspace.subscription_plan)">
+                      {{ workspace.subscription_plan | titlecase }}
+                    </mat-chip>
+                  </mat-chip-set>
+                </mat-card-subtitle>
+
+                <!-- Workspace Actions Menu -->
+                <button
+                  mat-icon-button
+                  [matMenuTriggerFor]="workspaceMenu"
+                  (click)="$event.stopPropagation()"
+                  class="workspace-menu-trigger">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+
+                <mat-menu #workspaceMenu="matMenu">
+                  <button mat-menu-item (click)="editWorkspace(workspace)">
+                    <mat-icon>edit</mat-icon>
+                    <span>Edit Workspace</span>
+                  </button>
+                  <mat-divider></mat-divider>
+                  <button mat-menu-item (click)="viewWorkspaceSettings(workspace)">
+                    <mat-icon>settings</mat-icon>
+                    <span>Settings</span>
+                  </button>
+                </mat-menu>
+              </mat-card-header>
+
+              <mat-card-content>
+                @if (workspace.description) {
+                  <p class="workspace-description">
+                    {{ workspace.description }}
+                  </p>
+                }
+
+                <!-- M3 Stats List -->
+                <mat-list class="workspace-stats">
+                  <mat-list-item>
+                    <mat-icon matListItemIcon>group</mat-icon>
+                    <div matListItemTitle>{{ workspace.member_count }}
+                      member{{ workspace.member_count !== 1 ? 's' : '' }}
+                    </div>
+                  </mat-list-item>
+                  <mat-list-item>
+                    <mat-icon matListItemIcon>schedule</mat-icon>
+                    <div matListItemTitle>{{ formatLastActivity(workspace.last_activity_at) }}</div>
+                  </mat-list-item>
+                </mat-list>
+              </mat-card-content>
+
+              <!-- M3 Selection State -->
+              @if (selectedWorkspaceId() === workspace.id) {
+                <mat-card-actions class="selection-actions">
+                  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+                  <div class="selection-feedback">
+                    <mat-icon>check_circle</mat-icon>
+                    <span>Selecting workspace...</span>
+                  </div>
+                </mat-card-actions>
+              }
+            </mat-card>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- M3 Empty State -->
+    @if (!isLoading() && workspaces().length === 0) {
+      <div class="empty-state">
+        <mat-card class="empty-state-card">
+          <mat-card-content>
+            <div class="empty-state-content">
+              <mat-icon class="empty-state-icon" color="primary">workspace_premium</mat-icon>
+              <h2 class="empty-state-title">No Workspaces Found</h2>
+              <p class="empty-state-description">
+                You don't have any workspaces yet. Create your first workspace to get started with Ampairs.
+              </p>
+
+              <button (click)="createNewWorkspace()" class="create-first-btn" color="primary" extended mat-fab>
+                <mat-icon>add</mat-icon>
+                Create Your First Workspace
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
+
+    <!-- M3 Create New Workspace FAB -->
+    @if (!isLoading() && workspaces().length > 0) {
+      <div class="create-new-section">
+        <mat-divider class="section-divider"></mat-divider>
+
+        <div class="create-new-content">
+          <p class="create-new-text">Need a new workspace?</p>
+          <button (click)="createNewWorkspace()" class="create-new-btn" color="primary" mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            Create New Workspace
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

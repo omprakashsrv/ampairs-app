@@ -1,0 +1,188 @@
+<!-- Material Design 3 App Header Component -->
+<mat-toolbar
+  class="app-header-toolbar">
+
+  <!-- Sidenav Toggle -->
+  @if (shouldShowSidenavToggle()) {
+    <button
+      mat-icon-button
+      (click)="onToggleSidenav()"
+      matTooltip="Toggle Navigation">
+      <mat-icon>menu</mat-icon>
+    </button>
+  }
+
+  <!-- Back Button (conditional) -->
+  @if (headerContext().showBackButton) {
+    <button
+      (click)="goBack()"
+      mat-icon-button
+      matTooltip="Go back">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+  }
+
+  <!-- Logo + Title Section -->
+  <span class="header-title-section">
+    @if (!headerContext().title) {
+      <!-- Default Ampairs Logo -->
+      <span class="logo">
+        <mat-icon class="logo-icon">business</mat-icon>
+        Ampairs
+      </span>
+    } @else {
+      <!-- Dynamic Title with Icon -->
+      <span class="dynamic-title">
+        @if (headerContext().titleIcon) {
+          <mat-icon class="title-icon">{{ headerContext().titleIcon }}</mat-icon>
+        }
+        {{ headerContext().title }}
+      </span>
+    }
+  </span>
+
+  <!-- Workspace Info (conditional) -->
+  @if (shouldShowWorkspaceMenu()) {
+    <div class="workspace-section">
+      <button
+        mat-button
+        [matMenuTriggerFor]="workspaceMenu"
+        class="workspace-button">
+        <span class="workspace-name">{{ currentWorkspace()?.name }}</span>
+        <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
+      </button>
+
+      <mat-menu #workspaceMenu="matMenu" class="workspace-menu">
+        <!-- Workspace Details Header -->
+        <div class="workspace-details">
+          <div class="workspace-header">
+            <mat-icon>business</mat-icon>
+            <div class="workspace-info-text">
+              <div class="workspace-title">{{ currentWorkspace()?.name }}</div>
+              <div class="workspace-slug">{{ currentWorkspace()?.slug }}</div>
+            </div>
+          </div>
+          @if (currentWorkspace(); as workspace) {
+            @if (workspace.description && workspace.description.length > 0) {
+              <div class="workspace-description">{{ workspace.description }}</div>
+            }
+          }
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <!-- Workspace Management Options -->
+        <button mat-menu-item (click)="manageMembers()">
+          <mat-icon>people</mat-icon>
+          <span>Manage Members</span>
+        </button>
+
+<!--        <button mat-menu-item (click)="manageRoles()">-->
+<!--          <mat-icon>security</mat-icon>-->
+<!--          <span>Manage Roles</span>-->
+<!--        </button>-->
+
+        <button mat-menu-item (click)="manageModules()">
+          <mat-icon>extension</mat-icon>
+          <span>Manage Modules</span>
+        </button>
+
+        <mat-divider></mat-divider>
+
+        <!-- Switch Workspace -->
+        <button mat-menu-item (click)="switchWorkspace()">
+          <mat-icon>swap_horiz</mat-icon>
+          <span>Switch Workspace</span>
+        </button>
+      </mat-menu>
+    </div>
+  }
+
+  <!-- Flexible Spacer -->
+  <span class="spacer"></span>
+
+  <!-- Step Indicator (conditional) -->
+  @if (headerContext().showStepIndicator && headerContext().stepInfo; as stepInfo) {
+    <div class="step-indicator">
+      <span class="step-text">
+        {{ stepInfo.current }} of {{ stepInfo.total }}
+      </span>
+    </div>
+  }
+
+  <!-- Theme Controls (conditional) -->
+  @if (shouldShowThemeControls()) {
+    <div class="theme-controls">
+      <!-- Theme Toggle Button -->
+      <button
+        (click)="toggleTheme()"
+        mat-icon-button
+        [matTooltip]="'Theme: ' + getThemeModeLabel() + ' (click to cycle)'"
+        class="theme-toggle-button">
+        <mat-icon>{{ getThemeModeIcon() }}</mat-icon>
+      </button>
+
+      <!-- Theme Settings Button -->
+      <button
+        (click)="openThemeSettings()"
+        mat-icon-button
+        matTooltip="Theme Settings">
+        <mat-icon>tune</mat-icon>
+      </button>
+    </div>
+  }
+
+  <!-- User Profile Menu (conditional) -->
+  @if (shouldShowUserMenu() && currentUser(); as user) {
+    <div class="user-profile-section">
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="userMenu"
+        class="user-avatar-button">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+
+      <mat-menu #userMenu class="user-menu">
+        <!-- User Info Header -->
+        <div class="user-info">
+          <mat-icon>account_circle</mat-icon>
+          <div class="user-details">
+            <div class="user-name">{{ formatUserName(user) }}</div>
+            <div class="user-mobile">+{{ user.country_code }} {{ user.phone }}</div>
+            @if (user.email) {
+              <div class="user-email">{{ user.email }}</div>
+            }
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <!-- Profile Management -->
+        <button mat-menu-item (click)="editProfile()">
+          <mat-icon>edit</mat-icon>
+          <span>Edit Profile</span>
+        </button>
+
+        <button mat-menu-item (click)="viewSettings()">
+          <mat-icon>settings</mat-icon>
+          <span>Settings</span>
+        </button>
+
+        <button mat-menu-item (click)="viewDevices()">
+          <mat-icon>devices</mat-icon>
+          <span>Device Sessions</span>
+        </button>
+
+        <mat-divider></mat-divider>
+
+        <!-- Logout -->
+        <button mat-menu-item (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
+    </div>
+  }
+
+</mat-toolbar>
+

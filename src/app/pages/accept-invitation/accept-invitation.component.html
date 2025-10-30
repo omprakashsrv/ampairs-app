@@ -1,0 +1,213 @@
+<div class="invitation-container">
+  <div class="invitation-card-wrapper">
+
+    <!-- Loading State -->
+    @if (state() === 'loading') {
+      <mat-card class="invitation-card">
+        <mat-card-content class="loading-content">
+          <mat-spinner diameter="48"></mat-spinner>
+          <h2>Loading invitation...</h2>
+          <p>Please wait while we verify your invitation.</p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Login Required State -->
+    @if (state() === 'login_required') {
+      <mat-card class="invitation-card">
+        <mat-card-header>
+          <div class="card-header">
+            <mat-icon class="header-icon">mail</mat-icon>
+            <div class="header-text">
+              <mat-card-title>Workspace Invitation</mat-card-title>
+              <mat-card-subtitle>You've been invited to join a workspace</mat-card-subtitle>
+            </div>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="login-required-content">
+            <mat-icon class="login-icon">login</mat-icon>
+            <h3>Login Required</h3>
+            <p>Please log in to your account to view and accept this workspace invitation.</p>
+
+            <div class="security-note">
+              <mat-icon>security</mat-icon>
+              <small>This ensures the invitation is accepted by the correct person</small>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions class="card-actions">
+          <button mat-raised-button color="primary" (click)="navigateToLogin()">
+            <mat-icon>login</mat-icon>
+            <span>Login to Continue</span>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    }
+
+    <!-- Ready to Accept State -->
+    @if (state() === 'ready_to_accept') {
+      <mat-card class="invitation-card">
+        <mat-card-header>
+          <div class="card-header">
+            <mat-icon class="header-icon">business</mat-icon>
+            <div class="header-text">
+              <mat-card-title>Workspace Invitation</mat-card-title>
+              <mat-card-subtitle>You've been invited to join a workspace</mat-card-subtitle>
+            </div>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="invitation-details">
+            <div class="detail-row">
+              <mat-icon class="detail-icon">business</mat-icon>
+              <div class="detail-content">
+                <label>Workspace</label>
+                <span>{{ invitation()?.workspace_name || 'Loading...' }}</span>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <mat-icon class="detail-icon">person</mat-icon>
+              <div class="detail-content">
+                <label>Invited by</label>
+                <span>{{ invitation()?.inviter_name || 'Workspace Administrator' }}</span>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <mat-icon class="detail-icon">admin_panel_settings</mat-icon>
+              <div class="detail-content">
+                <label>Role</label>
+                <div class="role-info">
+                  <mat-chip [color]="getRoleColor(invitation()?.role || 'MEMBER')">
+                    {{ getRoleDisplayName(invitation()?.role || 'MEMBER') }}
+                  </mat-chip>
+                  <small>{{ getRoleDescription(invitation()?.role || 'MEMBER') }}</small>
+                </div>
+              </div>
+            </div>
+
+            @if (invitation()?.message) {
+              <div class="detail-row">
+                <mat-icon class="detail-icon">message</mat-icon>
+                <div class="detail-content">
+                  <label>Personal Message</label>
+                  <p class="invitation-message">{{ invitation()?.message }}</p>
+                </div>
+              </div>
+            }
+
+            @if (invitation()?.expires_at) {
+              <div class="detail-row expiry-row">
+                <mat-icon class="detail-icon">schedule</mat-icon>
+                <div class="detail-content">
+                  <label>Expires</label>
+                  <span class="expiry-date">{{ invitation()?.expires_at | date:'medium' }}</span>
+                  @if (invitation()?.days_until_expiry !== null && invitation()?.days_until_expiry! > 0) {
+                    <small class="days-remaining">({{ invitation()?.days_until_expiry }} days remaining)</small>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="acceptance-note">
+            <mat-icon>info</mat-icon>
+            <p>By accepting this invitation, you'll gain access to the workspace with the specified role and permissions.</p>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions class="card-actions">
+          <button mat-button (click)="rejectInvitation()" [disabled]="state() === 'accepting'">
+            <mat-icon>close</mat-icon>
+            <span>Decline</span>
+          </button>
+          <button mat-raised-button color="primary" (click)="acceptInvitation()" [disabled]="state() === 'accepting'">
+            <mat-icon>check</mat-icon>
+            <span>Accept Invitation</span>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    }
+
+    <!-- Accepting State -->
+    @if (state() === 'accepting') {
+      <mat-card class="invitation-card">
+        <mat-card-content class="loading-content">
+          <mat-spinner diameter="48"></mat-spinner>
+          <h2>Processing...</h2>
+          <p>Please wait while we process your response.</p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Accepted State -->
+    @if (state() === 'accepted') {
+      <mat-card class="invitation-card success-card">
+        <mat-card-content class="success-content">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+          <h2>Welcome to {{ invitation()?.workspace_name }}!</h2>
+          <p>You've successfully joined the workspace as a {{ getRoleDisplayName(invitation()?.role || 'MEMBER') }}.</p>
+          <p class="redirect-note">Redirecting you to your workspaces...</p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Rejected State -->
+    @if (state() === 'rejected') {
+      <mat-card class="invitation-card">
+        <mat-card-content class="rejected-content">
+          <mat-icon class="rejected-icon">cancel</mat-icon>
+          <h2>Invitation Declined</h2>
+          <p>You have declined the invitation to join {{ invitation()?.workspace_name }}.</p>
+          <p class="redirect-note">Redirecting you to the home page...</p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Error State -->
+    @if (state() === 'error') {
+      <mat-card class="invitation-card error-card">
+        <mat-card-header>
+          <div class="card-header">
+            <mat-icon class="header-icon error">error</mat-icon>
+            <div class="header-text">
+              <mat-card-title>Invitation Error</mat-card-title>
+              <mat-card-subtitle>Unable to process invitation</mat-card-subtitle>
+            </div>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="error-content">
+            <p class="error-message">{{ errorMessage() }}</p>
+
+            <div class="error-help">
+              <h4>What can you do?</h4>
+              <ul>
+                <li>Check that the invitation link is complete and hasn't been modified</li>
+                <li>Ensure you're using the same email address the invitation was sent to</li>
+                <li>Contact the person who invited you for a new invitation</li>
+                <li>Make sure the invitation hasn't expired</li>
+              </ul>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions class="card-actions">
+          <button mat-button (click)="router.navigate(['/'])">
+            <mat-icon>home</mat-icon>
+            <span>Go Home</span>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    }
+
+  </div>
+</div>

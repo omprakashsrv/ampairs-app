@@ -1,0 +1,19 @@
+/*
+ * Material Design 3 System
+ * Modern theming with M3 color tokens, typography, and density support
+ */
+
+// Angular Material core
+@use '@angular/material' as mat;
+
+// Import M3 theme system
+@use 'fonts';
+@use 'colors';
+@use 'density';
+@use 'spacing';
+@use 'common';
+@use 'variables';
+
+// Include Material core (M3 compatible)
+@include mat.core();
+

@@ -1,0 +1,308 @@
+<!-- Dialog Header -->
+<div class="dialog-header">
+  <h2 mat-dialog-title>{{ dialogTitle() }}</h2>
+  <button mat-icon-button 
+          mat-dialog-close 
+          class="close-button"
+          [disabled]="loading()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<!-- Dialog Content -->
+<div mat-dialog-content class="dialog-content">
+  <form [formGroup]="roleForm" (ngSubmit)="onSubmit()">
+    
+    <!-- Step 1: Basic Information -->
+    <mat-expansion-panel [expanded]="currentStep() === 0" 
+                         [disabled]="loading()" 
+                         class="step-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon class="step-icon">info</mat-icon>
+          Basic Information
+        </mat-panel-title>
+        <mat-panel-description>
+          Define the role name and description
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      
+      <div class="step-content">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Role Name</mat-label>
+            <input matInput 
+                   formControlName="name" 
+                   placeholder="Enter role name"
+                   maxlength="50">
+            <mat-hint>Choose a clear, descriptive name for this role</mat-hint>
+            @if (hasFieldError('name')) {
+              <mat-error>{{ getFieldError('name') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description</mat-label>
+            <textarea matInput 
+                      formControlName="description" 
+                      placeholder="Describe the purpose and responsibilities of this role"
+                      rows="3"
+                      maxlength="200">
+            </textarea>
+            <mat-hint>Explain when and why someone would have this role</mat-hint>
+            @if (hasFieldError('description')) {
+              <mat-error>{{ getFieldError('description') }}</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        @if (!isEditMode()) {
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Base Role</mat-label>
+              <mat-select formControlName="baseRole">
+                @for (option of baseRoleOptions(); track option.value) {
+                  <mat-option [value]="option.value" [disabled]="option.disabled">
+                    <div class="base-role-option">
+                      <mat-icon class="role-icon">{{ getRoleIcon(option.value) }}</mat-icon>
+                      <div class="role-info">
+                        <span class="role-name">{{ option.label }}</span>
+                        <span class="role-description">{{ getInheritedPermissions(option.value).length }} inherited permissions</span>
+                      </div>
+                    </div>
+                  </mat-option>
+                }
+              </mat-select>
+              <mat-hint>Select the base role that this custom role extends</mat-hint>
+              @if (hasFieldError('baseRole')) {
+                <mat-error>{{ getFieldError('baseRole') }}</mat-error>
+              }
+            </mat-form-field>
+          </div>
+        }
+
+        <!-- Inherited Permissions Preview -->
+        @if (selectedBaseRole()) {
+          <div class="inherited-permissions-preview">
+            <h4>Inherited Permissions</h4>
+            <p class="preview-description">
+              This role will automatically inherit {{ inheritedPermissions().length }} permissions from 
+              {{ ROLE_DISPLAY_NAMES[selectedBaseRole()!] }}:
+            </p>
+            <div class="inherited-permissions-list">
+              @for (permission of inheritedPermissions(); track permission) {
+                <mat-chip class="inherited-chip">
+                  <mat-icon matChipAvatar>{{ getPermissionGroupIcon(permission) }}</mat-icon>
+                  {{ PERMISSION_DISPLAY_NAMES[permission] }}
+                </mat-chip>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Step 2: Permission Configuration -->
+    <mat-expansion-panel [expanded]="currentStep() === 1 || selectedBaseRole()" 
+                         [disabled]="loading() || !selectedBaseRole()" 
+                         class="step-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon class="step-icon">security</mat-icon>
+          Additional Permissions
+        </mat-panel-title>
+        <mat-panel-description>
+          @if (selectedPermissionCount() > 0) {
+            {{ selectedPermissionCount() }} additional permissions selected
+          } @else {
+            Select additional permissions beyond the base role
+          }
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      
+      <div class="step-content">
+        @if (selectedBaseRole()) {
+          <div class="permissions-info">
+            <p>
+              Select additional permissions to extend the capabilities of the {{ ROLE_DISPLAY_NAMES[selectedBaseRole()!] }} role.
+              Permissions already inherited from the base role are marked and cannot be deselected.
+            </p>
+          </div>
+
+          <!-- Permission Conflicts Warning -->
+          @if (permissionConflicts().length > 0) {
+            <div class="conflicts-warning">
+              <mat-icon class="warning-icon">warning</mat-icon>
+              <div class="warning-content">
+                <h4>Permission Conflicts Detected</h4>
+                <ul>
+                  @for (conflict of permissionConflicts(); track conflict) {
+                    <li>{{ conflict }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          }
+
+          <!-- Permission Groups -->
+          <div class="permission-groups">
+            @for (group of permissionGroups; track group.id; let groupIndex = $index) {
+              <mat-expansion-panel class="permission-group-panel">
+                <mat-expansion-panel-header>
+                  <mat-panel-title>
+                    <div class="group-header">
+                      <mat-checkbox [checked]="isAllPermissionsInGroupSelected(groupIndex)"
+                                    [indeterminate]="isSomePermissionsInGroupSelected(groupIndex)"
+                                    (change)="toggleAllPermissionsInGroup(groupIndex, $event.checked)"
+                                    class="group-checkbox">
+                      </mat-checkbox>
+                      <mat-icon class="group-icon">{{ group.icon }}</mat-icon>
+                      <div class="group-info">
+                        <span class="group-name">{{ group.name }}</span>
+                        <span class="group-summary">{{ getPermissionGroupSummary(groupIndex) }}</span>
+                      </div>
+                    </div>
+                  </mat-panel-title>
+                </mat-expansion-panel-header>
+                
+                <div class="permission-list">
+                  @for (permission of group.permissions; track permission; let permissionIndex = $index) {
+                    <div class="permission-item" 
+                         [class.inherited]="isPermissionInherited(permission)"
+                         [class.selected]="isPermissionSelected(permission)">
+                      <mat-checkbox [formControl]="getPermissionFormControl(groupIndex, permissionIndex)"
+                                    [disabled]="isPermissionInherited(permission)"
+                                    class="permission-checkbox">
+                        <div class="permission-details">
+                          <span class="permission-name">{{ PERMISSION_DISPLAY_NAMES[permission] }}</span>
+                          <span class="permission-description">{{ PERMISSION_DESCRIPTIONS[permission] }}</span>
+                          @if (isPermissionInherited(permission)) {
+                            <span class="inherited-badge">Inherited</span>
+                          }
+                        </div>
+                      </mat-checkbox>
+                    </div>
+                  }
+                </div>
+              </mat-expansion-panel>
+            }
+          </div>
+
+          <!-- Selected Permissions Summary -->
+          @if (selectedPermissionCount() > 0) {
+            <div class="selected-summary">
+              <h4>Selected Additional Permissions ({{ selectedPermissionCount() }})</h4>
+              <div class="selected-permissions">
+                @for (permission of Array.from(selectedPermissions()); track permission) {
+                  <mat-chip class="selected-permission-chip">
+                    <mat-icon matChipAvatar>{{ getPermissionGroupIcon(permission) }}</mat-icon>
+                    {{ PERMISSION_DISPLAY_NAMES[permission] }}
+                  </mat-chip>
+                }
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="select-base-role-prompt">
+            <mat-icon class="prompt-icon">arrow_upward</mat-icon>
+            <p>Please select a base role first to configure additional permissions.</p>
+          </div>
+        }
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Step 3: Appearance (Optional) -->
+    <mat-expansion-panel [disabled]="loading()" class="step-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon class="step-icon">palette</mat-icon>
+          Appearance
+        </mat-panel-title>
+        <mat-panel-description>
+          Customize the visual representation (optional)
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      
+      <div class="step-content">
+        <div class="form-row appearance-row">
+          <mat-form-field appearance="outline" class="color-field">
+            <mat-label>Color</mat-label>
+            <input matInput 
+                   formControlName="color" 
+                   type="color"
+                   class="color-input">
+            <mat-hint>Choose a color to represent this role</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="icon-field">
+            <mat-label>Icon</mat-label>
+            <mat-select formControlName="icon">
+              <mat-option value="person">person</mat-option>
+              <mat-option value="admin_panel_settings">admin_panel_settings</mat-option>
+              <mat-option value="supervisor_account">supervisor_account</mat-option>
+              <mat-option value="work">work</mat-option>
+              <mat-option value="business_center">business_center</mat-option>
+              <mat-option value="support_agent">support_agent</mat-option>
+              <mat-option value="engineering">engineering</mat-option>
+              <mat-option value="science">science</mat-option>
+              <mat-option value="design_services">design_services</mat-option>
+              <mat-option value="campaign">campaign</mat-option>
+            </mat-select>
+            <mat-hint>Select an icon to represent this role</mat-hint>
+          </mat-form-field>
+
+          <!-- Preview -->
+          <div class="role-preview">
+            <div class="preview-label">Preview:</div>
+            <div class="preview-role">
+              <mat-icon [style.color]="roleForm.get('color')?.value || '#2196f3'" class="preview-icon">
+                {{ roleForm.get('icon')?.value || 'person' }}
+              </mat-icon>
+              <span class="preview-name">{{ roleForm.get('name')?.value || 'Role Name' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-expansion-panel>
+  </form>
+</div>
+
+<!-- Dialog Actions -->
+<div mat-dialog-actions class="dialog-actions">
+  <div class="actions-left">
+    @if (permissionConflicts().length > 0) {
+      <div class="conflict-indicator">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <span>{{ permissionConflicts().length }} conflict(s) detected</span>
+      </div>
+    }
+  </div>
+
+  <div class="actions-right">
+    <button mat-button 
+            type="button"
+            (click)="onCancel()"
+            [disabled]="loading()">
+      Cancel
+    </button>
+    
+    <button mat-raised-button 
+            color="primary"
+            type="submit"
+            (click)="onSubmit()"
+            [disabled]="loading() || roleForm.invalid">
+      @if (loading()) {
+        <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
+        Saving...
+      } @else {
+        @if (isEditMode()) {
+          Update Role
+        } @else {
+          Create Role
+        }
+      }
+    </button>
+  </div>
+</div>

@@ -1,0 +1,85 @@
+@use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as vars;
+
+.dashboard-container {
+  padding: vars.$spacing-xxl;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.welcome-section {
+  margin-bottom: vars.$spacing-xxl;
+}
+
+.welcome-card {
+  background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-secondary 100%);
+  color: white;
+
+  .welcome-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    margin-right: vars.$spacing-md;
+  }
+
+  mat-card-title {
+    display: flex;
+    align-items: center;
+    color: white;
+  }
+
+  mat-card-subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: vars.$spacing-md;
+  }
+}
+
+.quick-actions {
+  margin-top: vars.$spacing-xxl;
+}
+
+.action-card {
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: vars.$spacing-xl;
+    margin-top: vars.$spacing-xl;
+  }
+
+  .action-button {
+    @include theme.flex-column;
+    gap: vars.$spacing-md;
+    padding: vars.$spacing-xxl;
+    height: auto;
+
+    mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+    }
+
+    span {
+      font-weight: 500;
+    }
+  }
+}
+
+@include theme.mobile {
+  .dashboard-container {
+    padding: vars.$spacing-xl;
+  }
+
+  .action-card .action-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .action-button {
+    padding: vars.$spacing-xl;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+}

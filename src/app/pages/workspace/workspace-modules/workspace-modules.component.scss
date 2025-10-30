@@ -1,0 +1,366 @@
+// M3 Material Design Workspace Modules Component
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
+
+.workspace-modules-container {
+  background-color: variables.$color-background;
+}
+
+// Header Section
+.modules-header {
+  background-color: variables.$color-surface-container;
+  border-bottom: 1px solid variables.$color-outline-variant;
+  padding: variables.$spacing-xxl variables.$spacing-xl;
+
+  .header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    @include theme.flex-between;
+    align-items: flex-start;
+    gap: variables.$spacing-xl;
+  }
+
+  .header-text {
+    flex: 1;
+
+    .page-title {
+      @include theme.flex-center;
+      gap: variables.$spacing-md;
+      font: variables.$font-display-small;
+      color: variables.$color-on-surface;
+      margin: 0 0 variables.$spacing-sm 0;
+
+      .title-icon {
+        font-size: 2rem;
+        color: variables.$color-primary;
+      }
+    }
+
+    .page-subtitle {
+      font: variables.$font-body-large;
+      color: variables.$color-on-surface-variant;
+      margin: 0;
+    }
+  }
+
+  .header-actions {
+    .store-button {
+      @include theme.flex-center;
+      gap: variables.$spacing-sm;
+    }
+  }
+}
+
+// Content Area
+.modules-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: variables.$spacing-xl;
+}
+
+// Tabs Styling
+.modules-tabs {
+  background-color: transparent;
+
+  .tab-icon {
+    margin-right: variables.$spacing-sm;
+  }
+
+  mat-chip-set {
+    margin-left: variables.$spacing-sm;
+  }
+}
+
+.tab-content {
+  padding: variables.$spacing-xl 0;
+}
+
+// Loading and Empty States
+.loading-state,
+.empty-state {
+  @include theme.flex-column;
+  @include theme.flex-center;
+  gap: variables.$spacing-lg;
+  padding: variables.$spacing-xxl;
+  text-align: center;
+
+  .loading-text {
+    font: variables.$font-body-medium;
+    color: variables.$color-on-surface-variant;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    color: variables.$color-on-surface-variant;
+    opacity: 0.6;
+  }
+
+  h2 {
+    font: variables.$font-headline-medium;
+    color: variables.$color-on-surface;
+    margin: 0;
+  }
+
+  p {
+    font: variables.$font-body-large;
+    color: variables.$color-on-surface-variant;
+    margin: 0;
+  }
+}
+
+// Modules Section
+.modules-section {
+  margin-bottom: variables.$spacing-xxl;
+
+  .section-title {
+    @include theme.flex-center;
+    gap: variables.$spacing-sm;
+    font: variables.$font-headline-small;
+    color: variables.$color-on-surface;
+    margin: 0 0 variables.$spacing-xl 0;
+    padding-bottom: variables.$spacing-md;
+    border-bottom: 1px solid variables.$color-outline-variant;
+
+    mat-icon {
+      color: variables.$color-primary;
+    }
+  }
+}
+
+// Modules Grid
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: variables.$spacing-xl;
+}
+
+// Module Card
+.module-card {
+  position: relative;
+  transition: variables.$transition-standard;
+  background-color: variables.$color-surface-container;
+  border-radius: variables.$border-radius-lg;
+
+  &:hover {
+    box-shadow: variables.$shadow-2;
+    transform: translateY(-2px);
+  }
+
+  &.active-module {
+    cursor: pointer;
+    border: 1px solid variables.$color-primary-container;
+
+    &:hover {
+      border-color: variables.$color-primary;
+    }
+  }
+
+  &.inactive-module {
+    opacity: 0.7;
+  }
+
+  &.available-module {
+    border: 1px solid variables.$color-outline-variant;
+  }
+
+  // Module Actions Menu
+  .module-menu-trigger {
+    position: absolute;
+    top: variables.$spacing-sm;
+    right: variables.$spacing-sm;
+    opacity: 0;
+    transition: opacity variables.$transition-fast;
+  }
+
+  &:hover .module-menu-trigger {
+    opacity: 1;
+  }
+}
+
+// Module Avatar
+.module-avatar {
+  @include theme.flex-center;
+  width: 48px;
+  height: 48px;
+  border-radius: variables.$border-radius-round;
+
+  &.inactive {
+    background-color: variables.$color-surface-variant;
+    color: variables.$color-on-surface-variant;
+  }
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+// Featured Badge
+.featured-badge {
+  position: absolute;
+  top: variables.$spacing-sm;
+  right: variables.$spacing-sm;
+  font-size: 20px;
+}
+
+// Module Content
+.module-content {
+  @include theme.flex-column;
+  @include theme.flex-center;
+  text-align: center;
+  gap: variables.$spacing-lg;
+  padding: variables.$spacing-xl;
+
+  .module-name {
+    font: variables.$font-title-medium;
+    color: variables.$color-on-surface;
+    margin: 0;
+  }
+}
+
+.module-status {
+  @include theme.flex-between;
+  align-items: center;
+  margin-bottom: variables.$spacing-md;
+
+  .module-version {
+    font: variables.$font-label-small;
+    color: variables.$color-on-surface-variant;
+  }
+}
+
+.module-health {
+  @include theme.flex-between;
+  align-items: center;
+  font: variables.$font-label-medium;
+
+  .health-label {
+    color: variables.$color-on-surface-variant;
+  }
+
+  .health-score {
+    color: variables.$color-success;
+    font-weight: 500;
+
+    &.needs-attention {
+      color: variables.$color-warning;
+    }
+  }
+}
+
+.module-description {
+  font: variables.$font-body-medium;
+  color: variables.$color-on-surface-variant;
+  margin: 0 0 variables.$spacing-md 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.module-meta {
+  @include theme.flex-between;
+  align-items: center;
+  margin-bottom: variables.$spacing-md;
+  font: variables.$font-label-medium;
+
+  .module-rating {
+    @include theme.flex-center;
+    gap: variables.$spacing-xs;
+    color: variables.$color-warning;
+
+    .rating-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .module-downloads {
+    color: variables.$color-on-surface-variant;
+  }
+}
+
+.module-tags {
+  @include theme.flex-center;
+  gap: variables.$spacing-sm;
+  flex-wrap: wrap;
+  margin-bottom: variables.$spacing-md;
+
+  .tag-chip {
+    font-size: 0.75rem;
+    height: 24px;
+  }
+}
+
+// Module Actions
+.module-actions {
+  @include theme.flex-between;
+  padding: variables.$spacing-md variables.$spacing-lg;
+
+  button {
+    @include theme.flex-center;
+    gap: variables.$spacing-sm;
+
+    mat-spinner {
+      margin-right: variables.$spacing-sm;
+    }
+  }
+}
+
+// Store Action
+.store-action {
+  text-align: center;
+  margin-top: variables.$spacing-xl;
+  padding-top: variables.$spacing-xl;
+  border-top: 1px solid variables.$color-outline-variant;
+
+  button {
+    @include theme.flex-center;
+    gap: variables.$spacing-sm;
+  }
+}
+
+// Responsive Design
+@include theme.tablet {
+
+  .modules-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: variables.$spacing-lg;
+  }
+}
+
+@include theme.mobile {
+  .modules-header {
+    padding: variables.$spacing-lg;
+
+    .page-title {
+      font: variables.$font-headline-medium;
+
+      .title-icon {
+        font-size: 1.5rem;
+      }
+    }
+  }
+
+  .modules-content {
+    padding: variables.$spacing-lg;
+  }
+
+  .modules-grid {
+    grid-template-columns: 1fr;
+    gap: variables.$spacing-lg;
+  }
+
+  .module-card {
+    .module-menu-trigger {
+      opacity: 1; // Always show on mobile
+    }
+  }
+
+  .tab-content {
+    padding: variables.$spacing-lg 0;
+  }
+}

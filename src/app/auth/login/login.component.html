@@ -1,0 +1,61 @@
+<div class="auth-container">
+  <mat-card class="auth-card">
+    <mat-card-header>
+      <mat-card-title class="text-center">
+        <mat-icon class="logo-icon">phone_android</mat-icon>
+        <h1>Welcome to Ampairs</h1>
+      </mat-card-title>
+      <mat-card-subtitle class="text-center">
+        Enter your mobile number to continue
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form (ngSubmit)="onSubmit()" [formGroup]="loginForm" class="auth-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Mobile Number</mat-label>
+          <span class="country-code" matPrefix>+91</span>
+          <input
+            formControlName="mobileNumber"
+            matInput
+            maxlength="10"
+            placeholder="Enter 10-digit mobile number"
+            type="tel">
+          <mat-icon matSuffix>phone</mat-icon>
+          @if (loginForm.get('mobileNumber')?.hasError('required')) {
+            <mat-error>Mobile number is required</mat-error>
+          }
+          @if (loginForm.get('mobileNumber')?.hasError('pattern')) {
+            <mat-error>Please enter a valid 10-digit mobile number</mat-error>
+          }
+          @if (loginForm.get('mobileNumber')?.hasError('minlength') || loginForm.get('mobileNumber')?.hasError('maxlength')) {
+            <mat-error>Mobile number must be exactly 10 digits</mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          [disabled]="loginForm.invalid || isLoading"
+          class="auth-button"
+          color="primary"
+          mat-raised-button
+          type="submit">
+          <div class="button-content">
+            @if (isLoading) {
+              <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+              <span>Sending OTP...</span>
+            } @else {
+              <span>Send OTP</span>
+            }
+          </div>
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions class="text-center">
+      <p class="help-text">
+        <mat-icon class="info-icon">info</mat-icon>
+        We'll send you a 6-digit verification code via SMS
+      </p>
+    </mat-card-actions>
+  </mat-card>
+</div>

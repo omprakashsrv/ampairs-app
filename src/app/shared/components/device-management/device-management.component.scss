@@ -1,0 +1,117 @@
+// M3 Material Design Device Management Component
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
+
+.device-management-card {
+  max-width: 800px;
+  margin: variables.$spacing-xl auto;
+  background-color: variables.$color-surface-container;
+  color: variables.$color-on-surface;
+}
+
+.loading-container {
+  @include theme.flex-column-center;
+  padding: variables.$spacing-xxl;
+  gap: variables.$spacing-lg;
+}
+
+.loading-container p {
+  color: variables.$color-on-surface-variant;
+  font: variables.$font-label-medium;
+}
+
+.no-devices {
+  @include theme.flex-column-center;
+  padding: variables.$spacing-xxl;
+  gap: variables.$spacing-lg;
+  color: variables.$color-on-surface-variant;
+}
+
+.no-devices mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: variables.$color-on-surface-variant;
+}
+
+.devices-container {
+  @include theme.flex-column;
+  gap: variables.$spacing-lg;
+}
+
+.device-item {
+  transition: all #{variables.$transition-normal} ease-in-out;
+
+  &.current-device {
+    border-color: variables.$color-primary;
+    background-color: variables.$color-primary-container;
+
+    .device-icon {
+      background-color: variables.$color-primary;
+      color: variables.$color-on-primary;
+    }
+  }
+}
+
+.device-icon {
+  background-color: variables.$color-surface-container-high;
+  color: variables.$color-on-surface-variant;
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.device-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+
+.device-metadata {
+  @include theme.flex-column;
+  gap: variables.$spacing-sm;
+  margin-top: variables.$spacing-lg;
+  padding-left: variables.$spacing-lg;
+  padding-right: variables.$spacing-lg;
+}
+
+.metadata-item {
+  @include theme.flex-center;
+  justify-content: flex-start;
+  gap: variables.$spacing-sm;
+  font: variables.$font-label-medium;
+  color: variables.$color-on-surface-variant;
+}
+
+.metadata-item mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: variables.$color-on-surface-variant;
+}
+
+.actions-container {
+  @include theme.flex-center;
+  margin-top: variables.$spacing-xl;
+  padding-top: variables.$spacing-lg;
+  border-top: 1px solid variables.$color-outline-variant;
+}
+
+
+/* M3 Responsive Design */
+@include theme.tablet {
+  .device-metadata {
+    padding-left: 0;
+  }
+}
+
+@include theme.mobile {
+  .device-management-card {
+    margin: variables.$spacing-sm;
+  }
+}

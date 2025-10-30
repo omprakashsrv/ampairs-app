@@ -1,0 +1,241 @@
+@use '../../../theme/variables' as vars;
+@use '../../../theme/mixins' as theme;
+
+.firebase-auth-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: vars.$spacing-lg;
+  background-color: vars.$color-background;
+
+  .auth-card {
+    width: 100%;
+    max-width: 480px;
+    background-color: vars.$color-surface;
+    border-radius: vars.$border-radius-lg;
+    box-shadow: vars.$shadow-2;
+
+    mat-card-header {
+      padding: vars.$spacing-xl;
+      border-bottom: 1px solid vars.$color-outline-variant;
+
+      .header-content {
+        width: 100%;
+        text-align: center;
+
+        .app-icon {
+          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          color: vars.$color-primary;
+          margin-bottom: vars.$spacing-md;
+        }
+
+        mat-card-title {
+          font: vars.$font-headline-medium;
+          color: vars.$color-on-surface;
+          margin-bottom: vars.$spacing-sm;
+        }
+
+        mat-card-subtitle {
+          font: vars.$font-body-medium;
+          color: vars.$color-on-surface-variant;
+        }
+      }
+    }
+
+    mat-card-content {
+      padding: vars.$spacing-xl;
+
+      .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: vars.$spacing-lg;
+
+        .phone-field-full,
+        .full-width {
+          width: 100%;
+        }
+
+        .recaptcha-container {
+          display: flex;
+          justify-content: center;
+          margin: vars.$spacing-lg 0;
+        }
+
+        .otp-info {
+          display: flex;
+          align-items: center;
+          gap: vars.$spacing-md;
+          padding: vars.$spacing-md;
+          background-color: vars.$color-surface-container-low;
+          border-radius: vars.$border-radius-md;
+          color: vars.$color-on-surface-variant;
+
+          mat-icon {
+            color: vars.$color-primary;
+          }
+
+          p {
+            margin: 0;
+            font: vars.$font-body-medium;
+          }
+        }
+
+        .error-message {
+          display: flex;
+          align-items: center;
+          gap: vars.$spacing-sm;
+          padding: vars.$spacing-md;
+          background-color: rgba(vars.$color-error, 0.1);
+          border-radius: vars.$border-radius-md;
+          color: vars.$color-error;
+          font: vars.$font-body-small;
+
+          mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+          }
+        }
+
+        .submit-button {
+          width: 100%;
+          height: 48px;
+          font: vars.$font-label-large;
+          transition: vars.$transition-standard;
+
+          .button-spinner {
+            display: inline-block;
+            margin-right: vars.$spacing-sm;
+          }
+        }
+
+        .otp-actions {
+          display: flex;
+          flex-direction: column;
+          gap: vars.$spacing-md;
+
+          .resend-section {
+            text-align: center;
+
+            .countdown-text {
+              margin: 0;
+              font: vars.$font-body-small;
+              color: vars.$color-on-surface-variant;
+            }
+          }
+
+          .back-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: vars.$spacing-sm;
+
+            mat-icon {
+              font-size: 20px;
+              width: 20px;
+              height: 20px;
+            }
+          }
+        }
+      }
+
+      .success-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: vars.$spacing-lg;
+        padding: vars.$spacing-xxl 0;
+        text-align: center;
+
+        .success-icon {
+          font-size: 64px;
+          width: 64px;
+          height: 64px;
+          color: vars.$color-success;
+        }
+
+        h2 {
+          font: vars.$font-headline-small;
+          color: vars.$color-on-surface;
+          margin: 0;
+        }
+
+        p {
+          font: vars.$font-body-medium;
+          color: vars.$color-on-surface-variant;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  .footer-info {
+    display: flex;
+    align-items: flex-start;
+    gap: vars.$spacing-md;
+    max-width: 480px;
+    margin-top: vars.$spacing-xl;
+    padding: vars.$spacing-md;
+    color: vars.$color-on-surface-variant;
+
+    mat-icon {
+      flex-shrink: 0;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+    }
+
+    p {
+      margin: 0;
+      font: vars.$font-body-small;
+      text-align: left;
+    }
+  }
+}
+
+// Responsive styles
+@include theme.mobile {
+  .firebase-auth-container {
+    padding: vars.$spacing-md;
+
+    .auth-card {
+      mat-card-header {
+        padding: vars.$spacing-lg;
+
+        .header-content {
+          .app-icon {
+            font-size: 40px;
+            width: 40px;
+            height: 40px;
+          }
+        }
+      }
+
+      mat-card-content {
+        padding: vars.$spacing-lg;
+      }
+    }
+
+    .footer-info {
+      padding: vars.$spacing-sm;
+    }
+  }
+}
+
+// Custom snackbar styles
+::ng-deep {
+  .success-snackbar {
+    background-color: vars.$color-success;
+    color: white;
+  }
+
+  .error-snackbar {
+    background-color: vars.$color-error;
+    color: white;
+  }
+}

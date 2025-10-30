@@ -1,0 +1,256 @@
+<div class="theme-settings-container">
+  <div class="settings-header">
+    <h2 class="settings-title" mat-dialog-title>
+      <mat-icon class="settings-icon">palette</mat-icon>
+      Theme Settings
+    </h2>
+    <p class="settings-subtitle">Customize your Material Design experience</p>
+  </div>
+
+  <div class="settings-content" mat-dialog-content>
+    <mat-tab-group animationDuration="300ms" class="settings-tabs">
+
+      <!-- Colors Tab -->
+      <mat-tab label="Colors">
+        <div class="tab-content">
+          <div class="setting-section">
+            <h3 class="section-title">Color Theme</h3>
+            <p class="section-description">Choose your preferred color scheme</p>
+
+            <div class="theme-grid">
+              @for (theme of availableThemes; track theme.name) {
+                <div
+                  class="theme-card"
+                  [class.selected]="selectedTheme === theme.name"
+                  (click)="selectedTheme = theme.name; onThemeChange()"
+                >
+                  <div class="theme-preview">
+                    <div class="color-swatch primary" [style.background-color]="theme.colors.primary"></div>
+                    <div class="color-swatch secondary" [style.background-color]="theme.colors.secondary"></div>
+                    <div class="color-swatch tertiary" [style.background-color]="theme.colors.tertiary"></div>
+                    <div class="color-swatch background" [style.background-color]="theme.colors.background"></div>
+                  </div>
+                  <div class="theme-info">
+                    <span class="theme-name">{{ theme.displayName }}</span>
+                    @if (theme.isDark) {
+                      <mat-icon class="dark-icon">dark_mode</mat-icon>
+                    } @else {
+                      <mat-icon class="light-icon">light_mode</mat-icon>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="quick-actions">
+              <button
+                (click)="toggleTheme()"
+                class="toggle-button"
+                mat-stroked-button
+                matTooltip="Toggle between light and dark theme"
+              >
+                <mat-icon>
+                  @if (currentTheme.isDark) {
+                    light_mode
+                  } @else {
+                    dark_mode
+                  }
+                </mat-icon>
+                Quick Toggle
+              </button>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Layout Tab -->
+      <mat-tab label="Layout">
+        <div class="tab-content">
+          <div class="setting-section">
+            <h3 class="section-title">Component Density</h3>
+            <p class="section-description">Adjust spacing and component sizes for better usability</p>
+
+            <div class="density-control">
+              <div class="slider-container">
+                <label class="slider-label">Compact</label>
+                <mat-slider
+                  [max]="0"
+                  [min]="-5"
+                  [step]="1"
+                  class="density-slider"
+                >
+                  <input (valueChange)="onDensityChange()" [(ngModel)]="selectedDensityLevel" matSliderThumb>
+                </mat-slider>
+                <label class="slider-label">Spacious</label>
+              </div>
+
+              <div class="density-info">
+                <span class="density-level">{{ getDensityDescription(selectedDensityLevel) }}</span>
+                <small class="density-description">
+                  @switch (selectedDensityLevel) {
+                    @case (-5) {
+                      Maximum density - Very compact layout
+                    }
+                    @case (-4) {
+                      High density - Compact layout
+                    }
+                    @case (-3) {
+                      Medium-high density
+                    }
+                    @case (-2) {
+                      Medium density - Good balance
+                    }
+                    @case (-1) {
+                      Medium-low density
+                    }
+                    @default {
+                      Default density - Standard Material spacing
+                    }
+                  }
+                </small>
+              </div>
+            </div>
+
+            <!-- Density Preview -->
+            <div class="density-preview">
+              <mat-card class="preview-card">
+                <mat-card-header>
+                  <mat-card-title>Preview Card</mat-card-title>
+                  <mat-card-subtitle>Shows current density settings</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <p>This card demonstrates the current density level.</p>
+                  <div class="preview-buttons">
+                    <button mat-button>Text Button</button>
+                    <button color="primary" mat-raised-button>Raised Button</button>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Typography Tab -->
+      <mat-tab label="Typography">
+        <div class="tab-content">
+          <div class="setting-section">
+            <h3 class="section-title">Font Selection</h3>
+            <p class="section-description">Choose your preferred font family</p>
+
+            <mat-select
+              (valueChange)="selectedTypographyIndex = $event; onTypographyChange()"
+              [value]="selectedTypographyIndex"
+              class="typography-select"
+            >
+              @for (typography of availableTypographies; track $index) {
+                <mat-option [value]="$index">
+                  <span [style.font-family]="typography.fontFamily">
+                    {{ getTypographyName($index) }}
+                  </span>
+                </mat-option>
+              }
+            </mat-select>
+
+            <!-- Typography Preview -->
+            <div class="typography-preview">
+              <div [style.font-family]="currentTypography.fontFamily" class="text-samples">
+                <h1 class="typography-display">Display Text</h1>
+                <h2 class="typography-headline">Headline Text</h2>
+                <h3 class="typography-title">Title Text</h3>
+                <h4 class="typography-subtitle">Subtitle Text</h4>
+                <p class="typography-body">
+                  Body text - Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                </p>
+                <p class="typography-caption">Caption text - Additional information</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Advanced Tab -->
+      <mat-tab label="Advanced">
+        <div class="tab-content">
+          <div class="setting-section">
+            <h3 class="section-title">Configuration Management</h3>
+            <p class="section-description">Import, export, and reset your theme settings</p>
+
+            <div class="config-actions">
+              <button
+                (click)="exportConfiguration()"
+                class="config-button"
+                mat-stroked-button
+                matTooltip="Download current theme configuration"
+              >
+                <mat-icon>download</mat-icon>
+                Export Configuration
+              </button>
+
+              <div class="import-wrapper">
+                <input
+                  #fileInput
+                  (change)="importConfiguration($event)"
+                  accept=".json"
+                  style="display: none;"
+                  type="file"
+                />
+                <button
+                  (click)="fileInput.click()"
+                  class="config-button"
+                  mat-stroked-button
+                  matTooltip="Import theme configuration from file"
+                >
+                  <mat-icon>upload</mat-icon>
+                  Import Configuration
+                </button>
+              </div>
+
+              <button
+                (click)="resetToDefaults()"
+                class="config-button reset-button"
+                mat-stroked-button
+                matTooltip="Reset all settings to default values"
+              >
+                <mat-icon>restore</mat-icon>
+                Reset to Defaults
+              </button>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="setting-section">
+            <h3 class="section-title">Current Settings</h3>
+            <div class="current-settings">
+              <div class="setting-item">
+                <span class="setting-label">Theme:</span>
+                <span class="setting-value">{{ currentTheme.displayName }}</span>
+              </div>
+              <div class="setting-item">
+                <span class="setting-label">Density:</span>
+                <span class="setting-value">{{ currentDensity.name }} ({{ currentDensity.level }})</span>
+              </div>
+              <div class="setting-item">
+                <span class="setting-label">Typography:</span>
+                <span class="setting-value">{{ getTypographyName(selectedTypographyIndex) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+  </div>
+
+  <div class="settings-actions" mat-dialog-actions>
+    <button (click)="onClose()" class="cancel-button" mat-button>
+      Cancel
+    </button>
+    <button (click)="onApply()" class="apply-button" color="primary" mat-raised-button>
+      <mat-icon>check</mat-icon>
+      Apply Settings
+    </button>
+  </div>
+</div>

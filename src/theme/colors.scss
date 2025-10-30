@@ -1,0 +1,127 @@
+@use '@angular/material' as mat;
+@use 'theme';
+@use 'palettes';
+
+.light-theme {
+  @include mat.all-component-colors(theme.$light-theme);
+  @include mat.all-component-bases(theme.$light-theme);
+
+  // M3 Design Tokens for light theme
+  --primary-color: var(--app-light-primary);
+  --primary-container-color: var(--app-light-primary-container);
+  --on-primary-color: var(--app-light-on-primary);
+  --on-primary-container-color: var(--app-light-on-primary-container);
+
+  --secondary-color: var(--app-light-secondary);
+  --secondary-container-color: var(--app-light-secondary-container);
+  --on-secondary-color: var(--app-light-on-secondary);
+  --on-secondary-container-color: var(--app-light-on-secondary-container);
+
+  --tertiary-color: var(--app-light-tertiary);
+  --tertiary-container-color: var(--app-light-tertiary-container);
+  --on-tertiary-color: var(--app-light-on-tertiary);
+  --on-tertiary-container-color: var(--app-light-on-tertiary-container);
+
+  --surface-color: var(--app-light-surface);
+  --surface-container-color: var(--app-light-surface-container);
+  --surface-container-low-color: var(--app-light-surface-container-low);
+  --surface-container-high-color: var(--app-light-surface-container-high);
+  --surface-container-highest-color: var(--app-light-surface-container-highest);
+  --on-surface-color: var(--app-light-on-surface);
+  --on-surface-variant-color: var(--app-light-on-surface-variant);
+
+  --background-color: var(--app-light-background);
+  --on-background-color: var(--app-light-on-background);
+
+  --error-color: var(--app-light-error);
+  --error-container-color: var(--app-light-error-container);
+  --on-error-color: var(--app-light-on-error);
+  --on-error-container-color: var(--app-light-on-error-container);
+
+  --outline-color: var(--app-light-outline);
+  --outline-variant-color: var(--app-light-outline-variant);
+
+  // Legacy compatibility
+  --accent-color: var(--app-light-secondary);
+  --warn-color: var(--app-light-error);
+  --success-color: var(--app-light-tertiary);
+  --warning-color: #ff9800;
+  --info-color: #2196f3;
+  --text-color: var(--app-light-on-background);
+  --text-secondary-color: var(--app-light-on-surface-variant);
+  --text-disabled-color: color-mix(in srgb, var(--app-light-on-surface) 38%, transparent);
+  --text-hint-color: color-mix(in srgb, var(--app-light-on-surface) 60%, transparent);
+  --border-color: var(--app-light-outline-variant);
+  --divider-color: var(--app-light-outline-variant);
+  --disabled-color: var(--app-light-surface-container);
+
+  // M3 Elevation shadows
+  --shadow-1: 0 1px 2px color-mix(in srgb, var(--app-light-on-surface) 30%, transparent), 0 1px 3px 1px color-mix(in srgb, var(--app-light-on-surface) 15%, transparent);
+  --shadow-2: 0 1px 2px color-mix(in srgb, var(--app-light-on-surface) 30%, transparent), 0 2px 6px 2px color-mix(in srgb, var(--app-light-on-surface) 15%, transparent);
+  --shadow-3: 0 4px 8px 3px color-mix(in srgb, var(--app-light-on-surface) 15%, transparent), 0 1px 3px color-mix(in srgb, var(--app-light-on-surface) 30%, transparent);
+  --shadow-4: 0 6px 10px 4px color-mix(in srgb, var(--app-light-on-surface) 15%, transparent), 0 2px 3px color-mix(in srgb, var(--app-light-on-surface) 30%, transparent);
+}
+
+.dark-theme {
+  @include mat.all-component-colors(theme.$dark-theme);
+  @include mat.all-component-bases(theme.$dark-theme);
+
+  // M3 Design Tokens for dark theme
+  --primary-color: var(--app-dark-primary);
+  --primary-container-color: var(--app-dark-primary-container);
+  --on-primary-color: var(--app-dark-on-primary);
+  --on-primary-container-color: var(--app-dark-on-primary-container);
+
+  --secondary-color: var(--app-dark-secondary);
+  --secondary-container-color: var(--app-dark-secondary-container);
+  --on-secondary-color: var(--app-dark-on-secondary);
+  --on-secondary-container-color: var(--app-dark-on-secondary-container);
+
+  --tertiary-color: var(--app-dark-tertiary);
+  --tertiary-container-color: var(--app-dark-tertiary-container);
+  --on-tertiary-color: var(--app-dark-on-tertiary);
+  --on-tertiary-container-color: var(--app-dark-on-tertiary-container);
+
+  --surface-color: var(--app-dark-surface);
+  --surface-container-color: var(--app-dark-surface-container);
+  --surface-container-low-color: var(--app-dark-surface-container-low);
+  --surface-container-high-color: var(--app-dark-surface-container-high);
+  --surface-container-highest-color: var(--app-dark-surface-container-highest);
+  --on-surface-color: var(--app-dark-on-surface);
+  --on-surface-variant-color: var(--app-dark-on-surface-variant);
+
+  --background-color: var(--app-dark-background);
+  --on-background-color: var(--app-dark-on-background);
+
+  --error-color: var(--app-dark-error);
+  --error-container-color: var(--app-dark-error-container);
+  --on-error-color: var(--app-dark-on-error);
+  --on-error-container-color: var(--app-dark-on-error-container);
+
+  --outline-color: var(--app-dark-outline);
+  --outline-variant-color: var(--app-dark-outline-variant);
+
+  // Legacy compatibility
+  --accent-color: var(--app-dark-secondary);
+  --warn-color: var(--app-dark-error);
+  --success-color: var(--app-dark-tertiary);
+  --warning-color: #ff9800;
+  --info-color: #2196f3;
+  --text-color: var(--app-dark-on-background);
+  --text-secondary-color: var(--app-dark-on-surface-variant);
+  --text-disabled-color: color-mix(in srgb, var(--app-dark-on-surface) 38%, transparent);
+  --text-hint-color: color-mix(in srgb, var(--app-dark-on-surface) 60%, transparent);
+  --border-color: var(--app-dark-outline-variant);
+  --divider-color: var(--app-dark-outline-variant);
+  --disabled-color: var(--app-dark-surface-container);
+
+  // M3 Elevation shadows for dark theme
+  --shadow-1: 0 1px 2px color-mix(in srgb, black 30%, transparent), 0 1px 3px 1px color-mix(in srgb, black 15%, transparent);
+  --shadow-2: 0 1px 2px color-mix(in srgb, black 30%, transparent), 0 2px 6px 2px color-mix(in srgb, black 15%, transparent);
+  --shadow-3: 0 4px 8px 3px color-mix(in srgb, black 15%, transparent), 0 1px 3px color-mix(in srgb, black 30%, transparent);
+  --shadow-4: 0 6px 10px 4px color-mix(in srgb, black 15%, transparent), 0 2px 3px color-mix(in srgb, black 30%, transparent);
+
+  // Material system variables for components
+  --mat-sys-primary: var(--app-dark-primary);
+  --mat-progress-spinner-active-indicator-color: var(--primary-color);
+}

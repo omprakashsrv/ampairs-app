@@ -1,0 +1,381 @@
+// Material Design 3 App Header Styles
+@use '../../../../theme/variables' as vars;
+
+.app-header-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: vars.$z-index-sticky;
+  padding: 0 vars.$spacing-xl;
+
+  // M3 Surface styling with consistent theming
+  background-color: vars.$color-surface-container;
+  color: vars.$color-on-surface;
+
+  // Dark mode support
+  :host-context(.dark-theme) & {
+    background-color: vars.$color-surface-container;
+    color: vars.$color-on-surface;
+  }
+
+  // Responsive padding
+  @media (max-width: vars.$breakpoint-sm) {
+    padding: 0 vars.$spacing-md;
+    min-height: 56px; // Mobile header height
+  }
+}
+
+// Header sections layout
+.header-title-section {
+  display: flex;
+  align-items: center;
+  margin-right: vars.$spacing-xxl;
+}
+
+.workspace-section {
+  display: flex;
+  align-items: center;
+  margin-right: vars.$spacing-xl;
+}
+
+.theme-controls {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-md;
+  margin-right: vars.$spacing-xl;
+
+  // Theme control buttons styling
+  button {
+    color: vars.$color-on-surface;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    
+    &:hover {
+      background-color: vars.$color-secondary-container;
+      color: vars.$color-on-secondary-container;
+    }
+    
+    &:focus {
+      outline: 2px solid vars.$color-primary;
+      outline-offset: 2px;
+    }
+
+    mat-icon {
+      color: inherit;
+    }
+  }
+}
+
+.user-profile-section {
+  display: flex;
+  align-items: center;
+}
+
+.spacer {
+  flex: 1;
+}
+
+// Logo styling
+.logo {
+  display: flex;
+  align-items: center;
+  font: vars.$font-title-medium;
+  color: inherit;
+
+  .logo-icon {
+    margin-right: vars.$spacing-md;
+    font-size: 1.5rem;
+  }
+}
+
+// Dynamic title styling
+.dynamic-title {
+  display: flex;
+  align-items: center;
+  font: vars.$font-body-large;
+  color: inherit;
+
+  .title-icon {
+    margin-right: vars.$spacing-md;
+    font-size: 1.5rem;
+  }
+}
+
+// M3 Workspace button styling
+.workspace-button {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-md;
+  padding: vars.$spacing-md vars.$spacing-xl;
+  border-radius: vars.$border-radius-xl; // M3 rounded corners
+  border: 1px solid vars.$color-outline-variant;
+  background-color: vars.$color-surface-variant;
+  color: vars.$color-on-surface-variant;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); // M3 easing
+
+  &:hover {
+    background-color: vars.$color-secondary-container;
+    color: vars.$color-on-secondary-container;
+    border-color: vars.$color-outline;
+  }
+
+  &:focus {
+    outline: 2px solid vars.$color-primary;
+    outline-offset: 2px;
+  }
+
+
+  // Dark mode support
+  :host-context(.dark-theme) & {
+    background-color: vars.$color-surface-variant;
+    color: vars.$color-on-surface-variant;
+    border-color: vars.$color-outline-variant;
+
+    &:hover {
+      background-color: vars.$color-secondary-container;
+      color: vars.$color-on-secondary-container;
+    }
+  }
+
+  .workspace-name {
+    font-weight: 500;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dropdown-icon {
+    font-size: 18px;
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  &[aria-expanded="true"] .dropdown-icon {
+    transform: rotate(180deg);
+  }
+}
+
+// M3 Step indicator styling
+.step-indicator {
+  display: flex;
+  align-items: center;
+  padding: vars.$spacing-sm vars.$spacing-lg;
+  border-radius: vars.$border-radius-lg; // M3 rounded corners
+  background-color: vars.$color-tertiary-container;
+  color: vars.$color-on-tertiary-container;
+  border: 1px solid vars.$color-outline-variant;
+
+
+  // Dark mode support
+  :host-context(.dark-theme) & {
+    background-color: vars.$color-tertiary-container;
+    color: vars.$color-on-tertiary-container;
+    border-color: vars.$color-outline-variant;
+  }
+
+  .step-text {
+    font: vars.$font-label-medium;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    line-height: vars.$line-height-tight;
+  }
+}
+
+// M3 User avatar button styling
+.user-avatar-button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  background-color: vars.$color-secondary-container;
+  color: vars.$color-on-secondary-container;
+
+  &:hover {
+    background-color: vars.$color-primary-container;
+    color: vars.$color-on-primary-container;
+    transform: scale(1.05);
+  }
+
+  &:focus {
+    outline: 2px solid vars.$color-primary;
+    outline-offset: 2px;
+  }
+
+
+  // Dark mode support
+  :host-context(.dark-theme) & {
+    background-color: vars.$color-secondary-container;
+    color: vars.$color-on-secondary-container;
+
+    &:hover {
+      background-color: vars.$color-primary-container;
+      color: vars.$color-on-primary-container;
+    }
+  }
+}
+
+// Menu styling improvements
+.workspace-menu {
+  min-width: 280px;
+  margin-top: vars.$spacing-md;
+}
+
+.workspace-details {
+  padding: vars.$spacing-xl;
+
+  .workspace-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: vars.$spacing-xl;
+    margin-bottom: vars.$spacing-md;
+
+    mat-icon {
+      font-size: 1.5rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      color: vars.$color-primary;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .workspace-info-text {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      padding: vars.$spacing-sm vars.$spacing-xs;
+
+      .workspace-title {
+        margin: 0 0 vars.$spacing-sm 0;
+        font: vars.$font-body-large;
+        color: vars.$color-menu-item-label;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .workspace-slug {
+        margin: 0 0 vars.$spacing-sm 0;
+        font: vars.$font-label-medium;
+        color: vars.$color-menu-item-label;
+        opacity: 0.7;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .workspace-description {
+    margin: 0 0 vars.$spacing-sm 0;
+    color: vars.$color-menu-item-label;
+    font: vars.$font-body-medium;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+.user-menu {
+  min-width: 240px;
+  margin-top: vars.$spacing-md;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-xl;
+  padding: vars.$spacing-xl;
+
+  .user-details {
+    flex: 1;
+    min-width: 0;
+
+    .user-name {
+      margin: 0 0 vars.$spacing-sm 0;
+      color: vars.$color-menu-item-label;
+      font: vars.$font-body-large;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-mobile,
+    .user-email {
+      margin: 0 0 vars.$spacing-sm 0;
+      color: vars.$color-menu-item-label;
+      font: vars.$font-label-medium;
+      opacity: 0.8;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: vars.$breakpoint-sm) {
+  .workspace-button .workspace-name {
+    max-width: 120px;
+  }
+
+  .theme-controls {
+    gap: vars.$spacing-sm;
+    margin-right: vars.$spacing-md;
+  }
+
+  .header-title-section {
+    margin-right: vars.$spacing-xl;
+  }
+
+  .logo {
+    font: vars.$font-body-large;
+
+    .logo-icon {
+      font-size: 1.5rem;
+    }
+  }
+
+  .dynamic-title {
+    font: vars.$font-body-large;
+
+    .title-icon {
+      font-size: 1.5rem;
+    }
+  }
+}
+
+@media (max-width: vars.$breakpoint-xs) {
+  .workspace-section {
+    margin-right: vars.$spacing-md;
+  }
+
+  .workspace-button {
+    padding: vars.$spacing-sm vars.$spacing-lg;
+
+    .workspace-name {
+      max-width: 80px;
+    }
+  }
+
+  .theme-controls {
+    margin-right: vars.$spacing-sm;
+  }
+
+  .step-indicator {
+    padding: vars.$spacing-sm vars.$spacing-md;
+
+    .step-text {
+      font: vars.$font-label-small;
+    }
+  }
+}
+

@@ -1,0 +1,162 @@
+<div class="firebase-auth-container">
+  <mat-card class="auth-card">
+    <mat-card-header>
+      <div class="header-content">
+        <mat-icon class="app-icon">security</mat-icon>
+        <mat-card-title>Sign In with Phone</mat-card-title>
+        <mat-card-subtitle>
+          @if (step() === 'phone') {
+            Enter your phone number to authenticate
+          } @else if (step() === 'otp') {
+            Enter the verification code sent to your phone
+          } @else {
+            Authentication successful!
+          }
+        </mat-card-subtitle>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Phone Number Step -->
+      @if (step() === 'phone') {
+        <form [formGroup]="phoneForm" (ngSubmit)="onSendOTP()" class="auth-form">
+          <mat-form-field appearance="outline" class="phone-field-full">
+            <mat-label>Phone Number (India)</mat-label>
+            <span matTextPrefix>+91 &nbsp;</span>
+            <input
+              matInput
+              type="tel"
+              formControlName="phone"
+              placeholder="9876543210"
+              maxlength="10"
+            />
+            @if (phoneForm.get('phone')?.hasError('required') && phoneForm.get('phone')?.touched) {
+              <mat-error>Phone number is required</mat-error>
+            }
+            @if (phoneForm.get('phone')?.hasError('pattern')) {
+              <mat-error>Invalid phone number format</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- reCAPTCHA Container -->
+          <div id="recaptcha-container" class="recaptcha-container"></div>
+
+          @if (firebaseAuthService.error()) {
+            <div class="error-message">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ firebaseAuthService.error() }}</span>
+            </div>
+          }
+
+          <button
+            mat-raised-button
+            color="primary"
+            type="submit"
+            class="submit-button"
+            [disabled]="phoneForm.invalid || firebaseAuthService.loading()"
+          >
+            @if (firebaseAuthService.loading()) {
+              <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+              <span>Sending OTP...</span>
+            } @else {
+              <span>Send OTP</span>
+            }
+          </button>
+        </form>
+      }
+
+      <!-- OTP Verification Step -->
+      @if (step() === 'otp') {
+        <form [formGroup]="otpForm" (ngSubmit)="onVerifyOTP()" class="auth-form">
+          <div class="otp-info">
+            <mat-icon>phone_android</mat-icon>
+            <p>OTP sent to {{ maskedPhone() }}</p>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Enter OTP</mat-label>
+            <input
+              matInput
+              type="text"
+              formControlName="otp"
+              placeholder="000000"
+              maxlength="6"
+              autocomplete="one-time-code"
+              inputmode="numeric"
+            />
+            @if (otpForm.get('otp')?.hasError('required') && otpForm.get('otp')?.touched) {
+              <mat-error>OTP is required</mat-error>
+            }
+            @if (otpForm.get('otp')?.hasError('pattern')) {
+              <mat-error>OTP must be 6 digits</mat-error>
+            }
+          </mat-form-field>
+
+          @if (firebaseAuthService.error()) {
+            <div class="error-message">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ firebaseAuthService.error() }}</span>
+            </div>
+          }
+
+          <div class="otp-actions">
+            <button
+              mat-raised-button
+              color="primary"
+              type="submit"
+              class="submit-button"
+              [disabled]="otpForm.invalid || firebaseAuthService.loading()"
+            >
+              @if (firebaseAuthService.loading()) {
+                <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+                <span>Verifying...</span>
+              } @else {
+                <span>Verify OTP</span>
+              }
+            </button>
+
+            <div class="resend-section">
+              @if (countdown() > 0) {
+                <p class="countdown-text">Resend OTP in {{ countdown() }}s</p>
+              } @else {
+                <button
+                  mat-button
+                  color="primary"
+                  type="button"
+                  (click)="onResendOTP()"
+                >
+                  Resend OTP
+                </button>
+              }
+            </div>
+
+            <button
+              mat-button
+              type="button"
+              (click)="onBackToPhone()"
+              class="back-button"
+            >
+              <mat-icon>arrow_back</mat-icon>
+              Change Phone Number
+            </button>
+          </div>
+        </form>
+      }
+
+      <!-- Success Step -->
+      @if (step() === 'success') {
+        <div class="success-content">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+          <h2>Authentication Successful!</h2>
+          <p>Redirecting...</p>
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <div class="footer-info">
+    <mat-icon>info_outline</mat-icon>
+    <p>Secure authentication powered by Firebase. Your credentials are encrypted and protected.</p>
+  </div>
+</div>

@@ -1,0 +1,42 @@
+@use '@angular/material' as mat;
+// ================================
+// Material 3 Dynamic Density Classes
+// ================================
+
+
+// M3 Density classes for runtime theme switching
+.density--5 {
+  @include mat.all-component-densities(mat.define-theme((
+          density: (scale: -5)
+  )));
+}
+
+.density--4 {
+  @include mat.all-component-densities(mat.define-theme((
+          density: (scale: -4)
+  )));
+}
+
+.density--3 {
+  @include mat.all-component-densities(mat.define-theme((
+          density: (scale: -3)
+  )));
+}
+
+.density--2 {
+  @include mat.all-component-densities(mat.define-theme((
+          density: (scale: -2)
+  )));
+}
+
+.density--1 {
+  @include mat.all-component-densities(mat.define-theme((
+          density: (scale: -1)
+  )));
+}
+
+.density-0 {
+  @include mat.all-component-densities(mat.define-theme((
+          density: (scale: 0)
+  )));
+}

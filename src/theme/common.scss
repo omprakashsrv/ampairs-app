@@ -1,0 +1,28 @@
+.common-theme {
+  --mat-sys-corner-full: 625rem;
+  --mat-sys-corner-extra-large: 1.75rem;
+  --mat-sys-corner-extra-large-top: 1.75rem 1.75rem 0 0;
+  --mat-sys-corner-large: 1rem;
+  --mat-sys-corner-large-end: 0 1rem 1rem 0;
+  --mat-sys-corner-large-start: 1rem 0 0 1rem;
+  --mat-sys-corner-large-top: 1rem 1rem 0 0;
+  --mat-sys-corner-medium: 1rem;
+  --mat-sys-corner-small: 0.5rem;
+  --mat-sys-corner-extra-small: 0.25rem;
+  --mat-sys-corner-extra-small-top: 0.25rem 0.25rem 0 0;
+  --mat-sys-corner-none: 0;
+
+
+  .auto-hide-scrollbar {
+    &:hover {
+      scrollbar-width: auto;
+    }
+
+    scrollbar-gutter: stable both-edges;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar {
+    scrollbar-width: none;
+  }
+}

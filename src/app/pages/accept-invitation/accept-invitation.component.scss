@@ -1,0 +1,418 @@
+// M3 Material Design Accept Invitation Component
+@use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as variables;
+
+.invitation-container {
+  min-height: 100vh;
+  background-color: variables.$color-background;
+  @include theme.flex-column;
+  @include theme.flex-center;
+  padding: variables.$spacing-xl;
+
+  .invitation-card-wrapper {
+    width: 100%;
+    max-width: 600px;
+
+    .invitation-card {
+      background-color: variables.$color-surface-container;
+      border-radius: variables.$border-radius-lg;
+      box-shadow: variables.$shadow-1;
+
+      &.success-card {
+        border: 2px solid variables.$color-success;
+      }
+
+      &.error-card {
+        border: 2px solid variables.$color-error;
+      }
+
+      // Card Header
+      .card-header {
+        @include theme.flex-center;
+        gap: variables.$spacing-lg;
+        align-items: flex-start;
+        width: 100%;
+
+        .header-icon {
+          font-size: 2rem;
+          color: variables.$color-primary;
+
+          &.error {
+            color: variables.$color-error;
+          }
+        }
+
+        .header-text {
+          flex: 1;
+
+          mat-card-title {
+            font: variables.$font-headline-medium;
+            color: variables.$color-on-surface;
+            margin: 0;
+          }
+
+          mat-card-subtitle {
+            font: variables.$font-body-large;
+            color: variables.$color-on-surface-variant;
+            margin: variables.$spacing-xs 0 0 0;
+          }
+        }
+      }
+
+      // Loading Content
+      .loading-content {
+        @include theme.flex-column;
+        @include theme.flex-center;
+        gap: variables.$spacing-lg;
+        padding: variables.$spacing-xxl;
+        text-align: center;
+
+        h2 {
+          font: variables.$font-headline-small;
+          color: variables.$color-on-surface;
+          margin: 0;
+        }
+
+        p {
+          font: variables.$font-body-medium;
+          color: variables.$color-on-surface-variant;
+          margin: 0;
+        }
+      }
+
+      // Login Required Content
+      .login-required-content {
+        @include theme.flex-column;
+        @include theme.flex-center;
+        gap: variables.$spacing-lg;
+        padding: variables.$spacing-xl 0;
+        text-align: center;
+
+        .login-icon {
+          font-size: 3rem;
+          color: variables.$color-primary;
+        }
+
+        h3 {
+          font: variables.$font-headline-small;
+          color: variables.$color-on-surface;
+          margin: 0;
+        }
+
+        p {
+          font: variables.$font-body-large;
+          color: variables.$color-on-surface-variant;
+          margin: 0;
+          max-width: 400px;
+        }
+
+        .security-note {
+          @include theme.flex-center;
+          gap: variables.$spacing-sm;
+          background-color: variables.$color-surface-container-low;
+          padding: variables.$spacing-md;
+          border-radius: variables.$border-radius-md;
+          margin-top: variables.$spacing-md;
+
+          mat-icon {
+            color: variables.$color-on-surface-variant;
+            font-size: 1.2rem;
+          }
+
+          small {
+            font: variables.$font-label-medium;
+            color: variables.$color-on-surface-variant;
+          }
+        }
+      }
+
+      // Invitation Details
+      .invitation-details {
+        @include theme.flex-column;
+        gap: variables.$spacing-lg;
+        margin-bottom: variables.$spacing-xl;
+
+        .detail-row {
+          @include theme.flex-center;
+          gap: variables.$spacing-lg;
+          align-items: flex-start;
+
+          &.expiry-row {
+            background-color: variables.$color-surface-container-low;
+            padding: variables.$spacing-md;
+            border-radius: variables.$border-radius-md;
+          }
+
+          .detail-icon {
+            color: variables.$color-primary;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+          }
+
+          .detail-content {
+            flex: 1;
+
+            label {
+              font: variables.$font-label-large;
+              color: variables.$color-on-surface-variant;
+              display: block;
+              margin-bottom: variables.$spacing-xs;
+            }
+
+            > span {
+              font: variables.$font-body-large;
+              color: variables.$color-on-surface;
+              display: block;
+            }
+
+            .role-info {
+              @include theme.flex-column;
+              gap: variables.$spacing-sm;
+
+              mat-chip {
+                align-self: flex-start;
+              }
+
+              small {
+                font: variables.$font-body-small;
+                color: variables.$color-on-surface-variant;
+                line-height: 1.4;
+              }
+            }
+
+            .invitation-message {
+              font: variables.$font-body-medium;
+              color: variables.$color-on-surface;
+              background-color: variables.$color-surface-container-low;
+              padding: variables.$spacing-md;
+              border-radius: variables.$border-radius-md;
+              border-left: 3px solid variables.$color-primary;
+              margin: variables.$spacing-sm 0 0 0;
+              font-style: italic;
+            }
+
+            .expiry-date {
+              font-weight: 500;
+            }
+
+            .days-remaining {
+              font: variables.$font-label-medium;
+              color: variables.$color-success;
+              margin-left: variables.$spacing-sm;
+            }
+          }
+        }
+      }
+
+      // Acceptance Note
+      .acceptance-note {
+        @include theme.flex-center;
+        gap: variables.$spacing-md;
+        background-color: variables.$color-surface-container-low;
+        padding: variables.$spacing-md;
+        border-radius: variables.$border-radius-md;
+        margin-top: variables.$spacing-lg;
+
+        mat-icon {
+          color: variables.$color-info;
+          font-size: 1.2rem;
+        }
+
+        p {
+          font: variables.$font-body-medium;
+          color: variables.$color-on-surface-variant;
+          margin: 0;
+          line-height: 1.4;
+        }
+      }
+
+      // Success Content
+      .success-content {
+        @include theme.flex-column;
+        @include theme.flex-center;
+        gap: variables.$spacing-lg;
+        padding: variables.$spacing-xxl;
+        text-align: center;
+
+        .success-icon {
+          font-size: 4rem;
+          color: variables.$color-success;
+        }
+
+        h2 {
+          font: variables.$font-headline-medium;
+          color: variables.$color-on-surface;
+          margin: 0;
+        }
+
+        p {
+          font: variables.$font-body-large;
+          color: variables.$color-on-surface-variant;
+          margin: 0;
+
+          &.redirect-note {
+            font: variables.$font-body-medium;
+            color: variables.$color-on-surface-variant;
+            font-style: italic;
+            margin-top: variables.$spacing-md;
+          }
+        }
+      }
+
+      // Rejected Content
+      .rejected-content {
+        @include theme.flex-column;
+        @include theme.flex-center;
+        gap: variables.$spacing-lg;
+        padding: variables.$spacing-xxl;
+        text-align: center;
+
+        .rejected-icon {
+          font-size: 4rem;
+          color: variables.$color-on-surface-variant;
+        }
+
+        h2 {
+          font: variables.$font-headline-medium;
+          color: variables.$color-on-surface;
+          margin: 0;
+        }
+
+        p {
+          font: variables.$font-body-large;
+          color: variables.$color-on-surface-variant;
+          margin: 0;
+
+          &.redirect-note {
+            font: variables.$font-body-medium;
+            font-style: italic;
+            margin-top: variables.$spacing-md;
+          }
+        }
+      }
+
+      // Error Content
+      .error-content {
+        .error-message {
+          font: variables.$font-body-large;
+          color: variables.$color-error;
+          background-color: variables.$color-surface-container-low;
+          padding: variables.$spacing-md;
+          border-radius: variables.$border-radius-md;
+          border-left: 3px solid variables.$color-error;
+          margin-bottom: variables.$spacing-lg;
+        }
+
+        .error-help {
+          h4 {
+            font: variables.$font-title-medium;
+            color: variables.$color-on-surface;
+            margin: 0 0 variables.$spacing-md 0;
+          }
+
+          ul {
+            font: variables.$font-body-medium;
+            color: variables.$color-on-surface-variant;
+            padding-left: variables.$spacing-lg;
+            line-height: 1.6;
+
+            li {
+              margin-bottom: variables.$spacing-sm;
+            }
+          }
+        }
+      }
+
+      // Card Actions
+      .card-actions {
+        @include theme.flex-between;
+        padding: variables.$spacing-lg variables.$spacing-xl;
+        gap: variables.$spacing-md;
+
+        button {
+          @include theme.flex-center;
+          gap: variables.$spacing-sm;
+          min-width: 120px;
+
+          &[mat-raised-button] {
+            flex: 1;
+            max-width: 200px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive Design
+@include theme.tablet {
+  .invitation-container {
+    padding: variables.$spacing-lg;
+
+    .invitation-card-wrapper {
+      max-width: 500px;
+    }
+  }
+}
+
+@include theme.mobile {
+  .invitation-container {
+    padding: variables.$spacing-md;
+    min-height: 100vh;
+
+    .invitation-card-wrapper {
+      max-width: 100%;
+
+      .invitation-card {
+        .card-header {
+          gap: variables.$spacing-md;
+
+          .header-icon {
+            font-size: 1.5rem;
+          }
+
+          .header-text {
+            mat-card-title {
+              font: variables.$font-headline-small;
+            }
+
+            mat-card-subtitle {
+              font: variables.$font-body-medium;
+            }
+          }
+        }
+
+        .invitation-details {
+          .detail-row {
+            gap: variables.$spacing-md;
+
+            .detail-icon {
+              font-size: 1.25rem;
+            }
+          }
+        }
+
+        .loading-content,
+        .success-content,
+        .rejected-content {
+          padding: variables.$spacing-xl;
+
+          h2 {
+            font: variables.$font-headline-small;
+          }
+        }
+
+        .card-actions {
+          flex-direction: column;
+          padding: variables.$spacing-md;
+
+          button {
+            width: 100%;
+            max-width: none;
+          }
+        }
+      }
+    }
+  }
+}

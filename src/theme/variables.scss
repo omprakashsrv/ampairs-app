@@ -1,0 +1,134 @@
+// Material 3 Design System Variables
+// Comprehensive theme variables for the Ampairs application
+
+// Material Design 3 Typography Tokens - Complete font definitions
+$font-body-large: var(--mat-sys-body-large);
+$font-body-medium: var(--mat-sys-body-medium);
+$font-body-small: var(--mat-sys-body-small);
+$font-display-large: var(--mat-sys-display-large);
+$font-display-medium: var(--mat-sys-display-medium);
+$font-display-small: var(--mat-sys-display-small);
+$font-headline-large: var(--mat-sys-headline-large);
+$font-headline-medium: var(--mat-sys-headline-medium);
+$font-headline-small: var(--mat-sys-headline-small);
+$font-label-large: var(--mat-sys-label-large);
+$font-label-medium: var(--mat-sys-label-medium);
+$font-label-small: var(--mat-sys-label-small);
+$font-title-large: var(--mat-sys-title-large);
+$font-title-medium: var(--mat-sys-title-medium);
+$font-title-small: var(--mat-sys-title-small);
+
+// Line Heights - References M3 typography line heights
+$line-height-tight: 1.2;
+$line-height-normal: calc(var(--mat-sys-body-large-line-height, 1.5rem) / var(--mat-sys-body-large-size, 1rem));
+$line-height-relaxed: 1.8;
+
+// Spacing Variables - References M3 spacing tokens
+// Use CSS custom properties for responsive spacing that adapts to density
+$spacing-xs: var(--mat-sys-spacing-small, 0.125rem); // ~2px
+$spacing-sm: var(--mat-sys-spacing-medium, 0.25rem); // ~4px
+$spacing-md: var(--mat-sys-spacing-large, 0.5rem); // ~8px
+$spacing-lg: var(--mat-sys-spacing-x-large, 0.75rem); // ~12px
+$spacing-xl: var(--mat-sys-spacing-xx-large, 1rem); // ~16px
+$spacing-xxl: var(--mat-sys-spacing-xxx-large, 1.2rem); // ~19px
+
+// Border Radius - References M3 corner tokens
+$border-radius-sm: var(--mat-sys-corner-extra-small, 0.25rem);
+$border-radius-md: var(--mat-sys-corner-small, 0.5rem);
+$border-radius-lg: var(--mat-sys-corner-medium, 1rem);
+$border-radius-xl: var(--mat-sys-corner-large, 1rem);
+$border-radius-round: var(--mat-sys-corner-full, 625rem);
+
+// Z-Index Layers
+$z-index-modal: 1000;
+$z-index-dropdown: 900;
+$z-index-sticky: 800;
+$z-index-tooltip: 700;
+$z-index-base: 1;
+
+// Breakpoints (standard Material Design breakpoints)
+$breakpoint-xs: 480px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 1024px;
+$breakpoint-lg: 1200px;
+$breakpoint-xl: 1440px;
+
+// Transition Durations
+$transition-fast: 0.15s;
+$transition-normal: 0.3s;
+$transition-slow: 0.5s;
+
+// Complete transition properties for M3
+$transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+// Material 3 Color Variables (referenced from theme system)
+// Primary Colors
+$color-primary: var(--primary-color);
+$color-primary-container: var(--primary-container-color);
+$color-on-primary: var(--on-primary-color);
+$color-on-primary-container: var(--on-primary-container-color);
+
+// Secondary Colors
+$color-secondary: var(--secondary-color);
+$color-secondary-container: var(--secondary-container-color);
+$color-on-secondary: var(--on-secondary-color);
+$color-on-secondary-container: var(--on-secondary-container-color);
+
+// Tertiary Colors
+$color-tertiary: var(--tertiary-color);
+$color-tertiary-container: var(--tertiary-container-color);
+$color-on-tertiary: var(--on-tertiary-color);
+$color-on-tertiary-container: var(--on-tertiary-container-color);
+
+// Surface Colors
+$color-surface: var(--surface-color);
+$color-surface-container: var(--surface-container-color);
+$color-surface-container-low: var(--surface-container-low-color);
+$color-surface-container-high: var(--surface-container-high-color);
+$color-surface-container-highest: var(--surface-container-highest-color);
+$color-surface-variant: var(--surface-variant-color);
+$color-on-surface: var(--on-surface-color);
+$color-on-surface-variant: var(--on-surface-variant-color);
+
+// Background Colors
+$color-background: var(--background-color);
+$color-on-background: var(--on-background-color);
+
+// Error Colors
+$color-error: var(--error-color);
+$color-error-container: var(--error-container-color);
+$color-on-error: var(--on-error-color);
+$color-on-error-container: var(--on-error-container-color);
+
+// Outline Colors
+$color-outline: var(--outline-color);
+$color-outline-variant: var(--outline-variant-color);
+
+// Text Colors
+$color-text: var(--text-color);
+$color-text-secondary: var(--text-secondary-color);
+$color-text-disabled: var(--text-disabled-color);
+$color-text-hint: var(--text-hint-color);
+
+// Legacy compatibility colors
+$color-accent: var(--accent-color);
+$color-warn: var(--warn-color);
+$color-success: var(--success-color);
+$color-warning: var(--warning-color);
+$color-info: var(--info-color);
+
+// Border and Divider Colors
+$color-border: var(--border-color);
+$color-divider: var(--divider-color);
+$color-disabled: var(--disabled-color);
+
+// Menu Colors
+$color-menu-item-label: var(--on-surface-color);
+$color-menu-item-supporting: var(--on-surface-variant-color);
+$color-menu-divider: var(--outline-variant-color);
+
+// Shadow Variables
+$shadow-1: var(--shadow-1);
+$shadow-2: var(--shadow-2);
+$shadow-3: var(--shadow-3);
+$shadow-4: var(--shadow-4);

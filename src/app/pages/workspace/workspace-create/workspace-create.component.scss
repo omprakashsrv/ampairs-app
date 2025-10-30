@@ -1,0 +1,274 @@
+// M3 Material Design Workspace Create Component
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
+
+.workspace-create-container {
+  // Remove min-height since header is now at layout level
+  background-color: variables.$color-background;
+}
+
+// M3 Toolbar Header
+.header-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: variables.$z-index-sticky;
+  box-shadow: variables.$shadow-1;
+}
+
+.header-title {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  font: variables.$font-headline-small;
+}
+
+.header-icon {
+  font-size: 1.5rem;
+  width: 24px;
+  height: 24px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.step-indicator {
+  @include theme.flex-center;
+  gap: variables.$spacing-sm;
+}
+
+.step-text {
+  font: variables.$font-label-medium;
+  color: variables.$color-on-primary;
+  opacity: 0.9;
+}
+
+// M3 Content Container
+.content-container {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: variables.$spacing-xxl;
+  width: 100%;
+}
+
+// M3 Stepper
+.workspace-stepper {
+  background-color: transparent;
+
+  .mat-stepper-horizontal-line {
+    background-color: variables.$color-outline-variant;
+  }
+}
+
+// M3 Step Card
+.step-card {
+  margin: variables.$spacing-xl 0;
+  background-color: variables.$color-surface-container;
+  border-radius: variables.$border-radius-lg;
+  box-shadow: variables.$shadow-1;
+}
+
+.step-avatar {
+  @include theme.flex-center;
+  width: 40px;
+  height: 40px;
+  background-color: variables.$color-primary-container;
+  color: variables.$color-on-primary-container;
+  border-radius: variables.$border-radius-round;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// M3 Form Styling
+.step-form {
+  @include theme.flex-column;
+  gap: variables.$spacing-xl;
+}
+
+.full-width-field {
+  width: 100%;
+}
+
+.half-width-field {
+  width: 48%;
+}
+
+// Form Organization
+.form-section {
+  margin-bottom: variables.$spacing-xxl;
+
+  .section-title {
+    font: variables.$font-headline-small;
+    color: variables.$color-on-surface;
+    margin: 0 0 variables.$spacing-lg 0;
+    padding-bottom: variables.$spacing-sm;
+    border-bottom: 1px solid variables.$color-outline-variant;
+  }
+}
+
+.form-row {
+  @include theme.flex-between;
+  gap: variables.$spacing-lg;
+  
+  @include theme.mobile {
+    flex-direction: column;
+    gap: 0;
+    
+    .half-width-field {
+      width: 100%;
+    }
+  }
+}
+
+// M3 Type Option Styling
+.type-option {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  align-items: flex-start;
+  padding: variables.$spacing-sm 0;
+}
+
+.type-content {
+  @include theme.flex-column;
+  gap: variables.$spacing-xs;
+}
+
+.type-name {
+  font: variables.$font-label-medium;
+  font-weight: 500;
+  color: variables.$color-on-surface;
+}
+
+.type-desc {
+  font: variables.$font-label-small;
+  color: variables.$color-on-surface-variant;
+  line-height: variables.$line-height-tight;
+}
+
+.selected-type {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  font: variables.$font-label-medium;
+  color: variables.$color-on-surface;
+}
+
+// M3 Info Cards
+.info-card,
+.success-card {
+  margin-top: variables.$spacing-xl;
+  background-color: variables.$color-surface-container-low;
+  border: 1px solid variables.$color-outline-variant;
+}
+
+.info-content {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  align-items: flex-start;
+}
+
+.info-text {
+  flex: 1;
+
+  h4 {
+    margin: 0 0 variables.$spacing-sm 0;
+    font: variables.$font-label-medium;
+    font-weight: 500;
+    color: variables.$color-on-surface;
+  }
+
+  p {
+    margin: 0;
+    font: variables.$font-label-small;
+    color: variables.$color-on-surface-variant;
+    line-height: variables.$line-height-normal;
+  }
+}
+
+// M3 Card Actions
+.step-actions {
+  @include theme.flex-between;
+  padding: variables.$spacing-lg variables.$spacing-xl;
+  border-top: 1px solid variables.$color-outline-variant;
+}
+
+.action-spacer {
+  flex: 1;
+}
+
+// M3 Slug Status Icons
+.slug-checking mat-icon {
+  animation: spin 1s linear infinite;
+  color: variables.$color-on-surface-variant;
+}
+
+.slug-available mat-icon {
+  color: variables.$color-success;
+}
+
+.slug-unavailable mat-icon {
+  color: variables.$color-error;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// M3 Responsive Design
+@include theme.tablet {
+  .content-container {
+    padding: variables.$spacing-xl;
+  }
+
+  .step-card {
+    margin: variables.$spacing-lg 0;
+  }
+
+  .header-title {
+    font: variables.$font-body-large;
+  }
+}
+
+@include theme.mobile {
+  .content-container {
+    padding: variables.$spacing-lg;
+  }
+
+  .step-form {
+    gap: variables.$spacing-lg;
+  }
+
+  .step-actions {
+    flex-direction: column;
+    gap: variables.$spacing-md;
+    align-items: stretch;
+
+    button {
+      width: 100%;
+    }
+
+    .action-spacer {
+      display: none;
+    }
+  }
+
+  .info-content {
+    flex-direction: column;
+    text-align: center;
+    gap: variables.$spacing-md;
+  }
+
+  .type-option {
+    flex-direction: column;
+    text-align: center;
+    gap: variables.$spacing-sm;
+  }
+}

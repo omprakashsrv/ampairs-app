@@ -1,0 +1,546 @@
+@use '../../../../theme/variables' as vars;
+@use '../../../../theme/mixins' as theme;
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: vars.$spacing-xl vars.$spacing-xl 0;
+  border-bottom: 1px solid vars.$color-outline-variant;
+  margin-bottom: vars.$spacing-lg;
+
+  h2 {
+    margin: 0;
+    color: vars.$color-on-surface;
+    font: vars.$font-title-medium;
+  }
+
+  .close-button {
+    color: vars.$color-on-surface-variant;
+
+    &:hover {
+      background-color: vars.$color-surface-variant;
+    }
+  }
+}
+
+.dialog-content {
+  padding: 0 vars.$spacing-xl;
+  max-height: 70vh;
+  overflow-y: auto;
+
+  @include theme.mobile {
+    padding: 0 vars.$spacing-lg;
+  }
+
+  .step-panel {
+    margin-bottom: vars.$spacing-lg;
+    border: 1px solid vars.$color-outline-variant;
+    border-radius: vars.$border-radius-lg;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    ::ng-deep {
+      .mat-expansion-panel-header {
+        padding: vars.$spacing-lg;
+
+        .mat-expansion-panel-header-title {
+          align-items: center;
+
+          .step-icon {
+            margin-right: vars.$spacing-md;
+            color: vars.$color-primary;
+            font-size: 1.25rem;
+            width: 1.25rem;
+            height: 1.25rem;
+          }
+        }
+
+        .mat-expansion-panel-header-description {
+          color: vars.$color-on-surface-variant;
+          margin-top: 2px;
+        }
+      }
+
+      .mat-expansion-panel-content {
+        .mat-expansion-panel-body {
+          padding: 0 vars.$spacing-lg vars.$spacing-lg;
+        }
+      }
+    }
+
+    .step-content {
+      .form-row {
+        margin-bottom: vars.$spacing-lg;
+
+        &.appearance-row {
+          display: flex;
+          align-items: flex-start;
+          gap: vars.$spacing-lg;
+          flex-wrap: wrap;
+
+          @include theme.mobile {
+            flex-direction: column;
+          }
+
+          .color-field {
+            flex: 1;
+            min-width: 120px;
+          }
+
+          .icon-field {
+            flex: 2;
+            min-width: 200px;
+          }
+
+          .role-preview {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: vars.$spacing-lg;
+            background-color: vars.$color-surface-container;
+            border-radius: vars.$border-radius-md;
+            border: 1px solid vars.$color-outline-variant;
+
+            .preview-label {
+              font: vars.$font-label-medium;
+              color: vars.$color-on-surface-variant;
+              margin-bottom: vars.$spacing-sm;
+            }
+
+            .preview-role {
+              display: flex;
+              align-items: center;
+              gap: vars.$spacing-sm;
+
+              .preview-icon {
+                font-size: 1.5rem;
+                width: 1.5rem;
+                height: 1.5rem;
+              }
+
+              .preview-name {
+                font-weight: 500;
+                color: vars.$color-on-surface;
+              }
+            }
+          }
+        }
+
+        &.full-width,
+        .full-width {
+          width: 100%;
+        }
+      }
+
+      .base-role-option {
+        display: flex;
+        align-items: center;
+        gap: vars.$spacing-md;
+        padding: vars.$spacing-xs 0;
+
+        .role-icon {
+          color: vars.$color-primary;
+          font-size: 1.25rem;
+          width: 1.25rem;
+          height: 1.25rem;
+        }
+
+        .role-info {
+          display: flex;
+          flex-direction: column;
+
+          .role-name {
+            font-weight: 500;
+            color: vars.$color-on-surface;
+          }
+
+          .role-description {
+            font: vars.$font-label-medium;
+            color: vars.$color-on-surface-variant;
+            margin-top: 2px;
+          }
+        }
+      }
+
+      .inherited-permissions-preview {
+        margin-top: vars.$spacing-xl;
+        padding: vars.$spacing-lg;
+        background-color: vars.$color-surface-container-low;
+        border-radius: vars.$border-radius-md;
+        border: 1px solid vars.$color-outline-variant;
+
+        h4 {
+          margin: 0 0 vars.$spacing-sm 0;
+          color: vars.$color-on-surface;
+          font: vars.$font-body-large;
+        }
+
+        .preview-description {
+          margin: 0 0 vars.$spacing-md 0;
+          color: vars.$color-on-surface-variant;
+          font: vars.$font-body-medium;
+        }
+
+        .inherited-permissions-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: vars.$spacing-xs;
+
+          .inherited-chip {
+            background-color: vars.$color-secondary-container;
+            color: vars.$color-on-secondary-container;
+            font: vars.$font-label-small;
+
+            mat-icon {
+              font-size: 0.875rem;
+              width: 0.875rem;
+              height: 0.875rem;
+            }
+          }
+        }
+      }
+
+      .permissions-info {
+        margin-bottom: vars.$spacing-lg;
+        padding: vars.$spacing-md;
+        background-color: vars.$color-primary-container;
+        color: vars.$color-on-primary-container;
+        border-radius: vars.$border-radius-md;
+
+        p {
+          margin: 0;
+          font: vars.$font-body-medium;
+        }
+      }
+
+      .conflicts-warning {
+        display: flex;
+        align-items: flex-start;
+        gap: vars.$spacing-md;
+        margin-bottom: vars.$spacing-lg;
+        padding: vars.$spacing-md;
+        background-color: vars.$color-secondary-container;
+        color: vars.$color-on-secondary-container;
+        border-radius: vars.$border-radius-md;
+        border: 1px solid vars.$color-warning;
+
+        .warning-icon {
+          color: vars.$color-warning;
+          font-size: 1.5rem;
+          width: 1.5rem;
+          height: 1.5rem;
+          margin-top: 2px;
+        }
+
+        .warning-content {
+          flex: 1;
+
+          h4 {
+            margin: 0 0 vars.$spacing-xs 0;
+            font: vars.$font-body-medium;
+          }
+
+          ul {
+            margin: 0;
+            padding-left: vars.$spacing-lg;
+
+            li {
+              margin-bottom: vars.$spacing-xs;
+              font: vars.$font-label-medium;
+            }
+          }
+        }
+      }
+
+      .permission-groups {
+        .permission-group-panel {
+          margin-bottom: vars.$spacing-md;
+          border: 1px solid vars.$color-outline-variant;
+          border-radius: vars.$border-radius-md;
+
+          ::ng-deep {
+            .mat-expansion-panel-header {
+              padding: vars.$spacing-md vars.$spacing-lg;
+
+              .mat-expansion-panel-header-title {
+                .group-header {
+                  display: flex;
+                  align-items: center;
+                  gap: vars.$spacing-md;
+                  width: 100%;
+
+                  .group-checkbox {
+                    margin-right: vars.$spacing-xs;
+                  }
+
+                  .group-icon {
+                    color: vars.$color-primary;
+                    font-size: 1.25rem;
+                    width: 1.25rem;
+                    height: 1.25rem;
+                  }
+
+                  .group-info {
+                    display: flex;
+                    flex-direction: column;
+
+                    .group-name {
+                      font-weight: 500;
+                      color: vars.$color-on-surface;
+                    }
+
+                    .group-summary {
+                      font: vars.$font-label-medium;
+                      color: vars.$color-on-surface-variant;
+                      margin-top: 2px;
+                    }
+                  }
+                }
+              }
+            }
+
+            .mat-expansion-panel-content .mat-expansion-panel-body {
+              padding: 0 vars.$spacing-lg vars.$spacing-lg;
+            }
+          }
+
+          .permission-list {
+            .permission-item {
+              padding: vars.$spacing-md 0;
+              border-bottom: 1px solid vars.$color-outline-variant;
+              transition: vars.$transition-standard;
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              &.inherited {
+                background-color: vars.$color-surface-container-low;
+                margin: 0 calc(-1 * 0.75rem);
+                padding-left: vars.$spacing-lg;
+                padding-right: vars.$spacing-lg;
+
+                .permission-details {
+                  .permission-name,
+                  .permission-description {
+                    opacity: 0.7;
+                  }
+                }
+              }
+
+              &.selected:not(.inherited) {
+                background-color: vars.$color-primary-container;
+                margin: 0 calc(-1 * 0.75rem);
+                padding-left: vars.$spacing-lg;
+                padding-right: vars.$spacing-lg;
+
+                .permission-details {
+                  .permission-name {
+                    color: vars.$color-on-primary-container;
+                    font-weight: 500;
+                  }
+                }
+              }
+
+              .permission-checkbox {
+                width: 100%;
+
+                ::ng-deep .mat-mdc-checkbox-label {
+                  width: 100%;
+                }
+
+                .permission-details {
+                  display: flex;
+                  flex-direction: column;
+                  gap: vars.$spacing-xs;
+                  width: 100%;
+
+                  .permission-name {
+                    font-weight: 500;
+                    color: vars.$color-on-surface;
+                    font: vars.$font-body-medium;
+                  }
+
+                  .permission-description {
+                    color: vars.$color-on-surface-variant;
+                    font: vars.$font-label-medium;
+                    line-height: 1.4;
+                  }
+
+                  .inherited-badge {
+                    background-color: vars.$color-secondary;
+                    color: vars.$color-on-secondary;
+                    font: vars.$font-label-small;
+                    padding: 2px vars.$spacing-xs;
+                    border-radius: vars.$border-radius-sm;
+                    font-weight: 500;
+                    width: fit-content;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .selected-summary {
+        margin-top: vars.$spacing-xl;
+        padding: vars.$spacing-lg;
+        background-color: vars.$color-primary-container;
+        color: vars.$color-on-primary-container;
+        border-radius: vars.$border-radius-md;
+
+        h4 {
+          margin: 0 0 vars.$spacing-md 0;
+          font: vars.$font-body-large;
+        }
+
+        .selected-permissions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: vars.$spacing-xs;
+
+          .selected-permission-chip {
+            background-color: vars.$color-primary;
+            color: vars.$color-on-primary;
+            font: vars.$font-label-small;
+
+            mat-icon {
+              font-size: 0.875rem;
+              width: 0.875rem;
+              height: 0.875rem;
+            }
+          }
+        }
+      }
+
+      .select-base-role-prompt {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: vars.$spacing-xxl;
+        text-align: center;
+
+        .prompt-icon {
+          font-size: 3rem;
+          width: 3rem;
+          height: 3rem;
+          color: vars.$color-outline;
+          margin-bottom: vars.$spacing-lg;
+        }
+
+        p {
+          margin: 0;
+          color: vars.$color-on-surface-variant;
+          font: vars.$font-body-medium;
+        }
+      }
+    }
+  }
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: vars.$spacing-lg vars.$spacing-xl vars.$spacing-xl;
+  border-top: 1px solid vars.$color-outline-variant;
+  margin-top: vars.$spacing-lg;
+
+  @include theme.mobile {
+    padding: vars.$spacing-lg;
+    flex-direction: column-reverse;
+    gap: vars.$spacing-lg;
+  }
+
+  .actions-left {
+    .conflict-indicator {
+      display: flex;
+      align-items: center;
+      gap: vars.$spacing-xs;
+      color: vars.$color-warning;
+
+      .warning-icon {
+        font-size: 1.125rem;
+        width: 1.125rem;
+        height: 1.125rem;
+      }
+
+      span {
+        font: vars.$font-label-medium;
+      }
+    }
+  }
+
+  .actions-right {
+    display: flex;
+    gap: vars.$spacing-md;
+    align-items: center;
+
+    @include theme.mobile {
+      width: 100%;
+      justify-content: stretch;
+
+      button {
+        flex: 1;
+      }
+    }
+
+    .button-spinner {
+      margin-right: vars.$spacing-xs;
+    }
+  }
+}
+
+// Accessibility improvements
+:host {
+  .color-input {
+    width: 100%;
+    height: 40px;
+    cursor: pointer;
+  }
+}
+
+// Custom scroll styling for dialog content
+.dialog-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dialog-content::-webkit-scrollbar-track {
+  background: vars.$color-surface-variant;
+  border-radius: vars.$border-radius-sm;
+}
+
+.dialog-content::-webkit-scrollbar-thumb {
+  background: vars.$color-outline;
+  border-radius: vars.$border-radius-sm;
+}
+
+.dialog-content::-webkit-scrollbar-thumb:hover {
+  background: vars.$color-on-surface-variant;
+}
+
+// Responsive adjustments
+@include theme.mobile {
+  .dialog-header h2 {
+    font: vars.$font-body-large;
+  }
+
+  .step-content .form-row .permission-item {
+    .permission-checkbox .permission-details {
+      .permission-name {
+        font: vars.$font-label-medium;
+      }
+
+      .permission-description {
+        font: vars.$font-label-small;
+      }
+    }
+  }
+}

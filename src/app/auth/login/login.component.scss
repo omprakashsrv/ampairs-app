@@ -1,0 +1,99 @@
+// M3 Material Design Login Component
+@use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as vars;
+
+.auth-container {
+  min-height: 100vh;
+  @include theme.flex-center;
+  background-color: vars.$color-background;
+  padding: vars.$spacing-xl;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.logo-icon {
+  font-size: 3rem; // M3 icon size large
+  width: 3rem;
+  height: 3rem;
+  color: vars.$color-primary;
+  margin-bottom: vars.$spacing-md;
+}
+
+.auth-form {
+  @include theme.flex-column;
+  gap: vars.$spacing-xl;
+  margin-top: vars.$spacing-xl;
+}
+
+.auth-button {
+  margin-top: vars.$spacing-xl;
+  align-self: center;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: vars.$spacing-md;
+}
+
+.button-spinner {
+  margin: 0;
+}
+
+.help-text {
+  @include theme.flex-center;
+  gap: vars.$spacing-md;
+  color: vars.$color-on-surface-variant;
+  font: vars.$font-label-medium;
+  margin: vars.$spacing-xl 0 0 0;
+}
+
+.info-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: vars.$color-primary;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-card-header {
+  margin-bottom: vars.$spacing-md;
+}
+
+mat-card-title h1 {
+  margin: vars.$spacing-md 0;
+  font: vars.$font-headline-small;
+  color: vars.$color-on-surface;
+}
+
+.country-code {
+  padding: vars.$spacing-md;
+  color: vars.$color-on-surface-variant;
+  font-weight: 500;
+}
+
+/* M3 Responsive design */
+@include theme.mobile {
+  .auth-container {
+    padding: vars.$spacing-md;
+  }
+
+  .auth-card {
+    margin: 0;
+  }
+
+  mat-card-title h1 {
+    font: vars.$font-title-large;
+  }
+}

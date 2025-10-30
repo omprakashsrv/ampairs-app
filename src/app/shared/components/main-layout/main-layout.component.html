@@ -1,0 +1,77 @@
+<!-- Main Layout with Sidenav -->
+<div class="main-layout-container">
+  <!-- Centralized App Header -->
+  <app-header (toggleSidenav)="toggleSidenav()"></app-header>
+
+  @if (shouldShowSidenav()) {
+    <!-- Sidenav Container -->
+    <mat-sidenav-container class="sidenav-container">
+      <!-- Module Navigation Sidenav -->
+      <mat-sidenav
+        #drawer
+        [mode]="getSidenavMode()"
+        [opened]="getSidenavOpened()"
+        class="module-sidenav">
+
+        <!-- Navigation Header -->
+        <div class="nav-header">
+          <mat-icon>apps</mat-icon>
+          <h3>Modules</h3>
+        </div>
+
+        <!-- Module Navigation -->
+        @if (navigationRoutes().length === 0) {
+          <div class="no-modules">
+            <mat-icon>extension_off</mat-icon>
+            <span>No modules installed</span>
+          </div>
+        } @else {
+          <nav class="module-navigation">
+            @for (moduleRoute of navigationRoutes(); track moduleRoute.moduleCode) {
+              <div class="module-group">
+                <!-- Module Header -->
+                <div class="module-header">
+                  <mat-icon [style.color]="moduleRoute.primaryColor">
+                    {{ moduleRoute.icon }}
+                  </mat-icon>
+                  <span>{{ moduleRoute.displayName }}</span>
+                </div>
+
+                <!-- Module Menu Items -->
+                <mat-nav-list class="module-menu-list">
+                  @for (menuItem of moduleRoute.menuItems; track menuItem.id) {
+                    <mat-list-item
+                      class="module-menu-item"
+                      (click)="navigateToMenuItem(moduleRoute.moduleCode, menuItem.routePath)">
+                      <mat-icon matListItemIcon [style.color]="moduleRoute.primaryColor">
+                        {{ menuItem.icon }}
+                      </mat-icon>
+                      <span matListItemTitle>{{ menuItem.label }}</span>
+                      @if (menuItem.isDefault) {
+                        <mat-icon matListItemMeta class="default-badge">star</mat-icon>
+                      }
+                    </mat-list-item>
+                  }
+                </mat-nav-list>
+
+                @if (!$last) {
+                  <mat-divider></mat-divider>
+                }
+              </div>
+            }
+          </nav>
+        }
+      </mat-sidenav>
+
+      <!-- Main Content -->
+      <mat-sidenav-content class="main-content">
+        <router-outlet></router-outlet>
+      </mat-sidenav-content>
+    </mat-sidenav-container>
+  } @else {
+    <!-- No Sidenav Content Area -->
+    <div class="main-content">
+      <router-outlet></router-outlet>
+    </div>
+  }
+</div>

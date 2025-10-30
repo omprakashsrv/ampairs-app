@@ -1,0 +1,137 @@
+<div class="dynamic-navigation-menu">
+  <!-- Header -->
+  <div class="menu-header">
+    <h2>
+      <mat-icon>apps</mat-icon>
+      Installed Modules
+    </h2>
+    @if (loading()) {
+      <mat-spinner diameter="24"></mat-spinner>
+    }
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading modules...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <mat-card class="error-card">
+      <mat-card-content>
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-button color="primary" (click)="loadModules()">
+          <mat-icon>refresh</mat-icon>
+          Retry
+        </button>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Module List -->
+  @if (!loading() && !error() && navigationRoutes().length > 0) {
+    <div class="modules-list">
+      @for (moduleRoute of navigationRoutes(); track moduleRoute.moduleCode) {
+        <mat-expansion-panel class="module-panel" [expanded]="isExpanded(moduleRoute.moduleCode)">
+          <!-- Module Header -->
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <div class="module-title">
+                <mat-icon
+                  [style.color]="moduleRoute.primaryColor"
+                  class="module-icon">
+                  {{ moduleRoute.icon }}
+                </mat-icon>
+                <span>{{ moduleRoute.displayName }}</span>
+              </div>
+            </mat-panel-title>
+            <mat-panel-description>
+              <span class="menu-item-count">{{ moduleRoute.menuItems.length }} items</span>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <!-- Module Menu Items -->
+          <div class="module-content">
+            <mat-nav-list>
+              @for (menuItem of moduleRoute.menuItems; track menuItem.id) {
+                <a
+                  mat-list-item
+                  [routerLink]="getFullRoutePath(moduleRoute.moduleCode, menuItem.routePath)"
+                  routerLinkActive="active-menu-item"
+                  [title]="menuItem.label"
+                  class="menu-item">
+                  <mat-icon
+                    matListItemIcon
+                    [style.color]="moduleRoute.primaryColor">
+                    {{ menuItem.icon }}
+                  </mat-icon>
+                  <span matListItemTitle>{{ menuItem.label }}</span>
+                  @if (menuItem.isDefault) {
+                    <mat-icon matListItemMeta class="default-indicator" matTooltip="Default route">
+                      star
+                    </mat-icon>
+                  }
+                </a>
+                @if (!$last) {
+                  <mat-divider></mat-divider>
+                }
+              }
+            </mat-nav-list>
+
+            <!-- Quick Action Button -->
+            <div class="module-actions">
+              <button
+                mat-raised-button
+                [style.background-color]="moduleRoute.primaryColor"
+                style="color: white"
+                (click)="navigateToModule(moduleRoute.moduleCode)"
+                class="module-action-btn">
+                <mat-icon>launch</mat-icon>
+                Open {{ moduleRoute.displayName }}
+              </button>
+            </div>
+          </div>
+        </mat-expansion-panel>
+      }
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading() && !error() && navigationRoutes().length === 0) {
+    <mat-card class="empty-state">
+      <mat-card-content>
+        <mat-icon class="empty-icon">apps</mat-icon>
+        <h3>No Modules Installed</h3>
+        <p>Install modules from the module store to get started.</p>
+        <button mat-raised-button color="primary">
+          <mat-icon>store</mat-icon>
+          Browse Modules
+        </button>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Module Statistics -->
+  @if (navigationRoutes().length > 0) {
+    <div class="module-stats">
+      <mat-card>
+        <mat-card-content>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-value">{{ navigationRoutes().length }}</span>
+              <span class="stat-label">Installed Modules</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ getTotalMenuItems() }}</span>
+              <span class="stat-label">Menu Items</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>
