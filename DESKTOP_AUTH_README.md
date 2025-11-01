@@ -22,7 +22,7 @@ Desktop App → Opens Browser → Web Authentication → Deep Link with Tokens �
 └────────┬────────┘
          │
          │ Opens browser to:
-         │ https://app.ampairs.com/login
+         │ https://app.ampairs.in/login
          │
          ▼
 ┌─────────────────────────┐
@@ -211,7 +211,7 @@ fun handleAuthCallback(url: URL) {
 
 // Trigger browser authentication
 fun login() {
-    val authUrl = "https://app.ampairs.com/desktop-auth"
+    val authUrl = "https://app.ampairs.in/desktop-auth"
     Desktop.getDesktop().browse(URI(authUrl))
 }
 ```
@@ -225,7 +225,7 @@ fun login() {
 **Step 2**: Enable Phone Authentication:
 - Go to Authentication → Sign-in method
 - Enable "Phone" provider
-- Add authorized domains (localhost, app.ampairs.com)
+- Add authorized domains (localhost, app.ampairs.in)
 
 **Step 3**: Get Firebase configuration:
 - Go to Project Settings → General
@@ -319,7 +319,7 @@ http://localhost:4200/login
 // User clicks "Login" button
 fun onLoginClick() {
     // Open browser to web authentication page
-    val authUrl = "https://app.ampairs.com/firebase-auth"
+    val authUrl = "https://app.ampairs.in/firebase-auth"
     openBrowser(authUrl)
 
     // Desktop app waits for deep link callback
@@ -382,4 +382,4 @@ ampairs://auth?access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&refresh_toke
 For issues or questions:
 - Open an issue on GitHub
 - Contact: dev@ampairs.com
-- Documentation: https://docs.ampairs.com
+- Documentation: https://docs.ampairs.in

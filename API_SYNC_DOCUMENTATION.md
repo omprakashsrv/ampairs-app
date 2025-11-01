@@ -113,7 +113,7 @@ export const environment = {
 // src/environments/environment.prod.ts
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.ampairs.com'  // ← Remove /api/v1 suffix
+  apiBaseUrl: 'https://api.ampairs.in'  // ← Remove /api/v1 suffix
 };
 ```
 

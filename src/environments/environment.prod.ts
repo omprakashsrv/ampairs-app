@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.ampairs.com', // Update with your production API URL
+  apiBaseUrl: 'https://api.ampairs.in', // Update with your production API URL
   recaptcha: {
     siteKey: '6LdcbvwrAAAAAIOZ2tSGVBeX3FuW3nsmm4zF9MBn', // Replace with your production site key
     enabled: true

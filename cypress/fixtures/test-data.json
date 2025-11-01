@@ -195,13 +195,13 @@
         "database": "munsi_app_dev"
       },
       "staging": {
-        "apiUrl": "https://staging-api.ampairs.com",
-        "webUrl": "https://staging.ampairs.com",
+        "apiUrl": "https://staging-api.ampairs.in",
+        "webUrl": "https://staging.ampairs.in",
         "database": "munsi_app_staging"
       },
       "production": {
-        "apiUrl": "https://api.ampairs.com",
-        "webUrl": "https://app.ampairs.com",
+        "apiUrl": "https://api.ampairs.in",
+        "webUrl": "https://app.ampairs.in",
         "database": "munsi_app_prod"
       }
     }
