@@ -45,6 +45,5 @@ include(
     ":ui:developer:log",
     ":ui:developer:notifications",
     ":ui:developer:settings",
-    ":tasks",
-    ":desktop-app",
+    ":tasks"
 )
