@@ -1,0 +1,90 @@
+<resources>
+    <string name="app_name">Ampairs</string>
+    <string name="please_check_network_connection">कृपया अपना नेटवर्क कनेक्शन जांचें</string>
+    <string name="share">साझा करें</string>
+    
+    <!-- Auth Screen Texts -->
+    <string name="login">लॉग इन</string>
+    <string name="verify_otp">OTP सत्यापित करें</string>
+    <string name="resend_otp">OTP पुनः भेजें</string>
+    <string name="device_sessions">डिवाइस सेशन</string>
+    <string name="logout_all_devices">सभी डिवाइस से लॉगआउट</string>
+    <string name="loading_device_sessions">डिवाइस सेशन लोड हो रहे हैं...</string>
+    <string name="otp">OTP</string>
+    <string name="enter_otp_instruction">फोन पर प्राप्त 6-अंकीय OTP दर्ज करें</string>
+    <string name="phone">फोन</string>
+    <string name="loading_user_details">उपयोगकर्ता विवरण लोड हो रहे हैं...</string>
+    <string name="update_your_profile">अपनी प्रोफाइल अपडेट करें</string>
+    <string name="first_name">पहला नाम</string>
+    <string name="last_name">अंतिम नाम</string>
+    <string name="update_profile">प्रोफाइल अपडेट करें</string>
+    <string name="error_colon">त्रुटि: </string>
+    
+    <!-- Common Action Words -->
+    <string name="search">खोजें</string>
+    <string name="save">सहेजें</string>
+    <string name="next">अगला</string>
+    <string name="ok">ठीक</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="confirm">पुष्टि करें</string>
+    <string name="create_new">नया बनाएं</string>
+    <string name="update">अपडेट</string>
+    <string name="discard">छोड़ें</string>
+    
+    <!-- Customer Screen Texts -->
+    <string name="search_customer">ग्राहक खोजें</string>
+    <string name="name">नाम</string>
+    <string name="landline">लैंडलाइन</string>
+    <string name="email">ईमेल</string>
+    <string name="gstin">जीएसटीआईएन</string>
+    <string name="registered_address">पंजीकृत पता</string>
+    <string name="street">गली</string>
+    <string name="street_1">गली 1</string>
+    <string name="address">पता</string>
+    <string name="city">शहर</string>
+    <string name="pincode">पिनकोड</string>
+    <string name="state">राज्य</string>
+    
+    <!-- Product Screen Texts -->
+    <string name="search_products">उत्पाद खोजें</string>
+    <string name="no_categories">कोई श्रेणी नहीं</string>
+    <string name="code">कोड</string>
+    <string name="group">समूह</string>
+    <string name="category">श्रेणी</string>
+    <string name="sub_category">उप श्रेणी</string>
+    <string name="brand">ब्रांड</string>
+    <string name="tax_code">टैक्स कोड</string>
+    <string name="mrp">एमआरपी</string>
+    <string name="dp">डीपी</string>
+    <string name="selling_price">बिक्री मूल्य</string>
+    <string name="buying_price">खरीद मूल्य</string>
+    <string name="stock">स्टॉक</string>
+    
+    <!-- Inventory Screen Texts -->
+    <string name="search_inventory">इन्वेंटरी खोजें</string>
+    
+    <!-- Order Screen Texts -->
+    <string name="discount_percent">छूट % :</string>
+    <string name="price">मूल्य :</string>
+    <string name="create_invoice">चालान बनाएं</string>
+    
+    <!-- Invoice Screen Texts -->
+    <!-- (Same discount_percent and price already defined above) -->
+    
+    <!-- Tax Screen Texts -->
+    <string name="hsn_sac_code">HSN/SAC कोड</string>
+    <string name="description">विवरण</string>
+    <string name="effective_from">प्रभावी तिथि से</string>
+    <string name="tax_spec">टैक्स विवरण</string>
+    <string name="taxes">कर</string>
+    <string name="percent">प्रतिशत</string>
+    <string name="formatted_name">स्वरूपित नाम</string>
+    <string name="search_code">कोड खोजें</string>
+    
+    <!-- Security Messages -->
+    <string name="app_update_required">सुरक्षा कारणों से ऐप अपडेट आवश्यक है</string>
+    <string name="network_requests_blocked">सुरक्षा नीति के कारण नेटवर्क अनुरोध अवरुद्ध हैं</string>
+    
+    <!-- General -->
+    <string name="translated_description_image">चित्र में क्या है इसका अनुवादित विवरण</string>
+</resources>

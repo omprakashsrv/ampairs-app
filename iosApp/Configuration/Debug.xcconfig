@@ -1,0 +1,5 @@
+TEAM_ID=
+BUNDLE_ID=com.ampairs.app
+APP_NAME=Ampairs App
+PRODUCT_NAME=iosApp
+GOOGLE_SERVICE=$(SRCROOT)/Firebase/GoogleService-Info-Development.plist

@@ -1,0 +1,13 @@
+// Copyright 2023, Christopher Banes
+// SPDX-License-Identifier: Apache-2.0
+
+package app.tivi.core.perf
+
+import app.tivi.inject.ApplicationScope
+import me.tatarka.inject.annotations.Provides
+
+actual interface PerformanceComponent {
+  @ApplicationScope
+  @Provides
+  fun provideTracer(bind: AndroidTracer): Tracer = bind
+}

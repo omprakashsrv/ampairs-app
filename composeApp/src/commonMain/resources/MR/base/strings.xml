@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Ampairs</string>
+    <string name="please_check_network_connection">Please check your network connection</string>
+    <string name="share">Share</string>
+</resources>

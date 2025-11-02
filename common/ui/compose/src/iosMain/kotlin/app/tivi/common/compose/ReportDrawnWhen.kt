@@ -1,0 +1,10 @@
+// Copyright 2023, Christopher Banes
+// SPDX-License-Identifier: Apache-2.0
+
+package app.tivi.common.compose
+
+import androidx.compose.runtime.Composable
+
+@Composable
+actual fun ReportDrawnWhen(predicate: () -> Boolean) {
+}

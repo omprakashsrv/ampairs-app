@@ -1,0 +1,90 @@
+<resources>
+    <string name="app_name">Ampairs</string>
+    <string name="please_check_network_connection">Please check your network connection</string>
+    <string name="share">Share</string>
+    
+    <!-- Auth Screen Texts -->
+    <string name="login">Log in</string>
+    <string name="verify_otp">Verify OTP</string>
+    <string name="resend_otp">Resend OTP</string>
+    <string name="device_sessions">Device Sessions</string>
+    <string name="logout_all_devices">Logout All Devices</string>
+    <string name="loading_device_sessions">Loading device sessions...</string>
+    <string name="otp">OTP</string>
+    <string name="enter_otp_instruction">Enter 6-digit OTP, received on phone</string>
+    <string name="phone">Phone</string>
+    <string name="loading_user_details">Loading user details...</string>
+    <string name="update_your_profile">Update Your Profile</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="update_profile">Update Profile</string>
+    <string name="error_colon">Error: </string>
+    
+    <!-- Common Action Words -->
+    <string name="search">Search</string>
+    <string name="save">Save</string>
+    <string name="next">Next</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="create_new">Create New</string>
+    <string name="update">Update</string>
+    <string name="discard">Discard</string>
+    
+    <!-- Customer Screen Texts -->
+    <string name="search_customer">Search Customer</string>
+    <string name="name">Name</string>
+    <string name="landline">Landline</string>
+    <string name="email">Email</string>
+    <string name="gstin">GSTIN</string>
+    <string name="registered_address">Registered Address</string>
+    <string name="street">Street</string>
+    <string name="street_1">Street 1</string>
+    <string name="address">Address</string>
+    <string name="city">City</string>
+    <string name="pincode">Pincode</string>
+    <string name="state">State</string>
+    
+    <!-- Product Screen Texts -->
+    <string name="search_products">Search Products</string>
+    <string name="no_categories">No Categories</string>
+    <string name="code">Code</string>
+    <string name="group">Group</string>
+    <string name="category">Category</string>
+    <string name="sub_category">Sub Category</string>
+    <string name="brand">Brand</string>
+    <string name="tax_code">Tax Code</string>
+    <string name="mrp">MRP</string>
+    <string name="dp">DP</string>
+    <string name="selling_price">Selling Price</string>
+    <string name="buying_price">Buying Price</string>
+    <string name="stock">Stock</string>
+    
+    <!-- Inventory Screen Texts -->
+    <string name="search_inventory">Search Inventory</string>
+    
+    <!-- Order Screen Texts -->
+    <string name="discount_percent">Discount % :</string>
+    <string name="price">Price :</string>
+    <string name="create_invoice">Create Invoice</string>
+    
+    <!-- Invoice Screen Texts -->
+    <!-- (Same discount_percent and price already defined above) -->
+    
+    <!-- Tax Screen Texts -->
+    <string name="hsn_sac_code">HSN/SAC Code</string>
+    <string name="description">Description</string>
+    <string name="effective_from">Effective From</string>
+    <string name="tax_spec">Tax Spec</string>
+    <string name="taxes">Taxes</string>
+    <string name="percent">percent</string>
+    <string name="formatted_name">Formatted Name</string>
+    <string name="search_code">Search Code</string>
+    
+    <!-- Security Messages -->
+    <string name="app_update_required">App update required for security reasons</string>
+    <string name="network_requests_blocked">Network requests blocked due to security policy</string>
+    
+    <!-- General -->
+    <string name="translated_description_image">Translated description of what the image contains</string>
+</resources>
