@@ -24,7 +24,8 @@ fun WorkspaceAwareDatabaseFactory.createDatabaseForAndroid(
     )
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(queryDispatcher)
-        .fallbackToDestructiveMigration(true)
+        .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
+        .enableMultiInstanceInvalidation() // Support multi-process scenarios
         .build()
 }
 
@@ -54,7 +55,8 @@ inline fun <reified T : androidx.room.RoomDatabase> WorkspaceAwareDatabaseFactor
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(queryDispatcher)
-            .fallbackToDestructiveMigration(true)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
+            .enableMultiInstanceInvalidation() // Support multi-process scenarios
             .build()
     }
 }

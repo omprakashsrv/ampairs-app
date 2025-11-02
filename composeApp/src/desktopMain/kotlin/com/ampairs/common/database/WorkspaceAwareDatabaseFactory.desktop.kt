@@ -32,7 +32,7 @@ actual inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.creat
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(queryDispatcher)
-            .fallbackToDestructiveMigration(true)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
             .build()
     }
 }
