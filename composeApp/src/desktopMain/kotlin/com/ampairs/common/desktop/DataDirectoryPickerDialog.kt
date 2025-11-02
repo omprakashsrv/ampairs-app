@@ -14,8 +14,6 @@ import androidx.compose.ui.window.rememberDialogState
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.UIManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 /**
  * Dialog that prompts the user to select a data directory on first launch.
@@ -186,14 +184,17 @@ fun DataDirectoryPickerDialog(
     LaunchedEffect(isSelecting) {
         if (isSelecting) {
             try {
-                val result = withContext(Dispatchers.IO) {
-                    showDirectoryChooser()
-                }
+                // Call directly - LaunchedEffect already runs on Main (Swing EDT)
+                val result = showDirectoryChooser()
                 if (result != null) {
                     selectedPath = result.absolutePath
+                    println("DataDirectoryPicker: Selected path: ${result.absolutePath}")
+                } else {
+                    println("DataDirectoryPicker: No directory selected")
                 }
             } catch (e: Exception) {
                 errorMessage = "Error selecting directory: ${e.message}"
+                e.printStackTrace()
             } finally {
                 isSelecting = false
             }
@@ -202,11 +203,14 @@ fun DataDirectoryPickerDialog(
 }
 
 private fun showDirectoryChooser(): File? {
+    println("DataDirectoryPicker: showDirectoryChooser() called")
+
     // Set system look and feel for native appearance
     try {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-    } catch (_: Exception) {
-        // Ignore - will use default LAF
+        println("DataDirectoryPicker: LAF set to ${UIManager.getLookAndFeel().name}")
+    } catch (e: Exception) {
+        println("DataDirectoryPicker: Failed to set LAF: ${e.message}")
     }
 
     val chooser = JFileChooser().apply {
@@ -223,12 +227,23 @@ private fun showDirectoryChooser(): File? {
 
         if (documentsDir.exists()) {
             currentDirectory = documentsDir
+            println("DataDirectoryPicker: Initial directory set to: ${documentsDir.absolutePath}")
         }
     }
 
-    return when (chooser.showDialog(null, "Select")) {
-        JFileChooser.APPROVE_OPTION -> chooser.selectedFile
-        else -> null
+    println("DataDirectoryPicker: About to show dialog...")
+    val result = chooser.showDialog(null, "Select")
+    println("DataDirectoryPicker: Dialog result: $result")
+
+    return when (result) {
+        JFileChooser.APPROVE_OPTION -> {
+            println("DataDirectoryPicker: File selected: ${chooser.selectedFile?.absolutePath}")
+            chooser.selectedFile
+        }
+        else -> {
+            println("DataDirectoryPicker: Dialog cancelled or closed")
+            null
+        }
     }
 }
 
