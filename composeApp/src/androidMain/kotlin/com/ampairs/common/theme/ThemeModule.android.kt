@@ -8,7 +8,8 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val androidAppConfigModule = module {
-    single<AppPreferencesDataStore> {
+    // Use factory instead of single to ensure each workspace gets its own preferences
+    factory<AppPreferencesDataStore> {
         DataStoreAppPreferences(
             dataStore = createAppDataStore(get<Context>())
         )

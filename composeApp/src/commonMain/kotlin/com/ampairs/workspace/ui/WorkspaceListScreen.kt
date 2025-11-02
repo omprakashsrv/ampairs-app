@@ -33,6 +33,7 @@ import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.GlobalNavigationManager
+import com.ampairs.common.config.DataStoreManager
 import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.context.WorkspaceContextManager
 import org.koin.compose.viewmodel.koinViewModel
@@ -320,10 +321,11 @@ fun WorkspaceListScreen(
                                         val previousSlug = previousWorkspace?.slug
                                         println("WorkspaceListScreen: Previous workspace slug: $previousSlug")
 
-                                        // Clear old workspace databases before switching
+                                        // Clear old workspace databases and DataStores before switching
                                         if (previousSlug != null && previousSlug != workspace.slug) {
-                                            println("WorkspaceListScreen: Clearing databases for previous workspace: $previousSlug")
+                                            println("WorkspaceListScreen: Clearing databases and DataStores for previous workspace: $previousSlug")
                                             DatabaseScopeManager.getInstance().clearWorkspaceDatabases(previousSlug)
+                                            DataStoreManager.clearDataStoresForWorkspace(previousSlug)
                                         } else {
                                             println("WorkspaceListScreen: No previous workspace or same workspace, skipping clear")
                                         }
