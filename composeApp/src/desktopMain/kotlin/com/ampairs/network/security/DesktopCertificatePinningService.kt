@@ -139,10 +139,30 @@ class DesktopCertificatePinningService(
  * Desktop implementation of certificate storage using file system
  */
 class DesktopCertificateStorage : CertificateStorage {
-    private val storageDir = File(System.getProperty("user.home"), ".ampairs")
-    private val certificateFile = File(storageDir, "certificates.properties")
-    
+    private val storageDir: File
+        get() {
+            return try {
+                // Use DataDirectoryManager for consistent storage location
+                com.ampairs.common.desktop.DataDirectoryManager.getDataDirectory()
+                    ?: run {
+                        // Fallback to temp directory if data directory not set
+                        val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs")
+                        tempDir.mkdirs()
+                        tempDir
+                    }
+            } catch (e: Exception) {
+                // Last resort fallback
+                val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs")
+                tempDir.mkdirs()
+                tempDir
+            }
+        }
+
+    private val certificateFile: File
+        get() = File(storageDir, "certificates.properties")
+
     init {
+        // Ensure directory exists on first access
         if (!storageDir.exists()) {
             storageDir.mkdirs()
         }

@@ -50,22 +50,23 @@ class DesktopFileManager : PlatformFileManager {
     }
 
     override suspend fun getCacheDirectory(): String = withContext(Dispatchers.IO) {
-        val applicationName = "ampairs"
-        val cacheDir = when (currentOperatingSystem) {
-            OperatingSystem.Windows -> File(System.getenv("AppData"), "$applicationName/customer_images")
-            OperatingSystem.Linux -> File(System.getProperty("user.home"), ".cache/$applicationName/customer_images")
-            OperatingSystem.MacOS -> File(
-                System.getProperty("user.home"),
-                "Library/Caches/$applicationName/customer_images"
-            )
-            else -> throw IllegalStateException("Unsupported operating system")
-        }
+        try {
+            // Use DataDirectoryManager for consistent cache location
+            val baseCacheDir = com.ampairs.common.desktop.DataDirectoryManager.getCacheDir()
+            val customerCacheDir = File(baseCacheDir, "customer_images")
 
-        if (!cacheDir.exists()) {
-            cacheDir.mkdirs()
-        }
+            if (!customerCacheDir.exists()) {
+                customerCacheDir.mkdirs()
+            }
 
-        cacheDir.absolutePath
+            customerCacheDir.absolutePath
+        } catch (e: IllegalStateException) {
+            // Fallback to temp directory if data directory not set (initialization phase)
+            val tempCacheDir = File(System.getProperty("java.io.tmpdir"), "ampairs/cache/customer_images")
+            tempCacheDir.mkdirs()
+            println("WARNING: Using temporary customer cache directory: ${tempCacheDir.absolutePath}")
+            tempCacheDir.absolutePath
+        }
     }
 
     override suspend fun readFile(filePath: String): ByteArray = withContext(Dispatchers.IO) {

@@ -5,16 +5,20 @@ import androidx.datastore.preferences.core.Preferences
 import java.io.File
 
 /**
- * Creates a DataStore instance for Desktop platform using the user's home directory
+ * Creates a DataStore instance for Desktop platform using the user-selected data directory
  */
 fun createAppDataStore(): DataStore<Preferences> = createAppDataStore(
     producePath = {
-        // Create .ampairs directory in user home for app data
-        val userHome = System.getProperty("user.home")
-        val ampairsDir = File(userHome, ".ampairs")
-        if (!ampairsDir.exists()) {
-            ampairsDir.mkdirs()
+        try {
+            // Use DataDirectoryManager for consistent data location
+            val prefsDir = com.ampairs.common.desktop.DataDirectoryManager.getPreferencesDir()
+            File(prefsDir, appDataStoreFileName).absolutePath
+        } catch (_: IllegalStateException) {
+            // Fallback to temp directory if data directory not set (initialization phase)
+            val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs/preferences")
+            tempDir.mkdirs()
+            println("WARNING: Using temporary preferences directory: ${tempDir.absolutePath}")
+            File(tempDir, appDataStoreFileName).absolutePath
         }
-        File(ampairsDir, appDataStoreFileName).absolutePath
     }
 )
