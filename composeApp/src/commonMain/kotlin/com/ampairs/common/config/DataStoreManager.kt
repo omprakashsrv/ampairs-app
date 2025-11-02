@@ -2,6 +2,7 @@ package com.ampairs.common.config
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import com.ampairs.common.concurrency.synchronized
 
 /**
  * Manages DataStore instances per workspace to ensure singleton behavior per workspace.

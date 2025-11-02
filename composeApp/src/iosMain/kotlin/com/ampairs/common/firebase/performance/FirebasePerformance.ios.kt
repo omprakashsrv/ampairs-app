@@ -17,6 +17,7 @@ actual class FirebasePerformance {
 
     actual fun newTrace(traceName: String): Trace {
         val iosTrace = performance.traceWithName(traceName)
+            ?: throw IllegalStateException("Failed to create Firebase trace: $traceName")
         return Trace(iosTrace)
     }
 }
