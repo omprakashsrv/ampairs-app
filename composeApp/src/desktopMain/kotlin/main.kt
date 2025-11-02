@@ -18,6 +18,8 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 // import com.ampairs.tally.TallyApp
 import com.ampairs.auth.deeplink.DeepLinkHandler
+import com.ampairs.common.desktop.DataDirectoryManager
+import com.ampairs.common.desktop.DataDirectoryPickerDialog
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.DynamicModulesMenu
 import coil3.compose.LocalPlatformContext
@@ -30,6 +32,29 @@ import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.get
 
 fun main() = application {
+    // Check if data directory is set before initializing Koin
+    var showDataDirectoryPicker by remember { mutableStateOf(!DataDirectoryManager.isDataDirectorySet()) }
+    var dataDirectoryReady by remember { mutableStateOf(DataDirectoryManager.isDataDirectorySet()) }
+
+    // Show data directory picker if not set
+    if (showDataDirectoryPicker) {
+        DataDirectoryPickerDialog(
+            onDirectorySelected = { directory ->
+                println("Main: Data directory selected: ${directory.absolutePath}")
+                showDataDirectoryPicker = false
+                dataDirectoryReady = true
+            },
+            onDismiss = {
+                // User must select a directory - don't allow dismissing
+                println("Main: Data directory selection is required")
+            }
+        )
+    }
+
+    // Only proceed with app initialization if data directory is ready
+    if (!dataDirectoryReady) {
+        return@application
+    }
     if (GlobalContext.getOrNull() == null) {
         val koinApplication = startKoin {}
         initKoin(koinApplication)

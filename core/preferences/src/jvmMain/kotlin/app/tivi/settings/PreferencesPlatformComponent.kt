@@ -14,17 +14,19 @@ actual interface PreferencesPlatformComponent {
     @Provides
     fun provideDataStore(): DataStore<androidx.datastore.preferences.core.Preferences> =
         createDataStore(
-            producePath = { getDatabaseDir().absolutePath }
+            producePath = { getPreferencesDir().absolutePath }
         )
 }
 
-private fun getDatabaseDir(): File {
-    val ApplicationName = "ampairs"
-    return when (currentOperatingSystem) {
-        OperatingSystem.Windows -> File(System.getenv("AppData"), "$ApplicationName")
-        OperatingSystem.Linux -> File(System.getProperty("user.home"), "$ApplicationName")
-        OperatingSystem.MacOS -> File(System.getProperty("user.home"), "$ApplicationName")
-        else -> throw IllegalStateException("Unsupported operating system")
+private fun getPreferencesDir(): File {
+    return try {
+        com.ampairs.common.desktop.DataDirectoryManager.getPreferencesDir()
+    } catch (e: IllegalStateException) {
+        // Fallback for early initialization
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs/preferences")
+        tempDir.mkdirs()
+        println("WARNING: Using temporary preferences directory: ${tempDir.absolutePath}")
+        tempDir
     }
 }
 
