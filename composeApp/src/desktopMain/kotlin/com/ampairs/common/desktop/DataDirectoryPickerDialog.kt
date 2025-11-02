@@ -1,5 +1,7 @@
 package com.ampairs.common.desktop
 
+import OperatingSystem
+import currentOperatingSystem
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -7,8 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogState
+import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.window.rememberDialogState
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.UIManager
@@ -31,10 +33,12 @@ fun DataDirectoryPickerDialog(
     var isSelecting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    Dialog(
+    val dialogState = rememberDialogState(width = 600.dp, height = 400.dp)
+
+    DialogWindow(
         onCloseRequest = { onDismiss?.invoke() },
         title = "Select Data Directory - Ampairs",
-        state = DialogState(width = 600.dp, height = 400.dp),
+        state = dialogState,
         resizable = false
     ) {
         Surface(
@@ -201,7 +205,7 @@ private fun showDirectoryChooser(): File? {
     // Set system look and feel for native appearance
     try {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         // Ignore - will use default LAF
     }
 
