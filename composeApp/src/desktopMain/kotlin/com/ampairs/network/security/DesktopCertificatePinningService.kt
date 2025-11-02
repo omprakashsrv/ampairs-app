@@ -145,16 +145,16 @@ class DesktopCertificateStorage : CertificateStorage {
                 // Use DataDirectoryManager for consistent storage location
                 com.ampairs.common.desktop.DataDirectoryManager.getDataDirectory()
                     ?: run {
-                        // Fallback to temp directory if data directory not set
-                        val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs")
-                        tempDir.mkdirs()
-                        tempDir
+                        // Fallback to user.home if data directory not set
+                        val fallbackDir = File(System.getProperty("user.home"), ".ampairs")
+                        fallbackDir.mkdirs()
+                        fallbackDir
                     }
             } catch (e: Exception) {
-                // Last resort fallback
-                val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs")
-                tempDir.mkdirs()
-                tempDir
+                // Last resort fallback to user.home
+                val fallbackDir = File(System.getProperty("user.home"), ".ampairs")
+                fallbackDir.mkdirs()
+                fallbackDir
             }
         }
 

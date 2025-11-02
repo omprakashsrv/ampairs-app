@@ -61,11 +61,11 @@ class DesktopFileManager : PlatformFileManager {
 
             customerCacheDir.absolutePath
         } catch (e: IllegalStateException) {
-            // Fallback to temp directory if data directory not set (initialization phase)
-            val tempCacheDir = File(System.getProperty("java.io.tmpdir"), "ampairs/cache/customer_images")
-            tempCacheDir.mkdirs()
-            println("WARNING: Using temporary customer cache directory: ${tempCacheDir.absolutePath}")
-            tempCacheDir.absolutePath
+            // Fallback to user.home if data directory not set (initialization phase)
+            val fallbackCacheDir = File(System.getProperty("user.home"), ".ampairs/cache/customer_images")
+            fallbackCacheDir.mkdirs()
+            println("WARNING: Using fallback customer cache directory: ${fallbackCacheDir.absolutePath}")
+            fallbackCacheDir.absolutePath
         }
     }
 

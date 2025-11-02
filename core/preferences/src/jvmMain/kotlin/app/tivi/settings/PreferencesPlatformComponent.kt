@@ -22,11 +22,11 @@ private fun getPreferencesDir(): File {
     return try {
         com.ampairs.common.desktop.DataDirectoryManager.getPreferencesDir()
     } catch (e: IllegalStateException) {
-        // Fallback for early initialization
-        val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs/preferences")
-        tempDir.mkdirs()
-        println("WARNING: Using temporary preferences directory: ${tempDir.absolutePath}")
-        tempDir
+        // Fallback to user.home for early initialization
+        val fallbackDir = File(System.getProperty("user.home"), ".ampairs/preferences")
+        fallbackDir.mkdirs()
+        println("WARNING: Using fallback preferences directory: ${fallbackDir.absolutePath}")
+        fallbackDir
     }
 }
 

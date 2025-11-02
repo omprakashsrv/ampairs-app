@@ -12,7 +12,6 @@ val businessPlatformModule: Module = module {
     factory<BusinessDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
         factory.createAndroidDatabase(
-            klass = BusinessDatabase::class,
             context = androidContext(),
             queryDispatcher = Dispatchers.IO,
             moduleName = "business"

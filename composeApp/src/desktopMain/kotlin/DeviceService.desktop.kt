@@ -56,16 +56,16 @@ class DesktopDeviceService() : DeviceService {
             if (dataDir != null) {
                 File(dataDir, "device_id")
             } else {
-                // Fallback to temp directory if data directory not set (initialization phase)
-                val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs")
-                tempDir.mkdirs()
-                File(tempDir, "device_id")
+                // Fallback to user.home if data directory not set (initialization phase)
+                val fallbackDir = File(System.getProperty("user.home"), ".ampairs")
+                fallbackDir.mkdirs()
+                File(fallbackDir, "device_id")
             }
         } catch (e: Exception) {
-            // Last resort fallback
-            val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs")
-            tempDir.mkdirs()
-            File(tempDir, "device_id")
+            // Last resort fallback to user.home
+            val fallbackDir = File(System.getProperty("user.home"), ".ampairs")
+            fallbackDir.mkdirs()
+            File(fallbackDir, "device_id")
         }
     }
 

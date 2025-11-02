@@ -87,12 +87,12 @@ private fun getCacheDir(): File {
     return try {
         com.ampairs.common.desktop.DataDirectoryManager.getCacheDir()
     } catch (e: IllegalStateException) {
-        // Fallback to temp directory if DataDirectoryManager not initialized
+        // Fallback to user.home if DataDirectoryManager not initialized
         // This should only happen during early initialization
-        val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs/cache")
-        tempDir.mkdirs()
-        println("WARNING: Using temporary cache directory: ${tempDir.absolutePath}")
-        tempDir
+        val fallbackDir = File(System.getProperty("user.home"), ".ampairs/cache")
+        fallbackDir.mkdirs()
+        println("WARNING: Using fallback cache directory: ${fallbackDir.absolutePath}")
+        fallbackDir
     }
 }
 

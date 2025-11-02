@@ -14,11 +14,11 @@ fun createAppDataStore(): DataStore<Preferences> = createAppDataStore(
             val prefsDir = com.ampairs.common.desktop.DataDirectoryManager.getPreferencesDir()
             File(prefsDir, appDataStoreFileName).absolutePath
         } catch (_: IllegalStateException) {
-            // Fallback to temp directory if data directory not set (initialization phase)
-            val tempDir = File(System.getProperty("java.io.tmpdir"), "ampairs/preferences")
-            tempDir.mkdirs()
-            println("WARNING: Using temporary preferences directory: ${tempDir.absolutePath}")
-            File(tempDir, appDataStoreFileName).absolutePath
+            // Fallback to user.home if data directory not set (initialization phase)
+            val fallbackDir = File(System.getProperty("user.home"), ".ampairs/preferences")
+            fallbackDir.mkdirs()
+            println("WARNING: Using fallback preferences directory: ${fallbackDir.absolutePath}")
+            File(fallbackDir, appDataStoreFileName).absolutePath
         }
     }
 )
