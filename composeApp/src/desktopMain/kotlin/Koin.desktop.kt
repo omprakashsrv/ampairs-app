@@ -84,26 +84,28 @@ fun generateImageLoader(): ImageLoader {
 
 // about currentOperatingSystem, see app
 private fun getCacheDir(): File {
-    val ApplicationName = "ampairs"
-    return when (currentOperatingSystem) {
-        OperatingSystem.Windows -> File(System.getenv("AppData"), "$ApplicationName/cache")
-        OperatingSystem.Linux -> File(System.getProperty("user.home"), ".cache/$ApplicationName")
-        OperatingSystem.MacOS -> File(
-            System.getProperty("user.home"),
-            "Library/Caches/$ApplicationName"
-        )
-
-        else -> throw IllegalStateException("Unsupported operating system")
+    return try {
+        com.ampairs.common.desktop.DataDirectoryManager.getCacheDir()
+    } catch (e: IllegalStateException) {
+        // Fallback to user.home if DataDirectoryManager not initialized
+        // This should only happen during early initialization
+        val fallbackDir = File(System.getProperty("user.home"), ".ampairs/cache")
+        fallbackDir.mkdirs()
+        println("WARNING: Using fallback cache directory: ${fallbackDir.absolutePath}")
+        fallbackDir
     }
 }
 
 fun getDatabaseDir(): File {
-    val ApplicationName = "ampairs"
-    return when (currentOperatingSystem) {
-        OperatingSystem.Windows -> File(System.getenv("AppData"), "$ApplicationName")
-        OperatingSystem.Linux -> File(System.getProperty("user.home"), "$ApplicationName")
-        OperatingSystem.MacOS -> File(System.getProperty("user.home"), "$ApplicationName")
-        else -> throw IllegalStateException("Unsupported operating system")
+    return try {
+        com.ampairs.common.desktop.DataDirectoryManager.getDatabaseDir()
+    } catch (e: IllegalStateException) {
+        // This should never happen in normal flow as data directory selection
+        // happens before Koin initialization
+        throw IllegalStateException(
+            "Data directory not set. This indicates an initialization order problem.",
+            e
+        )
     }
 }
 

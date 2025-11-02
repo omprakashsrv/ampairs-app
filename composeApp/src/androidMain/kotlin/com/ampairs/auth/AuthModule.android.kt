@@ -31,7 +31,8 @@ val authPlatformModule: Module = module {
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
-            .fallbackToDestructiveMigration(true)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
+            .enableMultiInstanceInvalidation() // Support multi-process scenarios
             .build()
     }
     

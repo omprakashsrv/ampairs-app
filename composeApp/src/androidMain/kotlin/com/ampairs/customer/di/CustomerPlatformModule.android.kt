@@ -16,7 +16,6 @@ actual val customerPlatformModule = module {
     factory<CustomerDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
         factory.createAndroidDatabase(
-            klass = CustomerDatabase::class,
             context = androidContext(),
             queryDispatcher = Dispatchers.IO,
             moduleName = "customer"

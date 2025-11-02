@@ -14,17 +14,19 @@ actual interface PreferencesPlatformComponent {
     @Provides
     fun provideDataStore(): DataStore<androidx.datastore.preferences.core.Preferences> =
         createDataStore(
-            producePath = { getDatabaseDir().absolutePath }
+            producePath = { getPreferencesDir().absolutePath }
         )
 }
 
-private fun getDatabaseDir(): File {
-    val ApplicationName = "ampairs"
-    return when (currentOperatingSystem) {
-        OperatingSystem.Windows -> File(System.getenv("AppData"), "$ApplicationName")
-        OperatingSystem.Linux -> File(System.getProperty("user.home"), "$ApplicationName")
-        OperatingSystem.MacOS -> File(System.getProperty("user.home"), "$ApplicationName")
-        else -> throw IllegalStateException("Unsupported operating system")
+private fun getPreferencesDir(): File {
+    return try {
+        com.ampairs.common.desktop.DataDirectoryManager.getPreferencesDir()
+    } catch (e: IllegalStateException) {
+        // Fallback to user.home for early initialization
+        val fallbackDir = File(System.getProperty("user.home"), ".ampairs/preferences")
+        fallbackDir.mkdirs()
+        println("WARNING: Using fallback preferences directory: ${fallbackDir.absolutePath}")
+        fallbackDir
     }
 }
 

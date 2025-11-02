@@ -9,7 +9,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 @OptIn(ExperimentalForeignApi::class)
 actual class FirebaseAnalytics {
     actual fun logEvent(eventName: String, params: Map<String, Any>?) {
-        val parameters = params?.mapValues { (_, value) ->
+        val parameters: Map<Any?, Any?>? = params?.mapKeys { it.key as Any? }?.mapValues { (_, value) ->
             when (value) {
                 is String -> value
                 is Int -> value
@@ -18,7 +18,7 @@ actual class FirebaseAnalytics {
                 is Boolean -> value
                 is Float -> value
                 else -> value.toString()
-            }
+            } as Any?
         }
         FIRAnalytics.logEventWithName(eventName, parameters)
     }

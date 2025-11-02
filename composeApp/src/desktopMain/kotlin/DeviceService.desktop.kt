@@ -50,13 +50,23 @@ class DesktopDeviceService() : DeviceService {
     }
 
     private fun getDeviceIdFile(): File {
-        val userHome = System.getProperty("user.home")
-        val appDir = when (getPlatform()) {
-            "Windows" -> File(userHome, "AppData\\Local\\Ampairs")
-            "macOS" -> File(userHome, "Library/Application Support/Ampairs")
-            else -> File(userHome, ".ampairs")
+        return try {
+            // Use DataDirectoryManager for consistent data location
+            val dataDir = com.ampairs.common.desktop.DataDirectoryManager.getDataDirectory()
+            if (dataDir != null) {
+                File(dataDir, "device_id")
+            } else {
+                // Fallback to user.home if data directory not set (initialization phase)
+                val fallbackDir = File(System.getProperty("user.home"), ".ampairs")
+                fallbackDir.mkdirs()
+                File(fallbackDir, "device_id")
+            }
+        } catch (e: Exception) {
+            // Last resort fallback to user.home
+            val fallbackDir = File(System.getProperty("user.home"), ".ampairs")
+            fallbackDir.mkdirs()
+            File(fallbackDir, "device_id")
         }
-        return File(appDir, "device_id")
     }
 
     private fun generateFingerprint(): String {

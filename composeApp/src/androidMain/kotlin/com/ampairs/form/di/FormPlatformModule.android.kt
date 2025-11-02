@@ -12,7 +12,6 @@ actual val formPlatformModule = module {
     factory<FormDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
         factory.createAndroidDatabase(
-            klass = FormDatabase::class,
             context = androidContext(),
             queryDispatcher = Dispatchers.IO,
             moduleName = "form"

@@ -50,22 +50,23 @@ class DesktopFileManager : PlatformFileManager {
     }
 
     override suspend fun getCacheDirectory(): String = withContext(Dispatchers.IO) {
-        val applicationName = "ampairs"
-        val cacheDir = when (currentOperatingSystem) {
-            OperatingSystem.Windows -> File(System.getenv("AppData"), "$applicationName/customer_images")
-            OperatingSystem.Linux -> File(System.getProperty("user.home"), ".cache/$applicationName/customer_images")
-            OperatingSystem.MacOS -> File(
-                System.getProperty("user.home"),
-                "Library/Caches/$applicationName/customer_images"
-            )
-            else -> throw IllegalStateException("Unsupported operating system")
-        }
+        try {
+            // Use DataDirectoryManager for consistent cache location
+            val baseCacheDir = com.ampairs.common.desktop.DataDirectoryManager.getCacheDir()
+            val customerCacheDir = File(baseCacheDir, "customer_images")
 
-        if (!cacheDir.exists()) {
-            cacheDir.mkdirs()
-        }
+            if (!customerCacheDir.exists()) {
+                customerCacheDir.mkdirs()
+            }
 
-        cacheDir.absolutePath
+            customerCacheDir.absolutePath
+        } catch (e: IllegalStateException) {
+            // Fallback to user.home if data directory not set (initialization phase)
+            val fallbackCacheDir = File(System.getProperty("user.home"), ".ampairs/cache/customer_images")
+            fallbackCacheDir.mkdirs()
+            println("WARNING: Using fallback customer cache directory: ${fallbackCacheDir.absolutePath}")
+            fallbackCacheDir.absolutePath
+        }
     }
 
     override suspend fun readFile(filePath: String): ByteArray = withContext(Dispatchers.IO) {

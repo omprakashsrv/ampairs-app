@@ -14,7 +14,6 @@ val tallyPlatformModule: Module = module {
     factory<TallyRoomDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
         factory.createAndroidDatabase(
-            klass = TallyRoomDatabase::class,
             context = androidContext(),
             queryDispatcher = Dispatchers.IO,
             moduleName = "tally"

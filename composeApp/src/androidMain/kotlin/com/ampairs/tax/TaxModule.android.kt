@@ -14,7 +14,6 @@ val taxPlatformModule: Module = module {
     factory<TaxRoomDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
         factory.createAndroidDatabase(
-            klass = TaxRoomDatabase::class,
             context = androidContext(),
             queryDispatcher = Dispatchers.IO,
             moduleName = "tax"
