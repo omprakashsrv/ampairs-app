@@ -3,6 +3,8 @@ package com.ampairs.common.desktop
 import OperatingSystem
 import currentOperatingSystem
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,13 +33,14 @@ fun DataDirectoryPickerDialog(
     var isSelecting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val dialogState = rememberDialogState(width = 600.dp, height = 400.dp)
+    val dialogState = rememberDialogState(width = 650.dp, height = 650.dp)
+    val scrollState = rememberScrollState()
 
     DialogWindow(
         onCloseRequest = { onDismiss?.invoke() },
         title = "Select Data Directory - Ampairs",
         state = dialogState,
-        resizable = false
+        resizable = true
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -46,6 +49,7 @@ fun DataDirectoryPickerDialog(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(scrollState)
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
