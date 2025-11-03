@@ -10,6 +10,7 @@ import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.db.UserWorkspaceRepositoryImpl
 import com.ampairs.auth.firebase.FirebaseAuthRepository
 import com.ampairs.auth.ui.LoginScope
+import com.ampairs.auth.viewmodel.AccountDeletionViewModel
 import com.ampairs.auth.viewmodel.DeviceManagementViewModel
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.auth.viewmodel.UserSelectionViewModel
@@ -38,6 +39,7 @@ val authModule: Module = module {
     viewModelOf(::DeviceManagementViewModel)
     viewModelOf(::UserUpdateViewModel)
     viewModelOf(::UserSelectionViewModel)
+    viewModelOf(::AccountDeletionViewModel)
 
     scope<LoginScope> {
         scoped { LoginViewModel(get(), get(), get(), get(), get()) }

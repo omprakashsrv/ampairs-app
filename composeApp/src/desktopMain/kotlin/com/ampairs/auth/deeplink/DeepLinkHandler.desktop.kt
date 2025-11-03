@@ -252,7 +252,7 @@ object DeepLinkHandler {
      * Open browser to authentication URL
      * URL is determined by current environment configuration:
      * - DEV: http://localhost:4200/login?client=desktop
-     * - PRODUCTION: https://app.ampairs.com/login?client=desktop
+     * - PRODUCTION: https://app.ampairs.in/login?client=desktop
      *
      * Query parameters added:
      * - client=desktop: Indicates this is a desktop client authentication
@@ -270,7 +270,7 @@ object DeepLinkHandler {
                 ?: "dev"
 
             val defaultBaseUrl = when (envProperty.lowercase()) {
-                "production", "prod", "release" -> "https://app.ampairs.com/login"
+                "production", "prod", "release" -> "https://app.ampairs.in/login"
                 else -> "http://localhost:4200/login"
             }
 

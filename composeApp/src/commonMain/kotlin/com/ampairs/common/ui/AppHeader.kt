@@ -37,6 +37,7 @@ fun AppHeader(
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onSwitchUser: () -> Unit,
+    onDeleteAccount: () -> Unit,
     onNavigationDrawerClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -134,7 +135,8 @@ fun AppHeader(
                     isLoading = isUserLoading,
                     onEditProfile = onEditProfile,
                     onLogout = onLogout,
-                    onSwitchUser = onSwitchUser
+                    onSwitchUser = onSwitchUser,
+                    onDeleteAccount = onDeleteAccount
                 )
             }
         }
@@ -277,6 +279,7 @@ private fun UserProfileMenu(
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onSwitchUser: () -> Unit,
+    onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -344,6 +347,21 @@ private fun UserProfileMenu(
                 onClick = {
                     expanded = false
                     onSwitchUser()
+                }
+            )
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                thickness = 0.5.dp
+            )
+
+            ProfileMenuItem(
+                icon = Icons.Default.Delete,
+                text = "Delete Account",
+                textColor = MaterialTheme.colorScheme.error,
+                onClick = {
+                    expanded = false
+                    onDeleteAccount()
                 }
             )
 

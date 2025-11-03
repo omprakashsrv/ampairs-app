@@ -11,6 +11,7 @@ import androidx.navigation.toRoute
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.domain.LoginStatus
+import com.ampairs.auth.ui.AccountDeletionScreen
 import com.ampairs.auth.ui.LoginScreen
 import com.ampairs.auth.ui.OtpScreen
 import com.ampairs.auth.ui.PhoneScreen
@@ -212,6 +213,26 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                 }
             }
         }
+    }
+
+    // Account deletion screen - accessible from authenticated screens
+    composable<AuthRoute.AccountDeletion> {
+        val tokenRepository = koinInject<TokenRepository>()
+
+        AccountDeletionScreen(
+            onDeletionSuccess = {
+                // Account deleted successfully, logout user
+                kotlinx.coroutines.runBlocking {
+                    tokenRepository.clearTokens()
+                    navigator.navigate(Route.Login) {
+                        popUpTo(0) // Clear entire back stack
+                    }
+                }
+            },
+            onNavigateBack = {
+                navigator.navigateUp()
+            }
+        )
     }
 }
 
