@@ -24,7 +24,7 @@ actual object PlatformConfig {
             }
             Environment.PRODUCTION -> {
                 bundle.objectForInfoDictionaryKey("AMPAIRS_API_BASE_URL") as? String
-                    ?: "https://api.ampairs.com"
+                    ?: "https://api.ampairs.in"
             }
         }
 

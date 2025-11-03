@@ -238,7 +238,7 @@ android {
             signingConfig = signingConfigs["release"]
         }
         val release by getting {
-            buildConfigField("String", "API_BASE_URL", "\"https://api.ampairs.com\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.ampairs.in\"")
             buildConfigField("String", "ENVIRONMENT", "\"production\"")
             isMinifyEnabled = true
             proguardFiles(
