@@ -25,6 +25,7 @@ fun AppScreenLayout(
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onSwitchUser: () -> Unit,
+    onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable (PaddingValues) -> Unit,
 ) {
@@ -75,6 +76,7 @@ fun AppScreenLayout(
                         onEditProfile = onEditProfile,
                         onLogout = onLogout,
                         onSwitchUser = onSwitchUser,
+                        onDeleteAccount = onDeleteAccount,
                         onNavigationDrawerClick = {
                             // Open the drawer when hamburger menu is clicked
                             scope.launch {
@@ -103,6 +105,7 @@ fun AppScreenLayout(
                     onEditProfile = onEditProfile,
                     onLogout = onLogout,
                     onSwitchUser = onSwitchUser,
+                    onDeleteAccount = onDeleteAccount,
                 )
             }
         ) { paddingValues ->

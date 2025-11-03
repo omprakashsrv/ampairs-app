@@ -1,5 +1,8 @@
 package com.ampairs.auth.api
 
+import com.ampairs.auth.api.model.AccountDeletionRequest
+import com.ampairs.auth.api.model.AccountDeletionResponse
+import com.ampairs.auth.api.model.AccountDeletionStatus
 import com.ampairs.auth.api.model.AuthComplete
 import com.ampairs.auth.api.model.AuthInit
 import com.ampairs.auth.api.model.AuthInitResponse
@@ -73,6 +76,18 @@ class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRe
 
     override suspend fun logoutAllDevices(): Response<GenericSuccess> {
         return post(client, ApiUrlBuilder.authUrl("auth/v1/logout/all"), null)
+    }
+
+    override suspend fun requestAccountDeletion(request: AccountDeletionRequest): Response<AccountDeletionResponse> {
+        return post(client, ApiUrlBuilder.apiUrl("v1/account/delete-request"), request)
+    }
+
+    override suspend fun cancelAccountDeletion(): Response<AccountDeletionResponse> {
+        return post(client, ApiUrlBuilder.apiUrl("v1/account/delete-cancel"), null)
+    }
+
+    override suspend fun getAccountDeletionStatus(): Response<AccountDeletionStatus> {
+        return get(client, ApiUrlBuilder.apiUrl("v1/account/delete-status"))
     }
 
     override fun clearToken() {

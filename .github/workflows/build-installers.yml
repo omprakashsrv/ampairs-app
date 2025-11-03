@@ -11,6 +11,7 @@ on:
 env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'temurin'
+  AMPAIRS_ENVIRONMENT: 'production'  # Set environment for all builds
 
 jobs:
   # ============================

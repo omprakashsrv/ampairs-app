@@ -57,6 +57,9 @@ sealed interface AuthRoute {
     data object UserUpdate : AuthRoute
 
     @Serializable
+    data object AccountDeletion : AuthRoute
+
+    @Serializable
     data object DesktopBrowserAuth : AuthRoute  // Desktop browser-based authentication
 }
 

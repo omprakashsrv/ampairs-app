@@ -171,6 +171,10 @@ fun AppScreenWithHeader(
                 launchSingleTop = true
             }
         },
+        onDeleteAccount = {
+            // Navigate to account deletion screen
+            navController.navigate(AuthRoute.AccountDeletion)
+        },
         modifier = modifier,
         content = content
     )

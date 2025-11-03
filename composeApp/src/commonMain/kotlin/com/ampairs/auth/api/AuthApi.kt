@@ -1,5 +1,8 @@
 package com.ampairs.auth.api
 
+import com.ampairs.auth.api.model.AccountDeletionRequest
+import com.ampairs.auth.api.model.AccountDeletionResponse
+import com.ampairs.auth.api.model.AccountDeletionStatus
 import com.ampairs.auth.api.model.AuthComplete
 import com.ampairs.auth.api.model.AuthInit
 import com.ampairs.auth.api.model.AuthInitResponse
@@ -30,6 +33,12 @@ interface AuthApi {
     suspend fun logoutDevice(deviceId: String): Response<GenericSuccess>
 
     suspend fun logoutAllDevices(): Response<GenericSuccess>
+
+    suspend fun requestAccountDeletion(request: AccountDeletionRequest): Response<AccountDeletionResponse>
+
+    suspend fun cancelAccountDeletion(): Response<AccountDeletionResponse>
+
+    suspend fun getAccountDeletionStatus(): Response<AccountDeletionStatus>
 
     fun clearToken()
 
