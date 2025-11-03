@@ -16,7 +16,7 @@ import io.ktor.client.HttpClient
  *     deviceId = "device-uid",
  *     httpClient = httpClient,
  *     tokenProvider = { authRepository.getAccessToken() },
- *     baseUrl = "http://api.ampairs.com"
+ *     baseUrl = "http://api.ampairs.in"
  * )
  *
  * // Connect
