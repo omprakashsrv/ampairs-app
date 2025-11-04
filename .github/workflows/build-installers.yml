@@ -102,12 +102,28 @@ jobs:
           echo "msi_name=$(Split-Path -Leaf $MSI_FILE)" >> $env:GITHUB_OUTPUT
         shell: pwsh
 
-      - name: Upload MSI artifact
-        uses: actions/upload-artifact@v4
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          name: Ampairs-Windows-MSI
-          path: ${{ steps.find-msi.outputs.msi_path }}
-          retention-days: 30
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload MSI to S3
+        run: |
+          $MSI_FILE = "${{ steps.find-msi.outputs.msi_path }}"
+          $MSI_NAME = "${{ steps.find-msi.outputs.msi_name }}"
+          $S3_BUCKET = "${{ secrets.S3_BUCKET_NAME }}"
+          $S3_PATH = "releases/windows/$MSI_NAME"
+
+          Write-Host "Uploading $MSI_NAME to S3://$S3_BUCKET/$S3_PATH"
+          aws s3 cp $MSI_FILE "s3://$S3_BUCKET/$S3_PATH" --acl public-read
+
+          $S3_URL = "https://$S3_BUCKET.s3.amazonaws.com/$S3_PATH"
+          Write-Host "MSI uploaded successfully to: $S3_URL"
+          echo "s3_url=$S3_URL" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+        id: s3-upload
 
   # ============================
   # Build Linux DEB Installer (DISABLED)
