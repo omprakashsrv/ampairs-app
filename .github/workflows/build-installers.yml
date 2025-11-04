@@ -15,52 +15,52 @@ env:
 
 jobs:
   # ============================
-  # Build macOS DMG Installer
+  # Build macOS DMG Installer (DISABLED)
   # ============================
-  build-macos:
-    name: Build macOS DMG
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.konan
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build DMG package
-        run: ./gradlew packageDmg
-
-      - name: Find DMG file
-        id: find-dmg
-        run: |
-          DMG_FILE=$(find composeApp/build/compose/binaries/main/dmg -name "*.dmg" | head -n 1)
-          echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
-          echo "dmg_name=$(basename $DMG_FILE)" >> $GITHUB_OUTPUT
-
-      - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Ampairs-macOS-DMG
-          path: ${{ steps.find-dmg.outputs.dmg_path }}
-          retention-days: 30
+  # build-macos:
+  #   name: Build macOS DMG
+  #   runs-on: macos-latest
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up JDK ${{ env.JAVA_VERSION }}
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: ${{ env.JAVA_DISTRIBUTION }}
+  #         java-version: ${{ env.JAVA_VERSION }}
+  #
+  #     - name: Cache Gradle packages
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.gradle/caches
+  #           ~/.gradle/wrapper
+  #           ~/.konan
+  #         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-gradle-
+  #
+  #     - name: Make gradlew executable
+  #       run: chmod +x ./gradlew
+  #
+  #     - name: Build DMG package
+  #       run: ./gradlew packageDmg
+  #
+  #     - name: Find DMG file
+  #       id: find-dmg
+  #       run: |
+  #         DMG_FILE=$(find composeApp/build/compose/binaries/main/dmg -name "*.dmg" | head -n 1)
+  #         echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
+  #         echo "dmg_name=$(basename $DMG_FILE)" >> $GITHUB_OUTPUT
+  #
+  #     - name: Upload DMG artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Ampairs-macOS-DMG
+  #         path: ${{ steps.find-dmg.outputs.dmg_path }}
+  #         retention-days: 30
 
   # ============================
   # Build Windows MSI Installer
@@ -110,132 +110,132 @@ jobs:
           retention-days: 30
 
   # ============================
-  # Build Linux DEB Installer
+  # Build Linux DEB Installer (DISABLED)
   # ============================
-  build-linux:
-    name: Build Linux DEB
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.konan
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build DEB package
-        run: ./gradlew packageDeb
-
-      - name: Find DEB file
-        id: find-deb
-        run: |
-          DEB_FILE=$(find composeApp/build/compose/binaries/main/deb -name "*.deb" | head -n 1)
-          echo "deb_path=$DEB_FILE" >> $GITHUB_OUTPUT
-          echo "deb_name=$(basename $DEB_FILE)" >> $GITHUB_OUTPUT
-
-      - name: Upload DEB artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Ampairs-Linux-DEB
-          path: ${{ steps.find-deb.outputs.deb_path }}
-          retention-days: 30
+  # build-linux:
+  #   name: Build Linux DEB
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up JDK ${{ env.JAVA_VERSION }}
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: ${{ env.JAVA_DISTRIBUTION }}
+  #         java-version: ${{ env.JAVA_VERSION }}
+  #
+  #     - name: Cache Gradle packages
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.gradle/caches
+  #           ~/.gradle/wrapper
+  #           ~/.konan
+  #         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-gradle-
+  #
+  #     - name: Make gradlew executable
+  #       run: chmod +x ./gradlew
+  #
+  #     - name: Build DEB package
+  #       run: ./gradlew packageDeb
+  #
+  #     - name: Find DEB file
+  #       id: find-deb
+  #       run: |
+  #         DEB_FILE=$(find composeApp/build/compose/binaries/main/deb -name "*.deb" | head -n 1)
+  #         echo "deb_path=$DEB_FILE" >> $GITHUB_OUTPUT
+  #         echo "deb_name=$(basename $DEB_FILE)" >> $GITHUB_OUTPUT
+  #
+  #     - name: Upload DEB artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Ampairs-Linux-DEB
+  #         path: ${{ steps.find-deb.outputs.deb_path }}
+  #         retention-days: 30
 
   # ============================
-  # Build Android APK and AAB
+  # Build Android APK and AAB (DISABLED)
   # ============================
-  build-android:
-    name: Build Android APK/AAB
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 11076708
-
-      - name: Install Android SDK components
-        run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          echo "y" | sdkmanager --licenses
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            ~/.konan
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Decode and setup keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > ampairs.jks
-            echo "Keystore decoded successfully"
-          else
-            echo "Warning: ANDROID_KEYSTORE_BASE64 secret not set. Build may fail if signing is required."
-          fi
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build Release APK
-        run: ./gradlew composeApp:assembleRelease
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-
-      - name: Build Release AAB
-        run: ./gradlew composeApp:bundleRelease
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Ampairs-Android-APK
-          path: composeApp/build/outputs/apk/release/*.apk
-          retention-days: 30
-
-      - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Ampairs-Android-AAB
-          path: composeApp/build/outputs/bundle/release/*.aab
-          retention-days: 30
+  # build-android:
+  #   name: Build Android APK/AAB
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up JDK ${{ env.JAVA_VERSION }}
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         distribution: ${{ env.JAVA_DISTRIBUTION }}
+  #         java-version: ${{ env.JAVA_VERSION }}
+  #
+  #     - name: Set up Android SDK
+  #       uses: android-actions/setup-android@v3
+  #       with:
+  #         cmdline-tools-version: 11076708
+  #
+  #     - name: Install Android SDK components
+  #       run: |
+  #         sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+  #         echo "y" | sdkmanager --licenses
+  #
+  #     - name: Cache Gradle packages
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.gradle/caches
+  #           ~/.gradle/wrapper
+  #           ~/.konan
+  #         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-gradle-
+  #
+  #     - name: Decode and setup keystore
+  #       env:
+  #         KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+  #       run: |
+  #         if [ -n "$KEYSTORE_BASE64" ]; then
+  #           echo "$KEYSTORE_BASE64" | base64 -d > ampairs.jks
+  #           echo "Keystore decoded successfully"
+  #         else
+  #           echo "Warning: ANDROID_KEYSTORE_BASE64 secret not set. Build may fail if signing is required."
+  #         fi
+  #
+  #     - name: Make gradlew executable
+  #       run: chmod +x ./gradlew
+  #
+  #     - name: Build Release APK
+  #       run: ./gradlew composeApp:assembleRelease
+  #       env:
+  #         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+  #         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+  #         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+  #
+  #     - name: Build Release AAB
+  #       run: ./gradlew composeApp:bundleRelease
+  #       env:
+  #         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+  #         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+  #         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+  #
+  #     - name: Upload APK artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Ampairs-Android-APK
+  #         path: composeApp/build/outputs/apk/release/*.apk
+  #         retention-days: 30
+  #
+  #     - name: Upload AAB artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: Ampairs-Android-AAB
+  #         path: composeApp/build/outputs/bundle/release/*.aab
+  #         retention-days: 30
 
   # ============================
   # Create GitHub Release (Optional)
@@ -243,7 +243,7 @@ jobs:
   # ============================
   create-release:
     name: Create GitHub Release
-    needs: [build-macos, build-windows, build-linux, build-android]
+    needs: [build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
@@ -263,11 +263,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/Ampairs-macOS-DMG/*.dmg
             artifacts/Ampairs-Windows-MSI/*.msi
-            artifacts/Ampairs-Linux-DEB/*.deb
-            artifacts/Ampairs-Android-APK/*.apk
-            artifacts/Ampairs-Android-AAB/*.aab
           draft: false
           prerelease: false
           generate_release_notes: true
