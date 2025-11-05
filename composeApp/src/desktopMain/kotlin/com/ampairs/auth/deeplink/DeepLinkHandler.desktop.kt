@@ -1,8 +1,12 @@
 package com.ampairs.auth.deeplink
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import java.awt.Desktop
 import java.net.URI
 import java.net.URLDecoder
@@ -22,6 +26,7 @@ object DeepLinkHandler {
 
     private val _deepLinkEvents = MutableSharedFlow<DeepLinkEvent>(replay = 0)
     val deepLinkEvents: SharedFlow<DeepLinkEvent> = _deepLinkEvents.asSharedFlow()
+    private val emissionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private var isSetup = false
 
@@ -78,7 +83,7 @@ object DeepLinkHandler {
             handleDeepLink(uri)
         } catch (e: Exception) {
             println("DeepLinkHandler: Error processing deep link: ${e.message}")
-            kotlinx.coroutines.runBlocking {
+            emissionScope.launch {
                 _deepLinkEvents.emit(DeepLinkEvent.Error("Invalid deep link URL: ${e.message}"))
             }
         }
@@ -167,7 +172,7 @@ object DeepLinkHandler {
                 "auth" -> handleAuthCallback(uri)
                 else -> {
                     println("DeepLinkHandler: Unknown deep link host: ${uri.host}")
-                    kotlinx.coroutines.runBlocking {
+                    emissionScope.launch {
                         _deepLinkEvents.emit(DeepLinkEvent.Unknown(uri.toString()))
                     }
                 }
@@ -176,7 +181,7 @@ object DeepLinkHandler {
         } catch (e: Exception) {
             println("DeepLinkHandler: Error handling deep link: ${e.message}")
             e.printStackTrace()
-            kotlinx.coroutines.runBlocking {
+            emissionScope.launch {
                 _deepLinkEvents.emit(DeepLinkEvent.Error("Error handling deep link: ${e.message}"))
             }
         }
@@ -199,7 +204,7 @@ object DeepLinkHandler {
 
             if (accessToken.isNullOrBlank() || refreshToken.isNullOrBlank()) {
                 println("DeepLinkHandler: Missing required tokens in auth callback")
-                kotlinx.coroutines.runBlocking {
+                emissionScope.launch {
                     _deepLinkEvents.emit(
                         DeepLinkEvent.Error("Missing access_token or refresh_token in deep link")
                     )
@@ -208,7 +213,7 @@ object DeepLinkHandler {
             }
 
             // Emit authentication event
-            kotlinx.coroutines.runBlocking {
+            emissionScope.launch {
                 _deepLinkEvents.emit(
                     DeepLinkEvent.AuthCallback(
                         accessToken = accessToken,
@@ -222,7 +227,7 @@ object DeepLinkHandler {
         } catch (e: Exception) {
             println("DeepLinkHandler: Error processing auth callback: ${e.message}")
             e.printStackTrace()
-            kotlinx.coroutines.runBlocking {
+            emissionScope.launch {
                 _deepLinkEvents.emit(DeepLinkEvent.Error("Error processing auth callback: ${e.message}"))
             }
         }
@@ -267,7 +272,7 @@ object DeepLinkHandler {
             // Use provided URL, or system property/env var, or default based on environment
             val envProperty = System.getProperty("ampairs.environment")
                 ?: System.getenv("AMPAIRS_ENVIRONMENT")
-                ?: "dev"
+                ?: "production"
 
             val defaultBaseUrl = when (envProperty.lowercase()) {
                 "production", "prod", "release" -> "https://app.ampairs.in/login"
