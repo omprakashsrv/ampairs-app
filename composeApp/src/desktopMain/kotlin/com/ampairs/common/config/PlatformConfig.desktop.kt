@@ -19,7 +19,7 @@ actual object PlatformConfig {
         // Check system properties first, then environment variables, then defaults
         val envProperty = System.getProperty("ampairs.environment")
             ?: System.getenv("AMPAIRS_ENVIRONMENT")
-            ?: "dev"
+            ?: "production"
 
         val environment = Environment.fromString(envProperty)
 
