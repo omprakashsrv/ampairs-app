@@ -107,7 +107,7 @@ jobs:
         with:
           name: Ampairs-Windows-MSI
           path: ${{ steps.find-msi.outputs.msi_path }}
-          retention-days: 30
+          retention-days: 7
 
   # ============================
   # Build Linux DEB Installer (DISABLED)
