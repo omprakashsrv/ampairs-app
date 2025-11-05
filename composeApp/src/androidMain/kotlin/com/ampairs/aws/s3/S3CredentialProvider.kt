@@ -6,8 +6,8 @@ import aws.smithy.kotlin.runtime.collections.Attributes
 
 private const val PROVIDER_NAME = "SystemProperties"
 
-private val ACCESS_KEY_ID = "AKIA2N6MZHTD5YV4LNMC"
-private val SECRET_ACCESS_KEY = "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"
+private val ACCESS_KEY_ID = ""
+private val SECRET_ACCESS_KEY = ""
 private val SESSION_TOKEN = ""
 
 /**

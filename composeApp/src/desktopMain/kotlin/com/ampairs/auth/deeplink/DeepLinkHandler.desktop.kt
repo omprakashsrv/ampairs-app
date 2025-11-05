@@ -1,5 +1,6 @@
 package com.ampairs.auth.deeplink
 
+import com.ampairs.common.desktop.WindowsProtocolRegistrar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,6 +47,11 @@ object DeepLinkHandler {
                 println("DeepLinkHandler: Desktop API not supported on this platform")
                 return
             }
+
+            WindowsProtocolRegistrar.ensureRegistered(
+                protocol = "ampairs",
+                appName = "Ampairs"
+            )
 
             val desktop = Desktop.getDesktop()
 
