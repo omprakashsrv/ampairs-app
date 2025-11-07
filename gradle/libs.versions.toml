@@ -7,7 +7,7 @@ androidx-activity = "1.11.0"
 androidx-core = "1.17.0"
 
 compose-tooling = "1.7.6"
-compose-plugin = "1.9.2"
+compose-plugin = "1.9.3"
 kotlin = "2.2.21"
 ksp = "2.2.20-2.0.3"
 androidx-room = "2.8.3"
@@ -19,20 +19,20 @@ haze = "1.6.10"
 kotlinx-dateTime = "0.7.1"
 kotlinx = "1.10.2"
 
-ktor = "3.3.1"
+ktor = "3.3.2"
 koin = "4.1.1"
 koin-compose = "4.1.1"
 paging-common = "3.3.6"
 image-loader = "1.10.0"
 aws-sdk = "1.5.44"
 file-picker = "3.1.0"
-splash-screen = "1.2.0-rc01"
+splash-screen = "1.2.0"
 uuid = "0.8.4"
-adaptive = "1.1.2"
+adaptive = "1.2.0"
 kermit = "2.0.8"
 navigation-compose = "2.9.1"
-lifecycle-viewmodel = "2.9.5"
-savedstate = "1.3.5"
+lifecycle-viewmodel = "2.9.6"
+savedstate = "1.3.6"
 kotlin-inject = "0.8.0"
 crashkios = "0.9.0"
 firebase-crashlytics = "19.4.4"
@@ -50,6 +50,8 @@ play-services-location = "21.3.0"
 maps-compose = "6.12.1"
 accompanist-permissions = "0.37.3"
 play-services-coroutines = "1.10.2"
+play-services-auth = "21.4.0"
+play-integrity = "1.5.0"
 krossbow = "9.3.0"
 firebase-bom = "34.5.0"
 firebase-auth = "24.0.1"
@@ -142,6 +144,8 @@ filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose
 
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 play-services-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "play-services-coroutines" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
+play-services-integrity = { module = "com.google.android.play:integrity", version.ref = "play-integrity" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
 

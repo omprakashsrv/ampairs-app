@@ -84,6 +84,8 @@ kotlin {
                 // Location and Maps
                 implementation(libs.play.services.location)
                 implementation(libs.play.services.coroutines)
+                implementation(libs.play.services.integrity)
+                implementation(libs.play.services.auth)
                 implementation(libs.maps.compose)
                 implementation(libs.accompanist.permissions)
 
@@ -215,8 +217,8 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 4
-        versionName = "1.0.0.4"
+        versionCode = 5
+        versionName = "1.0.0.5"
 
         // Environment configuration
         buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.5:8080\"")
