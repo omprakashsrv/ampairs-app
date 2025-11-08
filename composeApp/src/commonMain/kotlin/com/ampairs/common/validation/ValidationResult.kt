@@ -33,6 +33,7 @@ sealed class ValidationResult<T> {
      * invalid, or that the validation was considered unsuccessful. The [errors] property are the [Collection] of
      * errors that were encountered when performing the validation.
      */
+    @ConsistentCopyVisibility
     data class Invalid<T> internal constructor(val errors: Collection<ValidationError>) :
         ValidationResult<T>() {
 

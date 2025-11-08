@@ -203,7 +203,7 @@ fun WorkspaceCreateScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
             )
 
             ExposedDropdownMenu(

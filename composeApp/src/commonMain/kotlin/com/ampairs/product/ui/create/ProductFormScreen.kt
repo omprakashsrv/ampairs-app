@@ -200,7 +200,7 @@ private fun ProductForm(
                         label = { Text("Status") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedActive) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
                     )
                     ExposedDropdownMenu(
                         expanded = expandedActive,

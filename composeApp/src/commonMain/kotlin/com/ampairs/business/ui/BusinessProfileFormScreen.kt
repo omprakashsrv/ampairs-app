@@ -435,7 +435,7 @@ private fun BusinessTypeDropdown(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
             singleLine = true
         )
 

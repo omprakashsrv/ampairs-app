@@ -52,8 +52,8 @@ object UidGenerator {
 
         return buildString {
             append(now.year.toString().padStart(4, '0'))
-            append(now.monthNumber.toString().padStart(2, '0'))
-            append(now.dayOfMonth.toString().padStart(2, '0'))
+            append(now.month.toString().padStart(2, '0'))
+            append(now.day.toString().padStart(2, '0'))
             append(now.hour.toString().padStart(2, '0'))
             append(now.minute.toString().padStart(2, '0'))
             append(now.second.toString().padStart(2, '0'))

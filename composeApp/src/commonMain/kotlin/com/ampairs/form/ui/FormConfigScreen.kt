@@ -9,7 +9,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -381,7 +381,7 @@ private fun AttributeDefinitionCard(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
                     singleLine = true
                 )
                 ExposedDropdownMenu(

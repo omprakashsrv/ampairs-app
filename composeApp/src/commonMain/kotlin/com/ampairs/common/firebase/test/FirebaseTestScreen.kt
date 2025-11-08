@@ -95,7 +95,7 @@ fun FirebaseTestScreen() {
                 Text("Test User Properties")
             }
 
-            Divider()
+            HorizontalDivider()
 
             // Section: Firebase Crashlytics
             Text(
@@ -163,7 +163,7 @@ fun FirebaseTestScreen() {
                 color = MaterialTheme.colorScheme.error
             )
 
-            Divider()
+            HorizontalDivider()
 
             // Section: Firebase Performance
             Text(
@@ -238,7 +238,7 @@ fun FirebaseTestScreen() {
                 Text("Test Custom Trace")
             }
 
-            Divider()
+            HorizontalDivider()
 
             // Results Section
             if (testResults.isNotEmpty()) {
@@ -271,7 +271,7 @@ fun FirebaseTestScreen() {
                 }
             }
 
-            Divider()
+            HorizontalDivider()
 
             // Instructions
             Card(

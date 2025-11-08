@@ -84,7 +84,7 @@ private fun AndroidRemoteMessage.toCommonRemoteMessage(): RemoteMessage {
     return RemoteMessage(
         messageId = messageId,
         from = from,
-        to = to,
+        to = null, // 'to' field is deprecated in Firebase SDK
         data = data,
         notification = notification?.let {
             RemoteMessage.Notification(

@@ -293,7 +293,7 @@ fun CustomAttributeField(
                         },
                         supportingText = attribute.helpText?.let { { Text(it) } },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled),
+                        modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
                         enabled = enabled,
                         isError = attribute.mandatory && (value as? String).isNullOrBlank()
                     )

@@ -14,7 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowWidthSizeClass
+import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
 import com.ampairs.form.data.repository.ConfigRepository
@@ -115,7 +115,7 @@ private fun CustomerDetailsContent(
 ) {
     // Get window size class to determine layout
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    val isCompactOrMedium = windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.EXPANDED
+    val isCompactOrMedium = !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
     if (isCompactOrMedium) {
         // Compact/Medium: Use TabLayout for mobile/tablet
@@ -151,7 +151,7 @@ private fun CustomerDetailsTabLayout(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = selectedTabIndex) {
+        PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTabIndex == index,

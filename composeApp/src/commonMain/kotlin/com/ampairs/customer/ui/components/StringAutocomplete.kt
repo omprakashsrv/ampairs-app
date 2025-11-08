@@ -66,7 +66,7 @@ fun StringAutocomplete(
                 label = { Text(label) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(MenuAnchorType.PrimaryEditable, enabled = true)
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true)
                     .onFocusChanged { focusState ->
                         hasFocus = focusState.isFocused
                         if (focusState.isFocused) {

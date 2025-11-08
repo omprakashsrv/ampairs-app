@@ -221,7 +221,7 @@ private fun MemberFiltersSection(
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = roleExpanded)
                             },
                             modifier = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
 
@@ -264,7 +264,7 @@ private fun MemberFiltersSection(
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusExpanded)
                             },
                             modifier = Modifier
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
 

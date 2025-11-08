@@ -89,6 +89,9 @@ kotlin {
                 implementation(libs.maps.compose)
                 implementation(libs.accompanist.permissions)
 
+                // In-app updates
+                implementation(libs.app.update)
+
                 // Firebase - Native Android SDK
                 implementation(libs.firebase.auth)
                 implementation(libs.google.firebase.analytics)
