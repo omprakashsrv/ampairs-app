@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -50,6 +51,8 @@ import org.jetbrains.compose.resources.stringResource
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.login
 import org.koin.compose.koinInject
+import com.ampairs.common.navigation.PlatformBackHandler
+import com.ampairs.common.navigation.ExitApp
 
 @Composable
 fun PhoneScreen(
@@ -60,6 +63,11 @@ fun PhoneScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showExistingUserDialog by remember { mutableStateOf(false) }
+
+    // Handle back button to exit app since this is the initial screen
+    PlatformBackHandler(enabled = true) {
+        ExitApp()
+    }
 
     // Existing user dialog
     if (showExistingUserDialog && viewModel.existingUser != null) {
@@ -77,7 +85,10 @@ fun PhoneScreen(
         )
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
+    Scaffold(
+        modifier = Modifier.imePadding(),
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
         // Handle error messages
         if (viewModel.displayMessage.isNotEmpty()) {
             coroutineScope.launch {
@@ -89,6 +100,7 @@ fun PhoneScreen(
                     SnackbarResult.Dismissed -> {
                         viewModel.displayMessage = ""
                     }
+
                     SnackbarResult.ActionPerformed -> {
                         viewModel.displayMessage = ""
                     }
@@ -99,138 +111,105 @@ fun PhoneScreen(
         Box(
             modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
-        // Phone input section - Center aligned
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(min = 280.dp, max = 400.dp)
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Phone input section - Center aligned
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                // Authentication method selector (only if Firebase is supported)
-                if (viewModel.isFirebaseSupported) {
-                    Text(
-                        text = "Login Method",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                Column(
+                    modifier = Modifier
+                        .widthIn(min = 280.dp, max = 400.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Phone(
+                        countryCode = 91,
+                        readOnly = viewModel.loading,
+                        phone = viewModel.phoneNumber,
+                        onValueChange = { viewModel.phoneNumber = it },
+                        onValidChange = { viewModel.validPhoneNumber = it }
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        FilterChip(
-                            selected = viewModel.authMethod == AuthMethod.BACKEND_API,
-                            onClick = { viewModel.authMethod = AuthMethod.BACKEND_API },
-                            label = { Text("Backend API") },
-                            enabled = !viewModel.loading,
-                            modifier = Modifier.weight(1f)
-                        )
-                        FilterChip(
-                            selected = viewModel.authMethod == AuthMethod.FIREBASE,
-                            onClick = { viewModel.authMethod = AuthMethod.FIREBASE },
-                            label = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.Security,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Text("Firebase")
-                                }
-                            },
-                            enabled = !viewModel.loading,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
 
-                Phone(
-                    countryCode = 91,
-                    readOnly = viewModel.loading,
-                    phone = viewModel.phoneNumber,
-                    onValueChange = { viewModel.phoneNumber = it },
-                    onValidChange = { viewModel.validPhoneNumber = it }
-                )
-
-                // Show progress message
-                if (viewModel.progressMessage.isNotEmpty()) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (viewModel.recaptchaLoading || viewModel.loading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
+                    // Show progress message
+                    if (viewModel.progressMessage.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (viewModel.recaptchaLoading || viewModel.loading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                            Text(
+                                text = viewModel.progressMessage,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
                             )
                         }
-                        Text(
-                            text = viewModel.progressMessage,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
                     }
                 }
             }
-        }
 
-        // Login button - Bottom aligned
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Button(
-                onClick = {
-                    // First check if user already exists
-                    viewModel.checkExistingUser(
-                        onExistingUserFound = { user ->
-                            // Show dialog with existing user
-                            showExistingUserDialog = true
-                        },
-                        onNoExistingUser = {
-                            // Proceed with authentication
-                            when (viewModel.authMethod) {
-                                AuthMethod.BACKEND_API -> {
-                                    viewModel.authenticate { sessionId ->
-                                        onAuthSuccess(sessionId, "") // Backend API: sessionId populated, verificationId empty
+            // Login button - Bottom aligned
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Button(
+                    onClick = {
+                        // First check if user already exists
+                        viewModel.checkExistingUser(
+                            onExistingUserFound = { user ->
+                                // Show dialog with existing user
+                                showExistingUserDialog = true
+                            },
+                            onNoExistingUser = {
+                                // Proceed with authentication
+                                when (viewModel.authMethod) {
+                                    AuthMethod.BACKEND_API -> {
+                                        viewModel.authenticate { sessionId ->
+                                            onAuthSuccess(
+                                                sessionId,
+                                                ""
+                                            ) // Backend API: sessionId populated, verificationId empty
+                                        }
                                     }
-                                }
-                                AuthMethod.FIREBASE -> {
-                                    viewModel.authenticateWithFirebase { verificationId ->
-                                        onAuthSuccess("", verificationId) // Firebase: verificationId populated, sessionId empty
+
+                                    AuthMethod.FIREBASE -> {
+                                        viewModel.authenticateWithFirebase { verificationId ->
+                                            onAuthSuccess(
+                                                "",
+                                                verificationId
+                                            ) // Firebase: verificationId populated, sessionId empty
+                                        }
                                     }
                                 }
                             }
-                        }
-                    )
-                },
-                modifier = Modifier
-                    .widthIn(min = 280.dp, max = 400.dp)
-                    .fillMaxWidth(),
-                enabled = viewModel.validPhoneNumber && !viewModel.loading
-            ) {
-                if (viewModel.loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .progressSemantics()
-                            .size(24.dp)
-                    )
-                } else {
-                    Text(stringResource(Res.string.login))
+                        )
+                    },
+                    modifier = Modifier
+                        .widthIn(min = 280.dp, max = 400.dp)
+                        .fillMaxWidth(),
+                    enabled = viewModel.validPhoneNumber && !viewModel.loading
+                ) {
+                    if (viewModel.loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .progressSemantics()
+                                .size(24.dp)
+                        )
+                    } else {
+                        Text(stringResource(Res.string.login))
+                    }
                 }
             }
-        }
         }
     }
 }

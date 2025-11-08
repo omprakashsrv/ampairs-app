@@ -63,7 +63,7 @@ fun AppScreenLayout(
             drawerState = drawerState
         ) {
             Scaffold(
-                modifier = modifier,
+                modifier = modifier.imePadding(),
                 topBar = {
                     AppHeader(
                         navController = navController,
@@ -92,7 +92,7 @@ fun AppScreenLayout(
     } else {
         // Desktop/Non-drawer platforms: Use regular scaffold
         Scaffold(
-            modifier = modifier,
+            modifier = modifier.imePadding(),
             topBar = {
                 AppHeader(
                     navController = navController,

@@ -16,3 +16,13 @@ actual fun PlatformBackHandler(
     // Back navigation is typically handled by the navigation bar's back button
     // This could be extended to handle swipe gestures if needed
 }
+
+/**
+ * iOS-specific implementation to exit the app
+ * Note: Apple discourages programmatic app exit
+ */
+actual fun ExitApp() {
+    // iOS doesn't support programmatic app exit
+    // Users should use home button/gesture
+    // Apple guidelines discourage calling exit() programmatically
+}

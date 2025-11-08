@@ -55,6 +55,11 @@ expect fun PlatformBackHandler(
 )
 
 /**
+ * Platform-specific function to exit the application
+ */
+expect fun ExitApp()
+
+/**
  * Common composable for handling back navigation with NavController
  */
 @Composable

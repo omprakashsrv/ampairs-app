@@ -50,6 +50,7 @@ import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.device_sessions
 import ampairsapp.composeapp.generated.resources.loading_device_sessions
 import ampairsapp.composeapp.generated.resources.logout_all_devices
+import androidx.compose.foundation.layout.imePadding
 import kotlinx.coroutines.flow.filterNotNull
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -77,6 +78,7 @@ fun DeviceManagementScreen(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.device_sessions)) },

@@ -40,6 +40,7 @@ import ampairsapp.composeapp.generated.resources.first_name
 import ampairsapp.composeapp.generated.resources.last_name
 import ampairsapp.composeapp.generated.resources.update_profile
 import ampairsapp.composeapp.generated.resources.error_colon
+import androidx.compose.foundation.layout.imePadding
 
 @Composable
 fun UserUpdateScreen(
@@ -63,6 +64,7 @@ fun UserUpdateScreen(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
