@@ -36,6 +36,10 @@ import org.jetbrains.compose.resources.stringResource
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.resend_otp
 import ampairsapp.composeapp.generated.resources.verify_otp
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.ampairs.auth.domain.PhoneVerificationState
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -52,9 +56,26 @@ fun OtpScreen(
         viewModel.sessionId = sessionId
         viewModel.firebaseVerificationId = verificationId
     }
+
+    // Observe Firebase auto-verification state for automatic navigation
+    val verificationState by viewModel.firebaseVerificationState.collectAsState()
+    LaunchedEffect(verificationState) {
+        // When auto-verification completes successfully, automatically proceed with authentication
+        if (verificationState is PhoneVerificationState.VerificationCompleted &&
+            viewModel.authMethod == AuthMethod.FIREBASE) {
+            val completedState = verificationState as PhoneVerificationState.VerificationCompleted
+            println("OtpScreen: ✅ Auto-verification detected, proceeding with authentication")
+            // Note: completedState.userId actually contains the Firebase ID token due to implementation
+            viewModel.completeFirebaseAuthenticationWithToken(completedState.userId, onAuthSuccess)
+        }
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) {
+    Scaffold(
+        modifier = Modifier.imePadding(),
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) {
         if (viewModel.displayMessage.isNotEmpty()) {
             coroutineScope.launch {
                 val result = snackbarHostState.showSnackbar(
