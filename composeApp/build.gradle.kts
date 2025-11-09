@@ -161,6 +161,9 @@ kotlin {
                 // DataStore for preferences
                 implementation(libs.datastore)
                 implementation(libs.datastore.preferences)
+
+                // kotlinx-datetime for cross-platform time handling
+                implementation(libs.kotlinx.dateTime)
             }
         }
 

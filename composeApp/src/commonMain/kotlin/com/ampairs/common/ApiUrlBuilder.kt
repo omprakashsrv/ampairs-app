@@ -92,6 +92,14 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build complete API URL for app update endpoints
+     */
+    fun appUpdateUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/app-updates/$cleanPath"
+    }
+
+    /**
      * Build WebSocket URL
      */
     fun wsUrl(path: String): String {

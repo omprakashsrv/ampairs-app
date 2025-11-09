@@ -39,6 +39,26 @@ interface AppPreferencesDataStore {
      */
     suspend fun setFormConfigLastSyncTime(timestamp: String)
 
+    /**
+     * Get the last update check time as epoch milliseconds
+     */
+    fun getLastUpdateCheckTime(): Flow<Long>
+
+    /**
+     * Set the last update check time as epoch milliseconds
+     */
+    suspend fun setLastUpdateCheckTime(timestamp: Long)
+
+    /**
+     * Get whether the user dismissed a specific update version
+     */
+    fun isUpdateVersionDismissed(version: String): Flow<Boolean>
+
+    /**
+     * Set whether the user dismissed a specific update version
+     */
+    suspend fun setUpdateVersionDismissed(version: String, dismissed: Boolean)
+
     // Future app settings can be added here:
     // fun getLanguagePreference(): Flow<String>
     // suspend fun setLanguagePreference(language: String)
