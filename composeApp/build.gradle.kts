@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.firebaseCrashlytics) // Firebase Crashlytics plugin
     alias(libs.plugins.firebasePerf) // Firebase Performance Monitoring plugin
     alias(libs.plugins.kotlinCocoapods)
+    alias(libs.plugins.sentryPlugin) // Sentry error tracking
 }
 
 configurations.all {
@@ -67,6 +68,11 @@ kotlin {
 
         pod("FirebaseMessaging") {
             version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("Sentry") {
+            version = "~> 8.0"
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
     }

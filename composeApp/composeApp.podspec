@@ -15,6 +15,7 @@ Pod::Spec.new do |spec|
     spec.dependency 'FirebaseCrashlytics', '~> 11.13'
     spec.dependency 'FirebaseMessaging', '~> 11.13'
     spec.dependency 'FirebasePerformance', '~> 11.13'
+    spec.dependency 'Sentry', '~> 8.0'
                 
     if !Dir.exist?('build/cocoapods/framework/ComposeApp.framework') || Dir.empty?('build/cocoapods/framework/ComposeApp.framework')
         raise "
