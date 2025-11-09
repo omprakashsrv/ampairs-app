@@ -1,8 +1,12 @@
 package com.ampairs.customer.domain
 
 import com.ampairs.customer.data.repository.CustomerRepository
+import com.ampairs.customer.data.repository.CustomerImageRepository
 
-class CustomerStore(private val repository: CustomerRepository) {
+class CustomerStore(
+    private val repository: CustomerRepository,
+    private val imageRepository: CustomerImageRepository
+) {
 
     /**
      * Observe all customers - direct repository access
@@ -33,6 +37,13 @@ class CustomerStore(private val repository: CustomerRepository) {
 
     suspend fun syncCustomers(): Result<Int> {
         return repository.syncCustomers()
+    }
+
+    /**
+     * Sync all unsynced customer images across all customers
+     */
+    suspend fun syncCustomerImages(): Result<Int> {
+        return imageRepository.syncAllUnsyncedCustomerImages()
     }
 
     suspend fun getUniqueCities(): List<String> {

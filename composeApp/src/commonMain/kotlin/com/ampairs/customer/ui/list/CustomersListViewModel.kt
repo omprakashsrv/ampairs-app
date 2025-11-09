@@ -83,12 +83,27 @@ class CustomersListViewModel(
                     _uiState.update { it.copy(isRefreshing = false, error = error) }
                 }
             ) {
+                // 1. Sync customer details first
                 val result = customerStore.syncCustomers()
+
+                if (result.isFailure) {
+                    _uiState.update {
+                        it.copy(
+                            isRefreshing = false,
+                            error = result.exceptionOrNull()?.message ?: "Sync failed"
+                        )
+                    }
+                    return@handleCancellation
+                }
+
+                // 2. Sync customer images after customer details sync succeeds
+                val imageResult = customerStore.syncCustomerImages()
+
                 _uiState.update {
                     it.copy(
                         isRefreshing = false,
-                        error = if (result.isFailure) {
-                            result.exceptionOrNull()?.message ?: "Sync failed"
+                        error = if (imageResult.isFailure) {
+                            "Customer sync completed, but image sync failed: ${imageResult.exceptionOrNull()?.message}"
                         } else null
                     )
                 }
