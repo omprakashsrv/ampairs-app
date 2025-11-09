@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.firebaseCrashlytics) // Firebase Crashlytics plugin
     alias(libs.plugins.firebasePerf) // Firebase Performance Monitoring plugin
     alias(libs.plugins.kotlinCocoapods)
+    alias(libs.plugins.sentryPlugin) // Sentry error tracking
 }
 
 configurations.all {
@@ -69,6 +70,11 @@ kotlin {
             version = "~> 11.13"
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
+
+        pod("Sentry") {
+            version = "~> 8.0"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
     }
 
     sourceSets {
@@ -84,8 +90,13 @@ kotlin {
                 // Location and Maps
                 implementation(libs.play.services.location)
                 implementation(libs.play.services.coroutines)
+                implementation(libs.play.services.integrity)
+                implementation(libs.play.services.auth)
                 implementation(libs.maps.compose)
                 implementation(libs.accompanist.permissions)
+
+                // In-app updates
+                implementation(libs.app.update)
 
                 // Firebase - Native Android SDK
                 implementation(libs.firebase.auth)
@@ -215,8 +226,8 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 2
-        versionName = "1.0.0.1"
+        versionCode = 8
+        versionName = "1.0.0.8"
 
         // Environment configuration
         buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.5:8080\"")

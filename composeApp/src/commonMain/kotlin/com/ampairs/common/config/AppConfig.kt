@@ -15,7 +15,7 @@ data class AppConfig(
      */
     fun getApiUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
-        return "$apiBaseUrl/api/$cleanPath"
+        return "$apiBaseUrl/api/v1/$cleanPath"
     }
 
     /**

@@ -27,6 +27,7 @@ import coil3.compose.setSingletonImageLoaderFactory
 import coil3.PlatformContext
 import org.koin.compose.koinInject
 
+import com.ampairs.common.sentry.SentryManager
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.java.KoinJavaComponent.get
@@ -56,6 +57,9 @@ fun main() = application {
         return@application
     }
     if (GlobalContext.getOrNull() == null) {
+        // Initialize Sentry early in the application lifecycle
+        initializeSentry()
+
         val koinApplication = startKoin {}
         initKoin(koinApplication)
     }
@@ -177,4 +181,12 @@ private class AppWindowState(
     private val close: (AppWindowState) -> Unit,
 ) {
     fun close() = close(this)
+}
+
+private fun initializeSentry() {
+    SentryManager.initialize(
+        dsn = "https://dfb15e7a55f3454ba18b1b4c5ab03a46@o4510332999106560.ingest.de.sentry.io/4510333325148240",
+        environment = "production",
+        enableDebug = false
+    )
 }

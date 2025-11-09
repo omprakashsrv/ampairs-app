@@ -20,6 +20,7 @@ import com.ampairs.tax.domain.TaxType
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class, kotlin.time.ExperimentalTime::class)
 @Composable
@@ -126,7 +127,7 @@ fun TaxRateFormScreen(
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     )
 
                     ExposedDropdownMenu(
@@ -224,7 +225,7 @@ fun TaxRateFormScreen(
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     )
 
                     ExposedDropdownMenu(
@@ -388,6 +389,6 @@ private fun formatDate(timestamp: Long): String {
     if (timestamp == 0L) return "Select date"
 
     // Simple date formatting - in a real app, use proper date formatting
-    val date = kotlinx.datetime.Instant.fromEpochMilliseconds(timestamp)
+    val date = Instant.fromEpochMilliseconds(timestamp)
     return date.toString().take(10) // Just show YYYY-MM-DD
 }

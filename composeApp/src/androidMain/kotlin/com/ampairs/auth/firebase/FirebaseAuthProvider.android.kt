@@ -41,6 +41,12 @@ actual class FirebaseAuthProvider {
     private var storedVerificationId: String? = null
     private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
 
+    // Track auto-verification state to prevent duplicate attempts
+    @Volatile
+    private var autoVerificationInProgress = false
+    @Volatile
+    private var autoVerificationCompleted = false
+
     actual suspend fun initialize(): FirebaseAuthResult<Unit> {
         return try {
             // Firebase is automatically initialized by Google Services plugin
@@ -54,8 +60,11 @@ actual class FirebaseAuthProvider {
     actual suspend fun sendVerificationCode(phoneNumber: String): FirebaseAuthResult<String> {
         return suspendCancellableCoroutine { continuation ->
             try {
+                println("FirebaseAuth: 📱 Starting verification for: $phoneNumber")
+
                 val activity = ActivityProvider.getActivity()
                 if (activity == null) {
+                    println("FirebaseAuth: ❌ No activity available")
                     _verificationState.value = PhoneVerificationState.VerificationFailed(
                         "Activity not available. Please ensure the app is in foreground."
                     )
@@ -69,7 +78,12 @@ actual class FirebaseAuthProvider {
 
                 _verificationState.value = PhoneVerificationState.Idle
 
+                // Reset auto-verification flags for new verification attempt
+                autoVerificationInProgress = false
+                autoVerificationCompleted = false
+
                 val formattedPhone = if (phoneNumber.startsWith("+")) phoneNumber else "+$phoneNumber"
+                println("FirebaseAuth: 📞 Formatted phone: ${formattedPhone.take(5)}...")
 
                 val options = PhoneAuthOptions.newBuilder(firebaseAuth)
                     .setPhoneNumber(formattedPhone)
@@ -78,20 +92,44 @@ actual class FirebaseAuthProvider {
                     .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
 
                         override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                            // Auto-verification succeeded
-                            _verificationState.value = PhoneVerificationState.CodeSent
-                            storedVerificationId = credential.smsCode ?: ""
+                            // Auto-verification succeeded (instant verification without SMS)
+                            // This happens when Google Play Services auto-reads SMS or device is trusted
+                            println("FirebaseAuth: ✅ Auto-verification completed")
 
-                            // Auto-sign in
+                            // Check if auto-verification is already in progress or completed
+                            // This prevents duplicate auto-sign-in attempts
+                            synchronized(this@FirebaseAuthProvider) {
+                                if (autoVerificationInProgress || autoVerificationCompleted) {
+                                    println("FirebaseAuth: ⚠️ Auto-verification already in progress/completed, skipping duplicate")
+                                    return
+                                }
+                                autoVerificationInProgress = true
+                            }
+
+                            _verificationState.value = PhoneVerificationState.CodeSent
+
+                            // DON'T overwrite storedVerificationId here - keep it for manual verification
+                            // The credential already contains everything needed for auto-sign-in
+
+                            // Auto-sign in with the credential
                             signInWithCredential(credential) { result ->
+                                synchronized(this@FirebaseAuthProvider) {
+                                    autoVerificationInProgress = false
+                                }
+
                                 when (result) {
                                     is FirebaseAuthResult.Success -> {
+                                        println("FirebaseAuth: ✅ Auto-sign-in successful")
+                                        synchronized(this@FirebaseAuthProvider) {
+                                            autoVerificationCompleted = true
+                                        }
                                         _verificationState.value = PhoneVerificationState.VerificationCompleted(result.data)
                                         if (continuation.isActive) {
                                             continuation.resume(FirebaseAuthResult.Success(storedVerificationId ?: "auto"))
                                         }
                                     }
                                     is FirebaseAuthResult.Error -> {
+                                        println("FirebaseAuth: ❌ Auto-sign-in failed: ${result.message}")
                                         if (continuation.isActive) {
                                             continuation.resume(result)
                                         }
@@ -102,6 +140,10 @@ actual class FirebaseAuthProvider {
                         }
 
                         override fun onVerificationFailed(exception: FirebaseException) {
+                            println("FirebaseAuth: ❌ Verification failed: ${exception.message}")
+                            println("FirebaseAuth: ❌ Exception type: ${exception.javaClass.simpleName}")
+                            exception.printStackTrace()
+
                             _verificationState.value = PhoneVerificationState.VerificationFailed(
                                 exception.message ?: "Verification failed"
                             )
@@ -116,6 +158,10 @@ actual class FirebaseAuthProvider {
                             verificationId: String,
                             token: PhoneAuthProvider.ForceResendingToken
                         ) {
+                            println("FirebaseAuth: ✅ Code sent successfully")
+                            println("FirebaseAuth: 🔑 Verification ID: ${verificationId.take(20)}...")
+                            println("FirebaseAuth: 🔑 Stored verification ID: ${verificationId.take(20)}...")
+
                             storedVerificationId = verificationId
                             resendToken = token
                             _verificationState.value = PhoneVerificationState.CodeSent
@@ -143,7 +189,21 @@ actual class FirebaseAuthProvider {
     actual suspend fun verifyCode(verificationId: String, code: String): FirebaseAuthResult<String> {
         return suspendCancellableCoroutine { continuation ->
             try {
+                println("FirebaseAuth: 🔐 Verifying code...")
+                println("FirebaseAuth: 🔑 Using verification ID: ${verificationId.take(20)}...")
+                println("FirebaseAuth: 🔑 Stored verification ID: ${storedVerificationId?.take(20)}...")
+                println("FirebaseAuth: 🔢 Code length: ${code.length}")
+                println("FirebaseAuth: ✓ IDs match: ${verificationId == storedVerificationId}")
+
+                // Check if auto-verification already completed
+                // If so, the code has already been consumed
+                if (autoVerificationCompleted) {
+                    println("FirebaseAuth: ⚠️ Auto-verification already completed, code may be expired")
+                    println("FirebaseAuth: ℹ️ Attempting manual verification anyway...")
+                }
+
                 val credential = PhoneAuthProvider.getCredential(verificationId, code)
+                println("FirebaseAuth: 📝 Credential created, attempting sign-in...")
 
                 signInWithCredential(credential) { result ->
                     if (continuation.isActive) {
@@ -152,6 +212,9 @@ actual class FirebaseAuthProvider {
                 }
 
             } catch (e: Exception) {
+                println("FirebaseAuth: ❌ Exception during verifyCode: ${e.message}")
+                e.printStackTrace()
+
                 _verificationState.value = PhoneVerificationState.VerificationFailed(
                     e.message ?: "Invalid verification code"
                 )
@@ -166,34 +229,49 @@ actual class FirebaseAuthProvider {
         credential: PhoneAuthCredential,
         onComplete: (FirebaseAuthResult<String>) -> Unit
     ) {
+        println("FirebaseAuth: 🔓 Starting signInWithCredential...")
+
         firebaseAuth.signInWithCredential(credential)
             .addOnSuccessListener { authResult ->
+                println("FirebaseAuth: ✅ signInWithCredential SUCCESS")
                 val user = authResult.user
                 if (user != null) {
+                    println("FirebaseAuth: 👤 User obtained: ${user.uid}")
                     // Get the ID token (JWT) instead of just the UID
                     user.getIdToken(false)
                         .addOnSuccessListener { tokenResult ->
                             val idToken = tokenResult.token
                             if (idToken != null) {
+                                println("FirebaseAuth: 🎫 ID token obtained successfully")
                                 _verificationState.value = PhoneVerificationState.VerificationCompleted(user.uid)
                                 onComplete(FirebaseAuthResult.Success(idToken))
                             } else {
+                                println("FirebaseAuth: ❌ No ID token in result")
                                 _verificationState.value = PhoneVerificationState.VerificationFailed("No ID token returned")
                                 onComplete(FirebaseAuthResult.Error("Authentication succeeded but no ID token returned"))
                             }
                         }
                         .addOnFailureListener { tokenException ->
+                            println("FirebaseAuth: ❌ Failed to get ID token: ${tokenException.message}")
+                            tokenException.printStackTrace()
+
                             _verificationState.value = PhoneVerificationState.VerificationFailed(
                                 "Failed to get ID token: ${tokenException.message}"
                             )
                             onComplete(FirebaseAuthResult.Error("Failed to get ID token: ${tokenException.message}", tokenException))
                         }
                 } else {
+                    println("FirebaseAuth: ❌ No user in auth result")
                     _verificationState.value = PhoneVerificationState.VerificationFailed("No user returned")
                     onComplete(FirebaseAuthResult.Error("Authentication succeeded but no user returned"))
                 }
             }
             .addOnFailureListener { exception ->
+                println("FirebaseAuth: ❌ signInWithCredential FAILED: ${exception.message}")
+                println("FirebaseAuth: ❌ Exception type: ${exception.javaClass.simpleName}")
+                println("FirebaseAuth: ❌ Full error: ${exception}")
+                exception.printStackTrace()
+
                 _verificationState.value = PhoneVerificationState.VerificationFailed(
                     exception.message ?: "Authentication failed"
                 )

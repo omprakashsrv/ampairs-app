@@ -1,6 +1,6 @@
 package com.ampairs.common.concurrency
 
-@Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FIELD)
 @Retention(AnnotationRetention.BINARY)
 expect annotation class Volatile()
 

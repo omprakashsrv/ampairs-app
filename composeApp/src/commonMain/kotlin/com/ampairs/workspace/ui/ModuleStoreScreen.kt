@@ -118,7 +118,7 @@ fun ModuleStoreScreen(
             )
 
             // Tabs
-            TabRow(selectedTabIndex = selectedTab) {
+            PrimaryTabRow(selectedTabIndex = selectedTab) {
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },

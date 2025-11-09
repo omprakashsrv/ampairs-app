@@ -49,6 +49,7 @@ fun UserSelectionScreen(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
                 title = { Text("Select User") },

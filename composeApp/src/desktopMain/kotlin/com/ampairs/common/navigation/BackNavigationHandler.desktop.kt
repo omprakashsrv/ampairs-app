@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.*
+import kotlin.system.exitProcess
 
 /**
  * Desktop-specific implementation using keyboard input
@@ -67,4 +68,11 @@ actual fun PlatformBackHandler(
                 }
         )
     }
+}
+
+/**
+ * Desktop-specific implementation to exit the app
+ */
+actual fun ExitApp() {
+    exitProcess(0)
 }

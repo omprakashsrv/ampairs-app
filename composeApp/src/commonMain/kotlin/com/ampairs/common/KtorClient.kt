@@ -2,6 +2,8 @@ package com.ampairs.common
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.config.ConfigurationManager
+import com.ampairs.common.sentry.ErrorTracking
+import com.ampairs.common.sentry.SentryLevel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
@@ -83,12 +85,36 @@ fun httpClient(
     install(WebSockets)
 
     install(Logging) {
+        var currentStatusCode: Int? = null
+
         logger = object : Logger {
             override fun log(message: String) {
-                println("HTTP: $message")
+                // Debug: Print all messages temporarily to see the format
+                // println("DEBUG LOG: $message")
+
+                when {
+                    // Detect error response (4xx, 5xx)
+                    message.startsWith("RESPONSE:") -> {
+                        // Extract status code (format: "RESPONSE: 500 Internal Server Error")
+                        val statusCode =
+                            message.substringAfter("RESPONSE: ").substringBefore(" ").toIntOrNull()
+                        val isLoggingError = statusCode != null && statusCode >= 400
+                        if (isLoggingError) {
+                            println("❌ HTTP ERROR: $message")
+                            currentStatusCode = statusCode
+                            val currentErrorContext = StringBuilder()
+                            currentErrorContext.appendLine(message)
+                            sendHttpErrorToSentry(
+                                currentStatusCode,
+                                currentErrorContext.toString()
+                            )
+                        }
+                    }
+                }
             }
         }
-        level = LogLevel.INFO
+        level = LogLevel.BODY
+        sanitizeHeader { header -> header == "Authorization" }
     }
 
     if (withTimeout) {
@@ -161,5 +187,38 @@ fun httpClient(
 
         // Set default content type
         contentType(ContentType.Application.Json)
+    }
+}
+
+/**
+ * Sends HTTP error details to Sentry for monitoring.
+ * Captures status code and full error context including headers and body.
+ *
+ * @param statusCode The HTTP status code (e.g., 400, 500)
+ * @param errorContext Full error details including response body and headers
+ */
+private fun sendHttpErrorToSentry(statusCode: Int, errorContext: String) {
+    try {
+        // Add breadcrumb for HTTP error
+        ErrorTracking.addBreadcrumb(
+            message = "HTTP $statusCode Error",
+            category = "http"
+        )
+
+        // Determine severity based on status code
+        val level = when {
+            statusCode >= 500 -> SentryLevel.ERROR  // Server errors
+            statusCode >= 400 -> SentryLevel.WARNING // Client errors
+            else -> SentryLevel.INFO
+        }
+
+        // Capture detailed error message to Sentry
+        ErrorTracking.captureMessage(
+            message = "HTTP $statusCode Error:\n$errorContext",
+            level = level
+        )
+    } catch (e: Exception) {
+        // Fail silently - don't let Sentry reporting break the app
+        println("Failed to send HTTP error to Sentry: ${e.message}")
     }
 }

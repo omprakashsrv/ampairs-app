@@ -120,6 +120,7 @@ class ProductsListViewModel(
         }
     }
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
     private fun observeSearchQuery() {
         uiState
             .map { it.searchQuery }

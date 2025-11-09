@@ -18,6 +18,7 @@ import com.ampairs.tax.domain.HsnCode
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class, kotlin.time.ExperimentalTime::class)
 @Composable
@@ -422,6 +423,6 @@ private fun formatDetailDate(timestamp: Long): String {
     if (timestamp == 0L) return "Unknown"
 
     // Simple date formatting - in a real app, use proper date formatting
-    val date = kotlinx.datetime.Instant.fromEpochMilliseconds(timestamp)
+    val date = Instant.fromEpochMilliseconds(timestamp)
     return date.toString().take(19).replace("T", " ") // Show YYYY-MM-DD HH:MM:SS format
 }
