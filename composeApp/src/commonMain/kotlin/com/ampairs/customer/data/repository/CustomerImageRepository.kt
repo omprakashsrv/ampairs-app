@@ -269,6 +269,50 @@ class CustomerImageRepository(
 
     // Batch synchronization
 
+    /**
+     * Sync all unsynced customer images across all customers.
+     * This method gets all unsynced images and syncs them for each unique customer.
+     */
+    @OptIn(ExperimentalTime::class)
+    suspend fun syncAllUnsyncedCustomerImages(): Result<Int> {
+        return try {
+            CustomerLogger.i("CustomerImageSync", "Starting sync for all unsynced customer images")
+
+            // Get all unsynced images
+            val unsyncedImages = dao.getUnsyncedCustomerImages()
+
+            if (unsyncedImages.isEmpty()) {
+                CustomerLogger.i("CustomerImageSync", "No unsynced images found")
+                return Result.success(0)
+            }
+
+            // Group by customer ID to sync per customer
+            val customerIds = unsyncedImages.map { it.customerId }.distinct()
+            CustomerLogger.i("CustomerImageSync", "Found ${unsyncedImages.size} unsynced images across ${customerIds.size} customers")
+
+            var totalSynced = 0
+
+            // Sync images for each customer
+            for (customerId in customerIds) {
+                try {
+                    val result = syncCustomerImages(customerId)
+                    if (result.isSuccess) {
+                        totalSynced += result.getOrDefault(0)
+                    }
+                } catch (e: Exception) {
+                    CustomerLogger.e("CustomerImageSync", "Failed to sync images for customer: $customerId", e)
+                    // Continue with next customer
+                }
+            }
+
+            CustomerLogger.i("CustomerImageSync", "All customer images sync completed. Total synced: $totalSynced images")
+            Result.success(totalSynced)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerImageSync", "All customer images sync failed", e)
+            Result.failure(e)
+        }
+    }
+
     @OptIn(ExperimentalTime::class)
     suspend fun syncCustomerImages(customerId: String): Result<Int> {
         return try {

@@ -61,7 +61,7 @@ val customerModule = module {
     factory { CustomerImageRepository(get(), get(), get(), get()) }
 
     // Domain Layer - Use factory to recreate Stores with new repositories/DAOs
-    factory { CustomerStore(get()) }
+    factory { CustomerStore(get(), get()) }
     factory { CustomerTypeStore(get(), get()) }
     factory { CustomerGroupStore(get(), get()) }
     factory { StateStore(get(), get()) }
