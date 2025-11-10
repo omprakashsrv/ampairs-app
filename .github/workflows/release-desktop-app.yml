@@ -162,7 +162,7 @@ jobs:
 
       # Decode code signing certificate from GitHub Secrets
       - name: Setup code signing certificate
-        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' && secrets.WINDOWS_SIGN_PASSWORD != '' }}
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 && secrets.WINDOWS_SIGN_PASSWORD }}
         run: |
           $certBytes = [System.Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}")
           $certPath = "$env:TEMP\ampairs-cert.pfx"
@@ -212,7 +212,7 @@ jobs:
 
       # Verify MSI is signed (optional verification step)
       - name: Verify MSI signature
-        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' && secrets.WINDOWS_SIGN_PASSWORD != '' }}
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 && secrets.WINDOWS_SIGN_PASSWORD }}
         run: |
           $MSI_FILE = "${{ steps.find-msi.outputs.msi_path }}"
           $signature = Get-AuthenticodeSignature -FilePath $MSI_FILE
