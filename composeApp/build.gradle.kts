@@ -376,24 +376,30 @@ tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
 // The MSI will be automatically signed after packaging completes.
 // ============================================================================
 
-tasks.named("packageMsi").configure {
-    doLast {
-        val certFile = System.getenv("WINDOWS_SIGN_CERT_FILE")
-        val certPassword = System.getenv("WINDOWS_SIGN_PASSWORD")
+afterEvaluate {
+    tasks.matching { it.name == "packageMsi" || it.name == "packageReleaseMsi" }.configureEach {
+        doLast {
+            val certFile = System.getenv("WINDOWS_SIGN_CERT_FILE")
+            val certPassword = System.getenv("WINDOWS_SIGN_PASSWORD")
 
-        if (certFile != null && certPassword != null) {
-            val certPath = File(certFile)
-            if (!certPath.exists()) {
-                logger.warn("Certificate file not found: $certFile")
-                return@doLast
-            }
+            if (certFile != null && certPassword != null) {
+                val certPath = File(certFile)
+                if (!certPath.exists()) {
+                    logger.warn("Certificate file not found: $certFile")
+                    return@doLast
+                }
 
-            // Find the MSI file in the build output directory
-            val msiFile = fileTree(layout.buildDirectory.dir("compose/binaries/main/msi")) {
-                include("*.msi")
-            }.singleFile
+                // Find the MSI file in the build output directory
+                val msiFiles = fileTree(layout.buildDirectory.dir("compose/binaries/main")) {
+                    include("**/*.msi")
+                }.files
 
-            if (msiFile.exists()) {
+                if (msiFiles.isEmpty()) {
+                    logger.warn("No MSI file found in build output")
+                    return@doLast
+                }
+
+                val msiFile = msiFiles.first()
                 logger.lifecycle("Signing MSI installer: ${msiFile.name}")
 
                 // Sign using signtool.exe (Windows SDK required)
@@ -434,12 +440,10 @@ tasks.named("packageMsi").configure {
                     logger.error("Install Windows SDK: https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/")
                 }
             } else {
-                logger.warn("MSI file not found in build output")
+                logger.warn("⚠️  Windows code signing skipped")
+                logger.warn("Set WINDOWS_SIGN_CERT_FILE and WINDOWS_SIGN_PASSWORD to enable signing")
+                logger.warn("MSI will show 'Unknown Publisher' warning during installation")
             }
-        } else {
-            logger.warn("⚠️  Windows code signing skipped")
-            logger.warn("Set WINDOWS_SIGN_CERT_FILE and WINDOWS_SIGN_PASSWORD to enable signing")
-            logger.warn("MSI will show 'Unknown Publisher' warning during installation")
         }
     }
 }
