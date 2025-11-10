@@ -162,14 +162,17 @@ jobs:
 
       # Decode code signing certificate from GitHub Secrets
       - name: Setup code signing certificate
-        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 && secrets.WINDOWS_SIGN_PASSWORD }}
         run: |
-          $certBytes = [System.Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}")
-          $certPath = "$env:TEMP\ampairs-cert.pfx"
-          [System.IO.File]::WriteAllBytes($certPath, $certBytes)
-          "WINDOWS_SIGN_CERT_FILE=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "WINDOWS_SIGN_PASSWORD=${{ secrets.WINDOWS_SIGN_PASSWORD }}" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Output "✅ Code signing certificate configured"
+          if ("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}" -and "${{ secrets.WINDOWS_SIGN_PASSWORD }}") {
+            $certBytes = [System.Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}")
+            $certPath = "$env:TEMP\ampairs-cert.pfx"
+            [System.IO.File]::WriteAllBytes($certPath, $certBytes)
+            "WINDOWS_SIGN_CERT_FILE=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+            "WINDOWS_SIGN_PASSWORD=${{ secrets.WINDOWS_SIGN_PASSWORD }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+            Write-Output "✅ Code signing certificate configured"
+          } else {
+            Write-Output "⚠️  Code signing secrets not configured - MSI will be unsigned"
+          }
         shell: powershell
 
       - name: Clean build directory
@@ -212,15 +215,18 @@ jobs:
 
       # Verify MSI is signed (optional verification step)
       - name: Verify MSI signature
-        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 && secrets.WINDOWS_SIGN_PASSWORD }}
         run: |
-          $MSI_FILE = "${{ steps.find-msi.outputs.msi_path }}"
-          $signature = Get-AuthenticodeSignature -FilePath $MSI_FILE
-          if ($signature.Status -eq 'Valid') {
-            Write-Output "✅ MSI is properly signed"
-            Write-Output "Signer: $($signature.SignerCertificate.Subject)"
+          if (Test-Path env:WINDOWS_SIGN_CERT_FILE) {
+            $MSI_FILE = "${{ steps.find-msi.outputs.msi_path }}"
+            $signature = Get-AuthenticodeSignature -FilePath $MSI_FILE
+            if ($signature.Status -eq 'Valid') {
+              Write-Output "✅ MSI is properly signed"
+              Write-Output "Signer: $($signature.SignerCertificate.Subject)"
+            } else {
+              Write-Warning "⚠️  MSI signature status: $($signature.Status)"
+            }
           } else {
-            Write-Warning "⚠️  MSI signature status: $($signature.Status)"
+            Write-Output "⏭️  Signature verification skipped (no certificate configured)"
           }
         shell: powershell
 
