@@ -390,12 +390,15 @@ afterEvaluate {
                 }
 
                 // Find the MSI file in the build output directory
-                val msiFiles = fileTree(layout.buildDirectory.dir("compose/binaries/main")) {
-                    include("**/*.msi")
-                }.files
+                // Use project.buildDir instead of layout.buildDirectory for config cache compatibility
+                val buildDir = project.layout.buildDirectory.asFile.get()
+                val msiDir = File(buildDir, "compose/binaries/main")
+                val msiFiles = msiDir.walkTopDown()
+                    .filter { it.extension == "msi" }
+                    .toList()
 
                 if (msiFiles.isEmpty()) {
-                    logger.warn("No MSI file found in build output")
+                    logger.warn("No MSI file found in build output: ${msiDir.absolutePath}")
                     return@doLast
                 }
 
