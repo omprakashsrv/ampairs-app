@@ -96,20 +96,33 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Clean build directory
+        run: ./gradlew composeApp:clean
+
       - name: Build DMG package
         run: ./gradlew composeApp:packageDmg
 
       - name: Find DMG file
         id: find-dmg
         run: |
-          DMG_FILE=$(find composeApp/build/compose/binaries/main -name "*.dmg" | head -n 1)
+          # Find DMG file created in the last 5 minutes (current build)
+          DMG_FILE=$(find composeApp/build/compose/binaries/main -name "*.dmg" -mmin -5 -type f | head -n 1)
           if [ -z "$DMG_FILE" ]; then
-            echo "Error: DMG file not found"
+            echo "Error: DMG file not found or not recently created"
             exit 1
           fi
+
+          # Check for multiple DMG files
+          DMG_COUNT=$(find composeApp/build/compose/binaries/main -name "*.dmg" -type f | wc -l)
+          if [ "$DMG_COUNT" -gt 1 ]; then
+            echo "⚠️  Warning: Multiple DMG files found. Using most recent:"
+            find composeApp/build/compose/binaries/main -name "*.dmg" -type f -exec ls -lh {} \;
+          fi
+
           echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
           echo "dmg_name=$(basename $DMG_FILE)" >> $GITHUB_OUTPUT
-          echo "Found DMG: $DMG_FILE"
+          echo "✅ Found DMG: $DMG_FILE"
+          ls -lh "$DMG_FILE"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
@@ -159,6 +172,10 @@ jobs:
           Write-Output "✅ Code signing certificate configured"
         shell: powershell
 
+      - name: Clean build directory
+        run: ./gradlew composeApp:clean
+        shell: bash
+
       - name: Build and sign MSI package
         run: ./gradlew composeApp:packageMsi
         shell: bash
@@ -169,14 +186,28 @@ jobs:
       - name: Find MSI file
         id: find-msi
         run: |
-          $MSI_FILE = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          # Find MSI file and verify it was created in the last 5 minutes (current build)
+          $MSI_FILE = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse |
+                      Where-Object { $_.LastWriteTime -gt (Get-Date).AddMinutes(-5) } |
+                      Sort-Object LastWriteTime -Descending |
+                      Select-Object -First 1 -ExpandProperty FullName
+
           if (-not $MSI_FILE) {
-            Write-Error "MSI file not found"
+            Write-Error "MSI file not found or not recently created"
             exit 1
           }
+
+          # Verify only one MSI exists to avoid ambiguity
+          $ALL_MSI = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse
+          if ($ALL_MSI.Count -gt 1) {
+            Write-Warning "Multiple MSI files found. Using most recent: $MSI_FILE"
+            $ALL_MSI | ForEach-Object { Write-Output "  - $($_.FullName) (modified: $($_.LastWriteTime))" }
+          }
+
           "msi_path=$MSI_FILE" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "msi_name=$((Get-Item $MSI_FILE).Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Output "Found MSI: $MSI_FILE"
+          Write-Output "✅ Found MSI: $MSI_FILE"
+          Write-Output "   Created: $((Get-Item $MSI_FILE).LastWriteTime)"
         shell: powershell
 
       # Verify MSI is signed (optional verification step)
@@ -232,20 +263,33 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Clean build directory
+        run: ./gradlew composeApp:clean
+
       - name: Build DEB package
         run: ./gradlew composeApp:packageDeb
 
       - name: Find DEB file
         id: find-deb
         run: |
-          DEB_FILE=$(find composeApp/build/compose/binaries/main -name "*.deb" | head -n 1)
+          # Find DEB file created in the last 5 minutes (current build)
+          DEB_FILE=$(find composeApp/build/compose/binaries/main -name "*.deb" -mmin -5 -type f | head -n 1)
           if [ -z "$DEB_FILE" ]; then
-            echo "Error: DEB file not found"
+            echo "Error: DEB file not found or not recently created"
             exit 1
           fi
+
+          # Check for multiple DEB files
+          DEB_COUNT=$(find composeApp/build/compose/binaries/main -name "*.deb" -type f | wc -l)
+          if [ "$DEB_COUNT" -gt 1 ]; then
+            echo "⚠️  Warning: Multiple DEB files found. Using most recent:"
+            find composeApp/build/compose/binaries/main -name "*.deb" -type f -exec ls -lh {} \;
+          fi
+
           echo "deb_path=$DEB_FILE" >> $GITHUB_OUTPUT
           echo "deb_name=$(basename $DEB_FILE)" >> $GITHUB_OUTPUT
-          echo "Found DEB: $DEB_FILE"
+          echo "✅ Found DEB: $DEB_FILE"
+          ls -lh "$DEB_FILE"
 
       - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
