@@ -42,10 +42,31 @@ The CI/CD pipeline automates the following tasks when you push a version tag:
 **a) Configure GitHub Secrets** (Settings → Secrets and variables → Actions):
 
 ```
-AWS_ACCESS_KEY_ID          - IAM user with S3 write access
-AWS_SECRET_ACCESS_KEY      - IAM secret key
-AMPAIRS_ADMIN_TOKEN        - Admin JWT token from backend
+AWS_ACCESS_KEY_ID              - IAM user with S3 write access
+AWS_SECRET_ACCESS_KEY          - IAM secret key
+AMPAIRS_ADMIN_TOKEN            - Admin JWT token from backend
+WINDOWS_SIGN_CERT_BASE64       - Base64-encoded .pfx certificate (optional, for code signing)
+WINDOWS_SIGN_PASSWORD          - Certificate password (optional, required if cert provided)
 ```
+
+**Optional: Windows Code Signing** (prevents "Unknown Publisher" warning)
+
+If you have a Windows code signing certificate:
+
+1. Purchase a code signing certificate from a trusted CA (DigiCert, Sectigo, etc.)
+2. Export as `.pfx` file with private key
+3. Convert to base64:
+   ```bash
+   # On Linux/macOS
+   base64 -i your-certificate.pfx | tr -d '\n' > cert-base64.txt
+
+   # On Windows (PowerShell)
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("your-certificate.pfx")) | Out-File cert-base64.txt
+   ```
+4. Copy the base64 string and add as `WINDOWS_SIGN_CERT_BASE64` secret
+5. Add certificate password as `WINDOWS_SIGN_PASSWORD` secret
+
+**Note:** Code signing is optional but highly recommended. Without it, users will see "Unknown Publisher" warnings during installation.
 
 **b) IAM Policy** for GitHub Actions (in AWS):
 
@@ -235,7 +256,10 @@ Located at: `.github/workflows/release-desktop-app.yml`
 **Windows Job (runs on windows-latest):**
 - Sets up JDK 21
 - Caches Gradle dependencies
+- Decodes code signing certificate (if secrets configured)
 - Runs `./gradlew composeApp:packageMsi`
+- Signs `.msi` with certificate (automatic if cert available)
+- Verifies MSI signature
 - Finds `.msi` file in build output
 - Uploads as artifact
 

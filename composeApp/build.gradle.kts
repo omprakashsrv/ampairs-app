@@ -359,3 +359,87 @@ tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
     dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
     dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
 }
+
+// ============================================================================
+// Windows Code Signing Task (prevents "Unknown Publisher" warning)
+// ============================================================================
+//
+// Usage:
+//   1. Purchase a code signing certificate from a trusted CA (e.g., DigiCert, Sectigo)
+//   2. Export as .pfx or .p12 file with private key
+//   3. Set environment variables:
+//      - WINDOWS_SIGN_CERT_FILE: Path to .pfx/.p12 certificate file
+//      - WINDOWS_SIGN_PASSWORD: Certificate password
+//   4. Ensure signtool.exe is in PATH (comes with Windows SDK)
+//   5. Run: ./gradlew packageMsi
+//
+// The MSI will be automatically signed after packaging completes.
+// ============================================================================
+
+tasks.named("packageMsi").configure {
+    doLast {
+        val certFile = System.getenv("WINDOWS_SIGN_CERT_FILE")
+        val certPassword = System.getenv("WINDOWS_SIGN_PASSWORD")
+
+        if (certFile != null && certPassword != null) {
+            val certPath = File(certFile)
+            if (!certPath.exists()) {
+                logger.warn("Certificate file not found: $certFile")
+                return@doLast
+            }
+
+            // Find the MSI file in the build output directory
+            val msiFile = fileTree(layout.buildDirectory.dir("compose/binaries/main/msi")) {
+                include("*.msi")
+            }.singleFile
+
+            if (msiFile.exists()) {
+                logger.lifecycle("Signing MSI installer: ${msiFile.name}")
+
+                // Sign using signtool.exe (Windows SDK required)
+                // /f: certificate file
+                // /p: password
+                // /fd: file digest algorithm (SHA256)
+                // /tr: timestamp server URL (ensures signature validity after cert expires)
+                // /td: timestamp digest algorithm (SHA256)
+                // /d: description
+                val signCommand = listOf(
+                    "signtool.exe",
+                    "sign",
+                    "/f", certFile,
+                    "/p", certPassword,
+                    "/fd", "SHA256",
+                    "/tr", "http://timestamp.digicert.com",
+                    "/td", "SHA256",
+                    "/d", "Ampairs Desktop Application",
+                    msiFile.absolutePath
+                )
+
+                try {
+                    val process = ProcessBuilder(signCommand)
+                        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                        .redirectError(ProcessBuilder.Redirect.INHERIT)
+                        .start()
+
+                    val exitCode = process.waitFor()
+                    if (exitCode == 0) {
+                        logger.lifecycle("✅ MSI signed successfully: ${msiFile.name}")
+                    } else {
+                        logger.error("❌ MSI signing failed with exit code: $exitCode")
+                        logger.error("Make sure signtool.exe is in PATH (install Windows SDK)")
+                    }
+                } catch (e: Exception) {
+                    logger.error("❌ Failed to sign MSI: ${e.message}")
+                    logger.error("Make sure signtool.exe is available in PATH")
+                    logger.error("Install Windows SDK: https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/")
+                }
+            } else {
+                logger.warn("MSI file not found in build output")
+            }
+        } else {
+            logger.warn("⚠️  Windows code signing skipped")
+            logger.warn("Set WINDOWS_SIGN_CERT_FILE and WINDOWS_SIGN_PASSWORD to enable signing")
+            logger.warn("MSI will show 'Unknown Publisher' warning during installation")
+        }
+    }
+}

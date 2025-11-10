@@ -147,9 +147,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build MSI package
+      # Decode code signing certificate from GitHub Secrets
+      - name: Setup code signing certificate
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
+        run: |
+          $certBytes = [System.Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}")
+          $certPath = "$env:TEMP\ampairs-cert.pfx"
+          [System.IO.File]::WriteAllBytes($certPath, $certBytes)
+          "WINDOWS_SIGN_CERT_FILE=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "WINDOWS_SIGN_PASSWORD=${{ secrets.WINDOWS_SIGN_PASSWORD }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "✅ Code signing certificate configured"
+        shell: powershell
+
+      - name: Build and sign MSI package
         run: ./gradlew composeApp:packageMsi
         shell: bash
+        env:
+          WINDOWS_SIGN_CERT_FILE: ${{ env.WINDOWS_SIGN_CERT_FILE }}
+          WINDOWS_SIGN_PASSWORD: ${{ env.WINDOWS_SIGN_PASSWORD }}
 
       - name: Find MSI file
         id: find-msi
@@ -162,6 +177,20 @@ jobs:
           "msi_path=$MSI_FILE" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "msi_name=$((Get-Item $MSI_FILE).Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Output "Found MSI: $MSI_FILE"
+        shell: powershell
+
+      # Verify MSI is signed (optional verification step)
+      - name: Verify MSI signature
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
+        run: |
+          $MSI_FILE = "${{ steps.find-msi.outputs.msi_path }}"
+          $signature = Get-AuthenticodeSignature -FilePath $MSI_FILE
+          if ($signature.Status -eq 'Valid') {
+            Write-Output "✅ MSI is properly signed"
+            Write-Output "Signer: $($signature.SignerCertificate.Subject)"
+          } else {
+            Write-Warning "⚠️  MSI signature status: $($signature.Status)"
+          }
         shell: powershell
 
       - name: Upload MSI artifact
