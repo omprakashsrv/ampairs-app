@@ -93,36 +93,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Clean build directory
-        run: ./gradlew composeApp:clean
-
       - name: Build DMG package
-        run: ./gradlew composeApp:packageDmg --no-configuration-cache
+        run: |
+          chmod +x ./gradlew
+          ./gradlew composeApp:clean composeApp:packageDmg --no-configuration-cache
 
-      - name: Find DMG file
+      - name: Find and upload DMG
         id: find-dmg
         run: |
-          # Find DMG file created in the last 5 minutes (current build)
-          DMG_FILE=$(find composeApp/build/compose/binaries/main -name "*.dmg" -mmin -5 -type f | head -n 1)
+          DMG_FILE=$(find composeApp/build/compose/binaries/main -name "*.dmg" -type f | head -n 1)
           if [ -z "$DMG_FILE" ]; then
-            echo "Error: DMG file not found or not recently created"
+            echo "Error: DMG file not found"
             exit 1
           fi
-
-          # Check for multiple DMG files
-          DMG_COUNT=$(find composeApp/build/compose/binaries/main -name "*.dmg" -type f | wc -l)
-          if [ "$DMG_COUNT" -gt 1 ]; then
-            echo "⚠️  Warning: Multiple DMG files found. Using most recent:"
-            find composeApp/build/compose/binaries/main -name "*.dmg" -type f -exec ls -lh {} \;
-          fi
-
           echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
           echo "dmg_name=$(basename $DMG_FILE)" >> $GITHUB_OUTPUT
-          echo "✅ Found DMG: $DMG_FILE"
-          ls -lh "$DMG_FILE"
+          echo "✅ DMG ready: $DMG_FILE"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
@@ -160,74 +146,34 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Decode code signing certificate from GitHub Secrets
-      - name: Setup code signing certificate
+      # Setup code signing and build MSI in one step
+      - name: Build and sign MSI package
         run: |
+          # Setup code signing certificate if available
           if ("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}" -and "${{ secrets.WINDOWS_SIGN_PASSWORD }}") {
             $certBytes = [System.Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}")
             $certPath = "$env:TEMP\ampairs-cert.pfx"
             [System.IO.File]::WriteAllBytes($certPath, $certBytes)
-            "WINDOWS_SIGN_CERT_FILE=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-            "WINDOWS_SIGN_PASSWORD=${{ secrets.WINDOWS_SIGN_PASSWORD }}" | Out-File -FilePath $env:GITHUB_ENV -Append
-            Write-Output "✅ Code signing certificate configured"
-          } else {
-            Write-Output "⚠️  Code signing secrets not configured - MSI will be unsigned"
+            $env:WINDOWS_SIGN_CERT_FILE = $certPath
+            $env:WINDOWS_SIGN_PASSWORD = "${{ secrets.WINDOWS_SIGN_PASSWORD }}"
+            Write-Output "✅ Code signing configured"
           }
+
+          # Build MSI
+          ./gradlew composeApp:clean composeApp:packageMsi --no-configuration-cache
         shell: powershell
 
-      - name: Clean build directory
-        run: ./gradlew composeApp:clean
-        shell: bash
-
-      - name: Build and sign MSI package
-        run: ./gradlew composeApp:packageMsi --no-configuration-cache
-        shell: bash
-        env:
-          WINDOWS_SIGN_CERT_FILE: ${{ env.WINDOWS_SIGN_CERT_FILE }}
-          WINDOWS_SIGN_PASSWORD: ${{ env.WINDOWS_SIGN_PASSWORD }}
-
-      - name: Find MSI file
+      - name: Find and upload MSI
         id: find-msi
         run: |
-          # Find MSI file and verify it was created in the last 5 minutes (current build)
-          $MSI_FILE = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse |
-                      Where-Object { $_.LastWriteTime -gt (Get-Date).AddMinutes(-5) } |
-                      Sort-Object LastWriteTime -Descending |
-                      Select-Object -First 1 -ExpandProperty FullName
-
+          $MSI_FILE = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
           if (-not $MSI_FILE) {
-            Write-Error "MSI file not found or not recently created"
+            Write-Error "MSI file not found"
             exit 1
           }
-
-          # Verify only one MSI exists to avoid ambiguity
-          $ALL_MSI = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse
-          if ($ALL_MSI.Count -gt 1) {
-            Write-Warning "Multiple MSI files found. Using most recent: $MSI_FILE"
-            $ALL_MSI | ForEach-Object { Write-Output "  - $($_.FullName) (modified: $($_.LastWriteTime))" }
-          }
-
           "msi_path=$MSI_FILE" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "msi_name=$((Get-Item $MSI_FILE).Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Output "✅ Found MSI: $MSI_FILE"
-          Write-Output "   Created: $((Get-Item $MSI_FILE).LastWriteTime)"
-        shell: powershell
-
-      # Verify MSI is signed (optional verification step)
-      - name: Verify MSI signature
-        run: |
-          if (Test-Path env:WINDOWS_SIGN_CERT_FILE) {
-            $MSI_FILE = "${{ steps.find-msi.outputs.msi_path }}"
-            $signature = Get-AuthenticodeSignature -FilePath $MSI_FILE
-            if ($signature.Status -eq 'Valid') {
-              Write-Output "✅ MSI is properly signed"
-              Write-Output "Signer: $($signature.SignerCertificate.Subject)"
-            } else {
-              Write-Warning "⚠️  MSI signature status: $($signature.Status)"
-            }
-          } else {
-            Write-Output "⏭️  Signature verification skipped (no certificate configured)"
-          }
+          Write-Output "✅ MSI ready: $MSI_FILE"
         shell: powershell
 
       - name: Upload MSI artifact
@@ -266,36 +212,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Clean build directory
-        run: ./gradlew composeApp:clean
-
       - name: Build DEB package
-        run: ./gradlew composeApp:packageDeb --no-configuration-cache
+        run: |
+          chmod +x ./gradlew
+          ./gradlew composeApp:clean composeApp:packageDeb --no-configuration-cache
 
-      - name: Find DEB file
+      - name: Find and upload DEB
         id: find-deb
         run: |
-          # Find DEB file created in the last 5 minutes (current build)
-          DEB_FILE=$(find composeApp/build/compose/binaries/main -name "*.deb" -mmin -5 -type f | head -n 1)
+          DEB_FILE=$(find composeApp/build/compose/binaries/main -name "*.deb" -type f | head -n 1)
           if [ -z "$DEB_FILE" ]; then
-            echo "Error: DEB file not found or not recently created"
+            echo "Error: DEB file not found"
             exit 1
           fi
-
-          # Check for multiple DEB files
-          DEB_COUNT=$(find composeApp/build/compose/binaries/main -name "*.deb" -type f | wc -l)
-          if [ "$DEB_COUNT" -gt 1 ]; then
-            echo "⚠️  Warning: Multiple DEB files found. Using most recent:"
-            find composeApp/build/compose/binaries/main -name "*.deb" -type f -exec ls -lh {} \;
-          fi
-
           echo "deb_path=$DEB_FILE" >> $GITHUB_OUTPUT
           echo "deb_name=$(basename $DEB_FILE)" >> $GITHUB_OUTPUT
-          echo "✅ Found DEB: $DEB_FILE"
-          ls -lh "$DEB_FILE"
+          echo "✅ DEB ready: $DEB_FILE"
 
       - name: Upload DEB artifact
         uses: actions/upload-artifact@v4
