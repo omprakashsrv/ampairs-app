@@ -100,7 +100,7 @@ jobs:
         run: ./gradlew composeApp:clean
 
       - name: Build DMG package
-        run: ./gradlew composeApp:packageDmg
+        run: ./gradlew composeApp:packageDmg --no-configuration-cache
 
       - name: Find DMG file
         id: find-dmg
@@ -162,7 +162,7 @@ jobs:
 
       # Decode code signing certificate from GitHub Secrets
       - name: Setup code signing certificate
-        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' && secrets.WINDOWS_SIGN_PASSWORD != '' }}
         run: |
           $certBytes = [System.Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}")
           $certPath = "$env:TEMP\ampairs-cert.pfx"
@@ -177,7 +177,7 @@ jobs:
         shell: bash
 
       - name: Build and sign MSI package
-        run: ./gradlew composeApp:packageMsi
+        run: ./gradlew composeApp:packageMsi --no-configuration-cache
         shell: bash
         env:
           WINDOWS_SIGN_CERT_FILE: ${{ env.WINDOWS_SIGN_CERT_FILE }}
@@ -212,7 +212,7 @@ jobs:
 
       # Verify MSI is signed (optional verification step)
       - name: Verify MSI signature
-        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' && secrets.WINDOWS_SIGN_PASSWORD != '' }}
         run: |
           $MSI_FILE = "${{ steps.find-msi.outputs.msi_path }}"
           $signature = Get-AuthenticodeSignature -FilePath $MSI_FILE
@@ -267,7 +267,7 @@ jobs:
         run: ./gradlew composeApp:clean
 
       - name: Build DEB package
-        run: ./gradlew composeApp:packageDeb
+        run: ./gradlew composeApp:packageDeb --no-configuration-cache
 
       - name: Find DEB file
         id: find-deb
