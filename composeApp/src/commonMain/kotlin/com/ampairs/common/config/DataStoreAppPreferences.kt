@@ -20,6 +20,7 @@ class DataStoreAppPreferences(
 
     companion object {
         private val THEME_PREFERENCE_KEY = stringPreferencesKey("theme_preference")
+        private val LAST_UPDATE_CHECK_TIME_KEY = longPreferencesKey("last_update_check_time")
 
         // Workspace-aware preference keys
         // Note: These keys include workspace slug to maintain separate state per workspace
@@ -28,6 +29,10 @@ class DataStoreAppPreferences(
 
         private fun getFormConfigLastSyncTimeKey(workspaceSlug: String) =
             stringPreferencesKey("form_config_last_sync_time_$workspaceSlug")
+
+        // Update-specific keys
+        private fun getUpdateVersionDismissedKey(version: String) =
+            stringPreferencesKey("update_version_dismissed_$version")
 
         // Future preference keys can be added here:
         // private val LANGUAGE_PREFERENCE_KEY = stringPreferencesKey("language_preference")
@@ -83,6 +88,32 @@ class DataStoreAppPreferences(
 
         dataStore.edit { preferences ->
             preferences[key] = timestamp
+        }
+    }
+
+    override fun getLastUpdateCheckTime(): Flow<Long> {
+        return dataStore.data.map { preferences ->
+            preferences[LAST_UPDATE_CHECK_TIME_KEY] ?: 0L // Default to 0 (never checked)
+        }
+    }
+
+    override suspend fun setLastUpdateCheckTime(timestamp: Long) {
+        dataStore.edit { preferences ->
+            preferences[LAST_UPDATE_CHECK_TIME_KEY] = timestamp
+        }
+    }
+
+    override fun isUpdateVersionDismissed(version: String): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            val key = getUpdateVersionDismissedKey(version)
+            preferences[key]?.toBoolean() ?: false
+        }
+    }
+
+    override suspend fun setUpdateVersionDismissed(version: String, dismissed: Boolean) {
+        val key = getUpdateVersionDismissedKey(version)
+        dataStore.edit { preferences ->
+            preferences[key] = dismissed.toString()
         }
     }
 }

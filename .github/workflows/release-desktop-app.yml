@@ -1,0 +1,405 @@
+name: Release Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (e.g., v1.0.0.10)
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+  AWS_REGION: ap-south-1
+  S3_BUCKET: ampairs-app-updates
+  API_BASE_URL: https://api.ampairs.in
+
+jobs:
+  # ============================================================================
+  # Extract version from tag
+  # ============================================================================
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_code: ${{ steps.version.outputs.version_code }}
+      release_notes: ${{ steps.notes.outputs.notes }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for release notes
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION_CODE=$(echo $VERSION | awk -F. '{print $NF}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION (code: $VERSION_CODE)"
+
+      - name: Extract release notes from tag
+        id: notes
+        run: |
+          # Get tag annotation message
+          git fetch --tags --force
+          NOTES=$(git tag -l --format='%(contents)' ${GITHUB_REF#refs/tags/})
+
+          # If empty, use commit message
+          if [ -z "$NOTES" ]; then
+            NOTES=$(git log -1 --pretty=%B)
+          fi
+
+          # Save to file for multiline handling
+          echo "$NOTES" > release_notes.md
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload release notes artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release_notes.md
+          retention-days: 1
+
+  # ============================================================================
+  # Build macOS DMG
+  # ============================================================================
+  build-macos:
+    name: Build macOS DMG
+    runs-on: macos-latest
+    needs: prepare
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build DMG package
+        run: ./gradlew composeApp:packageDmg
+
+      - name: Find DMG file
+        id: find-dmg
+        run: |
+          DMG_FILE=$(find composeApp/build/compose/binaries/main -name "*.dmg" | head -n 1)
+          if [ -z "$DMG_FILE" ]; then
+            echo "Error: DMG file not found"
+            exit 1
+          fi
+          echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
+          echo "dmg_name=$(basename $DMG_FILE)" >> $GITHUB_OUTPUT
+          echo "Found DMG: $DMG_FILE"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: ${{ steps.find-dmg.outputs.dmg_path }}
+          retention-days: 30
+
+  # ============================================================================
+  # Build Windows MSI
+  # ============================================================================
+  build-windows:
+    name: Build Windows MSI
+    runs-on: windows-latest
+    needs: prepare
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # Decode code signing certificate from GitHub Secrets
+      - name: Setup code signing certificate
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
+        run: |
+          $certBytes = [System.Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}")
+          $certPath = "$env:TEMP\ampairs-cert.pfx"
+          [System.IO.File]::WriteAllBytes($certPath, $certBytes)
+          "WINDOWS_SIGN_CERT_FILE=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "WINDOWS_SIGN_PASSWORD=${{ secrets.WINDOWS_SIGN_PASSWORD }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Output "✅ Code signing certificate configured"
+        shell: powershell
+
+      - name: Build and sign MSI package
+        run: ./gradlew composeApp:packageMsi
+        shell: bash
+        env:
+          WINDOWS_SIGN_CERT_FILE: ${{ env.WINDOWS_SIGN_CERT_FILE }}
+          WINDOWS_SIGN_PASSWORD: ${{ env.WINDOWS_SIGN_PASSWORD }}
+
+      - name: Find MSI file
+        id: find-msi
+        run: |
+          $MSI_FILE = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $MSI_FILE) {
+            Write-Error "MSI file not found"
+            exit 1
+          }
+          "msi_path=$MSI_FILE" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "msi_name=$((Get-Item $MSI_FILE).Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Output "Found MSI: $MSI_FILE"
+        shell: powershell
+
+      # Verify MSI is signed (optional verification step)
+      - name: Verify MSI signature
+        if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' }}
+        run: |
+          $MSI_FILE = "${{ steps.find-msi.outputs.msi_path }}"
+          $signature = Get-AuthenticodeSignature -FilePath $MSI_FILE
+          if ($signature.Status -eq 'Valid') {
+            Write-Output "✅ MSI is properly signed"
+            Write-Output "Signer: $($signature.SignerCertificate.Subject)"
+          } else {
+            Write-Warning "⚠️  MSI signature status: $($signature.Status)"
+          }
+        shell: powershell
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: ${{ steps.find-msi.outputs.msi_path }}
+          retention-days: 30
+
+  # ============================================================================
+  # Build Linux DEB
+  # ============================================================================
+  build-linux:
+    name: Build Linux DEB
+    runs-on: ubuntu-latest
+    needs: prepare
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.konan
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build DEB package
+        run: ./gradlew composeApp:packageDeb
+
+      - name: Find DEB file
+        id: find-deb
+        run: |
+          DEB_FILE=$(find composeApp/build/compose/binaries/main -name "*.deb" | head -n 1)
+          if [ -z "$DEB_FILE" ]; then
+            echo "Error: DEB file not found"
+            exit 1
+          fi
+          echo "deb_path=$DEB_FILE" >> $GITHUB_OUTPUT
+          echo "deb_name=$(basename $DEB_FILE)" >> $GITHUB_OUTPUT
+          echo "Found DEB: $DEB_FILE"
+
+      - name: Upload DEB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: ${{ steps.find-deb.outputs.deb_path }}
+          retention-days: 30
+
+  # ============================================================================
+  # Publish to S3 and Register in Database
+  # ============================================================================
+  publish:
+    name: Publish ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    needs: [prepare, build-macos, build-windows, build-linux]
+
+    strategy:
+      matrix:
+        include:
+          - platform: MACOS
+            artifact: macos-dmg
+          - platform: WINDOWS
+            artifact: windows-msi
+          - platform: LINUX
+            artifact: linux-deb
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ./artifacts
+
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ./
+
+      - name: Find artifact file
+        id: find-file
+        run: |
+          FILE=$(find ./artifacts -type f \( -name "*.dmg" -o -name "*.msi" -o -name "*.deb" \) | head -n 1)
+          if [ -z "$FILE" ]; then
+            echo "Error: Artifact file not found"
+            exit 1
+          fi
+          echo "file_path=$FILE" >> $GITHUB_OUTPUT
+          echo "file_name=$(basename $FILE)" >> $GITHUB_OUTPUT
+          echo "Found artifact: $FILE"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install jq (for JSON processing)
+        run: sudo apt-get update && sudo apt-get install -y jq bc
+
+      - name: Make publish script executable
+        run: chmod +x ./scripts/publish-app-update.sh
+
+      - name: Publish to S3 and register in database
+        env:
+          AMPAIRS_ADMIN_TOKEN: ${{ secrets.AMPAIRS_ADMIN_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          API_BASE_URL: ${{ env.API_BASE_URL }}
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          CI: true  # Skip interactive confirmation
+        run: |
+          ./scripts/publish-app-update.sh \
+            "${{ steps.find-file.outputs.file_path }}" \
+            "${{ needs.prepare.outputs.version }}" \
+            "${{ matrix.platform }}" \
+            --release-notes release_notes.md
+
+      - name: Upload to GitHub Release (for backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: ${{ steps.find-file.outputs.file_path }}
+          retention-days: 90
+
+  # ============================================================================
+  # Create GitHub Release
+  # ============================================================================
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [prepare, publish]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./release-artifacts
+
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ./
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ needs.prepare.outputs.version }}
+          body_path: ./release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            ./release-artifacts/macos-dmg/*
+            ./release-artifacts/windows-msi/*
+            ./release-artifacts/linux-deb/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================================
+  # Notify on completion
+  # ============================================================================
+  notify:
+    name: Notify Release Complete
+    runs-on: ubuntu-latest
+    needs: [prepare, create-release]
+    if: always()
+
+    steps:
+      - name: Check status
+        run: |
+          if [ "${{ needs.create-release.result }}" == "success" ]; then
+            echo "✅ Release ${{ needs.prepare.outputs.version }} published successfully!"
+            echo "Users will receive update notifications within 4 hours."
+            echo "Download URLs are available via backend API."
+          else
+            echo "❌ Release ${{ needs.prepare.outputs.version }} failed!"
+            echo "Check workflow logs for details."
+            exit 1
+          fi
+
+      # Optional: Add Slack/Discord notification here
+      # - name: Notify Slack
+      #   if: success()
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: ${{ job.status }}
+      #     text: 'Release ${{ needs.prepare.outputs.version }} published successfully!'
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
