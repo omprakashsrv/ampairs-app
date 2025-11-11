@@ -6,7 +6,7 @@ on:
       - 'v*'  # Trigger on version tags (e.g., v1.0.0.10)
 
 env:
-  JAVA_VERSION: '21'
+  JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'temurin'
   AWS_REGION: ap-south-1
   S3_BUCKET: ampairs-app-updates
