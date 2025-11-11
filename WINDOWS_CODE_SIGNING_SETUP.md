@@ -4,7 +4,8 @@ Complete guide to obtaining and configuring Windows code signing certificates fo
 
 ## Table of Contents
 - [Why Code Signing?](#why-code-signing)
-- [Obtaining a Certificate](#obtaining-a-certificate)
+- [Free Option: SignPath.io](#free-option-signpathio) ⭐ **Recommended for Open Source**
+- [Paid Option: Commercial Certificates](#paid-option-commercial-certificates)
 - [Converting to Base64](#converting-to-base64)
 - [Configuring GitHub Secrets](#configuring-github-secrets)
 - [Testing the Setup](#testing-the-setup)
@@ -37,7 +38,225 @@ Digital signature is valid
 
 ---
 
-## Obtaining a Certificate
+## Free Option: SignPath.io
+
+⭐ **RECOMMENDED FOR OPEN SOURCE PROJECTS**
+
+[SignPath.io](https://signpath.io) provides **FREE code signing for open source projects** with trusted certificates.
+
+### Benefits
+
+✅ **Completely Free** - No annual costs
+✅ **Trusted Certificate** - Recognized by Windows SmartScreen
+✅ **GitHub Integration** - Direct CI/CD support
+✅ **No Manual Verification** - Automatic approval for open source
+✅ **Supports MSI** - Works with Windows installers
+✅ **Simple Setup** - 15-30 minute configuration
+
+### Eligibility
+
+Your project qualifies if:
+- ✅ Published on GitHub (public repository)
+- ✅ Open source license (MIT, Apache, GPL, etc.)
+- ✅ Active development (recent commits)
+- ✅ Clear project documentation
+
+**Ampairs App Status:** ✅ **Eligible** (public GitHub repository)
+
+### Setup Steps
+
+#### 1. Create SignPath Account
+
+1. Go to https://signpath.io
+2. Click **"Sign Up"**
+3. Choose **"Open Source"** plan
+4. Sign in with your **GitHub account**
+
+#### 2. Register Your Project
+
+1. In SignPath dashboard, click **"Create Organization"**
+2. Name: `Ampairs` (or your company name)
+3. Click **"New Project"**
+4. Project settings:
+   ```
+   Name: Ampairs Desktop App
+   Description: Business management application
+   Repository: https://github.com/omprakashsrv/ampairs-app
+   License: (select your license)
+   ```
+5. Click **"Submit for Review"**
+
+**Approval Time:** Usually 1-2 business days for open source projects
+
+#### 3. Configure Signing Policy
+
+Once approved, create a signing policy:
+
+1. Go to **Signing Policies** → **New Policy**
+2. Policy settings:
+   ```
+   Name: Release MSI Signing
+   Artifact Configuration:
+     - File type: MSI (Windows Installer)
+     - Deep signing: Enabled
+   Origin Verification:
+     - Repository: github.com/omprakashsrv/ampairs-app
+     - Branch: main (or tags v*)
+     - Workflow: release-desktop-app.yml
+   ```
+
+#### 4. Get API Credentials
+
+1. Go to **Settings** → **API Tokens**
+2. Click **"Create Token"**
+3. Name: `GitHub Actions CI/CD`
+4. Permissions: `Submit signing request`
+5. **Copy the token** (shown only once)
+
+#### 5. Update GitHub Actions Workflow
+
+Replace the manual signing step with SignPath integration:
+
+**Option A: Using SignPath GitHub Action (Recommended)**
+
+Add to `.github/workflows/release-desktop-app.yml`:
+
+```yaml
+- name: Build MSI package
+  run: |
+    chmod +x ./gradlew
+    ./gradlew composeApp:clean composeApp:packageMsi --no-configuration-cache
+
+- name: Find MSI file
+  id: find-msi
+  run: |
+    MSI_FILE=$(find composeApp/build/compose/binaries/main -name "*.msi" -type f | head -n 1)
+    echo "msi_path=$MSI_FILE" >> $GITHUB_OUTPUT
+
+- name: Sign MSI with SignPath
+  uses: signpath/github-action-submit-signing-request@v1
+  with:
+    api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+    organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+    project-slug: 'ampairs-desktop-app'
+    signing-policy-slug: 'release-msi-signing'
+    artifact-configuration-slug: 'default'
+    input-artifact-path: ${{ steps.find-msi.outputs.msi_path }}
+    output-artifact-path: ${{ steps.find-msi.outputs.msi_path }}
+    wait-for-completion: true
+```
+
+**Option B: Using SignPath REST API**
+
+```yaml
+- name: Sign MSI with SignPath
+  run: |
+    MSI_FILE="${{ steps.find-msi.outputs.msi_path }}"
+
+    # Submit signing request
+    RESPONSE=$(curl -X POST \
+      "https://app.signpath.io/api/v1/${{ secrets.SIGNPATH_ORGANIZATION_ID }}/SigningRequests" \
+      -H "Authorization: Bearer ${{ secrets.SIGNPATH_API_TOKEN }}" \
+      -F "ProjectSlug=ampairs-desktop-app" \
+      -F "SigningPolicySlug=release-msi-signing" \
+      -F "Artifact=@$MSI_FILE")
+
+    SIGNING_REQUEST_ID=$(echo $RESPONSE | jq -r '.SigningRequestId')
+
+    # Wait for completion
+    while true; do
+      STATUS=$(curl -s "https://app.signpath.io/api/v1/${{ secrets.SIGNPATH_ORGANIZATION_ID }}/SigningRequests/$SIGNING_REQUEST_ID" \
+        -H "Authorization: Bearer ${{ secrets.SIGNPATH_API_TOKEN }}" | jq -r '.Status')
+
+      if [ "$STATUS" = "Completed" ]; then
+        # Download signed artifact
+        curl -o "$MSI_FILE" \
+          "https://app.signpath.io/api/v1/${{ secrets.SIGNPATH_ORGANIZATION_ID }}/SigningRequests/$SIGNING_REQUEST_ID/SignedArtifact" \
+          -H "Authorization: Bearer ${{ secrets.SIGNPATH_API_TOKEN }}"
+        echo "✅ MSI signed successfully with SignPath"
+        break
+      elif [ "$STATUS" = "Failed" ]; then
+        echo "❌ Signing failed"
+        exit 1
+      fi
+
+      sleep 10
+    done
+```
+
+#### 6. Add GitHub Secrets
+
+1. Go to GitHub → Settings → Secrets → Actions
+2. Add new secrets:
+
+```
+SIGNPATH_API_TOKEN
+  Value: (paste the API token from SignPath)
+
+SIGNPATH_ORGANIZATION_ID
+  Value: (your organization ID from SignPath URL)
+```
+
+#### 7. Test the Setup
+
+```bash
+git tag -a v1.0.0.14-signpath-test -m "Test SignPath signing"
+git push origin v1.0.0.14-signpath-test
+```
+
+**Expected workflow:**
+1. MSI builds successfully
+2. Uploaded to SignPath
+3. Signed automatically (open source approval)
+4. Downloaded back to workflow
+5. Uploaded to S3 and GitHub Release
+
+### SignPath vs Commercial Certificates
+
+| Feature | SignPath (Free) | Commercial ($70-500/year) |
+|---------|-----------------|---------------------------|
+| **Cost** | ✅ Free | ❌ $70-500/year |
+| **Trusted by Windows** | ✅ Yes | ✅ Yes |
+| **Setup Time** | 15-30 minutes | 1-5 days |
+| **Identity Verification** | ✅ Automatic (GitHub) | ❌ Manual documents |
+| **CI/CD Integration** | ✅ Built-in | ⚠️ Manual setup |
+| **Open Source Requirement** | ⚠️ Yes (public repo) | ✅ No |
+| **Annual Renewal** | ✅ Automatic | ❌ Manual + payment |
+| **Certificate Control** | ❌ Managed by SignPath | ✅ You own it |
+
+### When to Use SignPath
+
+**Use SignPath if:**
+- ✅ Your project is open source (public repository)
+- ✅ You want zero ongoing costs
+- ✅ You prefer automated CI/CD integration
+- ✅ You don't need to sign private/closed-source builds
+
+**Use Commercial Certificate if:**
+- ❌ Your project is closed-source/private
+- ❌ You need to sign locally (offline)
+- ❌ You want full certificate ownership
+- ❌ You need to sign non-MSI files (drivers, ActiveX, etc.)
+
+### SignPath Limitations
+
+1. **Open Source Only**: Repository must be public
+2. **Build Transparency**: Signing happens on SignPath servers (they can see your MSI)
+3. **Internet Required**: Can't sign offline
+4. **MSI Only**: For our use case this is fine, but doesn't support all file types
+
+### Support
+
+- **Documentation**: https://about.signpath.io/documentation
+- **Support**: support@signpath.io
+- **GitHub**: https://github.com/SignPath
+- **Status**: https://status.signpath.io
+
+---
+
+## Paid Option: Commercial Certificates
+
+If SignPath doesn't meet your needs (closed-source project, need certificate ownership, etc.), purchase a commercial certificate:
 
 ### Step 1: Purchase from a Trusted Certificate Authority
 
