@@ -9,7 +9,7 @@ env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'temurin'
   AWS_REGION: ap-south-1
-  S3_BUCKET: ampairs-app-updates
+  S3_BUCKET: ampairs-artifacts
   API_BASE_URL: https://api.ampairs.in
 
 jobs:
