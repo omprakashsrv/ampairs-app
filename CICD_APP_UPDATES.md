@@ -51,11 +51,31 @@ WINDOWS_SIGN_PASSWORD          - Certificate password (optional, required if cer
 
 **Optional: Windows Code Signing** (prevents "Unknown Publisher" warning)
 
-If you have a Windows code signing certificate:
+**⭐ FREE OPTION: SignPath.io** (Recommended for Open Source)
+- ✅ **Completely free** for open source projects
+- ✅ Trusted Windows certificate (same as paid)
+- ✅ 15-30 minute setup
+- ✅ GitHub integration built-in
+- ⚠️ Requires public repository
 
-1. Purchase a code signing certificate from a trusted CA (DigiCert, Sectigo, etc.)
-2. Export as `.pfx` file with private key
-3. Convert to base64:
+**💰 PAID OPTION: Commercial Certificate**
+- Purchase from Certificate Authorities ($70-500/year)
+- Full certificate ownership
+- Works with private repositories
+- Requires identity verification (1-5 days)
+
+**📖 Complete Setup Guide:** See [WINDOWS_CODE_SIGNING_SETUP.md](WINDOWS_CODE_SIGNING_SETUP.md) for:
+- **SignPath.io free setup** (recommended!)
+- Where to purchase commercial certificates
+- Step-by-step configuration for both options
+- GitHub Secrets configuration
+- Testing and troubleshooting
+- Comparison table (free vs paid)
+
+**Quick Setup (if you already have a certificate):**
+
+1. Export certificate as `.pfx` file with private key
+2. Convert to base64:
    ```bash
    # On Linux/macOS
    base64 -i your-certificate.pfx | tr -d '\n' > cert-base64.txt
@@ -63,10 +83,11 @@ If you have a Windows code signing certificate:
    # On Windows (PowerShell)
    [Convert]::ToBase64String([IO.File]::ReadAllBytes("your-certificate.pfx")) | Out-File cert-base64.txt
    ```
-4. Copy the base64 string and add as `WINDOWS_SIGN_CERT_BASE64` secret
-5. Add certificate password as `WINDOWS_SIGN_PASSWORD` secret
+3. Add to GitHub Secrets:
+   - `WINDOWS_SIGN_CERT_BASE64` = (paste entire base64 string)
+   - `WINDOWS_SIGN_PASSWORD` = (certificate password)
 
-**Note:** Code signing is optional but highly recommended. Without it, users will see "Unknown Publisher" warnings during installation.
+**Note:** Code signing is optional but highly recommended. Without it, users see "Unknown Publisher" warnings during installation. See the setup guide for certificate authority recommendations and pricing.
 
 **b) IAM Policy** for GitHub Actions (in AWS):
 

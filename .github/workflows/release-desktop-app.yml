@@ -6,10 +6,10 @@ on:
       - 'v*'  # Trigger on version tags (e.g., v1.0.0.10)
 
 env:
-  JAVA_VERSION: '21'
+  JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'temurin'
   AWS_REGION: ap-south-1
-  S3_BUCKET: ampairs-app-updates
+  S3_BUCKET: ampairs-artifacts
   API_BASE_URL: https://api.ampairs.in
 
 jobs:
@@ -115,7 +115,7 @@ jobs:
         with:
           name: macos-dmg
           path: ${{ steps.find-dmg.outputs.dmg_path }}
-          retention-days: 30
+          retention-days: 7
 
   # ============================================================================
   # Build Windows MSI
@@ -181,7 +181,7 @@ jobs:
         with:
           name: windows-msi
           path: ${{ steps.find-msi.outputs.msi_path }}
-          retention-days: 30
+          retention-days: 7
 
   # ============================================================================
   # Build Linux DEB
@@ -234,7 +234,7 @@ jobs:
         with:
           name: linux-deb
           path: ${{ steps.find-deb.outputs.deb_path }}
-          retention-days: 30
+          retention-days: 7
 
   # ============================================================================
   # Publish to S3 and Register in Database
@@ -282,6 +282,18 @@ jobs:
           echo "file_name=$(basename $FILE)" >> $GITHUB_OUTPUT
           echo "Found artifact: $FILE"
 
+      - name: Verify AWS secrets are configured
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "❌ ERROR: AWS_ACCESS_KEY_ID secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "❌ ERROR: AWS_SECRET_ACCESS_KEY secret is not set"
+            exit 1
+          fi
+          echo "✅ AWS credentials secrets are configured"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -316,7 +328,7 @@ jobs:
         with:
           name: release-${{ matrix.platform }}
           path: ${{ steps.find-file.outputs.file_path }}
-          retention-days: 90
+          retention-days: 7
 
   # ============================================================================
   # Create GitHub Release
