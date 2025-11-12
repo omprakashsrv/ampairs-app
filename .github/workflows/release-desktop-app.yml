@@ -243,6 +243,7 @@ jobs:
     name: Publish ${{ matrix.platform }}
     runs-on: ubuntu-latest
     needs: [prepare, build-macos, build-windows, build-linux]
+    environment: production
 
     strategy:
       matrix:
