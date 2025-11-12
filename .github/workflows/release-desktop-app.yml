@@ -115,7 +115,7 @@ jobs:
         with:
           name: macos-dmg
           path: ${{ steps.find-dmg.outputs.dmg_path }}
-          retention-days: 30
+          retention-days: 7
 
   # ============================================================================
   # Build Windows MSI
@@ -181,7 +181,7 @@ jobs:
         with:
           name: windows-msi
           path: ${{ steps.find-msi.outputs.msi_path }}
-          retention-days: 30
+          retention-days: 7
 
   # ============================================================================
   # Build Linux DEB
@@ -234,7 +234,7 @@ jobs:
         with:
           name: linux-deb
           path: ${{ steps.find-deb.outputs.deb_path }}
-          retention-days: 30
+          retention-days: 7
 
   # ============================================================================
   # Publish to S3 and Register in Database
@@ -316,7 +316,7 @@ jobs:
         with:
           name: release-${{ matrix.platform }}
           path: ${{ steps.find-file.outputs.file_path }}
-          retention-days: 90
+          retention-days: 7
 
   # ============================================================================
   # Create GitHub Release
