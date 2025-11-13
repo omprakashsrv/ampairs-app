@@ -29,7 +29,7 @@ class UpdateApiImpl(
             "currentVersion" to currentVersion,
             "versionCode" to versionCode
         )
-        return get(client, ApiUrlBuilder.appUpdateUrl("v1/check"), params)
+        return get(client, ApiUrlBuilder.appUpdateUrl("check"), params)
     }
 
     override suspend fun downloadUpdate(downloadUrl: String): ByteArray {

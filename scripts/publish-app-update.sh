@@ -211,12 +211,13 @@ register_version() {
     local version=$1
     local version_code=$2
     local platform=$3
-    local download_url=$4
-    local file_size_mb=$5
-    local checksum=$6
-    local is_mandatory=${7:-false}
-    local min_version=${8:-null}
-    local release_notes=${9:-null}
+    local s3_key=$4
+    local filename=$5
+    local file_size_mb=$6
+    local checksum=$7
+    local is_mandatory=${8:-false}
+    local min_version=${9:-null}
+    local release_notes=${10:-null}
 
     log_info "Registering version in database..."
 
@@ -227,7 +228,8 @@ register_version() {
   "version_code": $version_code,
   "platform": "$platform",
   "is_mandatory": $is_mandatory,
-  "download_url": "$download_url",
+  "s3_key": "$s3_key",
+  "filename": "$filename",
   "file_size_mb": $file_size_mb,
   "checksum": "$checksum"
 EOF
@@ -366,12 +368,10 @@ main() {
         log_success "Release notes loaded from $RELEASE_NOTES_FILE"
     fi
 
-    # Generate S3 key
+    # Generate S3 key and filename
     FILE_EXTENSION="${FILE_PATH##*.}"
     S3_KEY="updates/${PLATFORM,,}-${VERSION}.${FILE_EXTENSION}"
-
-    # Generate download URL
-    DOWNLOAD_URL="$API_BASE_URL/api/v1/app-updates/download/${PLATFORM,,}-${VERSION}.${FILE_EXTENSION}"
+    FILENAME="${PLATFORM,,}-${VERSION}.${FILE_EXTENSION}"
 
     # Summary
     echo ""
@@ -389,7 +389,7 @@ main() {
     fi
     echo "S3 Bucket:        $S3_BUCKET"
     echo "S3 Key:           $S3_KEY"
-    echo "Download URL:     $DOWNLOAD_URL"
+    echo "Filename:         $FILENAME"
     echo "API URL:          $API_BASE_URL"
     echo ""
 
@@ -421,7 +421,8 @@ main() {
         "$VERSION" \
         "$VERSION_CODE" \
         "$PLATFORM" \
-        "$DOWNLOAD_URL" \
+        "$S3_KEY" \
+        "$FILENAME" \
         "$FILE_SIZE_MB" \
         "$CHECKSUM" \
         "$IS_MANDATORY" \

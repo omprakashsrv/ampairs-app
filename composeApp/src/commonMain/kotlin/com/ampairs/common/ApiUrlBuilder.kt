@@ -96,7 +96,7 @@ object ApiUrlBuilder {
      */
     fun appUpdateUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
-        return "${ConfigurationManager.apiBaseUrl}/app-updates/$cleanPath"
+        return "${ConfigurationManager.apiBaseUrl}/api/v1/app-updates/$cleanPath"
     }
 
     /**
