@@ -290,7 +290,7 @@ main() {
     local RELEASE_NOTES_FILE=""
     local DRY_RUN=false
 
-    while [[ $# -gt 0 ]]; then
+    while [[ $# -gt 0 ]]; do
         case $1 in
             --mandatory)
                 IS_MANDATORY=true
