@@ -2,6 +2,7 @@ package com.ampairs.update.service
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.utils.io.*
@@ -18,7 +19,13 @@ actual suspend fun downloadUpdateFileImpl(
     fileName: String,
     onProgress: (Float) -> Unit
 ): String? = withContext(Dispatchers.IO) {
-    val client = HttpClient(CIO)
+    val client = HttpClient(CIO) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = 300_000 // 5 minutes for large file downloads
+            connectTimeoutMillis = 30_000  // 30 seconds to establish connection
+            socketTimeoutMillis = 60_000   // 60 seconds between data packets
+        }
+    }
 
     try {
         // Get downloads directory or temp directory
