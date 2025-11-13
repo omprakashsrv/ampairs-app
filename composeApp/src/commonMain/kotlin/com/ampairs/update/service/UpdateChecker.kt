@@ -60,9 +60,6 @@ class UpdateChecker(
                 versionCode = versionCode
             )
 
-            // Update last check time
-            appPreferences.setLastUpdateCheckTime(currentTime)
-
             // Handle response
             val responseData = response.data
             if (responseData != null && response.error == null) {
@@ -76,6 +73,8 @@ class UpdateChecker(
                     println("✅ App is up to date")
                 }
 
+                // Update last check time
+                appPreferences.setLastUpdateCheckTime(currentTime)
                 result
             } else {
                 println("⚠️ Failed to check for updates: ${response.error}")
