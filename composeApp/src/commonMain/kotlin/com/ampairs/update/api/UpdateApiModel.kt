@@ -9,12 +9,13 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class UpdateInfoApiModel(
+    @SerialName("uid") val uid: String,
     @SerialName("version") val version: String,
     @SerialName("version_code") val versionCode: Int,
     @SerialName("release_date") val releaseDate: String,
     @SerialName("is_mandatory") val isMandatory: Boolean,
-    @SerialName("download_url") val downloadUrl: String,
     @SerialName("file_size_mb") val fileSizeMb: Double,
+    @SerialName("filename") val filename: String,
     @SerialName("platform") val platform: String, // "MACOS", "WINDOWS", "LINUX"
     @SerialName("release_notes") val releaseNotes: String? = null,
     @SerialName("min_supported_version") val minSupportedVersion: String? = null,

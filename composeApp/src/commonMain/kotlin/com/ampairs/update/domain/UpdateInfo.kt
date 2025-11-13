@@ -1,5 +1,6 @@
 package com.ampairs.update.domain
 
+import com.ampairs.common.config.ConfigurationManager
 import com.ampairs.update.api.UpdateCheckResponse
 import com.ampairs.update.api.UpdateInfoApiModel
 
@@ -66,12 +67,15 @@ sealed class UpdateInstallState {
 // Extension functions for converting between API and domain models
 
 fun UpdateInfoApiModel.asDomainModel(): UpdateInfo {
+    // Construct download URL from API base URL and filename
+    val downloadUrl = "${ConfigurationManager.apiBaseUrl}/api/v1/app-updates/download/${this.filename}"
+
     return UpdateInfo(
         version = this.version,
         versionCode = this.versionCode,
         releaseDate = this.releaseDate,
         isMandatory = this.isMandatory,
-        downloadUrl = this.downloadUrl,
+        downloadUrl = downloadUrl,
         fileSizeMb = this.fileSizeMb,
         platform = DesktopPlatform.fromCode(this.platform),
         releaseNotes = this.releaseNotes,
