@@ -6,15 +6,22 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import androidx.navigation.toRoute
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.authNavigation
 import com.ampairs.business.businessNavigation
 import com.ampairs.common.UnauthenticatedHandler
+import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.firebase.performance.FirebasePerformance
 import com.ampairs.common.firebase.performance.PerformanceAttributes
@@ -27,11 +34,13 @@ import com.ampairs.customer.ui.customerNavigation
 import com.ampairs.product.productNavigation
 import com.ampairs.tax.ui.navigation.taxNavigation
 import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.workspaceNavigation
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import org.koin.compose.koinInject
 
 @Composable
@@ -43,6 +52,56 @@ fun AppNavigation(
     val workspaceManager = WorkspaceContextManager.getInstance()
     val analytics: FirebaseAnalytics = koinInject()
     val performance: FirebasePerformance = koinInject()
+    val appPreferences: AppPreferencesDataStore = koinInject()
+    val workspaceRepository: OfflineFirstWorkspaceRepository = koinInject()
+    val tokenRepository: TokenRepository = koinInject()
+    val userWorkspaceRepository: UserWorkspaceRepository = koinInject()
+
+    // State for auto-resume: null = checking, true = auto-resume, false = normal flow
+    var autoResumeState by remember { mutableStateOf<Pair<Boolean, String?>?>(null) }
+
+    // Check for auto-resume on initial load - BEFORE rendering NavHost
+    LaunchedEffect(Unit) {
+        val lastUserId = appPreferences.getLastUserId().first()
+        val lastWorkspaceId = appPreferences.getLastWorkspaceId().first()
+
+        if (!lastUserId.isNullOrBlank() && !lastWorkspaceId.isNullOrBlank()) {
+            println("AppNavigation: 🔄 Checking auto-resume for user: $lastUserId, workspace: $lastWorkspaceId")
+
+            // Verify user exists and set as current
+            tokenRepository.setCurrentUser(lastUserId)
+            val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(lastUserId).isNotBlank()
+
+            if (hasWorkspace) {
+                // Load workspace from local database
+                val workspace = workspaceRepository.getWorkspaceById(lastWorkspaceId)
+                if (workspace != null) {
+                    println("AppNavigation: ✅ Auto-resume: Setting workspace context for ${workspace.name}")
+                    // Set workspace context BEFORE navigation
+                    WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
+                    GlobalNavigationManager.getInstance().onWorkspaceSelected()
+                    autoResumeState = Pair(true, lastWorkspaceId)
+                } else {
+                    println("AppNavigation: ⚠️ Workspace not found, clearing preferences")
+                    appPreferences.clearLastWorkspaceId()
+                    autoResumeState = Pair(false, null)
+                }
+            } else {
+                println("AppNavigation: ⚠️ User has no workspace, clearing preferences")
+                appPreferences.clearLastWorkspaceId()
+                autoResumeState = Pair(false, null)
+            }
+        } else {
+            println("AppNavigation: 📋 No auto-resume data found, normal flow")
+            autoResumeState = Pair(false, null)
+        }
+    }
+
+    // Show loading while checking auto-resume
+    if (autoResumeState == null) {
+        // Optional: Show a loading indicator while checking
+        return
+    }
 
     // Track active performance traces
     var activeScreenTrace: Trace? = null
@@ -102,6 +161,8 @@ fun AppNavigation(
         UnauthenticatedHandler.onUnauthenticated.collectLatest {
             // Clear workspace context and navigation service on logout using integration
             WorkspaceContextIntegration.clearWorkspaceContext()
+            // Clear last workspace ID to prevent auto-resume after logout
+            appPreferences.clearLastWorkspaceId()
             navController.navigate(Route.Login) {
                 popUpTo(0)
             }
@@ -130,25 +191,52 @@ fun AppNavigation(
     // This was causing infinite loops and should be handled differently
     // The workspace selection should be handled by the individual screens that require workspace context
 
+    // Determine start destination based on auto-resume state
+    val (shouldAutoResume, lastWorkspaceId) = autoResumeState!!
+    val startDestination: Any = if (shouldAutoResume && lastWorkspaceId != null) {
+        WorkspaceRoute.Modules(lastWorkspaceId)
+    } else {
+        Route.Login
+    }
+
     NavHost(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.systemBars),
-        navController = navController, startDestination = Route.Login
+        navController = navController,
+        startDestination = startDestination
     ) {
         authNavigation(navController) {
-            val options = navOptions {
-                popUpTo<AuthRoute.LoginRoot> {
-                    this.inclusive = true
-                }
-                launchSingleTop = true // Avoid multiple instances of the same destination
-            }
+            // After successful login, navigate to workspace selection
             navController.navigate(
                 route = Route.Workspace,
-                navOptions = options
+                navOptions = navOptions {
+                    popUpTo<Route.Login> { inclusive = true }
+                    launchSingleTop = true
+                }
             )
         }
         workspaceNavigation(navController, onNavigationServiceReady)
+
+        // Top-level WorkspaceRoute.Modules for auto-resume (direct start without back stack)
+        composable<WorkspaceRoute.Modules> { backStackEntry ->
+            val modulesRoute = backStackEntry.toRoute<WorkspaceRoute.Modules>()
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                com.ampairs.workspace.ui.WorkspaceModulesScreen(
+                    navController = navController,
+                    onModuleSelected = { moduleCode ->
+                        navController.navigate(WorkspaceRoute.Modules(modulesRoute.workspaceId))
+                    },
+                    onNavigationServiceReady = onNavigationServiceReady,
+                    workspaceId = modulesRoute.workspaceId,
+                    paddingValues = paddingValues
+                )
+            }
+        }
+
         // Customer module navigation
         composable<Route.Customer> {
             AppScreenWithHeader(

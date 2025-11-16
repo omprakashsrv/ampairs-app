@@ -17,6 +17,7 @@ import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.domain.WorkspaceList
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
+import com.ampairs.common.config.AppPreferencesDataStore
 import kotlinx.coroutines.flow.firstOrNull
 import org.koin.compose.koinInject
 
@@ -32,6 +33,7 @@ fun AppScreenWithHeader(
     val userWorkspaceRepository: UserWorkspaceRepository = koinInject()
     val tokenRepository: TokenRepository = koinInject()
     val analytics: FirebaseAnalytics = koinInject()
+    val appPreferences: AppPreferencesDataStore = koinInject()
     val headerStateManager = remember { AppHeaderStateManager.instance }
     val headerState by headerStateManager.headerState.collectAsState()
 
@@ -124,12 +126,14 @@ fun AppScreenWithHeader(
             if (!isWorkspaceSelection) {
                 // Clear workspace context and modules before switching
                 WorkspaceContextIntegration.clearWorkspaceContext()
+                // Clear last workspace ID to prevent auto-selection when explicitly switching
+                kotlinx.coroutines.runBlocking {
+                    appPreferences.clearLastWorkspaceId()
+                }
                 navController.navigate(Route.Workspace) {
-                    // Clear back stack up to workspace selection screen
-                    // This removes any deep navigation within the current workspace
-                    popUpTo(Route.Workspace) {
-                        inclusive = true  // Include the workspace route itself
-                    }
+                    // Clear ENTIRE back stack for workspace switching - complete reset
+                    // Use graph ID to pop all destinations regardless of start destination
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
                     launchSingleTop = true
                 }
             }
@@ -146,10 +150,16 @@ fun AppScreenWithHeader(
 
             // Clear workspace context and modules before logout
             WorkspaceContextIntegration.clearWorkspaceContext()
+            // Clear saved preferences to prevent auto-resume after logout
+            kotlinx.coroutines.runBlocking {
+                appPreferences.clearLastWorkspaceId()
+                appPreferences.clearLastUserId()
+            }
             // Clear user data and navigate to login
             headerStateManager.reset()
             navController.navigate(Route.Login) {
-                popUpTo(0)
+                // Use graph ID to pop all destinations regardless of start destination
+                popUpTo(navController.graph.id) { inclusive = true }
             }
         },
         onSwitchUser = {
@@ -160,6 +170,9 @@ fun AppScreenWithHeader(
             kotlinx.coroutines.runBlocking {
                 // Clear the current user so they stay on user selection screen
                 tokenRepository.clearCurrentUser()
+                // Clear saved preferences to prevent auto-selection when explicitly switching
+                appPreferences.clearLastUserId()
+                appPreferences.clearLastWorkspaceId()
             }
             // Clear workspace context and modules before switching users
             WorkspaceContextIntegration.clearWorkspaceContext()
@@ -167,7 +180,8 @@ fun AppScreenWithHeader(
             headerStateManager.reset()
             navController.navigate(AuthRoute.UserSelection) {
                 // Clear the ENTIRE back stack for user switching - complete reset
-                popUpTo(0) { inclusive = true }
+                // Use graph ID to pop all destinations regardless of start destination
+                popUpTo(navController.graph.id) { inclusive = true }
                 launchSingleTop = true
             }
         },

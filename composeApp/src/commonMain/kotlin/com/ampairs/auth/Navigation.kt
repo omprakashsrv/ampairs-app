@@ -41,7 +41,7 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                         } else {
                             // User needs to select workspace, go to workspace selection
                             navigator.navigate(Route.Workspace) {
-                                popUpTo(Route.Login) { inclusive = true }
+                                popUpTo(navigator.graph.startDestinationId) { inclusive = true }
                             }
                         }
                     }
@@ -118,7 +118,8 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                     val currentUserId = tokenRepository.getCurrentUserId()
                     if (currentUserId != null) {
                         val hasSelectedWorkspace =
-                            userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
+                            userWorkspaceRepository.getWorkspaceIdForUser(currentUserId)
+                                .isNotBlank()
                         if (hasSelectedWorkspace) {
                             // User has selected workspace, go to main app
                             onLoginSuccess()
@@ -139,10 +140,12 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
 
             PhoneScreen(
                 onAuthSuccess = { sessionId, verificationId ->
-                    navigator.navigate(AuthRoute.Otp(
-                        sessionId = sessionId,
-                        verificationId = verificationId
-                    ))
+                    navigator.navigate(
+                        AuthRoute.Otp(
+                            sessionId = sessionId,
+                            verificationId = verificationId
+                        )
+                    )
                 },
                 onExistingUserSelected = {
                     // When existing user is selected, check their workspace status
@@ -150,7 +153,8 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                         val currentUserId = tokenRepository.getCurrentUserId()
                         if (currentUserId != null) {
                             val hasSelectedWorkspace =
-                                userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
+                                userWorkspaceRepository.getWorkspaceIdForUser(currentUserId)
+                                    .isNotBlank()
                             if (hasSelectedWorkspace) {
                                 // User has selected workspace, go to main app
                                 onLoginSuccess()

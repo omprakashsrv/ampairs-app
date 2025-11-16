@@ -43,7 +43,9 @@ fun NavGraphBuilder.workspaceNavigation(
                     },
                     onWorkspaceSelected = { workspaceId: String ->
                         // Navigate to modules list for the selected workspace
-                        navController.navigate(WorkspaceRoute.Modules(workspaceId))
+                        navController.navigate(WorkspaceRoute.Modules(workspaceId)){
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
                     },
                     onWorkspaceEdit = { workspaceId: String ->
                         navController.navigate(WorkspaceRoute.Edit(workspaceId))
