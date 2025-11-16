@@ -181,7 +181,7 @@ private fun MemberFiltersSection(
     onRoleChanged: (String) -> Unit,
     onStatusChanged: (String) -> Unit,
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -364,7 +364,7 @@ private fun MemberCard(
     onMemberClick: () -> Unit,
     canManageMembers: Boolean,
 ) {
-    Card(
+    ElevatedCard(
         onClick = onMemberClick,
         modifier = Modifier.fillMaxWidth()
     ) {

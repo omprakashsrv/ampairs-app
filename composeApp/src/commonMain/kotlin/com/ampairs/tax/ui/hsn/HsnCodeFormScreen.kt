@@ -207,7 +207,7 @@ fun HsnCodeFormScreen(
 
                 // Preview formatted code
                 if (uiState.hsnCode.isNotBlank()) {
-                    Card(
+                    OutlinedCard(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)

@@ -100,7 +100,7 @@ fun WorkspaceInvitationCreateScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Recipient Information Card
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -194,7 +194,7 @@ fun WorkspaceInvitationCreateScreen(
             }
 
             // Role Selection Card
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -221,7 +221,7 @@ fun WorkspaceInvitationCreateScreen(
             }
 
             // Invitation Settings Card
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(

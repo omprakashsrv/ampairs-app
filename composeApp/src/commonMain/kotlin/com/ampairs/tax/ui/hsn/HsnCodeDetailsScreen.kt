@@ -159,7 +159,7 @@ private fun HsnCodeDetailsContent(
         }
 
         // Main HSN Code Information
-        Card(
+        OutlinedCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -250,7 +250,7 @@ private fun HsnCodeDetailsContent(
         }
 
         // HSN Code Validation Info
-        Card(
+        OutlinedCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -288,7 +288,7 @@ private fun HsnCodeDetailsContent(
         }
 
         // Metadata
-        Card(
+        OutlinedCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(

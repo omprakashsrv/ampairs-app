@@ -36,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -224,7 +225,6 @@ private fun CustomerForm(
     } else {
         // New customer: No images, show form only
         CustomerFormFields(
-            customerId = null,
             formState = formState,
             onFormChange = onFormChange,
             error = error,
@@ -297,7 +297,6 @@ private fun CustomerFormTabLayout(
 
         when (selectedTabIndex) {
             0 -> CustomerFormFields(
-                customerId = customerId,
                 formState = formState,
                 onFormChange = onFormChange,
                 error = error,
@@ -365,13 +364,12 @@ private fun CustomerFormSideBySideLayout(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Left side: Customer Form (60% width or full if images hidden)
-        Card(
+        OutlinedCard(
             modifier = Modifier
                 .weight(if (imagesFieldConfig?.visible == false || customerId.isBlank()) 1f else 0.6f)
                 .fillMaxHeight()
         ) {
             CustomerFormFields(
-                customerId = customerId,
                 formState = formState,
                 onFormChange = onFormChange,
                 error = error,
@@ -393,7 +391,7 @@ private fun CustomerFormSideBySideLayout(
 
         // Right side: Customer Images (40% width) - if visible and editing existing customer
         if (imagesFieldConfig?.visible != false && customerId.isNotBlank()) {
-            Card(
+            OutlinedCard(
                 modifier = Modifier
                     .weight(0.4f)
                     .fillMaxHeight()
@@ -413,7 +411,6 @@ private fun CustomerFormSideBySideLayout(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomerFormFields(
-    customerId: String?,
     formState: CustomerFormState,
     onFormChange: (CustomerFormState) -> Unit,
     error: String?,
@@ -460,7 +457,7 @@ private fun CustomerFormFields(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (error != null) {
-            Card(
+            OutlinedCard(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer
                 )
@@ -1101,7 +1098,7 @@ private fun FormSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -1204,7 +1201,7 @@ private fun LocationSection(
     ) {
         if (latitude != null && longitude != null) {
             // Show current location
-            Card(
+            OutlinedCard(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )

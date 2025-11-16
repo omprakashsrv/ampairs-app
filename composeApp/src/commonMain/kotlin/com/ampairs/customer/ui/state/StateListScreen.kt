@@ -37,7 +37,7 @@ fun StateListScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         // Header with search and add button
-        Card(
+        OutlinedCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
@@ -86,7 +86,7 @@ fun StateListScreen(
 
         // Error message
         uiState.error?.let { error ->
-            Card(
+            OutlinedCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
@@ -203,7 +203,7 @@ private fun StateListItem(
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    Card(
+    ElevatedCard(
         onClick = onStateClick,
         modifier = modifier.fillMaxWidth()
     ) {

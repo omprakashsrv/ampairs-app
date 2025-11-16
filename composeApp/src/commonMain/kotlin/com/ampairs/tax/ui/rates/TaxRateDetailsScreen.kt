@@ -139,7 +139,7 @@ private fun TaxRateDetailsContent(
     ) {
         // Error Display
         error?.let { errorMessage ->
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer
@@ -165,7 +165,7 @@ private fun TaxRateDetailsContent(
         }
 
         // Main Tax Rate Information
-        Card(
+        OutlinedCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -220,7 +220,7 @@ private fun TaxRateDetailsContent(
         }
 
         // Effective Period
-        Card(
+        OutlinedCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -309,7 +309,7 @@ private fun TaxRateDetailsContent(
         }
 
         // Metadata
-        Card(
+        OutlinedCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(

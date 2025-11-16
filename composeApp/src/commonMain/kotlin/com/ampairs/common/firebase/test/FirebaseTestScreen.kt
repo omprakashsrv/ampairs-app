@@ -247,7 +247,7 @@ fun FirebaseTestScreen() {
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                Card(
+                OutlinedCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(

@@ -82,7 +82,7 @@ fun CustomerTypeListScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         // Show error info
-                        Card(
+                        ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
@@ -209,7 +209,7 @@ private fun CustomerTypeCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    ElevatedCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth()
     ) {

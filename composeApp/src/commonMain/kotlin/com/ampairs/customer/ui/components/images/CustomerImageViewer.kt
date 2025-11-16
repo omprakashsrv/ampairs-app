@@ -237,7 +237,7 @@ private fun ImageContent(
     }
 
     if (imageModel != null) {
-        Card(
+        ElevatedCard(
             modifier = modifier,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
@@ -297,7 +297,7 @@ private fun ImageContent(
         }
     } else {
         // Placeholder for no image
-        Card(
+        ElevatedCard(
             modifier = modifier.size(200.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -335,7 +335,7 @@ private fun ImageDetailsExpandable(
     onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    ElevatedCard(
         modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow

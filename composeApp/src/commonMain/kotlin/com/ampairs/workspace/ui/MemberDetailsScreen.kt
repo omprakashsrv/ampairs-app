@@ -286,7 +286,7 @@ private fun MemberProfileCard(
     member: WorkspaceMember,
     isEditing: Boolean,
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -359,7 +359,7 @@ private fun MemberRoleStatusCard(
     onRoleChange: (String) -> Unit,
     onStatusChange: (String) -> Unit,
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -424,7 +424,7 @@ private fun MemberPermissionsCard(
     canEdit: Boolean,
     onPermissionsChange: (List<String>) -> Unit,
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -455,7 +455,7 @@ private fun MemberPermissionsCard(
 private fun MemberActivityCard(
     member: WorkspaceMember,
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -495,7 +495,7 @@ private fun MemberDangerZoneCard(
 ) {
     var showRemoveDialog by remember { mutableStateOf(false) }
 
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
@@ -896,7 +896,7 @@ private fun ErrorState(
 private fun MemberDetailsOfflineIndicator(
     onRefresh: () -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant

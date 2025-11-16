@@ -303,7 +303,7 @@ fun TaxRateFormScreen(
 
                 // Preview Tax Rate
                 if (uiState.ratePercentage > 0) {
-                    Card(
+                    OutlinedCard(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)

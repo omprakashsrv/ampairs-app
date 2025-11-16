@@ -196,7 +196,7 @@ private fun CustomerDetailsSideBySideLayout(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Left side: Customer Details (60% width)
-        Card(
+        OutlinedCard(
             modifier = Modifier
                 .weight(0.6f)
                 .fillMaxHeight()
@@ -209,7 +209,7 @@ private fun CustomerDetailsSideBySideLayout(
 
         // Right side: Customer Images (40% width) - if visible
         if (imagesFieldConfig?.visible != false) {
-            Card(
+            OutlinedCard(
                 modifier = Modifier
                     .weight(0.4f)
                     .fillMaxHeight()
@@ -381,7 +381,7 @@ private fun InfoSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
