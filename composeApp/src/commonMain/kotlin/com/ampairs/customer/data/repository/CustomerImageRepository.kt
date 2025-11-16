@@ -13,6 +13,7 @@ import com.ampairs.customer.domain.CustomerImageListItem
 import com.ampairs.customer.domain.CustomerImageUploadRequest
 import com.ampairs.customer.domain.CustomerImageUpdateRequest
 import com.ampairs.customer.domain.CustomerImageStatus
+import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_IMAGE_UID_REQUIRED
 import com.ampairs.customer.util.CustomerLogger
 import com.ampairs.workspace.context.WorkspaceContextManager
@@ -71,7 +72,7 @@ class CustomerImageRepository(
         description: String? = null,
         isPrimary: Boolean = false
     ): Result<CustomerImage> {
-        val uid = UidGenerator.generateUid("IMG")
+        val uid = UidGenerator.generateUid(CustomerConstants.CUSTOMER_IMAGE_UID_PREFIX)
         val now = Clock.System.now().toString()
 
         // Create upload request
