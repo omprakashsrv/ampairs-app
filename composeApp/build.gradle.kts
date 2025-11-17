@@ -229,8 +229,8 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 10
-        versionName = "1.0.0.10"
+        versionCode = 11
+        versionName = "1.0.0.11"
 
         // Environment configuration
         buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.7:8080\"")
