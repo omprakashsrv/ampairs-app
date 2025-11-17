@@ -595,62 +595,56 @@ private fun CustomerFormFields(
                 }
             }
 
-            // Phone and Landline Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (isFieldVisible("phone")) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Phone(
-                            countryCode = formState.countryCode,
-                            phone = formState.phone,
-                            onValueChange = { phone ->
-                                onFormChange(formState.copy(phone = phone))
-                            },
-                            onValidChange = { /* Validation handled in ViewModel */ }
-                        )
+            // Phone field
+            if (isFieldVisible("phone")) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Phone(
+                        countryCode = formState.countryCode,
+                        phone = formState.phone,
+                        onValueChange = { phone ->
+                            onFormChange(formState.copy(phone = phone))
+                        },
+                        onValidChange = { /* Validation handled in ViewModel */ }
+                    )
 
-                        formState.phoneError?.let { error ->
+                    formState.phoneError?.let { error ->
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // Landline field (separate row)
+            if (isFieldVisible("landline")) {
+                OutlinedTextField(
+                    value = formState.landline,
+                    onValueChange = { onFormChange(formState.copy(landline = it)) },
+                    label = { Text(getFieldLabel("landline", "Landline")) },
+                    placeholder = getFieldPlaceholder("landline")?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Phone,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true,
+                    isError = formState.landlineError != null,
+                    supportingText = formState.landlineError?.let { error ->
+                        {
                             Text(
                                 text = error,
                                 color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
-                }
-
-                if (isFieldVisible("landline")) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = formState.landline,
-                            onValueChange = { onFormChange(formState.copy(landline = it)) },
-                            label = { Text(getFieldLabel("landline", "Landline")) },
-                            placeholder = getFieldPlaceholder("landline")?.let { { Text(it) } },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Phone,
-                                imeAction = ImeAction.Next
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                            ),
-                            singleLine = true,
-                            isError = formState.landlineError != null,
-                            supportingText = formState.landlineError?.let { error ->
-                                {
-                                    Text(
-                                        text = error,
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-                        )
-                    }
-                }
+                )
             }
 
         }

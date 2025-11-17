@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.util.DateTimeFormatter
 import com.ampairs.customer.domain.CustomerImage
 import com.ampairs.customer.domain.CustomerImageStatus
 import com.ampairs.customer.util.CustomerLogger
@@ -419,10 +420,10 @@ private fun ImageDetails(
 
         // Timestamps
         image.createdAt?.let { createdAt ->
-            DetailRow(label = "Created", value = createdAt)
+            DetailRow(label = "Created", value = DateTimeFormatter.formatTimestamp(createdAt))
         }
         image.updatedAt?.let { updatedAt ->
-            DetailRow(label = "Updated", value = updatedAt)
+            DetailRow(label = "Updated", value = DateTimeFormatter.formatTimestamp(updatedAt))
         }
     }
 }
