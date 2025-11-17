@@ -1,6 +1,7 @@
 package com.ampairs.common.util
 
 import com.ampairs.common.model.formatDate
+import kotlin.time.Instant
 
 /**
  * Centralized date/time formatting utilities for the application.
@@ -16,7 +17,7 @@ object DateTimeFormatter {
     @OptIn(kotlin.time.ExperimentalTime::class)
     fun formatTimestamp(isoTimestamp: String): String {
         return try {
-            val instant = kotlinx.datetime.Instant.parse(isoTimestamp)
+            val instant = Instant.parse(isoTimestamp)
             instant.toEpochMilliseconds().formatDate("dd MMM yyyy, hh:mm a", isoTimestamp)
         } catch (_: Exception) {
             isoTimestamp
@@ -31,7 +32,7 @@ object DateTimeFormatter {
     @OptIn(kotlin.time.ExperimentalTime::class)
     fun formatDate(isoTimestamp: String): String {
         return try {
-            val instant = kotlinx.datetime.Instant.parse(isoTimestamp)
+            val instant = Instant.parse(isoTimestamp)
             instant.toEpochMilliseconds().formatDate("dd MMM yyyy", isoTimestamp)
         } catch (_: Exception) {
             isoTimestamp
@@ -46,7 +47,7 @@ object DateTimeFormatter {
     @OptIn(kotlin.time.ExperimentalTime::class)
     fun formatTime(isoTimestamp: String): String {
         return try {
-            val instant = kotlinx.datetime.Instant.parse(isoTimestamp)
+            val instant = Instant.parse(isoTimestamp)
             instant.toEpochMilliseconds().formatDate("hh:mm a", isoTimestamp)
         } catch (_: Exception) {
             isoTimestamp
