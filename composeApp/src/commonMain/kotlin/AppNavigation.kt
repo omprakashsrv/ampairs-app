@@ -27,7 +27,6 @@ import com.ampairs.common.firebase.performance.FirebasePerformance
 import com.ampairs.common.firebase.performance.PerformanceAttributes
 import com.ampairs.common.firebase.performance.PerformanceTraces
 import com.ampairs.common.firebase.performance.Trace
-import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.customer.ui.StateListRoute
 import com.ampairs.customer.ui.customerNavigation
@@ -39,6 +38,7 @@ import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.workspaceNavigation
+import com.ampairs.common.ui.GlobalAppLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import org.koin.compose.koinInject
@@ -199,14 +199,19 @@ fun AppNavigation(
         Route.Login
     }
 
-    NavHost(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.systemBars),
-        navController = navController,
-        startDestination = startDestination
-    ) {
-        authNavigation(navController) {
+    // Global App Layout wraps the entire NavHost - header is rendered ONCE here
+    GlobalAppLayout(
+        navController = navController
+    ) { globalPaddingValues ->
+        NavHost(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .windowInsetsPadding(WindowInsets.systemBars)
+                .padding(globalPaddingValues),
+            navController = navController,
+            startDestination = startDestination
+        ) {
+            authNavigation(navController) {
             // After successful login, navigate to workspace selection
             navController.navigate(
                 route = Route.Workspace,
@@ -221,89 +226,69 @@ fun AppNavigation(
         // Top-level WorkspaceRoute.Modules for auto-resume (direct start without back stack)
         composable<WorkspaceRoute.Modules> { backStackEntry ->
             val modulesRoute = backStackEntry.toRoute<WorkspaceRoute.Modules>()
-            AppScreenWithHeader(
+            com.ampairs.workspace.ui.WorkspaceModulesScreen(
                 navController = navController,
-                isWorkspaceSelection = false
-            ) { paddingValues ->
-                com.ampairs.workspace.ui.WorkspaceModulesScreen(
-                    navController = navController,
-                    onModuleSelected = { moduleCode ->
-                        navController.navigate(WorkspaceRoute.Modules(modulesRoute.workspaceId))
-                    },
-                    onNavigationServiceReady = onNavigationServiceReady,
-                    workspaceId = modulesRoute.workspaceId,
-                    paddingValues = paddingValues
-                )
-            }
+                onModuleSelected = { moduleCode ->
+                    navController.navigate(WorkspaceRoute.Modules(modulesRoute.workspaceId))
+                },
+                onNavigationServiceReady = onNavigationServiceReady,
+                workspaceId = modulesRoute.workspaceId,
+                paddingValues = androidx.compose.foundation.layout.PaddingValues()
+            )
         }
 
         // Customer module navigation
         composable<Route.Customer> {
-            AppScreenWithHeader(
-                navController = navController,
-                isWorkspaceSelection = false
-            ) { paddingValues ->
-                com.ampairs.customer.ui.CustomerScreen(
-                    onCustomerClick = { customerId ->
-                        navController.navigate(
-                            com.ampairs.customer.ui.CustomerDetailsRoute(
-                                customerId
-                            )
+            com.ampairs.customer.ui.CustomerScreen(
+                onCustomerClick = { customerId ->
+                    navController.navigate(
+                        com.ampairs.customer.ui.CustomerDetailsRoute(
+                            customerId
                         )
-                    },
-                    onCreateCustomer = {
-                        navController.navigate(CustomerCreateRoute())
-                    },
-                    onFormConfig = {
-                        println("AppNavigation Route.Customer: Navigating to FormConfig")
-                        navController.navigate(Route.FormConfig("customer"))
-                    },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
+                    )
+                },
+                onCreateCustomer = {
+                    navController.navigate(CustomerCreateRoute())
+                },
+                onFormConfig = {
+                    println("AppNavigation Route.Customer: Navigating to FormConfig")
+                    navController.navigate(Route.FormConfig("customer"))
+                },
+                modifier = Modifier
+            )
         }
 
         // Product module navigation
         composable<Route.Product> {
-            AppScreenWithHeader(
-                navController = navController,
-                isWorkspaceSelection = false
-            ) { paddingValues ->
-                com.ampairs.product.ProductScreen(
-                    onProductClick = { productId ->
-                        navController.navigate(ProductRoute.ProductDetails(productId))
-                    },
-                    onCreateProduct = {
-                        navController.navigate(ProductRoute.ProductForm())
-                    },
-                    onFormConfig = {
-                        println("AppNavigation Route.Product: Navigating to FormConfig")
-                        navController.navigate(Route.FormConfig("product"))
-                    },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
+            com.ampairs.product.ProductScreen(
+                onProductClick = { productId ->
+                    navController.navigate(ProductRoute.ProductDetails(productId))
+                },
+                onCreateProduct = {
+                    navController.navigate(ProductRoute.ProductForm())
+                },
+                onFormConfig = {
+                    println("AppNavigation Route.Product: Navigating to FormConfig")
+                    navController.navigate(Route.FormConfig("product"))
+                },
+                modifier = Modifier
+            )
         }
 
         // Tax module navigation
         composable<Route.Tax> {
-            AppScreenWithHeader(
-                navController = navController,
-                isWorkspaceSelection = false
-            ) { paddingValues ->
-                com.ampairs.tax.ui.navigation.TaxScreen(
-                    onNavigateToHsnCodes = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.HsnCodesListRoute)
-                    },
-                    onNavigateToTaxCalculator = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.TaxCalculatorRoute)
-                    },
-                    onNavigateToTaxRates = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.TaxRatesRoute)
-                    },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
+            com.ampairs.tax.ui.navigation.TaxScreen(
+                onNavigateToHsnCodes = {
+                    navController.navigate(com.ampairs.tax.ui.navigation.HsnCodesListRoute)
+                },
+                onNavigateToTaxCalculator = {
+                    navController.navigate(com.ampairs.tax.ui.navigation.TaxCalculatorRoute)
+                },
+                onNavigateToTaxRates = {
+                    navController.navigate(com.ampairs.tax.ui.navigation.TaxRatesRoute)
+                },
+                modifier = Modifier
+            )
         }
 
         // Form Config navigation
@@ -323,6 +308,7 @@ fun AppNavigation(
         // inventoryNavigation(navController) { }
         // orderNavigation(navController) { }
         // invoiceNavigation(navController) { }
+        }
     }
 }
 
