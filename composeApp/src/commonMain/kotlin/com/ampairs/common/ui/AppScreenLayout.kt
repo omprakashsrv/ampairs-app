@@ -93,7 +93,7 @@ fun AppScreenLayout(
         // Desktop/Non-drawer platforms: Use regular scaffold
         Scaffold(
             modifier = modifier.imePadding(),
-            topBar = {
+                    topBar = {
                 AppHeader(
                     navController = navController,
                     currentWorkspaceName = currentWorkspaceName,

@@ -233,7 +233,7 @@ android {
         versionName = "1.0.0.10"
 
         // Environment configuration
-        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.3:8080\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.7:8080\"")
         buildConfigField("String", "ENVIRONMENT", "\"dev\"")
     }
 
@@ -247,7 +247,7 @@ android {
     }
     buildTypes {
         val debug by getting {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.3:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.7:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
         }

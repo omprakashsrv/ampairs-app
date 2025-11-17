@@ -1,4 +1,10 @@
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.ampairs.customer.ui.components.location.LocationServiceMapHandler
 
 actual fun getPlatformName(): String = "Android"
@@ -9,5 +15,12 @@ fun MainView() {
     LocationServiceMapHandler()
 
     // Main app content
-    App({})
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.systemBars)
+    ) {
+        // Your content here
+        App({})
+    }
 }

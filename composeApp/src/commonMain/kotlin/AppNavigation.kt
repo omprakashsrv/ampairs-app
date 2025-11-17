@@ -1,5 +1,6 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -27,18 +28,17 @@ import com.ampairs.common.firebase.performance.FirebasePerformance
 import com.ampairs.common.firebase.performance.PerformanceAttributes
 import com.ampairs.common.firebase.performance.PerformanceTraces
 import com.ampairs.common.firebase.performance.Trace
+import com.ampairs.common.ui.GlobalAppLayout
 import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.customer.ui.StateListRoute
 import com.ampairs.customer.ui.customerNavigation
 import com.ampairs.product.productNavigation
 import com.ampairs.tax.ui.navigation.taxNavigation
-import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.workspaceNavigation
-import com.ampairs.common.ui.GlobalAppLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import org.koin.compose.koinInject
@@ -49,7 +49,6 @@ fun AppNavigation(
     onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
     val navController = rememberNavController()
-    val workspaceManager = WorkspaceContextManager.getInstance()
     val analytics: FirebaseAnalytics = koinInject()
     val performance: FirebasePerformance = koinInject()
     val appPreferences: AppPreferencesDataStore = koinInject()
@@ -70,7 +69,8 @@ fun AppNavigation(
 
             // Verify user exists and set as current
             tokenRepository.setCurrentUser(lastUserId)
-            val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(lastUserId).isNotBlank()
+            val hasWorkspace =
+                userWorkspaceRepository.getWorkspaceIdForUser(lastUserId).isNotBlank()
 
             if (hasWorkspace) {
                 // Load workspace from local database
@@ -154,9 +154,6 @@ fun AppNavigation(
         onNavigationReady?.invoke(navigationCallback)
     }
 
-    // Get global navigation manager instance
-    val globalNavigationManager = GlobalNavigationManager.getInstance()
-
     LaunchedEffect(Unit) {
         UnauthenticatedHandler.onUnauthenticated.collectLatest {
             // Clear workspace context and navigation service on logout using integration
@@ -206,108 +203,107 @@ fun AppNavigation(
         NavHost(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.background)
-                .windowInsetsPadding(WindowInsets.systemBars)
                 .padding(globalPaddingValues),
             navController = navController,
             startDestination = startDestination
         ) {
             authNavigation(navController) {
-            // After successful login, navigate to workspace selection
-            navController.navigate(
-                route = Route.Workspace,
-                navOptions = navOptions {
-                    popUpTo<Route.Login> { inclusive = true }
-                    launchSingleTop = true
-                }
-            )
-        }
-        workspaceNavigation(navController, onNavigationServiceReady)
+                // After successful login, navigate to workspace selection
+                navController.navigate(
+                    route = Route.Workspace,
+                    navOptions = navOptions {
+                        popUpTo<Route.Login> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                )
+            }
+            workspaceNavigation(navController, onNavigationServiceReady)
 
-        // Top-level WorkspaceRoute.Modules for auto-resume (direct start without back stack)
-        composable<WorkspaceRoute.Modules> { backStackEntry ->
-            val modulesRoute = backStackEntry.toRoute<WorkspaceRoute.Modules>()
-            com.ampairs.workspace.ui.WorkspaceModulesScreen(
-                navController = navController,
-                onModuleSelected = { moduleCode ->
-                    navController.navigate(WorkspaceRoute.Modules(modulesRoute.workspaceId))
-                },
-                onNavigationServiceReady = onNavigationServiceReady,
-                workspaceId = modulesRoute.workspaceId,
-                paddingValues = androidx.compose.foundation.layout.PaddingValues()
-            )
-        }
+            // Top-level WorkspaceRoute.Modules for auto-resume (direct start without back stack)
+            composable<WorkspaceRoute.Modules> { backStackEntry ->
+                val modulesRoute = backStackEntry.toRoute<WorkspaceRoute.Modules>()
+                com.ampairs.workspace.ui.WorkspaceModulesScreen(
+                    navController = navController,
+                    onModuleSelected = { moduleCode ->
+                        navController.navigate(WorkspaceRoute.Modules(modulesRoute.workspaceId))
+                    },
+                    onNavigationServiceReady = onNavigationServiceReady,
+                    workspaceId = modulesRoute.workspaceId,
+                    paddingValues = androidx.compose.foundation.layout.PaddingValues()
+                )
+            }
 
-        // Customer module navigation
-        composable<Route.Customer> {
-            com.ampairs.customer.ui.CustomerScreen(
-                onCustomerClick = { customerId ->
-                    navController.navigate(
-                        com.ampairs.customer.ui.CustomerDetailsRoute(
-                            customerId
+            // Customer module navigation
+            composable<Route.Customer> {
+                com.ampairs.customer.ui.CustomerScreen(
+                    onCustomerClick = { customerId ->
+                        navController.navigate(
+                            com.ampairs.customer.ui.CustomerDetailsRoute(
+                                customerId
+                            )
                         )
-                    )
-                },
-                onCreateCustomer = {
-                    navController.navigate(CustomerCreateRoute())
-                },
-                onFormConfig = {
-                    println("AppNavigation Route.Customer: Navigating to FormConfig")
-                    navController.navigate(Route.FormConfig("customer"))
-                },
-                modifier = Modifier
-            )
-        }
+                    },
+                    onCreateCustomer = {
+                        navController.navigate(CustomerCreateRoute())
+                    },
+                    onFormConfig = {
+                        println("AppNavigation Route.Customer: Navigating to FormConfig")
+                        navController.navigate(Route.FormConfig("customer"))
+                    },
+                    modifier = Modifier
+                )
+            }
 
-        // Product module navigation
-        composable<Route.Product> {
-            com.ampairs.product.ProductScreen(
-                onProductClick = { productId ->
-                    navController.navigate(ProductRoute.ProductDetails(productId))
-                },
-                onCreateProduct = {
-                    navController.navigate(ProductRoute.ProductForm())
-                },
-                onFormConfig = {
-                    println("AppNavigation Route.Product: Navigating to FormConfig")
-                    navController.navigate(Route.FormConfig("product"))
-                },
-                modifier = Modifier
-            )
-        }
+            // Product module navigation
+            composable<Route.Product> {
+                com.ampairs.product.ProductScreen(
+                    onProductClick = { productId ->
+                        navController.navigate(ProductRoute.ProductDetails(productId))
+                    },
+                    onCreateProduct = {
+                        navController.navigate(ProductRoute.ProductForm())
+                    },
+                    onFormConfig = {
+                        println("AppNavigation Route.Product: Navigating to FormConfig")
+                        navController.navigate(Route.FormConfig("product"))
+                    },
+                    modifier = Modifier
+                )
+            }
 
-        // Tax module navigation
-        composable<Route.Tax> {
-            com.ampairs.tax.ui.navigation.TaxScreen(
-                onNavigateToHsnCodes = {
-                    navController.navigate(com.ampairs.tax.ui.navigation.HsnCodesListRoute)
-                },
-                onNavigateToTaxCalculator = {
-                    navController.navigate(com.ampairs.tax.ui.navigation.TaxCalculatorRoute)
-                },
-                onNavigateToTaxRates = {
-                    navController.navigate(com.ampairs.tax.ui.navigation.TaxRatesRoute)
-                },
-                modifier = Modifier
-            )
-        }
+            // Tax module navigation
+            composable<Route.Tax> {
+                com.ampairs.tax.ui.navigation.TaxScreen(
+                    onNavigateToHsnCodes = {
+                        navController.navigate(com.ampairs.tax.ui.navigation.HsnCodesListRoute)
+                    },
+                    onNavigateToTaxCalculator = {
+                        navController.navigate(com.ampairs.tax.ui.navigation.TaxCalculatorRoute)
+                    },
+                    onNavigateToTaxRates = {
+                        navController.navigate(com.ampairs.tax.ui.navigation.TaxRatesRoute)
+                    },
+                    modifier = Modifier
+                )
+            }
 
-        // Form Config navigation
-        composable<Route.FormConfig> { backStackEntry ->
-            val route = backStackEntry.toRoute<Route.FormConfig>()
-            com.ampairs.form.ui.FormConfigScreen(
-                entityType = route.entityType,
-                onNavigateBack = { navController.navigateUp() }
-            )
-        }
+            // Form Config navigation
+            composable<Route.FormConfig> { backStackEntry ->
+                val route = backStackEntry.toRoute<Route.FormConfig>()
+                com.ampairs.form.ui.FormConfigScreen(
+                    entityType = route.entityType,
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
 
-        customerNavigation(navController)
-        productNavigation(navController)
-        taxNavigation(navController)
-        businessNavigation(navController)
-        // Temporarily commented out pending customer integration updates
-        // inventoryNavigation(navController) { }
-        // orderNavigation(navController) { }
-        // invoiceNavigation(navController) { }
+            customerNavigation(navController)
+            productNavigation(navController)
+            taxNavigation(navController)
+            businessNavigation(navController)
+            // Temporarily commented out pending customer integration updates
+            // inventoryNavigation(navController) { }
+            // orderNavigation(navController) { }
+            // invoiceNavigation(navController) { }
         }
     }
 }
@@ -348,6 +344,7 @@ private fun extractScreenName(route: String): String {
         cleanRoute.startsWith("CustomerRoute.") -> {
             "Customer_" + cleanRoute.substringAfter("CustomerRoute.")
         }
+
         cleanRoute.contains("com.ampairs.customer.ui.") -> {
             val screenName = cleanRoute.substringAfterLast(".")
                 .replace("Route", "")
@@ -357,6 +354,7 @@ private fun extractScreenName(route: String): String {
         cleanRoute.startsWith("ProductRoute.") -> {
             "Product_" + cleanRoute.substringAfter("ProductRoute.")
         }
+
         cleanRoute.contains("com.ampairs.product.") -> {
             val screenName = cleanRoute.substringAfterLast(".")
                 .replace("Route", "")
@@ -366,6 +364,7 @@ private fun extractScreenName(route: String): String {
         cleanRoute.startsWith("TaxRoute.") -> {
             "Tax_" + cleanRoute.substringAfter("TaxRoute.")
         }
+
         cleanRoute.contains("com.ampairs.tax.") -> {
             val screenName = cleanRoute.substringAfterLast(".")
                 .replace("Route", "")
