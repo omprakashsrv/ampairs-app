@@ -35,7 +35,17 @@ fun AppScreenLayout(
     val isNavigationAvailable by globalNavManager.isNavigationAvailable.collectAsState()
     val navigationPattern = PlatformNavigationDetector.getNavigationPattern()
 
-    if (navigationPattern == NavigationPattern.SIDE_DRAWER && isNavigationAvailable && navigationService != null) {
+    // Only show navigation drawer when:
+    // 1. Platform supports side drawer (mobile)
+    // 2. Navigation service is available and initialized
+    // 3. A workspace is actually selected (not on workspace selection screen)
+    val hasActiveWorkspace = !currentWorkspaceId.isNullOrBlank()
+    val shouldShowDrawer = navigationPattern == NavigationPattern.SIDE_DRAWER &&
+            isNavigationAvailable &&
+            navigationService != null &&
+            hasActiveWorkspace
+
+    if (shouldShowDrawer) {
         // Mobile: Use navigation drawer with MobileModuleSideNavigation
         val drawerState = rememberDrawerState(DrawerValue.Closed)
         val scope = rememberCoroutineScope()
@@ -48,14 +58,11 @@ fun AppScreenLayout(
             },
             onSwitchWorkspace = onWorkspaceClick,
             onManageMembers = {
-                currentWorkspaceId?.let { workspaceId ->
-                    navController.navigate("workspace/${workspaceId}/members")
-                }
+                // Safe to use !! since shouldShowDrawer ensures currentWorkspaceId is not null
+                navController.navigate("workspace/${currentWorkspaceId!!}/members")
             },
             onManageInvitations = {
-                currentWorkspaceId?.let { workspaceId ->
-                    navController.navigate("workspace/${workspaceId}/invitations")
-                }
+                navController.navigate("workspace/${currentWorkspaceId!!}/invitations")
             },
             onSettings = {
                 // Navigate to settings screen if available
