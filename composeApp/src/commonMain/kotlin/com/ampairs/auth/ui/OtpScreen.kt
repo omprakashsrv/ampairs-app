@@ -89,7 +89,7 @@ fun OtpScreen(
                     val completedState = verificationState as PhoneVerificationState.VerificationCompleted
                     println("OtpScreen: ✅ Auto-verification succeeded, proceeding with authentication")
                     waitingForAutoVerification = false
-                    // Note: completedState.userId actually contains the Firebase ID token due to implementation
+                    // completedState.userId contains the Firebase JWT ID token for backend verification
                     viewModel.completeFirebaseAuthenticationWithToken(completedState.userId, onAuthSuccess)
                 }
             }

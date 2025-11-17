@@ -136,8 +136,9 @@ actual class FirebaseAuthProvider {
                                     tokenError.localizedDescription ?: "Failed to get token"
                                 continuation.resume(FirebaseAuthResult.Error(errorMessage))
                             } else if (idToken != null) {
+                                // Pass the JWT ID token (not UID) to state for auto-verification flow
                                 _verificationState.value =
-                                    PhoneVerificationState.VerificationCompleted(user.uid())
+                                    PhoneVerificationState.VerificationCompleted(idToken)
                                 continuation.resume(FirebaseAuthResult.Success(idToken))
                             } else {
                                 continuation.resume(FirebaseAuthResult.Error("No ID token returned"))
