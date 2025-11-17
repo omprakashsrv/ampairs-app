@@ -219,7 +219,8 @@ fun AppNavigation(
             }
             workspaceNavigation(navController, onNavigationServiceReady)
 
-            // Top-level WorkspaceRoute.Modules for auto-resume (direct start without back stack)
+            // Top-level WorkspaceRoute.Modules for auto-resume
+            // This is needed because nested navigation graph routes can't be used as startDestination
             composable<WorkspaceRoute.Modules> { backStackEntry ->
                 val modulesRoute = backStackEntry.toRoute<WorkspaceRoute.Modules>()
                 com.ampairs.workspace.ui.WorkspaceModulesScreen(
@@ -233,61 +234,7 @@ fun AppNavigation(
                 )
             }
 
-            // Customer module navigation
-            composable<Route.Customer> {
-                com.ampairs.customer.ui.CustomerScreen(
-                    onCustomerClick = { customerId ->
-                        navController.navigate(
-                            com.ampairs.customer.ui.CustomerDetailsRoute(
-                                customerId
-                            )
-                        )
-                    },
-                    onCreateCustomer = {
-                        navController.navigate(CustomerCreateRoute())
-                    },
-                    onFormConfig = {
-                        println("AppNavigation Route.Customer: Navigating to FormConfig")
-                        navController.navigate(Route.FormConfig("customer"))
-                    },
-                    modifier = Modifier
-                )
-            }
-
-            // Product module navigation
-            composable<Route.Product> {
-                com.ampairs.product.ProductScreen(
-                    onProductClick = { productId ->
-                        navController.navigate(ProductRoute.ProductDetails(productId))
-                    },
-                    onCreateProduct = {
-                        navController.navigate(ProductRoute.ProductForm())
-                    },
-                    onFormConfig = {
-                        println("AppNavigation Route.Product: Navigating to FormConfig")
-                        navController.navigate(Route.FormConfig("product"))
-                    },
-                    modifier = Modifier
-                )
-            }
-
-            // Tax module navigation
-            composable<Route.Tax> {
-                com.ampairs.tax.ui.navigation.TaxScreen(
-                    onNavigateToHsnCodes = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.HsnCodesListRoute)
-                    },
-                    onNavigateToTaxCalculator = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.TaxCalculatorRoute)
-                    },
-                    onNavigateToTaxRates = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.TaxRatesRoute)
-                    },
-                    modifier = Modifier
-                )
-            }
-
-            // Form Config navigation
+            // Form Config navigation (shared across modules)
             composable<Route.FormConfig> { backStackEntry ->
                 val route = backStackEntry.toRoute<Route.FormConfig>()
                 com.ampairs.form.ui.FormConfigScreen(
@@ -296,6 +243,7 @@ fun AppNavigation(
                 )
             }
 
+            // Module navigations - each module handles its own Route.* entry point
             customerNavigation(navController)
             productNavigation(navController)
             taxNavigation(navController)

@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.PlatformBackHandler
 import kotlinx.coroutines.launch
 
 /**
@@ -27,6 +28,12 @@ fun MobileNavigationDrawer(
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+
+    // Handle back press to close drawer first if open
+    PlatformBackHandler(enabled = drawerState.isOpen) {
+        scope.launch { drawerState.close() }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {

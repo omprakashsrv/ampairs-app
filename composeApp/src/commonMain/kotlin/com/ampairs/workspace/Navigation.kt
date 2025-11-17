@@ -132,19 +132,8 @@ fun NavGraphBuilder.workspaceNavigation(
             )
         }
 
-        // Workspace modules management screen
-        composable<WorkspaceRoute.Modules> { backStackEntry ->
-            val modulesRoute = backStackEntry.toRoute<WorkspaceRoute.Modules>()
-            WorkspaceModulesScreen(
-                navController = navController,
-                onModuleSelected = { moduleCode ->
-                    navController.navigate(WorkspaceRoute.Modules(modulesRoute.workspaceId))
-                },
-                onNavigationServiceReady = onNavigationServiceReady,
-                workspaceId = modulesRoute.workspaceId,
-                paddingValues = PaddingValues()
-            )
-        }
+        // Note: WorkspaceRoute.Modules is defined at top level in AppNavigation.kt
+        // to support auto-resume (startDestination can't be inside nested graph)
 
         // Module Store screen with Marketplace and Installed tabs
         composable<WorkspaceRoute.ModuleStore> { backStackEntry ->
