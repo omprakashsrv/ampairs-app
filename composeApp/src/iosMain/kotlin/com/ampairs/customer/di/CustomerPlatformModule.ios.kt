@@ -4,6 +4,7 @@ import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.repository.IosFileManager
 import com.ampairs.customer.data.repository.PlatformFileManager
+import com.ampairs.customer.ui.components.contact.ContactPickerService
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -18,4 +19,7 @@ actual val customerPlatformModule = module {
     }
 
     single { IosFileManager() } bind PlatformFileManager::class
+
+    // Contact Picker Service (iOS implementation)
+    single { ContactPickerService() }
 }

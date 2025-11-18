@@ -1,6 +1,7 @@
 package com.ampairs.app
 
 import MainView
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -27,6 +28,8 @@ import com.ampairs.common.ImageCacheKeyer
 import com.ampairs.common.httpClient
 import com.ampairs.common.update.InAppUpdateManager
 import com.ampairs.common.update.UpdateCheckResult
+import com.ampairs.customer.ui.components.contact.ContactPickerResultHolder
+import com.ampairs.customer.ui.components.contact.ContactPickerService
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import io.github.vinceglb.filekit.FileKit
@@ -223,6 +226,20 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         // Clear activity reference to avoid memory leaks
         ActivityProvider.clearActivity()
+        // Clear contact picker callbacks
+        ContactPickerResultHolder.clearCallbacks()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            ContactPickerService.CONTACT_PICKER_REQUEST_CODE -> {
+                val contactUri = data?.data
+                ContactPickerResultHolder.onContactResult(contactUri)
+            }
+        }
     }
 }
 
