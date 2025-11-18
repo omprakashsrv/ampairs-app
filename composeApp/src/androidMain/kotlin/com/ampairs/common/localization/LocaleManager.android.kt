@@ -1,6 +1,7 @@
 package com.ampairs.common.localization
 
 import android.content.res.Configuration
+import android.os.LocaleList
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
@@ -28,9 +29,12 @@ actual fun PlatformLocaleConfiguration(
     val currentConfig = LocalConfiguration.current
 
     // Create a new configuration with the selected locale
-    val locale = Locale(languageCode)
+    val locale =
+        Locale.forLanguageTag(languageCode)
+
     val config = Configuration(currentConfig).apply {
-        setLocale(locale)
+        // Use LocaleList for API 24+
+        setLocales(LocaleList(locale))
     }
 
     // Create a new context with the updated configuration
