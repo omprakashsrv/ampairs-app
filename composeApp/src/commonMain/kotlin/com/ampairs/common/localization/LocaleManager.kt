@@ -8,6 +8,10 @@ import androidx.compose.runtime.getValue
 import com.ampairs.common.config.AppPreferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.jetbrains.compose.resources.InternalResourceApi
+import org.jetbrains.compose.resources.LanguageQualifier
+import org.jetbrains.compose.resources.RegionQualifier
+import org.jetbrains.compose.resources.ResourceEnvironment
 
 /**
  * Manages application locale and language preferences
@@ -48,8 +52,20 @@ class LocaleManager(
 val LocalLanguageCode = compositionLocalOf { "en" }
 
 /**
+ * CompositionLocal for ResourceEnvironment with language configuration
+ */
+@OptIn(InternalResourceApi::class)
+val LocalResourceEnvironment = compositionLocalOf<ResourceEnvironment> {
+    ResourceEnvironment(
+        language = LanguageQualifier("en"),
+        region = RegionQualifier.EMPTY
+    )
+}
+
+/**
  * Provider for locale/language management in Compose
  */
+@OptIn(InternalResourceApi::class)
 @Composable
 fun LocaleProvider(
     localeManager: LocaleManager,
@@ -57,8 +73,15 @@ fun LocaleProvider(
 ) {
     val languageCode by localeManager.currentLanguageCode.collectAsState("en")
 
+    val resourceEnvironment = ResourceEnvironment(
+        language = LanguageQualifier(languageCode),
+        region = RegionQualifier.EMPTY
+    )
+
     CompositionLocalProvider(
         LocalLanguageCode provides languageCode,
+        LocalResourceEnvironment provides resourceEnvironment,
+        org.jetbrains.compose.resources.LocalResourceEnvironment provides resourceEnvironment,
         content = content
     )
 }
