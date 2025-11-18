@@ -47,12 +47,10 @@ import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.ui.components.Phone
 import androidx.compose.ui.text.font.FontWeight
 import com.ampairs.ui.theme.AmpairsTheme
-import org.jetbrains.compose.resources.stringResource
-import ampairsapp.composeapp.generated.resources.Res
-import ampairsapp.composeapp.generated.resources.login
 import org.koin.compose.koinInject
 import com.ampairs.common.navigation.PlatformBackHandler
 import com.ampairs.common.navigation.ExitApp
+import com.ampairs.common.localization.localizedStrings
 
 @Composable
 fun PhoneScreen(
@@ -60,6 +58,7 @@ fun PhoneScreen(
     onAuthSuccess: (sessionId: String, verificationId: String) -> Unit,
     onExistingUserSelected: () -> Unit = {},
 ) {
+    val strings = localizedStrings()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showExistingUserDialog by remember { mutableStateOf(false) }
@@ -206,7 +205,7 @@ fun PhoneScreen(
                                 .size(24.dp)
                         )
                     } else {
-                        Text(stringResource(Res.string.login))
+                        Text(strings.phoneLogin)
                     }
                 }
             }
@@ -298,19 +297,21 @@ private fun ExistingUserDialog(
     onSelectUser: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = localizedStrings()
+
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
                 Icons.Default.AccountCircle,
-                contentDescription = "User exists",
+                contentDescription = strings.phoneUserExists,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
         },
         title = {
             Text(
-                text = "User Already Logged In",
+                text = strings.phoneUserAlreadyLoggedIn,
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -319,7 +320,7 @@ private fun ExistingUserDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "A user with this phone number is already logged in:",
+                    text = strings.phoneUserAlreadyLoggedInDesc,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Card(
@@ -345,7 +346,7 @@ private fun ExistingUserDialog(
                     }
                 }
                 Text(
-                    text = "Would you like to switch to this account?",
+                    text = strings.phoneWouldYouLikeToSwitch,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -355,12 +356,12 @@ private fun ExistingUserDialog(
             Button(
                 onClick = onSelectUser
             ) {
-                Text("Switch to This User")
+                Text(strings.phoneSwitchToThisUser)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         }
     )

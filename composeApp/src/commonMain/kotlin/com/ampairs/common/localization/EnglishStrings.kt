@@ -38,6 +38,12 @@ object EnglishStrings : Strings {
     override val phoneNumberPlaceholder = "9876543210"
     override val phoneNumberContinue = "Continue"
     override val phoneNumberInvalid = "Please enter a valid phone number"
+    override val phoneUserExists = "User exists"
+    override val phoneUserAlreadyLoggedIn = "User Already Logged In"
+    override val phoneUserAlreadyLoggedInDesc = "A user with this phone number is already logged in:"
+    override val phoneWouldYouLikeToSwitch = "Would you like to switch to this account?"
+    override val phoneSwitchToThisUser = "Switch to This User"
+    override val phoneLogin = "Login"
 
     // OTP Screen
     override val otpTitle = "Verify OTP"
@@ -47,6 +53,11 @@ object EnglishStrings : Strings {
     override val otpResend = "Resend OTP"
     override val otpInvalid = "Invalid OTP"
     override val otpSent = "OTP sent successfully"
+    override val otpVerifying = "Verifying..."
+    override val otpEnterCode = "Enter the code sent to your phone"
+    override val otpWaitingForAutoVerification = "Waiting for automatic verification..."
+    override val otpAutoVerificationDesc = "We're checking if your device can be verified automatically.\nThis usually takes a few seconds."
+    override val otpEnterManually = "Enter code manually"
 
     // Customer Screen
     override val customerTitle = "Customers"

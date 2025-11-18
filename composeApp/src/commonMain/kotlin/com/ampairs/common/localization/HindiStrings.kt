@@ -38,6 +38,12 @@ object HindiStrings : Strings {
     override val phoneNumberPlaceholder = "9876543210"
     override val phoneNumberContinue = "जारी रखें"
     override val phoneNumberInvalid = "कृपया एक मान्य फ़ोन नंबर दर्ज करें"
+    override val phoneUserExists = "उपयोगकर्ता मौजूद है"
+    override val phoneUserAlreadyLoggedIn = "उपयोगकर्ता पहले से लॉग इन है"
+    override val phoneUserAlreadyLoggedInDesc = "इस फ़ोन नंबर वाला उपयोगकर्ता पहले से लॉग इन है:"
+    override val phoneWouldYouLikeToSwitch = "क्या आप इस खाते में स्विच करना चाहेंगे?"
+    override val phoneSwitchToThisUser = "इस उपयोगकर्ता पर स्विच करें"
+    override val phoneLogin = "लॉगिन"
 
     // OTP Screen
     override val otpTitle = "OTP सत्यापित करें"
@@ -47,6 +53,11 @@ object HindiStrings : Strings {
     override val otpResend = "OTP पुनः भेजें"
     override val otpInvalid = "अमान्य OTP"
     override val otpSent = "OTP सफलतापूर्वक भेजा गया"
+    override val otpVerifying = "सत्यापित किया जा रहा है..."
+    override val otpEnterCode = "अपने फ़ोन पर भेजा गया कोड दर्ज करें"
+    override val otpWaitingForAutoVerification = "स्वचालित सत्यापन की प्रतीक्षा में..."
+    override val otpAutoVerificationDesc = "हम जांच रहे हैं कि क्या आपका डिवाइस स्वचालित रूप से सत्यापित किया जा सकता है।\nइसमें आमतौर पर कुछ सेकंड लगते हैं।"
+    override val otpEnterManually = "मैन्युअल रूप से कोड दर्ज करें"
 
     // Customer Screen
     override val customerTitle = "ग्राहक"

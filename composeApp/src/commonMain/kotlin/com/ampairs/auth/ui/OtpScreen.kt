@@ -32,10 +32,6 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.auth.domain.AuthMethod
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.ui.components.Otp
-import org.jetbrains.compose.resources.stringResource
-import ampairsapp.composeapp.generated.resources.Res
-import ampairsapp.composeapp.generated.resources.resend_otp
-import ampairsapp.composeapp.generated.resources.verify_otp
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.ampairs.auth.domain.PhoneVerificationState
+import com.ampairs.common.localization.localizedStrings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -53,6 +50,7 @@ fun OtpScreen(
     verificationId: String = "", // Firebase verification ID (empty for backend auth)
     onAuthSuccess: () -> Unit,
 ) {
+    val strings = localizedStrings()
     val viewModel = koinInject<LoginViewModel>()
 
     // Set the sessionId and verificationId from navigation parameters
@@ -169,13 +167,13 @@ fun OtpScreen(
                                     strokeWidth = 4.dp
                                 )
                                 Text(
-                                    text = "Waiting for automatic verification...",
+                                    text = strings.otpWaitingForAutoVerification,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     textAlign = TextAlign.Center
                                 )
                                 Text(
-                                    text = "We're checking if your device can be verified automatically.\nThis usually takes a few seconds.",
+                                    text = strings.otpAutoVerificationDesc,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
@@ -187,7 +185,7 @@ fun OtpScreen(
                                         waitingForAutoVerification = false
                                     }
                                 ) {
-                                    Text("Enter code manually")
+                                    Text(strings.otpEnterManually)
                                 }
                             }
                         } else {
@@ -242,7 +240,7 @@ fun OtpScreen(
                                         .size(24.dp)
                                 )
                             } else {
-                                Text(stringResource(Res.string.verify_otp))
+                                Text(strings.otpVerify)
                             }
                         }
 
@@ -268,7 +266,7 @@ fun OtpScreen(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !viewModel.loading
                         ) {
-                            Text(stringResource(Res.string.resend_otp))
+                            Text(strings.otpResend)
                         }
                     }
                 }

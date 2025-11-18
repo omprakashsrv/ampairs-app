@@ -39,6 +39,12 @@ interface Strings {
     val phoneNumberPlaceholder: String
     val phoneNumberContinue: String
     val phoneNumberInvalid: String
+    val phoneUserExists: String
+    val phoneUserAlreadyLoggedIn: String
+    val phoneUserAlreadyLoggedInDesc: String
+    val phoneWouldYouLikeToSwitch: String
+    val phoneSwitchToThisUser: String
+    val phoneLogin: String
 
     // OTP Screen
     val otpTitle: String
@@ -48,6 +54,11 @@ interface Strings {
     val otpResend: String
     val otpInvalid: String
     val otpSent: String
+    val otpVerifying: String
+    val otpEnterCode: String
+    val otpWaitingForAutoVerification: String
+    val otpAutoVerificationDesc: String
+    val otpEnterManually: String
 
     // Customer Screen
     val customerTitle: String
