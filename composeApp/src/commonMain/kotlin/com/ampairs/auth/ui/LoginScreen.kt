@@ -3,6 +3,8 @@ package com.ampairs.auth.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Button
@@ -34,13 +38,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +56,10 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.viewmodel.LoginViewModel
+import com.ampairs.common.localization.Language
+import com.ampairs.common.localization.LocalizationManager
+import com.ampairs.common.localization.localizedStrings
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @Composable
@@ -56,6 +67,11 @@ fun LoginScreen(
     viewModel: LoginViewModel = koinInject<LoginViewModel>(),
     onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit,
 ) {
+    val localizationManager: LocalizationManager = koinInject()
+    val strings = localizedStrings()
+    val scope = rememberCoroutineScope()
+    val currentLanguage by localizationManager.currentLanguage.collectAsState(Language.ENGLISH)
+
     var isVisible by remember { mutableStateOf(false) }
     var showWelcomeScreen by remember { mutableStateOf(false) }
     var isCheckingLogin by remember { mutableStateOf(true) }
@@ -118,7 +134,52 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Language Selection Section
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = strings.loginSelectLanguage,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = strings.loginSelectLanguage,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
+                ) {
+                    Language.entries.forEach { language ->
+                        LanguageSelector(
+                            language = language,
+                            isSelected = currentLanguage == language,
+                            onSelect = {
+                                scope.launch {
+                                    localizationManager.setLanguage(language)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             // App Logo
             Surface(
@@ -132,7 +193,7 @@ fun LoginScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Store,
-                        contentDescription = "Ampairs Logo",
+                        contentDescription = strings.appName,
                         modifier = Modifier.size(56.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -143,7 +204,7 @@ fun LoginScreen(
 
             // App Name
             Text(
-                text = "Ampairs",
+                text = strings.appName,
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -153,7 +214,7 @@ fun LoginScreen(
 
             // Tagline
             Text(
-                text = "Your Complete Business Management Solution",
+                text = strings.loginWelcomeTagline,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -164,24 +225,24 @@ fun LoginScreen(
             // Feature Cards
             FeatureCard(
                 icon = Icons.Default.Groups,
-                title = "Customer Management",
-                description = "Manage your customer relationships efficiently"
+                title = strings.loginFeatureCustomerManagement,
+                description = strings.loginFeatureCustomerManagementDesc
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             FeatureCard(
                 icon = Icons.Default.Inventory,
-                title = "Inventory Control",
-                description = "Track products and stock with ease"
+                title = strings.loginFeatureInventoryControl,
+                description = strings.loginFeatureInventoryControlDesc
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             FeatureCard(
                 icon = Icons.Default.Receipt,
-                title = "Smart Invoicing",
-                description = "Create and manage invoices effortlessly"
+                title = strings.loginFeatureSmartInvoicing,
+                description = strings.loginFeatureSmartInvoicingDesc
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -197,14 +258,14 @@ fun LoginScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = "Get Started",
+                    text = strings.loginGetStarted,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.Default.ArrowForward,
-                    contentDescription = "Continue",
+                    contentDescription = strings.loginGetStarted,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -273,6 +334,66 @@ private fun FeatureCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun LanguageSelector(
+    language: Language,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onSelect)
+            .then(
+                if (isSelected) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                } else {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            ),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Selected",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Text(
+                text = language.nativeName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
         }
     }
 }

@@ -1,0 +1,94 @@
+package com.ampairs.common.localization
+
+/**
+ * Hindi string resources
+ */
+object HindiStrings : Strings {
+    // Common
+    override val appName = "ऐम्पेयर्स"
+    override val ok = "ठीक है"
+    override val cancel = "रद्द करें"
+    override val save = "सहेजें"
+    override val delete = "हटाएं"
+    override val edit = "संपादित करें"
+    override val search = "खोजें"
+    override val loading = "लोड हो रहा है..."
+    override val error = "त्रुटि"
+    override val success = "सफलता"
+    override val retry = "पुनः प्रयास करें"
+    override val close = "बंद करें"
+    override val yes = "हां"
+    override val no = "नहीं"
+
+    // Login Screen
+    override val loginWelcomeTagline = "आपका संपूर्ण व्यवसाय प्रबंधन समाधान"
+    override val loginGetStarted = "शुरू करें"
+    override val loginFeatureCustomerManagement = "ग्राहक प्रबंधन"
+    override val loginFeatureCustomerManagementDesc = "अपने ग्राहक संबंधों को कुशलता से प्रबंधित करें"
+    override val loginFeatureInventoryControl = "इन्वेंटरी नियंत्रण"
+    override val loginFeatureInventoryControlDesc = "उत्पादों और स्टॉक को आसानी से ट्रैक करें"
+    override val loginFeatureSmartInvoicing = "स्मार्ट चालान"
+    override val loginFeatureSmartInvoicingDesc = "चालान बनाएं और प्रबंधित करें आसानी से"
+    override val loginSelectLanguage = "भाषा चुनें"
+    override val loginLanguagePrompt = "अपनी पसंदीदा भाषा चुनें"
+
+    // Phone Number Screen
+    override val phoneNumberTitle = "अपना फ़ोन नंबर दर्ज करें"
+    override val phoneNumberEnter = "फ़ोन नंबर"
+    override val phoneNumberPlaceholder = "9876543210"
+    override val phoneNumberContinue = "जारी रखें"
+    override val phoneNumberInvalid = "कृपया एक मान्य फ़ोन नंबर दर्ज करें"
+
+    // OTP Screen
+    override val otpTitle = "OTP सत्यापित करें"
+    override val otpEnter = "OTP दर्ज करें"
+    override val otpPlaceholder = "123456"
+    override val otpVerify = "सत्यापित करें"
+    override val otpResend = "OTP पुनः भेजें"
+    override val otpInvalid = "अमान्य OTP"
+    override val otpSent = "OTP सफलतापूर्वक भेजा गया"
+
+    // Customer Screen
+    override val customerTitle = "ग्राहक"
+    override val customerAdd = "ग्राहक जोड़ें"
+    override val customerSearch = "ग्राहक खोजें..."
+    override val customerName = "ग्राहक का नाम"
+    override val customerPhone = "फ़ोन नंबर"
+    override val customerEmail = "ईमेल"
+    override val customerAddress = "पता"
+    override val customerSave = "ग्राहक सहेजें"
+    override val customerDelete = "ग्राहक हटाएं"
+    override val customerEdit = "ग्राहक संपादित करें"
+    override val customerNoCustomers = "कोई ग्राहक नहीं मिला"
+    override val customerAddFirst = "अपना पहला ग्राहक जोड़ें"
+    override val customerDetails = "ग्राहक विवरण"
+    override val customerList = "ग्राहक सूची"
+    override val customerType = "ग्राहक प्रकार"
+    override val customerGroup = "ग्राहक समूह"
+    override val customerGSTNumber = "GST नंबर"
+    override val customerPANNumber = "PAN नंबर"
+
+    // Business/Workspace Screen
+    override val workspaceTitle = "कार्यस्थान"
+    override val workspaceSelect = "कार्यस्थान चुनें"
+    override val workspaceCreate = "कार्यस्थान बनाएं"
+    override val workspaceName = "कार्यस्थान का नाम"
+    override val workspaceDescription = "विवरण"
+    override val workspaceNoWorkspaces = "कोई कार्यस्थान नहीं मिला"
+    override val workspaceAddFirst = "अपना पहला कार्यस्थान बनाएं"
+    override val workspaceSwitch = "कार्यस्थान बदलें"
+    override val workspaceSettings = "कार्यस्थान सेटिंग्स"
+    override val workspaceModules = "मॉड्यूल"
+    override val workspaceNoModules = "कोई मॉड्यूल उपलब्ध नहीं"
+
+    // Settings
+    override val settingsTitle = "सेटिंग्स"
+    override val settingsLanguage = "भाषा"
+    override val settingsTheme = "थीम"
+    override val settingsAccount = "खाता"
+    override val settingsAbout = "हमारे बारे में"
+    override val settingsLogout = "लॉगआउट"
+    override val settingsVersion = "संस्करण"
+    override val settingsChangeLanguage = "भाषा बदलें"
+    override val settingsSelectLanguage = "भाषा चुनें"
+}
