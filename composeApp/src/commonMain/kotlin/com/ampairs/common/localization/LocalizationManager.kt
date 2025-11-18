@@ -1,9 +1,6 @@
 package com.ampairs.common.localization
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.ampairs.common.config.AppPreferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -11,15 +8,12 @@ import kotlinx.coroutines.flow.map
  * Manages language preferences and provides localized strings
  */
 class LocalizationManager(
-    private val dataStore: DataStore<Preferences>
+    private val appPreferences: AppPreferencesDataStore
 ) {
-    private val languageKey = stringPreferencesKey("app_language")
-
     /**
      * Current selected language as a Flow
      */
-    val currentLanguage: Flow<Language> = dataStore.data.map { preferences ->
-        val languageCode = preferences[languageKey] ?: Language.ENGLISH.code
+    val currentLanguage: Flow<Language> = appPreferences.getLanguagePreference().map { languageCode ->
         Language.fromCode(languageCode)
     }
 
@@ -34,9 +28,7 @@ class LocalizationManager(
      * Set the app language
      */
     suspend fun setLanguage(language: Language) {
-        dataStore.edit { preferences ->
-            preferences[languageKey] = language.code
-        }
+        appPreferences.setLanguagePreference(language.code)
     }
 
     /**

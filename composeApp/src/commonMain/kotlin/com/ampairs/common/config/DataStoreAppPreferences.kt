@@ -20,6 +20,7 @@ class DataStoreAppPreferences(
 
     companion object {
         private val THEME_PREFERENCE_KEY = stringPreferencesKey("theme_preference")
+        private val LANGUAGE_PREFERENCE_KEY = stringPreferencesKey("language_preference")
         private val LAST_UPDATE_CHECK_TIME_KEY = longPreferencesKey("last_update_check_time")
         private val LAST_WORKSPACE_ID_KEY = stringPreferencesKey("last_workspace_id")
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
@@ -166,6 +167,19 @@ class DataStoreAppPreferences(
         dataStore.edit { preferences ->
             preferences.remove(LAST_USER_ID_KEY)
             println("🧹 Last user ID cleared")
+        }
+    }
+
+    override fun getLanguagePreference(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[LANGUAGE_PREFERENCE_KEY] ?: "en" // Default to English
+        }
+    }
+
+    override suspend fun setLanguagePreference(languageCode: String) {
+        dataStore.edit { preferences ->
+            preferences[LANGUAGE_PREFERENCE_KEY] = languageCode
+            println("🌐 Language preference saved: $languageCode")
         }
     }
 }

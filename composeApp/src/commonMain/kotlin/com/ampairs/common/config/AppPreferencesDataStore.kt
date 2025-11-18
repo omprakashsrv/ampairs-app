@@ -89,9 +89,17 @@ interface AppPreferencesDataStore {
      */
     suspend fun clearLastUserId()
 
+    /**
+     * Get the current language preference (language code: "en", "hi")
+     */
+    fun getLanguagePreference(): Flow<String>
+
+    /**
+     * Set the language preference
+     */
+    suspend fun setLanguagePreference(languageCode: String)
+
     // Future app settings can be added here:
-    // fun getLanguagePreference(): Flow<String>
-    // suspend fun setLanguagePreference(language: String)
     // fun getNotificationSettings(): Flow<NotificationSettings>
     // suspend fun setNotificationSettings(settings: NotificationSettings)
 }
