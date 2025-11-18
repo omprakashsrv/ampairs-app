@@ -216,6 +216,7 @@ fun PhoneScreen(
 @Composable
 fun PhoneScreenPreview() {
     AmpairsTheme {
+        val strings = localizedStrings()
         // Mock ViewModel state for preview
         var phoneNumber by remember { mutableStateOf("9876543210") }
         var validPhoneNumber by remember { mutableStateOf(true) }
@@ -283,7 +284,7 @@ fun PhoneScreenPreview() {
                                 .size(24.dp)
                         )
                     } else {
-                        Text(stringResource(Res.string.login))
+                        Text(strings.phoneLogin)
                     }
                 }
             }
