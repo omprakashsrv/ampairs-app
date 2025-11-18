@@ -18,11 +18,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ampairs.common.localization.localizedStrings
 import com.ampairs.common.theme.ThemeManager
 import com.ampairs.common.theme.ThemePreference
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.GlobalNavigationManager
+import com.ampairs.workspace.ui.LanguageSettingsDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -282,7 +284,9 @@ private fun UserProfileMenu(
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = localizedStrings()
     var expanded by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
         Row(
@@ -334,10 +338,19 @@ private fun UserProfileMenu(
         ) {
             ProfileMenuItem(
                 icon = Icons.Default.Edit,
-                text = "Edit Profile",
+                text = strings.edit,
                 onClick = {
                     expanded = false
                     onEditProfile()
+                }
+            )
+
+            ProfileMenuItem(
+                icon = Icons.Default.Language,
+                text = strings.settingsLanguage,
+                onClick = {
+                    expanded = false
+                    showLanguageDialog = true
                 }
             )
 
@@ -372,12 +385,19 @@ private fun UserProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Filled.Logout,
-                text = "Logout",
+                text = strings.settingsLogout,
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false
                     onLogout()
                 }
+            )
+        }
+
+        // Language Settings Dialog
+        if (showLanguageDialog) {
+            LanguageSettingsDialog(
+                onDismiss = { showLanguageDialog = false }
             )
         }
     }
