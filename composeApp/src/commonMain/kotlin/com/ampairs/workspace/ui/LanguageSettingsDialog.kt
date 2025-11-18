@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.ampairs.common.localization.Language
 import com.ampairs.common.localization.LocaleManager
-import composeapp.composeapp.generated.resources.Res
-import composeapp.composeapp.generated.resources.*
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.*
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject

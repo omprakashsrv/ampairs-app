@@ -39,8 +39,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.ampairs.auth.domain.PhoneVerificationState
-import composeapp.composeapp.generated.resources.Res
-import composeapp.composeapp.generated.resources.*
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource

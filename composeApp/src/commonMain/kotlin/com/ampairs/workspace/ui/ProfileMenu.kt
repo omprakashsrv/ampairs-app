@@ -20,8 +20,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import composeapp.composeapp.generated.resources.Res
-import composeapp.composeapp.generated.resources.*
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

@@ -24,8 +24,8 @@ import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.ui.LanguageSettingsDialog
-import composeapp.composeapp.generated.resources.Res
-import composeapp.composeapp.generated.resources.*
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
