@@ -83,35 +83,22 @@ fun WorkspaceModulesScreen(
             }
         }
 
-        // Loading indicator
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            // Only show DynamicModuleNavigation on desktop platforms (menu bar)
-            // On mobile platforms, navigation is handled by the slide drawer
-            if (PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.MENU_BAR) {
-                globalNavigationService?.let { service ->
-                    DynamicModuleNavigation(
-                        navigationService = service,
-                    onNavigate = { route ->
-                        // Extract module code from route and navigate
-                        val moduleCode = extractModuleCodeFromRoute(route)
-                        if (moduleCode != null) {
-                            onModuleSelected(moduleCode)
-                        }
-                    }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+        // Offline-first loading pattern:
+        // - Show loading only if no data available yet
+        // - Show cached data immediately while refreshing in background
+        when {
+            // Loading state: Only show spinner if we have no modules yet
+            isLoading && activeModules.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
 
-            // Active modules list (legacy view)
-            if (activeModules.isEmpty()) {
+            // Empty state: No modules and not loading
+            !isLoading && activeModules.isEmpty() -> {
                 EmptyStateCard(
                     title = "No Active Modules",
                     description = "Install modules from the store to get started with your workspace",
@@ -119,7 +106,29 @@ fun WorkspaceModulesScreen(
                         navController.navigate(WorkspaceRoute.ModuleStore(workspaceId))
                     }
                 )
-            } else {
+            }
+
+            // Data available: Show modules (even if loading in background)
+            activeModules.isNotEmpty() -> {
+                // Only show DynamicModuleNavigation on desktop platforms (menu bar)
+                // On mobile platforms, navigation is handled by the slide drawer
+                if (PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.MENU_BAR) {
+                    globalNavigationService?.let { service ->
+                        DynamicModuleNavigation(
+                            navigationService = service,
+                            onNavigate = { route ->
+                                // Extract module code from route and navigate
+                                val moduleCode = extractModuleCodeFromRoute(route)
+                                if (moduleCode != null) {
+                                    onModuleSelected(moduleCode)
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+
+                // Active modules grid
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     verticalArrangement = Arrangement.spacedBy(16.dp),

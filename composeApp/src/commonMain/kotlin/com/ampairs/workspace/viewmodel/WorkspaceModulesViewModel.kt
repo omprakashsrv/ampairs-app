@@ -28,7 +28,8 @@ class WorkspaceModulesViewModel(
     // Use global navigation manager instead of local service
     private val globalNavigationManager = GlobalNavigationManager.getInstance()
 
-    private val _isLoading = MutableStateFlow(false)
+    // Start with loading state for offline-first pattern
+    private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -37,6 +38,9 @@ class WorkspaceModulesViewModel(
     // Installed modules - using UI state pattern like StateListViewModel
     private val _installedModules = MutableStateFlow<List<InstalledModule>>(emptyList())
     val installedModules: StateFlow<List<InstalledModule>> = _installedModules.asStateFlow()
+
+    // Track if we've received any data (for offline-first UX)
+    private var hasReceivedData = false
 
     // Active modules - matches web: get activeModules()
     val activeModules: StateFlow<List<InstalledModule>> = installedModules
@@ -61,19 +65,23 @@ class WorkspaceModulesViewModel(
     }
 
     /**
-     * Load installed modules - exact StateListViewModel pattern
+     * Load installed modules - offline-first pattern with Store5
+     * Shows cached data immediately, then refreshes from network in background
      */
     fun loadInstalledModules() {
         val wsId = workspaceId ?: run {
             println("WorkspaceModulesViewModel: loadInstalledModules - workspaceId is null!")
+            _isLoading.value = false
             return
         }
         println("WorkspaceModulesViewModel: loadInstalledModules called for workspaceId: $wsId")
         viewModelScope.launch {
-            _isLoading.value = true
+            // Only show loading if we haven't received any data yet
+            if (!hasReceivedData) {
+                _isLoading.value = true
+                globalNavigationManager.setModuleLoading(true)
+            }
             _errorMessage.value = null
-            // Set loading state in global navigation manager
-            globalNavigationManager.setModuleLoading(true)
 
             try {
                 val key = InstalledModuleKey.refresh(wsId)
@@ -84,39 +92,52 @@ class WorkspaceModulesViewModel(
                         println("WorkspaceModulesViewModel: Store response type: ${response::class.simpleName}")
                         when (response) {
                             is StoreReadResponse.Data -> {
-                                println("WorkspaceModulesViewModel: Received ${response.value.size} installed modules")
+                                println("WorkspaceModulesViewModel: Received ${response.value.size} installed modules (origin: ${response.origin})")
                                 _installedModules.value = response.value
+                                hasReceivedData = true
+                                // Hide loading after first data (cached or network)
                                 _isLoading.value = false
+                                globalNavigationManager.setModuleLoading(false)
                                 _errorMessage.value = null
                                 // Sync modules to global navigation manager
                                 globalNavigationManager.updateInstalledModules(response.value)
                             }
 
                             is StoreReadResponse.Loading -> {
-                                println("WorkspaceModulesViewModel: Loading...")
-                                _isLoading.value = true
+                                println("WorkspaceModulesViewModel: Loading... (hasReceivedData=$hasReceivedData)")
+                                // Only show loading spinner if we haven't received any data yet
+                                // This prevents spinner from showing during background refresh
+                                if (!hasReceivedData) {
+                                    _isLoading.value = true
+                                    globalNavigationManager.setModuleLoading(true)
+                                }
                             }
 
                             is StoreReadResponse.Error.Exception -> {
                                 println("WorkspaceModulesViewModel: Error.Exception: ${response.error.message}")
                                 response.error.printStackTrace()
                                 _isLoading.value = false
-                                _errorMessage.value = response.error.message ?: "Failed to load modules"
-                                // Set error in global navigation manager
-                                globalNavigationManager.setNavigationError(_errorMessage.value)
+                                globalNavigationManager.setModuleLoading(false)
+                                // Only show error if we have no cached data
+                                if (_installedModules.value.isEmpty()) {
+                                    _errorMessage.value = response.error.message ?: "Failed to load modules"
+                                    globalNavigationManager.setNavigationError(_errorMessage.value)
+                                }
                             }
 
                             is StoreReadResponse.Error.Message -> {
                                 println("WorkspaceModulesViewModel: Error.Message: ${response.message}")
                                 _isLoading.value = false
-                                _errorMessage.value = response.message
-                                // Set error in global navigation manager
-                                globalNavigationManager.setNavigationError(_errorMessage.value)
+                                globalNavigationManager.setModuleLoading(false)
+                                // Only show error if we have no cached data
+                                if (_installedModules.value.isEmpty()) {
+                                    _errorMessage.value = response.message
+                                    globalNavigationManager.setNavigationError(_errorMessage.value)
+                                }
                             }
 
                             else -> {
                                 println("WorkspaceModulesViewModel: Other response type: ${response::class.simpleName}")
-                                // Handle other response types if needed
                             }
                         }
                     }
@@ -124,9 +145,12 @@ class WorkspaceModulesViewModel(
                 println("WorkspaceModulesViewModel: Exception in loadInstalledModules: ${e.message}")
                 e.printStackTrace()
                 _isLoading.value = false
-                _errorMessage.value = e.message ?: "Failed to load modules"
-                // Set error in global navigation manager
-                globalNavigationManager.setNavigationError(_errorMessage.value)
+                globalNavigationManager.setModuleLoading(false)
+                // Only show error if we have no cached data
+                if (_installedModules.value.isEmpty()) {
+                    _errorMessage.value = e.message ?: "Failed to load modules"
+                    globalNavigationManager.setNavigationError(_errorMessage.value)
+                }
             }
         }
     }
