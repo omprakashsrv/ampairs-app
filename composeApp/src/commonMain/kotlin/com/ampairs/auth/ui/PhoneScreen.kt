@@ -6,6 +6,8 @@ import ampairsapp.composeapp.generated.resources.phone_login
 import ampairsapp.composeapp.generated.resources.phone_switch_to_this_user
 import ampairsapp.composeapp.generated.resources.phone_user_already_logged_in
 import ampairsapp.composeapp.generated.resources.phone_user_already_logged_in_desc
+import ampairsapp.composeapp.generated.resources.phone_user_exists
+import ampairsapp.composeapp.generated.resources.phone_would_you_like_to_switch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,8 +58,6 @@ import com.ampairs.ui.theme.AmpairsTheme
 import org.koin.compose.koinInject
 import com.ampairs.common.navigation.PlatformBackHandler
 import com.ampairs.common.navigation.ExitApp
-import composeapp.composeapp.generated.resources.Res
-import composeapp.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
