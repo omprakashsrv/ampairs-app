@@ -8,10 +8,6 @@ import androidx.compose.runtime.getValue
 import com.ampairs.common.config.AppPreferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import org.jetbrains.compose.resources.InternalResourceApi
-import org.jetbrains.compose.resources.LanguageQualifier
-import org.jetbrains.compose.resources.RegionQualifier
-import org.jetbrains.compose.resources.ResourceEnvironment
 
 /**
  * Manages application locale and language preferences
@@ -36,6 +32,8 @@ class LocaleManager(
      */
     suspend fun setLanguage(language: Language) {
         appPreferences.setLanguagePreference(language.code)
+        // Platform-specific locale configuration will be triggered
+        configureLocale(language.code)
     }
 
     /**
@@ -43,8 +41,15 @@ class LocaleManager(
      */
     suspend fun setLanguageCode(code: String) {
         appPreferences.setLanguagePreference(code)
+        configureLocale(code)
     }
 }
+
+/**
+ * Platform-specific locale configuration
+ * This should be implemented using expect/actual pattern for each platform
+ */
+expect fun configureLocale(languageCode: String)
 
 /**
  * CompositionLocal for current language code
@@ -52,20 +57,8 @@ class LocaleManager(
 val LocalLanguageCode = compositionLocalOf { "en" }
 
 /**
- * CompositionLocal for ResourceEnvironment with language configuration
- */
-@OptIn(InternalResourceApi::class)
-val LocalResourceEnvironment = compositionLocalOf<ResourceEnvironment> {
-    ResourceEnvironment(
-        language = LanguageQualifier("en"),
-        region = RegionQualifier.EMPTY
-    )
-}
-
-/**
  * Provider for locale/language management in Compose
  */
-@OptIn(InternalResourceApi::class)
 @Composable
 fun LocaleProvider(
     localeManager: LocaleManager,
@@ -73,18 +66,23 @@ fun LocaleProvider(
 ) {
     val languageCode by localeManager.currentLanguageCode.collectAsState("en")
 
-    val resourceEnvironment = ResourceEnvironment(
-        language = LanguageQualifier(languageCode),
-        region = RegionQualifier.EMPTY
-    )
-
-    CompositionLocalProvider(
-        LocalLanguageCode provides languageCode,
-        LocalResourceEnvironment provides resourceEnvironment,
-        org.jetbrains.compose.resources.LocalResourceEnvironment provides resourceEnvironment,
-        content = content
-    )
+    // Apply platform-specific locale configuration
+    PlatformLocaleConfiguration(languageCode) {
+        CompositionLocalProvider(
+            LocalLanguageCode provides languageCode,
+            content = content
+        )
+    }
 }
+
+/**
+ * Platform-specific locale configuration composable
+ */
+@Composable
+expect fun PlatformLocaleConfiguration(
+    languageCode: String,
+    content: @Composable () -> Unit
+)
 
 /**
  * Get current language code from composition
