@@ -20,7 +20,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ampairs.common.localization.localizedStrings
+import composeapp.composeapp.generated.resources.Res
+import composeapp.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ProfileMenu(
@@ -31,7 +33,6 @@ fun ProfileMenu(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val strings = localizedStrings()
     var expanded by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
@@ -116,7 +117,7 @@ fun ProfileMenu(
         ) {
             ProfileMenuItem(
                 icon = Icons.Default.Edit,
-                text = strings.edit,
+                text = stringResource(Res.string.edit),
                 onClick = {
                     expanded = false
                     onEditProfile()
@@ -130,7 +131,7 @@ fun ProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.Default.Language,
-                text = strings.settingsLanguage,
+                text = stringResource(Res.string.settings_language),
                 onClick = {
                     expanded = false
                     onLanguageSettings()
@@ -144,7 +145,7 @@ fun ProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Default.Logout,
-                text = strings.settingsLogout,
+                text = stringResource(Res.string.settings_logout),
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false

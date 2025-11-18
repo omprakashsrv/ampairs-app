@@ -39,9 +39,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.ampairs.auth.domain.PhoneVerificationState
-import com.ampairs.common.localization.localizedStrings
+import composeapp.composeapp.generated.resources.Res
+import composeapp.composeapp.generated.resources.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
@@ -50,7 +52,6 @@ fun OtpScreen(
     verificationId: String = "", // Firebase verification ID (empty for backend auth)
     onAuthSuccess: () -> Unit,
 ) {
-    val strings = localizedStrings()
     val viewModel = koinInject<LoginViewModel>()
 
     // Set the sessionId and verificationId from navigation parameters
@@ -167,13 +168,13 @@ fun OtpScreen(
                                     strokeWidth = 4.dp
                                 )
                                 Text(
-                                    text = strings.otpWaitingForAutoVerification,
+                                    text = stringResource(Res.string.otp_waiting_for_auto_verification),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     textAlign = TextAlign.Center
                                 )
                                 Text(
-                                    text = strings.otpAutoVerificationDesc,
+                                    text = stringResource(Res.string.otp_auto_verification_desc),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
@@ -185,7 +186,7 @@ fun OtpScreen(
                                         waitingForAutoVerification = false
                                     }
                                 ) {
-                                    Text(strings.otpEnterManually)
+                                    Text(stringResource(Res.string.otp_enter_manually))
                                 }
                             }
                         } else {
@@ -240,7 +241,7 @@ fun OtpScreen(
                                         .size(24.dp)
                                 )
                             } else {
-                                Text(strings.otpVerify)
+                                Text(stringResource(Res.string.otp_verify))
                             }
                         }
 
@@ -266,7 +267,7 @@ fun OtpScreen(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !viewModel.loading
                         ) {
-                            Text(strings.otpResend)
+                            Text(stringResource(Res.string.otp_resend))
                         }
                     }
                 }

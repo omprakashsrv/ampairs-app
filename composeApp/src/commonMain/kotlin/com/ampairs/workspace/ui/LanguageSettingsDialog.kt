@@ -17,10 +17,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.ampairs.common.localization.Language
-import com.ampairs.common.localization.LocalizationManager
-import com.ampairs.common.localization.currentLanguage
-import com.ampairs.common.localization.localizedStrings
+import com.ampairs.common.localization.LocaleManager
+import composeapp.composeapp.generated.resources.Res
+import composeapp.composeapp.generated.resources.*
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 /**
@@ -30,9 +31,8 @@ import org.koin.compose.koinInject
 fun LanguageSettingsDialog(
     onDismiss: () -> Unit
 ) {
-    val strings = localizedStrings()
-    val localizationManager: LocalizationManager = koinInject()
-    val currentLanguage = currentLanguage()
+    val localeManager: LocaleManager = koinInject()
+    val currentLanguage by localeManager.currentLanguage.collectAsState(Language.ENGLISH)
     val scope = rememberCoroutineScope()
 
     Dialog(onDismissRequest = onDismiss) {
@@ -56,13 +56,13 @@ fun LanguageSettingsDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Language,
-                        contentDescription = strings.settingsLanguage,
+                        contentDescription = stringResource(Res.string.settings_language),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = strings.settingsSelectLanguage,
+                        text = stringResource(Res.string.settings_select_language),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -78,7 +78,7 @@ fun LanguageSettingsDialog(
                         isSelected = currentLanguage == language,
                         onSelect = {
                             scope.launch {
-                                localizationManager.setLanguage(language)
+                                localeManager.setLanguage(language)
                                 // Small delay to let the preference save
                                 kotlinx.coroutines.delay(100)
                                 onDismiss()
@@ -98,7 +98,7 @@ fun LanguageSettingsDialog(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text(text = strings.cancel)
+                    Text(text = stringResource(Res.string.cancel))
                 }
             }
         }

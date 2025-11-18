@@ -1,5 +1,11 @@
 package com.ampairs.auth.ui
 
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.cancel
+import ampairsapp.composeapp.generated.resources.phone_login
+import ampairsapp.composeapp.generated.resources.phone_switch_to_this_user
+import ampairsapp.composeapp.generated.resources.phone_user_already_logged_in
+import ampairsapp.composeapp.generated.resources.phone_user_already_logged_in_desc
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,7 +56,9 @@ import com.ampairs.ui.theme.AmpairsTheme
 import org.koin.compose.koinInject
 import com.ampairs.common.navigation.PlatformBackHandler
 import com.ampairs.common.navigation.ExitApp
-import com.ampairs.common.localization.localizedStrings
+import composeapp.composeapp.generated.resources.Res
+import composeapp.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PhoneScreen(
@@ -58,7 +66,6 @@ fun PhoneScreen(
     onAuthSuccess: (sessionId: String, verificationId: String) -> Unit,
     onExistingUserSelected: () -> Unit = {},
 ) {
-    val strings = localizedStrings()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showExistingUserDialog by remember { mutableStateOf(false) }
@@ -205,7 +212,7 @@ fun PhoneScreen(
                                 .size(24.dp)
                         )
                     } else {
-                        Text(strings.phoneLogin)
+                        Text(stringResource(Res.string.phone_login))
                     }
                 }
             }
@@ -216,7 +223,6 @@ fun PhoneScreen(
 @Composable
 fun PhoneScreenPreview() {
     AmpairsTheme {
-        val strings = localizedStrings()
         // Mock ViewModel state for preview
         var phoneNumber by remember { mutableStateOf("9876543210") }
         var validPhoneNumber by remember { mutableStateOf(true) }
@@ -284,7 +290,7 @@ fun PhoneScreenPreview() {
                                 .size(24.dp)
                         )
                     } else {
-                        Text(strings.phoneLogin)
+                        Text(stringResource(Res.string.phone_login))
                     }
                 }
             }
@@ -298,21 +304,19 @@ private fun ExistingUserDialog(
     onSelectUser: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val strings = localizedStrings()
-
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
                 Icons.Default.AccountCircle,
-                contentDescription = strings.phoneUserExists,
+                contentDescription = stringResource(Res.string.phone_user_exists),
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
         },
         title = {
             Text(
-                text = strings.phoneUserAlreadyLoggedIn,
+                text = stringResource(Res.string.phone_user_already_logged_in),
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -321,7 +325,7 @@ private fun ExistingUserDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = strings.phoneUserAlreadyLoggedInDesc,
+                    text = stringResource(Res.string.phone_user_already_logged_in_desc),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Card(
@@ -347,7 +351,7 @@ private fun ExistingUserDialog(
                     }
                 }
                 Text(
-                    text = strings.phoneWouldYouLikeToSwitch,
+                    text = stringResource(Res.string.phone_would_you_like_to_switch),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -357,12 +361,12 @@ private fun ExistingUserDialog(
             Button(
                 onClick = onSelectUser
             ) {
-                Text(strings.phoneSwitchToThisUser)
+                Text(stringResource(Res.string.phone_switch_to_this_user))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(strings.cancel)
+                Text(stringResource(Res.string.cancel))
             }
         }
     )

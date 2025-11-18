@@ -7,5 +7,5 @@ import org.koin.dsl.module
  * Koin module for localization dependencies
  */
 val localizationModule = module {
-    singleOf(::LocalizationManager)
+    singleOf(::LocaleManager)
 }

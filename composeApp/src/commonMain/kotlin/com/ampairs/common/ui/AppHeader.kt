@@ -18,13 +18,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.ampairs.common.localization.localizedStrings
 import com.ampairs.common.theme.ThemeManager
 import com.ampairs.common.theme.ThemePreference
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.ui.LanguageSettingsDialog
+import composeapp.composeapp.generated.resources.Res
+import composeapp.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -284,7 +286,6 @@ private fun UserProfileMenu(
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val strings = localizedStrings()
     var expanded by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
 
@@ -338,7 +339,7 @@ private fun UserProfileMenu(
         ) {
             ProfileMenuItem(
                 icon = Icons.Default.Edit,
-                text = strings.edit,
+                text = stringResource(Res.string.edit),
                 onClick = {
                     expanded = false
                     onEditProfile()
@@ -347,7 +348,7 @@ private fun UserProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.Default.Language,
-                text = strings.settingsLanguage,
+                text = stringResource(Res.string.settings_language),
                 onClick = {
                     expanded = false
                     showLanguageDialog = true
@@ -385,7 +386,7 @@ private fun UserProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Filled.Logout,
-                text = strings.settingsLogout,
+                text = stringResource(Res.string.settings_logout),
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false
