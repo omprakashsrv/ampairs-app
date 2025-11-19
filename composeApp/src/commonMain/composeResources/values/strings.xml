@@ -176,6 +176,27 @@
     <string name="app_update_required">App update required for security reasons</string>
     <string name="network_requests_blocked">Network requests blocked due to security policy</string>
 
+    <!-- Desktop Browser Auth -->
+    <string name="desktop_auth_sign_in">Sign In</string>
+    <string name="desktop_auth_welcome">Welcome to Ampairs</string>
+    <string name="desktop_auth_sign_in_securely">Sign in securely with your web browser</string>
+    <string name="desktop_auth_click_button_below">Click the button below to open your browser and complete authentication with your phone number.</string>
+    <string name="desktop_auth_sign_in_with_browser">Sign in with Browser</string>
+    <string name="desktop_auth_waiting_for_authentication">Waiting for authentication...</string>
+    <string name="desktop_auth_complete_in_browser">Complete the authentication in your browser.\nThis window will automatically update when done.</string>
+    <string name="desktop_auth_browser_no_deep_links">Browser doesn\'t support deep links? Paste tokens here</string>
+    <string name="desktop_auth_cancel">Cancel</string>
+    <string name="desktop_auth_paste_tokens">Paste Authentication Tokens</string>
+    <string name="desktop_auth_paste_instructions">After completing authentication in your browser, copy the JSON tokens and paste them below.</string>
+    <string name="desktop_auth_json_tokens">JSON Tokens</string>
+    <string name="desktop_auth_paste_entire_json">Paste the entire JSON object from the browser</string>
+    <string name="desktop_auth_back">Back</string>
+    <string name="desktop_auth_how_it_works">How it works:</string>
+    <string name="desktop_auth_step_1">Browser opens to secure authentication page</string>
+    <string name="desktop_auth_step_2">Enter your phone number and verify with OTP</string>
+    <string name="desktop_auth_step_3">Desktop app automatically completes sign in</string>
+    <string name="desktop_auth_credentials_not_stored">Your credentials are never stored on this device.</string>
+
     <!-- General -->
     <string name="translated_description_image">Translated description of what the image contains</string>
 </resources>

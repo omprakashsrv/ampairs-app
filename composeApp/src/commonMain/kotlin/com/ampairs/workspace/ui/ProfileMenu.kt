@@ -22,7 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.*
-import org.jetbrains.compose.resources.stringResource
+import com.ampairs.common.localization.localizedString
 
 @Composable
 fun ProfileMenu(
@@ -117,7 +117,7 @@ fun ProfileMenu(
         ) {
             ProfileMenuItem(
                 icon = Icons.Default.Edit,
-                text = stringResource(Res.string.edit),
+                text = localizedString(Res.string.edit),
                 onClick = {
                     expanded = false
                     onEditProfile()
@@ -131,7 +131,7 @@ fun ProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.Default.Language,
-                text = stringResource(Res.string.settings_language),
+                text = localizedString(Res.string.settings_language),
                 onClick = {
                     expanded = false
                     onLanguageSettings()
@@ -145,7 +145,7 @@ fun ProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Default.Logout,
-                text = stringResource(Res.string.settings_logout),
+                text = localizedString(Res.string.settings_logout),
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false

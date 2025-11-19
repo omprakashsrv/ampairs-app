@@ -58,7 +58,7 @@ import com.ampairs.ui.theme.AmpairsTheme
 import org.koin.compose.koinInject
 import com.ampairs.common.navigation.PlatformBackHandler
 import com.ampairs.common.navigation.ExitApp
-import org.jetbrains.compose.resources.stringResource
+import com.ampairs.common.localization.localizedString
 
 @Composable
 fun PhoneScreen(
@@ -212,7 +212,7 @@ fun PhoneScreen(
                                 .size(24.dp)
                         )
                     } else {
-                        Text(stringResource(Res.string.phone_login))
+                        Text(localizedString(Res.string.phone_login))
                     }
                 }
             }
@@ -290,7 +290,7 @@ fun PhoneScreenPreview() {
                                 .size(24.dp)
                         )
                     } else {
-                        Text(stringResource(Res.string.phone_login))
+                        Text(localizedString(Res.string.phone_login))
                     }
                 }
             }
@@ -309,14 +309,14 @@ private fun ExistingUserDialog(
         icon = {
             Icon(
                 Icons.Default.AccountCircle,
-                contentDescription = stringResource(Res.string.phone_user_exists),
+                contentDescription = localizedString(Res.string.phone_user_exists),
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
         },
         title = {
             Text(
-                text = stringResource(Res.string.phone_user_already_logged_in),
+                text = localizedString(Res.string.phone_user_already_logged_in),
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -325,7 +325,7 @@ private fun ExistingUserDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = stringResource(Res.string.phone_user_already_logged_in_desc),
+                    text = localizedString(Res.string.phone_user_already_logged_in_desc),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Card(
@@ -351,7 +351,7 @@ private fun ExistingUserDialog(
                     }
                 }
                 Text(
-                    text = stringResource(Res.string.phone_would_you_like_to_switch),
+                    text = localizedString(Res.string.phone_would_you_like_to_switch),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -361,12 +361,12 @@ private fun ExistingUserDialog(
             Button(
                 onClick = onSelectUser
             ) {
-                Text(stringResource(Res.string.phone_switch_to_this_user))
+                Text(localizedString(Res.string.phone_switch_to_this_user))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(Res.string.cancel))
+                Text(localizedString(Res.string.cancel))
             }
         }
     )

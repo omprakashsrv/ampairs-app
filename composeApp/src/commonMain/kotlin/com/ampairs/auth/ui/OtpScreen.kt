@@ -43,7 +43,7 @@ import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.stringResource
+import com.ampairs.common.localization.localizedString
 import org.koin.compose.koinInject
 
 @Composable
@@ -168,13 +168,13 @@ fun OtpScreen(
                                     strokeWidth = 4.dp
                                 )
                                 Text(
-                                    text = stringResource(Res.string.otp_waiting_for_auto_verification),
+                                    text = localizedString(Res.string.otp_waiting_for_auto_verification),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     textAlign = TextAlign.Center
                                 )
                                 Text(
-                                    text = stringResource(Res.string.otp_auto_verification_desc),
+                                    text = localizedString(Res.string.otp_auto_verification_desc),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
@@ -186,7 +186,7 @@ fun OtpScreen(
                                         waitingForAutoVerification = false
                                     }
                                 ) {
-                                    Text(stringResource(Res.string.otp_enter_manually))
+                                    Text(localizedString(Res.string.otp_enter_manually))
                                 }
                             }
                         } else {
@@ -241,7 +241,7 @@ fun OtpScreen(
                                         .size(24.dp)
                                 )
                             } else {
-                                Text(stringResource(Res.string.otp_verify))
+                                Text(localizedString(Res.string.otp_verify))
                             }
                         }
 
@@ -267,7 +267,7 @@ fun OtpScreen(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !viewModel.loading
                         ) {
-                            Text(stringResource(Res.string.otp_resend))
+                            Text(localizedString(Res.string.otp_resend))
                         }
                     }
                 }

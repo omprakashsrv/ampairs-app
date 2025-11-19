@@ -21,7 +21,7 @@ import com.ampairs.common.localization.LocaleManager
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.*
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.stringResource
+import com.ampairs.common.localization.localizedString
 import org.koin.compose.koinInject
 
 /**
@@ -56,13 +56,13 @@ fun LanguageSettingsDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Language,
-                        contentDescription = stringResource(Res.string.settings_language),
+                        contentDescription = localizedString(Res.string.settings_language),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = stringResource(Res.string.settings_select_language),
+                        text = localizedString(Res.string.settings_select_language),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -98,7 +98,7 @@ fun LanguageSettingsDialog(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text(text = stringResource(Res.string.cancel))
+                    Text(text = localizedString(Res.string.cancel))
                 }
             }
         }

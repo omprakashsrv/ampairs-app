@@ -58,10 +58,10 @@ import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.common.localization.Language
 import com.ampairs.common.localization.LocaleManager
+import com.ampairs.common.localization.localizedString
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.*
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
@@ -148,13 +148,13 @@ fun LoginScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Language,
-                        contentDescription = stringResource(Res.string.login_select_language),
+                        contentDescription = localizedString(Res.string.login_select_language),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(Res.string.login_select_language),
+                        text = localizedString(Res.string.login_select_language),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -194,7 +194,7 @@ fun LoginScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Store,
-                        contentDescription = stringResource(Res.string.app_name),
+                        contentDescription = localizedString(Res.string.app_name),
                         modifier = Modifier.size(56.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -205,7 +205,7 @@ fun LoginScreen(
 
             // App Name
             Text(
-                text = stringResource(Res.string.app_name),
+                text = localizedString(Res.string.app_name),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -215,7 +215,7 @@ fun LoginScreen(
 
             // Tagline
             Text(
-                text = stringResource(Res.string.login_welcome_tagline),
+                text = localizedString(Res.string.login_welcome_tagline),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -226,24 +226,24 @@ fun LoginScreen(
             // Feature Cards
             FeatureCard(
                 icon = Icons.Default.Groups,
-                title = stringResource(Res.string.login_feature_customer_management),
-                description = stringResource(Res.string.login_feature_customer_management_desc)
+                title = localizedString(Res.string.login_feature_customer_management),
+                description = localizedString(Res.string.login_feature_customer_management_desc)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             FeatureCard(
                 icon = Icons.Default.Inventory,
-                title = stringResource(Res.string.login_feature_inventory_control),
-                description = stringResource(Res.string.login_feature_inventory_control_desc)
+                title = localizedString(Res.string.login_feature_inventory_control),
+                description = localizedString(Res.string.login_feature_inventory_control_desc)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             FeatureCard(
                 icon = Icons.Default.Receipt,
-                title = stringResource(Res.string.login_feature_smart_invoicing),
-                description = stringResource(Res.string.login_feature_smart_invoicing_desc)
+                title = localizedString(Res.string.login_feature_smart_invoicing),
+                description = localizedString(Res.string.login_feature_smart_invoicing_desc)
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -259,14 +259,14 @@ fun LoginScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = stringResource(Res.string.login_get_started),
+                    text = localizedString(Res.string.login_get_started),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.Default.ArrowForward,
-                    contentDescription = stringResource(Res.string.login_get_started),
+                    contentDescription = localizedString(Res.string.login_get_started),
                     modifier = Modifier.size(20.dp)
                 )
             }

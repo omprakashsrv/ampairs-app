@@ -26,7 +26,7 @@ import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.ui.LanguageSettingsDialog
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.*
-import org.jetbrains.compose.resources.stringResource
+import com.ampairs.common.localization.localizedString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -339,7 +339,7 @@ private fun UserProfileMenu(
         ) {
             ProfileMenuItem(
                 icon = Icons.Default.Edit,
-                text = stringResource(Res.string.edit),
+                text = localizedString(Res.string.edit),
                 onClick = {
                     expanded = false
                     onEditProfile()
@@ -348,7 +348,7 @@ private fun UserProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.Default.Language,
-                text = stringResource(Res.string.settings_language),
+                text = localizedString(Res.string.settings_language),
                 onClick = {
                     expanded = false
                     showLanguageDialog = true
@@ -386,7 +386,7 @@ private fun UserProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Filled.Logout,
-                text = stringResource(Res.string.settings_logout),
+                text = localizedString(Res.string.settings_logout),
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false
