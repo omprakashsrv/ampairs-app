@@ -91,7 +91,8 @@ fun AppScreenLayout(
                             }
                         }
                     )
-                }
+                },
+                contentWindowInsets = WindowInsets(0, 0, 0, 0)
             ) { paddingValues ->
                 content(paddingValues)
             }
@@ -100,7 +101,7 @@ fun AppScreenLayout(
         // Desktop/Non-drawer platforms: Use regular scaffold
         Scaffold(
             modifier = modifier.imePadding(),
-                    topBar = {
+            topBar = {
                 AppHeader(
                     navController = navController,
                     currentWorkspaceName = currentWorkspaceName,
@@ -114,7 +115,8 @@ fun AppScreenLayout(
                     onSwitchUser = onSwitchUser,
                     onDeleteAccount = onDeleteAccount,
                 )
-            }
+            },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
             content(paddingValues)
         }
