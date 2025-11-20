@@ -278,7 +278,7 @@ class WorkspaceCreateViewModel(
             _state.value = _state.value.copy(error = "No workspace ID provided for update")
             return
         }
-        
+
         if (!validateForm()) return
 
         val request = UpdateWorkspaceRequest(
@@ -312,4 +312,91 @@ class WorkspaceCreateViewModel(
             }
         }
     }
+
+    /**
+     * Archive workspace (soft delete)
+     */
+    fun archiveWorkspace(onSuccess: () -> Unit) {
+        val currentWorkspaceId = _state.value.workspaceId
+        if (currentWorkspaceId == null) {
+            _state.value = _state.value.copy(error = "No workspace ID provided")
+            return
+        }
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isDeleting = true,
+                deleteError = null
+            )
+
+            try {
+                workspaceRepository.archiveWorkspace(currentWorkspaceId)
+
+                _state.value = _state.value.copy(
+                    isDeleting = false,
+                    deleteError = null
+                )
+
+                onSuccess()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isDeleting = false,
+                    deleteError = e.message ?: "Failed to archive workspace"
+                )
+            }
+        }
+    }
+
+    /**
+     * Restore archived workspace
+     */
+    fun restoreWorkspace(onSuccess: () -> Unit) {
+        val currentWorkspaceId = _state.value.workspaceId
+        if (currentWorkspaceId == null) {
+            _state.value = _state.value.copy(error = "No workspace ID provided")
+            return
+        }
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isLoading = true,
+                error = null
+            )
+
+            try {
+                workspaceRepository.restoreWorkspace(currentWorkspaceId)
+
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = null
+                )
+
+                onSuccess()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "Failed to restore workspace"
+                )
+            }
+        }
+    }
+
+    fun updateDeleteConfirmationSlug(slug: String) {
+        _state.value = _state.value.copy(deleteConfirmationSlug = slug)
+    }
+
+    fun showDeleteDialog() {
+        _state.value = _state.value.copy(showDeleteDialog = true)
+    }
+
+    fun hideDeleteDialog() {
+        _state.value = _state.value.copy(
+            showDeleteDialog = false,
+            deleteConfirmationSlug = "",
+            deleteError = null
+        )
+    }
+
+    val isDeleteConfirmationValid: Boolean
+        get() = _state.value.deleteConfirmationSlug == _state.value.slug
 }

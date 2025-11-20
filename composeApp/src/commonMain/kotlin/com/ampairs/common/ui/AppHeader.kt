@@ -288,6 +288,7 @@ private fun UserProfileMenu(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showLogoutConfirmation by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
         Row(
@@ -390,7 +391,7 @@ private fun UserProfileMenu(
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false
-                    onLogout()
+                    showLogoutConfirmation = true
                 }
             )
         }
@@ -399,6 +400,17 @@ private fun UserProfileMenu(
         if (showLanguageDialog) {
             LanguageSettingsDialog(
                 onDismiss = { showLanguageDialog = false }
+            )
+        }
+
+        // Logout Confirmation Dialog
+        if (showLogoutConfirmation) {
+            LogoutConfirmationDialog(
+                onConfirm = {
+                    showLogoutConfirmation = false
+                    onLogout()
+                },
+                onDismiss = { showLogoutConfirmation = false }
             )
         }
     }
@@ -602,4 +614,48 @@ private fun ThemeToggleButton(
             }
         }
     }
+}
+
+@Composable
+private fun LogoutConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.AutoMirrored.Filled.Logout,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = {
+            Text(
+                text = "Logout",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "Are you sure you want to logout? You will need to sign in again to access your account.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Logout")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

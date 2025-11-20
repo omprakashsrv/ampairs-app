@@ -38,6 +38,12 @@ data class WorkspaceCreateState(
     val validationErrors: Map<String, String> = emptyMap(),
     val createdWorkspaceId: String? = null,
     val isLoadingWorkspace: Boolean = false, // For loading workspace data in edit mode
+
+    // Delete/Archive functionality
+    val showDeleteDialog: Boolean = false,
+    val deleteConfirmationSlug: String = "",
+    val isDeleting: Boolean = false,
+    val deleteError: String? = null,
 )
 
 data class WorkspaceDetailState(

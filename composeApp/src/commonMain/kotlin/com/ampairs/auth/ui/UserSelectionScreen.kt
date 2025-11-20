@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -151,8 +150,7 @@ fun UserSelectionScreen(
                     items(state.users) { user ->
                         UserCard(
                             user = user,
-                            onClick = { onUserSelectedWithSave(user.id) },
-                            onDelete = { viewModel.removeUser(user.id) }
+                            onClick = { onUserSelectedWithSave(user.id) }
                         )
                     }
 
@@ -208,7 +206,6 @@ fun UserSelectionScreen(
 private fun UserCard(
     user: UserInfo,
     onClick: () -> Unit,
-    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -278,19 +275,6 @@ private fun UserCard(
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
-            }
-            
-            // Delete Button
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Remove user",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
-                )
             }
         }
     }

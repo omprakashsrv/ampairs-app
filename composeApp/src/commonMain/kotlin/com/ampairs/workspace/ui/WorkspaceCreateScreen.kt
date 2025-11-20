@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -258,6 +259,161 @@ fun WorkspaceCreateScreen(
             Text("Cancel")
         }
 
+        // Delete Button (only in edit mode)
+        if (isEditMode) {
+            OutlinedButton(
+                onClick = { viewModel.showDeleteDialog() },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isLoading && !state.isDeleting,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Delete Workspace")
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
     }
+
+    // Delete Confirmation Dialog
+    if (state.showDeleteDialog) {
+        WorkspaceDeleteConfirmationDialog(
+            workspaceName = state.name,
+            workspaceSlug = state.slug,
+            confirmationSlug = state.deleteConfirmationSlug,
+            onConfirmationSlugChange = viewModel::updateDeleteConfirmationSlug,
+            isDeleting = state.isDeleting,
+            deleteError = state.deleteError,
+            isConfirmationValid = viewModel.isDeleteConfirmationValid,
+            onConfirm = {
+                viewModel.archiveWorkspace {
+                    onNavigateBack()
+                }
+            },
+            onDismiss = viewModel::hideDeleteDialog
+        )
+    }
+}
+
+@Composable
+private fun WorkspaceDeleteConfirmationDialog(
+    workspaceName: String,
+    workspaceSlug: String,
+    confirmationSlug: String,
+    onConfirmationSlugChange: (String) -> Unit,
+    isDeleting: Boolean,
+    deleteError: String?,
+    isConfirmationValid: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isDeleting) onDismiss() },
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = "Warning",
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = {
+            Text("Delete Workspace?")
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "You are about to archive the workspace \"$workspaceName\". " +
+                            "This action will mark it as archived and it can be restored later.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Text(
+                    text = "To confirm, please type the workspace slug:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Text(
+                        text = workspaceSlug,
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                OutlinedTextField(
+                    value = confirmationSlug,
+                    onValueChange = onConfirmationSlugChange,
+                    label = { Text("Type workspace slug") },
+                    singleLine = true,
+                    enabled = !isDeleting,
+                    isError = confirmationSlug.isNotEmpty() && !isConfirmationValid,
+                    supportingText = {
+                        if (confirmationSlug.isNotEmpty() && !isConfirmationValid) {
+                            Text("Slug doesn't match", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                deleteError?.let { error ->
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Text(
+                            text = error,
+                            modifier = Modifier.padding(12.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = isConfirmationValid && !isDeleting,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                if (isDeleting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onError
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isDeleting
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }

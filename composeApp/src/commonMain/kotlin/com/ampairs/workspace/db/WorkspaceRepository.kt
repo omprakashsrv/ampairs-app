@@ -101,4 +101,38 @@ class WorkspaceRepository(
         }
     }
 
+    /**
+     * Archive workspace (soft delete)
+     */
+    suspend fun archiveWorkspace(workspaceId: String): String {
+        val response = workspaceApi.archiveWorkspace(workspaceId)
+
+        return if (response.error == null && response.data != null) {
+            // Remove from local database or mark as archived
+            workspaceDao.deleteWorkspace(workspaceId)
+            response.data!!
+        } else {
+            throw Exception(response.error?.message ?: "Failed to archive workspace")
+        }
+    }
+
+    /**
+     * Restore archived workspace
+     */
+    suspend fun restoreWorkspace(workspaceId: String): String {
+        val response = workspaceApi.restoreWorkspace(workspaceId)
+
+        return if (response.error == null && response.data != null) {
+            // Fetch and save the restored workspace
+            val workspace = getWorkspaceById(workspaceId)
+            workspace?.let {
+                val currentUserId = getCurrentUserId() ?: "unknown_user"
+                workspaceDao.insertWorkspace(it.asDatabaseModel().copy(user_id = currentUserId))
+            }
+            response.data!!
+        } else {
+            throw Exception(response.error?.message ?: "Failed to restore workspace")
+        }
+    }
+
 }

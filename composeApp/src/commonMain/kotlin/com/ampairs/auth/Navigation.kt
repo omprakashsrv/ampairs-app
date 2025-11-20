@@ -10,8 +10,12 @@ import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
+import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.LoginStatus
+import com.ampairs.common.model.onSuccess
+import com.ampairs.common.model.onError
 import com.ampairs.auth.ui.AccountDeletionScreen
+import com.ampairs.auth.ui.AccountRestoreScreen
 import com.ampairs.auth.ui.LoginScreen
 import com.ampairs.auth.ui.OtpScreen
 import com.ampairs.auth.ui.PhoneScreen
@@ -171,11 +175,29 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         }
         composable<AuthRoute.Otp> { backStackEntry ->
             val otp = backStackEntry.toRoute<AuthRoute.Otp>()
+            val userRepository = koinInject<UserRepository>()
+
             OtpScreen(
                 sessionId = otp.sessionId,
                 verificationId = otp.verificationId,
                 onAuthSuccess = {
-                    navigator.navigate(AuthRoute.UserUpdate)
+                    // Check if account is pending deletion before proceeding
+                    kotlinx.coroutines.runBlocking {
+                        val deletionStatusResponse = userRepository.getAccountDeletionStatus()
+                        deletionStatusResponse.onSuccess {
+                            if (this.isDeleted && this.canRestore) {
+                                // Account is marked for deletion, navigate to restore screen
+                                println("🔍 Account is deleted, showing restore screen")
+                                navigator.navigate(AuthRoute.AccountRestore)
+                            } else {
+                                // Normal flow - proceed to user update
+                                navigator.navigate(AuthRoute.UserUpdate)
+                            }
+                        }.onError {
+                            // If status check fails, continue with normal flow
+                            navigator.navigate(AuthRoute.UserUpdate)
+                        }
+                    }
                 }
             )
         }
@@ -222,12 +244,28 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
     // Account deletion screen - accessible from authenticated screens
     composable<AuthRoute.AccountDeletion> {
         val tokenRepository = koinInject<TokenRepository>()
+        val userRepository = koinInject<UserRepository>()
 
         AccountDeletionScreen(
             onDeletionSuccess = {
                 // Account deleted successfully, logout user
                 kotlinx.coroutines.runBlocking {
+                    // Get current user ID before clearing
+                    val currentUserId = tokenRepository.getCurrentUserId()
+
+                    // Clear tokens
                     tokenRepository.clearTokens()
+
+                    // Delete user entity from local database (already done in ViewModel, but ensure it's done)
+                    currentUserId?.let { userId ->
+                        try {
+                            userRepository.deleteUserById(userId)
+                            println("✅ Deleted user entity after account deletion: $userId")
+                        } catch (e: Exception) {
+                            println("⚠️ Failed to delete user entity: ${e.message}")
+                        }
+                    }
+
                     navigator.navigate(Route.Login) {
                         popUpTo(0) // Clear entire back stack
                     }
@@ -235,6 +273,43 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             },
             onNavigateBack = {
                 navigator.navigateUp()
+            }
+        )
+    }
+
+    // Account restore screen - shown immediately after login if account is pending deletion
+    composable<AuthRoute.AccountRestore> {
+        val tokenRepository = koinInject<TokenRepository>()
+        val userRepository = koinInject<UserRepository>()
+
+        AccountRestoreScreen(
+            onRestoreSuccess = {
+                // Account restored successfully, continue to user update
+                navigator.navigate(AuthRoute.UserUpdate)
+            },
+            onLogout = {
+                // User chose to logout instead of restoring
+                kotlinx.coroutines.runBlocking {
+                    // Get current user ID before clearing
+                    val currentUserId = tokenRepository.getCurrentUserId()
+
+                    // Clear tokens
+                    tokenRepository.clearTokens()
+
+                    // Delete user entity from local database
+                    currentUserId?.let { userId ->
+                        try {
+                            userRepository.deleteUserById(userId)
+                            println("✅ Deleted user entity on logout: $userId")
+                        } catch (e: Exception) {
+                            println("⚠️ Failed to delete user entity on logout: ${e.message}")
+                        }
+                    }
+
+                    navigator.navigate(Route.Login) {
+                        popUpTo(0) // Clear entire back stack
+                    }
+                }
             }
         )
     }

@@ -230,6 +230,7 @@ class LoginViewModel(
                                 ))
                             }
 
+                            // Normal flow - auth complete
                             viewModelScope.launch(Dispatchers.Main) {
                                 delay(1000)
                                 onAuthComplete()

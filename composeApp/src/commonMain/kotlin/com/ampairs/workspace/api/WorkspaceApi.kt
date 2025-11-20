@@ -44,9 +44,14 @@ interface WorkspaceApi {
     suspend fun checkSlugAvailability(slug: String): Response<Map<String, Boolean>>
 
     /**
-     * Archive workspace
+     * Archive workspace (soft delete)
      */
     suspend fun archiveWorkspace(workspaceId: String): Response<String>
+
+    /**
+     * Restore archived workspace
+     */
+    suspend fun restoreWorkspace(workspaceId: String): Response<String>
 
     /**
      * Get current user's role and permissions in workspace

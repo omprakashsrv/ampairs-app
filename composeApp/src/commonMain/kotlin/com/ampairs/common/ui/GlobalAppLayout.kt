@@ -176,8 +176,23 @@ fun GlobalAppLayout(
                 analytics.setUserId(null)
                 WorkspaceContextIntegration.clearWorkspaceContext()
                 kotlinx.coroutines.runBlocking {
+                    // Get current user ID before clearing
+                    val currentUserId = tokenRepository.getCurrentUserId()
+
+                    // Clear tokens and preferences
+                    tokenRepository.clearTokens()
                     appPreferences.clearLastWorkspaceId()
                     appPreferences.clearLastUserId()
+
+                    // Delete user entity from local database
+                    currentUserId?.let { userId ->
+                        try {
+                            userRepository.deleteUserById(userId)
+                            println("✅ Deleted user entity on logout: $userId")
+                        } catch (e: Exception) {
+                            println("⚠️ Failed to delete user entity on logout: ${e.message}")
+                        }
+                    }
                 }
                 headerStateManager.reset()
                 navController.navigate(Route.Login) {
