@@ -3,6 +3,8 @@ package com.ampairs.auth
 import AuthRoute
 import Route
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -138,11 +140,17 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             }
         }
 
-        composable<AuthRoute.Phone> {
+        composable<AuthRoute.Phone> { backStackEntry ->
             val tokenRepository = koinInject<TokenRepository>()
             val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
 
+            // Get parent entry to share ViewModel scope with OtpScreen
+            val parentEntry = remember(backStackEntry) {
+                navigator.getBackStackEntry(Route.Login)
+            }
+
             PhoneScreen(
+                viewModelStoreOwner = parentEntry,
                 onAuthSuccess = { sessionId, verificationId ->
                     navigator.navigate(
                         AuthRoute.Otp(
@@ -177,7 +185,13 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             val otp = backStackEntry.toRoute<AuthRoute.Otp>()
             val userRepository = koinInject<UserRepository>()
 
+            // Get parent entry to share ViewModel scope with PhoneScreen
+            val parentEntry = remember(backStackEntry) {
+                navigator.getBackStackEntry(Route.Login)
+            }
+
             OtpScreen(
+                viewModelStoreOwner = parentEntry,
                 sessionId = otp.sessionId,
                 verificationId = otp.verificationId,
                 onAuthSuccess = {

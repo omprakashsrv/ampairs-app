@@ -8,6 +8,7 @@ import ampairsapp.composeapp.generated.resources.phone_user_already_logged_in
 import ampairsapp.composeapp.generated.resources.phone_user_already_logged_in_desc
 import ampairsapp.composeapp.generated.resources.phone_user_exists
 import ampairsapp.composeapp.generated.resources.phone_would_you_like_to_switch
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,10 +68,11 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun PhoneScreen(
-    viewModel: LoginViewModel = koinViewModel(),
+    viewModelStoreOwner: ViewModelStoreOwner,
     onAuthSuccess: (sessionId: String, verificationId: String) -> Unit,
     onExistingUserSelected: () -> Unit = {},
 ) {
+    val viewModel = koinViewModel<LoginViewModel>(viewModelStoreOwner = viewModelStoreOwner)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showExistingUserDialog by remember { mutableStateOf(false) }

@@ -26,7 +26,6 @@ import kotlinx.coroutines.launch
 class LoginViewModel(
     private val userRepository: UserRepository,
     private val tokenRepository: TokenRepository,
-    private val deviceService: DeviceService,
     private val firebaseAuthRepository: FirebaseAuthRepository,
     private val analytics: FirebaseAnalytics,
 ) : ViewModel() {

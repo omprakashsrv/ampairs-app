@@ -1,5 +1,6 @@
 package com.ampairs.auth.ui
 
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,11 +60,12 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun OtpScreen(
+    viewModelStoreOwner: ViewModelStoreOwner,
     sessionId: String,
     verificationId: String = "", // Firebase verification ID (empty for backend auth)
     onAuthSuccess: () -> Unit,
 ) {
-    val viewModel = koinViewModel<LoginViewModel>()
+    val viewModel = koinViewModel<LoginViewModel>(viewModelStoreOwner = viewModelStoreOwner)
 
     // Phone number is now properly retained in the ViewModel
     val phoneNumber = viewModel.phoneNumber
