@@ -246,12 +246,17 @@ android {
         }
     }
     buildTypes {
-        val debug by getting {
+        debug {
             buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.7:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
+
+            // Generate debug symbols for crash analysis
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
-        val release by getting {
+        release {
             buildConfigField("String", "API_BASE_URL", "\"https://api.ampairs.in\"")
             buildConfigField("String", "ENVIRONMENT", "\"production\"")
             isMinifyEnabled = true
@@ -259,6 +264,24 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
             signingConfig = signingConfigs["release"]
+
+            // Generate native debug symbols for Play Console crash reporting
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
+        }
+    }
+
+    // Include native debug symbols in App Bundle for crash analysis
+    bundle {
+        abi {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        language {
+            enableSplit = false
         }
     }
 }
