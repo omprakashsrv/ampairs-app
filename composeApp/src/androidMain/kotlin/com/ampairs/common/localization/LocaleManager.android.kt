@@ -6,14 +6,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import com.ampairs.common.ActivityProvider
 import java.util.Locale
 
 /**
  * Android-specific locale configuration
+ * Recreates the activity to properly reload resources with the new locale
  */
 actual fun configureLocale(languageCode: String) {
-    // On Android, locale is managed through Configuration
-    // This will be applied in PlatformLocaleConfiguration composable
+    val activity = ActivityProvider.getActivity()
+    activity?.recreate()
 }
 
 /**
@@ -26,14 +28,11 @@ actual fun PlatformLocaleConfiguration(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    val currentConfig = LocalConfiguration.current
 
     // Create a new configuration with the selected locale
-    val locale =
-        Locale.forLanguageTag(languageCode)
+    val locale = Locale.forLanguageTag(languageCode)
 
-    val config = Configuration(currentConfig).apply {
-        // Use LocaleList for API 24+
+    val config = Configuration(context.resources.configuration).apply {
         setLocales(LocaleList(locale))
     }
 
@@ -42,7 +41,6 @@ actual fun PlatformLocaleConfiguration(
 
     CompositionLocalProvider(
         LocalContext provides localizedContext,
-        LocalConfiguration provides config,
         content = content
     )
 }

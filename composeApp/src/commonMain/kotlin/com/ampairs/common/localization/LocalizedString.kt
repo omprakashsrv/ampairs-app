@@ -16,11 +16,8 @@ fun localizedString(resource: StringResource): String {
     // Read current language code to trigger recomposition on language change
     val languageCode = LocalLanguageCode.current
 
-    // Remember the string based on the language code
-    return remember(languageCode) {
-        // This will be recalculated when languageCode changes
-        resource
-    }.let { stringResource(it) }
+    // Don't use remember - let stringResource recompose with the updated context
+    return stringResource(resource)
 }
 
 /**
@@ -31,8 +28,6 @@ fun localizedString(resource: StringResource, vararg formatArgs: Any): String {
     // Read current language code to trigger recomposition on language change
     val languageCode = LocalLanguageCode.current
 
-    // Remember the string based on the language code and format args
-    return remember(languageCode, *formatArgs) {
-        resource
-    }.let { stringResource(it, *formatArgs) }
+    // Don't use remember - let stringResource recompose with the updated context
+    return stringResource(resource, *formatArgs)
 }
