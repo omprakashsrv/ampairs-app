@@ -63,10 +63,11 @@ import com.ampairs.ui.components.Phone
 import com.ampairs.ui.theme.AmpairsTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun PhoneScreen(
-    viewModel: LoginViewModel = koinInject<LoginViewModel>(),
+    viewModel: LoginViewModel = koinViewModel(),
     onAuthSuccess: (sessionId: String, verificationId: String) -> Unit,
     onExistingUserSelected: () -> Unit = {},
 ) {

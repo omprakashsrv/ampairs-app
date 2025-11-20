@@ -55,6 +55,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.ampairs.common.localization.localizedString
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun OtpScreen(
@@ -62,7 +63,10 @@ fun OtpScreen(
     verificationId: String = "", // Firebase verification ID (empty for backend auth)
     onAuthSuccess: () -> Unit,
 ) {
-    val viewModel = koinInject<LoginViewModel>()
+    val viewModel = koinViewModel<LoginViewModel>()
+
+    // Phone number is now properly retained in the ViewModel
+    val phoneNumber = viewModel.phoneNumber
 
     // Set the sessionId and verificationId from navigation parameters
     LaunchedEffect(sessionId, verificationId) {
@@ -198,7 +202,11 @@ fun OtpScreen(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "We've sent a 6-digit code to\n+91 ${viewModel.phoneNumber}",
+                        text = if (phoneNumber.isNotEmpty()) {
+                            "We've sent a 6-digit code to\n+91 $phoneNumber"
+                        } else {
+                            "We've sent a 6-digit code to your phone"
+                        },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
