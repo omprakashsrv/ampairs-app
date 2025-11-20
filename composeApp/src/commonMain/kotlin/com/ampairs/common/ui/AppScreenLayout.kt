@@ -89,10 +89,9 @@ fun AppScreenLayout(
                             scope.launch {
                                 drawerState.open()
                             }
-                        }
+                        },
                     )
                 },
-                contentWindowInsets = WindowInsets(0, 0, 0, 0)
             ) { paddingValues ->
                 content(paddingValues)
             }
@@ -116,7 +115,6 @@ fun AppScreenLayout(
                     onDeleteAccount = onDeleteAccount,
                 )
             },
-            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
             content(paddingValues)
         }
