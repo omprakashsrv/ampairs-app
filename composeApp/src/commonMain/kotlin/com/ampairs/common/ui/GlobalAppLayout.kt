@@ -179,20 +179,23 @@ fun GlobalAppLayout(
                     // Get current user ID before clearing
                     val currentUserId = tokenRepository.getCurrentUserId()
 
-                    // Clear tokens and preferences
-                    tokenRepository.clearTokens()
-                    appPreferences.clearLastWorkspaceId()
-                    appPreferences.clearLastUserId()
-
-                    // Delete user entity from local database
                     currentUserId?.let { userId ->
                         try {
+                            // 1. Logout user - clears tokens and user session from database
+                            tokenRepository.logoutUser(userId)
+
+                            // 2. Delete user entity from local database
                             userRepository.deleteUserById(userId)
-                            println("✅ Deleted user entity on logout: $userId")
+
+                            println("✅ Successfully logged out and deleted user: $userId")
                         } catch (e: Exception) {
-                            println("⚠️ Failed to delete user entity on logout: ${e.message}")
+                            println("⚠️ Failed to logout user: ${e.message}")
                         }
                     }
+
+                    // 3. Clear app preferences to prevent auto-resume
+                    appPreferences.clearLastWorkspaceId()
+                    appPreferences.clearLastUserId()
                 }
                 headerStateManager.reset()
                 navController.navigate(Route.Login) {
