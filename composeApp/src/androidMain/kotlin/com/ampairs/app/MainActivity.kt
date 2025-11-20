@@ -2,6 +2,7 @@ package com.ampairs.app
 
 import MainView
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -14,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
@@ -56,8 +58,13 @@ class MainActivity : ComponentActivity() {
         // Register activity for Firebase Phone Auth
         ActivityProvider.setActivity(this)
 
-        // Enable modern edge-to-edge (Android 15+ compatible)
+        // Configure edge-to-edge display for Android 15+ (SDK 35) compatibility
+        // This ensures proper handling of system bars and display cutouts
         enableEdgeToEdge()
+
+        // For backward compatibility with older Android versions
+        // Ensures window decorFitsSystemWindows is properly configured
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         actionBar?.hide()
 
