@@ -44,7 +44,6 @@ fun AppScreenLayout(
             isNavigationAvailable &&
             navigationService != null &&
             hasActiveWorkspace
-
     if (shouldShowDrawer) {
         // Mobile: Use navigation drawer with MobileModuleSideNavigation
         val drawerState = rememberDrawerState(DrawerValue.Closed)

@@ -229,8 +229,8 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 15
-        versionName = "1.0.0.15"
+        versionCode = 16
+        versionName = "1.0.0.16"
 
         // Environment configuration
         buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.7:8080\"")
@@ -269,19 +269,6 @@ android {
             ndk {
                 debugSymbolLevel = "FULL"
             }
-        }
-    }
-
-    // Include native debug symbols in App Bundle for crash analysis
-    bundle {
-        abi {
-            enableSplit = true
-        }
-        density {
-            enableSplit = true
-        }
-        language {
-            enableSplit = false
         }
     }
 }
