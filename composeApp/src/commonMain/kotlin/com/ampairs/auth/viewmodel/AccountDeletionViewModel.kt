@@ -58,28 +58,34 @@ class AccountDeletionViewModel(
         viewModelScope.launch {
             isLoadingOwnedWorkspaces = true
 
-            // Make a deletion check request with confirmed=false to get blocking workspaces
-            authApi.requestAccountDeletion(
-                AccountDeletionRequest(confirmed = false, reason = null)
-            ).onSuccess {
-                println("🔍 Account deletion check - deletionRequested: ${this.deletionRequested}")
-                println("🔍 blockingWorkspaces: ${this.blockingWorkspaces?.joinToString { it.workspaceName } ?: "null"}")
+            try {
+                // Make a deletion check request with confirmed=false to get blocking workspaces
+                authApi.requestAccountDeletion(
+                    AccountDeletionRequest(confirmed = false, reason = null)
+                ).onSuccess {
+                    println("🔍 Account deletion check - deletionRequested: ${this.deletionRequested}")
+                    println("🔍 blockingWorkspaces: ${this.blockingWorkspaces?.joinToString { it.workspaceName } ?: "null"}")
 
-                // The backend returns blockingWorkspaces if user owns any workspaces
-                val workspaces = this.blockingWorkspaces ?: emptyList()
-                ownedWorkspaces = workspaces
+                    // The backend returns blockingWorkspaces if user owns any workspaces
+                    val workspaces = this.blockingWorkspaces ?: emptyList()
+                    ownedWorkspaces = workspaces
 
-                if (workspaces.isNotEmpty()) {
-                    println("✅ Found ${workspaces.size} owned workspace(s):")
-                    workspaces.forEach {
-                        println("   - ${it.workspaceName} (${it.memberCount} members)")
+                    if (workspaces.isNotEmpty()) {
+                        println("✅ Found ${workspaces.size} owned workspace(s):")
+                        workspaces.forEach {
+                            println("   - ${it.workspaceName} (${it.memberCount} members)")
+                        }
+                    } else {
+                        println("✅ No owned workspaces - user can proceed with deletion")
                     }
-                } else {
-                    println("✅ No owned workspaces - user can proceed with deletion")
+                }.onError {
+                    println("❌ Error checking owned workspaces: ${this.message}")
+                    // On error, assume no owned workspaces (backend will validate on actual deletion)
+                    ownedWorkspaces = emptyList()
                 }
-            }.onError {
-                println("❌ Error checking owned workspaces: ${this.message}")
-                // On error, assume no owned workspaces (backend will validate on actual deletion)
+            } catch (e: Exception) {
+                println("❌ Network error checking owned workspaces: ${e.message}")
+                // On network error, assume no owned workspaces (backend will validate on actual deletion)
                 ownedWorkspaces = emptyList()
             }
 
@@ -98,10 +104,16 @@ class AccountDeletionViewModel(
     fun loadDeletionStatus() {
         viewModelScope.launch {
             statusState = UiState.Loading(null)
-            authApi.getAccountDeletionStatus().onSuccess {
-                statusState = UiState.Success(this)
-            }.onError {
-                // If account is not marked for deletion, this might return an error
+            try {
+                authApi.getAccountDeletionStatus().onSuccess {
+                    statusState = UiState.Success(this)
+                }.onError {
+                    // If account is not marked for deletion, this might return an error
+                    statusState = UiState.Empty
+                }
+            } catch (e: Exception) {
+                println("❌ Network error loading deletion status: ${e.message}")
+                // On network error, assume no pending deletion
                 statusState = UiState.Empty
             }
         }
@@ -120,42 +132,48 @@ class AccountDeletionViewModel(
                 reason = reason.trim().ifBlank { null }
             )
 
-            authApi.requestAccountDeletion(request).onSuccess {
-                if (this.deletionRequested) {
-                    deletionState = UiState.Success(this)
-                    displayMessage = this.message
+            try {
+                authApi.requestAccountDeletion(request).onSuccess {
+                    if (this.deletionRequested) {
+                        deletionState = UiState.Success(this)
+                        displayMessage = this.message
 
-                    // Clear local user data and logout in a coroutine
-                    viewModelScope.launch {
-                        try {
-                            // Get current user ID before clearing
-                            val currentUserId = tokenRepository.getCurrentUserId()
+                        // Clear local user data and logout in a coroutine
+                        viewModelScope.launch {
+                            try {
+                                // Get current user ID before clearing
+                                val currentUserId = tokenRepository.getCurrentUserId()
 
-                            // Clear tokens
-                            tokenRepository.clearTokens()
-                            authApi.clearToken()
+                                // Clear tokens
+                                tokenRepository.clearTokens()
+                                authApi.clearToken()
 
-                            // Delete user entity from local database
-                            currentUserId?.let { userId ->
-                                userDao.deleteById(userId)
-                                println("✅ Deleted user entity from local database: $userId")
+                                // Delete user entity from local database
+                                currentUserId?.let { userId ->
+                                    userDao.deleteById(userId)
+                                    println("✅ Deleted user entity from local database: $userId")
+                                }
+                            } catch (e: Exception) {
+                                println("⚠️ Failed to cleanup user data: ${e.message}")
                             }
-                        } catch (e: Exception) {
-                            println("⚠️ Failed to cleanup user data: ${e.message}")
                         }
-                    }
 
-                    onSuccess()
-                } else {
-                    // Account deletion blocked due to workspace ownership
-                    this@AccountDeletionViewModel.blockingWorkspaces = this.blockingWorkspaces ?: emptyList()
-                    this@AccountDeletionViewModel.showBlockingWorkspacesDialog = true
-                    deletionState = UiState.Error(this.message)
-                    displayMessage = this.message
+                        onSuccess()
+                    } else {
+                        // Account deletion blocked due to workspace ownership
+                        this@AccountDeletionViewModel.blockingWorkspaces = this.blockingWorkspaces ?: emptyList()
+                        this@AccountDeletionViewModel.showBlockingWorkspacesDialog = true
+                        deletionState = UiState.Error(this.message)
+                        displayMessage = this.message
+                    }
+                }.onError {
+                    deletionState = UiState.Error(this.message.ifEmpty { "Failed to delete account" })
+                    displayMessage = this.message.ifEmpty { "Failed to delete account" }
                 }
-            }.onError {
-                deletionState = UiState.Error(this.message.ifEmpty { "Failed to delete account" })
-                displayMessage = this.message.ifEmpty { "Failed to delete account" }
+            } catch (e: Exception) {
+                println("❌ Network error requesting account deletion: ${e.message}")
+                deletionState = UiState.Error("Unable to connect to server. Please check your network connection.")
+                displayMessage = "Unable to connect to server. Please check your network connection."
             }
         }
     }
@@ -163,14 +181,20 @@ class AccountDeletionViewModel(
     fun cancelAccountDeletion(onSuccess: () -> Unit) {
         viewModelScope.launch {
             deletionState = UiState.Loading(null)
-            authApi.cancelAccountDeletion().onSuccess {
-                deletionState = UiState.Success(this)
-                displayMessage = this.message
-                statusState = UiState.Empty
-                onSuccess()
-            }.onError {
-                deletionState = UiState.Error(this.message.ifEmpty { "Failed to cancel deletion" })
-                displayMessage = this.message.ifEmpty { "Failed to cancel deletion" }
+            try {
+                authApi.cancelAccountDeletion().onSuccess {
+                    deletionState = UiState.Success(this)
+                    displayMessage = this.message
+                    statusState = UiState.Empty
+                    onSuccess()
+                }.onError {
+                    deletionState = UiState.Error(this.message.ifEmpty { "Failed to cancel deletion" })
+                    displayMessage = this.message.ifEmpty { "Failed to cancel deletion" }
+                }
+            } catch (e: Exception) {
+                println("❌ Network error canceling account deletion: ${e.message}")
+                deletionState = UiState.Error("Unable to connect to server. Please check your network connection.")
+                displayMessage = "Unable to connect to server. Please check your network connection."
             }
         }
     }
