@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
@@ -19,12 +20,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.*
+import com.ampairs.common.localization.localizedString
 
 @Composable
 fun ProfileMenu(
     userFullName: String,
     isLoading: Boolean = false,
     onEditProfile: () -> Unit,
+    onLanguageSettings: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -112,21 +117,35 @@ fun ProfileMenu(
         ) {
             ProfileMenuItem(
                 icon = Icons.Default.Edit,
-                text = "Edit Profile",
+                text = localizedString(Res.string.edit),
                 onClick = {
                     expanded = false
                     onEditProfile()
                 }
             )
-            
+
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.outlineVariant,
                 thickness = 0.5.dp
             )
-            
+
+            ProfileMenuItem(
+                icon = Icons.Default.Language,
+                text = localizedString(Res.string.settings_language),
+                onClick = {
+                    expanded = false
+                    onLanguageSettings()
+                }
+            )
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                thickness = 0.5.dp
+            )
+
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Default.Logout,
-                text = "Logout",
+                text = localizedString(Res.string.settings_logout),
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false

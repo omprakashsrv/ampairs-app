@@ -60,6 +60,9 @@ sealed interface AuthRoute {
     data object AccountDeletion : AuthRoute
 
     @Serializable
+    data object AccountRestore : AuthRoute
+
+    @Serializable
     data object DesktopBrowserAuth : AuthRoute  // Desktop browser-based authentication
 }
 

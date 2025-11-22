@@ -1,6 +1,8 @@
 package com.ampairs.app
 
 import MainView
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -13,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
@@ -27,6 +30,8 @@ import com.ampairs.common.ImageCacheKeyer
 import com.ampairs.common.httpClient
 import com.ampairs.common.update.InAppUpdateManager
 import com.ampairs.common.update.UpdateCheckResult
+import com.ampairs.customer.ui.components.contact.ContactPickerResultHolder
+import com.ampairs.customer.ui.components.contact.ContactPickerService
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import io.github.vinceglb.filekit.FileKit
@@ -53,8 +58,13 @@ class MainActivity : ComponentActivity() {
         // Register activity for Firebase Phone Auth
         ActivityProvider.setActivity(this)
 
-        // Enable modern edge-to-edge (Android 15+ compatible)
+        // Configure edge-to-edge display for Android 15+ (SDK 35) compatibility
+        // This ensures proper handling of system bars and display cutouts
         enableEdgeToEdge()
+
+        // For backward compatibility with older Android versions
+        // Ensures window decorFitsSystemWindows is properly configured
+//        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         actionBar?.hide()
 
@@ -223,6 +233,20 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         // Clear activity reference to avoid memory leaks
         ActivityProvider.clearActivity()
+        // Clear contact picker callbacks
+        ContactPickerResultHolder.clearCallbacks()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            ContactPickerService.CONTACT_PICKER_REQUEST_CODE -> {
+                val contactUri = data?.data
+                ContactPickerResultHolder.onContactResult(contactUri)
+            }
+        }
     }
 }
 

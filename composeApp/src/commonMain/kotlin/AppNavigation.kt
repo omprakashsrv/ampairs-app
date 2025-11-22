@@ -1,37 +1,46 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import androidx.navigation.toRoute
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.authNavigation
 import com.ampairs.business.businessNavigation
 import com.ampairs.common.UnauthenticatedHandler
+import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.firebase.performance.FirebasePerformance
 import com.ampairs.common.firebase.performance.PerformanceAttributes
 import com.ampairs.common.firebase.performance.PerformanceTraces
 import com.ampairs.common.firebase.performance.Trace
-import com.ampairs.common.ui.AppScreenWithHeader
+import com.ampairs.common.ui.GlobalAppLayout
 import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.customer.ui.StateListRoute
 import com.ampairs.customer.ui.customerNavigation
 import com.ampairs.product.productNavigation
 import com.ampairs.tax.ui.navigation.taxNavigation
-import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.workspaceNavigation
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import org.koin.compose.koinInject
 
 @Composable
@@ -40,9 +49,59 @@ fun AppNavigation(
     onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
     val navController = rememberNavController()
-    val workspaceManager = WorkspaceContextManager.getInstance()
     val analytics: FirebaseAnalytics = koinInject()
     val performance: FirebasePerformance = koinInject()
+    val appPreferences: AppPreferencesDataStore = koinInject()
+    val workspaceRepository: OfflineFirstWorkspaceRepository = koinInject()
+    val tokenRepository: TokenRepository = koinInject()
+    val userWorkspaceRepository: UserWorkspaceRepository = koinInject()
+
+    // State for auto-resume: null = checking, true = auto-resume, false = normal flow
+    var autoResumeState by remember { mutableStateOf<Pair<Boolean, String?>?>(null) }
+
+    // Check for auto-resume on initial load - BEFORE rendering NavHost
+    LaunchedEffect(Unit) {
+        val lastUserId = appPreferences.getLastUserId().first()
+        val lastWorkspaceId = appPreferences.getLastWorkspaceId().first()
+
+        if (!lastUserId.isNullOrBlank() && !lastWorkspaceId.isNullOrBlank()) {
+            println("AppNavigation: 🔄 Checking auto-resume for user: $lastUserId, workspace: $lastWorkspaceId")
+
+            // Verify user exists and set as current
+            tokenRepository.setCurrentUser(lastUserId)
+            val hasWorkspace =
+                userWorkspaceRepository.getWorkspaceIdForUser(lastUserId).isNotBlank()
+
+            if (hasWorkspace) {
+                // Load workspace from local database
+                val workspace = workspaceRepository.getWorkspaceById(lastWorkspaceId)
+                if (workspace != null) {
+                    println("AppNavigation: ✅ Auto-resume: Setting workspace context for ${workspace.name}")
+                    // Set workspace context BEFORE navigation
+                    WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
+                    GlobalNavigationManager.getInstance().onWorkspaceSelected()
+                    autoResumeState = Pair(true, lastWorkspaceId)
+                } else {
+                    println("AppNavigation: ⚠️ Workspace not found, clearing preferences")
+                    appPreferences.clearLastWorkspaceId()
+                    autoResumeState = Pair(false, null)
+                }
+            } else {
+                println("AppNavigation: ⚠️ User has no workspace, clearing preferences")
+                appPreferences.clearLastWorkspaceId()
+                autoResumeState = Pair(false, null)
+            }
+        } else {
+            println("AppNavigation: 📋 No auto-resume data found, normal flow")
+            autoResumeState = Pair(false, null)
+        }
+    }
+
+    // Show loading while checking auto-resume
+    if (autoResumeState == null) {
+        // Optional: Show a loading indicator while checking
+        return
+    }
 
     // Track active performance traces
     var activeScreenTrace: Trace? = null
@@ -95,13 +154,12 @@ fun AppNavigation(
         onNavigationReady?.invoke(navigationCallback)
     }
 
-    // Get global navigation manager instance
-    val globalNavigationManager = GlobalNavigationManager.getInstance()
-
     LaunchedEffect(Unit) {
         UnauthenticatedHandler.onUnauthenticated.collectLatest {
             // Clear workspace context and navigation service on logout using integration
             WorkspaceContextIntegration.clearWorkspaceContext()
+            // Clear last workspace ID to prevent auto-resume after logout
+            appPreferences.clearLastWorkspaceId()
             navController.navigate(Route.Login) {
                 popUpTo(0)
             }
@@ -130,111 +188,71 @@ fun AppNavigation(
     // This was causing infinite loops and should be handled differently
     // The workspace selection should be handled by the individual screens that require workspace context
 
-    NavHost(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.systemBars),
-        navController = navController, startDestination = Route.Login
-    ) {
-        authNavigation(navController) {
-            val options = navOptions {
-                popUpTo<AuthRoute.LoginRoot> {
-                    this.inclusive = true
-                }
-                launchSingleTop = true // Avoid multiple instances of the same destination
-            }
-            navController.navigate(
-                route = Route.Workspace,
-                navOptions = options
-            )
-        }
-        workspaceNavigation(navController, onNavigationServiceReady)
-        // Customer module navigation
-        composable<Route.Customer> {
-            AppScreenWithHeader(
-                navController = navController,
-                isWorkspaceSelection = false
-            ) { paddingValues ->
-                com.ampairs.customer.ui.CustomerScreen(
-                    onCustomerClick = { customerId ->
-                        navController.navigate(
-                            com.ampairs.customer.ui.CustomerDetailsRoute(
-                                customerId
-                            )
-                        )
-                    },
-                    onCreateCustomer = {
-                        navController.navigate(CustomerCreateRoute())
-                    },
-                    onFormConfig = {
-                        println("AppNavigation Route.Customer: Navigating to FormConfig")
-                        navController.navigate(Route.FormConfig("customer"))
-                    },
-                    modifier = Modifier.padding(paddingValues)
+    // Determine start destination based on auto-resume state
+    val (shouldAutoResume, lastWorkspaceId) = autoResumeState!!
+    val startDestination: Any = if (shouldAutoResume && lastWorkspaceId != null) {
+        WorkspaceRoute.Modules(lastWorkspaceId)
+    } else {
+        Route.Login
+    }
+
+    // Global App Layout wraps the entire NavHost - header is rendered ONCE here
+    GlobalAppLayout(
+        navController = navController
+    ) { globalPaddingValues ->
+        NavHost(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .padding(globalPaddingValues),
+            navController = navController,
+            startDestination = startDestination
+        ) {
+            authNavigation(navController) {
+                // After successful login, navigate to workspace selection
+                navController.navigate(
+                    route = Route.Workspace,
+                    navOptions = navOptions {
+                        popUpTo<Route.Login> { inclusive = true }
+                        launchSingleTop = true
+                    }
                 )
             }
-        }
+            workspaceNavigation(navController, onNavigationServiceReady)
 
-        // Product module navigation
-        composable<Route.Product> {
-            AppScreenWithHeader(
-                navController = navController,
-                isWorkspaceSelection = false
-            ) { paddingValues ->
-                com.ampairs.product.ProductScreen(
-                    onProductClick = { productId ->
-                        navController.navigate(ProductRoute.ProductDetails(productId))
+            // Top-level WorkspaceRoute.Modules for auto-resume
+            // This is needed because nested navigation graph routes can't be used as startDestination
+            composable<WorkspaceRoute.Modules> { backStackEntry ->
+                val modulesRoute = backStackEntry.toRoute<WorkspaceRoute.Modules>()
+                com.ampairs.workspace.ui.WorkspaceModulesScreen(
+                    navController = navController,
+                    onModuleSelected = { moduleCode ->
+                        navController.navigate(WorkspaceRoute.Modules(modulesRoute.workspaceId))
                     },
-                    onCreateProduct = {
-                        navController.navigate(ProductRoute.ProductForm())
-                    },
-                    onFormConfig = {
-                        println("AppNavigation Route.Product: Navigating to FormConfig")
-                        navController.navigate(Route.FormConfig("product"))
-                    },
-                    modifier = Modifier.padding(paddingValues)
+                    onNavigationServiceReady = onNavigationServiceReady,
+                    workspaceId = modulesRoute.workspaceId,
+                    paddingValues = androidx.compose.foundation.layout.PaddingValues()
                 )
             }
-        }
 
-        // Tax module navigation
-        composable<Route.Tax> {
-            AppScreenWithHeader(
-                navController = navController,
-                isWorkspaceSelection = false
-            ) { paddingValues ->
-                com.ampairs.tax.ui.navigation.TaxScreen(
-                    onNavigateToHsnCodes = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.HsnCodesListRoute)
-                    },
-                    onNavigateToTaxCalculator = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.TaxCalculatorRoute)
-                    },
-                    onNavigateToTaxRates = {
-                        navController.navigate(com.ampairs.tax.ui.navigation.TaxRatesRoute)
-                    },
-                    modifier = Modifier.padding(paddingValues)
+            // Form Config navigation (shared across modules)
+            composable<Route.FormConfig> { backStackEntry ->
+                val route = backStackEntry.toRoute<Route.FormConfig>()
+                com.ampairs.form.ui.FormConfigScreen(
+                    entityType = route.entityType,
+                    onNavigateBack = { navController.navigateUp() }
                 )
             }
-        }
 
-        // Form Config navigation
-        composable<Route.FormConfig> { backStackEntry ->
-            val route = backStackEntry.toRoute<Route.FormConfig>()
-            com.ampairs.form.ui.FormConfigScreen(
-                entityType = route.entityType,
-                onNavigateBack = { navController.navigateUp() }
-            )
+            // Module navigations - each module handles its own Route.* entry point
+            customerNavigation(navController)
+            productNavigation(navController)
+            taxNavigation(navController)
+            businessNavigation(navController)
+            // Temporarily commented out pending customer integration updates
+            // inventoryNavigation(navController) { }
+            // orderNavigation(navController) { }
+            // invoiceNavigation(navController) { }
         }
-
-        customerNavigation(navController)
-        productNavigation(navController)
-        taxNavigation(navController)
-        businessNavigation(navController)
-        // Temporarily commented out pending customer integration updates
-        // inventoryNavigation(navController) { }
-        // orderNavigation(navController) { }
-        // invoiceNavigation(navController) { }
     }
 }
 
@@ -274,6 +292,7 @@ private fun extractScreenName(route: String): String {
         cleanRoute.startsWith("CustomerRoute.") -> {
             "Customer_" + cleanRoute.substringAfter("CustomerRoute.")
         }
+
         cleanRoute.contains("com.ampairs.customer.ui.") -> {
             val screenName = cleanRoute.substringAfterLast(".")
                 .replace("Route", "")
@@ -283,6 +302,7 @@ private fun extractScreenName(route: String): String {
         cleanRoute.startsWith("ProductRoute.") -> {
             "Product_" + cleanRoute.substringAfter("ProductRoute.")
         }
+
         cleanRoute.contains("com.ampairs.product.") -> {
             val screenName = cleanRoute.substringAfterLast(".")
                 .replace("Route", "")
@@ -292,6 +312,7 @@ private fun extractScreenName(route: String): String {
         cleanRoute.startsWith("TaxRoute.") -> {
             "Tax_" + cleanRoute.substringAfter("TaxRoute.")
         }
+
         cleanRoute.contains("com.ampairs.tax.") -> {
             val screenName = cleanRoute.substringAfterLast(".")
                 .replace("Route", "")

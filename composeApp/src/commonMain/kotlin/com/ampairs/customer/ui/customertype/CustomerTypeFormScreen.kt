@@ -77,7 +77,7 @@ fun CustomerTypeFormScreen(
             }
 
             // Basic Information Section
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -142,7 +142,7 @@ fun CustomerTypeFormScreen(
             }
 
             // Display & Ordering Section
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -175,7 +175,7 @@ fun CustomerTypeFormScreen(
             }
 
             // Credit Terms Section
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -225,7 +225,7 @@ fun CustomerTypeFormScreen(
             }
 
             // Additional Information Section
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(

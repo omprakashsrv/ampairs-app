@@ -222,7 +222,7 @@ private fun FieldConfigCard(
     fieldConfig: EntityFieldConfig,
     onUpdate: (EntityFieldConfig) -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -315,7 +315,7 @@ private fun AttributeDefinitionCard(
     onUpdate: (EntityAttributeDefinition) -> Unit,
     onDelete: (EntityAttributeDefinition) -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(

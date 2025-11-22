@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
@@ -36,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -49,6 +51,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,6 +82,9 @@ import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
 import com.ampairs.customer.util.CustomerConstants.STATUS_INACTIVE
 import com.ampairs.customer.util.CustomerConstants.STATUS_SUSPENDED
 import com.ampairs.customer.domain.CustomerType
+import com.ampairs.customer.ui.components.contact.ContactPickerService
+import com.ampairs.customer.ui.components.contact.ContactData
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -224,7 +230,6 @@ private fun CustomerForm(
     } else {
         // New customer: No images, show form only
         CustomerFormFields(
-            customerId = null,
             formState = formState,
             onFormChange = onFormChange,
             error = error,
@@ -297,7 +302,6 @@ private fun CustomerFormTabLayout(
 
         when (selectedTabIndex) {
             0 -> CustomerFormFields(
-                customerId = customerId,
                 formState = formState,
                 onFormChange = onFormChange,
                 error = error,
@@ -365,13 +369,12 @@ private fun CustomerFormSideBySideLayout(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Left side: Customer Form (60% width or full if images hidden)
-        Card(
+        OutlinedCard(
             modifier = Modifier
                 .weight(if (imagesFieldConfig?.visible == false || customerId.isBlank()) 1f else 0.6f)
                 .fillMaxHeight()
         ) {
             CustomerFormFields(
-                customerId = customerId,
                 formState = formState,
                 onFormChange = onFormChange,
                 error = error,
@@ -393,7 +396,7 @@ private fun CustomerFormSideBySideLayout(
 
         // Right side: Customer Images (40% width) - if visible and editing existing customer
         if (imagesFieldConfig?.visible != false && customerId.isNotBlank()) {
-            Card(
+            OutlinedCard(
                 modifier = Modifier
                     .weight(0.4f)
                     .fillMaxHeight()
@@ -413,7 +416,6 @@ private fun CustomerFormSideBySideLayout(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomerFormFields(
-    customerId: String?,
     formState: CustomerFormState,
     onFormChange: (CustomerFormState) -> Unit,
     error: String?,
@@ -432,6 +434,10 @@ private fun CustomerFormFields(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
+    val contactPickerService: ContactPickerService = koinInject()
+    var isImportingContact by remember { mutableStateOf(false) }
+    var contactImportError by remember { mutableStateOf<String?>(null) }
 
     // Helper functions for field config
     fun isFieldVisible(fieldName: String): Boolean {
@@ -453,6 +459,48 @@ private fun CustomerFormFields(
         return entityConfig?.getFieldConfig(fieldName)?.placeholder
     }
 
+    // Function to import contact data into form
+    fun importContactToForm(contactData: ContactData) {
+        // Debug log
+        println("ContactData received - Name: ${contactData.name}, Phone: ${contactData.phone}, CountryCode: ${contactData.countryCode}")
+
+        var updatedForm = formState
+
+        // Only update fields that have values and are currently empty
+        if (contactData.name.isNotBlank() && formState.name.isBlank()) {
+            updatedForm = updatedForm.copy(name = contactData.name)
+        }
+        if (contactData.email.isNotBlank() && formState.email.isBlank()) {
+            updatedForm = updatedForm.copy(email = contactData.email)
+        }
+        if (contactData.phone.isNotBlank() && formState.phone.isBlank()) {
+            // Convert country code string ("+91") to integer (91)
+            val countryCodeInt = contactData.countryCode.removePrefix("+").toIntOrNull() ?: 91
+            println("Updating phone - Number: ${contactData.phone}, CountryCode: $countryCodeInt")
+            updatedForm = updatedForm.copy(
+                phone = contactData.phone,
+                countryCode = countryCodeInt
+            )
+        }
+        if (contactData.street.isNotBlank() && formState.street.isBlank()) {
+            updatedForm = updatedForm.copy(street = contactData.street)
+        }
+        if (contactData.city.isNotBlank() && formState.city.isBlank()) {
+            updatedForm = updatedForm.copy(city = contactData.city)
+        }
+        if (contactData.state.isNotBlank() && formState.state.isBlank()) {
+            updatedForm = updatedForm.copy(state = contactData.state)
+        }
+        if (contactData.pincode.isNotBlank() && formState.pincode.isBlank()) {
+            updatedForm = updatedForm.copy(pincode = contactData.pincode)
+        }
+        if (contactData.country.isNotBlank() && formState.country.isBlank()) {
+            updatedForm = updatedForm.copy(country = contactData.country)
+        }
+
+        onFormChange(updatedForm)
+    }
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -460,7 +508,7 @@ private fun CustomerFormFields(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (error != null) {
-            Card(
+            OutlinedCard(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer
                 )
@@ -473,8 +521,62 @@ private fun CustomerFormFields(
             }
         }
 
+        // Contact Import Error
+        if (contactImportError != null) {
+            OutlinedCard(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Text(
+                    text = contactImportError ?: "",
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+
         // Basic Information
         FormSection(title = "Basic Information") {
+            // Import from Contact Button (only on Android/iOS, only for new customers)
+            if (contactPickerService.isAvailable() && formState.uid.isBlank()) {
+                OutlinedButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            isImportingContact = true
+                            contactImportError = null
+                            contactPickerService.pickContact()
+                                .onSuccess { contactData ->
+                                    importContactToForm(contactData)
+                                }
+                                .onFailure { error ->
+                                    if (error.message?.contains("cancelled", ignoreCase = true) != true) {
+                                        contactImportError = error.message ?: "Failed to import contact"
+                                    }
+                                }
+                            isImportingContact = false
+                        }
+                    },
+                    enabled = !isImportingContact,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isImportingContact) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Importing...")
+                    } else {
+                        Icon(Icons.Default.ContactPhone, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Import from Contact")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             // Name field - with config integration
             if (isFieldVisible("name")) {
                 OutlinedTextField(
@@ -598,62 +700,56 @@ private fun CustomerFormFields(
                 }
             }
 
-            // Phone and Landline Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (isFieldVisible("phone")) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Phone(
-                            countryCode = formState.countryCode,
-                            phone = formState.phone,
-                            onValueChange = { phone ->
-                                onFormChange(formState.copy(phone = phone))
-                            },
-                            onValidChange = { /* Validation handled in ViewModel */ }
-                        )
+            // Phone field
+            if (isFieldVisible("phone")) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Phone(
+                        countryCode = formState.countryCode,
+                        phone = formState.phone,
+                        onValueChange = { phone ->
+                            onFormChange(formState.copy(phone = phone))
+                        },
+                        onValidChange = { /* Validation handled in ViewModel */ }
+                    )
 
-                        formState.phoneError?.let { error ->
+                    formState.phoneError?.let { error ->
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // Landline field (separate row)
+            if (isFieldVisible("landline")) {
+                OutlinedTextField(
+                    value = formState.landline,
+                    onValueChange = { onFormChange(formState.copy(landline = it)) },
+                    label = { Text(getFieldLabel("landline", "Landline")) },
+                    placeholder = getFieldPlaceholder("landline")?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Phone,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true,
+                    isError = formState.landlineError != null,
+                    supportingText = formState.landlineError?.let { error ->
+                        {
                             Text(
                                 text = error,
                                 color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
-                }
-
-                if (isFieldVisible("landline")) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = formState.landline,
-                            onValueChange = { onFormChange(formState.copy(landline = it)) },
-                            label = { Text(getFieldLabel("landline", "Landline")) },
-                            placeholder = getFieldPlaceholder("landline")?.let { { Text(it) } },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Phone,
-                                imeAction = ImeAction.Next
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                            ),
-                            singleLine = true,
-                            isError = formState.landlineError != null,
-                            supportingText = formState.landlineError?.let { error ->
-                                {
-                                    Text(
-                                        text = error,
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-                        )
-                    }
-                }
+                )
             }
 
         }
@@ -1101,7 +1197,7 @@ private fun FormSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -1204,7 +1300,7 @@ private fun LocationSection(
     ) {
         if (latitude != null && longitude != null) {
             // Show current location
-            Card(
+            OutlinedCard(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )

@@ -69,7 +69,7 @@ class CustomerGroupRepository(
         return try {
             // Generate UID if not provided
             val uid = if (customerGroup.uid.isBlank()) {
-                UidGenerator.generateUid(CustomerConstants.UID_PREFIX)
+                UidGenerator.generateUid(CustomerConstants.CUSTOMER_GROUP_UID_PREFIX)
             } else {
                 customerGroup.uid
             }

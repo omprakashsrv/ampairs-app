@@ -199,7 +199,7 @@ private fun ProductImagesSection(
     product: Product,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    OutlinedCard(
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
@@ -327,7 +327,7 @@ private fun InfoSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(

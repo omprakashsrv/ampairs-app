@@ -69,7 +69,7 @@ class CustomerTypeRepository(
         return try {
             // Generate UID if not provided
             val uid = if (customerType.uid.isBlank()) {
-                UidGenerator.generateUid(CustomerConstants.UID_PREFIX)
+                UidGenerator.generateUid(CustomerConstants.CUSTOMER_TYPE_UID_PREFIX)
             } else {
                 customerType.uid
             }

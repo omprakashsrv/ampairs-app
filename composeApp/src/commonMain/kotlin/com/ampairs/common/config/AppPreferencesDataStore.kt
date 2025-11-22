@@ -59,9 +59,47 @@ interface AppPreferencesDataStore {
      */
     suspend fun setUpdateVersionDismissed(version: String, dismissed: Boolean)
 
+    /**
+     * Get the last selected workspace ID for auto-resume on app launch
+     */
+    fun getLastWorkspaceId(): Flow<String?>
+
+    /**
+     * Set the last selected workspace ID
+     */
+    suspend fun setLastWorkspaceId(workspaceId: String?)
+
+    /**
+     * Clear the last workspace ID (e.g., on logout)
+     */
+    suspend fun clearLastWorkspaceId()
+
+    /**
+     * Get the last selected user ID for auto-resume on app launch
+     */
+    fun getLastUserId(): Flow<String?>
+
+    /**
+     * Set the last selected user ID
+     */
+    suspend fun setLastUserId(userId: String?)
+
+    /**
+     * Clear the last user ID (e.g., when user is removed)
+     */
+    suspend fun clearLastUserId()
+
+    /**
+     * Get the current language preference (language code: "en", "hi")
+     */
+    fun getLanguagePreference(): Flow<String>
+
+    /**
+     * Set the language preference
+     */
+    suspend fun setLanguagePreference(languageCode: String)
+
     // Future app settings can be added here:
-    // fun getLanguagePreference(): Flow<String>
-    // suspend fun setLanguagePreference(language: String)
     // fun getNotificationSettings(): Flow<NotificationSettings>
     // suspend fun setNotificationSettings(settings: NotificationSettings)
 }

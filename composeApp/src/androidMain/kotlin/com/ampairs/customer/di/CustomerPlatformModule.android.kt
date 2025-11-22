@@ -5,6 +5,7 @@ import com.ampairs.common.database.createAndroidDatabase
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.repository.AndroidFileManager
 import com.ampairs.customer.data.repository.PlatformFileManager
+import com.ampairs.customer.ui.components.contact.ContactPickerService
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.bind
@@ -23,4 +24,7 @@ actual val customerPlatformModule = module {
     }
 
     single { AndroidFileManager(androidContext()) } bind PlatformFileManager::class
+
+    // Contact Picker Service (Android implementation)
+    single { ContactPickerService() }
 }

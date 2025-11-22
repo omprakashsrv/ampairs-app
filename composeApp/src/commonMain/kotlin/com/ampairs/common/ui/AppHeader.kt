@@ -2,6 +2,7 @@ package com.ampairs.common.ui
 
 import WorkspaceRoute
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,11 @@ import com.ampairs.common.theme.ThemePreference
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.GlobalNavigationManager
+import com.ampairs.workspace.ui.LanguageSettingsDialog
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.*
+import com.ampairs.common.localization.localizedString
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,24 +127,15 @@ fun AppHeader(
             // Spacer to push right-side elements to the right
             Spacer(modifier = Modifier.weight(1f))
 
-            // Right side - Theme toggle and user profile menu
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Theme toggle button
-                ThemeToggleButton()
-
-                // User profile menu
-                UserProfileMenu(
-                    userFullName = userFullName,
-                    isLoading = isUserLoading,
-                    onEditProfile = onEditProfile,
-                    onLogout = onLogout,
-                    onSwitchUser = onSwitchUser,
-                    onDeleteAccount = onDeleteAccount
-                )
-            }
+            // Right side - User profile menu
+            UserProfileMenu(
+                userFullName = userFullName,
+                isLoading = isUserLoading,
+                onEditProfile = onEditProfile,
+                onLogout = onLogout,
+                onSwitchUser = onSwitchUser,
+                onDeleteAccount = onDeleteAccount
+            )
         }
     }
 }
@@ -283,6 +280,9 @@ private fun UserProfileMenu(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var showLogoutConfirmation by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
         Row(
@@ -334,10 +334,28 @@ private fun UserProfileMenu(
         ) {
             ProfileMenuItem(
                 icon = Icons.Default.Edit,
-                text = "Edit Profile",
+                text = localizedString(Res.string.edit),
                 onClick = {
                     expanded = false
                     onEditProfile()
+                }
+            )
+
+            ProfileMenuItem(
+                icon = Icons.Default.Language,
+                text = localizedString(Res.string.settings_language),
+                onClick = {
+                    expanded = false
+                    showLanguageDialog = true
+                }
+            )
+
+            ProfileMenuItem(
+                icon = Icons.Default.Palette,
+                text = "Theme",
+                onClick = {
+                    expanded = false
+                    showThemeDialog = true
                 }
             )
 
@@ -372,12 +390,37 @@ private fun UserProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Filled.Logout,
-                text = "Logout",
+                text = localizedString(Res.string.settings_logout),
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false
-                    onLogout()
+                    showLogoutConfirmation = true
                 }
+            )
+        }
+
+        // Language Settings Dialog
+        if (showLanguageDialog) {
+            LanguageSettingsDialog(
+                onDismiss = { showLanguageDialog = false }
+            )
+        }
+
+        // Theme Settings Dialog
+        if (showThemeDialog) {
+            ThemeSettingsDialog(
+                onDismiss = { showThemeDialog = false }
+            )
+        }
+
+        // Logout Confirmation Dialog
+        if (showLogoutConfirmation) {
+            LogoutConfirmationDialog(
+                onConfirm = {
+                    showLogoutConfirmation = false
+                    onLogout()
+                },
+                onDismiss = { showLogoutConfirmation = false }
             )
         }
     }
@@ -493,92 +536,216 @@ private fun WorkspaceMenuItem(
 }
 
 @Composable
-private fun ThemeToggleButton(
-    modifier: Modifier = Modifier
+private fun ThemeSettingsDialog(
+    onDismiss: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
     val themeManager: ThemeManager = org.koin.compose.koinInject()
     val currentTheme by themeManager.themePreference.collectAsState()
+    val scope = rememberCoroutineScope()
 
-    Box(modifier = modifier) {
-        // Theme toggle button
-        IconButton(
-            onClick = { expanded = true },
-            modifier = Modifier.size(40.dp)
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                // Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = "Theme",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Select Theme",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Theme Options
+                ThemePreference.entries.forEach { theme ->
+                    ThemeOption(
+                        theme = theme,
+                        isSelected = currentTheme == theme,
+                        onSelect = {
+                            scope.launch {
+                                themeManager.setThemePreference(theme)
+                                kotlinx.coroutines.delay(100)
+                                onDismiss()
+                            }
+                        }
+                    )
+
+                    if (theme != ThemePreference.entries.last()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Cancel Button
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text(text = "Cancel")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeOption(
+    theme: ThemePreference,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onSelect)
+            .then(
+                if (isSelected) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                } else {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            ),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                when (currentTheme) {
+                imageVector = when (theme) {
                     ThemePreference.LIGHT -> Icons.Default.LightMode
                     ThemePreference.DARK -> Icons.Default.DarkMode
                     ThemePreference.SYSTEM -> Icons.Default.Settings
                 },
-                contentDescription = "Theme: ${currentTheme.displayName}",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                contentDescription = null,
+                tint = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 modifier = Modifier.size(24.dp)
             )
-        }
 
-        // Theme selection dropdown
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(
-                MaterialTheme.colorScheme.surface,
-                RoundedCornerShape(8.dp)
-            )
-        ) {
-            ThemePreference.entries.forEach { theme ->
-                DropdownMenuItem(
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                when (theme) {
-                                    ThemePreference.LIGHT -> Icons.Default.LightMode
-                                    ThemePreference.DARK -> Icons.Default.DarkMode
-                                    ThemePreference.SYSTEM -> Icons.Default.Settings
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = if (theme == currentTheme) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = theme.displayName,
-                                color = if (theme == currentTheme) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (theme == currentTheme) {
-                                    FontWeight.Medium
-                                } else {
-                                    FontWeight.Normal
-                                }
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            if (theme == currentTheme) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = "Selected",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    },
-                    onClick = {
-                        themeManager.setThemePreference(theme)
-                        expanded = false
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = theme.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
                     }
+                )
+                Text(
+                    text = when (theme) {
+                        ThemePreference.LIGHT -> "Always use light theme"
+                        ThemePreference.DARK -> "Always use dark theme"
+                        ThemePreference.SYSTEM -> "Follow system settings"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Selected",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
     }
+}
+
+@Composable
+private fun LogoutConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.AutoMirrored.Filled.Logout,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = {
+            Text(
+                text = "Logout",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "Are you sure you want to logout? You will need to sign in again to access your account.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Logout")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

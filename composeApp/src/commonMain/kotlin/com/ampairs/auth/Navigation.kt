@@ -3,6 +3,8 @@ package com.ampairs.auth
 import AuthRoute
 import Route
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -10,8 +12,12 @@ import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
+import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.LoginStatus
+import com.ampairs.common.model.onSuccess
+import com.ampairs.common.model.onError
 import com.ampairs.auth.ui.AccountDeletionScreen
+import com.ampairs.auth.ui.AccountRestoreScreen
 import com.ampairs.auth.ui.LoginScreen
 import com.ampairs.auth.ui.OtpScreen
 import com.ampairs.auth.ui.PhoneScreen
@@ -41,7 +47,7 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                         } else {
                             // User needs to select workspace, go to workspace selection
                             navigator.navigate(Route.Workspace) {
-                                popUpTo(Route.Login) { inclusive = true }
+                                popUpTo(navigator.graph.startDestinationId) { inclusive = true }
                             }
                         }
                     }
@@ -118,7 +124,8 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                     val currentUserId = tokenRepository.getCurrentUserId()
                     if (currentUserId != null) {
                         val hasSelectedWorkspace =
-                            userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
+                            userWorkspaceRepository.getWorkspaceIdForUser(currentUserId)
+                                .isNotBlank()
                         if (hasSelectedWorkspace) {
                             // User has selected workspace, go to main app
                             onLoginSuccess()
@@ -133,16 +140,24 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             }
         }
 
-        composable<AuthRoute.Phone> {
+        composable<AuthRoute.Phone> { backStackEntry ->
             val tokenRepository = koinInject<TokenRepository>()
             val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
 
+            // Get parent entry to share ViewModel scope with OtpScreen
+            val parentEntry = remember(backStackEntry) {
+                navigator.getBackStackEntry(Route.Login)
+            }
+
             PhoneScreen(
+                viewModelStoreOwner = parentEntry,
                 onAuthSuccess = { sessionId, verificationId ->
-                    navigator.navigate(AuthRoute.Otp(
-                        sessionId = sessionId,
-                        verificationId = verificationId
-                    ))
+                    navigator.navigate(
+                        AuthRoute.Otp(
+                            sessionId = sessionId,
+                            verificationId = verificationId
+                        )
+                    )
                 },
                 onExistingUserSelected = {
                     // When existing user is selected, check their workspace status
@@ -150,7 +165,8 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                         val currentUserId = tokenRepository.getCurrentUserId()
                         if (currentUserId != null) {
                             val hasSelectedWorkspace =
-                                userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
+                                userWorkspaceRepository.getWorkspaceIdForUser(currentUserId)
+                                    .isNotBlank()
                             if (hasSelectedWorkspace) {
                                 // User has selected workspace, go to main app
                                 onLoginSuccess()
@@ -167,11 +183,35 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         }
         composable<AuthRoute.Otp> { backStackEntry ->
             val otp = backStackEntry.toRoute<AuthRoute.Otp>()
+            val userRepository = koinInject<UserRepository>()
+
+            // Get parent entry to share ViewModel scope with PhoneScreen
+            val parentEntry = remember(backStackEntry) {
+                navigator.getBackStackEntry(Route.Login)
+            }
+
             OtpScreen(
+                viewModelStoreOwner = parentEntry,
                 sessionId = otp.sessionId,
                 verificationId = otp.verificationId,
                 onAuthSuccess = {
-                    navigator.navigate(AuthRoute.UserUpdate)
+                    // Check if account is pending deletion before proceeding
+                    kotlinx.coroutines.runBlocking {
+                        val deletionStatusResponse = userRepository.getAccountDeletionStatus()
+                        deletionStatusResponse.onSuccess {
+                            if (this.isDeleted && this.canRestore) {
+                                // Account is marked for deletion, navigate to restore screen
+                                println("🔍 Account is deleted, showing restore screen")
+                                navigator.navigate(AuthRoute.AccountRestore)
+                            } else {
+                                // Normal flow - proceed to user update
+                                navigator.navigate(AuthRoute.UserUpdate)
+                            }
+                        }.onError {
+                            // If status check fails, continue with normal flow
+                            navigator.navigate(AuthRoute.UserUpdate)
+                        }
+                    }
                 }
             )
         }
@@ -218,12 +258,28 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
     // Account deletion screen - accessible from authenticated screens
     composable<AuthRoute.AccountDeletion> {
         val tokenRepository = koinInject<TokenRepository>()
+        val userRepository = koinInject<UserRepository>()
 
         AccountDeletionScreen(
             onDeletionSuccess = {
                 // Account deleted successfully, logout user
                 kotlinx.coroutines.runBlocking {
+                    // Get current user ID before clearing
+                    val currentUserId = tokenRepository.getCurrentUserId()
+
+                    // Clear tokens
                     tokenRepository.clearTokens()
+
+                    // Delete user entity from local database (already done in ViewModel, but ensure it's done)
+                    currentUserId?.let { userId ->
+                        try {
+                            userRepository.deleteUserById(userId)
+                            println("✅ Deleted user entity after account deletion: $userId")
+                        } catch (e: Exception) {
+                            println("⚠️ Failed to delete user entity: ${e.message}")
+                        }
+                    }
+
                     navigator.navigate(Route.Login) {
                         popUpTo(0) // Clear entire back stack
                     }
@@ -231,6 +287,43 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             },
             onNavigateBack = {
                 navigator.navigateUp()
+            }
+        )
+    }
+
+    // Account restore screen - shown immediately after login if account is pending deletion
+    composable<AuthRoute.AccountRestore> {
+        val tokenRepository = koinInject<TokenRepository>()
+        val userRepository = koinInject<UserRepository>()
+
+        AccountRestoreScreen(
+            onRestoreSuccess = {
+                // Account restored successfully, continue to user update
+                navigator.navigate(AuthRoute.UserUpdate)
+            },
+            onLogout = {
+                // User chose to logout instead of restoring
+                kotlinx.coroutines.runBlocking {
+                    // Get current user ID before clearing
+                    val currentUserId = tokenRepository.getCurrentUserId()
+
+                    // Clear tokens
+                    tokenRepository.clearTokens()
+
+                    // Delete user entity from local database
+                    currentUserId?.let { userId ->
+                        try {
+                            userRepository.deleteUserById(userId)
+                            println("✅ Deleted user entity on logout: $userId")
+                        } catch (e: Exception) {
+                            println("⚠️ Failed to delete user entity on logout: ${e.message}")
+                        }
+                    }
+
+                    navigator.navigate(Route.Login) {
+                        popUpTo(0) // Clear entire back stack
+                    }
+                }
             }
         )
     }

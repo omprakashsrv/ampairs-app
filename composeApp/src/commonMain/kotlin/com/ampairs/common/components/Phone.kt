@@ -36,10 +36,11 @@ fun Phone(
     onValueChange: (String) -> Unit,
     onValidChange: (Boolean) -> Unit,
 ) {
-    var phoneNumber by remember {
+    // Use remember with keys so state updates when props change (e.g., from contact import)
+    var phoneNumber by remember(phone) {
         mutableStateOf(phone)
     }
-    var countryCodeText by remember {
+    var countryCodeText by remember(countryCode) {
         mutableStateOf("+ $countryCode")
     }
     var valid by remember {

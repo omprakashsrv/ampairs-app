@@ -233,7 +233,7 @@ private fun HsnCodeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    ElevatedCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth()
     ) {

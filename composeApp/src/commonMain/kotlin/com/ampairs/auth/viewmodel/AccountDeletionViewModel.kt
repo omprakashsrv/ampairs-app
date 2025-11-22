@@ -6,17 +6,21 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.AuthApi
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.model.AccountDeletionRequest
 import com.ampairs.auth.api.model.AccountDeletionResponse
 import com.ampairs.auth.api.model.AccountDeletionStatus
 import com.ampairs.auth.api.model.BlockingWorkspace
+import com.ampairs.auth.db.dao.UserDao
 import com.ampairs.common.model.UiState
 import com.ampairs.common.model.onError
 import com.ampairs.common.model.onSuccess
 import kotlinx.coroutines.launch
 
 class AccountDeletionViewModel(
-    private val authApi: AuthApi
+    private val authApi: AuthApi,
+    private val tokenRepository: TokenRepository,
+    private val userDao: UserDao
 ) : ViewModel() {
 
     var reason by mutableStateOf("")
@@ -39,8 +43,48 @@ class AccountDeletionViewModel(
     var showBlockingWorkspacesDialog by mutableStateOf(false)
         private set
 
+    var ownedWorkspaces by mutableStateOf<List<BlockingWorkspace>>(emptyList())
+        private set
+
+    var isLoadingOwnedWorkspaces by mutableStateOf(false)
+        private set
+
     init {
         loadDeletionStatus()
+        loadOwnedWorkspaces()
+    }
+
+    fun loadOwnedWorkspaces() {
+        viewModelScope.launch {
+            isLoadingOwnedWorkspaces = true
+
+            // Make a deletion check request with confirmed=false to get blocking workspaces
+            authApi.requestAccountDeletion(
+                AccountDeletionRequest(confirmed = false, reason = null)
+            ).onSuccess {
+                println("🔍 Account deletion check - deletionRequested: ${this.deletionRequested}")
+                println("🔍 blockingWorkspaces: ${this.blockingWorkspaces?.joinToString { it.workspaceName } ?: "null"}")
+
+                // The backend returns blockingWorkspaces if user owns any workspaces
+                val workspaces = this.blockingWorkspaces ?: emptyList()
+                ownedWorkspaces = workspaces
+
+                if (workspaces.isNotEmpty()) {
+                    println("✅ Found ${workspaces.size} owned workspace(s):")
+                    workspaces.forEach {
+                        println("   - ${it.workspaceName} (${it.memberCount} members)")
+                    }
+                } else {
+                    println("✅ No owned workspaces - user can proceed with deletion")
+                }
+            }.onError {
+                println("❌ Error checking owned workspaces: ${this.message}")
+                // On error, assume no owned workspaces (backend will validate on actual deletion)
+                ownedWorkspaces = emptyList()
+            }
+
+            isLoadingOwnedWorkspaces = false
+        }
     }
 
     fun updateReason(newReason: String) {
@@ -80,6 +124,27 @@ class AccountDeletionViewModel(
                 if (this.deletionRequested) {
                     deletionState = UiState.Success(this)
                     displayMessage = this.message
+
+                    // Clear local user data and logout in a coroutine
+                    viewModelScope.launch {
+                        try {
+                            // Get current user ID before clearing
+                            val currentUserId = tokenRepository.getCurrentUserId()
+
+                            // Clear tokens
+                            tokenRepository.clearTokens()
+                            authApi.clearToken()
+
+                            // Delete user entity from local database
+                            currentUserId?.let { userId ->
+                                userDao.deleteById(userId)
+                                println("✅ Deleted user entity from local database: $userId")
+                            }
+                        } catch (e: Exception) {
+                            println("⚠️ Failed to cleanup user data: ${e.message}")
+                        }
+                    }
+
                     onSuccess()
                 } else {
                     // Account deletion blocked due to workspace ownership

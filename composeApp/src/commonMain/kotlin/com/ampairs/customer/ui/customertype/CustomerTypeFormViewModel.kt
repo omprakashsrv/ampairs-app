@@ -117,7 +117,7 @@ class CustomerTypeFormViewModel(
         viewModelScope.launch {
             try {
                 val customerType = CustomerType(
-                    uid = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
+                    uid = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.CUSTOMER_TYPE_UID_PREFIX),
                     name = state.name.trim(),
                     description = state.description.trim().ifBlank { null },
                     typeCode = state.typeCode.trim().ifBlank { null },

@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.auth.deeplink.DeepLinkEvent
 import com.ampairs.auth.deeplink.DeepLinkHandler
 import com.ampairs.auth.viewmodel.LoginViewModel
+import com.ampairs.common.localization.localizedString
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -92,7 +95,7 @@ fun DesktopBrowserAuthScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sign In") },
+                title = { Text(localizedString(Res.string.desktop_auth_sign_in)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -131,7 +134,7 @@ fun DesktopBrowserAuthScreen(
 
             // Title
             Text(
-                text = "Welcome to Ampairs",
+                text = localizedString(Res.string.desktop_auth_welcome),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
@@ -162,7 +165,7 @@ fun DesktopBrowserAuthScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "Waiting for authentication...",
+                                text = localizedString(Res.string.desktop_auth_waiting_for_authentication),
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
@@ -171,7 +174,7 @@ fun DesktopBrowserAuthScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "Complete the authentication in your browser.\nThis window will automatically update when done.",
+                                text = localizedString(Res.string.desktop_auth_complete_in_browser),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
@@ -191,7 +194,7 @@ fun DesktopBrowserAuthScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Browser doesn't support deep links? Paste tokens here")
+                                Text(localizedString(Res.string.desktop_auth_browser_no_deep_links))
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -205,12 +208,12 @@ fun DesktopBrowserAuthScreen(
                                     pasteError = null
                                 }
                             ) {
-                                Text("Cancel")
+                                Text(localizedString(Res.string.desktop_auth_cancel))
                             }
                         } else {
                             // Manual token paste UI
                             Text(
-                                text = "Paste Authentication Tokens",
+                                text = localizedString(Res.string.desktop_auth_paste_tokens),
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
@@ -219,7 +222,7 @@ fun DesktopBrowserAuthScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "After completing authentication in your browser, copy the JSON tokens and paste them below.",
+                                text = localizedString(Res.string.desktop_auth_paste_instructions),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
@@ -237,7 +240,7 @@ fun DesktopBrowserAuthScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(120.dp),
-                                label = { Text("JSON Tokens") },
+                                label = { Text(localizedString(Res.string.desktop_auth_json_tokens)) },
                                 placeholder = {
                                     Text(
                                         """{"access_token": "...", "refresh_token": "..."}""",
@@ -245,7 +248,7 @@ fun DesktopBrowserAuthScreen(
                                     )
                                 },
                                 supportingText = {
-                                    Text("Paste the entire JSON object from the browser")
+                                    Text(localizedString(Res.string.desktop_auth_paste_entire_json))
                                 },
                                 isError = pasteError != null,
                                 textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
@@ -276,7 +279,7 @@ fun DesktopBrowserAuthScreen(
                                     },
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Back")
+                                    Text(localizedString(Res.string.desktop_auth_back))
                                 }
 
                                 Button(
@@ -303,7 +306,7 @@ fun DesktopBrowserAuthScreen(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Sign In")
+                                    Text(localizedString(Res.string.desktop_auth_sign_in))
                                 }
                             }
 
@@ -318,7 +321,7 @@ fun DesktopBrowserAuthScreen(
                                     pasteError = null
                                 }
                             ) {
-                                Text("Cancel")
+                                Text(localizedString(Res.string.desktop_auth_cancel))
                             }
                         }
                     }
@@ -336,7 +339,7 @@ fun DesktopBrowserAuthScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Sign in securely with your web browser",
+                            text = localizedString(Res.string.desktop_auth_sign_in_securely),
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
@@ -345,7 +348,7 @@ fun DesktopBrowserAuthScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Click the button below to open your browser and complete authentication with your phone number.",
+                            text = localizedString(Res.string.desktop_auth_click_button_below),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
@@ -373,7 +376,7 @@ fun DesktopBrowserAuthScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Sign in with Browser",
+                                text = localizedString(Res.string.desktop_auth_sign_in_with_browser),
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
@@ -419,19 +422,19 @@ fun DesktopBrowserAuthScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "How it works:",
+                            text = localizedString(Res.string.desktop_auth_how_it_works),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        BulletPoint("Browser opens to secure authentication page")
-                        BulletPoint("Enter your phone number and verify with OTP")
-                        BulletPoint("Desktop app automatically completes sign in")
+                        BulletPoint(localizedString(Res.string.desktop_auth_step_1))
+                        BulletPoint(localizedString(Res.string.desktop_auth_step_2))
+                        BulletPoint(localizedString(Res.string.desktop_auth_step_3))
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Your credentials are never stored on this device.",
+                            text = localizedString(Res.string.desktop_auth_credentials_not_stored),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.fillMaxWidth(),

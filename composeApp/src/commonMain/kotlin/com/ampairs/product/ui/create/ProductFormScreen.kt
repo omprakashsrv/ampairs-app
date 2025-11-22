@@ -582,7 +582,7 @@ private fun FormSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(

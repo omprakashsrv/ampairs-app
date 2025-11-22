@@ -131,7 +131,7 @@ private fun TaxModuleCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    ElevatedCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth()
     ) {

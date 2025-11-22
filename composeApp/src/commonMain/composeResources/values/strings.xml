@@ -1,9 +1,53 @@
 <resources>
+    <!-- Common -->
     <string name="app_name">Ampairs</string>
-    <string name="please_check_network_connection">Please check your network connection</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="search">Search</string>
+    <string name="loading">Loading...</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="retry">Retry</string>
+    <string name="close">Close</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="next">Next</string>
+    <string name="confirm">Confirm</string>
+    <string name="create_new">Create New</string>
+    <string name="update">Update</string>
+    <string name="discard">Discard</string>
     <string name="share">Share</string>
-    
-    <!-- Auth Screen Texts -->
+    <string name="please_check_network_connection">Please check your network connection</string>
+
+    <!-- Login Screen -->
+    <string name="login_welcome_tagline">Your Complete Business Management Solution</string>
+    <string name="login_get_started">Get Started</string>
+    <string name="login_feature_customer_management">Customer Management</string>
+    <string name="login_feature_customer_management_desc">Manage your customer relationships efficiently</string>
+    <string name="login_feature_inventory_control">Inventory Control</string>
+    <string name="login_feature_inventory_control_desc">Track products and stock with ease</string>
+    <string name="login_feature_smart_invoicing">Smart Invoicing</string>
+    <string name="login_feature_smart_invoicing_desc">Create and manage invoices effortlessly</string>
+    <string name="login_select_language">Select Language</string>
+    <string name="login_language_prompt">Choose your preferred language</string>
+
+    <!-- Phone Number Screen -->
+    <string name="phone_number_title">Enter Your Phone Number</string>
+    <string name="phone_number_enter">Phone Number</string>
+    <string name="phone_number_placeholder">9876543210</string>
+    <string name="phone_number_continue">Continue</string>
+    <string name="phone_number_invalid">Please enter a valid phone number</string>
+    <string name="phone_user_exists">User exists</string>
+    <string name="phone_user_already_logged_in">User Already Logged In</string>
+    <string name="phone_user_already_logged_in_desc">A user with this phone number is already logged in:</string>
+    <string name="phone_would_you_like_to_switch">Would you like to switch to this account?</string>
+    <string name="phone_switch_to_this_user">Switch to This User</string>
+    <string name="phone_login">Login</string>
+
+    <!-- Auth Screen Texts (Legacy) -->
     <string name="login">Log in</string>
     <string name="verify_otp">Verify OTP</string>
     <string name="resend_otp">Resend OTP</string>
@@ -19,19 +63,42 @@
     <string name="last_name">Last Name</string>
     <string name="update_profile">Update Profile</string>
     <string name="error_colon">Error: </string>
+
+    <!-- OTP Screen -->
+    <string name="otp_title">Verify OTP</string>
+    <string name="otp_enter">Enter OTP</string>
+    <string name="otp_placeholder">123456</string>
+    <string name="otp_verify">Verify</string>
+    <string name="otp_resend">Resend OTP</string>
+    <string name="otp_invalid">Invalid OTP</string>
+    <string name="otp_sent">OTP sent successfully</string>
+    <string name="otp_verifying">Verifying...</string>
+    <string name="otp_enter_code">Enter the code sent to your phone</string>
+    <string name="otp_waiting_for_auto_verification">Waiting for automatic verification...</string>
+    <string name="otp_auto_verification_desc">We\'re checking if your device can be verified automatically.\nThis usually takes a few seconds.</string>
+    <string name="otp_enter_manually">Enter code manually</string>
     
-    <!-- Common Action Words -->
-    <string name="search">Search</string>
-    <string name="save">Save</string>
-    <string name="next">Next</string>
-    <string name="ok">OK</string>
-    <string name="cancel">Cancel</string>
-    <string name="confirm">Confirm</string>
-    <string name="create_new">Create New</string>
-    <string name="update">Update</string>
-    <string name="discard">Discard</string>
-    
-    <!-- Customer Screen Texts -->
+    <!-- Customer Screen -->
+    <string name="customer_title">Customers</string>
+    <string name="customer_add">Add Customer</string>
+    <string name="customer_search">Search customers...</string>
+    <string name="customer_name">Customer Name</string>
+    <string name="customer_phone">Phone Number</string>
+    <string name="customer_email">Email</string>
+    <string name="customer_address">Address</string>
+    <string name="customer_save">Save Customer</string>
+    <string name="customer_delete">Delete Customer</string>
+    <string name="customer_edit">Edit Customer</string>
+    <string name="customer_no_customers">No customers found</string>
+    <string name="customer_add_first">Add your first customer</string>
+    <string name="customer_details">Customer Details</string>
+    <string name="customer_list">Customer List</string>
+    <string name="customer_type">Customer Type</string>
+    <string name="customer_group">Customer Group</string>
+    <string name="customer_gst_number">GST Number</string>
+    <string name="customer_pan_number">PAN Number</string>
+
+    <!-- Customer Screen Texts (Legacy) -->
     <string name="search_customer">Search Customer</string>
     <string name="name">Name</string>
     <string name="landline">Landline</string>
@@ -81,10 +148,55 @@
     <string name="formatted_name">Formatted Name</string>
     <string name="search_code">Search Code</string>
     
+    <!-- Business/Workspace Screen -->
+    <string name="workspace_title">Workspaces</string>
+    <string name="workspace_select">Select Workspace</string>
+    <string name="workspace_create">Create Workspace</string>
+    <string name="workspace_name">Workspace Name</string>
+    <string name="workspace_description">Description</string>
+    <string name="workspace_no_workspaces">No workspaces found</string>
+    <string name="workspace_add_first">Create your first workspace</string>
+    <string name="workspace_switch">Switch Workspace</string>
+    <string name="workspace_settings">Workspace Settings</string>
+    <string name="workspace_modules">Modules</string>
+    <string name="workspace_no_modules">No modules available</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_about">About</string>
+    <string name="settings_logout">Logout</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_change_language">Change Language</string>
+    <string name="settings_select_language">Select Language</string>
+
     <!-- Security Messages -->
     <string name="app_update_required">App update required for security reasons</string>
     <string name="network_requests_blocked">Network requests blocked due to security policy</string>
-    
+
+    <!-- Desktop Browser Auth -->
+    <string name="desktop_auth_sign_in">Sign In</string>
+    <string name="desktop_auth_welcome">Welcome to Ampairs</string>
+    <string name="desktop_auth_sign_in_securely">Sign in securely with your web browser</string>
+    <string name="desktop_auth_click_button_below">Click the button below to open your browser and complete authentication with your phone number.</string>
+    <string name="desktop_auth_sign_in_with_browser">Sign in with Browser</string>
+    <string name="desktop_auth_waiting_for_authentication">Waiting for authentication...</string>
+    <string name="desktop_auth_complete_in_browser">Complete the authentication in your browser.\nThis window will automatically update when done.</string>
+    <string name="desktop_auth_browser_no_deep_links">Browser doesn\'t support deep links? Paste tokens here</string>
+    <string name="desktop_auth_cancel">Cancel</string>
+    <string name="desktop_auth_paste_tokens">Paste Authentication Tokens</string>
+    <string name="desktop_auth_paste_instructions">After completing authentication in your browser, copy the JSON tokens and paste them below.</string>
+    <string name="desktop_auth_json_tokens">JSON Tokens</string>
+    <string name="desktop_auth_paste_entire_json">Paste the entire JSON object from the browser</string>
+    <string name="desktop_auth_back">Back</string>
+    <string name="desktop_auth_how_it_works">How it works:</string>
+    <string name="desktop_auth_step_1">Browser opens to secure authentication page</string>
+    <string name="desktop_auth_step_2">Enter your phone number and verify with OTP</string>
+    <string name="desktop_auth_step_3">Desktop app automatically completes sign in</string>
+    <string name="desktop_auth_credentials_not_stored">Your credentials are never stored on this device.</string>
+
     <!-- General -->
     <string name="translated_description_image">Translated description of what the image contains</string>
 </resources>

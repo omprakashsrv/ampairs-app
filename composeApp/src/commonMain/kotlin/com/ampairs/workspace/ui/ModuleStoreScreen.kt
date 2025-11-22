@@ -619,7 +619,7 @@ private fun ModuleDetailsContent(details: ModuleDetailResponse) {
     ) {
         item {
             // Module Info Section
-            Card(modifier = Modifier.fillMaxWidth()) {
+            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Module Information",
@@ -638,7 +638,7 @@ private fun ModuleDetailsContent(details: ModuleDetailResponse) {
 
         item {
             // Analytics Section
-            Card(modifier = Modifier.fillMaxWidth()) {
+            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Analytics",
@@ -655,7 +655,7 @@ private fun ModuleDetailsContent(details: ModuleDetailResponse) {
 
         item {
             // Configuration Section
-            Card(modifier = Modifier.fillMaxWidth()) {
+            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Configuration",

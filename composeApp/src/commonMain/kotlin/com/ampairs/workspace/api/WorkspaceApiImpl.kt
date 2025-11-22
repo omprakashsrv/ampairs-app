@@ -60,6 +60,10 @@ class WorkspaceApiImpl(engine: HttpClientEngine, private val tokenRepository: To
         return post(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/archive"), null)
     }
 
+    override suspend fun restoreWorkspace(workspaceId: String): Response<String> {
+        return post(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/restore"), null)
+    }
+
     override suspend fun getMyRole(workspaceId: String): Response<Map<String, Any>> {
         return get(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/my-role"))
     }

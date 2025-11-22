@@ -165,7 +165,7 @@ private fun InvitationFiltersSection(
     onStatusChanged: (String) -> Unit,
     onRoleChanged: (String) -> Unit,
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -357,7 +357,7 @@ private fun InvitationCard(
     onCancel: () -> Unit,
     canManageInvitations: Boolean,
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(

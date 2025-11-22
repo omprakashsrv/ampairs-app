@@ -79,15 +79,15 @@ class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRe
     }
 
     override suspend fun requestAccountDeletion(request: AccountDeletionRequest): Response<AccountDeletionResponse> {
-        return post(client, ApiUrlBuilder.apiUrl("v1/account/delete-request"), request)
+        return post(client, ApiUrlBuilder.apiUrl("account/delete-request"), request)
     }
 
     override suspend fun cancelAccountDeletion(): Response<AccountDeletionResponse> {
-        return post(client, ApiUrlBuilder.apiUrl("v1/account/delete-cancel"), null)
+        return post(client, ApiUrlBuilder.apiUrl("account/delete-cancel"), null)
     }
 
     override suspend fun getAccountDeletionStatus(): Response<AccountDeletionStatus> {
-        return get(client, ApiUrlBuilder.apiUrl("v1/account/delete-status"))
+        return get(client, ApiUrlBuilder.apiUrl("account/delete-status"))
     }
 
     override fun clearToken() {

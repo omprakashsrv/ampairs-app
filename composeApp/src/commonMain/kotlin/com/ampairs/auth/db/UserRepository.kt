@@ -2,6 +2,7 @@ package com.ampairs.auth.db
 
 import com.ampairs.auth.api.AuthApi
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.model.AccountDeletionStatus
 import com.ampairs.auth.api.model.AuthComplete
 import com.ampairs.auth.api.model.AuthInit
 import com.ampairs.auth.api.model.AuthInitResponse
@@ -133,6 +134,14 @@ class UserRepository(
 
     suspend fun logoutAllDevices(): Response<GenericSuccess> {
         return authApi.logoutAllDevices()
+    }
+
+    suspend fun getAccountDeletionStatus(): Response<AccountDeletionStatus> {
+        return authApi.getAccountDeletionStatus()
+    }
+
+    suspend fun deleteUserById(userId: String) {
+        userDao.deleteById(userId)
     }
 
     suspend fun resendOtp(phoneNumber: String): Response<AuthInitResponse> {

@@ -8,6 +8,6 @@ fun MainView() {
     // Handle location service requests (permissions and map selection)
     LocationServiceMapHandler()
 
-    // Main app content
+    // Your content here
     App({})
 }

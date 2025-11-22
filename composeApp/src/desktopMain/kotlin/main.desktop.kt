@@ -83,5 +83,5 @@ fun MainView(
     }
 
     // Show main app
-    App(onLoggedIn, onNavigationServiceReady, onNavigationReady)
+    App(onNavigationServiceReady, onNavigationReady)
 }

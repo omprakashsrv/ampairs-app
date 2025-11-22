@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.util.DateTimeFormatter
 import com.ampairs.customer.domain.CustomerImage
 import com.ampairs.customer.domain.CustomerImageStatus
 import com.ampairs.customer.util.CustomerLogger
@@ -237,7 +238,7 @@ private fun ImageContent(
     }
 
     if (imageModel != null) {
-        Card(
+        ElevatedCard(
             modifier = modifier,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
@@ -297,7 +298,7 @@ private fun ImageContent(
         }
     } else {
         // Placeholder for no image
-        Card(
+        ElevatedCard(
             modifier = modifier.size(200.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -335,7 +336,7 @@ private fun ImageDetailsExpandable(
     onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    ElevatedCard(
         modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -419,10 +420,10 @@ private fun ImageDetails(
 
         // Timestamps
         image.createdAt?.let { createdAt ->
-            DetailRow(label = "Created", value = createdAt)
+            DetailRow(label = "Created", value = DateTimeFormatter.formatTimestamp(createdAt))
         }
         image.updatedAt?.let { updatedAt ->
-            DetailRow(label = "Updated", value = updatedAt)
+            DetailRow(label = "Updated", value = DateTimeFormatter.formatTimestamp(updatedAt))
         }
     }
 }

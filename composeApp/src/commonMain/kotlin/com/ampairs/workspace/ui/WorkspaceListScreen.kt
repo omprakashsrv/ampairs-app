@@ -36,7 +36,9 @@ import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.common.config.DataStoreManager
 import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.common.config.AppPreferencesDataStore
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +52,7 @@ fun WorkspaceListScreen(
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
+    val appPreferences: AppPreferencesDataStore = koinInject()
 
     LaunchedEffect(Unit) {
         // Load workspaces only once when screen loads
@@ -336,6 +339,11 @@ fun WorkspaceListScreen(
                                         WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
                                         println("WorkspaceListScreen: ✅ Workspace context updated to: ${workspace.slug}")
 
+                                        // Save last workspace ID for auto-resume on app relaunch
+                                        coroutineScope.launch {
+                                            appPreferences.setLastWorkspaceId(workspace.id)
+                                        }
+
                                         // Initialize global navigation service for this workspace
                                         GlobalNavigationManager.getInstance().onWorkspaceSelected()
 
@@ -376,13 +384,12 @@ private fun WorkspaceCard(
     onClick: () -> Unit,
     onEdit: () -> Unit = {},
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.elevatedCardColors(
             containerColor = if (isOfflineMode)
                 MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
             else
@@ -529,9 +536,9 @@ private fun InvitationsSection(
     onClearError: () -> Unit,
     onRefresh: () -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
         )
     ) {
@@ -630,12 +637,12 @@ private fun InvitationCard(
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
-    Card(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier.padding(12.dp)

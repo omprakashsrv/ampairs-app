@@ -12,10 +12,40 @@ object CustomerConstants {
     const val UID_PREFIX = "CUS"
 
     /**
-     * UID prefix for Customer Image entities
-     * Used in UID generation to create identifiers like: IMG20250123143045A1B2C3D4E5F6G7H
+     * UID prefix for Customer Type entities
+     * Used in UID generation to create identifiers like: CT20250123143045A1B2C3D4E5F6G7H8
      */
-    const val CUSTOMER_IMAGE_UID_PREFIX = "IMG"
+    const val CUSTOMER_TYPE_UID_PREFIX = "CT"
+
+    /**
+     * UID prefix for Customer Group entities
+     * Used in UID generation to create identifiers like: CG20250123143045A1B2C3D4E5F6G7H8
+     */
+    const val CUSTOMER_GROUP_UID_PREFIX = "CG"
+
+    /**
+     * UID prefix for Customer Image entities
+     * Used in UID generation to create identifiers like: CIMG20250123143045A1B2C3D4E5F6G
+     */
+    const val CUSTOMER_IMAGE_UID_PREFIX = "CIMG"
+
+    /**
+     * UID prefix for State entities
+     * Used in UID generation to create identifiers like: STA20250123143045A1B2C3D4E5F6G7
+     */
+    const val STATE_UID_PREFIX = "STA"
+
+    /**
+     * UID prefix for Customer Field Config entities
+     * Used in UID generation to create identifiers like: CFC20250123143045A1B2C3D4E5F6G7
+     */
+    const val CUSTOMER_FIELD_CONFIG_UID_PREFIX = "CFC"
+
+    /**
+     * UID prefix for Customer Attribute Definition entities
+     * Used in UID generation to create identifiers like: CAD20250123143045A1B2C3D4E5F6G7
+     */
+    const val CUSTOMER_ATTRIBUTE_DEF_UID_PREFIX = "CAD"
 
     /**
      * Customer Status Values

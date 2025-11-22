@@ -243,7 +243,8 @@ actual class FirebaseAuthProvider {
                             val idToken = tokenResult.token
                             if (idToken != null) {
                                 println("FirebaseAuth: 🎫 ID token obtained successfully")
-                                _verificationState.value = PhoneVerificationState.VerificationCompleted(user.uid)
+                                // Pass the JWT ID token (not UID) to state for auto-verification flow
+                                _verificationState.value = PhoneVerificationState.VerificationCompleted(idToken)
                                 onComplete(FirebaseAuthResult.Success(idToken))
                             } else {
                                 println("FirebaseAuth: ❌ No ID token in result")

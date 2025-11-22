@@ -8,16 +8,18 @@
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
         <item name="splashScreenIconSize">@dimen/splashscreen_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.App</item>
-        <item name="android:navigationBarColor">@android:color/white</item>
+        <!-- Removed deprecated android:navigationBarColor - handled by enableEdgeToEdge() -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
     </style>
 
-    <style name="Theme.App" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.App" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="background">@android:color/white</item>
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
+        <!-- Removed deprecated android:statusBarColor and android:windowLightStatusBar -->
+        <!-- These are now handled automatically by enableEdgeToEdge() in MainActivity -->
     </style>
 </resources>

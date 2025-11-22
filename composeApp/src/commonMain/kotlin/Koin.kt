@@ -1,6 +1,7 @@
 import com.ampairs.auth.authModule
 import com.ampairs.business.businessModule
 import com.ampairs.common.firebase.di.firebaseModule
+import com.ampairs.common.localization.localizationModule
 import com.ampairs.common.sentry.sentryModule
 import com.ampairs.common.theme.themeModule
 import com.ampairs.customer.di.customerModule
@@ -20,6 +21,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
     koinApplication.modules(
         listOf(
             themeModule,
+            localizationModule,
             firebaseModule,
             sentryModule,
             platformModule,

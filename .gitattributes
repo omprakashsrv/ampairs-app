@@ -1,0 +1,19 @@
+# Ensure shell scripts always use LF line endings
+*.sh text eol=lf
+
+# Ensure all text files use LF in the repository
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.dmg binary
+*.msi binary
+*.exe binary
+*.deb binary
+*.rpm binary
+*.AppImage binary

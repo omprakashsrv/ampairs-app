@@ -77,7 +77,7 @@ fun CustomerGroupFormScreen(
             }
 
             // Basic Information Section
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -142,7 +142,7 @@ fun CustomerGroupFormScreen(
             }
 
             // Display & Priority Section
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -192,7 +192,7 @@ fun CustomerGroupFormScreen(
             }
 
             // Discount Settings Section
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -228,7 +228,7 @@ fun CustomerGroupFormScreen(
             }
 
             // Additional Information Section
-            Card(
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
