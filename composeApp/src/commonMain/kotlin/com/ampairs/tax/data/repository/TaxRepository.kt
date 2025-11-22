@@ -1,5 +1,6 @@
 package com.ampairs.tax.data.repository
 
+import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.tax.data.api.TaxApi
 import com.ampairs.tax.data.db.HsnCodeDao
 import com.ampairs.tax.data.db.TaxRateDao
@@ -71,10 +72,12 @@ class TaxRepository(
                 }
             } catch (e: Exception) {
                 // Network error - mark as pending sync
+                ErrorTracking.captureException(e, "TaxRepository.createHsnCode.sync")
                 hsnCodeDao.updateSyncStatus(hsnCodeWithTimestamp.id, "PENDING", now)
                 Result.success(hsnCodeWithTimestamp)
             }
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxRepository.createHsnCode")
             Result.failure(e)
         }
     }
@@ -101,10 +104,12 @@ class TaxRepository(
                     Result.success(updatedHsnCode)
                 }
             } catch (e: Exception) {
+                ErrorTracking.captureException(e, "TaxRepository.updateHsnCode.sync")
                 hsnCodeDao.updateSyncStatus(updatedHsnCode.id, "PENDING", now)
                 Result.success(updatedHsnCode)
             }
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxRepository.updateHsnCode")
             Result.failure(e)
         }
     }
@@ -128,11 +133,13 @@ class TaxRepository(
                     Result.success(Unit)
                 }
             } catch (e: Exception) {
+                ErrorTracking.captureException(e, "TaxRepository.deleteHsnCode.sync")
                 val now = Clock.System.now().toEpochMilliseconds()
                 hsnCodeDao.updateSyncStatus(id, "DELETE_PENDING", now)
                 Result.success(Unit)
             }
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxRepository.deleteHsnCode")
             Result.failure(e)
         }
     }
@@ -196,10 +203,12 @@ class TaxRepository(
                     Result.success(taxRateWithTimestamp)
                 }
             } catch (e: Exception) {
+                ErrorTracking.captureException(e, "TaxRepository.createTaxRate.sync")
                 taxRateDao.updateSyncStatus(taxRateWithTimestamp.id, "PENDING", now)
                 Result.success(taxRateWithTimestamp)
             }
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxRepository.createTaxRate")
             Result.failure(e)
         }
     }
@@ -214,7 +223,8 @@ class TaxRepository(
                     return result
                 }
             } catch (e: Exception) {
-                // Fall back to local calculation
+                // Fall back to local calculation - log but continue
+                ErrorTracking.captureException(e, "TaxRepository.calculateTax.server")
             }
 
             // Local tax calculation
@@ -272,6 +282,7 @@ class TaxRepository(
 
             Result.success(result)
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxRepository.calculateTax")
             Result.failure(e)
         }
     }
@@ -312,6 +323,7 @@ class TaxRepository(
 
             Result.success(Unit)
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxRepository.syncData")
             Result.failure(e)
         }
     }

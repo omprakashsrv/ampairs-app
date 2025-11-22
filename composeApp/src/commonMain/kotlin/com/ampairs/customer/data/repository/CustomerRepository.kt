@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.time.ExperimentalTime
+import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_UID_REQUIRED
 import com.ampairs.customer.util.CustomerLogger
 
@@ -188,6 +189,7 @@ class CustomerRepository(
         } catch (e: Exception) {
             // If server sync fails, customer is already saved locally as unsynced
             // It will be synced later via syncCustomers()
+            ErrorTracking.captureException(e, "CustomerRepository.createCustomer")
             return Result.success(customer)
         }
     }
@@ -209,6 +211,7 @@ class CustomerRepository(
         } catch (e: Exception) {
             // If server sync fails, customer is already updated locally as unsynced
             // It will be synced later via syncCustomers()
+            ErrorTracking.captureException(e, "CustomerRepository.updateCustomer")
             return Result.success(customer)
         }
     }
@@ -229,6 +232,7 @@ class CustomerRepository(
         } catch (e: Exception) {
             // If server delete fails, customer remains marked as deleted locally
             // It will be synced later via syncCustomers()
+            ErrorTracking.captureException(e, "CustomerRepository.deleteCustomer")
         }
 
         return Result.success(Unit)
@@ -266,6 +270,7 @@ class CustomerRepository(
                 } catch (syncError: Exception) {
                     // Continue with other customers if one fails
                     // Failed customer remains unsynced for next attempt
+                    ErrorTracking.captureException(syncError, "CustomerRepository.syncCustomers")
                     continue
                 }
             }
