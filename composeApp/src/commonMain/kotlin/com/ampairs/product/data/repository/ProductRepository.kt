@@ -1,5 +1,6 @@
 package com.ampairs.product.data.repository
 
+import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.event.EventManager
 import com.ampairs.event.domain.EventType
 import com.ampairs.event.util.EventLogger
@@ -185,6 +186,7 @@ class ProductRepository(
             productDao.insert(productWithId.toEntity())
             Result.success(productWithId)
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "ProductRepository.createProduct")
             Result.failure(e)
         }
     }
@@ -197,6 +199,7 @@ class ProductRepository(
             productDao.update(product.toEntity())
             Result.success(product)
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "ProductRepository.updateProduct")
             Result.failure(e)
         }
     }
@@ -209,6 +212,7 @@ class ProductRepository(
             productDao.deleteById(productId)
             Result.success(Unit)
         } catch (e: Exception) {
+            ErrorTracking.captureException(e, "ProductRepository.deleteProduct")
             Result.failure(e)
         }
     }
