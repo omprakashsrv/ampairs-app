@@ -20,9 +20,11 @@ import io.github.vinceglb.filekit.readBytes
 import io.github.vinceglb.filekit.size
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+import com.ampairs.auth.db.UserRepository
 
 class UserUpdateViewModel(
-    private val authApi: AuthApi
+    private val authApi: AuthApi,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     companion object {
@@ -158,10 +160,17 @@ class UserUpdateViewModel(
 
         viewModelScope.launch {
             uploadPictureState = UiState.Loading(null)
-            authApi.uploadProfilePicture(imageData, fileName, contentType).onSuccess {
-                uploadPictureState = UiState.Success(this)
+            val response = authApi.uploadProfilePicture(imageData, fileName, contentType)
+
+            if (response.data != null) {
+                val updatedUser = response.data!!
+                // Save updated user (with new profile picture) to local database
+                userRepository.saveUser(updatedUser)
+                println("UserUpdateViewModel: ✅ Saved user with new profile picture to local database")
+
+                uploadPictureState = UiState.Success(updatedUser)
                 // Use API endpoint URL for profile picture, not the raw storage path
-                this@UserUpdateViewModel.profilePictureUrl = if (!this.profilePictureUrl.isNullOrBlank()) {
+                this@UserUpdateViewModel.profilePictureUrl = if (!updatedUser.profilePictureUrl.isNullOrBlank()) {
                     // Add random param to bust cache after upload
                     "${ApiUrlBuilder.currentUserPictureUrl()}?t=${Random.nextLong()}"
                 } else {
@@ -170,9 +179,10 @@ class UserUpdateViewModel(
                 clearSelectedImage()
                 displayMessage = "Profile picture updated successfully"
                 onSuccess()
-            }.onError {
-                uploadPictureState = UiState.Error(this.message.ifEmpty { "Failed to upload profile picture" })
-                displayMessage = this.message.ifEmpty { "Failed to upload profile picture" }
+            } else {
+                val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to upload profile picture" }
+                uploadPictureState = UiState.Error(errorMessage)
+                displayMessage = errorMessage
             }
         }
     }
@@ -189,13 +199,21 @@ class UserUpdateViewModel(
                 firstName = firstName.trim(),
                 lastName = lastName.trim()
             )
-            authApi.updateUser(request).onSuccess {
-                updateUserState = UiState.Success(this)
+            val response = authApi.updateUser(request)
+
+            if (response.data != null) {
+                val updatedUser = response.data!!
+                // Save updated user to local database
+                userRepository.saveUser(updatedUser)
+                println("UserUpdateViewModel: ✅ Saved updated user to local database: ${updatedUser.firstName} ${updatedUser.lastName}")
+
+                updateUserState = UiState.Success(updatedUser)
                 displayMessage = "Profile updated successfully"
                 onSuccess()
-            }.onError {
-                updateUserState = UiState.Error(this.message.ifEmpty { "Failed to update user details" })
-                displayMessage = this.message.ifEmpty { "Failed to update user details" }
+            } else {
+                val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to update user details" }
+                updateUserState = UiState.Error(errorMessage)
+                displayMessage = errorMessage
             }
         }
     }

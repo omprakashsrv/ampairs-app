@@ -37,6 +37,8 @@ import com.ampairs.common.config.DataStoreManager
 import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.state.AppHeaderStateManager
+import com.ampairs.workspace.domain.WorkspaceList
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.compose.koinInject
 
@@ -338,6 +340,22 @@ fun WorkspaceListScreen(
                                         // Set workspace context for both business logic and database
                                         WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
                                         println("WorkspaceListScreen: ✅ Workspace context updated to: ${workspace.slug}")
+
+                                        // Update AppHeaderStateManager with selected workspace
+                                        val workspaceList = WorkspaceList(
+                                            id = workspace.id,
+                                            name = workspace.name,
+                                            slug = workspace.slug,
+                                            description = workspace.description,
+                                            workspaceType = workspace.workspaceType,
+                                            avatarUrl = workspace.avatarUrl,
+                                            subscriptionPlan = workspace.subscriptionPlan,
+                                            memberCount = workspace.memberCount ?: 1,
+                                            lastActivityAt = workspace.lastActivityAt,
+                                            createdAt = workspace.createdAt
+                                        )
+                                        AppHeaderStateManager.instance.updateWorkspace(workspaceList)
+                                        println("WorkspaceListScreen: ✅ Header state updated with workspace: ${workspace.name}")
 
                                         // Save last workspace ID for auto-resume on app relaunch
                                         coroutineScope.launch {
