@@ -2,9 +2,11 @@ package com.ampairs.workspace.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
+import com.ampairs.common.postMultiPart
 import com.ampairs.common.put
 import com.ampairs.common.model.Response
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
@@ -12,6 +14,10 @@ import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.api.model.WorkspaceApiModel
 import com.ampairs.workspace.api.model.PagedWorkspaceResponse
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.content.PartData
+import io.ktor.utils.io.ByteReadChannel
 
 class WorkspaceApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRepository) :
     WorkspaceApi {
@@ -66,5 +72,28 @@ class WorkspaceApiImpl(engine: HttpClientEngine, private val tokenRepository: To
 
     override suspend fun getMyRole(workspaceId: String): Response<Map<String, Any>> {
         return get(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/my-role"))
+    }
+
+    override suspend fun uploadAvatar(
+        workspaceId: String,
+        imageData: ByteArray,
+        fileName: String,
+        contentType: String
+    ): Response<WorkspaceApiModel> {
+        val parts = listOf(
+            PartData.FileItem(
+                provider = { ByteReadChannel(imageData) },
+                dispose = {},
+                partHeaders = Headers.build {
+                    append(HttpHeaders.ContentType, contentType)
+                    append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$fileName\"")
+                }
+            )
+        )
+        return postMultiPart(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/avatar"), parts)
+    }
+
+    override suspend fun deleteAvatar(workspaceId: String): Response<WorkspaceApiModel> {
+        return delete(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/avatar"))
     }
 }

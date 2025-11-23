@@ -172,6 +172,7 @@ fun GlobalAppLayout(
             navController = navController,
             currentWorkspaceName = if (isWorkspaceSelection) null else headerState.currentWorkspace?.name,
             currentWorkspaceId = if (isWorkspaceSelection) null else headerState.currentWorkspace?.id,
+            workspaceAvatarUrl = if (isWorkspaceSelection) null else headerState.currentWorkspace?.avatarUrl,
             userFullName = "${headerState.currentUser?.firstName ?: ""} ${headerState.currentUser?.lastName ?: ""}".trim()
                 .ifEmpty { "User" },
             profilePictureThumbnailUrl = headerState.currentUser?.profilePictureThumbnailUrl,

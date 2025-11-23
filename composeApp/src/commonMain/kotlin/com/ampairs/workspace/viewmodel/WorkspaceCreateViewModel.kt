@@ -3,20 +3,35 @@ package com.ampairs.workspace.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.ui.WorkspaceCreateState
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.name
+import io.github.vinceglb.filekit.readBytes
+import io.github.vinceglb.filekit.size
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class WorkspaceCreateViewModel(
     private val workspaceRepository: WorkspaceRepository,
+    private val workspaceApi: WorkspaceApi,
 ) : ViewModel() {
+
+    companion object {
+        private val SUPPORTED_IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "webp")
+        private const val MAX_FILE_SIZE = 5 * 1024 * 1024L // 5MB for avatars
+    }
 
     private val _state = MutableStateFlow(WorkspaceCreateState())
     val state: StateFlow<WorkspaceCreateState> = _state.asStateFlow()
@@ -399,4 +414,166 @@ class WorkspaceCreateViewModel(
 
     val isDeleteConfirmationValid: Boolean
         get() = _state.value.deleteConfirmationSlug == _state.value.slug
+
+    // Avatar upload functionality
+
+    fun pickAvatar() {
+        viewModelScope.launch {
+            try {
+                val file = FileKit.openFilePicker(
+                    type = FileKitType.Image
+                )
+
+                if (file == null) {
+                    return@launch
+                }
+
+                val fileName = file.name
+                val fileSize = file.size()
+
+                // Validate file extension
+                val extension = fileName.substringAfterLast(".", "").lowercase()
+                if (extension !in SUPPORTED_IMAGE_EXTENSIONS) {
+                    _state.value = _state.value.copy(
+                        avatarMessage = "Unsupported file type. Please select JPG, PNG, or WebP."
+                    )
+                    return@launch
+                }
+
+                // Validate file size
+                if (fileSize > MAX_FILE_SIZE) {
+                    _state.value = _state.value.copy(
+                        avatarMessage = "Image too large. Maximum size is 5MB."
+                    )
+                    return@launch
+                }
+
+                // Determine content type
+                val contentType = when (extension) {
+                    "jpg", "jpeg" -> "image/jpeg"
+                    "png" -> "image/png"
+                    "webp" -> "image/webp"
+                    else -> "image/*"
+                }
+
+                // Read file data
+                val imageData = file.readBytes()
+
+                _state.value = _state.value.copy(
+                    selectedAvatarData = imageData,
+                    selectedAvatarFileName = fileName,
+                    selectedAvatarContentType = contentType,
+                    avatarMessage = null
+                )
+
+                println("Workspace avatar selected: $fileName ($fileSize bytes)")
+            } catch (e: Exception) {
+                println("Error picking workspace avatar: ${e.message}")
+                _state.value = _state.value.copy(
+                    avatarMessage = "Failed to select image"
+                )
+            }
+        }
+    }
+
+    fun clearSelectedAvatar() {
+        _state.value = _state.value.copy(
+            selectedAvatarData = null,
+            selectedAvatarFileName = null,
+            selectedAvatarContentType = null
+        )
+    }
+
+    fun uploadAvatar() {
+        val workspaceId = _state.value.workspaceId
+        if (workspaceId == null) {
+            _state.value = _state.value.copy(avatarMessage = "Workspace must be created first before uploading avatar")
+            return
+        }
+
+        val imageData = _state.value.selectedAvatarData
+        val fileName = _state.value.selectedAvatarFileName
+        val contentType = _state.value.selectedAvatarContentType
+
+        if (imageData == null || fileName == null || contentType == null) {
+            _state.value = _state.value.copy(avatarMessage = "No image selected")
+            return
+        }
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isUploadingAvatar = true,
+                avatarUploadError = null
+            )
+
+            val response = workspaceApi.uploadAvatar(workspaceId, imageData, fileName, contentType)
+
+            if (response.data != null) {
+                val updatedWorkspace = response.data!!
+                // Update local avatar URL with cache-busting parameter
+                val newAvatarUrl = if (!updatedWorkspace.avatarUrl.isNullOrBlank()) {
+                    "${ApiUrlBuilder.workspaceAvatarUrl(workspaceId)}?t=${Random.nextLong()}"
+                } else {
+                    null
+                }
+
+                _state.value = _state.value.copy(
+                    avatarUrl = newAvatarUrl,
+                    selectedAvatarData = null,
+                    selectedAvatarFileName = null,
+                    selectedAvatarContentType = null,
+                    isUploadingAvatar = false,
+                    avatarMessage = "Avatar updated successfully"
+                )
+                println("WorkspaceCreateViewModel: ✅ Avatar uploaded successfully")
+            } else {
+                val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to upload avatar" }
+                _state.value = _state.value.copy(
+                    isUploadingAvatar = false,
+                    avatarUploadError = errorMessage,
+                    avatarMessage = errorMessage
+                )
+            }
+        }
+    }
+
+    fun deleteAvatar() {
+        val workspaceId = _state.value.workspaceId
+        if (workspaceId == null) {
+            _state.value = _state.value.copy(avatarMessage = "No workspace ID")
+            return
+        }
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isUploadingAvatar = true,
+                avatarUploadError = null
+            )
+
+            val response = workspaceApi.deleteAvatar(workspaceId)
+
+            if (response.data != null) {
+                _state.value = _state.value.copy(
+                    avatarUrl = null,
+                    isUploadingAvatar = false,
+                    avatarMessage = "Avatar removed successfully"
+                )
+                println("WorkspaceCreateViewModel: ✅ Avatar deleted successfully")
+            } else {
+                val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to delete avatar" }
+                _state.value = _state.value.copy(
+                    isUploadingAvatar = false,
+                    avatarUploadError = errorMessage,
+                    avatarMessage = errorMessage
+                )
+            }
+        }
+    }
+
+    fun clearAvatarMessage() {
+        _state.value = _state.value.copy(avatarMessage = null)
+    }
+
+    val hasSelectedAvatar: Boolean
+        get() = _state.value.selectedAvatarData != null
 }

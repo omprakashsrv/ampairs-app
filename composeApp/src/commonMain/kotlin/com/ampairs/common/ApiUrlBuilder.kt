@@ -29,6 +29,20 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build URL for workspace avatar
+     */
+    fun workspaceAvatarUrl(workspaceId: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/workspace/v1/$workspaceId/avatar"
+    }
+
+    /**
+     * Build URL for workspace avatar thumbnail
+     */
+    fun workspaceAvatarThumbnailUrl(workspaceId: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/workspace/v1/$workspaceId/avatar/thumbnail"
+    }
+
+    /**
      * Build complete API URL for user endpoints
      */
     fun userUrl(path: String): String {

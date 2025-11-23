@@ -38,6 +38,7 @@ fun AppHeader(
     navController: NavController,
     currentWorkspaceName: String?,
     currentWorkspaceId: String?,
+    workspaceAvatarUrl: String? = null,
     userFullName: String,
     profilePictureThumbnailUrl: String? = null,
     isUserLoading: Boolean = false,
@@ -122,6 +123,7 @@ fun AppHeader(
                 navController = navController,
                 workspaceName = currentWorkspaceName,
                 workspaceId = currentWorkspaceId,
+                workspaceAvatarUrl = workspaceAvatarUrl,
                 isLoading = isWorkspaceLoading,
                 onWorkspaceClick = onWorkspaceClick,
                 modifier = Modifier.widthIn(min = 120.dp, max = 200.dp)
@@ -149,6 +151,7 @@ private fun WorkspaceSelector(
     navController: NavController,
     workspaceName: String?,
     workspaceId: String?,
+    workspaceAvatarUrl: String?,
     isLoading: Boolean,
     onWorkspaceClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -168,12 +171,32 @@ private fun WorkspaceSelector(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Default.Business,
-                    contentDescription = "Workspace",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
+                // Workspace avatar or default icon
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!workspaceAvatarUrl.isNullOrBlank() && workspaceId != null) {
+                        AsyncImage(
+                            model = com.ampairs.common.ApiUrlBuilder.workspaceAvatarThumbnailUrl(workspaceId),
+                            contentDescription = "Workspace avatar",
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Business,
+                            contentDescription = "Workspace",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
