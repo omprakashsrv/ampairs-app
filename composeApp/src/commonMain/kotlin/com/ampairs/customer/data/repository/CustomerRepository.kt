@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.time.ExperimentalTime
+import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_UID_REQUIRED
 import com.ampairs.customer.util.CustomerLogger
 
@@ -188,6 +189,7 @@ class CustomerRepository(
         } catch (e: Exception) {
             // If server sync fails, customer is already saved locally as unsynced
             // It will be synced later via syncCustomers()
+            ErrorTracking.captureException(e, "CustomerRepository.createCustomer")
             return Result.success(customer)
         }
     }
@@ -209,28 +211,36 @@ class CustomerRepository(
         } catch (e: Exception) {
             // If server sync fails, customer is already updated locally as unsynced
             // It will be synced later via syncCustomers()
+            ErrorTracking.captureException(e, "CustomerRepository.updateCustomer")
             return Result.success(customer)
         }
     }
 
     suspend fun deleteCustomer(customerId: String): Result<Unit> {
-        // Offline-first: Mark as deleted locally first
+        // Offline-first: Mark as deleted locally first (BEFORE any network call)
         val customer = customerDao.getCustomerById(customerId)
         if (customer != null) {
             val deletedEntity = customer.copy(active = false, synced = false)
             customerDao.insertCustomer(deletedEntity) // Use insert with REPLACE strategy
+            CustomerLogger.info("✅ Customer marked as deleted locally: $customerId (synced=false)")
+        } else {
+            CustomerLogger.warn("⚠️ Customer not found in local database: $customerId")
         }
 
-        // Try to delete on server in background
+        // Try to delete on server in background (non-blocking for UI)
         try {
             customerApi.deleteCustomer(customerId)
             // If server delete succeeds, remove from local database completely
             customerDao.deleteCustomer(customerId)
+            CustomerLogger.info("✅ Customer deleted from server and removed locally: $customerId")
         } catch (e: Exception) {
-            // If server delete fails, customer remains marked as deleted locally
+            // If server delete fails (405, network error, etc.), customer remains marked as deleted locally
             // It will be synced later via syncCustomers()
+            CustomerLogger.warn("⚠️ Server delete failed for $customerId: ${e.message}. Will retry during sync.")
+            ErrorTracking.captureException(e, "CustomerRepository.deleteCustomer")
         }
 
+        // Always return success since local deletion is complete
         return Result.success(Unit)
     }
 
@@ -245,10 +255,26 @@ class CustomerRepository(
                 try {
                     if (!entity.active) {
                         // Handle deleted customers
-                        customerApi.deleteCustomer(customer.uid)
-                        // Remove from local database completely after successful server delete
-                        customerDao.deleteCustomer(customer.uid)
-                        syncedCount++
+                        try {
+                            customerApi.deleteCustomer(customer.uid)
+                            // Remove from local database completely after successful server delete
+                            customerDao.deleteCustomer(customer.uid)
+                            CustomerLogger.info("✅ Synced deletion for customer: ${customer.uid}")
+                            syncedCount++
+                        } catch (deleteError: Exception) {
+                            // If delete fails with 404/405, customer doesn't exist on server or delete not supported
+                            // Safe to remove locally since the goal is to delete
+                            val errorMessage = deleteError.message ?: ""
+                            if (errorMessage.contains("404") || errorMessage.contains("405") || errorMessage.contains("Not Found")) {
+                                CustomerLogger.info("⚠️ Customer ${customer.uid} not found on server or delete not supported - removing locally")
+                                customerDao.deleteCustomer(customer.uid)
+                                syncedCount++
+                            } else {
+                                // Other errors - keep for retry
+                                CustomerLogger.warn("⚠️ Delete sync failed for ${customer.uid}: ${deleteError.message}")
+                                throw deleteError
+                            }
+                        }
                     } else {
                         // Handle created/updated customers
                         val serverCustomer = try {
@@ -266,6 +292,7 @@ class CustomerRepository(
                 } catch (syncError: Exception) {
                     // Continue with other customers if one fails
                     // Failed customer remains unsynced for next attempt
+                    ErrorTracking.captureException(syncError, "CustomerRepository.syncCustomers")
                     continue
                 }
             }

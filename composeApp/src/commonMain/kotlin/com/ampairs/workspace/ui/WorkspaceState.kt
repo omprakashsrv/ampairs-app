@@ -39,6 +39,14 @@ data class WorkspaceCreateState(
     val createdWorkspaceId: String? = null,
     val isLoadingWorkspace: Boolean = false, // For loading workspace data in edit mode
 
+    // Avatar upload state
+    val selectedAvatarData: ByteArray? = null,
+    val selectedAvatarFileName: String? = null,
+    val selectedAvatarContentType: String? = null,
+    val isUploadingAvatar: Boolean = false,
+    val avatarUploadError: String? = null,
+    val avatarMessage: String? = null,
+
     // Delete/Archive functionality
     val showDeleteDialog: Boolean = false,
     val deleteConfirmationSlug: String = "",

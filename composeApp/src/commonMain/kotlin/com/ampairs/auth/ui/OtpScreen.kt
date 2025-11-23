@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -42,20 +41,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ampairs.auth.domain.AuthMethod
 import com.ampairs.auth.viewmodel.LoginViewModel
-import com.ampairs.ui.components.Otp
+import com.ampairs.common.components.Otp
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.ampairs.auth.domain.PhoneVerificationState
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.*
+import androidx.compose.material.icons.automirrored.filled.Message
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.ampairs.common.localization.localizedString
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -114,22 +112,29 @@ fun OtpScreen(
             is PhoneVerificationState.VerificationCompleted -> {
                 // Auto-verification succeeded
                 if (viewModel.authMethod == AuthMethod.FIREBASE) {
-                    val completedState = verificationState as PhoneVerificationState.VerificationCompleted
+                    val completedState =
+                        verificationState as PhoneVerificationState.VerificationCompleted
                     println("OtpScreen: ✅ Auto-verification succeeded, proceeding with authentication")
                     waitingForAutoVerification = false
                     // completedState.userId contains the Firebase JWT ID token for backend verification
-                    viewModel.completeFirebaseAuthenticationWithToken(completedState.userId, onAuthSuccess)
+                    viewModel.completeFirebaseAuthenticationWithToken(
+                        completedState.userId,
+                        onAuthSuccess
+                    )
                 }
             }
+
             is PhoneVerificationState.VerificationFailed -> {
                 // Auto-verification failed, show manual OTP input
                 println("OtpScreen: ❌ Auto-verification failed, showing manual OTP input")
                 waitingForAutoVerification = false
             }
+
             is PhoneVerificationState.CodeSent -> {
                 // Code sent, continue waiting for auto-verification
                 println("OtpScreen: 📨 Code sent, waiting for auto-verification...")
             }
+
             PhoneVerificationState.Idle -> {
                 // Idle state
             }
@@ -163,7 +168,8 @@ fun OtpScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top section - Header and instructions
             Column(
@@ -184,7 +190,7 @@ fun OtpScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Message,
+                        imageVector = Icons.AutoMirrored.Filled.Message,
                         contentDescription = "Verification",
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(40.dp)
@@ -225,37 +231,37 @@ fun OtpScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (waitingForAutoVerification) {
-                            // Show waiting for auto-verification UI
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(48.dp),
-                                    strokeWidth = 4.dp
-                                )
-                                Text(
-                                    text = localizedString(Res.string.otp_waiting_for_auto_verification),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    textAlign = TextAlign.Center
-                                )
-                                Text(
-                                    text = localizedString(Res.string.otp_auto_verification_desc),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                OutlinedButton(
-                                    onClick = {
-                                        println("OtpScreen: 👆 User chose to enter code manually")
-                                        waitingForAutoVerification = false
-                                    }
-                                ) {
-                                    Text(localizedString(Res.string.otp_enter_manually))
-                                }
+                    // Show waiting for auto-verification UI
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            strokeWidth = 4.dp
+                        )
+                        Text(
+                            text = localizedString(Res.string.otp_waiting_for_auto_verification),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = localizedString(Res.string.otp_auto_verification_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                println("OtpScreen: 👆 User chose to enter code manually")
+                                waitingForAutoVerification = false
                             }
+                        ) {
+                            Text(localizedString(Res.string.otp_enter_manually))
+                        }
+                    }
                 } else {
                     // Show manual OTP input
                     Column(
@@ -324,26 +330,31 @@ fun OtpScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                        Button(
-                            onClick = {
-                                when (viewModel.authMethod) {
-                                    AuthMethod.BACKEND_API -> viewModel.completeAuthentication(onAuthSuccess)
-                                    AuthMethod.FIREBASE -> viewModel.completeFirebaseAuthentication(onAuthSuccess)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = viewModel.validPhoneNumber && !viewModel.loading
-                        ) {
-                            if (viewModel.loading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier
-                                        .progressSemantics()
-                                        .size(24.dp)
+                    Button(
+                        onClick = {
+                            when (viewModel.authMethod) {
+                                AuthMethod.BACKEND_API -> viewModel.completeAuthentication(
+                                    onAuthSuccess
                                 )
-                            } else {
-                                Text(localizedString(Res.string.otp_verify))
+
+                                AuthMethod.FIREBASE -> viewModel.completeFirebaseAuthentication(
+                                    onAuthSuccess
+                                )
                             }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = viewModel.validPhoneNumber && !viewModel.loading
+                    ) {
+                        if (viewModel.loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .progressSemantics()
+                                    .size(24.dp)
+                            )
+                        } else {
+                            Text(localizedString(Res.string.otp_verify))
                         }
+                    }
 
                     OutlinedButton(
                         onClick = {
@@ -356,6 +367,7 @@ fun OtpScreen(
                                         canResend = false
                                     }
                                 }
+
                                 AuthMethod.FIREBASE -> {
                                     viewModel.resendFirebaseOtp { verificationId ->
                                         viewModel.firebaseVerificationId = verificationId

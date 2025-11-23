@@ -42,6 +42,11 @@ class UserSelectionViewModel(
                     val workspaceId = userWorkspaceRepository.getWorkspaceIdForUser(userId)
                     
                     if (user != null) {
+                        // NOTE: Profile picture URLs are NOT provided here because:
+                        // 1. On User Selection screen, no user is currently logged in
+                        // 2. Profile picture API endpoints require authentication
+                        // 3. We can't make authenticated requests without a current user
+                        // Profile pictures will show as initials on this screen
                         userInfoList.add(
                             UserInfo(
                                 id = user.id,
@@ -50,6 +55,8 @@ class UserSelectionViewModel(
                                 userName = user.user_name,
                                 countryCode = user.country_code,
                                 phone = user.phone,
+                                profilePictureUrl = null, // Not available without auth
+                                profilePictureThumbnailUrl = null, // Not available without auth
                                 isAuthenticated = isAuthenticated,
                                 hasSelectedWorkspace = workspaceId.isNotBlank()
                             )

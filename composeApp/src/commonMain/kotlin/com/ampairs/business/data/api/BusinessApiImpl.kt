@@ -7,8 +7,14 @@ import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
+import com.ampairs.common.postMultiPart
 import com.ampairs.common.put
+import com.ampairs.common.delete
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.content.PartData
+import io.ktor.utils.io.ByteReadChannel
 
 /**
  * Implementation of BusinessApi using Ktor HTTP client (simplified).
@@ -91,6 +97,209 @@ class BusinessApiImpl(
                 error != null -> Result.failure(Exception(error.message))
                 else -> Result.failure(IllegalStateException("Failed to check business existence"))
             }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Logo Endpoints ====================
+
+    override suspend fun uploadLogo(
+        imageData: ByteArray,
+        fileName: String,
+        contentType: String
+    ): Result<Business> {
+        return try {
+            val parts = listOf(
+                PartData.FileItem(
+                    provider = { ByteReadChannel(imageData) },
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentType, contentType)
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$fileName\"")
+                    }
+                )
+            )
+            val response: Response<Business> = postMultiPart(
+                client,
+                ApiUrlBuilder.businessUrl("logo"),
+                parts
+            )
+            handleResponse(response, "Failed to upload logo")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteLogo(): Result<Business> {
+        return try {
+            val response: Response<Business> = delete(
+                client,
+                ApiUrlBuilder.businessUrl("logo")
+            )
+            handleResponse(response, "Failed to delete logo")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Gallery Image Endpoints ====================
+
+    override suspend fun uploadImage(
+        imageData: ByteArray,
+        fileName: String,
+        contentType: String,
+        imageType: BusinessImageType,
+        title: String?,
+        description: String?,
+        altText: String?,
+        isPrimary: Boolean
+    ): Result<BusinessImage> {
+        return try {
+            val parts = mutableListOf<PartData>(
+                PartData.FileItem(
+                    provider = { ByteReadChannel(imageData) },
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentType, contentType)
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$fileName\"")
+                    }
+                ),
+                PartData.FormItem(
+                    value = imageType.name,
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"image_type\"")
+                    }
+                ),
+                PartData.FormItem(
+                    value = isPrimary.toString(),
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"is_primary\"")
+                    }
+                )
+            )
+
+            title?.let {
+                parts.add(PartData.FormItem(
+                    value = it,
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"title\"")
+                    }
+                ))
+            }
+
+            description?.let {
+                parts.add(PartData.FormItem(
+                    value = it,
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"description\"")
+                    }
+                ))
+            }
+
+            altText?.let {
+                parts.add(PartData.FormItem(
+                    value = it,
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"alt_text\"")
+                    }
+                ))
+            }
+
+            val response: Response<BusinessImage> = postMultiPart(
+                client,
+                ApiUrlBuilder.businessUrl("images"),
+                parts
+            )
+            handleResponse(response, "Failed to upload image")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getImages(imageType: BusinessImageType?): Result<List<BusinessImage>> {
+        return try {
+            val params = imageType?.let { mapOf("image_type" to it.name) } ?: emptyMap()
+            val response: Response<List<BusinessImage>> = get(
+                client,
+                ApiUrlBuilder.businessUrl("images"),
+                params
+            )
+            handleResponse(response, "Failed to fetch images")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getImageDetails(imageUid: String): Result<BusinessImage> {
+        return try {
+            val response: Response<BusinessImage> = get(
+                client,
+                ApiUrlBuilder.businessUrl("images/$imageUid")
+            )
+            handleResponse(response, "Failed to fetch image details")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateImage(imageUid: String, request: UpdateBusinessImageRequest): Result<BusinessImage> {
+        return try {
+            val response: Response<BusinessImage> = put(
+                client,
+                ApiUrlBuilder.businessUrl("images/$imageUid"),
+                request
+            )
+            handleResponse(response, "Failed to update image")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun setImageAsPrimary(imageUid: String): Result<BusinessImage> {
+        return try {
+            val response: Response<BusinessImage> = post(
+                client,
+                ApiUrlBuilder.businessUrl("images/$imageUid/set-primary"),
+                null
+            )
+            handleResponse(response, "Failed to set image as primary")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun reorderImages(imageUids: List<String>): Result<Unit> {
+        return try {
+            val response: Response<String> = post(
+                client,
+                ApiUrlBuilder.businessUrl("images/reorder"),
+                ReorderImagesRequest(imageUids)
+            )
+            response.error?.let { error ->
+                return Result.failure(Exception(error.message))
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteImage(imageUid: String): Result<Unit> {
+        return try {
+            val response: Response<String> = delete(
+                client,
+                ApiUrlBuilder.businessUrl("images/$imageUid")
+            )
+            response.error?.let { error ->
+                return Result.failure(Exception(error.message))
+            }
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

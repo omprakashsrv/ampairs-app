@@ -24,10 +24,13 @@ import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
+import coil3.compose.AsyncImage
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
@@ -37,6 +40,8 @@ import com.ampairs.common.config.DataStoreManager
 import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.state.AppHeaderStateManager
+import com.ampairs.workspace.domain.WorkspaceList
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.compose.koinInject
 
@@ -339,6 +344,22 @@ fun WorkspaceListScreen(
                                         WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
                                         println("WorkspaceListScreen: ✅ Workspace context updated to: ${workspace.slug}")
 
+                                        // Update AppHeaderStateManager with selected workspace
+                                        val workspaceList = WorkspaceList(
+                                            id = workspace.id,
+                                            name = workspace.name,
+                                            slug = workspace.slug,
+                                            description = workspace.description,
+                                            workspaceType = workspace.workspaceType,
+                                            avatarUrl = workspace.avatarUrl,
+                                            subscriptionPlan = workspace.subscriptionPlan,
+                                            memberCount = workspace.memberCount ?: 1,
+                                            lastActivityAt = workspace.lastActivityAt,
+                                            createdAt = workspace.createdAt
+                                        )
+                                        AppHeaderStateManager.instance.updateWorkspace(workspaceList)
+                                        println("WorkspaceListScreen: ✅ Header state updated with workspace: ${workspace.name}")
+
                                         // Save last workspace ID for auto-resume on app relaunch
                                         coroutineScope.launch {
                                             appPreferences.setLastWorkspaceId(workspace.id)
@@ -407,22 +428,27 @@ private fun WorkspaceCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
-                if (workspace.avatarUrl.isNullOrEmpty()) {
-                    Text(
-                        text = workspace.name.take(2).uppercase(),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                if (!workspace.avatarUrl.isNullOrEmpty()) {
+                    // Load avatar image from server
+                    val avatarUrl = ApiUrlBuilder.workspaceAvatarThumbnailUrl(workspace.id)
+                    AsyncImage(
+                        model = avatarUrl,
+                        contentDescription = "Workspace avatar",
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
                 } else {
-                    // TODO: Load avatar image
-                    Icon(
-                        Icons.Default.Business,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary
+                    // Show initials
+                    Text(
+                        text = workspace.name.take(2).uppercase(),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }

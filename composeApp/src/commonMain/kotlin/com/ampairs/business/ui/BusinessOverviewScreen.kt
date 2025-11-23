@@ -1,10 +1,15 @@
 package com.ampairs.business.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
@@ -14,7 +19,10 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.form.domain.EntityType
 import kotlinx.coroutines.flow.first
@@ -32,6 +40,7 @@ fun BusinessOverviewScreen(
     onNavigateToTax: () -> Unit = {},
     onNavigateToCustomAttributes: () -> Unit = {},
     onNavigateToFormConfig: () -> Unit = {},
+    onNavigateToImages: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: BusinessOverviewViewModel = koinInject(),
     configRepository: ConfigRepository = koinInject()
@@ -71,6 +80,7 @@ fun BusinessOverviewScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -159,19 +169,42 @@ fun BusinessOverviewScreen(
 
                     // Business Info Card
                     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(overview.name, style = MaterialTheme.typography.headlineSmall)
-                            Text("Type: ${overview.businessType}", style = MaterialTheme.typography.bodyMedium)
-                            if (overview.email != null) {
-                                Text("Email: ${overview.email}", style = MaterialTheme.typography.bodyMedium)
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // Business details on the left
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(overview.name, style = MaterialTheme.typography.headlineSmall)
+                                Text("Type: ${overview.businessType}", style = MaterialTheme.typography.bodyMedium)
+                                if (overview.email != null) {
+                                    Text("Email: ${overview.email}", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                if (overview.phone != null) {
+                                    Text("Phone: ${overview.phone}", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                if (overview.address.isNotBlank()) {
+                                    Text("Address: ${overview.address}", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                Text("Currency: ${overview.currency} | Timezone: ${overview.timezone}", style = MaterialTheme.typography.bodySmall)
                             }
-                            if (overview.phone != null) {
-                                Text("Phone: ${overview.phone}", style = MaterialTheme.typography.bodyMedium)
+
+                            // Logo on the right (if available)
+                            if (uiState.logoThumbnailUrl != null) {
+                                val logoUrl = "${uiState.logoThumbnailUrl}?v=${uiState.logoCacheBuster}"
+                                AsyncImage(
+                                    model = logoUrl,
+                                    contentDescription = "Business Logo",
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentScale = ContentScale.Crop
+                                )
                             }
-                            if (overview.address.isNotBlank()) {
-                                Text("Address: ${overview.address}", style = MaterialTheme.typography.bodyMedium)
-                            }
-                            Text("Currency: ${overview.currency} | Timezone: ${overview.timezone}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
 
@@ -216,6 +249,20 @@ fun BusinessOverviewScreen(
                             Column {
                                 Text("Tax Configuration", style = MaterialTheme.typography.titleMedium)
                                 Text("GST/VAT and tax compliance", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+
+                    OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToImages) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Column {
+                                Text("Logo & Gallery", style = MaterialTheme.typography.titleMedium)
+                                Text("Business logo and gallery images", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }

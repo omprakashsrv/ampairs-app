@@ -23,6 +23,9 @@ import com.ampairs.auth.ui.OtpScreen
 import com.ampairs.auth.ui.PhoneScreen
 import com.ampairs.auth.ui.UserSelectionScreen
 import com.ampairs.auth.ui.UserUpdateScreen
+import com.ampairs.auth.domain.UserInfo
+import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.state.AppHeaderStateManager
 import org.koin.compose.koinInject
 import getPlatformName
 
@@ -33,12 +36,49 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         composable<AuthRoute.UserSelection> {
             val tokenRepository = koinInject<TokenRepository>()
             val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+            val userRepository = koinInject<UserRepository>()
 
             UserSelectionScreen(
                 onUserSelected = { userId ->
                     // Set the selected user as current and check their state
                     kotlinx.coroutines.runBlocking {
                         tokenRepository.setCurrentUser(userId)
+
+                        // Update AppHeaderStateManager with selected user info
+                        userRepository.getUserById(userId)?.let { userEntity ->
+                            val profilePictureUrl = userEntity.profile_picture_url?.let { url ->
+                                if (url.isNotBlank() && !url.startsWith("http")) {
+                                    ApiUrlBuilder.currentUserPictureUrl()
+                                } else {
+                                    url.takeIf { it.isNotBlank() }
+                                }
+                            }
+                            val profilePictureThumbnailUrl = userEntity.profile_picture_thumbnail_url?.let { url ->
+                                if (url.isNotBlank() && !url.startsWith("http")) {
+                                    ApiUrlBuilder.currentUserPictureThumbnailUrl()
+                                } else {
+                                    url.takeIf { it.isNotBlank() }
+                                }
+                            }
+
+                            val userInfo = UserInfo(
+                                id = userEntity.id,
+                                firstName = userEntity.first_name,
+                                lastName = userEntity.last_name,
+                                userName = userEntity.user_name,
+                                countryCode = userEntity.country_code,
+                                phone = userEntity.phone,
+                                profilePictureUrl = profilePictureUrl,
+                                profilePictureThumbnailUrl = profilePictureThumbnailUrl,
+                                lastLogin = 0L,
+                                loginCount = 0,
+                                isAuthenticated = true,
+                                hasSelectedWorkspace = true
+                            )
+                            AppHeaderStateManager.instance.updateUser(userInfo)
+                            println("AuthNavigation: ✅ Header state updated with user: ${userInfo.firstName} ${userInfo.lastName}")
+                        }
+
                         val hasSelectedWorkspace =
                             userWorkspaceRepository.getWorkspaceIdForUser(userId).isNotBlank()
                         if (hasSelectedWorkspace) {
@@ -218,6 +258,7 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         composable<AuthRoute.UserUpdate> {
             val tokenRepository = koinInject<TokenRepository>()
             val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+            val userRepository = koinInject<UserRepository>()
 
             UserUpdateScreen {
                 kotlinx.coroutines.runBlocking {
@@ -234,6 +275,41 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                                 accessToken = accessToken,
                                 refreshToken = refreshToken
                             )
+
+                            // Update AppHeaderStateManager with updated user info
+                            userRepository.getUserById(currentUserId)?.let { userEntity ->
+                                val profilePictureUrl = userEntity.profile_picture_url?.let { url ->
+                                    if (url.isNotBlank() && !url.startsWith("http")) {
+                                        ApiUrlBuilder.currentUserPictureUrl()
+                                    } else {
+                                        url.takeIf { it.isNotBlank() }
+                                    }
+                                }
+                                val profilePictureThumbnailUrl = userEntity.profile_picture_thumbnail_url?.let { url ->
+                                    if (url.isNotBlank() && !url.startsWith("http")) {
+                                        ApiUrlBuilder.currentUserPictureThumbnailUrl()
+                                    } else {
+                                        url.takeIf { it.isNotBlank() }
+                                    }
+                                }
+
+                                val userInfo = UserInfo(
+                                    id = userEntity.id,
+                                    firstName = userEntity.first_name,
+                                    lastName = userEntity.last_name,
+                                    userName = userEntity.user_name,
+                                    countryCode = userEntity.country_code,
+                                    phone = userEntity.phone,
+                                    profilePictureUrl = profilePictureUrl,
+                                    profilePictureThumbnailUrl = profilePictureThumbnailUrl,
+                                    lastLogin = 0L,
+                                    loginCount = 0,
+                                    isAuthenticated = true,
+                                    hasSelectedWorkspace = true
+                                )
+                                AppHeaderStateManager.instance.updateUser(userInfo)
+                                println("AuthNavigation: ✅ Header state updated after profile update: ${userInfo.firstName} ${userInfo.lastName}")
+                            }
 
                             // After user update, check if workspace is selected
                             val hasSelectedWorkspace =

@@ -57,4 +57,19 @@ interface WorkspaceApi {
      * Get current user's role and permissions in workspace
      */
     suspend fun getMyRole(workspaceId: String): Response<Map<String, Any>>
+
+    /**
+     * Upload workspace avatar
+     */
+    suspend fun uploadAvatar(
+        workspaceId: String,
+        imageData: ByteArray,
+        fileName: String,
+        contentType: String
+    ): Response<WorkspaceApiModel>
+
+    /**
+     * Delete workspace avatar
+     */
+    suspend fun deleteAvatar(workspaceId: String): Response<WorkspaceApiModel>
 }

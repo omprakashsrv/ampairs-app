@@ -16,11 +16,16 @@ import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
+import com.ampairs.common.postMultiPart
 import com.ampairs.common.model.GenericSuccess
 import com.ampairs.common.model.Response
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.content.PartData
+import io.ktor.utils.io.ByteReadChannel
 
 class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRepository) : AuthApi {
 
@@ -64,6 +69,24 @@ class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRe
 
     override suspend fun updateUser(userUpdateRequest: UserUpdateRequest): Response<UserApiModel> {
         return post(client, ApiUrlBuilder.userUrl("v1/update"), userUpdateRequest)
+    }
+
+    override suspend fun uploadProfilePicture(
+        imageData: ByteArray,
+        fileName: String,
+        contentType: String
+    ): Response<UserApiModel> {
+        val parts = listOf(
+            PartData.FileItem(
+                provider = { ByteReadChannel(imageData) },
+                dispose = {},
+                partHeaders = Headers.build {
+                    append(HttpHeaders.ContentType, contentType)
+                    append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$fileName\"")
+                }
+            )
+        )
+        return postMultiPart(client, ApiUrlBuilder.userUrl("v1/upload-picture"), parts)
     }
 
     override suspend fun getDeviceSessions(): Response<List<DeviceSession>> {

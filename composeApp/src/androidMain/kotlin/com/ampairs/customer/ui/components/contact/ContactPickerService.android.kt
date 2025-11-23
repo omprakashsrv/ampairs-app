@@ -103,6 +103,9 @@ actual class ContactPickerService {
     private fun parsePhoneNumber(fullPhone: String): Pair<String, String> {
         val cleaned = fullPhone.replace("[^+\\d]".toRegex(), "")
 
+        // Default country code if we can't extract one
+        val defaultCode = "+91"
+
         return when {
             cleaned.startsWith("+91") && cleaned.length > 3 -> {
                 Pair("+91", cleaned.substring(3))
@@ -110,27 +113,40 @@ actual class ContactPickerService {
             cleaned.startsWith("+") && cleaned.length > 2 -> {
                 // Try to extract country code (1-4 digits after +)
                 val possibleCodes = listOf(
-                    cleaned.substring(0, 4), // +XXX
-                    cleaned.substring(0, 3), // +XX
-                    cleaned.substring(0, 2)  // +X
+                    cleaned.substring(0, minOf(4, cleaned.length)), // +XXX
+                    cleaned.substring(0, minOf(3, cleaned.length)), // +XX
+                    cleaned.substring(0, minOf(2, cleaned.length))  // +X
                 )
-                var code = "+91"
+                var code = defaultCode
                 var number = cleaned
                 for (c in possibleCodes) {
-                    if (cleaned.length > c.length) {
+                    // Validate that the code has at least one digit after +
+                    val codeDigits = c.removePrefix("+")
+                    if (codeDigits.isNotEmpty() && codeDigits.all { it.isDigit() } && cleaned.length > c.length) {
                         code = c
                         number = cleaned.substring(c.length)
                         break
                     }
                 }
-                Pair(code, number)
+                // If code is still invalid (no digits after +), use default
+                val finalCodeDigits = code.removePrefix("+")
+                if (finalCodeDigits.isEmpty() || !finalCodeDigits.all { it.isDigit() }) {
+                    Pair(defaultCode, cleaned.removePrefix("+"))
+                } else {
+                    Pair(code, number)
+                }
             }
             cleaned.length == 10 -> {
                 // Indian mobile number without country code
-                Pair("+91", cleaned)
+                Pair(defaultCode, cleaned)
+            }
+            cleaned.startsWith("0") && cleaned.length == 11 -> {
+                // Indian number with leading 0 (e.g., 09876543210)
+                Pair(defaultCode, cleaned.substring(1))
             }
             else -> {
-                Pair("+91", cleaned)
+                // Default to +91 for any other format
+                Pair(defaultCode, cleaned)
             }
         }
     }

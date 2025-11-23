@@ -1,8 +1,11 @@
 package com.ampairs.event.util
 
+import com.ampairs.common.sentry.ErrorTracking
+import com.ampairs.common.sentry.SentryLevel
+
 /**
  * Simple logger for event module.
- * Can be replaced with more sophisticated logging (e.g., Kermit) later.
+ * Error and warning messages with exceptions are automatically sent to Sentry.
  */
 object EventLogger {
     private const val TAG = "Event"
@@ -19,15 +22,17 @@ object EventLogger {
         println("[$TAG][$component] WARN: $message")
         exception?.let {
             println("[$TAG][$component] Exception: ${it.message}")
-            it.printStackTrace()
-        }
+            // Report exception to Sentry
+            ErrorTracking.captureException(it, "$TAG.$component")
+        } ?: ErrorTracking.captureMessage("[$TAG][$component] $message", SentryLevel.WARNING)
     }
 
     fun e(component: String, message: String, exception: Throwable? = null) {
         println("[$TAG][$component] ERROR: $message")
         exception?.let {
             println("[$TAG][$component] Exception: ${it.message}")
-            it.printStackTrace()
-        }
+            // Report exception to Sentry
+            ErrorTracking.captureException(it, "$TAG.$component")
+        } ?: ErrorTracking.captureMessage("[$TAG][$component] $message", SentryLevel.ERROR)
     }
 }

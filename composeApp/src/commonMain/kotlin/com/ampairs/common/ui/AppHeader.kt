@@ -28,6 +28,8 @@ import com.ampairs.workspace.ui.LanguageSettingsDialog
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.*
 import com.ampairs.common.localization.localizedString
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +38,9 @@ fun AppHeader(
     navController: NavController,
     currentWorkspaceName: String?,
     currentWorkspaceId: String?,
+    workspaceAvatarUrl: String? = null,
     userFullName: String,
+    profilePictureThumbnailUrl: String? = null,
     isUserLoading: Boolean = false,
     isWorkspaceLoading: Boolean = false,
     onWorkspaceClick: () -> Unit,
@@ -119,6 +123,7 @@ fun AppHeader(
                 navController = navController,
                 workspaceName = currentWorkspaceName,
                 workspaceId = currentWorkspaceId,
+                workspaceAvatarUrl = workspaceAvatarUrl,
                 isLoading = isWorkspaceLoading,
                 onWorkspaceClick = onWorkspaceClick,
                 modifier = Modifier.widthIn(min = 120.dp, max = 200.dp)
@@ -131,6 +136,7 @@ fun AppHeader(
             UserProfileMenu(
                 userFullName = userFullName,
                 isLoading = isUserLoading,
+                profilePictureThumbnailUrl = profilePictureThumbnailUrl,
                 onEditProfile = onEditProfile,
                 onLogout = onLogout,
                 onSwitchUser = onSwitchUser,
@@ -145,6 +151,7 @@ private fun WorkspaceSelector(
     navController: NavController,
     workspaceName: String?,
     workspaceId: String?,
+    workspaceAvatarUrl: String?,
     isLoading: Boolean,
     onWorkspaceClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -164,12 +171,32 @@ private fun WorkspaceSelector(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Default.Business,
-                    contentDescription = "Workspace",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
+                // Workspace avatar or default icon
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!workspaceAvatarUrl.isNullOrBlank() && workspaceId != null) {
+                        AsyncImage(
+                            model = com.ampairs.common.ApiUrlBuilder.workspaceAvatarThumbnailUrl(workspaceId),
+                            contentDescription = "Workspace avatar",
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Business,
+                            contentDescription = "Workspace",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
@@ -273,6 +300,7 @@ private fun WorkspaceSelector(
 private fun UserProfileMenu(
     userFullName: String,
     isLoading: Boolean,
+    profilePictureThumbnailUrl: String? = null,
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onSwitchUser: () -> Unit,
@@ -295,7 +323,8 @@ private fun UserProfileMenu(
             UserAvatar(
                 userFullName = userFullName,
                 isLoading = isLoading,
-                size = 36.dp
+                size = 36.dp,
+                profilePictureThumbnailUrl = profilePictureThumbnailUrl
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -431,6 +460,7 @@ private fun UserAvatar(
     userFullName: String,
     isLoading: Boolean,
     size: androidx.compose.ui.unit.Dp,
+    profilePictureThumbnailUrl: String? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -445,6 +475,14 @@ private fun UserAvatar(
                 modifier = Modifier.size(size * 0.6f),
                 strokeWidth = 2.dp,
                 color = MaterialTheme.colorScheme.onPrimary
+            )
+        } else if (!profilePictureThumbnailUrl.isNullOrBlank()) {
+            // Show profile picture if available
+            AsyncImage(
+                model = profilePictureThumbnailUrl,
+                contentDescription = "Profile picture",
+                modifier = Modifier.size(size),
+                contentScale = ContentScale.Crop
             )
         } else {
             val initials = userFullName

@@ -56,6 +56,11 @@ data class Business(
     val active: Boolean = true,
     @SerialName("custom_attributes")
     val customAttributes: Map<String, String>? = null,
+    // Logo fields - returned from server after upload/delete
+    @SerialName("logo_url")
+    val logoUrl: String? = null,
+    @SerialName("logo_thumbnail_url")
+    val logoThumbnailUrl: String? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")

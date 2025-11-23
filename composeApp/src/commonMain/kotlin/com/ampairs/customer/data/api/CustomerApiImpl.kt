@@ -74,10 +74,14 @@ class CustomerApiImpl(
     }
 
     override suspend fun deleteCustomer(customerId: String) {
-        delete<Response<Unit>>(
+        val response = delete<Response<Unit>>(
             client,
             ApiUrlBuilder.customerUrl("v1/$customerId")
         )
+        // Check for error in response and throw if delete failed
+        response.error?.let { error ->
+            throw Exception("Delete failed: ${error.message}")
+        }
     }
 
     override suspend fun getCustomer(customerId: String): Customer? {

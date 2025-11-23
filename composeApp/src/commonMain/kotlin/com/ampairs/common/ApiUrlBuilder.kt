@@ -29,10 +29,52 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build URL for workspace avatar
+     */
+    fun workspaceAvatarUrl(workspaceId: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/workspace/v1/$workspaceId/avatar"
+    }
+
+    /**
+     * Build URL for workspace avatar thumbnail
+     */
+    fun workspaceAvatarThumbnailUrl(workspaceId: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/workspace/v1/$workspaceId/avatar/thumbnail"
+    }
+
+    /**
      * Build complete API URL for user endpoints
      */
     fun userUrl(path: String): String {
         return "${ConfigurationManager.apiBaseUrl}/user/$path"
+    }
+
+    /**
+     * Build URL for current user's profile picture
+     */
+    fun currentUserPictureUrl(): String {
+        return "${ConfigurationManager.apiBaseUrl}/user/v1/picture"
+    }
+
+    /**
+     * Build URL for current user's profile picture thumbnail
+     */
+    fun currentUserPictureThumbnailUrl(): String {
+        return "${ConfigurationManager.apiBaseUrl}/user/v1/picture/thumbnail"
+    }
+
+    /**
+     * Build URL for a specific user's profile picture by user ID
+     */
+    fun userPictureUrl(userId: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/user/v1/$userId/picture"
+    }
+
+    /**
+     * Build URL for a specific user's profile picture thumbnail by user ID
+     */
+    fun userPictureThumbnailUrl(userId: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/user/v1/$userId/picture/thumbnail"
     }
 
     /**
@@ -57,6 +99,38 @@ object ApiUrlBuilder {
         val base = ConfigurationManager.getApiUrl("business")
         val cleanPath = path.removePrefix("/")
         return if (cleanPath.isBlank()) base else "$base/$cleanPath"
+    }
+
+    /**
+     * Build URL for business logo (full size)
+     * GET /api/v1/business/logo
+     */
+    fun businessLogoUrl(): String {
+        return "${ConfigurationManager.getApiUrl("business")}/logo"
+    }
+
+    /**
+     * Build URL for business logo thumbnail (256x256)
+     * GET /api/v1/business/logo/thumbnail
+     */
+    fun businessLogoThumbnailUrl(): String {
+        return "${ConfigurationManager.getApiUrl("business")}/logo/thumbnail"
+    }
+
+    /**
+     * Build URL for business gallery image file (full size)
+     * GET /api/v1/business/images/{imageUid}/file
+     */
+    fun businessImageUrl(imageUid: String): String {
+        return "${ConfigurationManager.getApiUrl("business")}/images/$imageUid/file"
+    }
+
+    /**
+     * Build URL for business gallery image thumbnail (400x400)
+     * GET /api/v1/business/images/{imageUid}/thumbnail
+     */
+    fun businessImageThumbnailUrl(imageUid: String): String {
+        return "${ConfigurationManager.getApiUrl("business")}/images/$imageUid/thumbnail"
     }
 
     /**

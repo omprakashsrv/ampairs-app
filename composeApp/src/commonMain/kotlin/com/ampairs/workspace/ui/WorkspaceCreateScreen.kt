@@ -1,21 +1,35 @@
 package com.ampairs.workspace.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
+import coil3.compose.AsyncImage
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,13 +73,62 @@ fun WorkspaceCreateScreen(
         )
 
         Text(
-            text = if (isEditMode) 
+            text = if (isEditMode)
                 "Update your workspace information. Changes will be saved automatically."
-            else 
+            else
                 "Set up your workspace with basic information. You can always change these settings later.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Avatar Section
+        WorkspaceAvatarSection(
+            avatarUrl = state.avatarUrl,
+            workspaceId = state.workspaceId,
+            workspaceName = state.name,
+            selectedImageData = state.selectedAvatarData,
+            isUploading = state.isUploadingAvatar,
+            isEditMode = isEditMode,
+            onPickAvatar = { viewModel.pickAvatar() },
+            onUploadAvatar = { viewModel.uploadAvatar() },
+            onDeleteAvatar = { viewModel.deleteAvatar() },
+            onClearSelected = { viewModel.clearSelectedAvatar() }
+        )
+
+        // Avatar message/error
+        state.avatarMessage?.let { message ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (state.avatarUploadError != null)
+                        MaterialTheme.colorScheme.errorContainer
+                    else
+                        MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = message,
+                        color = if (state.avatarUploadError != null)
+                            MaterialTheme.colorScheme.onErrorContainer
+                        else
+                            MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    TextButton(
+                        onClick = { viewModel.clearAvatarMessage() }
+                    ) {
+                        Text("Dismiss")
+                    }
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -299,6 +362,222 @@ fun WorkspaceCreateScreen(
             },
             onDismiss = viewModel::hideDeleteDialog
         )
+    }
+}
+
+@Composable
+private fun WorkspaceAvatarSection(
+    avatarUrl: String?,
+    workspaceId: String?,
+    workspaceName: String,
+    selectedImageData: ByteArray?,
+    isUploading: Boolean,
+    isEditMode: Boolean,
+    onPickAvatar: () -> Unit,
+    onUploadAvatar: () -> Unit,
+    onDeleteAvatar: () -> Unit,
+    onClearSelected: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Workspace Avatar",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        )
+
+        // Avatar preview with camera overlay
+        Box(
+            modifier = Modifier.size(120.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Avatar image or placeholder
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        shape = CircleShape
+                    )
+                    .clickable(enabled = !isUploading) { onPickAvatar() },
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    selectedImageData != null -> {
+                        // Show selected image preview using Coil's AsyncImage with ByteArray
+                        AsyncImage(
+                            model = selectedImageData,
+                            contentDescription = "Selected avatar",
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    !avatarUrl.isNullOrBlank() -> {
+                        // Show current avatar from URL
+                        val imageUrl = if (workspaceId != null) {
+                            "${ApiUrlBuilder.workspaceAvatarUrl(workspaceId)}?t=${Random.nextLong()}"
+                        } else {
+                            avatarUrl
+                        }
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = "Workspace avatar",
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    workspaceName.isNotBlank() -> {
+                        // Show initials
+                        val initials = workspaceName.split(" ")
+                            .take(2)
+                            .mapNotNull { it.firstOrNull()?.uppercase() }
+                            .joinToString("")
+                            .ifEmpty { workspaceName.firstOrNull()?.uppercase()?.toString() ?: "W" }
+                        Text(
+                            text = initials,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    else -> {
+                        // Show default icon
+                        Icon(
+                            Icons.Default.Business,
+                            contentDescription = "Default avatar",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Loading overlay
+                if (isUploading) {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            strokeWidth = 3.dp
+                        )
+                    }
+                }
+            }
+
+            // Camera button overlay (bottom right)
+            if (!isUploading) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = (-4).dp, y = (-4).dp)
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable { onPickAvatar() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.CameraAlt,
+                        contentDescription = "Change avatar",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+
+            // Clear selected image button (top right) - only show when there's a selected image
+            if (selectedImageData != null && !isUploading) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-4).dp, y = 4.dp)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .clickable { onClearSelected() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Clear selection",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Action buttons
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Upload button - only show in edit mode when there's a selected image
+            if (isEditMode && selectedImageData != null) {
+                Button(
+                    onClick = onUploadAvatar,
+                    enabled = !isUploading,
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    if (isUploading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text("Upload", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+
+            // Delete button - only show in edit mode when there's an existing avatar
+            if (isEditMode && !avatarUrl.isNullOrBlank() && selectedImageData == null) {
+                OutlinedButton(
+                    onClick = onDeleteAvatar,
+                    enabled = !isUploading,
+                    modifier = Modifier.height(36.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Remove", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+
+        // Help text for new workspace
+        if (!isEditMode) {
+            Text(
+                text = "You can add an avatar after creating the workspace",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
     }
 }
 

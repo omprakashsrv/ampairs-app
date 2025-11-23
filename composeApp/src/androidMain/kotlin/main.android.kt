@@ -8,6 +8,6 @@ fun MainView() {
     // Handle location service requests (permissions and map selection)
     LocationServiceMapHandler()
 
-    // Your content here
+    // Main app content - Material 3 Scaffold handles edge-to-edge automatically
     App({})
 }
