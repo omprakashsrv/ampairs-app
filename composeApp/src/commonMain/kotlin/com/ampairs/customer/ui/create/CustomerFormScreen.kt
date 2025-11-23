@@ -475,8 +475,10 @@ private fun CustomerFormFields(
         }
         if (contactData.phone.isNotBlank() && formState.phone.isBlank()) {
             // Convert country code string ("+91") to integer (91)
-            val countryCodeInt = contactData.countryCode.removePrefix("+").toIntOrNull() ?: 91
-            println("Updating phone - Number: ${contactData.phone}, CountryCode: $countryCodeInt")
+            // Default to 91 (India) if country code is invalid, empty, or 0
+            val parsedCode = contactData.countryCode.removePrefix("+").toIntOrNull()
+            val countryCodeInt = if (parsedCode == null || parsedCode == 0) 91 else parsedCode
+            println("Updating phone - Number: ${contactData.phone}, CountryCode: $countryCodeInt (raw: ${contactData.countryCode})")
             updatedForm = updatedForm.copy(
                 phone = contactData.phone,
                 countryCode = countryCodeInt

@@ -13,7 +13,7 @@ import com.ampairs.auth.db.entity.UserTokenEntity
 
 @Database(
     entities = [UserEntity::class, UserTokenEntity::class, UserSessionEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @ConstructedBy(AuthRoomDatabaseConstructor::class)

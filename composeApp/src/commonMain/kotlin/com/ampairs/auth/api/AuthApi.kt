@@ -28,6 +28,12 @@ interface AuthApi {
 
     suspend fun updateUser(userUpdateRequest: UserUpdateRequest): Response<UserApiModel>
 
+    suspend fun uploadProfilePicture(
+        imageData: ByteArray,
+        fileName: String,
+        contentType: String
+    ): Response<UserApiModel>
+
     suspend fun getDeviceSessions(): Response<List<DeviceSession>>
 
     suspend fun logoutDevice(deviceId: String): Response<GenericSuccess>

@@ -51,8 +51,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.AuthMethod
@@ -126,7 +133,8 @@ fun PhoneScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(24.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top section - Welcome and branding
             Column(
@@ -185,7 +193,8 @@ fun PhoneScreen(
             ) {
                 // Phone input
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Enter your phone number",
@@ -225,7 +234,8 @@ fun PhoneScreen(
 
                 // Feature highlights
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     FeatureItem(
                         icon = Icons.Default.Security,
@@ -291,11 +301,38 @@ fun PhoneScreen(
                     }
                 }
 
-                // Privacy note
+                // Privacy note with clickable links
+                val linkColor = MaterialTheme.colorScheme.primary
+                val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+                val linkStyle = TextLinkStyles(
+                    style = SpanStyle(
+                        color = linkColor,
+                        textDecoration = TextDecoration.Underline
+                    )
+                )
+
+                val annotatedText = buildAnnotatedString {
+                    withStyle(SpanStyle(color = textColor)) {
+                        append("By continuing, you agree to our ")
+                    }
+
+                    withLink(LinkAnnotation.Url("https://www.ampairs.in/terms", linkStyle)) {
+                        append("Terms of Service")
+                    }
+
+                    withStyle(SpanStyle(color = textColor)) {
+                        append(" and ")
+                    }
+
+                    withLink(LinkAnnotation.Url("https://www.ampairs.in/privacy", linkStyle)) {
+                        append("Privacy Policy")
+                    }
+                }
+
                 Text(
-                    text = "By continuing, you agree to our Terms of Service and Privacy Policy",
+                    text = annotatedText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )

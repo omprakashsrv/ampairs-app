@@ -17,6 +17,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.firebase.analytics.AnalyticsEvents
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
@@ -76,6 +77,23 @@ fun GlobalAppLayout(
         try {
             // Load current user
             userRepository.getUser()?.let { userEntity ->
+                // Convert legacy storage paths to API endpoint URLs
+                // If the URL doesn't start with http, it's a raw storage path that needs conversion
+                val profilePictureUrl = userEntity.profile_picture_url?.let { url ->
+                    if (url.isNotBlank() && !url.startsWith("http")) {
+                        ApiUrlBuilder.currentUserPictureUrl()
+                    } else {
+                        url.takeIf { it.isNotBlank() }
+                    }
+                }
+                val profilePictureThumbnailUrl = userEntity.profile_picture_thumbnail_url?.let { url ->
+                    if (url.isNotBlank() && !url.startsWith("http")) {
+                        ApiUrlBuilder.currentUserPictureThumbnailUrl()
+                    } else {
+                        url.takeIf { it.isNotBlank() }
+                    }
+                }
+
                 val userInfo = UserInfo(
                     id = userEntity.id,
                     firstName = userEntity.first_name,
@@ -83,6 +101,8 @@ fun GlobalAppLayout(
                     userName = userEntity.user_name,
                     countryCode = userEntity.country_code,
                     phone = userEntity.phone,
+                    profilePictureUrl = profilePictureUrl,
+                    profilePictureThumbnailUrl = profilePictureThumbnailUrl,
                     lastLogin = 0L,
                     loginCount = 0,
                     isAuthenticated = true,
@@ -154,6 +174,7 @@ fun GlobalAppLayout(
             currentWorkspaceId = if (isWorkspaceSelection) null else headerState.currentWorkspace?.id,
             userFullName = "${headerState.currentUser?.firstName ?: ""} ${headerState.currentUser?.lastName ?: ""}".trim()
                 .ifEmpty { "User" },
+            profilePictureThumbnailUrl = headerState.currentUser?.profilePictureThumbnailUrl,
             isUserLoading = headerState.isUserLoading,
             isWorkspaceLoading = headerState.isWorkspaceLoading,
             onWorkspaceClick = {

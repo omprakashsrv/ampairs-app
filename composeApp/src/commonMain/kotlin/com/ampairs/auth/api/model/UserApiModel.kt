@@ -12,4 +12,6 @@ data class UserApiModel(
     @SerialName("user_name") val userName: String,
     @SerialName("country_code") val countryCode: Int,
     @SerialName("phone") val phone: String,
+    @SerialName("profile_picture_url") val profilePictureUrl: String? = null,
+    @SerialName("profile_picture_thumbnail_url") val profilePictureThumbnailUrl: String? = null,
 )

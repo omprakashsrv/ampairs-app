@@ -7,6 +7,8 @@ data class UserInfo(
     val userName: String,
     val countryCode: Long,
     val phone: String,
+    val profilePictureUrl: String? = null,
+    val profilePictureThumbnailUrl: String? = null,
     val lastLogin: Long = 0,
     val loginCount: Int = 0,
     val isAuthenticated: Boolean = false,

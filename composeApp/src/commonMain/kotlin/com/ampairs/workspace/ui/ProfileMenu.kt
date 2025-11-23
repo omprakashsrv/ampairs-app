@@ -17,16 +17,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.*
+import coil3.compose.AsyncImage
 import com.ampairs.common.localization.localizedString
 
 @Composable
 fun ProfileMenu(
     userFullName: String,
+    profilePictureThumbnailUrl: String? = null,
     isLoading: Boolean = false,
     onEditProfile: () -> Unit,
     onLanguageSettings: () -> Unit,

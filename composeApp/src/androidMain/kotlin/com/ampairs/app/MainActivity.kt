@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
 
         // For backward compatibility with older Android versions
         // Ensures window decorFitsSystemWindows is properly configured
-//        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
 
         actionBar?.hide()
 

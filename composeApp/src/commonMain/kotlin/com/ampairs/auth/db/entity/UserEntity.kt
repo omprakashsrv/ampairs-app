@@ -16,5 +16,7 @@ data class UserEntity(
     val last_name: String,
     val user_name: String,
     val country_code: Long,
-    val phone: String
+    val phone: String,
+    val profile_picture_url: String? = null,
+    val profile_picture_thumbnail_url: String? = null
 )

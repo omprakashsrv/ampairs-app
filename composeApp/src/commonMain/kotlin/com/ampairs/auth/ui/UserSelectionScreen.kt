@@ -42,9 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.auth.viewmodel.UserSelectionViewModel
 import com.ampairs.common.config.AppPreferencesDataStore
@@ -229,20 +231,30 @@ private fun UserCard(
                     .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
-                val initials = "${user.firstName.firstOrNull() ?: ""}${user.lastName.firstOrNull() ?: ""}"
-                if (initials.isNotBlank()) {
-                    Text(
-                        text = initials.uppercase(),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                if (!user.profilePictureThumbnailUrl.isNullOrBlank()) {
+                    // Show profile picture if available
+                    AsyncImage(
+                        model = user.profilePictureThumbnailUrl,
+                        contentDescription = "Profile picture",
+                        modifier = Modifier.size(48.dp),
+                        contentScale = ContentScale.Crop
                     )
                 } else {
-                    Icon(
-                        Icons.Default.AccountCircle,
-                        contentDescription = "Profile",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
+                    val initials = "${user.firstName.firstOrNull() ?: ""}${user.lastName.firstOrNull() ?: ""}"
+                    if (initials.isNotBlank()) {
+                        Text(
+                            text = initials.uppercase(),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.AccountCircle,
+                            contentDescription = "Profile",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             }
             

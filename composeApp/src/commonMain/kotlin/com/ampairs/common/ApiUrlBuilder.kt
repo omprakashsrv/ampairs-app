@@ -36,6 +36,34 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build URL for current user's profile picture
+     */
+    fun currentUserPictureUrl(): String {
+        return "${ConfigurationManager.apiBaseUrl}/user/v1/picture"
+    }
+
+    /**
+     * Build URL for current user's profile picture thumbnail
+     */
+    fun currentUserPictureThumbnailUrl(): String {
+        return "${ConfigurationManager.apiBaseUrl}/user/v1/picture/thumbnail"
+    }
+
+    /**
+     * Build URL for a specific user's profile picture by user ID
+     */
+    fun userPictureUrl(userId: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/user/v1/$userId/picture"
+    }
+
+    /**
+     * Build URL for a specific user's profile picture thumbnail by user ID
+     */
+    fun userPictureThumbnailUrl(userId: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/user/v1/$userId/picture/thumbnail"
+    }
+
+    /**
      * Build complete API URL for customer endpoints
      */
     fun customerUrl(path: String): String {
