@@ -40,6 +40,9 @@ fun NavGraphBuilder.businessNavigation(
                 onNavigateToFormConfig = {
                     navController.navigate(Route.FormConfig("business"))
                 },
+                onNavigateToImages = {
+                    navController.navigate(BusinessRoute.Images)
+                },
                 modifier = Modifier
             )
         }
@@ -68,6 +71,13 @@ fun NavGraphBuilder.businessNavigation(
         // Custom Attributes Screen
         composable<BusinessRoute.CustomAttributes> {
             com.ampairs.business.ui.BusinessCustomAttributesScreen(
+                modifier = Modifier
+            )
+        }
+
+        // Images Screen (Logo & Gallery)
+        composable<BusinessRoute.Images> {
+            com.ampairs.business.ui.BusinessImagesScreen(
                 modifier = Modifier
             )
         }

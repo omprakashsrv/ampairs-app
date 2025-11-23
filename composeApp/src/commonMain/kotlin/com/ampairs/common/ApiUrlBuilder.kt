@@ -102,6 +102,38 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build URL for business logo (full size)
+     * GET /api/v1/business/logo
+     */
+    fun businessLogoUrl(): String {
+        return "${ConfigurationManager.getApiUrl("business")}/logo"
+    }
+
+    /**
+     * Build URL for business logo thumbnail (256x256)
+     * GET /api/v1/business/logo/thumbnail
+     */
+    fun businessLogoThumbnailUrl(): String {
+        return "${ConfigurationManager.getApiUrl("business")}/logo/thumbnail"
+    }
+
+    /**
+     * Build URL for business gallery image file (full size)
+     * GET /api/v1/business/images/{imageUid}/file
+     */
+    fun businessImageUrl(imageUid: String): String {
+        return "${ConfigurationManager.getApiUrl("business")}/images/$imageUid/file"
+    }
+
+    /**
+     * Build URL for business gallery image thumbnail (400x400)
+     * GET /api/v1/business/images/{imageUid}/thumbnail
+     */
+    fun businessImageThumbnailUrl(imageUid: String): String {
+        return "${ConfigurationManager.getApiUrl("business")}/images/$imageUid/thumbnail"
+    }
+
+    /**
      * Build complete API URL for order endpoints
      */
     fun orderUrl(path: String): String {

@@ -26,6 +26,7 @@ val businessModule: Module = module {
     viewModel { com.ampairs.business.ui.BusinessOperationsViewModel(get()) }
     viewModel { com.ampairs.business.ui.BusinessTaxConfigViewModel(get()) }
     viewModel { com.ampairs.business.ui.BusinessCustomAttributesViewModel(get(), get()) }
+    viewModel { com.ampairs.business.ui.BusinessImagesViewModel(get()) }
 }
 
 fun businessModule(): Module = businessModule

@@ -1,0 +1,448 @@
+package com.ampairs.business.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.ampairs.business.domain.BusinessImage
+import com.ampairs.common.ApiUrlBuilder
+import org.koin.compose.koinInject
+
+/**
+ * Business Images Screen.
+ * Manages business logo and gallery images with upload, view, and delete functionality.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BusinessImagesScreen(
+    modifier: Modifier = Modifier,
+    viewModel: BusinessImagesViewModel = koinInject()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
+    var isRefreshing by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Handle success messages
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSuccessMessage()
+        }
+    }
+
+    // Handle error messages
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+
+    // Handle refresh state
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading) {
+            isRefreshing = false
+        }
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        PullToRefreshBox(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            state = pullRefreshState,
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                if (!isRefreshing) {
+                    isRefreshing = true
+                    viewModel.refresh()
+                }
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                Text(
+                    text = "Business Images",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                when {
+                    uiState.isLoading && uiState.business == null -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    else -> {
+                        // Logo Section - append cache buster to force reload after upload
+                        val logoUrlWithCacheBuster = uiState.logoThumbnailUrl?.let { url ->
+                            if (uiState.logoCacheBuster > 0) "$url?t=${uiState.logoCacheBuster}" else url
+                        }
+                        BusinessLogoSection(
+                            logoUrl = logoUrlWithCacheBuster,
+                            hasLogo = uiState.logoUrl != null,
+                            isUploading = uiState.isUploadingLogo,
+                            isDeleting = uiState.isDeletingLogo,
+                            onUploadClick = { viewModel.pickAndUploadLogo() },
+                            onDeleteClick = { viewModel.deleteLogo() }
+                        )
+
+                        HorizontalDivider()
+
+                        // Gallery Section
+                        BusinessGallerySection(
+                            images = uiState.images,
+                            isUploading = uiState.isUploadingImage,
+                            isDeleting = uiState.isDeletingImage,
+                            onAddClick = { viewModel.pickAndUploadImage() },
+                            onSetPrimaryClick = { viewModel.setImageAsPrimary(it) },
+                            onDeleteClick = { viewModel.deleteImage(it) }
+                        )
+
+                        // Bottom spacing
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Business Logo Section
+ */
+@Composable
+private fun BusinessLogoSection(
+    logoUrl: String?,
+    hasLogo: Boolean,
+    isUploading: Boolean,
+    isDeleting: Boolean,
+    onUploadClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Business Logo",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.align(Alignment.Start)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Logo preview
+            Box(
+                modifier = Modifier
+                    .size(128.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                if (hasLogo && logoUrl != null) {
+                    AsyncImage(
+                        model = logoUrl,
+                        contentDescription = "Business Logo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Business,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Loading overlay
+                if (isUploading || isDeleting) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.5f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Action buttons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onUploadClick,
+                    enabled = !isUploading && !isDeleting
+                ) {
+                    Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (hasLogo) "Change" else "Upload")
+                }
+
+                if (hasLogo) {
+                    OutlinedButton(
+                        onClick = onDeleteClick,
+                        enabled = !isUploading && !isDeleting,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Remove")
+                    }
+                }
+            }
+
+            // Helper text
+            Text(
+                text = "Max 10MB • JPEG, PNG, or WebP • 512x512 recommended",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Business Gallery Section
+ */
+@Composable
+private fun BusinessGallerySection(
+    images: List<BusinessImage>,
+    isUploading: Boolean,
+    isDeleting: Boolean,
+    onAddClick: () -> Unit,
+    onSetPrimaryClick: (String) -> Unit,
+    onDeleteClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Gallery Images",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "${images.size}/20 images",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            FilledTonalButton(
+                onClick = onAddClick,
+                enabled = !isUploading && images.size < 20
+            ) {
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Add Image")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (images.isEmpty()) {
+            // Empty state
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoLibrary,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "No images yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(onClick = onAddClick) {
+                        Text("Add First Image")
+                    }
+                }
+            }
+        } else {
+            // Image grid
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp),
+                userScrollEnabled = false
+            ) {
+                items(images, key = { it.uid }) { image ->
+                    BusinessImageItem(
+                        image = image,
+                        isDeleting = isDeleting,
+                        onSetPrimaryClick = { onSetPrimaryClick(image.uid) },
+                        onDeleteClick = { onDeleteClick(image.uid) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Individual gallery image item
+ */
+@Composable
+private fun BusinessImageItem(
+    image: BusinessImage,
+    isDeleting: Boolean,
+    onSetPrimaryClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showMenu by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(8.dp))
+    ) {
+        // Image
+        AsyncImage(
+            model = ApiUrlBuilder.businessImageThumbnailUrl(image.uid),
+            contentDescription = image.altText ?: image.title,
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable { showMenu = true },
+            contentScale = ContentScale.Crop
+        )
+
+        // Primary badge
+        if (image.isPrimary) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(4.dp),
+                shape = RoundedCornerShape(4.dp),
+                color = MaterialTheme.colorScheme.primary
+            ) {
+                Text(
+                    text = "Primary",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+
+        // Menu button
+        IconButton(
+            onClick = { showMenu = true },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(32.dp)
+        ) {
+            Icon(
+                Icons.Default.MoreVert,
+                contentDescription = "Options",
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        // Dropdown menu
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false }
+        ) {
+            if (!image.isPrimary) {
+                DropdownMenuItem(
+                    text = { Text("Set as Primary") },
+                    onClick = {
+                        showMenu = false
+                        onSetPrimaryClick()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Star, null) }
+                )
+            }
+            DropdownMenuItem(
+                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                onClick = {
+                    showMenu = false
+                    onDeleteClick()
+                },
+                leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                enabled = !isDeleting
+            )
+        }
+    }
+}

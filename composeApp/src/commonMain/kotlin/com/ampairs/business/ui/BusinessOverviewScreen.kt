@@ -1,10 +1,13 @@
 package com.ampairs.business.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
@@ -32,6 +35,7 @@ fun BusinessOverviewScreen(
     onNavigateToTax: () -> Unit = {},
     onNavigateToCustomAttributes: () -> Unit = {},
     onNavigateToFormConfig: () -> Unit = {},
+    onNavigateToImages: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: BusinessOverviewViewModel = koinInject(),
     configRepository: ConfigRepository = koinInject()
@@ -71,6 +75,7 @@ fun BusinessOverviewScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -216,6 +221,20 @@ fun BusinessOverviewScreen(
                             Column {
                                 Text("Tax Configuration", style = MaterialTheme.typography.titleMedium)
                                 Text("GST/VAT and tax compliance", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+
+                    OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToImages) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Column {
+                                Text("Logo & Gallery", style = MaterialTheme.typography.titleMedium)
+                                Text("Business logo and gallery images", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }

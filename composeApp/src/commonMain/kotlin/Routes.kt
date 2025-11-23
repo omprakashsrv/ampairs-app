@@ -244,4 +244,7 @@ sealed interface BusinessRoute {
 
     @Serializable
     data object CustomAttributes : BusinessRoute
+
+    @Serializable
+    data object Images : BusinessRoute
 }
