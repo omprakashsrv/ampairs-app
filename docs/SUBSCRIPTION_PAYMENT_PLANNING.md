@@ -589,9 +589,468 @@ fun CustomerListScreen(viewModel: CustomerListViewModel = koinInject()) {
 
 ---
 
-## 7. Backend Integration Requirements
+## 7. Offline-First Subscription Enforcement
 
-### 7.1 API Endpoints (Spring Boot Backend)
+### 7.1 Implementation Complexity Overview
+
+| Component | Server-Side | App-Side (with Offline) |
+|-----------|-------------|-------------------------|
+| Subscription CRUD | Easy | Medium |
+| Payment webhooks | Medium | N/A |
+| Feature gating | Easy | Medium |
+| Usage metering | Medium | Challenging |
+| Device tracking | Medium | Challenging |
+| Limit enforcement | Easy | Challenging |
+
+**Core Challenge**: How do you enforce subscription limits when the app can't reach the server?
+
+### 7.2 Device Limit Enforcement
+
+#### Problem Scenario
+```
+┌─────────────────────────────────────────────────────────────┐
+│ User has Free tier (2 devices allowed)                      │
+│                                                             │
+│  Device A (Phone)     Device B (Tablet)    Device C (New)   │
+│  ✅ Registered        ✅ Registered         ❓ Wants access  │
+│  [OFFLINE]            [OFFLINE]             [ONLINE]        │
+│                                                             │
+│ Server can't revoke A or B because they're offline!         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Solution Approaches
+
+| Approach | Pros | Cons | Recommendation |
+|----------|------|------|----------------|
+| **Token Expiry** | Simple, forces periodic sync | User must go online periodically | ✅ Recommended |
+| **Device Priority Queue** | FIFO deregistration | Complex, confusing UX | ❌ Not recommended |
+| **Soft Limit + Grace** | Good UX | Can be abused | ⚠️ Secondary option |
+
+#### Recommended Implementation
+
+```kotlin
+// Device Registration with Token Expiry
+@Serializable
+data class DeviceRegistration(
+    val deviceId: String,
+    val workspaceId: String,
+    val deviceName: String,
+    val platform: String,              // ANDROID, IOS, DESKTOP
+    val registeredAt: String,
+    val tokenExpiresAt: String,        // Must sync before this (e.g., 7 days)
+    val lastSyncAt: String,
+    val isActive: Boolean,
+)
+
+// App startup check
+class DeviceAuthManager(
+    private val deviceRegistration: DeviceRegistration,
+    private val subscriptionRepository: SubscriptionRepository,
+) {
+    fun canUseApp(): DeviceAccessResult {
+        val now = Clock.System.now()
+        val expiresAt = Instant.parse(deviceRegistration.tokenExpiresAt)
+
+        return when {
+            now < expiresAt -> DeviceAccessResult.ALLOWED
+            now < expiresAt.plus(3.days) -> DeviceAccessResult.GRACE_PERIOD
+            else -> DeviceAccessResult.EXPIRED_MUST_SYNC
+        }
+    }
+
+    suspend fun refreshDeviceToken(): Result<DeviceRegistration> {
+        // Call server to extend token and verify device is still registered
+        return subscriptionRepository.refreshDeviceRegistration(deviceRegistration.deviceId)
+    }
+}
+
+sealed class DeviceAccessResult {
+    object ALLOWED : DeviceAccessResult()
+    object GRACE_PERIOD : DeviceAccessResult()  // Show warning, allow use
+    object EXPIRED_MUST_SYNC : DeviceAccessResult()  // Force online sync
+}
+```
+
+#### Server-Side Device Management
+
+```kotlin
+// Backend: Device Registration Service
+class DeviceRegistrationService {
+
+    fun registerDevice(
+        userId: String,
+        workspaceId: String,
+        deviceInfo: DeviceInfo
+    ): Result<DeviceRegistration> {
+        val subscription = subscriptionRepository.getByWorkspaceId(workspaceId)
+        val currentDevices = deviceRepository.getActiveDevices(userId, workspaceId)
+
+        if (currentDevices.size >= subscription.limits.maxDevices) {
+            return Result.failure(DeviceLimitExceededException(
+                current = currentDevices.size,
+                limit = subscription.limits.maxDevices,
+                devices = currentDevices  // Allow user to deregister one
+            ))
+        }
+
+        val registration = DeviceRegistration(
+            deviceId = generateDeviceId(),
+            workspaceId = workspaceId,
+            tokenExpiresAt = Clock.System.now().plus(7.days).toString(),
+            // ... other fields
+        )
+
+        return Result.success(deviceRepository.save(registration))
+    }
+
+    fun refreshToken(deviceId: String): Result<DeviceRegistration> {
+        val device = deviceRepository.findById(deviceId)
+            ?: return Result.failure(DeviceNotFoundException())
+
+        // Extend token by 7 days
+        val updated = device.copy(
+            tokenExpiresAt = Clock.System.now().plus(7.days).toString(),
+            lastSyncAt = Clock.System.now().toString()
+        )
+
+        return Result.success(deviceRepository.save(updated))
+    }
+}
+```
+
+### 7.3 Data Limit Enforcement (Offline)
+
+#### Problem Scenario
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Free tier: 50 customers allowed                             │
+│                                                             │
+│ User creates customers while OFFLINE:                       │
+│   - Already has 48 customers                                │
+│   - Creates 5 more offline (now has 53)                     │
+│   - Goes online → Server rejects? Deletes? Syncs?           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Solution: Client-Side Primary + Server Graceful Handling
+
+| Layer | Enforcement | Behavior |
+|-------|-------------|----------|
+| **Client (Primary)** | Check local count before create | Prevent exceeding limit |
+| **Server (Secondary)** | Accept sync, flag for upgrade | No data loss |
+
+#### Client-Side Enforcement
+
+```kotlin
+// Repository layer - check before any create operation
+class CustomerRepository(
+    private val customerDao: CustomerDao,
+    private val subscriptionState: Flow<SubscriptionState>,
+) {
+    suspend fun createCustomer(customer: Customer): Result<Customer> {
+        val subscription = subscriptionState.first()
+        val currentCount = customerDao.getCount()
+        val limit = subscription.limits.maxCustomers
+
+        // Enforce limit locally
+        if (limit != -1 && currentCount >= limit) {
+            return Result.failure(LimitExceededException(
+                resource = "customers",
+                current = currentCount,
+                limit = limit,
+                suggestedPlan = getSuggestedUpgradePlan(subscription.plan)
+            ))
+        }
+
+        // Proceed with offline-first creation
+        val unsyncedCustomer = customer.copy(synced = false)
+        customerDao.insert(unsyncedCustomer.toEntity())
+
+        // Background sync will handle server communication
+        return Result.success(unsyncedCustomer)
+    }
+}
+
+// ViewModel - handle limit errors gracefully
+class CustomerFormViewModel : ViewModel() {
+
+    fun saveCustomer(customer: Customer) {
+        viewModelScope.launch {
+            repository.createCustomer(customer)
+                .onSuccess {
+                    _uiState.value = UiState.Success(it)
+                }
+                .onFailure { error ->
+                    when (error) {
+                        is LimitExceededException -> {
+                            _uiState.value = UiState.LimitReached(
+                                message = "You've reached your ${error.resource} limit (${error.limit})",
+                                suggestedPlan = error.suggestedPlan
+                            )
+                        }
+                        else -> _uiState.value = UiState.Error(error.message)
+                    }
+                }
+        }
+    }
+}
+```
+
+#### Server-Side Graceful Handling
+
+```kotlin
+// Backend: Accept over-limit data but flag workspace
+class CustomerSyncService {
+
+    fun syncCustomers(
+        workspaceId: String,
+        customers: List<Customer>
+    ): SyncResult {
+        val subscription = subscriptionRepository.getByWorkspaceId(workspaceId)
+        val existingCount = customerRepository.countByWorkspace(workspaceId)
+        val newCount = existingCount + customers.size
+
+        // Always accept the data (no data loss)
+        customerRepository.saveAll(customers)
+
+        // But flag if over limit
+        if (subscription.limits.maxCustomers != -1 &&
+            newCount > subscription.limits.maxCustomers) {
+
+            workspaceRepository.flagOverLimit(workspaceId, "customers", newCount)
+
+            return SyncResult(
+                success = true,
+                syncedCount = customers.size,
+                warning = OverLimitWarning(
+                    resource = "customers",
+                    current = newCount,
+                    limit = subscription.limits.maxCustomers,
+                    action = "upgrade_required_for_new_creates"
+                )
+            )
+        }
+
+        return SyncResult(success = true, syncedCount = customers.size)
+    }
+}
+```
+
+### 7.4 Subscription Expiry While Offline
+
+#### Problem Scenario
+```
+┌─────────────────────────────────────────────────────────────┐
+│ User has STARTER plan, goes offline for 2 weeks             │
+│ Subscription expires/fails to renew during offline period   │
+│                                                             │
+│ Options:                                                    │
+│  A) App continues working (abuse potential)                 │
+│  B) App locks immediately when token expires (harsh)        │
+│  C) App works in read-only mode (balanced)                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Recommended: Graceful Degradation Model
+
+```kotlin
+enum class SubscriptionAccessMode {
+    FULL_ACCESS,      // Active subscription, recently verified
+    OFFLINE_GRACE,    // Token valid but can't verify (allow full access)
+    READ_ONLY,        // Subscription likely expired (view only, no creates)
+    LOCKED,           // Extended non-payment (must go online)
+}
+
+class SubscriptionAccessManager(
+    private val subscriptionState: SubscriptionState,
+    private val deviceRegistration: DeviceRegistration,
+) {
+    fun determineAccessMode(): SubscriptionAccessMode {
+        val now = Clock.System.now()
+        val tokenExpiry = Instant.parse(deviceRegistration.tokenExpiresAt)
+        val subscriptionEnd = subscriptionState.currentPeriodEnd?.let { Instant.parse(it) }
+
+        return when {
+            // Token fresh and subscription active
+            now < tokenExpiry && subscriptionState.status == SubscriptionStatus.ACTIVE ->
+                SubscriptionAccessMode.FULL_ACCESS
+
+            // Token expired but within grace period (3 days)
+            now < tokenExpiry.plus(3.days) ->
+                SubscriptionAccessMode.OFFLINE_GRACE
+
+            // Token expired, subscription end date passed (if known)
+            subscriptionEnd != null && now > subscriptionEnd.plus(7.days) ->
+                SubscriptionAccessMode.READ_ONLY
+
+            // Extended offline (> 14 days without sync)
+            now > tokenExpiry.plus(14.days) ->
+                SubscriptionAccessMode.LOCKED
+
+            // Default to grace period for edge cases
+            else -> SubscriptionAccessMode.OFFLINE_GRACE
+        }
+    }
+}
+```
+
+#### UI Behavior Per Access Mode
+
+```kotlin
+@Composable
+fun AppContent(accessMode: SubscriptionAccessMode) {
+    when (accessMode) {
+        SubscriptionAccessMode.FULL_ACCESS -> {
+            // Normal app experience
+            MainAppContent()
+        }
+
+        SubscriptionAccessMode.OFFLINE_GRACE -> {
+            // Show subtle warning banner
+            Column {
+                OfflineGraceBanner(
+                    message = "You're offline. Some features may be limited.",
+                    onSyncClick = { /* trigger sync */ }
+                )
+                MainAppContent()
+            }
+        }
+
+        SubscriptionAccessMode.READ_ONLY -> {
+            // Disable create/edit actions
+            Column {
+                ReadOnlyModeBanner(
+                    message = "Please connect to the internet to verify your subscription.",
+                    onConnectClick = { /* open settings or retry */ }
+                )
+                MainAppContent(readOnly = true)
+            }
+        }
+
+        SubscriptionAccessMode.LOCKED -> {
+            // Show lock screen with sync option
+            SubscriptionLockedScreen(
+                message = "Your subscription needs verification. Please connect to the internet.",
+                onRetryClick = { /* attempt sync */ }
+            )
+        }
+    }
+}
+```
+
+### 7.5 Subscription State Synchronization
+
+#### Sync Strategy
+
+```kotlin
+class SubscriptionSyncManager(
+    private val subscriptionRepository: SubscriptionRepository,
+    private val deviceManager: DeviceAuthManager,
+) {
+    // Sync triggers
+    enum class SyncTrigger {
+        APP_LAUNCH,           // Every app start
+        BACKGROUND_PERIODIC,  // Every 6 hours when online
+        USER_INITIATED,       // Pull-to-refresh or manual
+        PAYMENT_CALLBACK,     // After payment provider callback
+        TOKEN_NEAR_EXPIRY,    // When device token < 24h remaining
+    }
+
+    suspend fun syncSubscriptionState(trigger: SyncTrigger): SyncResult {
+        return try {
+            // 1. Refresh device token
+            val deviceResult = deviceManager.refreshDeviceToken()
+
+            // 2. Get latest subscription state from server
+            val subscription = subscriptionRepository.fetchFromServer()
+
+            // 3. Update local cache
+            subscriptionRepository.updateLocalCache(subscription)
+
+            // 4. Return updated state
+            SyncResult.Success(subscription)
+        } catch (e: NetworkException) {
+            // Offline - use cached state
+            SyncResult.OfflineUsingCache(subscriptionRepository.getCached())
+        } catch (e: Exception) {
+            SyncResult.Error(e)
+        }
+    }
+}
+```
+
+### 7.6 Complete Enforcement Architecture
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    SUBSCRIPTION ENFORCEMENT                     │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    CLIENT (Offline-First)                │   │
+│  │                                                          │   │
+│  │   SubscriptionState (cached locally)                     │   │
+│  │   ├── plan: FREE/STARTER/PRO/ENTERPRISE                  │   │
+│  │   ├── limits: { maxCustomers: 50, maxDevices: 2, ... }   │   │
+│  │   ├── tokenExpiresAt: "2025-11-30T00:00:00Z"            │   │
+│  │   └── accessMode: FULL_ACCESS / GRACE / READ_ONLY       │   │
+│  │                                                          │   │
+│  │   Enforcement Points:                                    │   │
+│  │   ├── 1. App Launch → Check token expiry & access mode   │   │
+│  │   ├── 2. Create/Edit → Check limits locally FIRST        │   │
+│  │   ├── 3. Module Access → Check feature gate              │   │
+│  │   └── 4. Sync → Refresh subscription state & token       │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              │                                  │
+│                              ▼ (when online)                    │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    SERVER (Source of Truth)              │   │
+│  │                                                          │   │
+│  │   On Every Sync:                                         │   │
+│  │   ├── 1. Validate device is registered & within limit    │   │
+│  │   ├── 2. Return fresh subscription state                 │   │
+│  │   ├── 3. Extend device token (7 days)                    │   │
+│  │   ├── 4. Check for payment issues                        │   │
+│  │   └── 5. Accept over-limit data, flag for follow-up      │   │
+│  │                                                          │   │
+│  │   Webhooks: Handle payment events, update subscription   │   │
+│  │                                                          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 7.7 Implementation Effort Estimate
+
+| Component | Server | App (Common) | App (Platform-Specific) |
+|-----------|--------|--------------|-------------------------|
+| Device registration & token management | 2-3 days | 2 days | 1 day each |
+| Subscription state caching | 1 day | 2 days | - |
+| Access mode determination | 1 day | 2 days | - |
+| Client-side limit enforcement | - | 3 days | - |
+| Graceful degradation UI | - | 2 days | - |
+| Sync manager | 2 days | 3 days | - |
+| **Total** | **~7 days** | **~14 days** | **~3 days** |
+
+### 7.8 Key Design Decisions
+
+| Decision | Recommendation | Rationale |
+|----------|----------------|-----------|
+| Token expiry period | 7 days | Balance between security and UX |
+| Grace period | 3 days | Allow short offline periods |
+| Read-only mode trigger | 7 days after subscription end | Give user time to renew |
+| Lock mode trigger | 14 days without sync | Prevent extended abuse |
+| Over-limit sync handling | Accept data, flag workspace | No data loss, encourage upgrade |
+| Client-side enforcement | Primary | Better UX, instant feedback |
+| Server-side enforcement | Secondary | Prevent bypass, source of truth |
+
+---
+
+## 8. Backend Integration Requirements
+
+### 8.1 API Endpoints (Spring Boot Backend)
 
 ```
 # Subscription Management
@@ -625,7 +1084,7 @@ GET    /api/v1/usage/current                    # Get current usage
 GET    /api/v1/usage/history                    # Get usage history
 ```
 
-### 7.2 Webhook Event Handling
+### 8.2 Webhook Event Handling
 
 ```kotlin
 // Backend Webhook Event Types to Handle
@@ -667,7 +1126,7 @@ GET    /api/v1/usage/history                    # Get usage history
 
 ---
 
-## 8. Implementation Roadmap
+## 9. Implementation Roadmap
 
 ### Phase 1: Foundation (Sprint 1-2)
 - [ ] Define subscription domain models in commonMain
@@ -713,21 +1172,21 @@ GET    /api/v1/usage/history                    # Get usage history
 
 ---
 
-## 9. Revenue Optimization Strategies
+## 10. Revenue Optimization Strategies
 
-### 9.1 Conversion Optimization
+### 10.1 Conversion Optimization
 - **Free Trial**: 14-day trial for paid plans (no credit card required)
 - **Onboarding Flow**: Guide users to key features during trial
 - **Usage Notifications**: Alert users when approaching limits
 - **Upgrade Prompts**: Context-aware upgrade suggestions
 
-### 9.2 Retention Strategies
+### 10.2 Retention Strategies
 - **Annual Discount**: 20% off for annual commitment
 - **Cancellation Flow**: Offer pause option before cancellation
 - **Win-back Campaigns**: Re-engagement for churned users
 - **Feature Announcements**: Highlight new features for upgrades
 
-### 9.3 Expansion Revenue
+### 10.3 Expansion Revenue
 - **Seat Expansion**: Easy addition of team members
 - **Storage Upsells**: Clear storage upgrade path
 - **Add-on Modules**: Targeted module recommendations
@@ -735,39 +1194,39 @@ GET    /api/v1/usage/history                    # Get usage history
 
 ---
 
-## 10. Compliance & Security
+## 11. Compliance & Security
 
-### 10.1 Payment Compliance
+### 11.1 Payment Compliance
 - **PCI DSS**: All card handling through payment providers (no card storage)
 - **Strong Customer Authentication (SCA)**: 3D Secure for European cards
 - **RBI Guidelines**: Tokenization for Indian cards via Razorpay
 
-### 10.2 Platform Requirements
+### 11.2 Platform Requirements
 - **Google Play**: Must use Play Billing for digital goods
 - **App Store**: 30% fee (15% for Small Business Program)
 - **DMA Compliance**: Alternative payment in EU (iOS)
 
-### 10.3 Data Privacy
+### 11.3 Data Privacy
 - **GDPR**: Subscription data handling in compliance
 - **Data Portability**: Export subscription and billing data
 - **Retention**: Clear data retention policies per tier
 
 ---
 
-## 11. Pricing Considerations
+## 12. Pricing Considerations
 
-### 11.1 Indian Market (INR)
+### 12.1 Indian Market (INR)
 - Consider purchasing power parity
 - UPI as primary payment method
 - GST compliance (18% on software services)
 - Annual pricing more popular
 
-### 11.2 International Market (USD)
+### 12.2 International Market (USD)
 - Competitive with similar SaaS products
 - Card payments primary
 - Support for local payment methods via Stripe
 
-### 11.3 Fee Considerations
+### 12.3 Fee Considerations
 | Provider | Fee |
 |----------|-----|
 | Google Play | 15-30% |
@@ -777,25 +1236,25 @@ GET    /api/v1/usage/history                    # Get usage history
 
 ---
 
-## 12. Decision Points Requiring Input
+## 13. Decision Points Requiring Input
 
-### 12.1 Pricing Strategy
+### 13.1 Pricing Strategy
 - [ ] Confirm tier pricing for Indian vs International markets
 - [ ] Decide on add-on module pricing
 - [ ] Determine trial duration per tier
 - [ ] Set overage pricing model
 
-### 12.2 Feature Allocation
+### 13.2 Feature Allocation
 - [ ] Finalize which modules are included in which tier
 - [ ] Decide on API rate limits per tier
 - [ ] Determine storage tiers
 
-### 12.3 Technical Decisions
+### 13.3 Technical Decisions
 - [ ] Choose primary payment provider for desktop (Razorpay vs Stripe split)
 - [ ] Decide on web dashboard for subscription management
 - [ ] Determine grace period for failed payments
 
-### 12.4 Business Decisions
+### 13.4 Business Decisions
 - [ ] Refund policy
 - [ ] Plan change proration
 - [ ] Team/family plans consideration
