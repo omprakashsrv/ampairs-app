@@ -10,14 +10,14 @@ This document outlines the subscription model and payment integration strategy f
 
 ### 1.1 Model Comparison for Multi-Workspace SaaS
 
-| Model | Best For | Complexity | Revenue Predictability |
-|-------|----------|------------|------------------------|
-| **Per-Workspace Tiered** | Business tools with team collaboration | Medium | High |
-| **Per-User (Seat-Based)** | Enterprise software | Low | High |
-| **Per-Workspace + Per-User Hybrid** | Complex multi-tenant apps | High | Very High |
-| **Usage-Based (Metered)** | API/Storage-heavy apps | High | Variable |
-| **Feature-Based (Module)** | Modular business apps | Medium | Medium |
-| **Flat Rate** | Simple apps | Low | High |
+| Model                               | Best For                                | Complexity | Revenue Predictability |
+|-------------------------------------|-----------------------------------------|------------|------------------------|
+| **Per-Workspace Tiered**            | Business tools with team collaboration  | Medium     | High                   |
+| **Per-User (Seat-Based)**           | Enterprise software                     | Low        | High                   |
+| **Per-Workspace + Per-User Hybrid** | Complex multi-tenant apps               | High       | Very High              |
+| **Usage-Based (Metered)**           | API/Storage-heavy apps                  | High       | Variable               |
+| **Feature-Based (Module)**          | Modular business apps                   | Medium     | Medium                 |
+| **Flat Rate**                       | Simple apps                             | Low        | High                   |
 
 ### 1.2 Recommended Model: **Hybrid Workspace-Tier + Module Add-ons**
 
@@ -52,85 +52,85 @@ Given Ampairs' architecture with multi-workspace support and modular business fe
 ### 2.1 Tier Structure
 
 #### **FREE TIER** - Try & Explore
-| Feature | Limit |
-|---------|-------|
-| Workspaces | 1 |
-| Members per Workspace | 2 |
-| Storage | 500 MB |
-| Customers | 50 |
-| Products | 50 |
-| Invoices/month | 20 |
-| Devices | 2 |
-| Modules | Core only (Customer, Product, Invoice) |
-| Support | Community |
-| Data Retention | 6 months |
-| Trial Period | - |
+| Feature               | Limit                                  |
+|-----------------------|----------------------------------------|
+| Workspaces            | 1                                      |
+| Members per Workspace | 1                                      |
+| Storage               | 500 MB                                 |
+| Customers             | 50                                     |
+| Products              | 50                                     |
+| Invoices/month        | 20                                     |
+| Devices               | 2                                      |
+| Modules               | Core only (Customer, Product, Invoice) |
+| Support               | Community                              |
+| Data Retention        | 6 months                               |
+| Trial Period          | -                                      |
 
 #### **STARTER** - Small Business - ₹499/month or $7/month
-| Feature | Limit |
-|---------|-------|
-| Workspaces | 2 |
-| Members per Workspace | 5 |
-| Storage | 5 GB |
-| Customers | 500 |
-| Products | 500 |
-| Invoices/month | 200 |
-| Devices | 5 |
-| Modules | Core + Order Management |
-| Support | Email (48h response) |
-| Data Retention | 2 years |
-| Trial Period | 14 days |
+| Feature               | Limit                   |
+|-----------------------|-------------------------|
+| Workspaces            | 2                       |
+| Members per Workspace | 5                       |
+| Storage               | 5 GB                    |
+| Customers             | 500                     |
+| Products              | 500                     |
+| Invoices/month        | 200                     |
+| Devices               | 5                       |
+| Modules               | Core + Order Management |
+| Support               | Email (48h response)    |
+| Data Retention        | 2 years                 |
+| Trial Period          | 14 days                 |
 
 #### **PROFESSIONAL** - Growing Business - ₹1,499/month or $19/month
-| Feature | Limit |
-|---------|-------|
-| Workspaces | 5 |
-| Members per Workspace | 15 |
-| Storage | 25 GB |
-| Customers | Unlimited |
-| Products | Unlimited |
-| Invoices/month | Unlimited |
-| Devices | 15 |
-| Modules | All Standard Modules |
-| Support | Priority Email (24h) |
-| Data Retention | 5 years |
-| Trial Period | 14 days |
-| Features | Custom branding, API access |
+| Feature               | Limit                       |
+|-----------------------|-----------------------------|
+| Workspaces            | 5                           |
+| Members per Workspace | 15                          |
+| Storage               | 25 GB                       |
+| Customers             | Unlimited                   |
+| Products              | Unlimited                   |
+| Invoices/month        | Unlimited                   |
+| Devices               | 15                          |
+| Modules               | All Standard Modules        |
+| Support               | Priority Email (24h)        |
+| Data Retention        | 5 years                     |
+| Trial Period          | 14 days                     |
+| Features              | Custom branding, API access |
 
 #### **ENTERPRISE** - Large Organizations - ₹4,999/month or $59/month
-| Feature | Limit |
-|---------|-------|
-| Workspaces | Unlimited |
-| Members per Workspace | Unlimited |
-| Storage | 100 GB (expandable) |
-| All Data Limits | Unlimited |
-| Devices | Unlimited |
-| Modules | All + Premium Add-ons |
-| Support | Phone + Dedicated Manager |
-| Data Retention | Unlimited |
-| Trial Period | 30 days |
-| Features | SSO, Audit logs, Custom integrations |
+| Feature               | Limit                                |
+|-----------------------|--------------------------------------|
+| Workspaces            | Unlimited                            |
+| Members per Workspace | Unlimited                            |
+| Storage               | 100 GB (expandable)                  |
+| All Data Limits       | Unlimited                            |
+| Devices               | Unlimited                            |
+| Modules               | All + Premium Add-ons                |
+| Support               | Phone + Dedicated Manager            |
+| Data Retention        | Unlimited                            |
+| Trial Period          | 30 days                              |
+| Features              | SSO, Audit logs, Custom integrations |
 
 ### 2.2 Premium Add-on Modules (Available for Pro+ tiers)
 
-| Module | Price (Monthly) | Description |
-|--------|-----------------|-------------|
-| Tally Integration | ₹299 / $4 | Sync with Tally ERP |
-| Advanced Analytics | ₹499 / $6 | Custom reports, dashboards |
-| Multi-Currency | ₹199 / $3 | Support for multiple currencies |
-| E-Invoicing (GST) | ₹399 / $5 | Government e-invoicing compliance |
-| Inventory Pro | ₹299 / $4 | Advanced stock management |
-| Custom Fields | ₹199 / $3 | Unlimited custom fields |
+| Module             | Price (Monthly) | Description                       |
+|--------------------|-----------------|-----------------------------------|
+| Tally Integration  | ₹299 / $4       | Sync with Tally ERP               |
+| Advanced Analytics | ₹499 / $6       | Custom reports, dashboards        |
+| Multi-Currency     | ₹199 / $3       | Support for multiple currencies   |
+| E-Invoicing (GST)  | ₹399 / $5       | Government e-invoicing compliance |
+| Inventory Pro      | ₹299 / $4       | Advanced stock management         |
+| Custom Fields      | ₹199 / $3       | Unlimited custom fields           |
 
 ### 2.3 Usage-Based Overages
 
-| Resource | Overage Rate |
-|----------|--------------|
-| Additional Members | ₹99 / $1.5 per seat/month |
-| Additional Storage | ₹99 / $1.5 per 5GB/month |
-| Additional Workspaces | ₹299 / $4 per workspace/month |
-| SMS Notifications | ₹0.25 / $0.003 per SMS |
-| Email Volume (>1000/mo) | ₹0.10 / $0.001 per email |
+| Resource                | Overage Rate                  |
+|-------------------------|-------------------------------|
+| Additional Members      | ₹99 / $1.5 per seat/month     |
+| Additional Storage      | ₹99 / $1.5 per 5GB/month      |
+| Additional Workspaces   | ₹299 / $4 per workspace/month |
+| SMS Notifications       | ₹0.25 / $0.003 per SMS        |
+| Email Volume (>1000/mo) | ₹0.10 / $0.001 per email      |
 
 ---
 
@@ -138,12 +138,12 @@ Given Ampairs' architecture with multi-workspace support and modular business fe
 
 ### 3.1 Available Billing Cycles
 
-| Cycle | Discount | Best For |
-|-------|----------|----------|
-| Monthly | 0% | Cash flow flexibility |
-| Quarterly | 5% | Short-term commitment |
-| Annual | 20% | Long-term savings |
-| Biennial (2 years) | 30% | Maximum savings |
+| Cycle              | Discount | Best For               |
+|--------------------|----------|------------------------|
+| Monthly            | 0%       | Cash flow flexibility  |
+| Quarterly          | 5%       | Short-term commitment  |
+| Annual             | 20%      | Long-term savings      |
+| Biennial (2 years) | 30%      | Maximum savings        |
 
 ### 3.2 Billing Model Considerations
 
@@ -184,12 +184,12 @@ data class Workspace(
 
 ### 4.1 Payment Provider Matrix
 
-| Platform | Primary Provider | Region | In-App Purchase | External Payment |
-|----------|------------------|--------|-----------------|------------------|
-| Android | Google Play Billing | Global | Required for digital goods | Physical goods only |
-| iOS | Apple StoreKit 2 | Global | Required (30% fee) | Allowed in EU (DMA) |
-| Desktop (India) | Razorpay | India | N/A | Full control |
-| Desktop (Intl) | Stripe | Global | N/A | Full control |
+| Platform        | Primary Provider     | Region   | In-App Purchase            | External Payment     |
+|-----------------|----------------------|----------|----------------------------|----------------------|
+| Android         | Google Play Billing  | Global   | Required for digital goods | Physical goods only  |
+| iOS             | Apple StoreKit 2     | Global   | Required (30% fee)         | Allowed in EU (DMA)  |
+| Desktop (India) | Razorpay             | India    | N/A                        | Full control         |
+| Desktop (Intl)  | Stripe               | Global   | N/A                        | Full control         |
 
 ### 4.2 Android - Google Play Billing Library v7
 
