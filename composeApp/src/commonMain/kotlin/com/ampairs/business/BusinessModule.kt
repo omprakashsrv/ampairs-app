@@ -21,7 +21,7 @@ val businessModule: Module = module {
     factory { BusinessStore(get()) }
 
     // ViewModels for business management screens
-    viewModel { com.ampairs.business.ui.BusinessOverviewViewModel(get()) }
+    viewModel { com.ampairs.business.ui.BusinessOverviewViewModel(get(), get()) }
     viewModel { com.ampairs.business.ui.BusinessProfileViewModel(get()) }
     viewModel { com.ampairs.business.ui.BusinessOperationsViewModel(get()) }
     viewModel { com.ampairs.business.ui.BusinessTaxConfigViewModel(get()) }

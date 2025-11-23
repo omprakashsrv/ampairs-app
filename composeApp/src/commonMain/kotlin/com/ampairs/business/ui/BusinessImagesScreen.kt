@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.business.domain.BusinessImage
+import com.ampairs.business.domain.BusinessImageType
 import com.ampairs.common.ApiUrlBuilder
 import org.koin.compose.koinInject
 
@@ -41,6 +43,12 @@ fun BusinessImagesScreen(
     val pullRefreshState = rememberPullToRefreshState()
     var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Upload dialog state
+    var showUploadDialog by remember { mutableStateOf(false) }
+
+    // Edit dialog state
+    var editingImage by remember { mutableStateOf<BusinessImage?>(null) }
 
     // Handle success messages
     LaunchedEffect(uiState.successMessage) {
@@ -125,7 +133,8 @@ fun BusinessImagesScreen(
                             images = uiState.images,
                             isUploading = uiState.isUploadingImage,
                             isDeleting = uiState.isDeletingImage,
-                            onAddClick = { viewModel.pickAndUploadImage() },
+                            onAddClick = { showUploadDialog = true },
+                            onEditClick = { image -> editingImage = image },
                             onSetPrimaryClick = { viewModel.setImageAsPrimary(it) },
                             onDeleteClick = { viewModel.deleteImage(it) }
                         )
@@ -136,6 +145,29 @@ fun BusinessImagesScreen(
                 }
             }
         }
+    }
+
+    // Upload Image Dialog
+    if (showUploadDialog) {
+        ImageUploadDialog(
+            onDismiss = { showUploadDialog = false },
+            onUpload = { imageType, title, description ->
+                showUploadDialog = false
+                viewModel.pickAndUploadImage(imageType, title, description)
+            }
+        )
+    }
+
+    // Edit Image Dialog
+    editingImage?.let { image ->
+        ImageEditDialog(
+            image = image,
+            onDismiss = { editingImage = null },
+            onSave = { title, description, imageType ->
+                viewModel.updateImageMetadata(image.uid, title, description, imageType)
+                editingImage = null
+            }
+        )
     }
 }
 
@@ -260,6 +292,7 @@ private fun BusinessGallerySection(
     isUploading: Boolean,
     isDeleting: Boolean,
     onAddClick: () -> Unit,
+    onEditClick: (BusinessImage) -> Unit,
     onSetPrimaryClick: (String) -> Unit,
     onDeleteClick: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -349,6 +382,7 @@ private fun BusinessGallerySection(
                     BusinessImageItem(
                         image = image,
                         isDeleting = isDeleting,
+                        onEditClick = { onEditClick(image) },
                         onSetPrimaryClick = { onSetPrimaryClick(image.uid) },
                         onDeleteClick = { onDeleteClick(image.uid) }
                     )
@@ -365,6 +399,7 @@ private fun BusinessGallerySection(
 private fun BusinessImageItem(
     image: BusinessImage,
     isDeleting: Boolean,
+    onEditClick: () -> Unit,
     onSetPrimaryClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -385,6 +420,23 @@ private fun BusinessImageItem(
                 .clickable { showMenu = true },
             contentScale = ContentScale.Crop
         )
+
+        // Type badge (show image type)
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(4.dp),
+            shape = RoundedCornerShape(4.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+        ) {
+            Text(
+                text = image.imageType.replace("_", " ").lowercase()
+                    .replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+            )
+        }
 
         // Primary badge
         if (image.isPrimary) {
@@ -424,6 +476,14 @@ private fun BusinessImageItem(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
+            DropdownMenuItem(
+                text = { Text("Edit") },
+                onClick = {
+                    showMenu = false
+                    onEditClick()
+                },
+                leadingIcon = { Icon(Icons.Default.Edit, null) }
+            )
             if (!image.isPrimary) {
                 DropdownMenuItem(
                     text = { Text("Set as Primary") },
@@ -445,4 +505,205 @@ private fun BusinessImageItem(
             )
         }
     }
+}
+
+/**
+ * Dialog for uploading a new image with type selection
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ImageUploadDialog(
+    onDismiss: () -> Unit,
+    onUpload: (BusinessImageType, String?, String?) -> Unit
+) {
+    var selectedType by remember { mutableStateOf(BusinessImageType.GALLERY) }
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Image") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Image Type Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedType.name.replace("_", " ").lowercase()
+                            .replaceFirstChar { it.uppercase() },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Image Type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        BusinessImageType.entries.forEach { type ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(type.name.replace("_", " ").lowercase()
+                                        .replaceFirstChar { it.uppercase() })
+                                },
+                                onClick = {
+                                    selectedType = type
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Title (optional)
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Description (optional)
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description (optional)") },
+                    minLines = 2,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onUpload(
+                        selectedType,
+                        title.takeIf { it.isNotBlank() },
+                        description.takeIf { it.isNotBlank() }
+                    )
+                }
+            ) {
+                Text("Select Image")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+/**
+ * Dialog for editing image metadata
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ImageEditDialog(
+    image: BusinessImage,
+    onDismiss: () -> Unit,
+    onSave: (String?, String?, String?) -> Unit
+) {
+    val currentType = try {
+        BusinessImageType.valueOf(image.imageType)
+    } catch (_: Exception) {
+        BusinessImageType.GALLERY
+    }
+
+    var selectedType by remember { mutableStateOf(currentType) }
+    var title by remember { mutableStateOf(image.title ?: "") }
+    var description by remember { mutableStateOf(image.description ?: "") }
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Image") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Image Type Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedType.name.replace("_", " ").lowercase()
+                            .replaceFirstChar { it.uppercase() },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Image Type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        BusinessImageType.entries.forEach { type ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(type.name.replace("_", " ").lowercase()
+                                        .replaceFirstChar { it.uppercase() })
+                                },
+                                onClick = {
+                                    selectedType = type
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Title
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Description
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    minLines = 2,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(
+                        title.takeIf { it.isNotBlank() },
+                        description.takeIf { it.isNotBlank() },
+                        selectedType.name
+                    )
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
