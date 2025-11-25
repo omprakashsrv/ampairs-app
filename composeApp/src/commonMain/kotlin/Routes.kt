@@ -30,6 +30,9 @@ sealed interface Route {
     data object Business : Route
 
     @Serializable
+    data object Subscription : Route
+
+    @Serializable
     data class FormConfig(
         val entityType: String = ""
     ) : Route
@@ -247,4 +250,34 @@ sealed interface BusinessRoute {
 
     @Serializable
     data object Images : BusinessRoute
+}
+
+// Subscription routes
+@Serializable
+sealed interface SubscriptionRoute {
+    @Serializable
+    data object Root : SubscriptionRoute
+
+    @Serializable
+    data object Plans : SubscriptionRoute
+
+    @Serializable
+    data class PlanDetails(
+        val planCode: String = ""
+    ) : SubscriptionRoute
+
+    @Serializable
+    data object Usage : SubscriptionRoute
+
+    @Serializable
+    data object PaymentHistory : SubscriptionRoute
+
+    @Serializable
+    data class Checkout(
+        val planCode: String = "",
+        val billingCycle: String = "MONTHLY"
+    ) : SubscriptionRoute
+
+    @Serializable
+    data object Devices : SubscriptionRoute
 }

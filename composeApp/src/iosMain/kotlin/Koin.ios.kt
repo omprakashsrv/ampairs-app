@@ -87,6 +87,7 @@ actual val customerPlatformModule: Module = com.ampairs.customer.di.customerPlat
 actual val productPlatformModule: Module = com.ampairs.product.productPlatformModule
 actual val businessPlatformModule: Module = com.ampairs.business.businessPlatformModule
 actual val taxPlatformModule: Module = com.ampairs.tax.taxPlatformModule
+actual val subscriptionPlatformModule: Module = com.ampairs.subscription.di.subscriptionPlatformModule
 // Temporarily commented out pending customer integration updates
 // actual val orderPlatformModule: Module = com.ampairs.order.orderPlatformModule
 // actual val invoicePlatformModule: Module = com.ampairs.invoice.invoicePlatformModule

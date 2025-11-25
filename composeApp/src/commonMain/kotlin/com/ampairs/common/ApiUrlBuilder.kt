@@ -174,6 +174,14 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build complete API URL for subscription endpoints
+     */
+    fun subscriptionUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/$cleanPath"
+    }
+
+    /**
      * Build WebSocket URL
      */
     fun wsUrl(path: String): String {

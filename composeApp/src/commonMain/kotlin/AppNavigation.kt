@@ -33,6 +33,7 @@ import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.customer.ui.StateListRoute
 import com.ampairs.customer.ui.customerNavigation
 import com.ampairs.product.productNavigation
+import com.ampairs.subscription.subscriptionNavigation
 import com.ampairs.tax.ui.navigation.taxNavigation
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
@@ -248,6 +249,7 @@ fun AppNavigation(
             productNavigation(navController)
             taxNavigation(navController)
             businessNavigation(navController)
+            subscriptionNavigation(navController)
             // Temporarily commented out pending customer integration updates
             // inventoryNavigation(navController) { }
             // orderNavigation(navController) { }
@@ -287,6 +289,10 @@ private fun extractScreenName(route: String): String {
         // Handle business routes (BusinessRoute.*)
         cleanRoute.startsWith("BusinessRoute.") -> {
             "Business_" + cleanRoute.substringAfter("BusinessRoute.")
+        }
+        // Handle subscription routes (SubscriptionRoute.*)
+        cleanRoute.startsWith("SubscriptionRoute.") -> {
+            "Subscription_" + cleanRoute.substringAfter("SubscriptionRoute.")
         }
         // Handle customer routes (CustomerRoute.* or com.ampairs.customer.ui.*)
         cleanRoute.startsWith("CustomerRoute.") -> {
@@ -341,6 +347,7 @@ fun navigateToMenuItem(navController: androidx.navigation.NavHostController, rou
         route == "invoice" -> navController.navigate(Route.Invoice)
         route == "inventory" -> navController.navigate(Route.Inventory)
         route == "tax" -> navController.navigate(Route.Tax)
+        route == "subscription" -> navController.navigate(Route.Subscription)
 
         // Handle specific menu item paths
         route.startsWith("/customers") -> {
@@ -406,6 +413,15 @@ fun navigateToMenuItem(navController: androidx.navigation.NavHostController, rou
             // Extract entity type from route like /form-config/customer
             val entityType = route.removePrefix("/form-config/")
             navController.navigate(Route.FormConfig(entityType))
+        }
+
+        route.startsWith("/subscription") -> {
+            when (route) {
+                "/subscription" -> navController.navigate(Route.Subscription)
+                "/subscription/plans" -> navController.navigate(SubscriptionRoute.Plans)
+                "/subscription/usage" -> navController.navigate(SubscriptionRoute.Usage)
+                else -> navController.navigate(Route.Subscription)
+            }
         }
 
         else -> {

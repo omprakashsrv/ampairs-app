@@ -291,6 +291,20 @@ private fun WorkspaceSelector(
                         navController.navigate(WorkspaceRoute.Invitations(workspaceId = workspaceId))
                     }
                 )
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    thickness = 0.5.dp
+                )
+
+                WorkspaceMenuItem(
+                    icon = Icons.Default.CreditCard,
+                    text = "Subscription",
+                    onClick = {
+                        expanded = false
+                        navController.navigate(Route.Subscription)
+                    }
+                )
             }
         }
     }

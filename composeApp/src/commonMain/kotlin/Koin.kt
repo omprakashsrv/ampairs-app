@@ -9,6 +9,7 @@ import com.ampairs.customer.ui.components.location.locationServiceModule
 import com.ampairs.event.di.eventModule
 import com.ampairs.form.di.formModule
 import com.ampairs.product.productModule
+import com.ampairs.subscription.di.subscriptionModule
 import com.ampairs.tax.taxModule
 import com.ampairs.update.di.updateModule
 import com.ampairs.workspace.workspaceModule
@@ -33,6 +34,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             productPlatformModule,
             businessPlatformModule,
             taxPlatformModule,
+            subscriptionPlatformModule,
             authModule(),
             workspaceModule(),
             eventModule(),
@@ -42,6 +44,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             productModule(),
             businessModule(),
             taxModule,
+            subscriptionModule,
             updateModule,
         )
     )
@@ -56,3 +59,4 @@ expect val customerPlatformModule: Module
 expect val productPlatformModule: Module
 expect val businessPlatformModule: Module
 expect val taxPlatformModule: Module
+expect val subscriptionPlatformModule: Module
