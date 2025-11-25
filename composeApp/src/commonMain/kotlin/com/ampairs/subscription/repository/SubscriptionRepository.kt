@@ -43,6 +43,13 @@ class SubscriptionRepository(
     }
 
     /**
+     * Update subscription locally (for optimistic updates)
+     */
+    suspend fun updateSubscriptionLocally(subscription: SubscriptionState) {
+        dao.insertSubscription(subscription.toEntity())
+    }
+
+    /**
      * Sync subscription from server
      */
     suspend fun syncSubscription(workspaceId: String): Result<SubscriptionState> {

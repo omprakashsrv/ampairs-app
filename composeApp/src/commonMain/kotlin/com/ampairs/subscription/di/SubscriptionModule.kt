@@ -7,6 +7,7 @@ import com.ampairs.subscription.db.SubscriptionDao
 import com.ampairs.subscription.db.SubscriptionDatabase
 import com.ampairs.subscription.feature.FeatureGate
 import com.ampairs.subscription.feature.LimitChecker
+import com.ampairs.subscription.feature.SubscriptionEnforcement
 import com.ampairs.subscription.repository.SubscriptionRepository
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 import org.koin.core.module.Module
@@ -51,6 +52,14 @@ val subscriptionModule = module {
     factory {
         LimitChecker(
             repository = get()
+        )
+    }
+
+    // Subscription Enforcement
+    factory {
+        SubscriptionEnforcement(
+            repository = get(),
+            limitChecker = get()
         )
     }
 

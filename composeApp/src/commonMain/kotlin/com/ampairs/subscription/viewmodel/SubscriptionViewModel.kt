@@ -386,6 +386,7 @@ sealed class SubscriptionEvent {
     data class TrialStarted(val planCode: String, val trialDays: Int) : SubscriptionEvent()
     data class CheckoutReady(val response: InitiatePurchaseResponse) : SubscriptionEvent()
     data class PurchaseVerified(val subscription: SubscriptionState) : SubscriptionEvent()
+    data class PlanChangedInstantly(val newPlanCode: String) : SubscriptionEvent()
     data class PlanChanged(val response: ChangePlanResponse) : SubscriptionEvent()
     data class SubscriptionCancelled(val immediate: Boolean) : SubscriptionEvent()
     data class SubscriptionPaused(val pauseDays: Int) : SubscriptionEvent()
