@@ -1,7 +1,113 @@
+@file:OptIn(kotlin.time.ExperimentalTime::class)
+
 package com.ampairs.subscription.domain.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+
+/**
+ * Multi-workspace discount configuration
+ */
+@Serializable
+data class MultiWorkspaceDiscount(
+    @SerialName("min_workspaces")
+    val minWorkspaces: Int = 0,
+    @SerialName("discount_percent")
+    val discountPercent: Int = 0,
+    @SerialName("is_available")
+    val isAvailable: Boolean = false
+)
+
+/**
+ * Pre-Launch discount configuration (50% off for early adopters)
+ */
+@Serializable
+data class PreLaunchDiscount(
+    @SerialName("discount_percent")
+    val discountPercent: Int = 0,
+    @SerialName("end_at")
+    val endAt: String? = null,
+    @SerialName("new_users_only")
+    val newUsersOnly: Boolean = false,
+    @SerialName("is_active")
+    val isActive: Boolean = false
+) {
+    /**
+     * Get days remaining until pre-launch discount ends
+     */
+    fun getDaysRemaining(): Long {
+        if (!isActive || endAt == null) return 0
+        return try {
+            val end = kotlinx.datetime.Instant.parse(endAt)
+            val now = Clock.System.now().toEpochMilliseconds()
+            val diffMillis = end.toEpochMilliseconds() - now
+            diffMillis / (24L * 60L * 60L * 1000L)
+        } catch (_: Exception) {
+            0
+        }
+    }
+
+    /**
+     * Check if user is eligible for pre-launch discount
+     */
+    fun isEligible(isNewUser: Boolean): Boolean {
+        if (!isActive) return false
+        return !newUsersOnly || isNewUser
+    }
+}
+
+/**
+ * Seasonal/Festival discount configuration
+ */
+@Serializable
+data class SeasonalDiscount(
+    @SerialName("discount_percent")
+    val discountPercent: Int = 0,
+    @SerialName("discount_name")
+    val discountName: String? = null,
+    @SerialName("start_at")
+    val startAt: String? = null,
+    @SerialName("end_at")
+    val endAt: String? = null,
+    @SerialName("is_active")
+    val isActive: Boolean = false
+) {
+    /**
+     * Get days remaining until discount ends
+     */
+    fun getDaysRemaining(): Long {
+        if (!isActive || endAt == null) return 0
+        return try {
+            // Parse ISO 8601 timestamp
+            val endInstant = kotlinx.datetime.Instant.parse(endAt)
+            val nowInstant = Clock.System.now().toEpochMilliseconds()
+
+            // Calculate difference in milliseconds
+            val diffMillis = endInstant.toEpochMilliseconds() - nowInstant
+
+            // Convert to days
+            diffMillis / (24L * 60L * 60L * 1000L)
+        } catch (_: Exception) {
+            0
+        }
+    }
+
+    /**
+     * Check if discount is ending soon (less than 3 days)
+     */
+    fun isEndingSoon(): Boolean {
+        return getDaysRemaining() in 1..3
+    }
+
+    /**
+     * Check if discount is critical (less than 24 hours)
+     */
+    fun isCritical(): Boolean {
+        return getDaysRemaining() < 1 && isActive
+    }
+}
 
 /**
  * Subscription plan definition with limits and features
@@ -22,6 +128,12 @@ data class SubscriptionPlanDefinition(
     val features: SubscriptionFeatures,
     @SerialName("trial_days")
     val trialDays: Int = 0,
+    @SerialName("multi_workspace_discount")
+    val multiWorkspaceDiscount: MultiWorkspaceDiscount = MultiWorkspaceDiscount(),
+    @SerialName("seasonal_discount")
+    val seasonalDiscount: SeasonalDiscount = SeasonalDiscount(),
+    @SerialName("pre_launch_discount")
+    val preLaunchDiscount: PreLaunchDiscount = PreLaunchDiscount(),
     @SerialName("google_play_product_id_monthly")
     val googlePlayProductIdMonthly: String? = null,
     @SerialName("google_play_product_id_annual")
@@ -42,6 +154,107 @@ data class SubscriptionPlanDefinition(
             "USD" -> monthlyPriceUsd
             else -> monthlyPriceUsd
         }
+    }
+
+    /**
+     * Calculate price with all discounts applied (pre-launch + multi-workspace + seasonal)
+     * IMPORTANT: Pre-launch discount is applied FIRST for maximum savings
+     */
+    fun getPriceWithDiscount(currency: String, workspaceCount: Int, isNewUser: Boolean = true): Double {
+        var price = getMonthlyPrice(currency)
+
+        // 1. Apply pre-launch discount FIRST (highest priority, 50% off)
+        if (preLaunchDiscount.isEligible(isNewUser)) {
+            val discountMultiplier = (100 - preLaunchDiscount.discountPercent) / 100.0
+            price *= discountMultiplier
+        }
+
+        // 2. Apply multi-workspace discount
+        if (workspaceCount >= multiWorkspaceDiscount.minWorkspaces && multiWorkspaceDiscount.isAvailable) {
+            val discountMultiplier = (100 - multiWorkspaceDiscount.discountPercent) / 100.0
+            price *= discountMultiplier
+        }
+
+        // 3. Apply seasonal discount (stacks with all above)
+        if (seasonalDiscount.isActive) {
+            val discountMultiplier = (100 - seasonalDiscount.discountPercent) / 100.0
+            price *= discountMultiplier
+        }
+
+        return price
+    }
+
+    /**
+     * Check if multi-workspace discount is applicable
+     */
+    fun hasMultiWorkspaceDiscount(workspaceCount: Int): Boolean {
+        return workspaceCount >= multiWorkspaceDiscount.minWorkspaces && multiWorkspaceDiscount.isAvailable
+    }
+
+    /**
+     * Check if any discount is applicable
+     */
+    fun hasAnyDiscount(workspaceCount: Int, isNewUser: Boolean = true): Boolean {
+        return preLaunchDiscount.isEligible(isNewUser) ||
+                hasMultiWorkspaceDiscount(workspaceCount) ||
+                seasonalDiscount.isActive
+    }
+
+    /**
+     * Calculate total savings with all discounts
+     */
+    fun calculateSavings(currency: String, workspaceCount: Int, isNewUser: Boolean = true): Double {
+        val basePrice = getMonthlyPrice(currency)
+        val discountedPrice = getPriceWithDiscount(currency, workspaceCount, isNewUser)
+        return (basePrice - discountedPrice) * workspaceCount
+    }
+
+    /**
+     * Get breakdown of all discounts (in order of application: pre-launch → multi-workspace → seasonal)
+     */
+    fun getDiscountBreakdown(currency: String, workspaceCount: Int, isNewUser: Boolean = true): List<DiscountItem> {
+        val discounts = mutableListOf<DiscountItem>()
+        var currentPrice = getMonthlyPrice(currency)
+
+        // 1. Pre-launch discount (applied FIRST)
+        if (preLaunchDiscount.isEligible(isNewUser)) {
+            val discount = currentPrice * preLaunchDiscount.discountPercent / 100.0
+            discounts.add(
+                DiscountItem(
+                    name = "🚀 Pre-Launch Special (${preLaunchDiscount.discountPercent}%)",
+                    amount = discount,
+                    type = DiscountType.PRE_LAUNCH
+                )
+            )
+            currentPrice -= discount
+        }
+
+        // 2. Multi-workspace discount
+        if (hasMultiWorkspaceDiscount(workspaceCount)) {
+            val discount = currentPrice * multiWorkspaceDiscount.discountPercent / 100.0
+            discounts.add(
+                DiscountItem(
+                    name = "Multi-workspace (${multiWorkspaceDiscount.discountPercent}%)",
+                    amount = discount,
+                    type = DiscountType.MULTI_WORKSPACE
+                )
+            )
+            currentPrice -= discount
+        }
+
+        // 3. Seasonal discount
+        if (seasonalDiscount.isActive) {
+            val discount = currentPrice * seasonalDiscount.discountPercent / 100.0
+            discounts.add(
+                DiscountItem(
+                    name = "${seasonalDiscount.discountName ?: "Seasonal"} (${seasonalDiscount.discountPercent}%)",
+                    amount = discount,
+                    type = DiscountType.SEASONAL
+                )
+            )
+        }
+
+        return discounts
     }
 
     /**
@@ -396,4 +609,23 @@ data class ExceededLimits(
     val deviceLimitExceeded: Boolean = false,
     @SerialName("has_any_exceeded")
     val hasAnyExceeded: Boolean = false
+)
+
+/**
+ * Discount type enumeration
+ */
+enum class DiscountType {
+    PRE_LAUNCH,
+    MULTI_WORKSPACE,
+    SEASONAL,
+    BILLING_CYCLE
+}
+
+/**
+ * Individual discount item for breakdown
+ */
+data class DiscountItem(
+    val name: String,
+    val amount: Double,
+    val type: DiscountType
 )

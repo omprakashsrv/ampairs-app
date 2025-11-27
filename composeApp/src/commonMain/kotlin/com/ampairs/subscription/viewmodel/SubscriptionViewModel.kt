@@ -67,6 +67,24 @@ class SubscriptionViewModel(
         .observeCurrentPlan(workspaceId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SubscriptionPlan.FREE)
 
+    // User's workspace count for discount calculation
+    private val _userWorkspaceCount = MutableStateFlow(1)
+    val userWorkspaceCount: StateFlow<Int> = _userWorkspaceCount.asStateFlow()
+
+    // Is user eligible for "new user" discounts (pre-launch)
+    private val _isNewUser = MutableStateFlow(true) // Default to true for pre-launch
+    val isNewUser: StateFlow<Boolean> = _isNewUser.asStateFlow()
+
+    // Active seasonal discount (from any plan)
+    val activeSeasonalDiscount: StateFlow<com.ampairs.subscription.domain.model.SeasonalDiscount?> = plans
+        .map { plansList -> plansList.firstOrNull { it.seasonalDiscount.isActive }?.seasonalDiscount }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // Active pre-launch discount (from any plan)
+    val activePreLaunchDiscount: StateFlow<com.ampairs.subscription.domain.model.PreLaunchDiscount?> = plans
+        .map { plansList -> plansList.firstOrNull { it.preLaunchDiscount.isActive }?.preLaunchDiscount }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     // ======================
     // Initialization
     // ======================
@@ -364,6 +382,85 @@ class SubscriptionViewModel(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    /**
+     * Set user's workspace count for discount calculation
+     */
+    fun setWorkspaceCount(count: Int) {
+        _userWorkspaceCount.value = count
+    }
+
+    /**
+     * Set whether user is new (eligible for pre-launch/new-user-only discounts)
+     */
+    fun setIsNewUser(isNew: Boolean) {
+        _isNewUser.value = isNew
+    }
+
+    /**
+     * Calculate price with discount for a plan
+     */
+    fun calculateDiscountedPrice(plan: SubscriptionPlanDefinition, currency: String = "INR"): Double {
+        return plan.getPriceWithDiscount(currency, _userWorkspaceCount.value, _isNewUser.value)
+    }
+
+    /**
+     * Calculate total savings with discount
+     */
+    fun calculateSavings(plan: SubscriptionPlanDefinition, currency: String = "INR"): Double {
+        return plan.calculateSavings(currency, _userWorkspaceCount.value, _isNewUser.value)
+    }
+
+    /**
+     * Check if any discount is available for a plan
+     */
+    fun isDiscountAvailable(plan: SubscriptionPlanDefinition): Boolean {
+        return plan.hasAnyDiscount(_userWorkspaceCount.value, _isNewUser.value)
+    }
+
+    /**
+     * Get workspace count needed to unlock multi-workspace discount
+     */
+    fun getWorkspacesNeededForDiscount(plan: SubscriptionPlanDefinition): Int {
+        val needed = plan.multiWorkspaceDiscount.minWorkspaces - _userWorkspaceCount.value
+        return if (needed > 0) needed else 0
+    }
+
+    /**
+     * Check if seasonal discount is active for a plan
+     */
+    fun isSeasonalDiscountActive(plan: SubscriptionPlanDefinition): Boolean {
+        return plan.seasonalDiscount.isActive
+    }
+
+    /**
+     * Check if pre-launch discount is active and user is eligible
+     */
+    fun isPreLaunchDiscountEligible(plan: SubscriptionPlanDefinition): Boolean {
+        return plan.preLaunchDiscount.isEligible(_isNewUser.value)
+    }
+
+    /**
+     * Get discount breakdown for a plan
+     */
+    fun getDiscountBreakdown(plan: SubscriptionPlanDefinition, currency: String = "INR"): List<com.ampairs.subscription.domain.model.DiscountItem> {
+        return plan.getDiscountBreakdown(currency, _userWorkspaceCount.value, _isNewUser.value)
+    }
+
+    /**
+     * Check if should show seasonal banner
+     */
+    fun shouldShowSeasonalBanner(): Boolean {
+        return activeSeasonalDiscount.value != null
+    }
+
+    /**
+     * Check if should show pre-launch banner
+     */
+    fun shouldShowPreLaunchBanner(): Boolean {
+        return activePreLaunchDiscount.value != null &&
+                activePreLaunchDiscount.value!!.isEligible(_isNewUser.value)
     }
 }
 

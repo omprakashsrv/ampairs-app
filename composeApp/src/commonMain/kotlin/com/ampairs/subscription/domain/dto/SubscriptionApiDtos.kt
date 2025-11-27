@@ -56,6 +56,12 @@ data class PlanResponseDto(
     val features: PlanFeaturesDto,
     @SerialName("trial_days")
     val trialDays: Int,
+    @SerialName("multi_workspace_discount")
+    val multiWorkspaceDiscount: MultiWorkspaceDiscountDto = MultiWorkspaceDiscountDto(),
+    @SerialName("seasonal_discount")
+    val seasonalDiscount: SeasonalDiscountDto = SeasonalDiscountDto(),
+    @SerialName("pre_launch_discount")
+    val preLaunchDiscount: PreLaunchDiscountDto = PreLaunchDiscountDto(),
     @SerialName("google_play_product_id_monthly")
     val googlePlayProductIdMonthly: String? = null,
     @SerialName("google_play_product_id_annual")
@@ -78,11 +84,86 @@ data class PlanResponseDto(
             limits = limits.toModel(),
             features = features.toModel(),
             trialDays = trialDays,
+            multiWorkspaceDiscount = multiWorkspaceDiscount.toModel(),
+            seasonalDiscount = seasonalDiscount.toModel(),
+            preLaunchDiscount = preLaunchDiscount.toModel(),
             googlePlayProductIdMonthly = googlePlayProductIdMonthly,
             googlePlayProductIdAnnual = googlePlayProductIdAnnual,
             appStoreProductIdMonthly = appStoreProductIdMonthly,
             appStoreProductIdAnnual = appStoreProductIdAnnual,
             displayOrder = displayOrder
+        )
+    }
+}
+
+/**
+ * Multi-workspace discount response from API
+ */
+@Serializable
+data class MultiWorkspaceDiscountDto(
+    @SerialName("min_workspaces")
+    val minWorkspaces: Int = 0,
+    @SerialName("discount_percent")
+    val discountPercent: Int = 0,
+    @SerialName("is_available")
+    val isAvailable: Boolean = false
+) {
+    fun toModel(): MultiWorkspaceDiscount {
+        return MultiWorkspaceDiscount(
+            minWorkspaces = minWorkspaces,
+            discountPercent = discountPercent,
+            isAvailable = isAvailable
+        )
+    }
+}
+
+/**
+ * Seasonal discount response from API
+ */
+@Serializable
+data class SeasonalDiscountDto(
+    @SerialName("discount_percent")
+    val discountPercent: Int = 0,
+    @SerialName("discount_name")
+    val discountName: String? = null,
+    @SerialName("start_at")
+    val startAt: String? = null,
+    @SerialName("end_at")
+    val endAt: String? = null,
+    @SerialName("is_active")
+    val isActive: Boolean = false
+) {
+    fun toModel(): SeasonalDiscount {
+        return SeasonalDiscount(
+            discountPercent = discountPercent,
+            discountName = discountName,
+            startAt = startAt,
+            endAt = endAt,
+            isActive = isActive
+        )
+    }
+}
+
+/**
+ * Pre-launch discount response from API
+ */
+@Serializable
+data class PreLaunchDiscountDto(
+    @SerialName("discount_percent")
+    val discountPercent: Int = 0,
+    @SerialName("end_at")
+    val endAt: String? = null,
+    @SerialName("new_users_only")
+    val newUsersOnly: Boolean = false,
+    @SerialName("is_active")
+    val isActive: Boolean = false
+) {
+    fun toModel(): PreLaunchDiscount {
+        return PreLaunchDiscount(
+            discountPercent = discountPercent,
+            endAt = endAt,
+            newUsersOnly = newUsersOnly,
+            isActive = isActive
         )
     }
 }
