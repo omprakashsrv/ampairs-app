@@ -351,38 +351,43 @@ fun PlanCard(
                     }
                 }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    if (plan.monthlyPriceInr > 0) {
-                        Text(
-                            text = formatAmount(pricePerMonth, "INR"),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "/month",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (selectedBillingCycle.discountPercent > 0) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
-                                Text(
-                                    text = "${selectedBillingCycle.discountPercent}% off",
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = "Free",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                if (plan.monthlyPriceInr > 0) {
+                    // Use PriceWithDiscounts component to show final price after all discounts
+                    PriceWithDiscounts(
+                        plan = plan,
+                        workspaceCount = 1, // TODO: Get from ViewModel
+                        currency = "INR"
+                    )
+                } else {
+                    Text(
+                        text = "Free",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
+            }
+
+            // Pre-launch badge (MOST prominent - shown first)
+            if (plan.preLaunchDiscount.isActive) {
+                PreLaunchBadge(discount = plan.preLaunchDiscount)
+            }
+
+            // Seasonal discount badge
+            if (plan.seasonalDiscount.isActive) {
+                SeasonalDiscountBadge(seasonalDiscount = plan.seasonalDiscount)
+            }
+
+            // Multi-workspace discount badge
+            if (plan.multiWorkspaceDiscount.isAvailable) {
+                DiscountBadge(discount = plan.multiWorkspaceDiscount)
+            }
+
+            // Discount breakdown
+            if (plan.hasAnyDiscount(1)) { // Pass workspace count from viewModel
+                DiscountBreakdownCard(
+                    plan = plan,
+                    workspaceCount = 1 // This should come from ViewModel
+                )
             }
 
             // Key features

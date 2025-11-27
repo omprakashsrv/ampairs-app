@@ -107,7 +107,8 @@ fun SubscriptionEntity.toDomain(): SubscriptionState = SubscriptionState(
     tableName = "subscription_plans",
     indices = [
         Index(value = ["uid"], unique = true),
-        Index(value = ["plan_code"], unique = true)
+        Index(value = ["plan_code"], unique = true),
+        Index(value = ["is_active"])
     ]
 )
 data class SubscriptionPlanEntity(
@@ -135,12 +136,17 @@ data class SubscriptionPlanEntity(
     val priority_support: Boolean,
     // Trial
     val trial_days: Int,
+    // Discounts (stored as JSON)
+    val multi_workspace_discount_json: String?, // JSON object
+    val seasonal_discount_json: String?, // JSON object
+    val pre_launch_discount_json: String?, // JSON object
     // Product IDs
     val google_play_product_id_monthly: String?,
     val google_play_product_id_annual: String?,
     val app_store_product_id_monthly: String?,
     val app_store_product_id_annual: String?,
     // Metadata
+    val is_active: Boolean = true, // Track if plan is currently available
     val display_order: Int,
     val last_sync: Long = 0
 )
@@ -148,71 +154,110 @@ data class SubscriptionPlanEntity(
 /**
  * Convert domain model to entity
  */
-fun SubscriptionPlanDefinition.toEntity(): SubscriptionPlanEntity = SubscriptionPlanEntity(
-    uid = uid,
-    plan_code = planCode,
-    display_name = displayName,
-    description = description,
-    monthly_price_inr = monthlyPriceInr,
-    monthly_price_usd = monthlyPriceUsd,
-    max_workspaces = limits.maxWorkspaces,
-    max_members_per_workspace = limits.maxMembersPerWorkspace,
-    max_storage_gb = limits.maxStorageGb,
-    max_customers = limits.maxCustomers,
-    max_products = limits.maxProducts,
-    max_invoices_per_month = limits.maxInvoicesPerMonth,
-    max_devices = limits.maxDevices,
-    data_retention_years = limits.dataRetentionYears,
-    available_modules = features.availableModules.joinToString(","),
-    api_access_enabled = features.apiAccessEnabled,
-    custom_branding_enabled = features.customBrandingEnabled,
-    sso_enabled = features.ssoEnabled,
-    audit_logs_enabled = features.auditLogsEnabled,
-    priority_support = features.prioritySupport,
-    trial_days = trialDays,
-    google_play_product_id_monthly = googlePlayProductIdMonthly,
-    google_play_product_id_annual = googlePlayProductIdAnnual,
-    app_store_product_id_monthly = appStoreProductIdMonthly,
-    app_store_product_id_annual = appStoreProductIdAnnual,
-    display_order = displayOrder,
-    last_sync = Clock.System.now().toEpochMilliseconds()
-)
+fun SubscriptionPlanDefinition.toEntity(): SubscriptionPlanEntity {
+    val json = kotlinx.serialization.json.Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+
+    return SubscriptionPlanEntity(
+        uid = uid,
+        plan_code = planCode,
+        display_name = displayName,
+        description = description,
+        monthly_price_inr = monthlyPriceInr,
+        monthly_price_usd = monthlyPriceUsd,
+        max_workspaces = limits.maxWorkspaces,
+        max_members_per_workspace = limits.maxMembersPerWorkspace,
+        max_storage_gb = limits.maxStorageGb,
+        max_customers = limits.maxCustomers,
+        max_products = limits.maxProducts,
+        max_invoices_per_month = limits.maxInvoicesPerMonth,
+        max_devices = limits.maxDevices,
+        data_retention_years = limits.dataRetentionYears,
+        available_modules = features.availableModules.joinToString(","),
+        api_access_enabled = features.apiAccessEnabled,
+        custom_branding_enabled = features.customBrandingEnabled,
+        sso_enabled = features.ssoEnabled,
+        audit_logs_enabled = features.auditLogsEnabled,
+        priority_support = features.prioritySupport,
+        trial_days = trialDays,
+        multi_workspace_discount_json = try {
+            json.encodeToString(MultiWorkspaceDiscount.serializer(), multiWorkspaceDiscount)
+        } catch (_: Exception) { null },
+        seasonal_discount_json = try {
+            json.encodeToString(SeasonalDiscount.serializer(), seasonalDiscount)
+        } catch (_: Exception) { null },
+        pre_launch_discount_json = try {
+            json.encodeToString(PreLaunchDiscount.serializer(), preLaunchDiscount)
+        } catch (_: Exception) { null },
+        google_play_product_id_monthly = googlePlayProductIdMonthly,
+        google_play_product_id_annual = googlePlayProductIdAnnual,
+        app_store_product_id_monthly = appStoreProductIdMonthly,
+        app_store_product_id_annual = appStoreProductIdAnnual,
+        is_active = true, // Plans from API are always active
+        display_order = displayOrder,
+        last_sync = Clock.System.now().toEpochMilliseconds()
+    )
+}
 
 /**
  * Convert entity to domain model
  */
-fun SubscriptionPlanEntity.toDomain(): SubscriptionPlanDefinition = SubscriptionPlanDefinition(
-    uid = uid,
-    planCode = plan_code,
-    displayName = display_name,
-    description = description,
-    monthlyPriceInr = monthly_price_inr,
-    monthlyPriceUsd = monthly_price_usd,
-    limits = SubscriptionLimits(
-        maxWorkspaces = max_workspaces,
-        maxMembersPerWorkspace = max_members_per_workspace,
-        maxStorageGb = max_storage_gb,
-        maxCustomers = max_customers,
-        maxProducts = max_products,
-        maxInvoicesPerMonth = max_invoices_per_month,
-        maxDevices = max_devices,
-        dataRetentionYears = data_retention_years
-    ),
-    features = SubscriptionFeatures(
-        availableModules = available_modules.split(",").filter { it.isNotBlank() },
-        apiAccessEnabled = api_access_enabled,
-        customBrandingEnabled = custom_branding_enabled,
-        ssoEnabled = sso_enabled,
-        auditLogsEnabled = audit_logs_enabled,
-        prioritySupport = priority_support
-    ),
-    trialDays = trial_days,
-    googlePlayProductIdMonthly = google_play_product_id_monthly,
-    googlePlayProductIdAnnual = google_play_product_id_annual,
-    appStoreProductIdMonthly = app_store_product_id_monthly,
-    appStoreProductIdAnnual = app_store_product_id_annual,
-    displayOrder = display_order
-)
+fun SubscriptionPlanEntity.toDomain(): SubscriptionPlanDefinition {
+    val json = kotlinx.serialization.json.Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+
+    return SubscriptionPlanDefinition(
+        uid = uid,
+        planCode = plan_code,
+        displayName = display_name,
+        description = description,
+        monthlyPriceInr = monthly_price_inr,
+        monthlyPriceUsd = monthly_price_usd,
+        limits = SubscriptionLimits(
+            maxWorkspaces = max_workspaces,
+            maxMembersPerWorkspace = max_members_per_workspace,
+            maxStorageGb = max_storage_gb,
+            maxCustomers = max_customers,
+            maxProducts = max_products,
+            maxInvoicesPerMonth = max_invoices_per_month,
+            maxDevices = max_devices,
+            dataRetentionYears = data_retention_years
+        ),
+        features = SubscriptionFeatures(
+            availableModules = available_modules.split(",").filter { it.isNotBlank() },
+            apiAccessEnabled = api_access_enabled,
+            customBrandingEnabled = custom_branding_enabled,
+            ssoEnabled = sso_enabled,
+            auditLogsEnabled = audit_logs_enabled,
+            prioritySupport = priority_support
+        ),
+        trialDays = trial_days,
+        multiWorkspaceDiscount = multi_workspace_discount_json?.let {
+            try {
+                json.decodeFromString(MultiWorkspaceDiscount.serializer(), it)
+            } catch (_: Exception) { MultiWorkspaceDiscount() }
+        } ?: MultiWorkspaceDiscount(),
+        seasonalDiscount = seasonal_discount_json?.let {
+            try {
+                json.decodeFromString(SeasonalDiscount.serializer(), it)
+            } catch (_: Exception) { SeasonalDiscount() }
+        } ?: SeasonalDiscount(),
+        preLaunchDiscount = pre_launch_discount_json?.let {
+            try {
+                json.decodeFromString(PreLaunchDiscount.serializer(), it)
+            } catch (_: Exception) { PreLaunchDiscount() }
+        } ?: PreLaunchDiscount(),
+        googlePlayProductIdMonthly = google_play_product_id_monthly,
+        googlePlayProductIdAnnual = google_play_product_id_annual,
+        appStoreProductIdMonthly = app_store_product_id_monthly,
+        appStoreProductIdAnnual = app_store_product_id_annual,
+        displayOrder = display_order
+    )
+}
 
 /**
  * Room entity for device registration

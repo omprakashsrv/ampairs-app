@@ -39,11 +39,14 @@ interface SubscriptionDao {
     // Plan Operations
     // ======================
 
-    @Query("SELECT * FROM subscription_plans ORDER BY display_order ASC")
+    @Query("SELECT * FROM subscription_plans WHERE is_active = 1 ORDER BY display_order ASC")
     fun observeAllPlans(): Flow<List<SubscriptionPlanEntity>>
 
-    @Query("SELECT * FROM subscription_plans ORDER BY display_order ASC")
+    @Query("SELECT * FROM subscription_plans WHERE is_active = 1 ORDER BY display_order ASC")
     suspend fun getAllPlans(): List<SubscriptionPlanEntity>
+
+    @Query("SELECT * FROM subscription_plans ORDER BY display_order ASC")
+    suspend fun getAllPlansIncludingInactive(): List<SubscriptionPlanEntity>
 
     @Query("SELECT * FROM subscription_plans WHERE plan_code = :planCode LIMIT 1")
     suspend fun getPlanByCode(planCode: String): SubscriptionPlanEntity?
@@ -56,6 +59,15 @@ interface SubscriptionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPlans(plans: List<SubscriptionPlanEntity>)
+
+    @Query("UPDATE subscription_plans SET is_active = 0 WHERE uid = :uid")
+    suspend fun deactivatePlan(uid: String)
+
+    @Query("UPDATE subscription_plans SET is_active = 0 WHERE uid IN (:uids)")
+    suspend fun deactivatePlans(uids: List<String>)
+
+    @Query("UPDATE subscription_plans SET is_active = 1 WHERE uid = :uid")
+    suspend fun reactivatePlan(uid: String)
 
     @Query("DELETE FROM subscription_plans")
     suspend fun clearAllPlans()

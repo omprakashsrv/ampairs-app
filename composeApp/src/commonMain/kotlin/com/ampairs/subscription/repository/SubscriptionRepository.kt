@@ -104,15 +104,38 @@ class SubscriptionRepository(
     }
 
     /**
-     * Sync plans from server
+     * Sync plans from server with deactivation handling
+     *
+     * This method:
+     * 1. Fetches active plans from the server
+     * 2. Inserts/updates them in the local database (marked as active)
+     * 3. Deactivates any cached plans that are no longer in the server response
      */
     suspend fun syncPlans(): Result<List<SubscriptionPlanDefinition>> {
         return try {
-            val plans = api.getPlans().map { it.toModel() }
-            dao.insertPlans(plans.map { it.toEntity() })
-            Result.success(plans)
+            // Fetch active plans from server
+            val serverPlans = api.getPlans().map { it.toModel() }
+            val serverPlanUids = serverPlans.map { it.uid }.toSet()
+
+            // Get all plans from local cache (including inactive ones)
+            val cachedPlans = dao.getAllPlansIncludingInactive()
+
+            // Find plans that exist in cache but not in server response (deactivated plans)
+            val deactivatedPlanUids = cachedPlans
+                .filter { it.is_active && it.uid !in serverPlanUids }
+                .map { it.uid }
+
+            // Insert/update active plans from server (marked as active)
+            dao.insertPlans(serverPlans.map { it.toEntity() })
+
+            // Mark deactivated plans as inactive (don't delete them in case user is subscribed)
+            if (deactivatedPlanUids.isNotEmpty()) {
+                dao.deactivatePlans(deactivatedPlanUids)
+            }
+
+            Result.success(serverPlans)
         } catch (e: Exception) {
-            // Return cached plans if available
+            // Return cached active plans if available
             val cached = dao.getAllPlans().map { it.toDomain() }
             if (cached.isNotEmpty()) {
                 Result.success(cached)

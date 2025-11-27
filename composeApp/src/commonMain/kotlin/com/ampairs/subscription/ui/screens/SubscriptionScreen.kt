@@ -36,9 +36,11 @@ fun SubscriptionScreen(
     val plans by viewModel.plans.collectAsState()
     val usageStatus by viewModel.usageStatus.collectAsState()
     val currentPlan by viewModel.currentPlan.collectAsState()
+    val activeSeasonalDiscount by viewModel.activeSeasonalDiscount.collectAsState()
+    val activePreLaunchDiscount by viewModel.activePreLaunchDiscount.collectAsState()
+    val isNewUser by viewModel.isNewUser.collectAsState()
 
     var showCancelDialog by remember { mutableStateOf(false) }
-    var showPauseDialog by remember { mutableStateOf(false) }
     var showUpgradeSheet by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -63,12 +65,6 @@ fun SubscriptionScreen(
                     snackbarHostState.showSnackbar(
                         if (event.immediate) "Subscription cancelled" else "Subscription will cancel at period end"
                     )
-                }
-                is SubscriptionEvent.SubscriptionPaused -> {
-                    snackbarHostState.showSnackbar("Subscription paused for ${event.pauseDays} days")
-                }
-                is SubscriptionEvent.SubscriptionResumed -> {
-                    snackbarHostState.showSnackbar("Subscription resumed")
                 }
                 is SubscriptionEvent.Error -> {
                     snackbarHostState.showSnackbar(event.message)
@@ -98,6 +94,23 @@ fun SubscriptionScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
+                // Pre-Launch Banner (HIGHEST PRIORITY - shown first if eligible)
+                item {
+                    activePreLaunchDiscount?.let { preLaunchDiscount ->
+                        if (preLaunchDiscount.isEligible(isNewUser)) {
+                            PreLaunchHeroBanner(discount = preLaunchDiscount)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+
+                // Seasonal Discount Banner (if active and no pre-launch)
+                item {
+                    if (activePreLaunchDiscount == null || !activePreLaunchDiscount!!.isEligible(isNewUser)) {
+                        SeasonalDiscountBanner(seasonalDiscount = activeSeasonalDiscount)
+                    }
+                }
+
                 // Current Subscription Card
                 item {
                     subscription?.let { sub ->
@@ -126,9 +139,7 @@ fun SubscriptionScreen(
                         onViewPlans = onNavigateToPlanComparison,
                         onBillingHistory = onNavigateToBillingHistory,
                         onManageDevices = onNavigateToDeviceManagement,
-                        onPause = { showPauseDialog = true },
-                        onCancel = { showCancelDialog = true },
-                        onResume = { viewModel.resumeSubscription() }
+                        onCancel = { showCancelDialog = true }
                     )
                 }
 
@@ -174,17 +185,6 @@ fun SubscriptionScreen(
         )
     }
 
-    // Pause Dialog
-    if (showPauseDialog) {
-        PauseSubscriptionDialog(
-            onDismiss = { showPauseDialog = false },
-            onConfirm = { days, reason ->
-                viewModel.pauseSubscription(days, reason)
-                showPauseDialog = false
-            }
-        )
-    }
-
     // Upgrade Bottom Sheet
     if (showUpgradeSheet) {
         UpgradeBottomSheet(
@@ -226,9 +226,7 @@ private fun QuickActionsSection(
     onViewPlans: () -> Unit,
     onBillingHistory: () -> Unit,
     onManageDevices: () -> Unit,
-    onPause: () -> Unit,
-    onCancel: () -> Unit,
-    onResume: () -> Unit
+    onCancel: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -268,47 +266,20 @@ private fun QuickActionsSection(
             }
 
             // Subscription management actions
-            if (subscription != null && !subscription.isFree) {
+            if (subscription != null && !subscription.isFree &&
+                (subscription.status == SubscriptionStatus.ACTIVE || subscription.status == SubscriptionStatus.TRIALING)) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                when (subscription.status) {
-                    SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING -> {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = onPause,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(Icons.Default.Pause, contentDescription = null)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Pause")
-                            }
-                            OutlinedButton(
-                                onClick = onCancel,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Icon(Icons.Default.Cancel, contentDescription = null)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Cancel")
-                            }
-                        }
-                    }
-                    SubscriptionStatus.PAUSED -> {
-                        Button(
-                            onClick = onResume,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(Modifier.width(4.dp))
-                            Text("Resume Subscription")
-                        }
-                    }
-                    else -> {}
+                OutlinedButton(
+                    onClick = onCancel,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(Icons.Default.Cancel, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Cancel Subscription")
                 }
             }
         }

@@ -264,9 +264,6 @@ private fun CompactPlanCard(
     billingCycle: BillingCycle,
     onSelect: () -> Unit
 ) {
-    val price = billingCycle.calculateDiscountedPrice(plan.monthlyPriceInr)
-    val pricePerMonth = price / billingCycle.months
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = if (isCurrentPlan) {
@@ -311,24 +308,19 @@ private fun CompactPlanCard(
                 )
             }
 
-            Column(horizontalAlignment = Alignment.End) {
-                if (plan.monthlyPriceInr > 0) {
-                    Text(
-                        text = "₹${pricePerMonth.toLong()}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "/month",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                } else {
-                    Text(
-                        text = "Free",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            if (plan.monthlyPriceInr > 0) {
+                // Use PriceWithDiscounts to show final price with all discounts applied
+                PriceWithDiscounts(
+                    plan = plan,
+                    workspaceCount = 1, // TODO: Get from ViewModel
+                    currency = "INR"
+                )
+            } else {
+                Text(
+                    text = "Free",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(Modifier.width(12.dp))

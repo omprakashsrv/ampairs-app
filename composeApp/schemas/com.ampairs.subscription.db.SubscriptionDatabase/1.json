@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "baf085946ed188d6cdbf27c0a2c6eb51",
+    "identityHash": "5b916e2535dce889d6f8498e952cb546",
     "entities": [
       {
         "tableName": "subscriptions",
@@ -163,7 +163,7 @@
       },
       {
         "tableName": "subscription_plans",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `plan_code` TEXT NOT NULL, `display_name` TEXT NOT NULL, `description` TEXT, `monthly_price_inr` REAL NOT NULL, `monthly_price_usd` REAL NOT NULL, `max_workspaces` INTEGER NOT NULL, `max_members_per_workspace` INTEGER NOT NULL, `max_storage_gb` INTEGER NOT NULL, `max_customers` INTEGER NOT NULL, `max_products` INTEGER NOT NULL, `max_invoices_per_month` INTEGER NOT NULL, `max_devices` INTEGER NOT NULL, `data_retention_years` INTEGER NOT NULL, `available_modules` TEXT NOT NULL, `api_access_enabled` INTEGER NOT NULL, `custom_branding_enabled` INTEGER NOT NULL, `sso_enabled` INTEGER NOT NULL, `audit_logs_enabled` INTEGER NOT NULL, `priority_support` INTEGER NOT NULL, `trial_days` INTEGER NOT NULL, `google_play_product_id_monthly` TEXT, `google_play_product_id_annual` TEXT, `app_store_product_id_monthly` TEXT, `app_store_product_id_annual` TEXT, `display_order` INTEGER NOT NULL, `last_sync` INTEGER NOT NULL, PRIMARY KEY(`uid`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `plan_code` TEXT NOT NULL, `display_name` TEXT NOT NULL, `description` TEXT, `monthly_price_inr` REAL NOT NULL, `monthly_price_usd` REAL NOT NULL, `max_workspaces` INTEGER NOT NULL, `max_members_per_workspace` INTEGER NOT NULL, `max_storage_gb` INTEGER NOT NULL, `max_customers` INTEGER NOT NULL, `max_products` INTEGER NOT NULL, `max_invoices_per_month` INTEGER NOT NULL, `max_devices` INTEGER NOT NULL, `data_retention_years` INTEGER NOT NULL, `available_modules` TEXT NOT NULL, `api_access_enabled` INTEGER NOT NULL, `custom_branding_enabled` INTEGER NOT NULL, `sso_enabled` INTEGER NOT NULL, `audit_logs_enabled` INTEGER NOT NULL, `priority_support` INTEGER NOT NULL, `trial_days` INTEGER NOT NULL, `multi_workspace_discount_json` TEXT, `seasonal_discount_json` TEXT, `pre_launch_discount_json` TEXT, `google_play_product_id_monthly` TEXT, `google_play_product_id_annual` TEXT, `app_store_product_id_monthly` TEXT, `app_store_product_id_annual` TEXT, `is_active` INTEGER NOT NULL, `display_order` INTEGER NOT NULL, `last_sync` INTEGER NOT NULL, PRIMARY KEY(`uid`))",
         "fields": [
           {
             "fieldPath": "uid",
@@ -291,6 +291,21 @@
             "notNull": true
           },
           {
+            "fieldPath": "multi_workspace_discount_json",
+            "columnName": "multi_workspace_discount_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seasonal_discount_json",
+            "columnName": "seasonal_discount_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pre_launch_discount_json",
+            "columnName": "pre_launch_discount_json",
+            "affinity": "TEXT"
+          },
+          {
             "fieldPath": "google_play_product_id_monthly",
             "columnName": "google_play_product_id_monthly",
             "affinity": "TEXT"
@@ -309,6 +324,12 @@
             "fieldPath": "app_store_product_id_annual",
             "columnName": "app_store_product_id_annual",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "is_active",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
           },
           {
             "fieldPath": "display_order",
@@ -347,6 +368,15 @@
             ],
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_subscription_plans_plan_code` ON `${TABLE_NAME}` (`plan_code`)"
+          },
+          {
+            "name": "index_subscription_plans_is_active",
+            "unique": false,
+            "columnNames": [
+              "is_active"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_subscription_plans_is_active` ON `${TABLE_NAME}` (`is_active`)"
           }
         ]
       },
@@ -675,7 +705,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'baf085946ed188d6cdbf27c0a2c6eb51')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5b916e2535dce889d6f8498e952cb546')"
     ]
   }
 }
