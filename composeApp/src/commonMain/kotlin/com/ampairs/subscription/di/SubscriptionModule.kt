@@ -9,6 +9,7 @@ import com.ampairs.subscription.feature.FeatureGate
 import com.ampairs.subscription.feature.LimitChecker
 import com.ampairs.subscription.feature.SubscriptionEnforcement
 import com.ampairs.subscription.repository.SubscriptionRepository
+import com.ampairs.subscription.util.SubscriptionOnboardingManager
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
@@ -26,6 +27,14 @@ val subscriptionModule = module {
             engine = get(),
             tokenRepository = get()
         )
+    }
+
+    // Invoice API
+    factory {
+        com.ampairs.subscription.api.InvoiceApiImpl(
+            engine = get(),
+            tokenRepository = get()
+        ) as com.ampairs.subscription.api.InvoiceApi
     }
 
     // DAO - from database provided by platform
@@ -63,6 +72,20 @@ val subscriptionModule = module {
         )
     }
 
+    // Subscription Onboarding Manager
+    single {
+        SubscriptionOnboardingManager(
+            appPreferences = get()
+        )
+    }
+
+    // Invoice Repository
+    factory {
+        com.ampairs.subscription.repository.InvoiceRepository(
+            api = get()
+        )
+    }
+
     // ViewModel - uses AppHeaderStateManager for user context (synchronous access)
     viewModel {
         SubscriptionViewModel(
@@ -71,6 +94,13 @@ val subscriptionModule = module {
             limitChecker = get(),
             userIdProvider = { AppHeaderStateManager.instance.headerState.value.currentUser?.id ?: "" },
             deviceIdProvider = { getDeviceId() }
+        )
+    }
+
+    // Invoice ViewModel
+    viewModel {
+        com.ampairs.subscription.viewmodel.InvoiceViewModel(
+            repository = get()
         )
     }
 }

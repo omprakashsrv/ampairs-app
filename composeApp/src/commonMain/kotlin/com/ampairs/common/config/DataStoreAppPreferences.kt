@@ -2,6 +2,7 @@ package com.ampairs.common.config
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -37,8 +38,17 @@ class DataStoreAppPreferences(
         private fun getUpdateVersionDismissedKey(version: String) =
             stringPreferencesKey("update_version_dismissed_$version")
 
+        // Subscription onboarding keys
+        private fun getHasSeenPlanSelectionKey(workspaceId: String) =
+            booleanPreferencesKey("has_seen_plan_selection_$workspaceId")
+
+        private fun getSubscriptionPlanKey(workspaceId: String) =
+            stringPreferencesKey("subscription_plan_$workspaceId")
+
+        private fun getShouldShowUpgradeKey(workspaceId: String) =
+            booleanPreferencesKey("should_show_upgrade_$workspaceId")
+
         // Future preference keys can be added here:
-        // private val LANGUAGE_PREFERENCE_KEY = stringPreferencesKey("language_preference")
         // private val NOTIFICATION_SETTINGS_KEY = stringPreferencesKey("notification_settings")
     }
 
@@ -180,6 +190,69 @@ class DataStoreAppPreferences(
         dataStore.edit { preferences ->
             preferences[LANGUAGE_PREFERENCE_KEY] = languageCode
             println("🌐 Language preference saved: $languageCode")
+        }
+    }
+
+    // Subscription onboarding methods
+    override fun hasSeenPlanSelection(workspaceId: String): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            val key = getHasSeenPlanSelectionKey(workspaceId)
+            preferences[key] ?: false
+        }
+    }
+
+    override suspend fun markPlanSelectionSeen(workspaceId: String) {
+        val key = getHasSeenPlanSelectionKey(workspaceId)
+        dataStore.edit { preferences ->
+            preferences[key] = true
+            println("✅ Marked plan selection as seen for workspace: $workspaceId")
+        }
+    }
+
+    override suspend fun resetPlanSelectionSeen(workspaceId: String) {
+        val key = getHasSeenPlanSelectionKey(workspaceId)
+        dataStore.edit { preferences ->
+            preferences.remove(key)
+            println("🔄 Reset plan selection seen flag for workspace: $workspaceId")
+        }
+    }
+
+    override suspend fun saveSubscriptionPlan(workspaceId: String, planCode: String) {
+        val key = getSubscriptionPlanKey(workspaceId)
+        dataStore.edit { preferences ->
+            preferences[key] = planCode
+            println("💾 Saved subscription plan for workspace $workspaceId: $planCode")
+        }
+    }
+
+    override fun getSavedSubscriptionPlan(workspaceId: String): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            val key = getSubscriptionPlanKey(workspaceId)
+            preferences[key]
+        }
+    }
+
+    override suspend fun setShouldShowUpgrade(workspaceId: String, shouldShow: Boolean) {
+        val key = getShouldShowUpgradeKey(workspaceId)
+        dataStore.edit { preferences ->
+            preferences[key] = shouldShow
+            println("🔔 Set should show upgrade for workspace $workspaceId: $shouldShow")
+        }
+    }
+
+    override fun shouldShowUpgrade(workspaceId: String): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            val key = getShouldShowUpgradeKey(workspaceId)
+            preferences[key] ?: false
+        }
+    }
+
+    override suspend fun clearSubscriptionOnboardingData(workspaceId: String) {
+        dataStore.edit { preferences ->
+            preferences.remove(getHasSeenPlanSelectionKey(workspaceId))
+            preferences.remove(getSubscriptionPlanKey(workspaceId))
+            preferences.remove(getShouldShowUpgradeKey(workspaceId))
+            println("🧹 Cleared subscription onboarding data for workspace: $workspaceId")
         }
     }
 }

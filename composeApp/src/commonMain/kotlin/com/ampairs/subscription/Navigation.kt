@@ -4,6 +4,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import androidx.navigation.toRoute
 import com.ampairs.subscription.ui.screens.*
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -32,6 +33,9 @@ fun NavGraphBuilder.subscriptionNavigation(
                 },
                 onNavigateToUsageDetails = {
                     navController.navigate(SubscriptionRoute.Usage)
+                },
+                onNavigateToInvoices = {
+                    navController.navigate(SubscriptionRoute.Invoices)
                 },
                 onCheckoutUrl = { url ->
                     onOpenCheckoutUrl?.invoke(url)
@@ -72,6 +76,15 @@ fun NavGraphBuilder.subscriptionNavigation(
             )
         }
 
+        // Payment methods screen
+        composable<SubscriptionRoute.PaymentMethods> {
+            val viewModel: SubscriptionViewModel = koinViewModel()
+            PaymentMethodsScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
         // Device management screen
         composable<SubscriptionRoute.Devices> {
             val viewModel: SubscriptionViewModel = koinViewModel()
@@ -81,6 +94,25 @@ fun NavGraphBuilder.subscriptionNavigation(
                 onNavigateToPlans = {
                     navController.navigate(SubscriptionRoute.Plans)
                 }
+            )
+        }
+
+        // Invoice list screen
+        composable<SubscriptionRoute.Invoices> {
+            InvoiceListScreen(
+                onNavigateToInvoiceDetail = { invoiceUid ->
+                    navController.navigate(SubscriptionRoute.InvoiceDetail(invoiceUid))
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Invoice detail screen
+        composable<SubscriptionRoute.InvoiceDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<SubscriptionRoute.InvoiceDetail>()
+            InvoiceDetailScreen(
+                invoiceUid = route.invoiceUid,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

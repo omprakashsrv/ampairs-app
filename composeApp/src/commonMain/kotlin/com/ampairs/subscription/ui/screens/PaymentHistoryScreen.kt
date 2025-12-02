@@ -34,11 +34,14 @@ fun PaymentHistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val subscription by viewModel.subscription.collectAsState()
+    val payments by viewModel.paymentHistory.collectAsState()
+    val isLoadingPayments by viewModel.isLoadingPayments.collectAsState()
+    val hasMorePayments by viewModel.hasMorePayments.collectAsState()
 
-    // TODO: Add payment history to ViewModel when backend API is ready
-    // For now, showing placeholder UI that will work when data is available
-    val payments = remember { mutableStateListOf<PaymentTransaction>() }
-    var isLoading by remember { mutableStateOf(false) }
+    // Load payment history on first composition
+    LaunchedEffect(Unit) {
+        viewModel.loadPaymentHistory(page = 0, refresh = true)
+    }
 
     Scaffold(
         topBar = {
@@ -50,7 +53,10 @@ fun PaymentHistoryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Refresh */ }) {
+                    IconButton(
+                        onClick = { viewModel.refreshPaymentHistory() },
+                        enabled = !isLoadingPayments
+                    ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -58,7 +64,7 @@ fun PaymentHistoryScreen(
         },
         modifier = modifier
     ) { paddingValues ->
-        if (isLoading) {
+        if (isLoadingPayments && payments.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
@@ -105,6 +111,26 @@ fun PaymentHistoryScreen(
                     // Payment transactions
                     items(payments) { payment ->
                         PaymentTransactionCard(payment = payment)
+                    }
+
+                    // Load more button
+                    if (hasMorePayments) {
+                        item {
+                            Button(
+                                onClick = { viewModel.loadMorePayments() },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !isLoadingPayments
+                            ) {
+                                if (isLoadingPayments) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Text(if (isLoadingPayments) "Loading..." else "Load More")
+                            }
+                        }
                     }
                 }
 

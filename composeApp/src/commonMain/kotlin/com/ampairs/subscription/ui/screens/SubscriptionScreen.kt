@@ -28,6 +28,7 @@ fun SubscriptionScreen(
     onNavigateToBillingHistory: () -> Unit,
     onNavigateToDeviceManagement: () -> Unit,
     onNavigateToUsageDetails: () -> Unit,
+    onNavigateToInvoices: (() -> Unit)? = null,
     onCheckoutUrl: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -138,6 +139,7 @@ fun SubscriptionScreen(
                         subscription = subscription,
                         onViewPlans = onNavigateToPlanComparison,
                         onBillingHistory = onNavigateToBillingHistory,
+                        onInvoices = onNavigateToInvoices,
                         onManageDevices = onNavigateToDeviceManagement,
                         onCancel = { showCancelDialog = true }
                     )
@@ -225,6 +227,7 @@ private fun QuickActionsSection(
     subscription: SubscriptionState?,
     onViewPlans: () -> Unit,
     onBillingHistory: () -> Unit,
+    onInvoices: (() -> Unit)? = null,
     onManageDevices: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -263,6 +266,24 @@ private fun QuickActionsSection(
                     onClick = onManageDevices,
                     modifier = Modifier.weight(1f)
                 )
+            }
+
+            // Second row with invoices button
+            onInvoices?.let {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    QuickActionButton(
+                        icon = Icons.Default.Description,
+                        label = "Invoices",
+                        onClick = it,
+                        modifier = Modifier.weight(1f)
+                    )
+                    // Placeholder buttons to maintain layout
+                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
 
             // Subscription management actions

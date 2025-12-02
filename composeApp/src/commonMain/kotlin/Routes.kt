@@ -273,6 +273,9 @@ sealed interface SubscriptionRoute {
     data object PaymentHistory : SubscriptionRoute
 
     @Serializable
+    data object PaymentMethods : SubscriptionRoute
+
+    @Serializable
     data class Checkout(
         val planCode: String = "",
         val billingCycle: String = "MONTHLY"
@@ -280,4 +283,12 @@ sealed interface SubscriptionRoute {
 
     @Serializable
     data object Devices : SubscriptionRoute
+
+    @Serializable
+    data object Invoices : SubscriptionRoute
+
+    @Serializable
+    data class InvoiceDetail(
+        val invoiceUid: String = ""
+    ) : SubscriptionRoute
 }

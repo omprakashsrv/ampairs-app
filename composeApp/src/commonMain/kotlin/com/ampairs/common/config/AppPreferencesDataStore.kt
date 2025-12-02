@@ -99,6 +99,46 @@ interface AppPreferencesDataStore {
      */
     suspend fun setLanguagePreference(languageCode: String)
 
+    /**
+     * Get whether user has seen subscription plan selection for a workspace
+     */
+    fun hasSeenPlanSelection(workspaceId: String): Flow<Boolean>
+
+    /**
+     * Mark that user has seen subscription plan selection for a workspace
+     */
+    suspend fun markPlanSelectionSeen(workspaceId: String)
+
+    /**
+     * Reset plan selection seen flag (for testing or re-onboarding)
+     */
+    suspend fun resetPlanSelectionSeen(workspaceId: String)
+
+    /**
+     * Save current subscription plan for workspace
+     */
+    suspend fun saveSubscriptionPlan(workspaceId: String, planCode: String)
+
+    /**
+     * Get saved subscription plan for workspace
+     */
+    fun getSavedSubscriptionPlan(workspaceId: String): Flow<String?>
+
+    /**
+     * Set flag to show upgrade prompt later
+     */
+    suspend fun setShouldShowUpgrade(workspaceId: String, shouldShow: Boolean)
+
+    /**
+     * Check if should show upgrade prompt
+     */
+    fun shouldShowUpgrade(workspaceId: String): Flow<Boolean>
+
+    /**
+     * Clear all subscription onboarding data for a workspace
+     */
+    suspend fun clearSubscriptionOnboardingData(workspaceId: String)
+
     // Future app settings can be added here:
     // fun getNotificationSettings(): Flow<NotificationSettings>
     // suspend fun setNotificationSettings(settings: NotificationSettings)
