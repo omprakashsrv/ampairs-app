@@ -15,7 +15,11 @@ import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.ui.components.*
 import com.ampairs.subscription.viewmodel.SubscriptionEvent
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
+import com.ampairs.subscription.viewmodel.InvoiceViewModel
+import com.ampairs.common.util.formatCurrencyWithCode
 import kotlinx.coroutines.flow.collectLatest
+import org.koin.compose.koinInject
+import androidx.compose.foundation.clickable
 
 /**
  * Main subscription management screen
@@ -29,8 +33,10 @@ fun SubscriptionScreen(
     onNavigateToDeviceManagement: () -> Unit,
     onNavigateToUsageDetails: () -> Unit,
     onNavigateToInvoices: (() -> Unit)? = null,
+    onNavigateToInvoiceDetail: ((String) -> Unit)? = null,
     onCheckoutUrl: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    invoiceViewModel: InvoiceViewModel = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val subscription by viewModel.subscription.collectAsState()
@@ -41,10 +47,21 @@ fun SubscriptionScreen(
     val activePreLaunchDiscount by viewModel.activePreLaunchDiscount.collectAsState()
     val isNewUser by viewModel.isNewUser.collectAsState()
 
+    // Invoice states
+    val invoiceSummary by invoiceViewModel.invoiceSummary.collectAsState()
+    val unpaidInvoices by invoiceViewModel.invoices.collectAsState()
+
     var showCancelDialog by remember { mutableStateOf(false) }
     var showUpgradeSheet by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Load invoice summary on screen entry
+    LaunchedEffect(Unit) {
+        invoiceViewModel.loadInvoiceSummary()
+        // Load only overdue and pending invoices for display
+        invoiceViewModel.loadInvoices(status = InvoiceStatus.OVERDUE)
+    }
 
     // Handle events
     LaunchedEffect(Unit) {
@@ -119,6 +136,17 @@ fun SubscriptionScreen(
                             subscription = sub,
                             onUpgrade = { showUpgradeSheet = true },
                             onManage = onNavigateToPlanComparison
+                        )
+                    }
+                }
+
+                // Unpaid Invoices Alert (if any)
+                item {
+                    if (invoiceSummary != null && (invoiceSummary!!.overdueInvoices > 0 || invoiceSummary!!.pendingInvoices > 0)) {
+                        UnpaidInvoicesCard(
+                            summary = invoiceSummary!!,
+                            onViewInvoices = onNavigateToInvoices,
+                            onViewInvoiceDetail = onNavigateToInvoiceDetail
                         )
                     }
                 }
@@ -323,6 +351,157 @@ private fun QuickActionButton(
         ) {
             Icon(icon, contentDescription = null)
             Text(label, style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+/**
+ * Card displaying unpaid invoices alert
+ */
+@Composable
+private fun UnpaidInvoicesCard(
+    summary: InvoiceSummary,
+    onViewInvoices: (() -> Unit)? = null,
+    onViewInvoiceDetail: ((String) -> Unit)? = null
+) {
+    val hasOverdue = summary.overdueInvoices > 0
+    val totalUnpaid = summary.overdueInvoices + summary.pendingInvoices
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if (hasOverdue)
+                MaterialTheme.colorScheme.errorContainer
+            else
+                MaterialTheme.colorScheme.secondaryContainer
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (hasOverdue) Icons.Default.Warning else Icons.Default.Info,
+                        contentDescription = null,
+                        tint = if (hasOverdue)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = if (hasOverdue) "Overdue Invoices" else "Pending Invoices",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (hasOverdue)
+                            MaterialTheme.colorScheme.onErrorContainer
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(
+                        text = "$totalUnpaid",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Message
+            Text(
+                text = if (hasOverdue) {
+                    "You have ${summary.overdueInvoices} overdue invoice${if (summary.overdueInvoices > 1) "s" else ""}. " +
+                    "Please pay to avoid service interruption."
+                } else {
+                    "You have ${summary.pendingInvoices} pending invoice${if (summary.pendingInvoices > 1) "s" else ""}. " +
+                    "Payment due soon."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (hasOverdue)
+                    MaterialTheme.colorScheme.onErrorContainer
+                else
+                    MaterialTheme.colorScheme.onSurface
+            )
+
+            HorizontalDivider()
+
+            // Amount and next due date
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Total Outstanding",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (hasOverdue)
+                            MaterialTheme.colorScheme.onErrorContainer
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = formatCurrencyWithCode(summary.totalOutstanding, "INR"),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (hasOverdue)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                summary.nextDueDate?.let { dueDate ->
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Next Due",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (hasOverdue)
+                                MaterialTheme.colorScheme.onErrorContainer
+                            else
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = dueDate.substringBefore("T"),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            // Action button
+            Button(
+                onClick = { onViewInvoices?.invoke() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (hasOverdue)
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(Icons.Default.Description, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (hasOverdue) "Pay Now" else "View Invoices")
+            }
         }
     }
 }

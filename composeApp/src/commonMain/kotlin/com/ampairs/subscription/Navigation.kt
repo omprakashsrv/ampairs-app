@@ -37,6 +37,9 @@ fun NavGraphBuilder.subscriptionNavigation(
                 onNavigateToInvoices = {
                     navController.navigate(SubscriptionRoute.Invoices)
                 },
+                onNavigateToInvoiceDetail = { invoiceUid ->
+                    navController.navigate(SubscriptionRoute.InvoiceDetail(invoiceUid))
+                },
                 onCheckoutUrl = { url ->
                     onOpenCheckoutUrl?.invoke(url)
                 }
