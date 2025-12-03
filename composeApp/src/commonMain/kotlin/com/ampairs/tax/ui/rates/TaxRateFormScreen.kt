@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +34,8 @@ fun TaxRateFormScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showTaxTypeDropdown by remember { mutableStateOf(false) }
     var showBusinessTypeDropdown by remember { mutableStateOf(false) }
+    var showEffectiveFromDatePicker by remember { mutableStateOf(false) }
+    var showEffectiveToDatePicker by remember { mutableStateOf(false) }
 
     val isEditing = taxRateId != null
 
@@ -268,7 +271,7 @@ fun TaxRateFormScreen(
                     modifier = Modifier.padding(top = 8.dp)
                 )
 
-                // Effective From Date (simplified - using current date)
+                // Effective From Date
                 OutlinedTextField(
                     value = formatDate(uiState.effectiveFrom),
                     onValueChange = { },
@@ -276,11 +279,38 @@ fun TaxRateFormScreen(
                     readOnly = true,
                     trailingIcon = {
                         IconButton(onClick = {
-                            // TODO: Show date picker
-                            viewModel.updateEffectiveFrom(Clock.System.now().toEpochMilliseconds())
+                            showEffectiveFromDatePicker = true
                         }) {
                             Icon(Icons.Default.DateRange, contentDescription = "Select date")
                         }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Effective To Date (Optional)
+                OutlinedTextField(
+                    value = uiState.effectiveTo?.let { formatDate(it) } ?: "Not set (indefinite)",
+                    onValueChange = { },
+                    label = { Text("Effective To - Optional") },
+                    readOnly = true,
+                    trailingIcon = {
+                        Row {
+                            if (uiState.effectiveTo != null) {
+                                IconButton(onClick = {
+                                    viewModel.updateEffectiveTo(null)
+                                }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear date")
+                                }
+                            }
+                            IconButton(onClick = {
+                                showEffectiveToDatePicker = true
+                            }) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Select date")
+                            }
+                        }
+                    },
+                    supportingText = {
+                        Text("Leave empty for indefinite validity")
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -357,6 +387,59 @@ fun TaxRateFormScreen(
                         }
                     }
                 }
+            }
+        }
+
+        // Date Picker Dialogs
+        if (showEffectiveFromDatePicker) {
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = uiState.effectiveFrom
+            )
+            DatePickerDialog(
+                onDismissRequest = { showEffectiveFromDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            viewModel.updateEffectiveFrom(millis)
+                        }
+                        showEffectiveFromDatePicker = false
+                    }) {
+                        Text("OK")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEffectiveFromDatePicker = false }) {
+                        Text("Cancel")
+                    }
+                }
+            ) {
+                DatePicker(state = datePickerState)
+            }
+        }
+
+        if (showEffectiveToDatePicker) {
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = uiState.effectiveTo ?: Clock.System.now().toEpochMilliseconds()
+            )
+            DatePickerDialog(
+                onDismissRequest = { showEffectiveToDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            viewModel.updateEffectiveTo(millis)
+                        }
+                        showEffectiveToDatePicker = false
+                    }) {
+                        Text("OK")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEffectiveToDatePicker = false }) {
+                        Text("Cancel")
+                    }
+                }
+            ) {
+                DatePicker(state = datePickerState)
             }
         }
     }
