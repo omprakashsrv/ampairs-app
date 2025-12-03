@@ -11,10 +11,13 @@ import com.ampairs.subscription.repository.SubscriptionRepository
 import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Clock
 
 /**
  * ViewModel for subscription management screens
  */
+@OptIn(kotlin.time.ExperimentalTime::class)
 class SubscriptionViewModel(
     private val repository: SubscriptionRepository,
     private val featureGate: FeatureGate,
@@ -22,6 +25,37 @@ class SubscriptionViewModel(
     private val userIdProvider: () -> String,
     private val deviceIdProvider: () -> String
 ) : ViewModel() {
+
+    companion object {
+        // Cache duration for subscription data (5 minutes)
+        private val CACHE_DURATION = 5.minutes
+
+        // Singleton cache to persist across ViewModel instances
+        private val lastSyncTimes = mutableMapOf<String, kotlin.time.Instant>()
+
+        /**
+         * Check if data needs refresh based on last sync time
+         */
+        private fun needsRefresh(key: String): Boolean {
+            val lastSync = lastSyncTimes[key] ?: return true
+            val now = Clock.System.now()
+            return (now - lastSync) > CACHE_DURATION
+        }
+
+        /**
+         * Update last sync time for a key
+         */
+        private fun updateSyncTime(key: String) {
+            lastSyncTimes[key] = Clock.System.now()
+        }
+
+        /**
+         * Clear cache for a workspace (call on logout or workspace switch)
+         */
+        fun clearCache(workspaceId: String) {
+            lastSyncTimes.keys.removeAll { it.startsWith(workspaceId) }
+        }
+    }
 
     // Get workspace and user IDs from context managers
     private val workspaceId: String
@@ -85,6 +119,27 @@ class SubscriptionViewModel(
         .map { plansList -> plansList.firstOrNull { it.preLaunchDiscount.isActive }?.preLaunchDiscount }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    // Payment history
+    private val _paymentHistory = MutableStateFlow<List<PaymentTransaction>>(emptyList())
+    val paymentHistory: StateFlow<List<PaymentTransaction>> = _paymentHistory.asStateFlow()
+
+    // Payment methods
+    private val _paymentMethods = MutableStateFlow<List<PaymentMethod>>(emptyList())
+    val paymentMethods: StateFlow<List<PaymentMethod>> = _paymentMethods.asStateFlow()
+
+    // Default payment method
+    private val _defaultPaymentMethod = MutableStateFlow<PaymentMethod?>(null)
+    val defaultPaymentMethod: StateFlow<PaymentMethod?> = _defaultPaymentMethod.asStateFlow()
+
+    // Payment history pagination
+    private val _isLoadingPayments = MutableStateFlow(false)
+    val isLoadingPayments: StateFlow<Boolean> = _isLoadingPayments.asStateFlow()
+
+    private val _hasMorePayments = MutableStateFlow(true)
+    val hasMorePayments: StateFlow<Boolean> = _hasMorePayments.asStateFlow()
+
+    private var currentPaymentPage = 0
+
     // ======================
     // Initialization
     // ======================
@@ -97,11 +152,37 @@ class SubscriptionViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                // Sync subscription and plans in parallel
-                launch { repository.syncSubscription(workspaceId) }
-                launch { repository.syncPlans() }
-                launch { repository.syncUsage(workspaceId) }
-                launch { repository.syncDevices(workspaceId) }
+                // Only sync if cache is expired (5 minutes)
+                if (needsRefresh("${workspaceId}_subscription")) {
+                    launch {
+                        repository.syncSubscription(workspaceId)
+                        updateSyncTime("${workspaceId}_subscription")
+                    }
+                }
+
+                // Plans are global, not workspace-specific
+                if (needsRefresh("global_plans")) {
+                    launch {
+                        repository.syncPlans()
+                        updateSyncTime("global_plans")
+                    }
+                }
+
+                // Usage data changes frequently, but still cache for 5 minutes
+                if (needsRefresh("${workspaceId}_usage")) {
+                    launch {
+                        repository.syncUsage(workspaceId)
+                        updateSyncTime("${workspaceId}_usage")
+                    }
+                }
+
+                // Devices rarely change, good candidate for caching
+                if (needsRefresh("${workspaceId}_devices")) {
+                    launch {
+                        repository.syncDevices(workspaceId)
+                        updateSyncTime("${workspaceId}_devices")
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             } finally {
@@ -114,7 +195,14 @@ class SubscriptionViewModel(
     // Actions
     // ======================
 
-    fun refresh() {
+    /**
+     * Force refresh subscription data (bypasses cache)
+     */
+    fun refresh(force: Boolean = false) {
+        if (force) {
+            // Clear cache for this workspace to force refresh
+            clearCache(workspaceId)
+        }
         loadInitialData()
     }
 
@@ -155,7 +243,8 @@ class SubscriptionViewModel(
         planCode: String,
         billingCycle: BillingCycle,
         provider: PaymentProvider,
-        currency: String = "INR"
+        currency: String = "INR",
+        startPolling: Boolean = false
     ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isProcessing = true) }
@@ -168,6 +257,11 @@ class SubscriptionViewModel(
                 repository.initiatePurchase(request, provider).fold(
                     onSuccess = { response ->
                         _events.emit(SubscriptionEvent.CheckoutReady(response))
+
+                        // Start polling for desktop platforms (Razorpay/Stripe)
+                        if (startPolling && (provider == PaymentProvider.RAZORPAY || provider == PaymentProvider.STRIPE)) {
+                            startPollingForSubscriptionUpdate()
+                        }
                     },
                     onFailure = { error ->
                         _uiState.update { it.copy(error = error.message) }
@@ -177,6 +271,46 @@ class SubscriptionViewModel(
             } finally {
                 _uiState.update { it.copy(isProcessing = false) }
             }
+        }
+    }
+
+    /**
+     * Poll for subscription update after desktop checkout (Razorpay/Stripe)
+     * Used when user completes payment in browser
+     */
+    private fun startPollingForSubscriptionUpdate() {
+        viewModelScope.launch {
+            var attempts = 0
+            val maxAttempts = 60 // Poll for 5 minutes (5 seconds * 60)
+            val pollInterval = 5000L // 5 seconds
+
+            while (attempts < maxAttempts) {
+                kotlinx.coroutines.delay(pollInterval)
+
+                // Sync subscription to check if payment completed
+                repository.syncSubscription(workspaceId).fold(
+                    onSuccess = { subscription ->
+                        if (subscription.status == SubscriptionStatus.ACTIVE) {
+                            // Payment verified, stop polling
+                            _events.emit(SubscriptionEvent.PurchaseVerified(subscription))
+                            return@launch
+                        }
+                    },
+                    onFailure = {
+                        // Continue polling on failure
+                    }
+                )
+
+                attempts++
+            }
+
+            // Timeout - show manual refresh instruction
+            _events.emit(
+                SubscriptionEvent.Error(
+                    "Payment verification is taking longer than expected. " +
+                    "If you completed the payment, please refresh the screen to check your subscription status."
+                )
+            )
         }
     }
 
@@ -462,6 +596,144 @@ class SubscriptionViewModel(
         return activePreLaunchDiscount.value != null &&
                 activePreLaunchDiscount.value!!.isEligible(_isNewUser.value)
     }
+
+    // ======================
+    // Payment History & Methods
+    // ======================
+
+    /**
+     * Load payment history with pagination
+     */
+    fun loadPaymentHistory(page: Int = 0, refresh: Boolean = false) {
+        if (refresh) {
+            currentPaymentPage = 0
+            _paymentHistory.value = emptyList()
+            _hasMorePayments.value = true
+        }
+
+        viewModelScope.launch {
+            if (_isLoadingPayments.value) return@launch
+
+            _isLoadingPayments.value = true
+            try {
+                repository.getPaymentHistory(page).fold(
+                    onSuccess = { pageResponse ->
+                        val newTransactions = pageResponse.content
+                        _paymentHistory.value = if (refresh) {
+                            newTransactions
+                        } else {
+                            _paymentHistory.value + newTransactions
+                        }
+                        _hasMorePayments.value = !pageResponse.last
+                        currentPaymentPage = page
+                    },
+                    onFailure = { error ->
+                        _events.emit(SubscriptionEvent.Error(
+                            error.message ?: "Failed to load payment history"
+                        ))
+                    }
+                )
+            } finally {
+                _isLoadingPayments.value = false
+            }
+        }
+    }
+
+    /**
+     * Load next page of payment history
+     */
+    fun loadMorePayments() {
+        if (_hasMorePayments.value && !_isLoadingPayments.value) {
+            loadPaymentHistory(currentPaymentPage + 1, refresh = false)
+        }
+    }
+
+    /**
+     * Refresh payment history
+     */
+    fun refreshPaymentHistory() {
+        loadPaymentHistory(page = 0, refresh = true)
+    }
+
+    /**
+     * Load payment methods
+     */
+    fun loadPaymentMethods() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                repository.getPaymentMethods().fold(
+                    onSuccess = { methods ->
+                        _paymentMethods.value = methods
+                        _defaultPaymentMethod.value = methods.firstOrNull { it.isDefault }
+                    },
+                    onFailure = { error ->
+                        _events.emit(SubscriptionEvent.Error(
+                            error.message ?: "Failed to load payment methods"
+                        ))
+                    }
+                )
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    /**
+     * Set default payment method
+     */
+    fun setDefaultPaymentMethod(uid: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessing = true) }
+            try {
+                repository.setDefaultPaymentMethod(uid).fold(
+                    onSuccess = { updatedMethod ->
+                        // Update local state
+                        _paymentMethods.value = _paymentMethods.value.map { method ->
+                            method.copy(isDefault = method.uid == uid)
+                        }
+                        _defaultPaymentMethod.value = updatedMethod
+                        _events.emit(SubscriptionEvent.PaymentMethodUpdated)
+                    },
+                    onFailure = { error ->
+                        _events.emit(SubscriptionEvent.Error(
+                            error.message ?: "Failed to set default payment method"
+                        ))
+                    }
+                )
+            } finally {
+                _uiState.update { it.copy(isProcessing = false) }
+            }
+        }
+    }
+
+    /**
+     * Remove payment method
+     */
+    fun removePaymentMethod(uid: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isProcessing = true) }
+            try {
+                repository.removePaymentMethod(uid).fold(
+                    onSuccess = {
+                        // Remove from local state
+                        _paymentMethods.value = _paymentMethods.value.filter { it.uid != uid }
+                        if (_defaultPaymentMethod.value?.uid == uid) {
+                            _defaultPaymentMethod.value = _paymentMethods.value.firstOrNull { it.isDefault }
+                        }
+                        _events.emit(SubscriptionEvent.PaymentMethodRemoved(uid))
+                    },
+                    onFailure = { error ->
+                        _events.emit(SubscriptionEvent.Error(
+                            error.message ?: "Failed to remove payment method"
+                        ))
+                    }
+                )
+            } finally {
+                _uiState.update { it.copy(isProcessing = false) }
+            }
+        }
+    }
 }
 
 /**
@@ -491,5 +763,7 @@ sealed class SubscriptionEvent {
     data class DeviceDeactivated(val deviceUid: String) : SubscriptionEvent()
     data class SyncCompleted(val serverTime: String) : SubscriptionEvent()
     data class SyncFailed(val reason: String) : SubscriptionEvent()
+    data object PaymentMethodUpdated : SubscriptionEvent()
+    data class PaymentMethodRemoved(val uid: String) : SubscriptionEvent()
     data class Error(val message: String) : SubscriptionEvent()
 }

@@ -10,13 +10,47 @@ import com.ampairs.subscription.domain.model.PaymentLinkResponse
 import com.ampairs.subscription.repository.InvoiceRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Clock
 
 /**
  * ViewModel for invoice operations
  */
+@OptIn(kotlin.time.ExperimentalTime::class)
 class InvoiceViewModel(
     private val repository: InvoiceRepository
 ) : ViewModel() {
+
+    companion object {
+        // Cache duration for invoice data (3 minutes - invoices change less frequently)
+        private val CACHE_DURATION = 3.minutes
+
+        // Singleton cache for invoice summary
+        private val lastSummarySync = mutableMapOf<String, kotlin.time.Instant>()
+
+        /**
+         * Check if summary needs refresh
+         */
+        private fun needsSummaryRefresh(workspaceId: String): Boolean {
+            val lastSync = lastSummarySync[workspaceId] ?: return true
+            val now = Clock.System.now()
+            return (now - lastSync) > CACHE_DURATION
+        }
+
+        /**
+         * Update summary sync time
+         */
+        private fun updateSummaryTime(workspaceId: String) {
+            lastSummarySync[workspaceId] = Clock.System.now()
+        }
+
+        /**
+         * Clear cache when payment is made or invoice status changes
+         */
+        fun clearSummaryCache(workspaceId: String) {
+            lastSummarySync.remove(workspaceId)
+        }
+    }
 
     private val _invoices = MutableStateFlow<List<Invoice>>(emptyList())
     val invoices: StateFlow<List<Invoice>> = _invoices.asStateFlow()
@@ -76,14 +110,22 @@ class InvoiceViewModel(
     }
 
     /**
-     * Load invoice summary
+     * Load invoice summary (with caching)
      */
-    fun loadInvoiceSummary() {
+    fun loadInvoiceSummary(force: Boolean = false) {
+        val workspaceId = getWorkspaceId()
+
+        // Skip if cache is still valid (unless forced)
+        if (!force && !needsSummaryRefresh(workspaceId)) {
+            return
+        }
+
         viewModelScope.launch {
-            repository.getInvoiceSummary(getWorkspaceId()).collect { result ->
+            repository.getInvoiceSummary(workspaceId).collect { result ->
                 result.fold(
                     onSuccess = { summary ->
                         _invoiceSummary.value = summary
+                        updateSummaryTime(workspaceId)
                     },
                     onFailure = { exception ->
                         println("Failed to load summary: ${exception.message}")
@@ -133,12 +175,15 @@ class InvoiceViewModel(
                         // Payment link generated, user needs to complete payment
                         _paymentLink.value = paymentLinkResponse
                     } else {
-                        // Auto-charge was successful
+                        // Auto-charge was successful - clear cache and reload
+                        clearSummaryCache(getWorkspaceId())
                         _error.value = "Payment processed successfully"
                         // Reload invoice to get updated status
                         loadInvoice(invoiceUid)
                         // Reload invoice list
                         loadInvoices(_selectedStatus.value)
+                        // Force reload summary
+                        loadInvoiceSummary(force = true)
                     }
                 },
                 onFailure = { exception ->
@@ -165,9 +210,12 @@ class InvoiceViewModel(
                     if (paymentLinkResponse.paymentLinkUrl.isNotEmpty()) {
                         _paymentLink.value = paymentLinkResponse
                     } else {
+                        // Payment successful - clear cache and reload
+                        clearSummaryCache(getWorkspaceId())
                         _error.value = "Payment processed successfully"
                         loadInvoice(invoiceUid)
                         loadInvoices(_selectedStatus.value)
+                        loadInvoiceSummary(force = true)
                     }
                 },
                 onFailure = { exception ->
