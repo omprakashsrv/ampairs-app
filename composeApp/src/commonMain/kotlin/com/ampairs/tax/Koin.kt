@@ -19,20 +19,21 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val taxModule = module {
+    includes(taxPlatformModule)
 
     // API Layer
     singleOf(::TaxApiImpl) bind TaxApi::class
 
-    // Database Layer
-    single { get<com.ampairs.tax.data.db.TaxRoomDatabase>().hsnCodeDao() }
-    single { get<com.ampairs.tax.data.db.TaxRoomDatabase>().taxRateDao() }
+    // Database Layer - Use factory to get fresh DAOs with new database instance
+    factory { get<com.ampairs.tax.data.db.TaxRoomDatabase>().hsnCodeDao() }
+    factory { get<com.ampairs.tax.data.db.TaxRoomDatabase>().taxRateDao() }
 
-    // Repository Layer
-    singleOf(::TaxRepository)
+    // Repository Layer - Use factory to recreate with new DAOs after workspace switch
+    factory { TaxRepository(get(), get(), get()) }
 
-    // Domain Layer
-    singleOf(::TaxStore)
-    singleOf(::TaxCalculationEngine)
+    // Domain Layer - Use factory to recreate Stores with new repositories/DAOs
+    factory { TaxStore(get()) }
+    factory { TaxCalculationEngine() }
 
     // ViewModels
     viewModelOf(::HsnCodesListViewModel)
@@ -43,3 +44,5 @@ val taxModule = module {
     viewModel { (taxRateId: String) -> TaxRateDetailsViewModel(taxRateId, get()) }
     viewModelOf(::TaxCalculatorViewModel)
 }
+
+expect val taxPlatformModule: org.koin.core.module.Module
