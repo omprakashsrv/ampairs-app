@@ -26,15 +26,6 @@ class TaxRepository(
     private val taxRateDao: TaxRateDao
 ) {
 
-    /**
-     * Get current workspace ID from workspace context manager
-     * @throws IllegalStateException if no workspace is selected
-     */
-    private fun getWorkspaceId(): String {
-        return WorkspaceContextManager.getInstance().getCurrentWorkspaceId()
-            ?: throw IllegalStateException("No workspace selected. Please select a workspace first.")
-    }
-
     // HSN Code operations
     fun getAllHsnCodes(): Flow<List<HsnCode>> {
         return hsnCodeDao.getAllActiveHsnCodes()
@@ -70,8 +61,7 @@ class TaxRepository(
 
             // Try to sync with server
             try {
-                val workspaceId = getWorkspaceId()
-                val result = taxApi.createHsnCode(workspaceId, hsnCodeWithTimestamp)
+                val result = taxApi.createHsnCode(hsnCodeWithTimestamp)
 
                 if (result.isSuccess) {
                     val serverHsnCode = result.getOrThrow()
@@ -104,8 +94,7 @@ class TaxRepository(
 
             // Try to sync with server
             try {
-                val workspaceId = getWorkspaceId()
-                val result = taxApi.updateHsnCode(workspaceId, hsnCode.id, updatedHsnCode)
+                val result = taxApi.updateHsnCode(hsnCode.id, updatedHsnCode)
 
                 if (result.isSuccess) {
                     val serverHsnCode = result.getOrThrow()
@@ -133,8 +122,7 @@ class TaxRepository(
 
             // Try to delete from server
             try {
-                val workspaceId = getWorkspaceId()
-                val result = taxApi.deleteHsnCode(workspaceId, id)
+                val result = taxApi.deleteHsnCode(id)
 
                 if (result.isSuccess) {
                     hsnCodeDao.deleteHsnCodeById(id)
@@ -203,8 +191,7 @@ class TaxRepository(
 
             // Try to sync with server
             try {
-                val workspaceId = getWorkspaceId()
-                val result = taxApi.createTaxRate(workspaceId, taxRateWithTimestamp)
+                val result = taxApi.createTaxRate(taxRateWithTimestamp)
 
                 if (result.isSuccess) {
                     val serverTaxRate = result.getOrThrow()
@@ -229,8 +216,7 @@ class TaxRepository(
         return try {
             // Try server calculation first
             try {
-                val workspaceId = getWorkspaceId()
-                val result = taxApi.calculateTax(workspaceId, request)
+                val result = taxApi.calculateTax(request)
                 if (result.isSuccess) {
                     return result
                 }
@@ -268,7 +254,7 @@ class TaxRepository(
                         ratePercentage = taxRate.ratePercentage / 2,
                         taxableAmount = baseAmount,
                         taxAmount = cgstAmount,
-                        description = "CGST @ ${String.format("%.2f", taxRate.ratePercentage / 2)}%"
+                        description = "CGST @ ${"%.2f".format(taxRate.ratePercentage / 2)}%"
                     ))
 
                     // SGST
@@ -277,15 +263,15 @@ class TaxRepository(
                         ratePercentage = taxRate.ratePercentage / 2,
                         taxableAmount = baseAmount,
                         taxAmount = sgstAmount,
-                        description = "SGST @ ${String.format("%.2f", taxRate.ratePercentage / 2)}%"
+                        description = "SGST @ ${"%.2f".format(taxRate.ratePercentage / 2)}%"
                     ))
 
                     // CESS (if applicable)
                     if (cessAmount > 0) {
                         val cessDescription = if (taxRate.cessRate != null) {
-                            "Cess @ ${String.format("%.2f", taxRate.cessRate)}%"
+                            "Cess @ ${"%.2f".format(taxRate.cessRate)}%"
                         } else {
-                            "Cess ₹${String.format("%.2f", taxRate.cessAmountPerUnit)} per unit"
+                            "Cess ₹${"%.2f".format(taxRate.cessAmountPerUnit)} per unit"
                         }
                         add(TaxBreakdownItem(
                             taxType = TaxType.CESS,
@@ -321,15 +307,15 @@ class TaxRepository(
                         ratePercentage = taxRate.ratePercentage,
                         taxableAmount = baseAmount,
                         taxAmount = gstAmount,
-                        description = "IGST @ ${String.format("%.2f", taxRate.ratePercentage)}%"
+                        description = "IGST @ ${"%.2f".format(taxRate.ratePercentage)}%"
                     ))
 
                     // CESS (if applicable)
                     if (cessAmount > 0) {
                         val cessDescription = if (taxRate.cessRate != null) {
-                            "Cess @ ${String.format("%.2f", taxRate.cessRate)}%"
+                            "Cess @ ${"%.2f".format(taxRate.cessRate)}%"
                         } else {
-                            "Cess ₹${String.format("%.2f", taxRate.cessAmountPerUnit)} per unit"
+                            "Cess ₹${"%.2f".format(taxRate.cessAmountPerUnit)} per unit"
                         }
                         add(TaxBreakdownItem(
                             taxType = TaxType.CESS,

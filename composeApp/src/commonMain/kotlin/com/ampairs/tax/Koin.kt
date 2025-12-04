@@ -33,7 +33,7 @@ val taxModule = module {
 
     // Domain Layer - Use factory to recreate Stores with new repositories/DAOs
     factory { TaxStore(get()) }
-    factory { TaxCalculationEngine() }
+    factory { TaxCalculationEngine(get()) }
 
     // ViewModels
     viewModelOf(::HsnCodesListViewModel)
