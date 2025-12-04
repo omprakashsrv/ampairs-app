@@ -25,6 +25,8 @@ import org.koin.core.parameter.parametersOf
 import androidx.navigation.NavController
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
+import com.ampairs.subscription.ui.screens.SubscriptionOnboardingScreen
+import SubscriptionRoute
 
 /**
  * Workspace modules screen showing active modules
@@ -42,10 +44,20 @@ fun WorkspaceModulesScreen(
 ) {
     var showUpdateDialog by remember { mutableStateOf(false) }
     var missingModuleName by remember { mutableStateOf("") }
+    var showSubscriptionOnboarding by remember { mutableStateOf(false) }
 
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val activeModules by viewModel.activeModules.collectAsState()
+
+    // Show subscription onboarding for new workspaces
+    LaunchedEffect(workspaceId) {
+        if (workspaceId.isNotEmpty()) {
+            // Show onboarding after a short delay to let the screen load
+            kotlinx.coroutines.delay(500)
+            showSubscriptionOnboarding = true
+        }
+    }
 
     // Initialize module registry and load data on first composition ONLY if workspaceId is provided
     LaunchedEffect(workspaceId) {
@@ -164,6 +176,23 @@ fun WorkspaceModulesScreen(
                 // This would typically open app store or trigger update mechanism
                 // For now, just dismiss the dialog
                 showUpdateDialog = false
+            }
+        )
+    }
+
+    // Subscription Onboarding Dialog
+    if (showSubscriptionOnboarding && workspaceId.isNotEmpty()) {
+        SubscriptionOnboardingScreen(
+            workspaceId = workspaceId,
+            onNavigateToPlanSelection = {
+                showSubscriptionOnboarding = false
+                navController.navigate(SubscriptionRoute.Plans)
+            },
+            onContinueWithFree = {
+                showSubscriptionOnboarding = false
+            },
+            onDismiss = {
+                showSubscriptionOnboarding = false
             }
         )
     }

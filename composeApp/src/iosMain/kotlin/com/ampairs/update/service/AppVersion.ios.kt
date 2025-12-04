@@ -2,6 +2,7 @@ package com.ampairs.update.service
 
 import com.ampairs.update.domain.DesktopPlatform
 import platform.Foundation.NSDate
+import platform.Foundation.timeIntervalSince1970
 
 /**
  * iOS implementation for getting current platform

@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ampairs.common.util.formatDecimal
 import com.ampairs.subscription.domain.model.*
 import kotlinx.coroutines.delay
 
@@ -208,7 +209,7 @@ fun DiscountBreakdownCard(
                 )
 
                 Text(
-                    text = "₹%.2f".format(totalSavings * workspaceCount) + " saved!",
+                    text = "₹${(totalSavings * workspaceCount).formatDecimal()} saved!",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
@@ -244,7 +245,7 @@ fun DiscountBreakdownCard(
                         )
                     }
                     Text(
-                        text = "-₹%.2f".format(discount.amount),
+                        text = "-₹${discount.amount.formatDecimal()}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.secondary
@@ -276,7 +277,7 @@ fun PriceWithDiscounts(
         // Show original price with strikethrough if discounts apply
         if (hasDiscounts) {
             Text(
-                text = "₹%.2f".format(basePrice),
+                text = "₹${basePrice.formatDecimal()}",
                 style = MaterialTheme.typography.bodyMedium,
                 textDecoration = TextDecoration.LineThrough,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -289,7 +290,7 @@ fun PriceWithDiscounts(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "₹%.2f".format(finalPrice),
+                text = "₹${finalPrice.formatDecimal()}",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = if (hasDiscounts) MaterialTheme.colorScheme.secondary

@@ -2,6 +2,7 @@
 
 package com.ampairs.subscription.repository
 
+import com.ampairs.common.model.PageResponse
 import com.ampairs.subscription.api.SubscriptionApi
 import com.ampairs.subscription.db.*
 import com.ampairs.subscription.domain.model.*
@@ -442,6 +443,85 @@ class SubscriptionRepository(
             } else {
                 Result.failure(e)
             }
+        }
+    }
+
+    // ======================
+    // Payment History & Methods
+    // ======================
+
+    /**
+     * Get payment history with pagination
+     */
+    suspend fun getPaymentHistory(page: Int = 0, size: Int = 20): Result<PageResponse<PaymentTransaction>> {
+        return try {
+            val response = api.getPaymentHistory(page, size)
+            // Map DTOs to domain models
+            val pageResponse = PageResponse(
+                content = response.content.map { it.toModel() },
+                pageNumber = response.pageNumber,
+                pageSize = response.pageSize,
+                totalElements = response.totalElements,
+                totalPages = response.totalPages,
+                hasNext = response.hasNext,
+                hasPrevious = response.hasPrevious,
+                first = response.first,
+                last = response.last
+            )
+            Result.success(pageResponse)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get all payment methods
+     */
+    suspend fun getPaymentMethods(): Result<List<PaymentMethod>> {
+        return try {
+            val response = api.getPaymentMethods()
+            val methods = response.map { it.toModel() }
+            Result.success(methods)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get default payment method
+     */
+    suspend fun getDefaultPaymentMethod(): Result<PaymentMethod?> {
+        return try {
+            val response = api.getDefaultPaymentMethod()
+            val method = response?.toModel()
+            Result.success(method)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Set default payment method
+     */
+    suspend fun setDefaultPaymentMethod(uid: String): Result<PaymentMethod> {
+        return try {
+            val response = api.setDefaultPaymentMethod(uid)
+            val method = response.toModel()
+            Result.success(method)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Remove payment method
+     */
+    suspend fun removePaymentMethod(uid: String): Result<Unit> {
+        return try {
+            api.removePaymentMethod(uid)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 

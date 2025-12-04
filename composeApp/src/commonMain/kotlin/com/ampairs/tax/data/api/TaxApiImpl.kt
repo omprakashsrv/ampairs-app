@@ -102,7 +102,6 @@ class TaxApiImpl(
     private val client = httpClient(engine, tokenRepository)
 
     override suspend fun getHsnCodes(
-        workspaceId: String,
         page: Int,
         size: Int,
         search: String?,
@@ -127,7 +126,7 @@ class TaxApiImpl(
         }
     }
 
-    override suspend fun getHsnCode(workspaceId: String, hsnCodeId: String): Result<HsnCode> {
+    override suspend fun getHsnCode(hsnCodeId: String): Result<HsnCode> {
         return try {
             val response: Response<HsnCode> = get(
                 client,
@@ -140,7 +139,7 @@ class TaxApiImpl(
         }
     }
 
-    override suspend fun createHsnCode(workspaceId: String, hsnCode: HsnCode): Result<HsnCode> {
+    override suspend fun createHsnCode(hsnCode: HsnCode): Result<HsnCode> {
         return try {
             // Use single POST UPSERT endpoint
             val requestDto = HsnCodeUpsertRequest(
@@ -172,7 +171,6 @@ class TaxApiImpl(
     }
 
     override suspend fun updateHsnCode(
-        workspaceId: String,
         hsnCodeId: String,
         hsnCode: HsnCode
     ): Result<HsnCode> {
@@ -206,7 +204,7 @@ class TaxApiImpl(
         }
     }
 
-    override suspend fun deleteHsnCode(workspaceId: String, hsnCodeId: String): Result<Unit> {
+    override suspend fun deleteHsnCode(hsnCodeId: String): Result<Unit> {
         return try {
             delete<Unit>(
                 client,
@@ -218,7 +216,7 @@ class TaxApiImpl(
         }
     }
 
-    override suspend fun searchHsnCodes(workspaceId: String, query: String): Result<List<HsnCode>> {
+    override suspend fun searchHsnCodes(query: String): Result<List<HsnCode>> {
         return try {
             val params = mapOf("searchTerm" to query)
             val response: Response<List<HsnCode>> = get(
@@ -233,7 +231,6 @@ class TaxApiImpl(
     }
 
     override suspend fun getTaxRates(
-        workspaceId: String,
         hsnCode: String?,
         businessType: String?,
         effectiveDate: Long?
@@ -256,7 +253,6 @@ class TaxApiImpl(
     }
 
     override suspend fun getEffectiveTaxRate(
-        workspaceId: String,
         hsnCode: String,
         businessType: String,
         effectiveDate: Long
@@ -279,7 +275,7 @@ class TaxApiImpl(
         }
     }
 
-    override suspend fun getTaxRate(workspaceId: String, taxRateId: String): Result<TaxRate> {
+    override suspend fun getTaxRate(taxRateId: String): Result<TaxRate> {
         return try {
             val response: Response<TaxRate> = get(
                 client,
@@ -292,7 +288,7 @@ class TaxApiImpl(
         }
     }
 
-    override suspend fun createTaxRate(workspaceId: String, taxRate: TaxRate): Result<TaxRate> {
+    override suspend fun createTaxRate(taxRate: TaxRate): Result<TaxRate> {
         return try {
             // Use single POST UPSERT endpoint
             val requestDto = TaxRateUpsertRequest(
@@ -331,7 +327,6 @@ class TaxApiImpl(
     }
 
     override suspend fun updateTaxRate(
-        workspaceId: String,
         taxRateId: String,
         taxRate: TaxRate
     ): Result<TaxRate> {
@@ -373,7 +368,7 @@ class TaxApiImpl(
         }
     }
 
-    override suspend fun deleteTaxRate(workspaceId: String, taxRateId: String): Result<Unit> {
+    override suspend fun deleteTaxRate(taxRateId: String): Result<Unit> {
         return try {
             delete<Unit>(
                 client,
@@ -386,7 +381,6 @@ class TaxApiImpl(
     }
 
     override suspend fun calculateTax(
-        workspaceId: String,
         request: TaxCalculationRequest
     ): Result<TaxCalculationResult> {
         return try {

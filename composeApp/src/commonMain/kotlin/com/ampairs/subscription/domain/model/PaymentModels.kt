@@ -1,5 +1,6 @@
 package com.ampairs.subscription.domain.model
 
+import com.ampairs.common.util.formatDecimal
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -49,7 +50,7 @@ data class PaymentTransaction(
             "GBP" -> "£"
             else -> currency
         }
-        return "$symbol%.2f".format(amount)
+        return "$symbol${amount.formatDecimal()}"
     }
 
     /**

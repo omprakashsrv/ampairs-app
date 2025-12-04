@@ -98,6 +98,9 @@ kotlin {
                 // In-app updates
                 implementation(libs.app.update)
 
+                // Google Play Billing
+                implementation(libs.billing.ktx)
+
                 // Firebase - Native Android SDK
                 implementation(libs.firebase.auth)
                 implementation(libs.google.firebase.analytics)
@@ -233,7 +236,7 @@ android {
         versionName = "1.0.0.17"
 
         // Environment configuration
-        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.3:8080\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.8:8080\"")
         buildConfigField("String", "ENVIRONMENT", "\"dev\"")
     }
 
@@ -247,7 +250,7 @@ android {
     }
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.3:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.8:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
 

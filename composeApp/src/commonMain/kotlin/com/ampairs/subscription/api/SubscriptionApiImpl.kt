@@ -8,6 +8,7 @@ import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
+import com.ampairs.common.put
 import com.ampairs.subscription.domain.dto.*
 import com.ampairs.subscription.domain.model.*
 import io.ktor.client.engine.HttpClientEngine
@@ -224,7 +225,7 @@ class SubscriptionApiImpl(
     override suspend fun getPaymentHistory(page: Int, size: Int): PageResponse<PaymentTransactionResponseDto> {
         val response: Response<PageResponse<PaymentTransactionResponseDto>> = get(
             client,
-            ApiUrlBuilder.subscriptionUrl("v1/billing/invoices"),
+            ApiUrlBuilder.subscriptionUrl("v1/subscriptions/payments"),
             mapOf("page" to page, "size" to size)
         )
         return response.data ?: PageResponse(
@@ -243,7 +244,7 @@ class SubscriptionApiImpl(
     override suspend fun getPaymentMethods(): List<PaymentMethodResponseDto> {
         val response: Response<List<PaymentMethodResponseDto>> = get(
             client,
-            ApiUrlBuilder.subscriptionUrl("v1/billing/payment-methods")
+            ApiUrlBuilder.subscriptionUrl("v1/subscriptions/payment-methods")
         )
         return response.data ?: emptyList()
     }
@@ -251,16 +252,16 @@ class SubscriptionApiImpl(
     override suspend fun getDefaultPaymentMethod(): PaymentMethodResponseDto? {
         val response: Response<PaymentMethodResponseDto> = get(
             client,
-            ApiUrlBuilder.subscriptionUrl("v1/billing/payment-methods/default")
+            ApiUrlBuilder.subscriptionUrl("v1/subscriptions/payment-methods/default")
         )
         return response.data
     }
 
     override suspend fun setDefaultPaymentMethod(paymentMethodUid: String): PaymentMethodResponseDto {
-        val response: Response<PaymentMethodResponseDto> = post(
+        val response: Response<PaymentMethodResponseDto> = put(
             client,
-            ApiUrlBuilder.subscriptionUrl("v1/billing/payment-methods/default"),
-            mapOf("paymentMethodUid" to paymentMethodUid)
+            ApiUrlBuilder.subscriptionUrl("v1/subscriptions/payment-methods/$paymentMethodUid/default"),
+            emptyMap<String, String>()
         )
         return response.data ?: throw SubscriptionApiException(
             response.error?.message ?: "Failed to set default payment method"
@@ -270,7 +271,7 @@ class SubscriptionApiImpl(
     override suspend fun removePaymentMethod(uid: String) {
         delete<Response<Map<String, Boolean>>>(
             client,
-            ApiUrlBuilder.subscriptionUrl("v1/billing/payment-methods/$uid")
+            ApiUrlBuilder.subscriptionUrl("v1/subscriptions/payment-methods/$uid")
         )
     }
 

@@ -55,16 +55,15 @@ actual class ContactPickerService {
 
     actual suspend fun hasContactPermission(): Boolean {
         val status = CNContactStore.authorizationStatusForEntityType(CNEntityType.CNEntityTypeContacts)
-        return status == CNAuthorizationStatus.CNAuthorizationStatusAuthorized
+        return status == 3L // CNAuthorizationStatusAuthorized
     }
 
     actual suspend fun requestContactPermission(): Boolean = withContext(Dispatchers.Main) {
         val currentStatus = CNContactStore.authorizationStatusForEntityType(CNEntityType.CNEntityTypeContacts)
 
         when (currentStatus) {
-            CNAuthorizationStatus.CNAuthorizationStatusAuthorized -> return@withContext true
-            CNAuthorizationStatus.CNAuthorizationStatusDenied,
-            CNAuthorizationStatus.CNAuthorizationStatusRestricted -> return@withContext false
+            3L -> return@withContext true // CNAuthorizationStatusAuthorized
+            2L, 1L -> return@withContext false // CNAuthorizationStatusDenied, CNAuthorizationStatusRestricted
             else -> {
                 // Not determined, request permission
                 val permissionDeferred = CompletableDeferred<Boolean>()
@@ -96,20 +95,24 @@ private class ContactPickerDelegate(
         // Get phone
         var phone = ""
         var countryCode = "+91"
-        val phones = contact.phoneNumbers as? List<CNLabeledValue<CNPhoneNumber>>
-        if (!phones.isNullOrEmpty()) {
-            val phoneNumber = phones.first().value
-            val fullPhone = phoneNumber.stringValue
-            val (code, number) = parsePhoneNumber(fullPhone)
-            countryCode = code
-            phone = number
+        val phones = contact.phoneNumbers as? List<*>
+        if (phones?.isNotEmpty() == true) {
+            val labeledValue = phones.first() as? CNLabeledValue
+            val phoneNumber = labeledValue?.value as? CNPhoneNumber
+            val fullPhone = phoneNumber?.stringValue ?: ""
+            if (fullPhone.isNotEmpty()) {
+                val (code, number) = parsePhoneNumber(fullPhone)
+                countryCode = code
+                phone = number
+            }
         }
 
         // Get email
         var email = ""
-        val emails = contact.emailAddresses as? List<CNLabeledValue<*>>
-        if (!emails.isNullOrEmpty()) {
-            email = emails.first().value as? String ?: ""
+        val emails = contact.emailAddresses as? List<*>
+        if (emails?.isNotEmpty() == true) {
+            val labeledValue = emails.first() as? CNLabeledValue
+            email = labeledValue?.value as? String ?: ""
         }
 
         // Get organization
@@ -122,14 +125,15 @@ private class ContactPickerDelegate(
         var pincode = ""
         var country = ""
 
-        val addresses = contact.postalAddresses as? List<CNLabeledValue<CNPostalAddress>>
-        if (!addresses.isNullOrEmpty()) {
-            val postalAddress = addresses.first().value
-            street = postalAddress.street ?: ""
-            city = postalAddress.city ?: ""
-            state = postalAddress.state ?: ""
-            pincode = postalAddress.postalCode ?: ""
-            country = postalAddress.country ?: ""
+        val addresses = contact.postalAddresses as? List<*>
+        if (addresses?.isNotEmpty() == true) {
+            val labeledValue = addresses.first() as? CNLabeledValue
+            val postalAddress = labeledValue?.value as? CNPostalAddress
+            street = postalAddress?.street ?: ""
+            city = postalAddress?.city ?: ""
+            state = postalAddress?.state ?: ""
+            pincode = postalAddress?.postalCode ?: ""
+            country = postalAddress?.country ?: ""
         }
 
         val contactData = ContactData(

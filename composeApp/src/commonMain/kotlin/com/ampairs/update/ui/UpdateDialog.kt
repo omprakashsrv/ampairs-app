@@ -7,6 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.util.formatDecimal
 import com.ampairs.update.domain.UpdateDownloadState
 import com.ampairs.update.domain.UpdateInfo
 import com.ampairs.update.domain.UpdateInstallState
@@ -72,7 +73,7 @@ fun UpdateDialog(
 
                 // File size
                 Text(
-                    text = "Size: ${String.format("%.1f", updateInfo.fileSizeMb)} MB",
+                    text = "Size: ${updateInfo.fileSizeMb.formatDecimal(1)} MB",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

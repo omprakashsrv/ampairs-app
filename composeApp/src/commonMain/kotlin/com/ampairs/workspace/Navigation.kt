@@ -1,6 +1,7 @@
 package com.ampairs.workspace
 
 import Route
+import SubscriptionRoute
 import WorkspaceRoute
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -55,8 +56,11 @@ fun NavGraphBuilder.workspaceNavigation(
                     navController.popBackStack()
                 },
                 onWorkspaceCreated = { workspaceId ->
-                    // Navigate to modules list for the selected workspace
-                    navController.navigate(WorkspaceRoute.Modules(workspaceId))
+                    // After workspace creation, check if we need to show subscription plan selection
+                    // Navigate to subscription plan selection first for new workspaces
+                    navController.navigate(SubscriptionRoute.Plans) {
+                        popUpTo(WorkspaceRoute.Root) { inclusive = false }
+                    }
                 },
                 modifier = Modifier
             )

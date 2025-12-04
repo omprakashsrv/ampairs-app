@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ampairs.common.util.formatDecimal
 import com.ampairs.subscription.domain.model.PreLaunchDiscount
 import kotlinx.coroutines.delay
 
@@ -272,7 +273,7 @@ fun PreLaunchDiscountBreakdown(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "$currency%.2f".format(basePrice),
+                    text = "$currency${basePrice.formatDecimal()}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -306,7 +307,7 @@ fun PreLaunchDiscountBreakdown(
                     )
                 }
                 Text(
-                    text = "-$currency%.2f".format(preLaunchSavings),
+                    text = "-$currency${preLaunchSavings.formatDecimal()}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = PreLaunchOrange
@@ -324,7 +325,7 @@ fun PreLaunchDiscountBreakdown(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "-$currency%.2f".format(amount),
+                        text = "-$currency${amount.formatDecimal()}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.secondary
@@ -345,7 +346,7 @@ fun PreLaunchDiscountBreakdown(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "$currency%.2f".format(currentPrice),
+                    text = "$currency${currentPrice.formatDecimal()}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = PreLaunchOrange
@@ -366,7 +367,7 @@ fun PreLaunchDiscountBreakdown(
                     Text(text = "💰", style = MaterialTheme.typography.bodyLarge)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "You save $currency%.2f every month!".format(totalSavings),
+                        text = "You save $currency${totalSavings.formatDecimal()} every month!",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF2E7D32)

@@ -53,6 +53,7 @@ play-services-coroutines = "1.10.2"
 play-services-auth = "21.4.0"
 play-integrity = "1.5.0"
 app-update = "2.1.0"
+billing = "7.1.1"
 krossbow = "9.3.0"
 firebase-bom = "34.5.0"
 firebase-auth = "24.0.1"
@@ -149,6 +150,7 @@ play-services-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
 play-services-integrity = { module = "com.google.android.play:integrity", version.ref = "play-integrity" }
 app-update = { module = "com.google.android.play:app-update-ktx", version.ref = "app-update" }
+billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
 

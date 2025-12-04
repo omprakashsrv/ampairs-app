@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import com.ampairs.common.util.formatDecimal
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -110,7 +111,7 @@ fun PricingCalculator(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "$currency%.2f".format(basePrice) + " each",
+                    text = "$currency${basePrice.formatDecimal()} each",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -127,7 +128,7 @@ fun PricingCalculator(
                         color = MaterialTheme.colorScheme.secondary
                     )
                     Text(
-                        text = "-$currency%.2f".format(savings),
+                        text = "-$currency${savings.formatDecimal()}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
@@ -148,7 +149,7 @@ fun PricingCalculator(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "$currency%.2f".format(totalPrice),
+                    text = "$currency${totalPrice.formatDecimal()}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
