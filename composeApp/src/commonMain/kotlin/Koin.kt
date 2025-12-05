@@ -10,7 +10,6 @@ import com.ampairs.event.di.eventModule
 import com.ampairs.form.di.formModule
 import com.ampairs.product.productModule
 import com.ampairs.subscription.di.subscriptionModule
-import com.ampairs.tax.taxModule
 import com.ampairs.update.di.updateModule
 import com.ampairs.workspace.workspaceModule
 import org.koin.core.KoinApplication
@@ -43,7 +42,6 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             locationServiceModule,
             productModule(),
             businessModule(),
-            taxModule,
             subscriptionModule,
             updateModule,
         )

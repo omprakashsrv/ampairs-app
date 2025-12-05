@@ -96,6 +96,10 @@ class WorkspaceContextManager private constructor() {
         return _currentWorkspace.value
             ?: throw IllegalStateException("No workspace context available. User must select a workspace first.")
     }
+
+    fun getCurrentCountryCode(): String? {
+        return null;
+    }
 }
 
 /**

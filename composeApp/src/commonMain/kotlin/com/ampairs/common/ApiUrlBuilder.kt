@@ -182,6 +182,23 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build complete API URL for tax endpoints
+     */
+    fun taxUrl(path: String, queryParams: Map<String, String> = emptyMap()): String {
+        val cleanPath = path.removePrefix("/")
+        val baseUrl = "${ConfigurationManager.apiBaseUrl}/tax/$cleanPath"
+
+        return if (queryParams.isEmpty()) {
+            baseUrl
+        } else {
+            val queryString = queryParams.entries.joinToString("&") { (key, value) ->
+                "$key=$value"
+            }
+            "$baseUrl?$queryString"
+        }
+    }
+
+    /**
      * Build WebSocket URL
      */
     fun wsUrl(path: String): String {
