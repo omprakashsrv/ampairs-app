@@ -17,6 +17,8 @@ import com.ampairs.tax.data.repository.TaxComponentRepository
 import com.ampairs.tax.data.repository.TaxConfigurationRepository
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxStrategy
+import com.ampairs.tax.ui.calculator.TaxCalculatorViewModel
+import com.ampairs.tax.ui.list.MyTaxCodesViewModel
 import com.ampairs.tax.ui.search.TaxCodeSearchViewModel
 import com.ampairs.tax.ui.detail.TaxCodeDetailViewModel
 import org.koin.core.module.dsl.factoryOf
@@ -144,6 +146,8 @@ val taxModule = module {
     }
 
     // ViewModels
+    viewModelOf(::TaxCalculatorViewModel)
+    viewModelOf(::MyTaxCodesViewModel)
     viewModelOf(::TaxCodeSearchViewModel)
     viewModelOf(::TaxCodeDetailViewModel)
 }

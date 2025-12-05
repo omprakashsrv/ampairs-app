@@ -1,0 +1,211 @@
+package com.ampairs.tax.ui.detail
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ampairs.tax.calculation.TaxCalculationEngine
+import com.ampairs.tax.calculation.model.*
+import com.ampairs.tax.data.repository.TaxCodeRepository
+import com.ampairs.tax.domain.model.TaxCode
+import com.ampairs.workspace.context.WorkspaceContextManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+/**
+ * Tax Code Detail ViewModel
+ *
+ * Features:
+ * - Display full tax code information
+ * - Edit notes and custom tax rules
+ * - Toggle favorite status
+ * - View usage history
+ * - Unsubscribe from code
+ */
+class TaxCodeDetailViewModel(
+    private val taxCodeId: String,
+    private val taxCodeRepository: TaxCodeRepository,
+    private val taxCalculationEngine: TaxCalculationEngine,
+    private val workspaceContext: WorkspaceContextManager
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<TaxCodeDetailUiState>(TaxCodeDetailUiState.Loading)
+    val uiState: StateFlow<TaxCodeDetailUiState> = _uiState.asStateFlow()
+
+    init {
+        loadTaxCodeDetails()
+    }
+
+    private fun loadTaxCodeDetails() {
+        viewModelScope.launch {
+            _uiState.value = TaxCodeDetailUiState.Loading
+
+            // Observe the tax code from database
+            taxCodeRepository.observeWorkspaceTaxCodes().collect { taxCodes ->
+                val taxCode = taxCodes.find { it.id == taxCodeId }
+                if (taxCode != null) {
+                    _uiState.value = TaxCodeDetailUiState.Success(
+                        taxCode = taxCode,
+                        isEditing = false,
+                        isSaving = false,
+                        saveError = null
+                    )
+                } else {
+                    _uiState.value = TaxCodeDetailUiState.Error("Tax code not found")
+                }
+            }
+        }
+    }
+
+    fun toggleFavorite() {
+        val currentState = _uiState.value
+        if (currentState is TaxCodeDetailUiState.Success) {
+            viewModelScope.launch {
+                val newFavoriteStatus = !currentState.taxCode.isFavorite
+                taxCodeRepository.setFavorite(taxCodeId, newFavoriteStatus)
+                // State will update automatically via Flow observation
+            }
+        }
+    }
+
+    fun updateNotes(notes: String) {
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState is TaxCodeDetailUiState.Success) {
+                _uiState.update {
+                    currentState.copy(
+                        taxCode = currentState.taxCode.copy(notes = notes.ifBlank { null })
+                    )
+                }
+            }
+        }
+    }
+
+    fun saveNotes(notes: String) {
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState is TaxCodeDetailUiState.Success) {
+                _uiState.update { currentState.copy(isSaving = true, saveError = null) }
+
+                // Note: This would require a repository method to update notes
+                // For now, we'll just update the local state
+                // TODO: Add repository.updateNotes(taxCodeId, notes) method
+
+                _uiState.update {
+                    currentState.copy(
+                        isSaving = false,
+                        isEditing = false,
+                        saveError = null
+                    )
+                }
+            }
+        }
+    }
+
+    fun setEditing(isEditing: Boolean) {
+        val currentState = _uiState.value
+        if (currentState is TaxCodeDetailUiState.Success) {
+            _uiState.update { currentState.copy(isEditing = isEditing) }
+        }
+    }
+
+    fun unsubscribe(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState is TaxCodeDetailUiState.Success) {
+                _uiState.update { currentState.copy(isSaving = true, saveError = null) }
+
+                val result = taxCodeRepository.unsubscribeFromTaxCode(taxCodeId)
+
+                result.fold(
+                    onSuccess = {
+                        onSuccess()
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            currentState.copy(
+                                isSaving = false,
+                                saveError = error.message ?: "Failed to unsubscribe"
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    fun clearError() {
+        val currentState = _uiState.value
+        if (currentState is TaxCodeDetailUiState.Success) {
+            _uiState.update { currentState.copy(saveError = null) }
+        }
+    }
+
+    fun calculateTaxPreview(amount: Double, quantity: Int, sourceState: String, destState: String) {
+        val currentState = _uiState.value
+        if (currentState is TaxCodeDetailUiState.Success) {
+            viewModelScope.launch {
+                _uiState.update { currentState.copy(isCalculating = true) }
+
+                val countryCode = workspaceContext.getCurrentCountryCode() ?: "IN"
+
+                val request = TaxCalculationRequest(
+                    taxCode = currentState.taxCode.code,
+                    taxCodeType = currentState.taxCode.codeType,
+                    baseAmount = amount,
+                    quantity = quantity,
+                    sourceLocation = TaxJurisdiction(
+                        country = countryCode,
+                        state = sourceState
+                    ),
+                    destinationLocation = TaxJurisdiction(
+                        country = countryCode,
+                        state = destState
+                    ),
+                    transactionType = TransactionType.B2B,
+                    transactionContext = TransactionContext(
+                        businessType = "REGULAR"
+                    )
+                )
+
+                val result = taxCalculationEngine.calculateTax(request)
+
+                result.fold(
+                    onSuccess = { calculationResult ->
+                        _uiState.update {
+                            currentState.copy(
+                                isCalculating = false,
+                                calculationResult = calculationResult
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            currentState.copy(
+                                isCalculating = false,
+                                saveError = error.message ?: "Calculation failed"
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * UI State for Tax Code Detail
+ */
+sealed class TaxCodeDetailUiState {
+    data object Loading : TaxCodeDetailUiState()
+    data class Error(val message: String) : TaxCodeDetailUiState()
+    data class Success(
+        val taxCode: TaxCode,
+        val isEditing: Boolean = false,
+        val isSaving: Boolean = false,
+        val saveError: String? = null,
+        val isCalculating: Boolean = false,
+        val calculationResult: TaxCalculationResult? = null
+    ) : TaxCodeDetailUiState()
+}

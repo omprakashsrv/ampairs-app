@@ -9,12 +9,20 @@ import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
 import Route
+import com.ampairs.tax.ui.calculator.TaxCalculatorScreen
+import com.ampairs.tax.ui.list.MyTaxCodesScreen
 import com.ampairs.tax.ui.search.TaxCodeSearchScreen
 import com.ampairs.tax.ui.detail.TaxCodeDetailScreen
 
 // Tax Navigation Routes
 @Serializable
 object TaxListRoute
+
+@Serializable
+object TaxCalculatorRoute
+
+@Serializable
+object MyTaxCodesRoute
 
 @Serializable
 data class TaxCodeSearchRoute(val initialQuery: String = "")
@@ -29,6 +37,32 @@ fun NavGraphBuilder.taxNavigation(
         // Main Tax Module Landing Screen
         composable<TaxListRoute> {
             TaxModuleScreen(
+                onNavigateToCalculator = {
+                    navController.navigate(TaxCalculatorRoute)
+                },
+                onNavigateToMyTaxCodes = {
+                    navController.navigate(MyTaxCodesRoute)
+                },
+                onNavigateToSearch = {
+                    navController.navigate(TaxCodeSearchRoute())
+                },
+                modifier = Modifier
+            )
+        }
+
+        // Tax Calculator Screen
+        composable<TaxCalculatorRoute> {
+            TaxCalculatorScreen(
+                modifier = Modifier
+            )
+        }
+
+        // My Tax Codes List Screen
+        composable<MyTaxCodesRoute> {
+            MyTaxCodesScreen(
+                onNavigateToEdit = { codeId ->
+                    navController.navigate(TaxCodeDetailRoute(taxCodeId = codeId))
+                },
                 onNavigateToSearch = {
                     navController.navigate(TaxCodeSearchRoute())
                 },
@@ -64,6 +98,8 @@ fun TaxScreen(
     modifier: Modifier = Modifier
 ) {
     TaxModuleScreen(
+        onNavigateToCalculator = {},
+        onNavigateToMyTaxCodes = {},
         onNavigateToSearch = {},
         modifier = modifier
     )
