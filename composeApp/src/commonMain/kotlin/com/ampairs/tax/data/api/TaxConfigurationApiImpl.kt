@@ -1,16 +1,18 @@
 package com.ampairs.tax.data.api
 
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.tax.domain.model.MasterTaxCode
-import com.ampairs.tax.domain.model.TaxComponentType
-import com.ampairs.tax.domain.model.TaxRule
 import com.ampairs.tax.domain.model.TaxCode
-import com.ampairs.tax.domain.model.WorkspaceTaxComponent
+import com.ampairs.tax.domain.model.TaxComponentType
 import com.ampairs.tax.domain.model.TaxConfiguration
-import io.ktor.client.HttpClient
+import com.ampairs.tax.domain.model.TaxRule
+import com.ampairs.tax.domain.model.WorkspaceTaxComponent
 import io.ktor.client.call.body
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -24,8 +26,11 @@ import kotlinx.serialization.Serializable
  * Tax Configuration API Implementation
  */
 class TaxConfigurationApiImpl(
-    private val httpClient: HttpClient
+    engine: HttpClientEngine,
+    tokenRepository: TokenRepository
 ) : TaxConfigurationApi {
+
+    private val httpClient = httpClient(engine, tokenRepository)
 
     override suspend fun getWorkspaceConfiguration(): Result<TaxConfiguration> {
         return try {

@@ -33,7 +33,7 @@ This document outlines the architecture for building a globally extensible, mult
 - ✅ Support tax systems from multiple countries (India, USA, UK, EU, Canada, Australia, etc.)
 - ✅ Maintain offline-first architecture for seamless operation
 - ✅ Provide flexible tax component identification (CGST/SGST, VAT, Sales Tax, etc.)
-- ✅ Enable workspace-level country configuration
+- ✅ Enable -level country configuration
 - ✅ Support complex tax scenarios (compound taxes, tiered rates, jurisdiction-based)
 - ✅ Ensure compliance with country-specific tax regulations
 
@@ -81,19 +81,19 @@ Tax systems decomposed into reusable components:
 - Components have configurable rates, calculation methods, and rules
 - Rules compose multiple components for complete tax calculation
 
-### 3. **Workspace-Scoped Configuration**
+### 3. **-Scoped Configuration**
 
-Each workspace can have different tax settings:
+Each  can have different tax settings:
 - Country selection determines tax strategy
-- Tax rules specific to workspace + country
-- Proper isolation using workspace context
+- Tax rules specific to  + country
+- Proper isolation using  context
 
 ### 4. **Strategy Pattern for Countries**
 
 Pluggable strategies for different tax systems:
 - `ITaxCalculationStrategy` interface
 - Country-specific implementations (IndiaGSTStrategy, USASalesTaxStrategy, etc.)
-- Runtime strategy selection based on workspace country
+- Runtime strategy selection based on  country
 
 ### 5. **Scalability & Extensibility**
 
@@ -112,7 +112,7 @@ Built for growth and adaptation:
 ```
 ┌─────────────────────────────────────────────────────┐
 │           TaxCalculationEngine (Orchestrator)       │
-│   - Selects strategy based on workspace country     │
+│   - Selects strategy based on  country     │
 │   - Coordinates offline-first calculation           │
 │   - Manages component composition                   │
 └────────────────┬────────────────────────────────────┘
@@ -150,7 +150,7 @@ Built for growth and adaptation:
        ▼
 ┌──────────────────────────┐
 │ TaxCalculationEngine     │
-│ - Get workspace country  │
+│ - Get  country  │
 │ - Select strategy        │
 └──────┬───────────────────┘
        │
@@ -199,7 +199,7 @@ com.ampairs.tax/
 ├── data/
 │   ├── db/
 │   │   ├── TaxComponentTypeEntity.kt   (Component definitions)
-│   │   ├── WorkspaceTaxComponentEntity.kt (Workspace configs)
+│   │   ├── TaxComponentEntity.kt ( configs)
 │   │   ├── TaxRuleEntityV2.kt          (Tax rules)
 │   │   ├── TaxComponentTypeDao.kt
 │   │   ├── TaxComponentDao.kt
@@ -223,7 +223,194 @@ com.ampairs.tax/
 
 ## Data Models
 
-### 1. Tax Component Type (Master Data)
+### 1. Master Tax Code Registry (Server-Side)
+
+**Country-wise** global registry of all available tax codes maintained server-side. Each country has its own tax code system:
+
+| Country | Tax Code Systems | Approximate Count | Examples |
+|---------|------------------|-------------------|----------|
+| **India** 🇮🇳 | HSN (Goods), SAC (Services) | 50,000+ HSN, 10,000+ SAC | HSN: 12345678, SAC: 998314 |
+| **USA** 🇺🇸 | Tax Categories, NAICS | 5,000+ categories | GENERAL, GROCERY, CLOTHING |
+| **International** 🌍 | HS Codes | 5,000+ | HS: 123456 (6-digit) |
+| **UK/EU** 🇬🇧🇪🇺 | Tax Categories, CN Codes | 3,000+ | STANDARD, REDUCED, ZERO_RATED |
+| **Canada** 🇨🇦 | Tax Categories, HS | 3,000+ | GOODS, SERVICES, EXEMPT |
+| **Australia** 🇦🇺 | Tax Categories | 1,000+ | GST_TAXABLE, GST_FREE |
+
+**Total Master Codes:** ~100,000+ across all countries
+
+This is a comprehensive database stored **server-side only** - too large for mobile storage.
+
+```kotlin
+@Entity(tableName = "master_tax_codes")
+data class MasterTaxCodeEntity(
+    @PrimaryKey val id: String,                    // "HSN_12345678", "SAC_998314"
+    val countryCode: String,                        // ISO 3166-1 alpha-2
+    val codeType: String,                           // HSN_CODE, SAC_CODE, HS_CODE, TAX_CATEGORY
+    val code: String,                               // "12345678", "998314"
+    val description: String,                        // Full description
+    val shortDescription: String,                   // Short description
+    val chapter: String? = null,                    // HSN Chapter (e.g., "12")
+    val heading: String? = null,                    // HSN Heading (e.g., "1234")
+    val subHeading: String? = null,                 // HSN Sub-heading (e.g., "123456")
+    val category: String? = null,                   // Category/Industry
+    val defaultTaxRate: Double? = null,             // Suggested default rate
+    val defaultTaxSlabId: String? = null,           // Default slab reference
+    val isActive: Boolean = true,
+    val metadata: String = "{}",                    // JSON: Additional attributes
+    val createdAt: Long,
+    val updatedAt: Long
+)
+```
+
+**Examples:**
+
+**India HSN Code:**
+```json
+{
+  "id": "HSN_12345678",
+  "countryCode": "IN",
+  "codeType": "HSN_CODE",
+  "code": "12345678",
+  "description": "Oil seeds and oleaginous fruits; miscellaneous grains, seeds and fruit",
+  "shortDescription": "Oil seeds",
+  "chapter": "12",
+  "heading": "1234",
+  "subHeading": "123456",
+  "category": "AGRICULTURE",
+  "defaultTaxRate": 5.0,
+  "defaultTaxSlabId": "GST_5"
+}
+```
+
+**India SAC Code:**
+```json
+{
+  "id": "SAC_998314",
+  "countryCode": "IN",
+  "codeType": "SAC_CODE",
+  "code": "998314",
+  "description": "Information technology design and development services",
+  "shortDescription": "IT Services",
+  "category": "SERVICES",
+  "defaultTaxRate": 18.0,
+  "defaultTaxSlabId": "GST_18"
+}
+```
+
+**USA Tax Category:**
+```json
+{
+  "id": "USA_GROCERY",
+  "countryCode": "US",
+  "codeType": "TAX_CATEGORY",
+  "code": "GROCERY",
+  "description": "Grocery items and food products",
+  "shortDescription": "Groceries",
+  "category": "FOOD_BEVERAGE",
+  "defaultTaxRate": 0.0,
+  "defaultTaxSlabId": "TAX_EXEMPT",
+  "metadata": {
+    "exemptStates": ["CA", "NY", "TX"],
+    "taxableStates": ["IL", "WA"]
+  }
+}
+```
+
+**UK Tax Category:**
+```json
+{
+  "id": "UK_BOOKS",
+  "countryCode": "GB",
+  "codeType": "TAX_CATEGORY",
+  "code": "BOOKS",
+  "description": "Books, newspapers, magazines",
+  "shortDescription": "Books & Publications",
+  "category": "MEDIA",
+  "defaultTaxRate": 0.0,
+  "defaultTaxSlabId": "ZERO_RATED"
+}
+```
+
+**International HS Code:**
+```json
+{
+  "id": "HS_854232",
+  "countryCode": "INT",
+  "codeType": "HS_CODE",
+  "code": "854232",
+  "description": "Electronic integrated circuits as processors and controllers",
+  "shortDescription": "Electronic processors",
+  "chapter": "85",
+  "heading": "8542",
+  "subHeading": "854232",
+  "category": "ELECTRONICS"
+}
+```
+
+**Notes:**
+- Master tax codes are **country-wise** and **server-side only** - too large for mobile storage (100K+ codes)
+- Each  only needs codes for its operating country
+- Mobile app uses search API to find codes filtered by  country
+- Only -selected codes are synced to mobile
+- Search automatically filters by 's configured country code
+
+### 2.  Tax Code Subscription
+
+Subset of tax codes actively used by a specific . These are synced to mobile for offline access.
+
+```kotlin
+@Entity(
+    tableName = "_tax_codes",
+    foreignKeys = [
+        ForeignKey(
+            entity = MasterTaxCodeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["master_tax_code_id"]
+        )
+    ]
+)
+data class TaxCodeEntity(
+    @PrimaryKey val id: String,
+    val Id: String,
+    val masterTaxCodeId: String,                    // FK to master_tax_codes
+
+    // Cached master data for offline access
+    val code: String,
+    val codeType: String,
+    val description: String,
+    val shortDescription: String,
+
+    // -specific configuration
+    val customTaxRuleId: String? = null,            // Override default rule
+    val usageCount: Int = 0,                        // Track usage frequency
+    val lastUsedAt: Long? = null,
+    val isFavorite: Boolean = false,
+    val notes: String? = null,
+
+    val isActive: Boolean = true,
+    val addedAt: Long,
+    val syncStatus: String = "SYNCED"
+)
+```
+
+**Example:**
+```json
+{
+  "id": "WTC_001_HSN_12345678",
+  "Id": "WS_001",
+  "masterTaxCodeId": "HSN_12345678",
+  "code": "12345678",
+  "codeType": "HSN_CODE",
+  "description": "Oil seeds and oleaginous fruits",
+  "shortDescription": "Oil seeds",
+  "customTaxRuleId": "RULE_WS001_HSN_12345678",
+  "usageCount": 45,
+  "lastUsedAt": 1733270400000,
+  "isFavorite": true
+}
+```
+
+### 3. Tax Component Type (Master Data)
 
 Global reference data for tax component definitions.
 
@@ -290,13 +477,13 @@ data class TaxComponentTypeEntity(
 }
 ```
 
-### 2. Workspace Tax Component
+### 2.  Tax Component
 
-Workspace-specific component configuration with actual rates.
+-specific component configuration with actual rates.
 
 ```kotlin
 @Entity(
-    tableName = "workspace_tax_components",
+    tableName = "_tax_components",
     foreignKeys = [
         ForeignKey(
             entity = TaxComponentTypeEntity::class,
@@ -305,9 +492,9 @@ Workspace-specific component configuration with actual rates.
         )
     ]
 )
-data class WorkspaceTaxComponentEntity(
+data class TaxComponentEntity(
     @PrimaryKey val id: String,
-    val workspaceId: String,
+    val Id: String,
     val componentTypeId: String,                    // FK to tax_component_types
 
     // Jurisdiction
@@ -346,8 +533,8 @@ data class WorkspaceTaxComponentEntity(
 **Example - Maharashtra CGST 9%:**
 ```json
 {
-  "id": "WTC_MH_CGST_9",
-  "workspaceId": "WS_001",
+  "id": "CGST_MH_9",
+  "Id": "WS_001",
   "componentTypeId": "IN_CGST",
   "jurisdiction": "MH",
   "jurisdictionLevel": "STATE",
@@ -360,21 +547,31 @@ data class WorkspaceTaxComponentEntity(
 }
 ```
 
-### 3. Tax Rule (Component Composition)
+### 5. Tax Rule (Component Composition)
 
-Defines how multiple components combine to form complete tax.
+Defines how multiple components combine to form complete tax. References  tax codes for offline access.
 
 ```kotlin
-@Entity(tableName = "tax_rules_v2")
+@Entity(
+    tableName = "tax_rules_v2",
+    foreignKeys = [
+        ForeignKey(
+            entity = TaxCodeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["_tax_code_id"]
+        )
+    ]
+)
 data class TaxRuleEntityV2(
     @PrimaryKey val id: String,
-    val workspaceId: String,
+    val Id: String,
     val countryCode: String,
 
-    // Tax code classification
-    val taxCode: String,                            // HSN, HS, Tax Category
-    val taxCodeType: String,                        // HSN_CODE, HS_CODE
-    val taxCodeDescription: String,
+    // Tax code reference (-specific)
+    val TaxCodeId: String,                 // FK to _tax_codes
+    val taxCode: String,                            // Cached: "12345678", "998314"
+    val taxCodeType: String,                        // Cached: HSN_CODE, SAC_CODE
+    val taxCodeDescription: String,                 // Cached description
 
     // Jurisdiction
     val jurisdiction: String,                       // "MH", "CA-Los Angeles"
@@ -407,22 +604,24 @@ data class TaxRuleEntityV2(
 ```json
 {
   "id": "RULE_IN_HSN_12345_18",
-  "workspaceId": "WS_001",
+  "Id": "WS_001",
   "countryCode": "IN",
+  "TaxCodeId": "WTC_001_HSN_12345678",
   "taxCode": "12345678",
   "taxCodeType": "HSN_CODE",
+  "taxCodeDescription": "Oil seeds and oleaginous fruits",
   "jurisdiction": "MH",
   "componentComposition": {
     "intraState": {
       "components": [
-        { "id": "WTC_MH_CGST_9", "rate": 9.0, "order": 1 },
-        { "id": "WTC_MH_SGST_9", "rate": 9.0, "order": 2 }
+        { "id": "CGST_MH_9", "rate": 9.0, "order": 1 },
+        { "id": "SGST_MH_9", "rate": 9.0, "order": 2 }
       ],
       "totalRate": 18.0
     },
     "interState": {
       "components": [
-        { "id": "WTC_IN_IGST_18", "rate": 18.0, "order": 1 }
+        { "id": "IGST_18", "rate": 18.0, "order": 1 }
       ],
       "totalRate": 18.0
     }
@@ -434,7 +633,7 @@ data class TaxRuleEntityV2(
 ```json
 {
   "id": "RULE_US_CAT_001_LA",
-  "workspaceId": "WS_002",
+  "Id": "WS_002",
   "countryCode": "US",
   "taxCode": "GENERAL",
   "taxCodeType": "TAX_CATEGORY",
@@ -442,9 +641,9 @@ data class TaxRuleEntityV2(
   "componentComposition": {
     "standard": {
       "components": [
-        { "id": "WTC_CA_STATE", "rate": 7.25, "order": 1 },
-        { "id": "WTC_CA_LA_COUNTY", "rate": 1.0, "order": 2 },
-        { "id": "WTC_CA_LA_CITY", "rate": 1.5, "order": 3 }
+        { "id": "CA_STATE", "rate": 7.25, "order": 1 },
+        { "id": "LA_COUNTY", "rate": 1.0, "order": 2 },
+        { "id": "LA_CITY", "rate": 1.5, "order": 3 }
       ],
       "totalRate": 9.75
     }
@@ -452,25 +651,42 @@ data class TaxRuleEntityV2(
 }
 ```
 
-### 4. Workspace Tax Configuration
+### 6.  Tax Configuration
 
-Top-level configuration for workspace tax settings.
+Top-level configuration for  tax settings.
 
 ```kotlin
-@Entity(tableName = "workspace_tax_configuration")
-data class WorkspaceTaxConfigEntity(
+@Entity(tableName = "_tax_configuration")
+data class TaxConfigEntity(
     @PrimaryKey val id: String,
-    val workspaceId: String,
+    val Id: String,
     val countryCode: String,                        // ISO 3166-1 alpha-2
     val taxStrategy: String,                        // "INDIA_GST", "USA_SALES_TAX"
     val defaultTaxCodeSystem: String,               // "HSN_CODE", "HS_CODE"
     val taxJurisdictions: String,                   // JSON: ["MH", "KA", "DL"]
+    val industry: String? = null,                   // Industry sector for default codes
+    val autoSubscribeNewCodes: Boolean = false,     // Auto-add popular codes
     val syncedAt: Long,
     val metadata: String = "{}"
 )
 ```
 
-### 5. Tax Calculation Models
+**Example:**
+```json
+{
+  "id": "WTC_WS001",
+  "Id": "WS_001",
+  "countryCode": "IN",
+  "taxStrategy": "INDIA_GST",
+  "defaultTaxCodeSystem": "HSN_CODE",
+  "taxJurisdictions": ["MH", "GJ", "DL"],
+  "industry": "RETAIL_GROCERY",
+  "autoSubscribeNewCodes": true,
+  "syncedAt": 1733270400000
+}
+```
+
+### 7. Tax Calculation Models
 
 ```kotlin
 @Serializable
@@ -615,18 +831,18 @@ class TaxCalculationEngine(
     private val taxRuleDao: TaxRuleDao,
     private val taxComponentDao: TaxComponentDao,
     private val componentTypeDao: TaxComponentTypeDao,
-    private val workspaceConfigDao: WorkspaceTaxConfigDao,
-    private val workspaceContext: WorkspaceContextManager
+    private val ConfigDao: TaxConfigDao,
+    private val Context: ContextManager
 ) {
     private val strategyCache = mutableMapOf<String, ITaxCalculationStrategy>()
 
     suspend fun calculateTax(request: TaxCalculationRequest): Result<TaxCalculationResult> {
-        // 1. Get workspace configuration
-        val workspaceId = workspaceContext.getCurrentWorkspaceId()
-            ?: return Result.failure(Exception("No workspace selected"))
+        // 1. Get  configuration
+        val Id = Context.getCurrentId()
+            ?: return Result.failure(Exception("No  selected"))
 
-        val config = workspaceConfigDao.getByWorkspaceId(workspaceId)
-            ?: getDefaultConfig(workspaceId)
+        val config = ConfigDao.getById(Id)
+            ?: getDefaultConfig(Id)
 
         // 2. Get strategy for country
         val strategy = getOrCreateStrategy(config)
@@ -642,10 +858,10 @@ class TaxCalculationEngine(
         )
     }
 
-    private fun getOrCreateStrategy(config: WorkspaceTaxConfigEntity): ITaxCalculationStrategy {
+    private fun getOrCreateStrategy(config: TaxConfigEntity): ITaxCalculationStrategy {
         return strategyCache.getOrPut(config.taxStrategy) {
             when (config.taxStrategy) {
-                "INDIA_GST" -> IndiaGSTStrategy(taxRuleDao, taxComponentDao, componentTypeDao, workspaceContext)
+                "INDIA_GST" -> IndiaGSTStrategy(taxRuleDao, taxComponentDao, componentTypeDao, Context)
                 "USA_SALES_TAX" -> USASalesTaxStrategy(...)
                 "EU_VAT" -> EUVATStrategy(...)
                 "CANADA_GST_HST" -> CanadaGSTHSTStrategy(...)
@@ -676,7 +892,7 @@ class TaxCalculationEngine(
                ▼
 ┌─────────────────────────────────────┐
 │ 3. Load Component Configurations    │
-│    - Get from workspace_tax_comp    │
+│    - Get from _tax_comp    │
 │    - Include component type details │
 └──────────────┬──────────────────────┘
                │
@@ -711,7 +927,7 @@ Admin selects country → Backend provides templates → Mobile downloads → Ro
 **Periodic Sync:**
 ```
 Every 24h or on-demand:
-Mobile → GET /api/v1/workspaces/{id}/tax/rules?modifiedAfter=timestamp
+Mobile → GET /api/v1/s/{id}/tax/rules?modifiedAfter=timestamp
 Backend → Returns changed rules only (incremental)
 Mobile → Upserts to Room DB
 ```
@@ -738,24 +954,24 @@ Local rule modified + Backend rule changed:
 class TaxConfigurationSyncService(
     private val taxConfigApi: TaxConfigurationApi,
     private val taxRuleDao: TaxRuleDao,
-    private val workspaceConfigDao: WorkspaceTaxConfigDao,
-    private val workspaceContext: WorkspaceContextManager
+    private val ConfigDao: TaxConfigDao,
+    private val Context: ContextManager
 ) {
     suspend fun syncTaxConfiguration(): Result<Int> {
-        val workspaceId = workspaceContext.getCurrentWorkspaceId() ?: return Result.failure(...)
+        val Id = Context.getCurrentId() ?: return Result.failure(...)
 
-        // 1. Get workspace config
-        val configResult = taxConfigApi.getWorkspaceTaxConfiguration(workspaceId)
+        // 1. Get  config
+        val configResult = taxConfigApi.getTaxConfiguration(Id)
         if (configResult.isSuccess) {
-            workspaceConfigDao.upsert(configResult.getOrThrow().toEntity())
+            ConfigDao.upsert(configResult.getOrThrow().toEntity())
         }
 
         // 2. Get last sync timestamp
-        val lastSync = workspaceConfigDao.getByWorkspaceId(workspaceId)?.syncedAt ?: 0L
+        val lastSync = ConfigDao.getById(Id)?.syncedAt ?: 0L
 
         // 3. Fetch updated rules (incremental)
         val rulesResult = taxConfigApi.getTaxRules(
-            workspaceId = workspaceId,
+            Id = Id,
             modifiedAfter = lastSync
         )
 
@@ -769,7 +985,7 @@ class TaxConfigurationSyncService(
                 ))
             }
 
-            workspaceConfigDao.updateSyncTime(workspaceId, Clock.System.now().toEpochMilliseconds())
+            ConfigDao.updateSyncTime(Id, Clock.System.now().toEpochMilliseconds())
             return Result.success(rules.size)
         }
 
@@ -780,38 +996,329 @@ class TaxConfigurationSyncService(
 
 ---
 
+## Tax Code Management Workflow
+
+### Overview
+
+The system maintains a **two-tier, country-wise tax code structure**:
+1. **Master Tax Codes** (Server-only): Complete database of 100K+ codes organized by country
+   - India: 60,000+ codes (HSN + SAC)
+   - USA: 5,000+ tax categories
+   - UK/EU: 3,000+ tax categories
+   - Each country maintains separate code registry
+2. ** Tax Codes** (Synced to Mobile): Small subset (typically 50-500 codes) actively used by 
+   - Filtered by 's operating country
+   - Only relevant country codes synced to mobile
+
+### Country-Based Filtering
+
+**Automatic Country Filtering:**
+```
+ configured as India (IN) →
+  Search shows only HSN/SAC codes →
+    Subscribe only to India codes →
+      Mobile syncs only India codes
+
+ configured as USA (US) →
+  Search shows only US tax categories →
+    Subscribe only to US codes →
+      Mobile syncs only US codes
+```
+
+This ensures s never see irrelevant codes from other countries.
+
+### Country-Wise Code Organization
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│          Master Tax Code Registry (Server-Side)             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │   India 🇮🇳   │  │    USA 🇺🇸    │  │     UK 🇬🇧    │     │
+│  │              │  │              │  │              │     │
+│  │ 50,000 HSN   │  │ 5,000 Tax    │  │ 3,000 Tax    │     │
+│  │ 10,000 SAC   │  │ Categories   │  │ Categories   │     │
+│  │              │  │              │  │              │     │
+│  │ HSN_12345678 │  │ GROCERY      │  │ BOOKS        │     │
+│  │ SAC_998314   │  │ CLOTHING     │  │ FOOD         │     │
+│  │ HSN_84713000 │  │ ELECTRONICS  │  │ HEALTHCARE   │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │  Canada 🇨🇦   │  │ Australia 🇦🇺 │  │   EU 🇪🇺      │     │
+│  │              │  │              │  │              │     │
+│  │ 3,000 Tax    │  │ 1,000 Tax    │  │ 3,000 CN     │     │
+│  │ Categories   │  │ Categories   │  │ Codes        │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+                            ▼
+           ┌────────────────────────────────────┐
+           │  : "Retail Store India"   │
+           │  Country: IN                       │
+           ├────────────────────────────────────┤
+           │   Tax Codes (50 codes)    │
+           │  - HSN_12345678 (Oil seeds)        │
+           │  - HSN_10063000 (Rice)             │
+           │  - HSN_19059090 (Bakery items)     │
+           │  ... 47 more India codes           │
+           │                                    │
+           │  ❌ No USA codes                   │
+           │  ❌ No UK codes                    │
+           └────────────────────────────────────┘
+                            ▼
+                   Synced to Mobile
+                 (Only 50 India codes)
+```
+
+### User Workflow
+
+```
+┌─────────────────────────────────────────────────┐
+│ 1. Search Master Codes (Server API)            │
+│    User: "oil seeds" → Server returns HSN codes│
+└──────────────┬──────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────────────┐
+│ 2. Subscribe to Code (Add to )        │
+│    POST /-codes/subscribe              │
+│    Creates TaxCodeEntity               │
+└──────────────┬──────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────────────┐
+│ 3. Sync to Mobile (Background)                 │
+│    GET /-codes?modifiedAfter=...       │
+│    Downloads subscribed codes to Room DB        │
+└──────────────┬──────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────────────┐
+│ 4. Offline Usage (Mobile)                      │
+│    Tax calculation uses cached  codes  │
+│    No network required                          │
+└─────────────────────────────────────────────────┘
+```
+
+### Search Implementation
+
+**Mobile Search Screen:**
+```kotlin
+@Composable
+fun TaxCodeSearchScreen(viewModel: TaxCodeSearchViewModel) {
+    var query by remember { mutableStateOf("") }
+    val searchResults by viewModel.searchResults.collectAsState()
+    val Codes by viewModel.Codes.collectAsState()
+
+    Column {
+        // Search box (requires network)
+        SearchBar(
+            query = query,
+            onQueryChange = { query = it },
+            onSearch = { viewModel.searchMasterCodes(query) }
+        )
+
+        // Search results (from server)
+        if (searchResults.isNotEmpty()) {
+            Text("Master Tax Codes", style = MaterialTheme.typography.titleMedium)
+            LazyColumn {
+                items(searchResults) { code ->
+                    MasterTaxCodeItem(
+                        code = code,
+                        isSubscribed = Codes.any { it.masterTaxCodeId == code.id },
+                        onSubscribe = { viewModel.subscribeToCode(code.id) }
+                    )
+                }
+            }
+        }
+
+        //  subscribed codes (offline available)
+        Text("My Tax Codes", style = MaterialTheme.typography.titleMedium)
+        LazyColumn {
+            items(Codes) { code ->
+                TaxCodeItem(
+                    code = code,
+                    onUnsubscribe = { viewModel.unsubscribeFromCode(code.id) }
+                )
+            }
+        }
+    }
+}
+```
+
+**ViewModel:**
+```kotlin
+class TaxCodeSearchViewModel(
+    private val taxCodeRepository: TaxCodeRepository,
+    private val Context: ContextManager
+) : ViewModel() {
+
+    private val _searchResults = MutableStateFlow<List<MasterTaxCode>>(emptyList())
+    val searchResults = _searchResults.asStateFlow()
+
+    val Codes = taxCodeRepository.observeTaxCodes()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    fun searchMasterCodes(query: String) {
+        viewModelScope.launch {
+            val result = taxCodeRepository.searchMasterCodes(
+                query = query,
+                countryCode = Context.getCurrentCountryCode()
+            )
+            if (result.isSuccess) {
+                _searchResults.value = result.getOrThrow()
+            }
+        }
+    }
+
+    fun subscribeToCode(masterTaxCodeId: String) {
+        viewModelScope.launch {
+            taxCodeRepository.subscribeToTaxCode(masterTaxCodeId)
+            // Auto-refresh  codes
+        }
+    }
+
+    fun unsubscribeFromCode(TaxCodeId: String) {
+        viewModelScope.launch {
+            taxCodeRepository.unsubscribeFromTaxCode(TaxCodeId)
+        }
+    }
+}
+```
+
+### Repository Implementation
+
+```kotlin
+class TaxCodeRepository(
+    private val taxCodeApi: TaxCodeApi,
+    private val TaxCodeDao: TaxCodeDao,
+    private val Context: ContextManager
+) {
+
+    /**
+     * Search master tax codes (server-side only, requires network)
+     */
+    suspend fun searchMasterCodes(
+        query: String,
+        countryCode: String
+    ): Result<List<MasterTaxCode>> {
+        return try {
+            val response = taxCodeApi.searchMasterTaxCodes(
+                query = query,
+                countryCode = countryCode,
+                page = 0,
+                size = 50
+            )
+            Result.success(response.content)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Subscribe  to tax code (creates  tax code)
+     */
+    suspend fun subscribeToTaxCode(masterTaxCodeId: String): Result<TaxCode> {
+        val Id = Context.getCurrentId()
+            ?: return Result.failure(Exception("No  selected"))
+
+        return try {
+            // Call server to subscribe
+            val request = SubscribeTaxCodeRequest(masterTaxCodeId)
+            val TaxCode = taxCodeApi.subscribeToTaxCode(Id, request)
+
+            // Save to local database
+            TaxCodeDao.insert(TaxCode.toEntity())
+
+            Result.success(TaxCode)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get  subscribed codes (offline available)
+     */
+    fun observeTaxCodes(): Flow<List<TaxCode>> {
+        val Id = Context.getCurrentId()
+            ?: return flowOf(emptyList())
+
+        return TaxCodeDao.observeTaxCodes(Id)
+            .map { entities -> entities.map { it.toDomain() } }
+    }
+
+    /**
+     * Sync  tax codes (background sync)
+     */
+    suspend fun syncTaxCodes(): Result<Int> {
+        val Id = Context.getCurrentId()
+            ?: return Result.failure(Exception("No  selected"))
+
+        return try {
+            val lastSync = TaxCodeDao.getLastSyncTime(Id) ?: 0L
+
+            val result = taxCodeApi.getTaxCodes(
+                Id = Id,
+                modifiedAfter = lastSync
+            )
+
+            val codes = result.content
+            codes.forEach { code ->
+                TaxCodeDao.upsert(code.toEntity())
+            }
+
+            Result.success(codes.size)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}
+```
+
+### Key Benefits
+
+✅ **Minimal Mobile Storage**: Only stores 50-500 codes instead of 100K+ codes
+✅ **Fast Offline Access**:  codes cached locally for instant access
+✅ **Server-Side Search**: Full-text search across all master codes without mobile overhead
+✅ **Industry-Specific**: s subscribe only to relevant codes for their business
+✅ **Usage Tracking**: Most-used codes automatically prioritized in UI
+✅ **Favorites**: Users can mark frequently used codes for quick access
+
+---
+
 ## Backend Integration
 
 ### API Endpoints
 
 ```kotlin
 @RestController
-@RequestMapping("/api/v1/workspaces/{workspaceId}/tax")
+@RequestMapping("/api/v1/s/{Id}/tax")
 class TaxConfigurationController {
 
     /**
-     * Get workspace tax configuration
+     * Get  tax configuration
      */
     @GetMapping("/configuration")
-    fun getWorkspaceTaxConfiguration(
-        @PathVariable workspaceId: String
-    ): ApiResponse<WorkspaceTaxConfigurationDto>
+    fun getTaxConfiguration(
+        @PathVariable Id: String
+    ): ApiResponse<TaxConfigurationDto>
 
     /**
-     * Update workspace tax configuration
+     * Update  tax configuration
      */
     @PutMapping("/configuration")
-    fun updateWorkspaceTaxConfiguration(
-        @PathVariable workspaceId: String,
-        @RequestBody config: WorkspaceTaxConfigurationDto
-    ): ApiResponse<WorkspaceTaxConfigurationDto>
+    fun updateTaxConfiguration(
+        @PathVariable Id: String,
+        @RequestBody config: TaxConfigurationDto
+    ): ApiResponse<TaxConfigurationDto>
 
     /**
      * Get tax rules (incremental sync)
      */
     @GetMapping("/rules")
     fun getTaxRules(
-        @PathVariable workspaceId: String,
+        @PathVariable Id: String,
         @RequestParam(required = false) modifiedAfter: Long?,
         @RequestParam(required = false) countryCode: String?,
         @RequestParam(defaultValue = "0") page: Int,
@@ -823,7 +1330,7 @@ class TaxConfigurationController {
      */
     @PostMapping("/rules")
     fun createOrUpdateTaxRule(
-        @PathVariable workspaceId: String,
+        @PathVariable Id: String,
         @RequestBody rule: TaxRuleDto
     ): ApiResponse<TaxRuleDto>
 
@@ -832,16 +1339,92 @@ class TaxConfigurationController {
      */
     @PostMapping("/rules/bulk-import")
     fun bulkImportTaxRules(
-        @PathVariable workspaceId: String,
+        @PathVariable Id: String,
         @RequestBody rules: List<TaxRuleDto>
     ): ApiResponse<BulkImportResult>
+
+    /**
+     * Search master tax codes (server-side only, not synced)
+     * Used by mobile app to search and select tax codes
+     * IMPORTANT: Always filtered by 's country code
+     *
+     * Examples:
+     * - India : searches only HSN/SAC codes (countryCode=IN)
+     * - USA : searches only US tax categories (countryCode=US)
+     * - UK : searches only UK tax categories (countryCode=GB)
+     */
+    @GetMapping("/master-codes/search")
+    fun searchMasterTaxCodes(
+        @RequestParam query: String,
+        @RequestParam countryCode: String,                      // REQUIRED:  country
+        @RequestParam(required = false) codeType: String?,      // HSN_CODE, SAC_CODE, TAX_CATEGORY
+        @RequestParam(required = false) category: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "50") size: Int
+    ): ApiResponse<Page<MasterTaxCodeDto>>
+
+    /**
+     * Get master tax code by ID
+     */
+    @GetMapping("/master-codes/{codeId}")
+    fun getMasterTaxCode(
+        @PathVariable codeId: String
+    ): ApiResponse<MasterTaxCodeDto>
+
+    /**
+     * Get popular/suggested tax codes for industry
+     */
+    @GetMapping("/master-codes/popular")
+    fun getPopularTaxCodes(
+        @RequestParam countryCode: String,
+        @RequestParam(required = false) industry: String?,
+        @RequestParam(defaultValue = "20") limit: Int
+    ): ApiResponse<List<MasterTaxCodeDto>>
+
+    /**
+     * Get -subscribed tax codes (synced to mobile)
+     */
+    @GetMapping("/-codes")
+    fun getTaxCodes(
+        @PathVariable Id: String,
+        @RequestParam(required = false) modifiedAfter: Long?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "100") size: Int
+    ): ApiResponse<Page<TaxCodeDto>>
+
+    /**
+     * Subscribe  to tax code (adds to  codes)
+     */
+    @PostMapping("/-codes/subscribe")
+    fun subscribeToTaxCode(
+        @PathVariable Id: String,
+        @RequestBody request: SubscribeTaxCodeRequest
+    ): ApiResponse<TaxCodeDto>
+
+    /**
+     * Unsubscribe from tax code
+     */
+    @DeleteMapping("/-codes/{TaxCodeId}")
+    fun unsubscribeFromTaxCode(
+        @PathVariable Id: String,
+        @PathVariable TaxCodeId: String
+    ): ApiResponse<Unit>
+
+    /**
+     * Bulk subscribe to multiple tax codes
+     */
+    @PostMapping("/-codes/bulk-subscribe")
+    fun bulkSubscribeTaxCodes(
+        @PathVariable Id: String,
+        @RequestBody request: BulkSubscribeRequest
+    ): ApiResponse<BulkSubscribeResult>
 
     /**
      * Get predefined tax templates
      */
     @GetMapping("/templates/{countryCode}")
     fun getTaxTemplates(
-        @PathVariable workspaceId: String,
+        @PathVariable Id: String,
         @PathVariable countryCode: String
     ): ApiResponse<List<TaxTemplateDto>>
 
@@ -853,23 +1436,105 @@ class TaxConfigurationController {
         @PathVariable countryCode: String
     ): ApiResponse<List<TaxComponentTypeDto>>
 }
+
+/**
+ * DTOs for tax code subscription
+ */
+data class SubscribeTaxCodeRequest(
+    val masterTaxCodeId: String,
+    val customTaxRuleId: String? = null,
+    val isFavorite: Boolean = false,
+    val notes: String? = null
+)
+
+data class BulkSubscribeRequest(
+    val masterTaxCodeIds: List<String>,
+    val applyDefaultRules: Boolean = true
+)
+
+data class BulkSubscribeResult(
+    val successCount: Int,
+    val failureCount: Int,
+    val subscribedCodes: List<TaxCodeDto>,
+    val errors: List<String> = emptyList()
+)
 ```
 
 ### Database Schema (PostgreSQL)
 
 ```sql
--- Workspace Tax Configuration
-CREATE TABLE workspace_tax_configuration (
+-- Master Tax Codes (Server-side global registry)
+CREATE TABLE master_tax_codes (
+    id VARCHAR(100) PRIMARY KEY,
+    country_code VARCHAR(2) NOT NULL,
+    code_type VARCHAR(20) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    description TEXT NOT NULL,
+    short_description VARCHAR(500),
+    chapter VARCHAR(10),
+    heading VARCHAR(10),
+    sub_heading VARCHAR(10),
+    category VARCHAR(100),
+    default_tax_rate DECIMAL(10,4),
+    default_tax_slab_id VARCHAR(50),
+    is_active BOOLEAN DEFAULT true,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(country_code, code_type, code)
+);
+
+-- Indices for fast search (country-wise filtering is critical)
+CREATE INDEX idx_master_codes_search ON master_tax_codes
+    USING GIN (to_tsvector('english', description || ' ' || short_description));
+CREATE INDEX idx_master_codes_country ON master_tax_codes(country_code, code_type);
+CREATE INDEX idx_master_codes_category ON master_tax_codes(country_code, category);
+CREATE INDEX idx_master_codes_chapter ON master_tax_codes(country_code, chapter, heading);
+
+-- Optional: Partition by country for better performance with 100K+ records
+-- ALTER TABLE master_tax_codes PARTITION BY LIST (country_code);
+-- CREATE TABLE master_tax_codes_in PARTITION OF master_tax_codes FOR VALUES IN ('IN');
+-- CREATE TABLE master_tax_codes_us PARTITION OF master_tax_codes FOR VALUES IN ('US');
+-- CREATE TABLE master_tax_codes_gb PARTITION OF master_tax_codes FOR VALUES IN ('GB');
+-- etc.
+
+--  Tax Codes (Subscribed subset synced to mobile)
+CREATE TABLE _tax_codes (
     id UUID PRIMARY KEY,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id),
+    _id UUID NOT NULL REFERENCES s(id),
+    master_tax_code_id VARCHAR(100) NOT NULL REFERENCES master_tax_codes(id),
+    code VARCHAR(50) NOT NULL,
+    code_type VARCHAR(20) NOT NULL,
+    description TEXT NOT NULL,
+    short_description VARCHAR(500),
+    custom_tax_rule_id UUID,
+    usage_count INT DEFAULT 0,
+    last_used_at TIMESTAMP,
+    is_favorite BOOLEAN DEFAULT false,
+    notes TEXT,
+    is_active BOOLEAN DEFAULT true,
+    added_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(_id, master_tax_code_id)
+);
+
+CREATE INDEX idx__codes ON _tax_codes(_id, is_active);
+CREATE INDEX idx__codes_usage ON _tax_codes(_id, usage_count DESC);
+
+--  Tax Configuration
+CREATE TABLE _tax_configuration (
+    id UUID PRIMARY KEY,
+    _id UUID NOT NULL REFERENCES s(id),
     country_code VARCHAR(2) NOT NULL,
     tax_strategy VARCHAR(50) NOT NULL,
     default_tax_code_system VARCHAR(20) NOT NULL,
     tax_jurisdictions JSONB,
+    industry VARCHAR(100),
+    auto_subscribe_new_codes BOOLEAN DEFAULT false,
     metadata JSONB,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(workspace_id)
+    UNIQUE(_id)
 );
 
 -- Tax Component Types (Global Master)
@@ -891,10 +1556,9 @@ CREATE TABLE tax_component_types (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Workspace Tax Components
-CREATE TABLE workspace_tax_components (
+--  Tax Components
+CREATE TABLE _tax_components (
     id UUID PRIMARY KEY,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id),
     component_type_id VARCHAR(50) REFERENCES tax_component_types(id),
     jurisdiction VARCHAR(100),
     jurisdiction_level VARCHAR(20),
@@ -918,7 +1582,7 @@ CREATE TABLE workspace_tax_components (
 -- Tax Rules
 CREATE TABLE tax_rules_v2 (
     id UUID PRIMARY KEY,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id),
+    tax_code_id UUID NOT NULL REFERENCES _tax_codes(id),
     country_code VARCHAR(2) NOT NULL,
     tax_code VARCHAR(50) NOT NULL,
     tax_code_type VARCHAR(20) NOT NULL,
@@ -941,10 +1605,11 @@ CREATE TABLE tax_rules_v2 (
 );
 
 -- Indices
-CREATE INDEX idx_tax_rules_workspace ON tax_rules_v2(workspace_id, country_code);
-CREATE INDEX idx_tax_rules_code ON tax_rules_v2(workspace_id, tax_code, jurisdiction);
+CREATE INDEX idx_tax_rules_ ON tax_rules_v2(_id, country_code);
+CREATE INDEX idx_tax_rules_code ON tax_rules_v2(_id, tax_code, jurisdiction);
+CREATE INDEX idx_tax_rules__code ON tax_rules_v2(_tax_code_id);
 CREATE INDEX idx_tax_rules_effective ON tax_rules_v2(effective_from, effective_to);
-CREATE INDEX idx_workspace_components ON workspace_tax_components(workspace_id, jurisdiction);
+CREATE INDEX idx__components ON _tax_components(_id, jurisdiction);
 ```
 
 ---
@@ -976,15 +1641,15 @@ If CESS applicable:
 {
   "intraState": {
     "components": [
-      { "id": "IN_CGST_9", "rate": 9.0, "order": 1 },
-      { "id": "IN_SGST_9", "rate": 9.0, "order": 2 },
-      { "id": "IN_CESS_1", "rate": 1.0, "order": 3 }
+      { "id": "CGST_9", "rate": 9.0, "order": 1 },
+      { "id": "SGST_9", "rate": 9.0, "order": 2 },
+      { "id": "CESS_1", "rate": 1.0, "order": 3 }
     ]
   },
   "interState": {
     "components": [
-      { "id": "IN_IGST_18", "rate": 18.0, "order": 1 },
-      { "id": "IN_CESS_1", "rate": 1.0, "order": 2 }
+      { "id": "IGST_18", "rate": 18.0, "order": 1 },
+      { "id": "CESS_1", "rate": 1.0, "order": 2 }
     ]
   }
 }
@@ -1013,9 +1678,9 @@ If has nexus in destination state:
 {
   "standard": {
     "components": [
-      { "id": "US_CA_STATE", "rate": 7.25, "order": 1 },
-      { "id": "US_CA_LA_COUNTY", "rate": 1.0, "order": 2 },
-      { "id": "US_CA_LA_CITY", "rate": 1.5, "order": 3 }
+      { "id": "CA_STATE", "rate": 7.25, "order": 1 },
+      { "id": "LA_COUNTY", "rate": 1.0, "order": 2 },
+      { "id": "LA_CITY", "rate": 1.5, "order": 3 }
     ],
     "totalRate": 9.75
   }
@@ -1044,12 +1709,12 @@ Else:
 {
   "b2c": {
     "components": [
-      { "id": "DE_VAT_STANDARD", "rate": 19.0, "order": 1 }
+      { "id": "VAT_STANDARD", "rate": 19.0, "order": 1 }
     ]
   },
   "b2b": {
     "components": [
-      { "id": "DE_VAT_REVERSE_CHARGE", "rate": 0.0, "order": 1 }
+      { "id": "VAT_REVERSE_CHARGE", "rate": 0.0, "order": 1 }
     ]
   }
 }
@@ -1080,8 +1745,8 @@ Else:
 {
   "standard": {
     "components": [
-      { "id": "CA_GST", "rate": 5.0, "order": 1, "compound": false },
-      { "id": "CA_QC_QST", "rate": 9.975, "order": 2, "compound": true }
+      { "id": "GST", "rate": 5.0, "order": 1, "compound": false },
+      { "id": "QST", "rate": 9.975, "order": 2, "compound": true }
     ]
   }
 }
@@ -1109,7 +1774,7 @@ Else:
 {
   "standard": {
     "components": [
-      { "id": "AU_GST", "rate": 10.0, "order": 1 }
+      { "id": "GST", "rate": 10.0, "order": 1 }
     ]
   }
 }
@@ -1282,22 +1947,22 @@ class TaxTemplateSeeder {
 }
 ```
 
-### Workspace Initialization
+###  Initialization
 
-When a new workspace is created, automatically configure tax settings based on selected country:
+When a new  is created, automatically configure tax settings based on selected country:
 
 ```kotlin
 @Service
-class WorkspaceInitializationService {
+class InitializationService {
 
-    suspend fun initializeWorkspaceTaxConfiguration(
-        workspaceId: String,
+    suspend fun initializeTaxConfiguration(
+        Id: String,
         countryCode: String
     ) {
-        // 1. Create workspace tax configuration
-        val config = WorkspaceTaxConfiguration(
+        // 1. Create  tax configuration
+        val config = TaxConfiguration(
             id = UUID.randomUUID(),
-            workspaceId = workspaceId,
+            Id = Id,
             countryCode = countryCode,
             taxStrategy = getTaxStrategyForCountry(countryCode),
             defaultTaxCodeSystem = getTaxCodeSystemForCountry(countryCode),
@@ -1310,7 +1975,7 @@ class WorkspaceInitializationService {
 
         // 3. Create default tax rules from templates
         templates.forEach { template ->
-            createTaxRulesFromTemplate(workspaceId, template)
+            createTaxRulesFromTemplate(Id, template)
         }
     }
 
@@ -1329,25 +1994,25 @@ class WorkspaceInitializationService {
 
 ### Mobile Initial Sync
 
-On first login or workspace selection, mobile app syncs tax configuration:
+On first login or  selection, mobile app syncs tax configuration:
 
 ```kotlin
-suspend fun performInitialTaxSync(workspaceId: String) {
-    // 1. Get workspace tax configuration
-    val config = taxConfigApi.getWorkspaceTaxConfiguration(workspaceId)
-    workspaceConfigDao.insert(config.toEntity())
+suspend fun performInitialTaxSync(Id: String) {
+    // 1. Get  tax configuration
+    val config = taxConfigApi.getTaxConfiguration(Id)
+    ConfigDao.insert(config.toEntity())
 
     // 2. Get component types for country
     val componentTypes = taxConfigApi.getComponentTypes(config.countryCode)
     componentTypeDao.insertAll(componentTypes.map { it.toEntity() })
 
-    // 3. Get tax rules for workspace
-    val rules = taxConfigApi.getTaxRules(workspaceId)
+    // 3. Get tax rules for 
+    val rules = taxConfigApi.getTaxRules(Id)
     taxRuleDao.insertAll(rules.map { it.toEntity() })
 
     // 4. Mark as synced
-    workspaceConfigDao.updateSyncTime(
-        workspaceId,
+    ConfigDao.updateSyncTime(
+        Id,
         Clock.System.now().toEpochMilliseconds()
     )
 }
@@ -1424,7 +2089,7 @@ suspend fun performInitialTaxSync(workspaceId: String) {
 - ✅ All calculations work offline (100% offline capability)
 - ✅ Database query performance < 50ms for tax calculation
 - ✅ Sync completes in < 5 seconds for 1000 rules
-- ✅ Zero data loss during workspace switching
+- ✅ Zero data loss during  switching
 - ✅ 100% backward compatibility with existing data
 
 ### Business Metrics

@@ -7,6 +7,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
@@ -96,7 +99,7 @@ fun TaxCodeSearchScreen(
                         codes = workspaceCodes,
                         onCodeClick = { code ->
                             viewModel.incrementUsageCount(code.id)
-                            onCodeSelected(code.code)
+                            onCodeSelected(code.id)
                         },
                         onFavoriteToggle = { code ->
                             viewModel.toggleFavorite(code.id, !code.isFavorite)
@@ -111,12 +114,12 @@ fun TaxCodeSearchScreen(
                 SearchTab.MASTER_CODES -> {
                     MasterCodesContent(
                         codes = uiState.masterCodes,
+                        subscribedCodeId = uiState.lastSubscribedCode?.id,
                         isSearching = uiState.isSearching,
                         searchError = uiState.searchError,
-                        onCodeClick = { code ->
-                            // Subscribe and select
-                            viewModel.subscribeToCode(code, isFavorite = false)
-                            onCodeSelected(code.code)
+                        onCodeClick = { codeId ->
+                            // Navigate to detail screen
+                            onCodeSelected(codeId)
                         },
                         onSubscribe = { code ->
                             viewModel.subscribeToCode(code, isFavorite = false)
@@ -353,6 +356,8 @@ private fun WorkspaceTaxCodeCard(
                                 label = { Text("Used ${code.usageCount}x") }
                             )
                         }
+                        // Sync Status Indicator
+                        SyncStatusChip(syncStatus = code.syncStatus)
                     }
                 }
 
@@ -382,9 +387,10 @@ private fun WorkspaceTaxCodeCard(
 @Composable
 private fun MasterCodesContent(
     codes: List<MasterTaxCode>,
+    subscribedCodeId: String?,
     isSearching: Boolean,
     searchError: String?,
-    onCodeClick: (MasterTaxCode) -> Unit,
+    onCodeClick: (String) -> Unit,
     onSubscribe: (MasterTaxCode) -> Unit,
     onClearError: () -> Unit,
     modifier: Modifier = Modifier
@@ -431,8 +437,14 @@ private fun MasterCodesContent(
                     items(codes, key = { it.id }) { code ->
                         MasterTaxCodeCard(
                             code = code,
-                            onClick = { onCodeClick(code) },
-                            onSubscribe = { onSubscribe(code) }
+                            onClick = {
+                                // If this code was just subscribed, navigate to it
+                                if (subscribedCodeId != null) {
+                                    onCodeClick(subscribedCodeId)
+                                }
+                            },
+                            onSubscribe = { onSubscribe(code) },
+                            isSubscribed = code.id == subscribedCodeId
                         )
                     }
                 }
@@ -446,6 +458,7 @@ private fun MasterTaxCodeCard(
     code: MasterTaxCode,
     onClick: () -> Unit,
     onSubscribe: () -> Unit,
+    isSubscribed: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -498,15 +511,78 @@ private fun MasterTaxCodeCard(
                     }
                 }
 
-                FilledTonalButton(
-                    onClick = onSubscribe,
-                    modifier = Modifier.padding(start = 8.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add")
+                if (isSubscribed) {
+                    FilledTonalButton(
+                        onClick = onClick,
+                        modifier = Modifier.padding(start = 8.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Text("View")
+                    }
+                } else {
+                    FilledTonalButton(
+                        onClick = onSubscribe,
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add")
+                    }
                 }
             }
         }
     }
+}
+
+/**
+ * Sync Status Indicator Chip
+ * Shows the current sync status of a tax code
+ */
+@Composable
+private fun SyncStatusChip(
+    syncStatus: String,
+    modifier: Modifier = Modifier
+) {
+    val (icon, label, color) = when (syncStatus) {
+        "SYNCED" -> Triple(
+            Icons.Default.CloudDone,
+            "Synced",
+            MaterialTheme.colorScheme.primary
+        )
+        "PENDING" -> Triple(
+            Icons.Default.CloudQueue,
+            "Pending",
+            MaterialTheme.colorScheme.tertiary
+        )
+        "DELETE_PENDING" -> Triple(
+            Icons.Default.CloudOff,
+            "Deleting",
+            MaterialTheme.colorScheme.error
+        )
+        else -> Triple(
+            Icons.Default.CloudQueue,
+            syncStatus,
+            MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    AssistChip(
+        onClick = {},
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(16.dp),
+                tint = color
+            )
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            labelColor = color,
+            leadingIconContentColor = color
+        ),
+        modifier = modifier
+    )
 }

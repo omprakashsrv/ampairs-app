@@ -2,6 +2,8 @@ package com.ampairs.tax.ui.navigation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -10,6 +12,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun TaxModuleScreen(
+    onNavigateToSearch: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -77,7 +80,58 @@ fun TaxModuleScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "✅ Database entities and DAOs\n✅ Repository layer with offline-first\n✅ Tax calculation engine with India GST strategy\n⏳ UI screens coming soon",
+                        text = "✅ Database entities and DAOs\n✅ Repository layer with offline-first\n✅ Tax calculation engine (7 countries)\n✅ Tax code search & management UI\n✅ Tax code detail screen",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        item {
+            // Quick Actions
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Quick Actions",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+
+                    Button(
+                        onClick = onNavigateToSearch,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Search Tax Codes")
+                    }
+                }
+            }
+        }
+
+        item {
+            // Features Card
+            Card {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Available Features",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "• Search master tax codes from global registry\n• Subscribe to workspace tax codes\n• Manage favorites and usage tracking\n• View detailed tax code information\n• Offline-first with background sync\n• Multi-country tax calculation support",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

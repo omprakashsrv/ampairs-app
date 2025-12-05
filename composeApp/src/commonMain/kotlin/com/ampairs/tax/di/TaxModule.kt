@@ -18,9 +18,11 @@ import com.ampairs.tax.data.repository.TaxConfigurationRepository
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxStrategy
 import com.ampairs.tax.ui.search.TaxCodeSearchViewModel
+import com.ampairs.tax.ui.detail.TaxCodeDetailViewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 /**
@@ -31,7 +33,12 @@ import org.koin.dsl.module
  */
 val taxModule = module {
     // API Layer - Single instance with Ktor client injection
-    singleOf(::TaxConfigurationApiImpl) { TaxConfigurationApi::class }
+    single<TaxConfigurationApi> {
+        TaxConfigurationApiImpl(
+            engine = get(),
+            tokenRepository = get()
+        )
+    }
 
     // DAOs - Factory scoped for workspace isolation
     factory {
@@ -138,4 +145,5 @@ val taxModule = module {
 
     // ViewModels
     viewModelOf(::TaxCodeSearchViewModel)
+    viewModelOf(::TaxCodeDetailViewModel)
 }
