@@ -18,6 +18,16 @@ This guide provides complete API specifications for implementing the Tax Module 
 - **Database**: PostgreSQL with multi-tenant isolation
 - **API Style**: RESTful with standard `ApiResponse<T>` wrapper
 
+### Naming Convention
+**All endpoints follow singular resource naming:**
+
+| Resource Type | Endpoint Pattern |
+|--------------|------------------|
+| Master Tax Code | `/api/v1/tax/master-code/*` |
+| Workspace Tax Code | `/api/v1/workspaces/{id}/tax/code/*` |
+| Tax Rule | `/api/v1/workspaces/{id}/tax/rule/*` |
+| Tax Component | `/api/v1/workspaces/{id}/tax/component/*` |
+
 ---
 
 ## 1. Tax Configuration APIs
@@ -119,7 +129,7 @@ class TaxConfigurationController(
 
 ### 2.1 Search Master Tax Codes
 
-**Endpoint**: `GET /api/v1/tax/master-codes/search`
+**Endpoint**: `GET /api/v1/tax/master-code/search`
 
 **Description**: Search global tax code registry filtered by country. This is the primary endpoint for mobile to discover tax codes.
 
@@ -164,7 +174,7 @@ data class PageResponse<T>(
 
 **Example Request**:
 ```
-GET /api/v1/tax/master-codes/search?query=oil&countryCode=IN&codeType=HSN_CODE&page=0&size=20
+GET /api/v1/tax/master-code/search?query=oil&countryCode=IN&codeType=HSN_CODE&page=0&size=20
 ```
 
 **Example Response**:
@@ -205,7 +215,7 @@ GET /api/v1/tax/master-codes/search?query=oil&countryCode=IN&codeType=HSN_CODE&p
 **Spring Boot Implementation**:
 ```kotlin
 @RestController
-@RequestMapping("/api/v1/tax/master-codes")
+@RequestMapping("/api/v1/tax/master-code")
 class MasterTaxCodeController(
     private val masterTaxCodeService: MasterTaxCodeService
 ) {
@@ -269,7 +279,7 @@ interface MasterTaxCodeRepository : JpaRepository<MasterTaxCode, String> {
 
 ### 2.2 Get Popular Tax Codes
 
-**Endpoint**: `GET /api/v1/tax/master-codes/popular`
+**Endpoint**: `GET /api/v1/tax/master-code/popular`
 
 **Description**: Get popular tax codes for a country/industry to help users discover commonly used codes.
 
@@ -282,7 +292,7 @@ interface MasterTaxCodeRepository : JpaRepository<MasterTaxCode, String> {
 
 **Example**:
 ```
-GET /api/v1/tax/master-codes/popular?countryCode=IN&industry=RETAIL_GROCERY&limit=20
+GET /api/v1/tax/master-code/popular?countryCode=IN&industry=RETAIL_GROCERY&limit=20
 ```
 
 ---
@@ -291,7 +301,7 @@ GET /api/v1/tax/master-codes/popular?countryCode=IN&industry=RETAIL_GROCERY&limi
 
 ### 3.1 Subscribe to Tax Code
 
-**Endpoint**: `POST /api/v1/workspaces/{workspaceId}/tax/codes/subscribe`
+**Endpoint**: `POST /api/v1/workspaces/{workspaceId}/tax/code/subscribe`
 
 **Description**: Subscribe workspace to a master tax code. Creates a workspace-specific copy with custom configurations.
 
@@ -344,7 +354,7 @@ data class WorkspaceTaxCodeDto(
 **Spring Boot Implementation**:
 ```kotlin
 @RestController
-@RequestMapping("/api/v1/workspaces/{workspaceId}/tax/codes")
+@RequestMapping("/api/v1/workspaces/{workspaceId}/tax/code")
 class WorkspaceTaxCodeController(
     private val workspaceTaxCodeService: WorkspaceTaxCodeService
 ) {
@@ -424,7 +434,7 @@ class WorkspaceTaxCodeService(
 
 ### 3.2 Get Workspace Tax Codes (Incremental Sync)
 
-**Endpoint**: `GET /api/v1/workspaces/{workspaceId}/tax/codes`
+**Endpoint**: `GET /api/v1/workspaces/{workspaceId}/tax/code`
 
 **Description**: Get all workspace subscribed tax codes with incremental sync support.
 
@@ -437,7 +447,7 @@ class WorkspaceTaxCodeService(
 
 **Example**:
 ```
-GET /api/v1/workspaces/WS_001/tax/codes?modifiedAfter=1733000000000&page=0&size=1000
+GET /api/v1/workspaces/WS_001/tax/code?modifiedAfter=1733000000000&page=0&size=1000
 ```
 
 **Spring Boot Implementation**:
@@ -471,7 +481,7 @@ fun getWorkspaceTaxCodes(
 
 ### 3.3 Unsubscribe from Tax Code
 
-**Endpoint**: `DELETE /api/v1/workspaces/{workspaceId}/tax/codes/{taxCodeId}`
+**Endpoint**: `DELETE /api/v1/workspaces/{workspaceId}/tax/code/{taxCodeId}`
 
 **Description**: Unsubscribe workspace from a tax code (soft delete).
 
@@ -481,7 +491,7 @@ fun getWorkspaceTaxCodes(
 
 ### 3.4 Update Tax Code Configuration
 
-**Endpoint**: `PATCH /api/v1/workspaces/{workspaceId}/tax/codes/{taxCodeId}`
+**Endpoint**: `PATCH /api/v1/workspaces/{workspaceId}/tax/code/{taxCodeId}`
 
 **Description**: Update workspace-specific tax code settings (notes, favorite, custom rule).
 
@@ -498,7 +508,7 @@ fun getWorkspaceTaxCodes(
 
 ### 3.5 Increment Usage Count
 
-**Endpoint**: `POST /api/v1/workspaces/{workspaceId}/tax/codes/{taxCodeId}/usage`
+**Endpoint**: `POST /api/v1/workspaces/{workspaceId}/tax/code/{taxCodeId}/usage`
 
 **Description**: Increment usage count when tax code is used in calculations/transactions.
 
@@ -515,7 +525,7 @@ fun getWorkspaceTaxCodes(
 
 ### 4.1 Get Tax Rules
 
-**Endpoint**: `GET /api/v1/workspaces/{workspaceId}/tax/rules`
+**Endpoint**: `GET /api/v1/workspaces/{workspaceId}/tax/rule`
 
 **Description**: Get tax rules for workspace with incremental sync support.
 
@@ -630,7 +640,7 @@ data class ComponentReferenceDto(
 
 ### 4.2 Get Tax Components
 
-**Endpoint**: `GET /api/v1/workspaces/{workspaceId}/tax/components`
+**Endpoint**: `GET /api/v1/workspaces/{workspaceId}/tax/component`
 
 **Description**: Get workspace tax components (CGST, SGST, IGST, VAT, etc.).
 
@@ -731,7 +741,7 @@ data class TaxComponentResultDto(
 
 ### 6.1 Bulk Subscribe Tax Codes
 
-**Endpoint**: `POST /api/v1/workspaces/{workspaceId}/tax/codes/bulk-subscribe`
+**Endpoint**: `POST /api/v1/workspaces/{workspaceId}/tax/code/bulk-subscribe`
 
 **Description**: Subscribe to multiple tax codes in one request.
 
