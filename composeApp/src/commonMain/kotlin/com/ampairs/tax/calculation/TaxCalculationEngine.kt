@@ -21,8 +21,11 @@ class TaxCalculationEngine(
     suspend fun calculateTax(request: TaxCalculationRequest): Result<TaxCalculationResult> {
         return try {
 
-            val config = taxConfigRepository.getConfiguration()
-                ?: return Result.failure(Exception("Workspace tax configuration not found"))
+            val configResult = taxConfigRepository.getConfiguration()
+            if (configResult.isFailure) {
+                return Result.failure(Exception("Workspace tax configuration not found"))
+            }
+            val config = configResult.getOrThrow()
 
             // 2. Get strategy for workspace country
             val strategy = strategies[config.taxStrategy]
@@ -46,7 +49,8 @@ class TaxCalculationEngine(
      */
     suspend fun getCurrentStrategy(): TaxStrategy? {
         return try {
-            taxConfigRepository.getConfiguration()?.taxStrategy
+            val result = taxConfigRepository.getConfiguration()
+            if (result.isSuccess) result.getOrNull()?.taxStrategy else null
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCalculationEngine.getCurrentStrategy")
             null
