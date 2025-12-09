@@ -20,6 +20,7 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -358,14 +359,21 @@ class TaxConfigurationApiImpl(
 // Request DTOs
 @Serializable
 private data class SubscribeTaxCodeRequest(
+    @SerialName("master_tax_code_id")
     val masterTaxCodeId: String,
+    @SerialName("custom_tax_rule_id")
     val customTaxRuleId: String? = null,
+    @SerialName("is_favorite")
     val isFavorite: Boolean = false,
-    val notes: String? = null
+    val notes: String? = null,
+    @SerialName("custom_name")
+    val customName: String? = null
 )
 
 @Serializable
 private data class BulkSubscribeRequest(
+    @SerialName("master_tax_code_ids")
     val masterTaxCodeIds: List<String>,
+    @SerialName("apply_default_rules")
     val applyDefaultRules: Boolean = true
 )
