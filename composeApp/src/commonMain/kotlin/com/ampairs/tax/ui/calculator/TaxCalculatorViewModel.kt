@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.calculation.TaxCalculationEngine
 import com.ampairs.tax.calculation.model.*
 import com.ampairs.tax.data.repository.TaxCodeRepository
+import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.coroutines.flow.*
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 class TaxCalculatorViewModel(
     private val taxCalculationEngine: TaxCalculationEngine,
     private val taxCodeRepository: TaxCodeRepository,
+    private val taxRuleRepository: TaxRuleRepository,
     private val workspaceContext: WorkspaceContextManager
 ) : ViewModel() {
 
@@ -37,6 +39,11 @@ class TaxCalculatorViewModel(
                     destinationCountry = countryCode
                 )
             }
+        }
+
+        // Sync tax rules in background for calculations
+        viewModelScope.launch {
+            taxRuleRepository.syncTaxRules()
         }
     }
 
