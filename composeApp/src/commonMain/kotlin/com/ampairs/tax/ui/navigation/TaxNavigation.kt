@@ -13,10 +13,14 @@ import com.ampairs.tax.ui.calculator.TaxCalculatorScreen
 import com.ampairs.tax.ui.list.MyTaxCodesScreen
 import com.ampairs.tax.ui.search.TaxCodeSearchScreen
 import com.ampairs.tax.ui.detail.TaxCodeDetailScreen
+import com.ampairs.tax.ui.configuration.TaxConfigurationScreen
 
 // Tax Navigation Routes
 @Serializable
 object TaxListRoute
+
+@Serializable
+object TaxConfigurationRoute
 
 @Serializable
 object TaxCalculatorRoute
@@ -46,6 +50,17 @@ fun NavGraphBuilder.taxNavigation(
                 onNavigateToSearch = {
                     navController.navigate(TaxCodeSearchRoute())
                 },
+                onNavigateToConfiguration = {
+                    navController.navigate(TaxConfigurationRoute)
+                },
+                modifier = Modifier
+            )
+        }
+
+        // Tax Configuration Screen
+        composable<TaxConfigurationRoute> {
+            TaxConfigurationScreen(
+                onNavigateBack = { navController.popBackStack() },
                 modifier = Modifier
             )
         }

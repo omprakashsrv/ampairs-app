@@ -28,28 +28,109 @@ class TaxConfigurationRepository(
     }
 
     /**
-     * Get workspace tax configuration (offline)
+     * Get workspace tax configuration (offline + sync fallback)
      */
-    suspend fun getConfiguration(): TaxConfiguration? {
-        return taxConfigurationDao.getConfiguration()?.toDomain()
+    suspend fun getConfiguration(): Result<TaxConfiguration> {
+        return try {
+            // Try local database first
+            val localConfig = taxConfigurationDao.getConfiguration()?.toDomain()
+            if (localConfig != null) {
+                return Result.success(localConfig)
+            }
+
+            // If not found locally, try to fetch from server
+            val result = taxConfigApi.getWorkspaceConfiguration()
+            if (result.isSuccess) {
+                val serverConfig = result.getOrThrow()
+                taxConfigurationDao.insert(serverConfig.toEntity())
+                Result.success(serverConfig)
+            } else {
+                Result.failure(result.exceptionOrNull() ?: Exception("Configuration not found"))
+            }
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxConfigurationRepository.getConfiguration")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Create workspace tax configuration (database-first with background sync)
+     */
+    suspend fun createConfiguration(
+        countryCode: String,
+        taxStrategy: String,
+        defaultTaxCodeSystem: String,
+        industry: String? = null,
+        autoSubscribeNewCodes: Boolean = false
+    ): Result<TaxConfiguration> {
+        return try {
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val config = TaxConfiguration(
+                countryCode = countryCode,
+                taxStrategy = taxStrategy,
+                defaultTaxCodeSystem = defaultTaxCodeSystem,
+                taxJurisdictions = emptyList(),
+                industry = industry,
+                autoSubscribeNewCodes = autoSubscribeNewCodes,
+                syncedAt = now
+            )
+
+            // Save to local database first
+            taxConfigurationDao.insert(config.toEntity())
+
+            // Try to create on server
+            try {
+                val result = taxConfigApi.createWorkspaceConfiguration(config)
+                if (result.isSuccess) {
+                    val serverConfig = result.getOrThrow()
+                    taxConfigurationDao.insert(serverConfig.toEntity())
+                    Result.success(serverConfig)
+                } else {
+                    // Keep local version but mark as failed to sync
+                    Result.success(config)
+                }
+            } catch (e: Exception) {
+                // Network error - keep local version
+                ErrorTracking.captureException(
+                    e,
+                    "TaxConfigurationRepository.createConfiguration.sync"
+                )
+                Result.success(config)
+            }
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxConfigurationRepository.createConfiguration")
+            Result.failure(e)
+        }
     }
 
     /**
      * Update workspace tax configuration (database-first with background sync)
      */
-    suspend fun updateConfiguration(config: TaxConfiguration): Result<TaxConfiguration> {
+    suspend fun updateConfiguration(
+        countryCode: String,
+        taxStrategy: String,
+        defaultTaxCodeSystem: String,
+        industry: String? = null,
+        autoSubscribeNewCodes: Boolean = false
+    ): Result<TaxConfiguration> {
         return try {
             val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
-            val configWithTimestamp = config.copy(
+            val config = TaxConfiguration(
+                countryCode = countryCode,
+                taxStrategy = taxStrategy,
+                defaultTaxCodeSystem = defaultTaxCodeSystem,
+                taxJurisdictions = emptyList(),
+                industry = industry,
+                autoSubscribeNewCodes = autoSubscribeNewCodes,
                 syncedAt = now
             )
 
             // Save to local database first
-            taxConfigurationDao.insert(configWithTimestamp.toEntity())
+            taxConfigurationDao.insert(config.toEntity())
 
             // Try to sync with server in background
             try {
-                val result = taxConfigApi.updateWorkspaceConfiguration(configWithTimestamp)
+                val result = taxConfigApi.updateWorkspaceConfiguration(config)
 
                 if (result.isSuccess) {
                     val serverConfig = result.getOrThrow()
@@ -57,7 +138,7 @@ class TaxConfigurationRepository(
                     Result.success(serverConfig)
                 } else {
                     // Keep local version
-                    Result.success(configWithTimestamp)
+                    Result.success(config)
                 }
             } catch (e: Exception) {
                 // Network error - keep local version
@@ -65,7 +146,7 @@ class TaxConfigurationRepository(
                     e,
                     "TaxConfigurationRepository.updateConfiguration.sync"
                 )
-                Result.success(configWithTimestamp)
+                Result.success(config)
             }
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxConfigurationRepository.updateConfiguration")

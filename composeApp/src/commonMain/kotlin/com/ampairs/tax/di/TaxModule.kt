@@ -21,6 +21,7 @@ import com.ampairs.tax.ui.calculator.TaxCalculatorViewModel
 import com.ampairs.tax.ui.list.MyTaxCodesViewModel
 import com.ampairs.tax.ui.search.TaxCodeSearchViewModel
 import com.ampairs.tax.ui.detail.TaxCodeDetailViewModel
+import com.ampairs.tax.ui.configuration.TaxConfigurationViewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -150,4 +151,5 @@ val taxModule = module {
     viewModelOf(::MyTaxCodesViewModel)
     viewModelOf(::TaxCodeSearchViewModel)
     viewModelOf(::TaxCodeDetailViewModel)
+    viewModelOf(::TaxConfigurationViewModel)
 }

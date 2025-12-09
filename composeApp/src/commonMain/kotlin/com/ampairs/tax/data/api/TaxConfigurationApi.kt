@@ -15,6 +15,7 @@ interface TaxConfigurationApi {
 
     // Workspace Configuration
     suspend fun getWorkspaceConfiguration(): Result<TaxConfiguration>
+    suspend fun createWorkspaceConfiguration(config: TaxConfiguration): Result<TaxConfiguration>
     suspend fun updateWorkspaceConfiguration(config: TaxConfiguration): Result<TaxConfiguration>
 
     // Master Tax Codes (Server-side only)

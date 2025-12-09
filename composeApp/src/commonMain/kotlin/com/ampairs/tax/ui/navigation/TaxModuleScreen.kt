@@ -20,6 +20,7 @@ fun TaxModuleScreen(
     onNavigateToCalculator: () -> Unit,
     onNavigateToMyTaxCodes: () -> Unit,
     onNavigateToSearch: () -> Unit,
+    onNavigateToConfiguration: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -63,6 +64,18 @@ fun TaxModuleScreen(
                 icon = Icons.Default.Search,
                 onClick = onNavigateToSearch
             )
+        }
+
+        // Configuration option (if provided)
+        onNavigateToConfiguration?.let { navigate ->
+            item {
+                FeatureCard(
+                    title = "Tax Configuration",
+                    description = "Configure country, tax strategy, and default settings",
+                    icon = Icons.Default.Code,
+                    onClick = navigate
+                )
+            }
         }
     }
 }

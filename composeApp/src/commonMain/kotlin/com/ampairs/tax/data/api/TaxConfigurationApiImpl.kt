@@ -48,6 +48,26 @@ class TaxConfigurationApiImpl(
         }
     }
 
+    override suspend fun createWorkspaceConfiguration(
+        config: TaxConfiguration
+    ): Result<TaxConfiguration> {
+        return try {
+            val url = ApiUrlBuilder.taxUrl("v1/configuration")
+            val response: Response<TaxConfiguration> = httpClient.post(url) {
+                contentType(ContentType.Application.Json)
+                setBody(config)
+            }.body()
+
+            if (response.data != null && response.error == null) {
+                Result.success(response.data!!)
+            } else {
+                Result.failure(Exception(response.error?.toString() ?: "Unknown error"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun updateWorkspaceConfiguration(
         config: TaxConfiguration
     ): Result<TaxConfiguration> {
