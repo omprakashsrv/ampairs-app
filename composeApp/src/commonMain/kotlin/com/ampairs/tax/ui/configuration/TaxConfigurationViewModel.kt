@@ -3,6 +3,8 @@ package com.ampairs.tax.ui.configuration
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.data.repository.TaxConfigurationRepository
+import com.ampairs.tax.domain.model.TaxStrategy
+import com.ampairs.tax.domain.model.TaxCodeType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,8 +41,8 @@ class TaxConfigurationViewModel(
                         isNewConfiguration = false,
                         formState = TaxConfigurationFormState(
                             countryCode = config.countryCode,
-                            taxStrategy = config.taxStrategy,
-                            defaultTaxCodeSystem = config.defaultTaxCodeSystem ?: "",
+                            taxStrategy = config.taxStrategy.name,
+                            defaultTaxCodeSystem = config.defaultTaxCodeSystem.name,
                             industry = config.industry,
                             autoSubscribeNewCodes = config.autoSubscribeNewCodes
                         ),
@@ -76,19 +78,32 @@ class TaxConfigurationViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
 
+            // Convert string values to enums
+            val taxStrategy = try {
+                TaxStrategy.valueOf(formState.taxStrategy)
+            } catch (e: Exception) {
+                TaxStrategy.DEFAULT_TAX
+            }
+
+            val taxCodeSystem = try {
+                TaxCodeType.valueOf(formState.defaultTaxCodeSystem)
+            } catch (e: Exception) {
+                TaxCodeType.TAX_CATEGORY
+            }
+
             val result = if (_uiState.value.isNewConfiguration) {
                 repository.createConfiguration(
                     countryCode = formState.countryCode,
-                    taxStrategy = formState.taxStrategy,
-                    defaultTaxCodeSystem = formState.defaultTaxCodeSystem,
+                    taxStrategy = taxStrategy,
+                    defaultTaxCodeSystem = taxCodeSystem,
                     industry = formState.industry,
                     autoSubscribeNewCodes = formState.autoSubscribeNewCodes
                 )
             } else {
                 repository.updateConfiguration(
                     countryCode = formState.countryCode,
-                    taxStrategy = formState.taxStrategy,
-                    defaultTaxCodeSystem = formState.defaultTaxCodeSystem,
+                    taxStrategy = taxStrategy,
+                    defaultTaxCodeSystem = taxCodeSystem,
                     industry = formState.industry,
                     autoSubscribeNewCodes = formState.autoSubscribeNewCodes
                 )

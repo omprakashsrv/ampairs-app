@@ -6,6 +6,8 @@ import com.ampairs.tax.data.db.dao.TaxConfigurationDao
 import com.ampairs.tax.data.db.entity.toEntity
 import com.ampairs.tax.data.db.entity.toDomain
 import com.ampairs.tax.domain.model.TaxConfiguration
+import com.ampairs.tax.domain.model.TaxStrategy
+import com.ampairs.tax.domain.model.TaxCodeType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.ExperimentalTime
@@ -58,14 +60,15 @@ class TaxConfigurationRepository(
      */
     suspend fun createConfiguration(
         countryCode: String,
-        taxStrategy: String,
-        defaultTaxCodeSystem: String,
+        taxStrategy: TaxStrategy,
+        defaultTaxCodeSystem: TaxCodeType,
         industry: String? = null,
         autoSubscribeNewCodes: Boolean = false
     ): Result<TaxConfiguration> {
         return try {
             val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             val config = TaxConfiguration(
+                id = "",  // Server will generate
                 countryCode = countryCode,
                 taxStrategy = taxStrategy,
                 defaultTaxCodeSystem = defaultTaxCodeSystem,
@@ -108,14 +111,17 @@ class TaxConfigurationRepository(
      */
     suspend fun updateConfiguration(
         countryCode: String,
-        taxStrategy: String,
-        defaultTaxCodeSystem: String,
+        taxStrategy: TaxStrategy,
+        defaultTaxCodeSystem: TaxCodeType,
         industry: String? = null,
         autoSubscribeNewCodes: Boolean = false
     ): Result<TaxConfiguration> {
         return try {
             val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            // Get existing config to preserve ID
+            val existingConfig = taxConfigurationDao.getConfiguration()
             val config = TaxConfiguration(
+                id = existingConfig?.id ?: "",
                 countryCode = countryCode,
                 taxStrategy = taxStrategy,
                 defaultTaxCodeSystem = defaultTaxCodeSystem,
