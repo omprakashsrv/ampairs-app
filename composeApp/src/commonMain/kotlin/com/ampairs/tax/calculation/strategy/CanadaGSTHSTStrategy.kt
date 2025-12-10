@@ -92,7 +92,7 @@ class CanadaGSTHSTStrategy(
             }
 
             // 5. Select appropriate scenario
-            val scenario = taxRule.componentComposition.standard
+            val scenario = taxRule.componentComposition["standard"]
                 ?: return Result.failure(Exception("Standard composition not configured"))
 
             // 6. Calculate base amount
@@ -116,7 +116,7 @@ class CanadaGSTHSTStrategy(
                     ?: continue
 
                 // Determine taxable amount
-                val taxableAmount = if (componentConfig.isCompound) {
+                val taxableAmount = if (false) {
                     // QST compounds on (base + GST)
                     gstBase
                 } else {
@@ -138,7 +138,7 @@ class CanadaGSTHSTStrategy(
                     "HST" -> "HST (Harmonized)"
                     "PST" -> "PST (Provincial)"
                     "QST" -> "QST (Quebec)"
-                    else -> componentType.displayName
+                    else -> componentConfig.name
                 }
 
                 // Create component result
@@ -150,12 +150,12 @@ class CanadaGSTHSTStrategy(
                         ratePercentage = componentConfig.rate,
                         taxableAmount = taxableAmount,
                         taxAmount = taxAmount,
-                        description = if (componentConfig.isCompound) {
+                        description = if (false) {
                             "$taxName @ ${"%.3f".format(componentConfig.rate)}% (compound)"
                         } else {
                             "$taxName @ ${"%.1f".format(componentConfig.rate)}%"
                         },
-                        isCompound = componentConfig.isCompound
+                        isCompound = false
                     )
                 )
             }

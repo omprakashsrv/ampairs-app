@@ -105,7 +105,7 @@ class UKVATStrategy(
                 }
                 else -> {
                     // Standard VAT (B2C or standard B2B)
-                    taxRule.componentComposition.standard
+                    taxRule.componentComposition["standard"]
                         ?: return Result.failure(Exception("Standard composition not configured"))
                 }
             }
@@ -142,7 +142,7 @@ class UKVATStrategy(
                 components.add(
                     TaxComponentResult(
                         componentId = componentConfig.id,
-                        componentName = componentType.displayName,
+                        componentName = componentConfig.name,
                         taxType = componentType.componentCode,
                         ratePercentage = componentConfig.rate,
                         taxableAmount = baseAmount,

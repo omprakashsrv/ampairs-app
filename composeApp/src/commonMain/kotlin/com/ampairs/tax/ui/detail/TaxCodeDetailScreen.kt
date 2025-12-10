@@ -103,6 +103,8 @@ fun TaxCodeDetailScreen(
             is TaxCodeDetailUiState.Success -> {
                 TaxCodeDetailContent(
                     taxCode = state.taxCode,
+                    taxRules = state.taxRules,
+                    isLoadingRules = state.isLoadingRules,
                     isEditing = state.isEditing,
                     isSaving = state.isSaving,
                     saveError = state.saveError,
@@ -139,6 +141,8 @@ fun TaxCodeDetailScreen(
 @Composable
 private fun TaxCodeDetailContent(
     taxCode: TaxCode,
+    taxRules: List<com.ampairs.tax.domain.model.TaxRule>,
+    isLoadingRules: Boolean,
     isEditing: Boolean,
     isSaving: Boolean,
     saveError: String?,
@@ -490,6 +494,46 @@ private fun TaxCodeDetailContent(
             }
         }
 
+        // Tax Rules Card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Tax Rules",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                if (isLoadingRules) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (taxRules.isEmpty()) {
+                    Text(
+                        text = "No tax rules configured for this code",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    taxRules.forEach { rule ->
+                        TaxRuleItem(rule = rule)
+                        if (rule != taxRules.last()) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        }
+                    }
+                }
+            }
+        }
+
         // Notes Card
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -671,6 +715,124 @@ private fun UnsubscribeConfirmationDialog(
             }
         }
     )
+}
+
+@Composable
+private fun TaxRuleItem(
+    rule: com.ampairs.tax.domain.model.TaxRule,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Jurisdiction and Type
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Jurisdiction: ${rule.jurisdiction}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = rule.jurisdictionLevel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // Tax Code Info
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Tax Code:",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "${rule.taxCode} (${rule.taxCodeType})",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        if (rule.taxCodeDescription != null) {
+            Text(
+                text = rule.taxCodeDescription,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        // Tax Components
+        if (rule.componentComposition.isNotEmpty()) {
+            Text(
+                text = "Tax Components:",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            // Display all scenarios in the composition map
+            rule.componentComposition.forEach { (scenarioKey, composition) ->
+                val scenarioLabel = when (scenarioKey) {
+                    "intra_state" -> "Intra-State"
+                    "inter_state" -> "Inter-State"
+                    "standard" -> "Standard"
+                    "b2b" -> "B2B"
+                    "b2c" -> "B2C"
+                    else -> scenarioKey.replace("_", " ").replaceFirstChar { it.uppercase() }
+                }
+
+                Text(
+                    text = "$scenarioLabel (Total: ${composition.totalRate}%)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                composition.components.forEach { component ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = component.name,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            text = "${component.rate}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        // Status badge
+        if (rule.isActive) {
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(
+                    text = "Active",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+    }
 }
 
 /**

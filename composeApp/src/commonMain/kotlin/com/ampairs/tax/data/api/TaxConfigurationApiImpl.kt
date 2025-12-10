@@ -314,6 +314,23 @@ class TaxConfigurationApiImpl(
         }
     }
 
+    override suspend fun getTaxRulesByTaxCode(
+        taxCodeId: String
+    ): Result<List<TaxRule>> {
+        return try {
+            val url = ApiUrlBuilder.taxUrl("v1/rule/tax-code/$taxCodeId")
+            val response: Response<List<TaxRule>> = httpClient.get(url).body()
+
+            if (response.data != null && response.error == null) {
+                Result.success(response.data!!)
+            } else {
+                Result.failure(Exception(response.error?.toString() ?: "Unknown error"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun createTaxRule(
         rule: TaxRule
     ): Result<TaxRule> {

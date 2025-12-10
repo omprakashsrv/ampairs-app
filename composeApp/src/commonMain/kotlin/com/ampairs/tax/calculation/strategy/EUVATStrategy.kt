@@ -103,7 +103,7 @@ class EUVATStrategy(
 
                 // B2C Intra-EU (destination principle) or domestic
                 else -> {
-                    taxRule.componentComposition.standard
+                    taxRule.componentComposition["standard"]
                         ?: return Result.failure(Exception("Standard composition not configured"))
                 }
             }
@@ -140,7 +140,7 @@ class EUVATStrategy(
                 components.add(
                     TaxComponentResult(
                         componentId = componentConfig.id,
-                        componentName = componentType.displayName,
+                        componentName = componentConfig.name,
                         taxType = componentType.componentCode,
                         ratePercentage = componentConfig.rate,
                         taxableAmount = baseAmount,

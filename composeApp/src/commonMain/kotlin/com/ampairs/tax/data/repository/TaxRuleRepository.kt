@@ -41,13 +41,11 @@ class TaxRuleRepository(
      */
     suspend fun getEffectiveRule(
         taxCode: String,
-        jurisdiction: String,
-        effectiveDate: Long = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        jurisdiction: String
     ): TaxRule? {
         return taxRuleDao.getEffectiveRule(
             taxCode = taxCode,
-            jurisdiction = jurisdiction,
-            effectiveDate = effectiveDate
+            jurisdiction = jurisdiction
         )?.toDomain()
     }
 
@@ -57,6 +55,38 @@ class TaxRuleRepository(
     suspend fun getRulesByTaxCode(workspaceTaxCodeId: String): List<TaxRule> {
         return taxRuleDao.getRulesByTaxCode(workspaceTaxCodeId)
             .map { it.toDomain() }
+    }
+
+    /**
+     * Get tax rules by workspace tax code with server fallback
+     * Tries local first, then fetches from server if needed
+     */
+    suspend fun getRulesByTaxCodeWithSync(workspaceTaxCodeId: String): Result<List<TaxRule>> {
+        return try {
+            // Try local database first
+            val localRules = taxRuleDao.getRulesByTaxCode(workspaceTaxCodeId)
+                .map { it.toDomain() }
+
+            if (localRules.isNotEmpty()) {
+                return Result.success(localRules)
+            }
+
+            // If not found locally, fetch from server
+            val result = taxConfigApi.getTaxRulesByTaxCode(workspaceTaxCodeId)
+
+            if (result.isSuccess) {
+                val serverRules = result.getOrThrow()
+                // Save to local database for future offline access
+                val entities = serverRules.map { it.toEntity().copy(syncStatus = "SYNCED") }
+                taxRuleDao.insertAll(entities)
+                Result.success(serverRules)
+            } else {
+                Result.failure(result.exceptionOrNull() ?: Exception("No tax rules found"))
+            }
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxRuleRepository.getRulesByTaxCodeWithSync")
+            Result.failure(e)
+        }
     }
 
     // ==================== CRUD Operations (Database-First) ====================

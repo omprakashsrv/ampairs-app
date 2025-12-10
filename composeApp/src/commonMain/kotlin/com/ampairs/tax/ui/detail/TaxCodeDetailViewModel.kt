@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.calculation.TaxCalculationEngine
 import com.ampairs.tax.calculation.model.*
 import com.ampairs.tax.data.repository.TaxCodeRepository
+import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxCode
+import com.ampairs.tax.domain.model.TaxRule
 import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 class TaxCodeDetailViewModel(
     private val taxCodeId: String,
     private val taxCodeRepository: TaxCodeRepository,
+    private val taxRuleRepository: TaxRuleRepository,
     private val taxCalculationEngine: TaxCalculationEngine,
     private val workspaceContext: WorkspaceContextManager
 ) : ViewModel() {
@@ -35,6 +38,7 @@ class TaxCodeDetailViewModel(
 
     init {
         loadTaxCodeDetails()
+        loadTaxRules()
     }
 
     private fun loadTaxCodeDetails() {
@@ -45,8 +49,17 @@ class TaxCodeDetailViewModel(
             taxCodeRepository.observeWorkspaceTaxCodes().collect { taxCodes ->
                 val taxCode = taxCodes.find { it.id == taxCodeId }
                 if (taxCode != null) {
+                    val currentState = _uiState.value
+                    val existingRules = if (currentState is TaxCodeDetailUiState.Success) {
+                        currentState.taxRules
+                    } else {
+                        emptyList()
+                    }
+
                     _uiState.value = TaxCodeDetailUiState.Success(
                         taxCode = taxCode,
+                        taxRules = existingRules,
+                        isLoadingRules = existingRules.isEmpty(),
                         isEditing = false,
                         isSaving = false,
                         saveError = null
@@ -55,6 +68,43 @@ class TaxCodeDetailViewModel(
                     _uiState.value = TaxCodeDetailUiState.Error("Tax code not found")
                 }
             }
+        }
+    }
+
+    private fun loadTaxRules() {
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState is TaxCodeDetailUiState.Success) {
+                _uiState.update { currentState.copy(isLoadingRules = true) }
+            }
+
+            val result = taxRuleRepository.getRulesByTaxCodeWithSync(taxCodeId)
+
+            result.fold(
+                onSuccess = { rules ->
+                    val state = _uiState.value
+                    if (state is TaxCodeDetailUiState.Success) {
+                        _uiState.update {
+                            state.copy(
+                                taxRules = rules,
+                                isLoadingRules = false
+                            )
+                        }
+                    }
+                },
+                onFailure = { error ->
+                    val state = _uiState.value
+                    if (state is TaxCodeDetailUiState.Success) {
+                        _uiState.update {
+                            state.copy(
+                                taxRules = emptyList(),
+                                isLoadingRules = false,
+                                saveError = "Failed to load tax rules: ${error.message}"
+                            )
+                        }
+                    }
+                }
+            )
         }
     }
 
@@ -202,6 +252,8 @@ sealed class TaxCodeDetailUiState {
     data class Error(val message: String) : TaxCodeDetailUiState()
     data class Success(
         val taxCode: TaxCode,
+        val taxRules: List<TaxRule> = emptyList(),
+        val isLoadingRules: Boolean = false,
         val isEditing: Boolean = false,
         val isSaving: Boolean = false,
         val saveError: String? = null,

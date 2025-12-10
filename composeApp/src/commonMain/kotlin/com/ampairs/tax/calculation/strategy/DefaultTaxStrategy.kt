@@ -62,7 +62,7 @@ class DefaultTaxStrategy(
             }
 
             // 4. Select scenario (standard by default)
-            val scenario = taxRule.componentComposition.standard
+            val scenario = taxRule.componentComposition["standard"]
                 ?: return Result.failure(Exception("Standard composition not configured"))
 
             // 5. Calculate base amount
@@ -71,9 +71,8 @@ class DefaultTaxStrategy(
             // 6. Calculate tax components
             val components = mutableListOf<TaxComponentResult>()
             var totalTaxAmount = 0.0
-            var compoundBase = baseAmount  // For compound tax calculation
 
-            // Sort by order for proper compound calculation
+            // Sort by order for proper calculation
             val sortedComponents = scenario.components.sortedBy { it.order }
 
             for (componentConfig in sortedComponents) {
@@ -85,37 +84,24 @@ class DefaultTaxStrategy(
                 val componentType = taxComponentRepository.getComponentTypeById(workspaceComponent.componentTypeId)
                     ?: continue
 
-                // Determine taxable amount (base or compound)
-                val taxableAmount = if (componentConfig.isCompound) {
-                    compoundBase  // Tax on (base + previous taxes)
-                } else {
-                    baseAmount  // Tax on base only
-                }
+                // Calculate taxable amount (base amount only, no compound tax)
+                val taxableAmount = baseAmount
 
-                // Calculate tax amount
+                // Calculate tax amount using rate from component reference
                 val taxAmount = taxableAmount * (componentConfig.rate / 100.0)
                 totalTaxAmount += taxAmount
-
-                // Update compound base for next component
-                if (componentConfig.isCompound) {
-                    compoundBase += taxAmount
-                }
 
                 // Create component result
                 components.add(
                     TaxComponentResult(
                         componentId = componentConfig.id,
-                        componentName = componentType.displayName,
+                        componentName = componentConfig.name,
                         taxType = componentType.componentCode,
                         ratePercentage = componentConfig.rate,
                         taxableAmount = taxableAmount,
                         taxAmount = taxAmount,
-                        description = if (componentConfig.isCompound) {
-                            "${componentType.displayName} @ ${"%.2f".format(componentConfig.rate)}% (compound)"
-                        } else {
-                            "${componentType.displayName} @ ${"%.2f".format(componentConfig.rate)}%"
-                        },
-                        isCompound = componentConfig.isCompound
+                        description = "${componentConfig.name} @ ${"%.2f".format(componentConfig.rate)}%",
+                        isCompound = false
                     )
                 )
             }

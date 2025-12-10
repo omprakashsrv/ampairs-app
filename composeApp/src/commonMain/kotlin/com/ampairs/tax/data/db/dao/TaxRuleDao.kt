@@ -32,16 +32,13 @@ interface TaxRuleDao {
         WHERE tax_code = :taxCode
         AND jurisdiction = :jurisdiction
         AND is_active = 1
-        AND effective_from <= :effectiveDate
-        AND (effective_to IS NULL OR effective_to >= :effectiveDate)
-        ORDER BY version DESC
+        ORDER BY created_at DESC
         LIMIT 1
     """
     )
     suspend fun getEffectiveRule(
         taxCode: String,
-        jurisdiction: String,
-        effectiveDate: Long
+        jurisdiction: String
     ): TaxRuleEntity?
 
     @Query(

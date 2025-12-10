@@ -4,9 +4,9 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.ampairs.tax.domain.model.JurisdictionLevel
-import com.ampairs.tax.domain.model.TaxCodeType
+import com.ampairs.tax.domain.model.ComponentComposition
 import com.ampairs.tax.domain.model.TaxRule
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
@@ -40,48 +40,27 @@ data class TaxRuleEntity(
     val taxCodeType: String,
 
     @ColumnInfo(name = "tax_code_description")
-    val taxCodeDescription: String,
+    val taxCodeDescription: String? = null,
 
     // Jurisdiction
     @ColumnInfo(name = "jurisdiction")
     val jurisdiction: String,
 
-    @ColumnInfo(name = "jurisdiction_type")
-    val jurisdictionType: String,
+    @ColumnInfo(name = "jurisdiction_level")
+    val jurisdictionLevel: String,
 
-    // Component composition
+    // Component composition - JSON map
     @ColumnInfo(name = "component_composition")
-    val componentComposition: String,               // JSON
-
-    // Transaction context
-    @ColumnInfo(name = "applicable_transaction_types")
-    val applicableTransactionTypes: String = "[]",  // JSON
-
-    @ColumnInfo(name = "applicable_business_types")
-    val applicableBusinessTypes: String = "[]",     // JSON
-
-    // Effective dates
-    @ColumnInfo(name = "effective_from")
-    val effectiveFrom: Long,
-
-    @ColumnInfo(name = "effective_to")
-    val effectiveTo: Long? = null,
-
-    // Version control
-    @ColumnInfo(name = "version")
-    val version: Int = 1,
-
-    @ColumnInfo(name = "replaces_rule_id")
-    val replacesRuleId: String? = null,
+    val componentComposition: String,               // JSON Map<String, ComponentComposition>
 
     @ColumnInfo(name = "is_active")
     val isActive: Boolean = true,
 
     @ColumnInfo(name = "created_at")
-    val createdAt: Long,
+    val createdAt: Long = 0,
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long,
+    val updatedAt: Long = 0,
 
     @ColumnInfo(name = "sync_status")
     val syncStatus: String = "SYNCED"
@@ -92,19 +71,13 @@ fun TaxRuleEntity.toDomain(): TaxRule {
     return TaxRule(
         id = id,
         countryCode = countryCode,
-        workspaceTaxCodeId = taxCodeId,
+        taxCodeId = taxCodeId,
         taxCode = taxCode,
-        taxCodeType = TaxCodeType.valueOf(taxCodeType),
+        taxCodeType = taxCodeType,
         taxCodeDescription = taxCodeDescription,
         jurisdiction = jurisdiction,
-        jurisdictionType = JurisdictionLevel.valueOf(jurisdictionType),
+        jurisdictionLevel = jurisdictionLevel,
         componentComposition = Json.decodeFromString(componentComposition),
-        applicableTransactionTypes = Json.decodeFromString(applicableTransactionTypes),
-        applicableBusinessTypes = Json.decodeFromString(applicableBusinessTypes),
-        effectiveFrom = effectiveFrom,
-        effectiveTo = effectiveTo,
-        version = version,
-        replacesRuleId = replacesRuleId,
         isActive = isActive,
         createdAt = createdAt,
         updatedAt = updatedAt,
@@ -116,19 +89,13 @@ fun TaxRule.toEntity(): TaxRuleEntity {
     return TaxRuleEntity(
         id = id,
         countryCode = countryCode,
-        taxCodeId = workspaceTaxCodeId,
+        taxCodeId = taxCodeId,
         taxCode = taxCode,
-        taxCodeType = taxCodeType.name,
+        taxCodeType = taxCodeType,
         taxCodeDescription = taxCodeDescription,
         jurisdiction = jurisdiction,
-        jurisdictionType = jurisdictionType.name,
+        jurisdictionLevel = jurisdictionLevel,
         componentComposition = Json.encodeToString(componentComposition),
-        applicableTransactionTypes = Json.encodeToString(applicableTransactionTypes),
-        applicableBusinessTypes = Json.encodeToString(applicableBusinessTypes),
-        effectiveFrom = effectiveFrom,
-        effectiveTo = effectiveTo,
-        version = version,
-        replacesRuleId = replacesRuleId,
         isActive = isActive,
         createdAt = createdAt,
         updatedAt = updatedAt,

@@ -34,14 +34,10 @@ class IndiaGSTStrategy(
             // 3. Determine if intra-state or inter-state
             val isIntraState = request.sourceLocation.state == request.destinationLocation.state
 
-            // 4. Get applicable scenario
-            val scenario = if (isIntraState) {
-                taxRule.componentComposition.intraState
-                    ?: return Result.failure(Exception("Intra-state composition not configured"))
-            } else {
-                taxRule.componentComposition.interState
-                    ?: return Result.failure(Exception("Inter-state composition not configured"))
-            }
+            // 4. Get applicable scenario from composition map
+            val scenarioKey = if (isIntraState) "intra_state" else "inter_state"
+            val scenario = taxRule.componentComposition[scenarioKey]
+                ?: return Result.failure(Exception("$scenarioKey composition not configured"))
 
             // 5. Calculate base amount
             val baseAmount = request.baseAmount * request.quantity
@@ -62,14 +58,10 @@ class IndiaGSTStrategy(
                 val componentType = taxComponentRepository.getComponentTypeById(workspaceComponent.componentTypeId)
                     ?: continue
 
-                // Calculate taxable amount (for compound tax, includes previous taxes)
-                val taxableAmount = if (componentConfig.isCompound) {
-                    baseAmount + totalTaxAmount
-                } else {
-                    baseAmount
-                }
+                // Calculate taxable amount (base amount only, no compound tax for GST)
+                val taxableAmount = baseAmount
 
-                // Calculate tax amount
+                // Calculate tax amount using rate from component reference
                 val taxAmount = taxableAmount * (componentConfig.rate / 100.0)
 
                 // Add to total
@@ -79,13 +71,13 @@ class IndiaGSTStrategy(
                 components.add(
                     TaxComponentResult(
                         componentId = componentConfig.id,
-                        componentName = componentType.displayName,
+                        componentName = componentConfig.name,
                         taxType = componentType.componentCode,
                         ratePercentage = componentConfig.rate,
                         taxableAmount = taxableAmount,
                         taxAmount = taxAmount,
-                        description = "${componentType.displayName} @ ${"%.2f".format(componentConfig.rate)}%",
-                        isCompound = componentConfig.isCompound
+                        description = "${componentConfig.name} @ ${"%.2f".format(componentConfig.rate)}%",
+                        isCompound = false
                     )
                 )
             }

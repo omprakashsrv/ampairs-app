@@ -74,6 +74,10 @@ interface TaxConfigurationApi {
         size: Int = 100
     ): Result<PageResponse<TaxRule>>
 
+    suspend fun getTaxRulesByTaxCode(
+        taxCodeId: String
+    ): Result<List<TaxRule>>
+
     suspend fun createTaxRule(
         rule: TaxRule
     ): Result<TaxRule>

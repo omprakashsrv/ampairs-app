@@ -64,7 +64,7 @@ class USASalesTaxStrategy(
                 }
                 else -> {
                     // Standard B2C or B2B without exemption
-                    taxRule.componentComposition.standard
+                    taxRule.componentComposition["standard"]
                         ?: return Result.failure(Exception("Standard composition not configured"))
                 }
             }
@@ -76,10 +76,8 @@ class USASalesTaxStrategy(
             val components = mutableListOf<TaxComponentResult>()
             var totalTaxAmount = 0.0
 
-            // Sort by jurisdiction level and order
-            val sortedComponents = scenario.components.sortedWith(
-                compareBy({ getJurisdictionPriority(it.id) }, { it.order })
-            )
+            // Sort by order
+            val sortedComponents = scenario.components.sortedBy { it.order }
 
             for (componentConfig in sortedComponents) {
                 // Get workspace component details
@@ -103,12 +101,12 @@ class USASalesTaxStrategy(
                 components.add(
                     TaxComponentResult(
                         componentId = componentConfig.id,
-                        componentName = componentType.displayName,
+                        componentName = componentConfig.name,
                         taxType = componentType.componentCode,
                         ratePercentage = componentConfig.rate,
                         taxableAmount = baseAmount,
                         taxAmount = taxAmount,
-                        description = "${componentType.displayName} @ ${"%.3f".format(componentConfig.rate)}%",
+                        description = "${componentConfig.name} @ ${"%.3f".format(componentConfig.rate)}%",
                         isCompound = false
                     )
                 )

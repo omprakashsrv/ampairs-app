@@ -132,7 +132,7 @@ class AustraliaGSTStrategy(
             }
 
             // 4. Standard GST calculation
-            val scenario = taxRule.componentComposition.standard
+            val scenario = taxRule.componentComposition["standard"]
                 ?: return Result.failure(Exception("Standard composition not configured"))
 
             // 5. Calculate base amount
