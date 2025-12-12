@@ -198,6 +198,33 @@ class TaxCodeDetailViewModel(
             viewModelScope.launch {
                 _uiState.update { currentState.copy(isCalculating = true) }
 
+                // Check if we have tax rules loaded
+                if (currentState.taxRules.isEmpty()) {
+                    _uiState.update {
+                        currentState.copy(
+                            isCalculating = false,
+                            saveError = "No tax rules available for this code. Please sync tax rules first."
+                        )
+                    }
+                    return@launch
+                }
+
+                // Find the appropriate rule for the source jurisdiction
+                val applicableRule = currentState.taxRules.find { rule ->
+                    rule.jurisdiction == sourceState && rule.isActive
+                } ?: currentState.taxRules.firstOrNull { it.isActive }
+
+                if (applicableRule == null) {
+                    _uiState.update {
+                        currentState.copy(
+                            isCalculating = false,
+                            saveError = "No active tax rule found for jurisdiction: $sourceState"
+                        )
+                    }
+                    return@launch
+                }
+
+                // Use the calculation engine with the loaded rule
                 val countryCode = workspaceContext.getCurrentCountryCode() ?: "IN"
 
                 val request = TaxCalculationRequest(
@@ -226,7 +253,8 @@ class TaxCodeDetailViewModel(
                         _uiState.update {
                             currentState.copy(
                                 isCalculating = false,
-                                calculationResult = calculationResult
+                                calculationResult = calculationResult,
+                                saveError = null
                             )
                         }
                     },
@@ -234,7 +262,7 @@ class TaxCodeDetailViewModel(
                         _uiState.update {
                             currentState.copy(
                                 isCalculating = false,
-                                saveError = error.message ?: "Calculation failed"
+                                saveError = "Calculation failed: ${error.message}"
                             )
                         }
                     }
