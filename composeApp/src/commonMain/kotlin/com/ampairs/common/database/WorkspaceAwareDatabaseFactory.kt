@@ -1,6 +1,7 @@
 package com.ampairs.common.database
 
 import androidx.room.Room
+import androidx.room.migration.Migration
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ampairs.common.workspace.WorkspaceContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -18,22 +19,30 @@ class WorkspaceAwareDatabaseFactory(
      * Create a workspace-aware Room database
      * @param moduleName The module name (e.g., "customer", "product")
      * @param workspaceSlug Optional workspace slug. If not provided, uses current workspace context
+     * @param migrations List of database migrations to apply
      * @return Room database builder configured for the workspace
      */
     inline fun <reified T : androidx.room.RoomDatabase> createDatabase(
         klass: kotlin.reflect.KClass<T>,
         moduleName: String,
-        workspaceSlug: String? = null
+        workspaceSlug: String? = null,
+        migrations: List<Migration> = emptyList()
     ): T {
         val slug = workspaceSlug ?: WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
         val dbPath = databasePathProvider.getWorkspaceDatabasePath(slug, moduleName)
 
-        return createDatabaseInternal<T>(dbPath)
+        return createDatabaseInternal<T>(dbPath, migrations)
     }
 
-    inline fun <reified T : androidx.room.RoomDatabase> createDatabaseInternal(dbPath: String): T {
-        return createPlatformDatabase<T>(dbPath)
+    inline fun <reified T : androidx.room.RoomDatabase> createDatabaseInternal(
+        dbPath: String,
+        migrations: List<Migration> = emptyList()
+    ): T {
+        return createPlatformDatabase<T>(dbPath, migrations)
     }
 }
 
-expect inline fun <reified T : androidx.room.RoomDatabase> WorkspaceAwareDatabaseFactory.createPlatformDatabase(dbPath: String): T
+expect inline fun <reified T : androidx.room.RoomDatabase> WorkspaceAwareDatabaseFactory.createPlatformDatabase(
+    dbPath: String,
+    migrations: List<Migration> = emptyList()
+): T

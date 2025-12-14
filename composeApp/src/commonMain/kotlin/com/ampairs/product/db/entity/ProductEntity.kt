@@ -29,6 +29,9 @@ data class ProductEntity(
     val mrp: Double,
     val dp: Double,
     val selling_price: Double,
+    val product_type: String? = null,
+    val service_type: String? = null,
+    val has_variants: Int = 0,
     val active: Int = 1,
     val soft_deleted: Int = 0,
     val synced: Int = 0

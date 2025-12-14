@@ -2,10 +2,14 @@ package com.ampairs.common.database
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ampairs.common.workspace.WorkspaceContext
 
-actual inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.createPlatformDatabase(dbPath: String): T {
+actual inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.createPlatformDatabase(
+    dbPath: String,
+    migrations: List<Migration>
+): T {
     // Extract workspace slug and module name from dbPath for scope management
     // Expected format: .../workspace_{slug}/customer.db
     val fileName = dbPath.substringAfterLast('/')  // customer.db
@@ -32,6 +36,11 @@ actual inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.creat
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(queryDispatcher)
+            .apply {
+                if (migrations.isNotEmpty()) {
+                    addMigrations(*migrations.toTypedArray())
+                }
+            }
             .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
             .build()
     }

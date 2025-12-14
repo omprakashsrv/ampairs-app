@@ -10,22 +10,26 @@ import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ImageDao
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductImageDao
+import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.dao.TaxCodeDao
 import com.ampairs.product.db.dao.TaxInfoDao
 import com.ampairs.product.db.dao.UnitConversionDao
 import com.ampairs.product.db.dao.UnitDao
+import com.ampairs.product.db.dao.VariantAttributeDao
 import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
 import com.ampairs.product.db.entity.ImageEntity
 import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.db.entity.ProductImageEntity
+import com.ampairs.product.db.entity.ProductVariantEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import com.ampairs.product.db.entity.TaxCodeEntity
 import com.ampairs.product.db.entity.TaxInfoEntity
 import com.ampairs.product.db.entity.UnitConversionEntity
 import com.ampairs.product.db.entity.UnitEntity
+import com.ampairs.product.db.entity.VariantAttributeEntity
 
 @Database(
     entities = [
@@ -39,9 +43,11 @@ import com.ampairs.product.db.entity.UnitEntity
         SubCategoryEntity::class,
         BrandEntity::class,
         ImageEntity::class,
-        ProductImageEntity::class
+        ProductImageEntity::class,
+        ProductVariantEntity::class,
+        VariantAttributeEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @ConstructedBy(ProductRoomDatabaseConstructor::class)
@@ -57,6 +63,8 @@ abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun brandDao(): BrandDao
     abstract fun imageDao(): ImageDao
     abstract fun productImageDao(): ProductImageDao
+    abstract fun productVariantDao(): ProductVariantDao
+    abstract fun variantAttributeDao(): VariantAttributeDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

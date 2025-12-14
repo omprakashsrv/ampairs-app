@@ -3,6 +3,7 @@ package com.ampairs.common.database
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ampairs.common.workspace.WorkspaceContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -15,7 +16,8 @@ inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.createAndroi
     context: Context,
     queryDispatcher: CoroutineDispatcher,
     moduleName: String,
-    workspaceSlug: String? = null
+    workspaceSlug: String? = null,
+    migrations: List<Migration> = emptyList()
 ): T {
     val slug = workspaceSlug ?: WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
     println("AndroidDatabaseFactory: Creating database for module=$moduleName, workspace=$slug")
@@ -32,6 +34,11 @@ inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.createAndroi
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(queryDispatcher)
+            .apply {
+                if (migrations.isNotEmpty()) {
+                    addMigrations(*migrations.toTypedArray())
+                }
+            }
             .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
             .enableMultiInstanceInvalidation() // Support multi-process scenarios
             .build()
