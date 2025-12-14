@@ -18,16 +18,19 @@ import org.koin.dsl.module
 
 
 val productModule: Module = module {
-    // Store5 based components
-    single<ProductDao> { get<ProductRoomDatabase>().productDao() }
+    // DAOs - Use factory for workspace isolation
+    factory { get<ProductRoomDatabase>().productDao() }
+    factory { get<ProductRoomDatabase>().productVariantDao() }
+    factory { get<ProductRoomDatabase>().variantAttributeDao() }
 
-    // Product API implementation
+    // Product API implementation - Stateless, can be single
     single<ProductApi> { ProductApiImpl(get(), get()) }
 
-    single<ProductRepository> { ProductRepository(get(), get()) }
+    // Repository - Use factory for workspace isolation
+    factory<ProductRepository> { ProductRepository(get(), get(), get(), get()) }
 
-    // Product Store for offline-first pattern
-    single<ProductStore> { ProductStore(get()) }
+    // Product Store for offline-first pattern - Use factory for workspace isolation
+    factory<ProductStore> { ProductStore(get()) }
 
     // ViewModels for Store5 pattern
     viewModel { ProductsListViewModel(get(), get()) }

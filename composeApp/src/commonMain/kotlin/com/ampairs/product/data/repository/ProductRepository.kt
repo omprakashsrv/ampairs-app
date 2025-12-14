@@ -6,9 +6,16 @@ import com.ampairs.event.domain.EventType
 import com.ampairs.event.util.EventLogger
 import com.ampairs.product.data.api.ProductApi
 import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.product.db.dao.ProductVariantDao
+import com.ampairs.product.db.dao.VariantAttributeDao
 import com.ampairs.product.db.entity.ProductEntity
+import com.ampairs.product.db.entity.VariantAttributeEntity
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductListItem
+import com.ampairs.product.domain.ProductVariant
+import com.ampairs.product.domain.toEntity
+import com.ampairs.product.domain.toDomain
+import com.ampairs.product.domain.toDomainList
 import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +35,9 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 class ProductRepository(
     private val productApi: ProductApi,
-    private val productDao: ProductDao
+    private val productDao: ProductDao,
+    private val variantDao: ProductVariantDao,
+    private val attributeDao: VariantAttributeDao
 ) {
     // Event listener job for cleanup
     private var eventListenerJob: Job? = null
@@ -283,5 +292,203 @@ class ProductRepository(
             imageUrl = null, // TODO: Join with image table
             active = this.active == 1
         )
+    }
+
+    // ==================== Product Variant Methods ====================
+
+    /**
+     * Observe all variants for a product (reactive, offline-first)
+     */
+    fun observeProductVariants(productId: String): Flow<List<ProductVariant>> {
+        return variantDao.observeProductVariants(productId)
+            .map { entities -> entities.toDomainList() }
+    }
+
+    /**
+     * Get variant by ID
+     */
+    suspend fun getVariantById(variantId: String): ProductVariant? {
+        return variantDao.getVariantById(variantId)?.toDomain()
+    }
+
+    /**
+     * Get variant by SKU
+     */
+    suspend fun getVariantBySku(sku: String): ProductVariant? {
+        return variantDao.getVariantBySku(sku)?.toDomain()
+    }
+
+    /**
+     * Create variant (database-first with background sync)
+     */
+    suspend fun createVariant(variant: ProductVariant): Result<ProductVariant> {
+        return try {
+            require(variant.id.isNotBlank()) { "Variant ID must be set" }
+            require(variant.sku.isNotBlank()) { "SKU is required" }
+
+            val now = Clock.System.now()
+            val variantWithTimestamps = variant.copy(
+                createdAt = now.toString(),
+                updatedAt = now.toString(),
+                lastUpdated = now.toEpochMilliseconds(),
+                synced = false
+            )
+
+            // 1. Save to database first (offline-first)
+            val entity = variantWithTimestamps.toEntity()
+            variantDao.insertVariant(entity)
+
+            // 2. Update variant attributes for searchability
+            updateVariantAttributes(variant.productId, variant)
+
+            // 3. Background sync to server (graceful failure)
+            try {
+                // TODO: API call when backend is ready
+                // val serverVariant = productApi.createVariant(variantWithTimestamps)
+                // variantDao.insertVariant(serverVariant.toEntity().copy(synced = 1))
+            } catch (e: Exception) {
+                EventLogger.w("ProductRepository", "Variant sync failed, will retry later", e)
+            }
+
+            Result.success(variantWithTimestamps)
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "ProductRepository.createVariant")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Update variant (database-first with background sync)
+     */
+    suspend fun updateVariant(variant: ProductVariant): Result<ProductVariant> {
+        return try {
+            val now = Clock.System.now()
+            val updatedVariant = variant.copy(
+                updatedAt = now.toString(),
+                lastUpdated = now.toEpochMilliseconds(),
+                synced = false
+            )
+
+            // 1. Update database first
+            variantDao.updateVariant(updatedVariant.toEntity())
+
+            // 2. Update variant attributes
+            updateVariantAttributes(variant.productId, variant)
+
+            // 3. Background sync to server
+            try {
+                // TODO: API call when backend is ready
+                // val serverVariant = productApi.updateVariant(updatedVariant)
+                // variantDao.insertVariant(serverVariant.toEntity().copy(synced = 1))
+            } catch (e: Exception) {
+                EventLogger.w("ProductRepository", "Variant sync failed, will retry later", e)
+            }
+
+            Result.success(updatedVariant)
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "ProductRepository.updateVariant")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Delete variant (soft delete)
+     */
+    suspend fun deleteVariant(variantId: String): Result<Unit> {
+        return try {
+            variantDao.deleteVariant(variantId)
+
+            // Background sync
+            try {
+                // TODO: API call when backend is ready
+                // productApi.deleteVariant(variantId)
+            } catch (e: Exception) {
+                EventLogger.w("ProductRepository", "Variant delete sync failed", e)
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "ProductRepository.deleteVariant")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get total stock across all variants
+     */
+    suspend fun getTotalVariantStock(productId: String): Double {
+        return variantDao.getTotalProductStock(productId)
+    }
+
+    /**
+     * Get available attribute names for a product
+     */
+    suspend fun getAttributeNames(productId: String): List<String> {
+        return attributeDao.getAttributeNames(productId)
+    }
+
+    /**
+     * Get available values for a specific attribute
+     */
+    suspend fun getAttributeValues(productId: String, attributeName: String): List<String> {
+        return attributeDao.getAttributeValues(productId, attributeName)
+    }
+
+    /**
+     * Update searchable variant attributes
+     */
+    private suspend fun updateVariantAttributes(productId: String, variant: ProductVariant) {
+        try {
+            val now = Clock.System.now().toString()
+            val attributes = mutableListOf<VariantAttributeEntity>()
+
+            variant.attribute1Name?.let { name ->
+                variant.attribute1Value?.let { value ->
+                    attributes.add(
+                        VariantAttributeEntity(
+                            productId = productId,
+                            attributeName = name,
+                            attributeValue = value,
+                            createdAt = now,
+                            updatedAt = now
+                        )
+                    )
+                }
+            }
+
+            variant.attribute2Name?.let { name ->
+                variant.attribute2Value?.let { value ->
+                    attributes.add(
+                        VariantAttributeEntity(
+                            productId = productId,
+                            attributeName = name,
+                            attributeValue = value,
+                            createdAt = now,
+                            updatedAt = now
+                        )
+                    )
+                }
+            }
+
+            variant.attribute3Name?.let { name ->
+                variant.attribute3Value?.let { value ->
+                    attributes.add(
+                        VariantAttributeEntity(
+                            productId = productId,
+                            attributeName = name,
+                            attributeValue = value,
+                            createdAt = now,
+                            updatedAt = now
+                        )
+                    )
+                }
+            }
+
+            if (attributes.isNotEmpty()) {
+                attributeDao.insertAttributes(attributes)
+            }
+        } catch (e: Exception) {
+            EventLogger.w("ProductRepository", "Failed to update variant attributes", e)
+        }
     }
 }
