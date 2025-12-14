@@ -53,17 +53,23 @@ data class Product(
      * Otherwise returns the product's own stock quantity
      */
     val totalStock: Double
-        get() = if (hasVariants && variants != null) {
-            variants.sumOf { it.stockQuantity }
-        } else {
-            stockQuantity ?: 0.0
+        get() {
+            val variantList = variants
+            return if (hasVariants && variantList != null) {
+                variantList.sumOf { it.stockQuantity }
+            } else {
+                stockQuantity ?: 0.0
+            }
         }
 
     /**
      * Check if any variant is low on stock
      */
     val hasLowStockVariants: Boolean
-        get() = hasVariants && variants?.any { it.isLowStock } == true
+        get() {
+            val variantList = variants
+            return hasVariants && variantList?.any { it.isLowStock } == true
+        }
 }
 
 fun ProductEntity.asDomainModel(): Product {
