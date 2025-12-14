@@ -60,11 +60,11 @@ interface ProductVariantDao {
      * Get total stock across all variants for a product
      */
     @Query("""
-        SELECT COALESCE(SUM(stock), 0) FROM product_variants
+        SELECT COALESCE(SUM(stock_quantity), 0.0) FROM product_variants
         WHERE product_id = :productId
         AND active = 1
     """)
-    suspend fun getTotalProductStock(productId: String): Int
+    suspend fun getTotalProductStock(productId: String): Double
 
     /**
      * Insert or update variant

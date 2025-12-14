@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "4d88b838ba12d7c3c69f0b921ab5ba5f",
+    "identityHash": "dcee11dc6d7b5e84e8406f90a8663d42",
     "entities": [
       {
         "tableName": "productEntity",
@@ -841,7 +841,7 @@
       },
       {
         "tableName": "product_variants",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `sku` TEXT NOT NULL, `variant_name` TEXT NOT NULL, `size` TEXT, `color` TEXT, `material` TEXT, `mrp` REAL, `dealer_price` REAL, `selling_price` REAL, `stock` INTEGER NOT NULL, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`product_id`) REFERENCES `productEntity`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `product_id` TEXT NOT NULL, `sku` TEXT NOT NULL, `variant_name` TEXT NOT NULL, `attribute_1_name` TEXT, `attribute_1_value` TEXT, `attribute_2_name` TEXT, `attribute_2_value` TEXT, `attribute_3_name` TEXT, `attribute_3_value` TEXT, `mrp` REAL, `dealer_price` REAL, `selling_price` REAL, `stock_quantity` REAL NOT NULL, `low_stock_alert` REAL, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `created_at` TEXT, `updated_at` TEXT, `last_updated` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`product_id`) REFERENCES `productEntity`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -868,18 +868,33 @@
             "notNull": true
           },
           {
-            "fieldPath": "size",
-            "columnName": "size",
+            "fieldPath": "attribute1Name",
+            "columnName": "attribute_1_name",
             "affinity": "TEXT"
           },
           {
-            "fieldPath": "color",
-            "columnName": "color",
+            "fieldPath": "attribute1Value",
+            "columnName": "attribute_1_value",
             "affinity": "TEXT"
           },
           {
-            "fieldPath": "material",
-            "columnName": "material",
+            "fieldPath": "attribute2Name",
+            "columnName": "attribute_2_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "attribute2Value",
+            "columnName": "attribute_2_value",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "attribute3Name",
+            "columnName": "attribute_3_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "attribute3Value",
+            "columnName": "attribute_3_value",
             "affinity": "TEXT"
           },
           {
@@ -898,10 +913,15 @@
             "affinity": "REAL"
           },
           {
-            "fieldPath": "stock",
-            "columnName": "stock",
-            "affinity": "INTEGER",
+            "fieldPath": "stockQuantity",
+            "columnName": "stock_quantity",
+            "affinity": "REAL",
             "notNull": true
+          },
+          {
+            "fieldPath": "lowStockAlert",
+            "columnName": "low_stock_alert",
+            "affinity": "REAL"
           },
           {
             "fieldPath": "active",
@@ -918,14 +938,17 @@
           {
             "fieldPath": "createdAt",
             "columnName": "created_at",
-            "affinity": "INTEGER",
-            "notNull": true
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "updatedAt",
             "columnName": "updated_at",
-            "affinity": "INTEGER",
-            "notNull": true
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "last_updated",
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -979,7 +1002,7 @@
       },
       {
         "tableName": "variant_attributes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `product_id` TEXT NOT NULL, `attribute_type` TEXT NOT NULL, `attribute_value` TEXT NOT NULL, `created_at` INTEGER NOT NULL, FOREIGN KEY(`product_id`) REFERENCES `productEntity`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `product_id` TEXT NOT NULL, `attribute_name` TEXT NOT NULL, `attribute_value` TEXT NOT NULL, `created_at` TEXT, `updated_at` TEXT, FOREIGN KEY(`product_id`) REFERENCES `productEntity`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -994,8 +1017,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "attributeType",
-            "columnName": "attribute_type",
+            "fieldPath": "attributeName",
+            "columnName": "attribute_name",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -1008,8 +1031,12 @@
           {
             "fieldPath": "createdAt",
             "columnName": "created_at",
-            "affinity": "INTEGER",
-            "notNull": true
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -1029,13 +1056,13 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_variant_attributes_product_id` ON `${TABLE_NAME}` (`product_id`)"
           },
           {
-            "name": "index_variant_attributes_attribute_type",
+            "name": "index_variant_attributes_attribute_name",
             "unique": false,
             "columnNames": [
-              "attribute_type"
+              "attribute_name"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_variant_attributes_attribute_type` ON `${TABLE_NAME}` (`attribute_type`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_variant_attributes_attribute_name` ON `${TABLE_NAME}` (`attribute_name`)"
           },
           {
             "name": "index_variant_attributes_attribute_value",
@@ -1045,6 +1072,17 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_variant_attributes_attribute_value` ON `${TABLE_NAME}` (`attribute_value`)"
+          },
+          {
+            "name": "index_variant_attributes_product_id_attribute_name_attribute_value",
+            "unique": true,
+            "columnNames": [
+              "product_id",
+              "attribute_name",
+              "attribute_value"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_variant_attributes_product_id_attribute_name_attribute_value` ON `${TABLE_NAME}` (`product_id`, `attribute_name`, `attribute_value`)"
           }
         ],
         "foreignKeys": [
@@ -1064,7 +1102,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4d88b838ba12d7c3c69f0b921ab5ba5f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dcee11dc6d7b5e84e8406f90a8663d42')"
     ]
   }
 }
