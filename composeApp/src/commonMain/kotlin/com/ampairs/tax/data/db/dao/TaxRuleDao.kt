@@ -44,6 +44,28 @@ interface TaxRuleDao {
     @Query(
         """
         SELECT * FROM tax_rules
+        WHERE tax_code = :taxCode
+        AND is_active = 1
+    """
+    )
+    fun observeRulesByCodeString(
+        taxCode: String
+    ): Flow<List<TaxRuleEntity>>
+
+    @Query(
+        """
+        SELECT * FROM tax_rules
+        WHERE tax_code_id = :taxCodeId
+        AND is_active = 1
+    """
+    )
+    fun observeRulesByTaxCode(
+        taxCodeId: String
+    ): Flow<List<TaxRuleEntity>>
+
+    @Query(
+        """
+        SELECT * FROM tax_rules
         WHERE tax_code_id = :taxCodeId
         AND is_active = 1
     """

@@ -269,14 +269,20 @@ class TaxConfigurationApiImpl(
     }
 
     override suspend fun getWorkspaceComponents(
-        modifiedAfter: Long?
-    ): Result<List<WorkspaceTaxComponent>> {
+        modifiedAfter: Long?,
+        page: Int,
+        size: Int
+    ): Result<PageResponse<WorkspaceTaxComponent>> {
         return try {
             val url = ApiUrlBuilder.taxUrl(
                 "v1/component",
-                mapOf("modifiedAfter" to modifiedAfter?.toString()).filterValues { it != null } as Map<String, String>
+                mapOf(
+                    "modifiedAfter" to modifiedAfter?.toString(),
+                    "page" to page.toString(),
+                    "size" to size.toString()
+                ).filterValues { it != null } as Map<String, String>
             )
-            val response: Response<List<WorkspaceTaxComponent>> = httpClient.get(url).body()
+            val response: Response<PageResponse<WorkspaceTaxComponent>> = httpClient.get(url).body()
 
             if (response.data != null && response.error == null) {
                 Result.success(response.data!!)

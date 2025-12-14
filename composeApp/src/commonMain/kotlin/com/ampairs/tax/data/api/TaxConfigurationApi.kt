@@ -64,8 +64,10 @@ interface TaxConfigurationApi {
 
     // Workspace Tax Components
     suspend fun getWorkspaceComponents(
-        modifiedAfter: Long? = null
-    ): Result<List<WorkspaceTaxComponent>>
+        modifiedAfter: Long? = null,
+        page: Int = 0,
+        size: Int = 100
+    ): Result<PageResponse<WorkspaceTaxComponent>>
 
     // Tax Rules
     suspend fun getTaxRules(

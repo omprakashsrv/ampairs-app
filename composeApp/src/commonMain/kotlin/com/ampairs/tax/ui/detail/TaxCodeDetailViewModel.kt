@@ -37,74 +37,64 @@ class TaxCodeDetailViewModel(
     val uiState: StateFlow<TaxCodeDetailUiState> = _uiState.asStateFlow()
 
     init {
-        loadTaxCodeDetails()
-        loadTaxRules()
+        loadTaxCodeDetailsAndRules()
     }
 
-    private fun loadTaxCodeDetails() {
+    private fun loadTaxCodeDetailsAndRules() {
         viewModelScope.launch {
             _uiState.value = TaxCodeDetailUiState.Loading
 
-            // Observe the tax code from database
-            taxCodeRepository.observeWorkspaceTaxCodes().collect { taxCodes ->
-                val taxCode = taxCodes.find { it.id == taxCodeId }
-                if (taxCode != null) {
-                    val currentState = _uiState.value
-                    val existingRules = if (currentState is TaxCodeDetailUiState.Success) {
-                        currentState.taxRules
+            println("🔍 [TaxCodeDetailVM] Loading tax code and rules for ID: $taxCodeId")
+
+            // Observe tax code from database (reactive)
+            launch {
+                taxCodeRepository.observeWorkspaceTaxCodes().collect { taxCodes ->
+                    val taxCode = taxCodes.find { it.id == taxCodeId }
+                    if (taxCode != null) {
+                        val currentState = _uiState.value
+                        val existingRules = if (currentState is TaxCodeDetailUiState.Success) {
+                            currentState.taxRules
+                        } else {
+                            emptyList()
+                        }
+
+                        _uiState.value = TaxCodeDetailUiState.Success(
+                            taxCode = taxCode,
+                            taxRules = existingRules,
+                            isLoadingRules = false,
+                            isEditing = false,
+                            isSaving = false,
+                            saveError = null
+                        )
                     } else {
-                        emptyList()
+                        _uiState.value = TaxCodeDetailUiState.Error("Tax code not found")
                     }
-
-                    _uiState.value = TaxCodeDetailUiState.Success(
-                        taxCode = taxCode,
-                        taxRules = existingRules,
-                        isLoadingRules = existingRules.isEmpty(),
-                        isEditing = false,
-                        isSaving = false,
-                        saveError = null
-                    )
-                } else {
-                    _uiState.value = TaxCodeDetailUiState.Error("Tax code not found")
                 }
             }
-        }
-    }
 
-    private fun loadTaxRules() {
-        viewModelScope.launch {
-            val currentState = _uiState.value
-            if (currentState is TaxCodeDetailUiState.Success) {
-                _uiState.update { currentState.copy(isLoadingRules = true) }
-            }
-
-            val result = taxRuleRepository.getRulesByTaxCodeWithSync(taxCodeId)
-
-            result.fold(
-                onSuccess = { rules ->
-                    val state = _uiState.value
-                    if (state is TaxCodeDetailUiState.Success) {
-                        _uiState.update {
-                            state.copy(
-                                taxRules = rules,
-                                isLoadingRules = false
-                            )
-                        }
-                    }
-                },
-                onFailure = { error ->
-                    val state = _uiState.value
-                    if (state is TaxCodeDetailUiState.Success) {
-                        _uiState.update {
-                            state.copy(
-                                taxRules = emptyList(),
-                                isLoadingRules = false,
-                                saveError = "Failed to load tax rules: ${error.message}"
-                            )
+            // Observe tax rules from database (reactive)
+            // Note: Backend returns tax_code_id as empty, so we query by tax_code string instead
+            launch {
+                taxCodeRepository.observeWorkspaceTaxCodes().collect { taxCodes ->
+                    val taxCode = taxCodes.find { it.id == taxCodeId }
+                    if (taxCode != null) {
+                        println("🔍 [TaxCodeDetailVM] Tax code found: ${taxCode.code}, querying rules by code string")
+                        taxRuleRepository.observeTaxRulesByCode(taxCode.code).collect { rules ->
+                            println("🔄 [TaxCodeDetailVM] Tax rules updated: ${rules.size} rules for code ${taxCode.code}")
+                            val currentState = _uiState.value
+                            if (currentState is TaxCodeDetailUiState.Success) {
+                                _uiState.update {
+                                    currentState.copy(
+                                        taxRules = rules,
+                                        isLoadingRules = false,
+                                        saveError = null
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-            )
+            }
         }
     }
 

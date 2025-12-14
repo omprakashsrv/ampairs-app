@@ -99,7 +99,14 @@ class TaxComponentRepository(
      * Get workspace component by ID (offline)
      */
     suspend fun getWorkspaceComponentById(id: String): WorkspaceTaxComponent? {
-        return taxComponentDao.getById(id)?.toDomain()
+        println("🔍 [TaxComponentRepo] Looking up component by ID: $id")
+        val entity = taxComponentDao.getById(id)
+        if (entity != null) {
+            println("✅ [TaxComponentRepo] Found component: ID=${entity.id}, typeId=${entity.componentTypeId}")
+        } else {
+            println("❌ [TaxComponentRepo] Component not found in DB for ID: $id")
+        }
+        return entity?.toDomain()
     }
 
     /**
@@ -180,28 +187,58 @@ class TaxComponentRepository(
      * Sync workspace components from server (incremental sync)
      */
     suspend fun syncWorkspaceComponents(): Result<Int> {
-
         return try {
             // Get last sync time
             val lastSync = getLastSyncTime()
 
-            // Fetch updated components from server
-            val result = taxConfigApi.getWorkspaceComponents(
-                modifiedAfter = lastSync
-            )
+            println("🔄 [TaxComponentRepo] Starting sync with lastSync: $lastSync")
 
-            if (result.isSuccess) {
-                val components = result.getOrThrow()
+            // Fetch updated components from server (paginated)
+            var totalSynced = 0
+            var page = 0
+            val pageSize = 100
 
-                // Upsert to local database
-                val entities = components.map { it.toEntity() }
-                taxComponentDao.insertAll(entities)
+            do {
+                val result = taxConfigApi.getWorkspaceComponents(
+                    modifiedAfter = lastSync,
+                    page = page,
+                    size = pageSize
+                )
 
-                Result.success(components.size)
-            } else {
-                Result.failure(result.exceptionOrNull() ?: Exception("Sync failed"))
-            }
+                if (result.isSuccess) {
+                    val response = result.getOrThrow()
+                    val components = response.content
+
+                    println("📥 [TaxComponentRepo] Page $page: Received ${components.size} components")
+
+                    // Log first few components for debugging
+                    components.take(3).forEach { comp ->
+                        println("  - Component: ID=${comp.id}, typeId=${comp.componentTypeId}, jurisdiction=${comp.jurisdiction}, rate=${comp.ratePercentage}")
+                    }
+
+                    // Upsert to local database
+                    val entities = components.map { it.toEntity() }
+                    taxComponentDao.insertAll(entities)
+                    println("✅ [TaxComponentRepo] Successfully inserted ${entities.size} entities to DB")
+
+                    totalSynced += components.size
+
+                    // Check if more pages available
+                    if (!response.hasNext || components.isEmpty()) {
+                        break
+                    }
+
+                    page++
+                } else {
+                    println("❌ [TaxComponentRepo] Sync failed: ${result.exceptionOrNull()?.message}")
+                    break
+                }
+            } while (totalSynced < 10000) // Safety limit
+
+            println("✅ [TaxComponentRepo] Sync complete: $totalSynced components synced")
+            Result.success(totalSynced)
         } catch (e: Exception) {
+            println("❌ [TaxComponentRepo] Sync exception: ${e.message}")
             ErrorTracking.captureException(e, "TaxComponentRepository.syncWorkspaceComponents")
             Result.failure(e)
         }

@@ -43,18 +43,60 @@ class TaxRuleRepository(
         taxCode: String,
         jurisdiction: String
     ): TaxRule? {
-        return taxRuleDao.getEffectiveRule(
+        println("🔍 [TaxRuleRepo] getEffectiveRule: taxCode=$taxCode, jurisdiction=$jurisdiction")
+        val entity = taxRuleDao.getEffectiveRule(
             taxCode = taxCode,
             jurisdiction = jurisdiction
-        )?.toDomain()
+        )
+        if (entity != null) {
+            println("✅ [TaxRuleRepo] Found rule: ID=${entity.id}, jurisdiction=${entity.jurisdiction}")
+            val domainRule = entity.toDomain()
+            println("   Component composition keys: ${domainRule.componentComposition.keys}")
+            domainRule.componentComposition.forEach { (key, comp) ->
+                println("   - Scenario: $key, components: ${comp.components.size}, total_rate: ${comp.totalRate}")
+            }
+            return domainRule
+        } else {
+            println("❌ [TaxRuleRepo] No rule found for taxCode=$taxCode, jurisdiction=$jurisdiction")
+            return null
+        }
+    }
+
+    /**
+     * Observe tax rules for a specific tax code by code string (reactive, offline)
+     * Use this when backend returns empty tax_code_id
+     */
+    fun observeTaxRulesByCode(taxCode: String): Flow<List<TaxRule>> {
+        println("👀 [TaxRuleRepo] Setting up observer for tax_code string: $taxCode")
+        return taxRuleDao.observeRulesByCodeString(taxCode)
+            .map { entities ->
+                println("👀 [TaxRuleRepo] Flow emitted ${entities.size} entities for tax_code: $taxCode")
+                entities.map { it.toDomain() }
+            }
+    }
+
+    /**
+     * Observe tax rules for a specific tax code by ID (reactive, offline)
+     * Use this when backend returns proper tax_code_id
+     */
+    fun observeTaxRulesForTaxCode(workspaceTaxCodeId: String): Flow<List<TaxRule>> {
+        println("👀 [TaxRuleRepo] Setting up observer for tax_code_id: $workspaceTaxCodeId")
+        return taxRuleDao.observeRulesByTaxCode(workspaceTaxCodeId)
+            .map { entities ->
+                println("👀 [TaxRuleRepo] Flow emitted ${entities.size} entities for tax_code_id: $workspaceTaxCodeId")
+                entities.map { it.toDomain() }
+            }
     }
 
     /**
      * Get tax rules by workspace tax code (offline)
      */
     suspend fun getRulesByTaxCode(workspaceTaxCodeId: String): List<TaxRule> {
-        return taxRuleDao.getRulesByTaxCode(workspaceTaxCodeId)
+        println("🔍 [TaxRuleRepo] getRulesByTaxCode for ID: $workspaceTaxCodeId")
+        val rules = taxRuleDao.getRulesByTaxCode(workspaceTaxCodeId)
             .map { it.toDomain() }
+        println("🔍 [TaxRuleRepo] Found ${rules.size} rules in local DB")
+        return rules
     }
 
     /**
@@ -235,6 +277,7 @@ class TaxRuleRepository(
         return try {
             // Get last sync time
             val lastSync = getLastSyncTime()
+            println("🔄 [TaxRuleRepo] Starting sync with lastSync: $lastSync")
 
             // Fetch updated rules from server (paginated)
             var totalSynced = 0
@@ -252,9 +295,29 @@ class TaxRuleRepository(
                     val response = result.getOrThrow()
                     val rules = response.content
 
+                    println("📥 [TaxRuleRepo] Page $page: Received ${rules.size} rules")
+
+                    // Log first few rules for debugging
+                    rules.take(3).forEach { rule ->
+                        println("  - Rule: ID=${rule.id}, tax_code_id=${rule.taxCodeId}, tax_code=${rule.taxCode}, jurisdiction=${rule.jurisdiction}")
+                    }
+
                     // Upsert to local database
-                    val entities = rules.map { it.toEntity().copy(syncStatus = "SYNCED") }
-                    taxRuleDao.insertAll(entities)
+                    try {
+                        val entities = rules.map { it.toEntity().copy(syncStatus = "SYNCED") }
+                        println("📥 [TaxRuleRepo] Converting ${entities.size} rules to entities...")
+
+                        // Log first entity details
+                        entities.firstOrNull()?.let { entity ->
+                            println("  - First entity: ID=${entity.id}, taxCodeId=${entity.taxCodeId}, taxCode=${entity.taxCode}")
+                        }
+
+                        taxRuleDao.insertAll(entities)
+                        println("✅ [TaxRuleRepo] Successfully inserted ${entities.size} entities to DB")
+                    } catch (e: Exception) {
+                        println("❌ [TaxRuleRepo] Failed to insert entities: ${e.message}")
+                        e.printStackTrace()
+                    }
 
                     totalSynced += rules.size
 
@@ -265,12 +328,15 @@ class TaxRuleRepository(
 
                     page++
                 } else {
+                    println("❌ [TaxRuleRepo] Sync failed: ${result.exceptionOrNull()?.message}")
                     break
                 }
             } while (totalSynced < 10000) // Safety limit
 
+            println("✅ [TaxRuleRepo] Sync complete: $totalSynced rules synced")
             Result.success(totalSynced)
         } catch (e: Exception) {
+            println("❌ [TaxRuleRepo] Sync exception: ${e.message}")
             ErrorTracking.captureException(e, "TaxRuleRepository.syncTaxRules")
             Result.failure(e)
         }

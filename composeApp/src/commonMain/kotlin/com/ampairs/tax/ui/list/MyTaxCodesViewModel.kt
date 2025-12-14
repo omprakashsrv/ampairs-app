@@ -12,7 +12,9 @@ import kotlinx.coroutines.launch
  * My Tax Codes ViewModel
  */
 class MyTaxCodesViewModel(
-    private val taxCodeRepository: TaxCodeRepository
+    private val taxCodeRepository: TaxCodeRepository,
+    private val taxRuleRepository: com.ampairs.tax.data.repository.TaxRuleRepository,
+    private val taxComponentRepository: com.ampairs.tax.data.repository.TaxComponentRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyTaxCodesUiState())
@@ -139,31 +141,52 @@ class MyTaxCodesViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSyncing = true, syncSuccessMessage = null) }
 
-            // Sync from server
-            val result = taxCodeRepository.syncWorkspaceTaxCodes()
+            // Sync tax codes from server
+            val codesResult = taxCodeRepository.syncWorkspaceTaxCodes()
 
-            result.fold(
-                onSuccess = { count ->
-                    _uiState.update {
-                        it.copy(
-                            isSyncing = false,
-                            syncSuccessMessage = if (count > 0) {
-                                "Synced $count tax code${if (count != 1) "s" else ""}"
-                            } else {
-                                "Already up to date"
+            // Sync tax rules from server
+            val rulesResult = taxRuleRepository.syncTaxRules()
+
+            // Sync workspace components from server (needed for tax calculations)
+            val componentsResult = taxComponentRepository.syncWorkspaceComponents()
+
+            // Combine results
+            if (codesResult.isSuccess && rulesResult.isSuccess && componentsResult.isSuccess) {
+                val codesCount = codesResult.getOrNull() ?: 0
+                val rulesCount = rulesResult.getOrNull() ?: 0
+                val componentsCount = componentsResult.getOrNull() ?: 0
+
+                _uiState.update {
+                    it.copy(
+                        isSyncing = false,
+                        syncSuccessMessage = if (codesCount > 0 || rulesCount > 0 || componentsCount > 0) {
+                            buildString {
+                                if (codesCount > 0) {
+                                    append("Synced $codesCount tax code${if (codesCount != 1) "s" else ""}")
+                                }
+                                if (rulesCount > 0) {
+                                    if (codesCount > 0) append(", ")
+                                    append("$rulesCount rule${if (rulesCount != 1) "s" else ""}")
+                                }
+                                if (componentsCount > 0) {
+                                    if (codesCount > 0 || rulesCount > 0) append(", ")
+                                    append("$componentsCount component${if (componentsCount != 1) "s" else ""}")
+                                }
                             }
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isSyncing = false,
-                            errorMessage = error.message ?: "Sync failed"
-                        )
-                    }
+                        } else {
+                            "Already up to date"
+                        }
+                    )
                 }
-            )
+            } else {
+                val error = codesResult.exceptionOrNull() ?: rulesResult.exceptionOrNull() ?: componentsResult.exceptionOrNull()
+                _uiState.update {
+                    it.copy(
+                        isSyncing = false,
+                        errorMessage = error?.message ?: "Sync failed"
+                    )
+                }
+            }
         }
     }
 
