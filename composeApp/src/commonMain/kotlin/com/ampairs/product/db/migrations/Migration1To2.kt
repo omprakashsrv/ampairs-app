@@ -36,7 +36,7 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
             """.trimIndent()
         )
 
-        // 2. Create product_variants table
+        // 2. Create product_variants table with flexible attributes
         connection.execSQL(
             """
             CREATE TABLE IF NOT EXISTS product_variants (
@@ -44,17 +44,22 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
                 product_id TEXT NOT NULL,
                 sku TEXT NOT NULL UNIQUE,
                 variant_name TEXT NOT NULL,
-                size TEXT,
-                color TEXT,
-                material TEXT,
+                attribute_1_name TEXT,
+                attribute_1_value TEXT,
+                attribute_2_name TEXT,
+                attribute_2_value TEXT,
+                attribute_3_name TEXT,
+                attribute_3_value TEXT,
                 mrp REAL,
                 dealer_price REAL,
                 selling_price REAL,
-                stock INTEGER NOT NULL DEFAULT 0,
+                stock_quantity REAL NOT NULL DEFAULT 0,
+                low_stock_alert REAL,
                 active INTEGER NOT NULL DEFAULT 1,
                 synced INTEGER NOT NULL DEFAULT 0,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL,
+                created_at TEXT,
+                updated_at TEXT,
+                last_updated INTEGER,
                 FOREIGN KEY(product_id) REFERENCES productEntity(id) ON DELETE CASCADE
             )
             """.trimIndent()
@@ -82,15 +87,16 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
             """.trimIndent()
         )
 
-        // 3. Create variant_attributes table
+        // 3. Create variant_attributes table for searchable attributes
         connection.execSQL(
             """
             CREATE TABLE IF NOT EXISTS variant_attributes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 product_id TEXT NOT NULL,
-                attribute_type TEXT NOT NULL,
+                attribute_name TEXT NOT NULL,
                 attribute_value TEXT NOT NULL,
-                created_at INTEGER NOT NULL,
+                created_at TEXT,
+                updated_at TEXT,
                 FOREIGN KEY(product_id) REFERENCES productEntity(id) ON DELETE CASCADE
             )
             """.trimIndent()
@@ -106,8 +112,8 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
 
         connection.execSQL(
             """
-            CREATE INDEX IF NOT EXISTS index_variant_attributes_attribute_type
-            ON variant_attributes(attribute_type)
+            CREATE INDEX IF NOT EXISTS index_variant_attributes_attribute_name
+            ON variant_attributes(attribute_name)
             """.trimIndent()
         )
 
@@ -115,6 +121,13 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
             """
             CREATE INDEX IF NOT EXISTS index_variant_attributes_attribute_value
             ON variant_attributes(attribute_value)
+            """.trimIndent()
+        )
+
+        connection.execSQL(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS index_variant_attributes_unique
+            ON variant_attributes(product_id, attribute_name, attribute_value)
             """.trimIndent()
         )
     }
