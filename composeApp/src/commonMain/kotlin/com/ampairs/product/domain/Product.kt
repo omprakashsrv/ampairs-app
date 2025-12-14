@@ -34,6 +34,10 @@ data class Product(
     var lowStockAlert: Double? = null,
     var categoryName: String? = null,
     var brandName: String? = null,
+    var productType: ProductType? = null,
+    var serviceType: ServiceType? = null,
+    var hasVariants: Boolean = false,
+    var variants: List<ProductVariant>? = null,
     // var inventory: Inventory? = null
 ) {
     var quantity: Double by mutableStateOf(0.0)
@@ -43,6 +47,23 @@ data class Product(
 
     val isLowStock: Boolean
         get() = stockQuantity != null && lowStockAlert != null && stockQuantity!! <= lowStockAlert!!
+
+    /**
+     * Get total stock across all variants (if product has variants)
+     * Otherwise returns the product's own stock quantity
+     */
+    val totalStock: Double
+        get() = if (hasVariants && variants != null) {
+            variants.sumOf { it.stockQuantity }
+        } else {
+            stockQuantity ?: 0.0
+        }
+
+    /**
+     * Check if any variant is low on stock
+     */
+    val hasLowStockVariants: Boolean
+        get() = hasVariants && variants?.any { it.isLowStock } == true
 }
 
 fun ProductEntity.asDomainModel(): Product {
@@ -60,6 +81,13 @@ fun ProductEntity.asDomainModel(): Product {
         dp = this.dp,
         baseUnit = null,
         sellingPrice = this.selling_price,
+        productType = this.product_type?.let { type ->
+            try { ProductType.valueOf(type) } catch (e: Exception) { null }
+        },
+        serviceType = this.service_type?.let { type ->
+            try { ServiceType.valueOf(type) } catch (e: Exception) { null }
+        },
+        hasVariants = this.has_variants == 1
     )
 }
 
@@ -84,7 +112,10 @@ fun Product.asDatabaseModel(): ProductEntity {
         updated_at = "",
         last_updated = Clock.System.now().toEpochMilliseconds(),
         soft_deleted = if (this.softDeleted) 1 else 0,
-        synced = 0
+        synced = 0,
+        product_type = this.productType?.name,
+        service_type = this.serviceType?.name,
+        has_variants = if (this.hasVariants) 1 else 0
     )
 }
 
