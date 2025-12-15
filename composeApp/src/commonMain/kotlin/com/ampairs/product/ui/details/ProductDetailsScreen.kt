@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +34,7 @@ fun ProductDetailsScreen(
     productId: String,
     onNavigateBack: () -> Unit,
     onEditProduct: (String) -> Unit,
+    onManageVariants: ((String, String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: ProductDetailsViewModel = koinViewModel { parametersOf(productId) }
 ) {
@@ -81,6 +83,7 @@ fun ProductDetailsScreen(
                 val currentProduct = uiState.product ?: return@Column
                 ProductDetailsContent(
                     product = currentProduct,
+                    onManageVariants = onManageVariants,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -113,6 +116,7 @@ fun ProductDetailsScreen(
 @Composable
 private fun ProductDetailsContent(
     product: Product,
+    onManageVariants: ((String, String) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -154,6 +158,26 @@ private fun ProductDetailsContent(
                 val discount = ((product.mrp - product.sellingPrice) / product.mrp) * 100
                 InfoRow(label = "Discount", value = "${discount.toInt()}%")
             }
+        }
+
+        // Classification
+        if (product.productType != null || product.serviceType != null) {
+            InfoSection(title = "Classification") {
+                product.productType?.let { type ->
+                    InfoRow(label = "Product Type", value = type.displayName)
+                }
+                product.serviceType?.let { type ->
+                    InfoRow(label = "Service Type", value = type.displayName)
+                }
+            }
+        }
+
+        // Variants Section
+        if (product.hasVariants) {
+            VariantsSection(
+                product = product,
+                onManageVariants = onManageVariants
+            )
         }
 
         // Stock Information
@@ -396,6 +420,183 @@ private fun ErrorMessage(
 
         Button(onClick = onRetry) {
             Text("Retry")
+        }
+    }
+}
+
+@Composable
+private fun VariantsSection(
+    product: Product,
+    onManageVariants: ((String, String) -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Product Variants",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Icon(
+                    Icons.Default.Inventory,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // Summary
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "Total Stock",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = product.totalStock.toString(),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Variants",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${product.variants?.size ?: 0}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            // Low stock alert
+            if (product.hasLowStockVariants) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Some variants are low on stock",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                }
+            }
+
+            // First 3 variants preview
+            val variantsToShow = product.variants?.take(3) ?: emptyList()
+            if (variantsToShow.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    variantsToShow.forEach { variant ->
+                        VariantListItem(variant = variant)
+                    }
+                }
+
+                if ((product.variants?.size ?: 0) > 3) {
+                    Text(
+                        text = "And ${(product.variants?.size ?: 0) - 3} more...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            } else {
+                Text(
+                    text = "No variants added yet",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Manage button
+            if (onManageVariants != null) {
+                Button(
+                    onClick = { onManageVariants(product.id, product.name) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Manage Variants")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VariantListItem(
+    variant: com.ampairs.product.domain.ProductVariant,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = variant.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "Stock: ${variant.stockQuantity}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (variant.isLowStock) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+            Text(
+                text = "SKU: ${variant.sku}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

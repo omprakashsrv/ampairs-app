@@ -9,6 +9,8 @@ import com.ampairs.product.domain.ProductStore
 import com.ampairs.product.ui.create.ProductFormViewModel
 import com.ampairs.product.ui.details.ProductDetailsViewModel
 import com.ampairs.product.ui.list.ProductsListViewModel
+import com.ampairs.product.ui.variant.VariantFormViewModel
+import com.ampairs.product.ui.variant.VariantManagementViewModel
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
@@ -36,6 +38,10 @@ val productModule: Module = module {
     viewModel { ProductsListViewModel(get(), get()) }
     viewModel { (productId: String?) -> ProductFormViewModel(productId, get(), get()) }
     viewModel { (productId: String) -> ProductDetailsViewModel(productId, get(), get()) }
+
+    // Variant ViewModels
+    viewModel { (productId: String) -> VariantManagementViewModel(productId, get()) }
+    viewModel { (productId: String, variantId: String?) -> VariantFormViewModel(productId, variantId, get()) }
 }
 
 fun productModule() = productModule

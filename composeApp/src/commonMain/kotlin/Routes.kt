@@ -158,6 +158,18 @@ sealed interface ProductRoute {
     ) : ProductRoute
 
     @Serializable
+    data class VariantManagement(
+        val productId: String = "",
+        val productName: String = ""
+    ) : ProductRoute
+
+    @Serializable
+    data class VariantForm(
+        val productId: String = "",
+        val variantId: String? = null
+    ) : ProductRoute
+
+    @Serializable
     data object TaxInfo : ProductRoute
 
     @Serializable

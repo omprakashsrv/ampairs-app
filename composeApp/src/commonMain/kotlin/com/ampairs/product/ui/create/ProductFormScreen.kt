@@ -25,6 +25,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductImage
+import com.ampairs.product.domain.ProductType
+import com.ampairs.product.domain.ServiceType
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -222,6 +224,104 @@ private fun ProductForm(
                         )
                     }
                 }
+            }
+        }
+
+        // Classification
+        FormSection(title = "Classification") {
+            // Product Type Dropdown
+            var expandedProductType by remember { mutableStateOf(false) }
+            @OptIn(ExperimentalMaterial3Api::class)
+            ExposedDropdownMenuBox(
+                expanded = expandedProductType,
+                onExpandedChange = { expandedProductType = it }
+            ) {
+                OutlinedTextField(
+                    value = formState.productType?.displayName ?: "Select Type",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Product Type") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedProductType) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedProductType,
+                    onDismissRequest = { expandedProductType = false }
+                ) {
+                    ProductType.values().forEach { type ->
+                        DropdownMenuItem(
+                            text = { Text(type.displayName) },
+                            onClick = {
+                                onFormChange(formState.copy(productType = type))
+                                expandedProductType = false
+                            }
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text("Clear Selection") },
+                        onClick = {
+                            onFormChange(formState.copy(productType = null))
+                            expandedProductType = false
+                        }
+                    )
+                }
+            }
+
+            // Service Type Dropdown
+            var expandedServiceType by remember { mutableStateOf(false) }
+            @OptIn(ExperimentalMaterial3Api::class)
+            ExposedDropdownMenuBox(
+                expanded = expandedServiceType,
+                onExpandedChange = { expandedServiceType = it }
+            ) {
+                OutlinedTextField(
+                    value = formState.serviceType?.displayName ?: "Select Type",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Service Type") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedServiceType) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedServiceType,
+                    onDismissRequest = { expandedServiceType = false }
+                ) {
+                    ServiceType.values().forEach { type ->
+                        DropdownMenuItem(
+                            text = { Text(type.displayName) },
+                            onClick = {
+                                onFormChange(formState.copy(serviceType = type))
+                                expandedServiceType = false
+                            }
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text("Clear Selection") },
+                        onClick = {
+                            onFormChange(formState.copy(serviceType = null))
+                            expandedServiceType = false
+                        }
+                    )
+                }
+            }
+
+            // Has Variants Checkbox
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Checkbox(
+                    checked = formState.hasVariants,
+                    onCheckedChange = { onFormChange(formState.copy(hasVariants = it)) }
+                )
+                Text("Product has variants")
             }
         }
 
@@ -605,6 +705,9 @@ data class ProductFormState(
     val description: String = "",
     val taxCode: String = "",
     val active: Boolean = true,
+    val productType: ProductType? = null,
+    val serviceType: ServiceType? = null,
+    val hasVariants: Boolean = false,
     val mrp: Double = 0.0,
     val dp: Double = 0.0,
     val sellingPrice: Double = 0.0,
@@ -634,6 +737,9 @@ fun Product.toFormState(): ProductFormState {
         description = this.description,
         taxCode = this.taxCode,
         active = this.active,
+        productType = this.productType,
+        serviceType = this.serviceType,
+        hasVariants = this.hasVariants,
         mrp = this.mrp,
         dp = this.dp,
         sellingPrice = this.sellingPrice,
@@ -655,6 +761,9 @@ fun ProductFormState.toProduct(): Product {
         description = this.description,
         taxCode = this.taxCode,
         active = this.active,
+        productType = this.productType,
+        serviceType = this.serviceType,
+        hasVariants = this.hasVariants,
         mrp = this.mrp,
         dp = this.dp,
         sellingPrice = this.sellingPrice,

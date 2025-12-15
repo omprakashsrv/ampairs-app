@@ -12,6 +12,8 @@ import androidx.navigation.toRoute
 import com.ampairs.product.ui.create.ProductFormScreen
 import com.ampairs.product.ui.details.ProductDetailsScreen
 import com.ampairs.product.ui.list.ProductsListScreen
+import com.ampairs.product.ui.variant.VariantFormScreen
+import com.ampairs.product.ui.variant.VariantManagementScreen
 
 fun NavGraphBuilder.productNavigation(
     navController: NavHostController
@@ -45,6 +47,14 @@ fun NavGraphBuilder.productNavigation(
                 onEditProduct = { productId ->
                     navController.navigate(ProductRoute.ProductForm(productId = productId))
                 },
+                onManageVariants = { productId, productName ->
+                    navController.navigate(
+                        ProductRoute.VariantManagement(
+                            productId = productId,
+                            productName = productName
+                        )
+                    )
+                },
                 modifier = Modifier
             )
         }
@@ -54,6 +64,37 @@ fun NavGraphBuilder.productNavigation(
             val productFormRoute = backStackEntry.toRoute<ProductRoute.ProductForm>()
             ProductFormScreen(
                 productId = productFormRoute.productId,
+                onSaveSuccess = {
+                    navController.popBackStack()
+                },
+                modifier = Modifier
+            )
+        }
+
+        // Variant Management Screen
+        composable<ProductRoute.VariantManagement> { backStackEntry ->
+            val variantManagementRoute = backStackEntry.toRoute<ProductRoute.VariantManagement>()
+            VariantManagementScreen(
+                productId = variantManagementRoute.productId,
+                productName = variantManagementRoute.productName,
+                onNavigateToForm = { variantId ->
+                    navController.navigate(
+                        ProductRoute.VariantForm(
+                            productId = variantManagementRoute.productId,
+                            variantId = variantId
+                        )
+                    )
+                },
+                modifier = Modifier
+            )
+        }
+
+        // Variant Form Screen (Create/Edit)
+        composable<ProductRoute.VariantForm> { backStackEntry ->
+            val variantFormRoute = backStackEntry.toRoute<ProductRoute.VariantForm>()
+            VariantFormScreen(
+                productId = variantFormRoute.productId,
+                variantId = variantFormRoute.variantId,
                 onSaveSuccess = {
                     navController.popBackStack()
                 },
