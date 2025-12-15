@@ -41,8 +41,9 @@ fun ProductDetailsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    // Refresh product data when returning from edit or variant management
     LaunchedEffect(productId) {
-        viewModel.loadProduct()
+        viewModel.refreshProduct()
     }
 
     Column(modifier = modifier.fillMaxSize()) {

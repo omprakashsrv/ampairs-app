@@ -20,6 +20,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import coil3.compose.AsyncImage
 import com.ampairs.product.domain.ProductListItem
 import org.koin.compose.viewmodel.koinViewModel
@@ -34,9 +37,13 @@ fun ProductsListScreen(
     viewModel: ProductsListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(Unit) {
-        viewModel.loadProducts()
+    // Refresh products when screen becomes visible (returning from create/edit)
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.loadProducts(forceRefresh = true)
+        }
     }
 
     Column(modifier = modifier.fillMaxSize()) {

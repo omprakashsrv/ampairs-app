@@ -36,7 +36,7 @@ class ProductsListViewModel(
         observeSearchQuery()
     }
 
-    fun loadProducts() {
+    fun loadProducts(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
@@ -46,8 +46,14 @@ class ProductsListViewModel(
                 }
             ) {
                 val key = ProductListKey(searchQuery = _uiState.value.searchQuery)
+                val request = if (forceRefresh) {
+                    StoreReadRequest.fresh(key)
+                } else {
+                    StoreReadRequest.cached(key, refresh = false)
+                }
+
                 productStore.productListStore
-                    .stream(StoreReadRequest.cached(key, refresh = false))
+                    .stream(request)
                     .catch { throwable ->
                         if (throwable.shouldShowAsError()) {
                             _uiState.update {
@@ -106,8 +112,8 @@ class ProductsListViewModel(
             _uiState.update { it.copy(isRefreshing = true, error = null) }
 
             try {
-                // For now, just refresh the current data
-                loadProducts()
+                // Force refresh from database
+                loadProducts(forceRefresh = true)
                 _uiState.update { it.copy(isRefreshing = false) }
             } catch (e: Exception) {
                 _uiState.update {
