@@ -1,6 +1,8 @@
 package com.ampairs.product.ui.create
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -12,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -171,16 +174,11 @@ private fun ProductForm(
                 singleLine = true
             )
 
-            OutlinedTextField(
-                value = formState.taxCode,
-                onValueChange = { onFormChange(formState.copy(taxCode = it)) },
-                label = { Text("Tax Code") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                ),
-                singleLine = true
+            TaxCodeAutocomplete(
+                selectedTaxCode = formState.taxCode,
+                taxCodeDescription = formState.taxCodeDescription,
+                viewModel = viewModel,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Row(
@@ -704,6 +702,7 @@ data class ProductFormState(
     val code: String = "",
     val description: String = "",
     val taxCode: String = "",
+    val taxCodeDescription: String? = null,
     val active: Boolean = true,
     val productType: ProductType? = null,
     val serviceType: ServiceType? = null,
@@ -776,4 +775,97 @@ fun ProductFormState.toProduct(): Product {
         baseUnitId = this.baseUnitId.takeIf { it.isNotBlank() },
         images = this.images
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TaxCodeAutocomplete(
+    selectedTaxCode: String,
+    taxCodeDescription: String?,
+    viewModel: ProductFormViewModel,
+    modifier: Modifier = Modifier
+) {
+    val searchQuery by viewModel.taxCodeSearchQuery.collectAsState()
+    val suggestions by viewModel.taxCodeSuggestions.collectAsState()
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = if (selectedTaxCode.isNotEmpty()) {
+                taxCodeDescription ?: selectedTaxCode
+            } else {
+                searchQuery
+            },
+            onValueChange = {
+                if (selectedTaxCode.isEmpty()) {
+                    viewModel.onTaxCodeSearchQueryChange(it)
+                    expanded = suggestions.isNotEmpty()
+                }
+            },
+            label = { Text("Tax Code") },
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                if (selectedTaxCode.isNotEmpty()) {
+                    IconButton(onClick = {
+                        viewModel.clearTaxCode()
+                        expanded = false
+                    }) {
+                        Icon(Icons.Default.Close, contentDescription = "Clear tax code")
+                    }
+                } else if (searchQuery.isNotEmpty()) {
+                    Icon(Icons.Default.Search, contentDescription = "Search")
+                }
+            },
+            placeholder = { Text("Search tax codes...") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(
+                onNext = { LocalFocusManager.current.moveFocus(FocusDirection.Next) }
+            ),
+            colors = OutlinedTextFieldDefaults.colors()
+        )
+
+        // Dropdown suggestions
+        if (expanded && suggestions.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 200.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                LazyColumn {
+                    items(suggestions) { taxCode ->
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = taxCode.code,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = taxCode.shortDescription,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 2
+                                )
+                            },
+                            trailingContent = {
+                                Text(
+                                    text = taxCode.codeType.name,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                viewModel.selectTaxCode(taxCode)
+                                expanded = false
+                            }
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            }
+        }
+    }
 }

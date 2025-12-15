@@ -6,22 +6,44 @@ import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductImage
 import com.ampairs.product.domain.ProductStore
+import com.ampairs.tax.data.repository.TaxCodeRepository
+import com.ampairs.tax.domain.model.TaxCode
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
+@OptIn(ExperimentalTime::class, FlowPreview::class)
 class ProductFormViewModel(
     private val productId: String?,
     private val productStore: ProductStore,
-    private val workspaceContextManager: WorkspaceContextManager
+    private val workspaceContextManager: WorkspaceContextManager,
+    private val taxCodeRepository: TaxCodeRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductFormUiState())
     val uiState: StateFlow<ProductFormUiState> = _uiState.asStateFlow()
+
+    private val _taxCodeSearchQuery = MutableStateFlow("")
+    val taxCodeSearchQuery: StateFlow<String> = _taxCodeSearchQuery.asStateFlow()
+
+    private val _taxCodeSuggestions = MutableStateFlow<List<TaxCode>>(emptyList())
+    val taxCodeSuggestions: StateFlow<List<TaxCode>> = _taxCodeSuggestions.asStateFlow()
+
+    init {
+        // Setup tax code search with debounce
+        viewModelScope.launch {
+            _taxCodeSearchQuery
+                .debounce(300) // Wait 300ms after user stops typing
+                .collect { query ->
+                    searchTaxCodes(query)
+                }
+        }
+    }
 
     fun loadProduct() {
         if (productId == null) return
@@ -172,6 +194,50 @@ class ProductFormViewModel(
             codeError = codeError,
             priceError = priceError,
             stockError = stockError
+        )
+    }
+
+    // Tax Code Search Methods
+    fun onTaxCodeSearchQueryChange(query: String) {
+        _taxCodeSearchQuery.value = query
+    }
+
+    private suspend fun searchTaxCodes(query: String) {
+        if (query.isBlank()) {
+            _taxCodeSuggestions.value = emptyList()
+            return
+        }
+
+        try {
+            val results = taxCodeRepository.searchWorkspaceTaxCodes(query, limit = 10)
+            _taxCodeSuggestions.value = results
+        } catch (e: Exception) {
+            // Graceful failure - keep existing suggestions
+        }
+    }
+
+    fun selectTaxCode(taxCode: TaxCode) {
+        _uiState.value = _uiState.value.copy(
+            formState = _uiState.value.formState.copy(
+                taxCode = taxCode.code,
+                taxCodeDescription = "${taxCode.code} - ${taxCode.shortDescription}"
+            )
+        )
+        _taxCodeSearchQuery.value = ""
+        _taxCodeSuggestions.value = emptyList()
+
+        // Increment usage count
+        viewModelScope.launch {
+            taxCodeRepository.incrementUsageCount(taxCode.id)
+        }
+    }
+
+    fun clearTaxCode() {
+        _uiState.value = _uiState.value.copy(
+            formState = _uiState.value.formState.copy(
+                taxCode = "",
+                taxCodeDescription = null
+            )
         )
     }
 }

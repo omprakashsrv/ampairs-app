@@ -36,7 +36,7 @@ val productModule: Module = module {
 
     // ViewModels for Store5 pattern
     viewModel { ProductsListViewModel(get(), get()) }
-    viewModel { (productId: String?) -> ProductFormViewModel(productId, get(), get()) }
+    viewModel { (productId: String?) -> ProductFormViewModel(productId, get(), get(), get()) }
     viewModel { (productId: String) -> ProductDetailsViewModel(productId, get(), get()) }
 
     // Variant ViewModels
