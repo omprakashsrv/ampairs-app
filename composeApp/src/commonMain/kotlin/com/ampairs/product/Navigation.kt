@@ -67,6 +67,14 @@ fun NavGraphBuilder.productNavigation(
                 onSaveSuccess = {
                     navController.popBackStack()
                 },
+                onManageVariants = { productId, productName ->
+                    navController.navigate(
+                        ProductRoute.VariantManagement(
+                            productId = productId,
+                            productName = productName
+                        )
+                    )
+                },
                 modifier = Modifier
             )
         }

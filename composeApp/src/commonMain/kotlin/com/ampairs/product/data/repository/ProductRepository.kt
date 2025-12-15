@@ -205,7 +205,14 @@ class ProductRepository(
      */
     suspend fun updateProduct(product: Product): Result<Product> {
         return try {
-            productDao.update(product.toEntity())
+            // Get existing entity to preserve seq_id
+            val existing = productDao.productById(product.id)
+            val entityToUpdate = if (existing != null) {
+                product.toEntity().copy(seq_id = existing.seq_id)
+            } else {
+                product.toEntity()
+            }
+            productDao.update(entityToUpdate)
             Result.success(product)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "ProductRepository.updateProduct")
@@ -253,7 +260,13 @@ class ProductRepository(
             mrp = this.mrp,
             dp = this.dp,
             selling_price = this.sellingPrice,
+            description = this.description,
+            stock_quantity = this.stockQuantity,
+            low_stock_alert = this.lowStockAlert,
             base_unit = this.baseUnitId,
+            product_type = this.productType?.name,
+            service_type = this.serviceType?.name,
+            has_variants = if (this.hasVariants) 1 else 0,
             last_updated = Clock.System.now().toEpochMilliseconds(),
             created_at = Clock.System.now().toString(),
             updated_at = Clock.System.now().toString(),
@@ -261,7 +274,14 @@ class ProductRepository(
         )
     }
 
-    private fun ProductEntity.toDomainProduct(): Product {
+    private suspend fun ProductEntity.toDomainProduct(): Product {
+        // Load variants if product has them
+        val variants = if (this.has_variants == 1) {
+            variantDao.getProductVariants(this.id).map { it.toDomain() }
+        } else {
+            null
+        }
+
         return Product(
             id = this.id,
             name = this.name,
@@ -275,7 +295,18 @@ class ProductRepository(
             mrp = this.mrp,
             dp = this.dp,
             sellingPrice = this.selling_price,
-            baseUnitId = this.base_unit
+            baseUnitId = this.base_unit,
+            description = this.description ?: "",
+            stockQuantity = this.stock_quantity,
+            lowStockAlert = this.low_stock_alert,
+            productType = this.product_type?.let { type ->
+                try { com.ampairs.product.domain.ProductType.valueOf(type) } catch (e: Exception) { null }
+            },
+            serviceType = this.service_type?.let { type ->
+                try { com.ampairs.product.domain.ServiceType.valueOf(type) } catch (e: Exception) { null }
+            },
+            hasVariants = this.has_variants == 1,
+            variants = variants
         )
     }
 

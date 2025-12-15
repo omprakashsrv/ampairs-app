@@ -99,7 +99,7 @@ fun MobileModuleSideNavigation(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = moduleRoute.displayName.first().uppercase(),
+                                text = moduleRoute.displayName.firstOrNull()?.uppercase() ?: "?",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 10.sp

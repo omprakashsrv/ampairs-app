@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ import org.koin.core.parameter.parametersOf
 fun ProductFormScreen(
     productId: String? = null,
     onSaveSuccess: () -> Unit,
+    onManageVariants: ((String, String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: ProductFormViewModel = koinViewModel { parametersOf(productId) }
 ) {
@@ -83,6 +85,7 @@ fun ProductFormScreen(
 
             else -> {
                 ProductForm(
+                    productId = productId,
                     formState = uiState.formState,
                     onFormChange = viewModel::updateForm,
                     error = uiState.error,
@@ -91,6 +94,8 @@ fun ProductFormScreen(
                     onSave = { viewModel.saveProduct { onSaveSuccess() } },
                     canSave = uiState.canSave && !uiState.isSaving,
                     isSaving = uiState.isSaving,
+                    onManageVariants = onManageVariants,
+                    viewModel = viewModel,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -100,6 +105,7 @@ fun ProductFormScreen(
 
 @Composable
 private fun ProductForm(
+    productId: String?,
     formState: ProductFormState,
     onFormChange: (ProductFormState) -> Unit,
     error: String?,
@@ -108,6 +114,8 @@ private fun ProductForm(
     onSave: () -> Unit,
     canSave: Boolean,
     isSaving: Boolean,
+    onManageVariants: ((String, String) -> Unit)?,
+    viewModel: ProductFormViewModel,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
@@ -174,6 +182,7 @@ private fun ProductForm(
                 singleLine = true
             )
 
+            // Tax Code with Autocomplete
             TaxCodeAutocomplete(
                 selectedTaxCode = formState.taxCode,
                 taxCodeDescription = formState.taxCodeDescription,
@@ -308,140 +317,6 @@ private fun ProductForm(
                     )
                 }
             }
-
-            // Has Variants Checkbox
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Checkbox(
-                    checked = formState.hasVariants,
-                    onCheckedChange = { onFormChange(formState.copy(hasVariants = it)) }
-                )
-                Text("Product has variants")
-            }
-        }
-
-        // Pricing Information
-        FormSection(title = "Pricing") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = formState.mrp.toString(),
-                    onValueChange = {
-                        it.toDoubleOrNull()?.let { price ->
-                            onFormChange(formState.copy(mrp = price))
-                        }
-                    },
-                    label = { Text("MRP") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
-                )
-
-                OutlinedTextField(
-                    value = formState.dp.toString(),
-                    onValueChange = {
-                        it.toDoubleOrNull()?.let { price ->
-                            onFormChange(formState.copy(dp = price))
-                        }
-                    },
-                    label = { Text("Dealer Price") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
-                )
-            }
-
-            OutlinedTextField(
-                value = formState.sellingPrice.toString(),
-                onValueChange = {
-                    it.toDoubleOrNull()?.let { price ->
-                        onFormChange(formState.copy(sellingPrice = price))
-                    }
-                },
-                label = { Text("Selling Price") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                ),
-                isError = formState.priceError != null,
-                supportingText = formState.priceError?.let { { Text(it) } },
-                singleLine = true
-            )
-        }
-
-        // Stock Management
-        FormSection(title = "Stock Management") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = formState.stockQuantity?.toString() ?: "",
-                    onValueChange = {
-                        val quantity = if (it.isBlank()) null else it.toDoubleOrNull()
-                        onFormChange(formState.copy(stockQuantity = quantity))
-                    },
-                    label = { Text("Current Stock") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    placeholder = { Text("Optional") },
-                    singleLine = true
-                )
-
-                OutlinedTextField(
-                    value = formState.lowStockAlert?.toString() ?: "",
-                    onValueChange = {
-                        val alert = if (it.isBlank()) null else it.toDoubleOrNull()
-                        onFormChange(formState.copy(lowStockAlert = alert))
-                    },
-                    label = { Text("Low Stock Alert") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    placeholder = { Text("Optional") },
-                    singleLine = true
-                )
-            }
-
-            if (formState.stockError != null) {
-                Text(
-                    text = formState.stockError,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
         }
 
         // Category Information
@@ -517,6 +392,236 @@ private fun ProductForm(
                 ),
                 singleLine = true
             )
+        }
+
+        // Variants Section
+        FormSection(title = "Product Variants") {
+            // Has Variants Checkbox
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        val newValue = !formState.hasVariants
+                        onFormChange(formState.copy(hasVariants = newValue))
+                        // If enabling variants and product is saved, navigate to variant management
+                        if (newValue && productId != null && onManageVariants != null) {
+                            onManageVariants(productId, formState.name)
+                        }
+                    }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Checkbox(
+                    checked = formState.hasVariants,
+                    onCheckedChange = null // Handled by Row click
+                )
+                Column {
+                    Text(
+                        text = "This product has variants",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = "Enable if product comes in different sizes, colors, or configurations",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Show variant management card when hasVariants is enabled
+            if (formState.hasVariants) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (productId == null) {
+                            MaterialTheme.colorScheme.tertiaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        }
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (productId == null) {
+                            // Product not yet created - show instruction
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = "Save product first to add variants",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Text(
+                                text = "After saving this product, you'll be able to add and manage variants like sizes, colors, and other options.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        } else {
+                            // Product exists - show manage button
+                            Text(
+                                text = "Manage Product Variants",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Add and manage sizes, colors, and other variant options. At least one variant is required.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            if (onManageVariants != null) {
+                                OutlinedButton(
+                                    onClick = { onManageVariants(productId, formState.name) },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Manage Variants")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Pricing Information (hidden when product has variants)
+        if (!formState.hasVariants) {
+            FormSection(title = "Pricing") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = formState.mrp.toString(),
+                    onValueChange = {
+                        it.toDoubleOrNull()?.let { price ->
+                            onFormChange(formState.copy(mrp = price))
+                        }
+                    },
+                    label = { Text("MRP") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = formState.dp.toString(),
+                    onValueChange = {
+                        it.toDoubleOrNull()?.let { price ->
+                            onFormChange(formState.copy(dp = price))
+                        }
+                    },
+                    label = { Text("Dealer Price") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+            }
+
+            OutlinedTextField(
+                value = formState.sellingPrice.toString(),
+                onValueChange = {
+                    it.toDoubleOrNull()?.let { price ->
+                        onFormChange(formState.copy(sellingPrice = price))
+                    }
+                },
+                label = { Text("Selling Price") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                isError = formState.priceError != null,
+                supportingText = formState.priceError?.let { { Text(it) } },
+                singleLine = true
+            )
+            }
+
+            // Stock Management
+            FormSection(title = "Stock Management") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = formState.stockQuantity?.toString() ?: "",
+                    onValueChange = {
+                        val quantity = if (it.isBlank()) null else it.toDoubleOrNull()
+                        onFormChange(formState.copy(stockQuantity = quantity))
+                    },
+                    label = { Text("Current Stock") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    placeholder = { Text("Optional") },
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = formState.lowStockAlert?.toString() ?: "",
+                    onValueChange = {
+                        val alert = if (it.isBlank()) null else it.toDoubleOrNull()
+                        onFormChange(formState.copy(lowStockAlert = alert))
+                    },
+                    label = { Text("Low Stock Alert") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    placeholder = { Text("Optional") },
+                    singleLine = true
+                )
+            }
+
+            if (formState.stockError != null) {
+                Text(
+                    text = formState.stockError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            }
         }
 
         // Save Button Section
@@ -788,6 +893,7 @@ private fun TaxCodeAutocomplete(
     val searchQuery by viewModel.taxCodeSearchQuery.collectAsState()
     val suggestions by viewModel.taxCodeSuggestions.collectAsState()
     var expanded by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
 
     Column(modifier = modifier) {
         OutlinedTextField(
@@ -820,7 +926,7 @@ private fun TaxCodeAutocomplete(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(
-                onNext = { LocalFocusManager.current.moveFocus(FocusDirection.Next) }
+                onNext = { focusManager.moveFocus(FocusDirection.Next) }
             ),
             colors = OutlinedTextFieldDefaults.colors()
         )

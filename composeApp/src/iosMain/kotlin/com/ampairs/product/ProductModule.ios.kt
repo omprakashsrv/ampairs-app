@@ -3,6 +3,7 @@ package com.ampairs.product
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.product.db.ProductRoomDatabase
 import com.ampairs.product.db.migrations.MIGRATION_1_2
+import com.ampairs.product.db.migrations.MIGRATION_2_3
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -14,7 +15,7 @@ val productPlatformModule: Module = module {
         factory.createDatabase(
             klass = ProductRoomDatabase::class,
             moduleName = "product",
-            migrations = listOf(MIGRATION_1_2)
+            migrations = listOf(MIGRATION_1_2, MIGRATION_2_3)
         )
     }
 }

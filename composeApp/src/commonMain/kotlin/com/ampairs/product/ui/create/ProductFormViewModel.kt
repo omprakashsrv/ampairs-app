@@ -58,9 +58,26 @@ class ProductFormViewModel(
                     .collect { response ->
                         when (response) {
                             is org.mobilenativefoundation.store.store5.StoreReadResponse.Data -> {
+                                val product = response.value
+                                val formState = product.toFormState()
+
+                                // Load tax code description if tax code is set
+                                val taxCodeDescription = if (product.taxCode.isNotBlank()) {
+                                    try {
+                                        val taxCodes = taxCodeRepository.searchWorkspaceTaxCodes(product.taxCode, limit = 1)
+                                        taxCodes.firstOrNull()?.let { taxCode ->
+                                            "${taxCode.code} - ${taxCode.shortDescription}"
+                                        }
+                                    } catch (e: Exception) {
+                                        null
+                                    }
+                                } else {
+                                    null
+                                }
+
                                 _uiState.value = _uiState.value.copy(
                                     isLoading = false,
-                                    formState = response.value.toFormState()
+                                    formState = formState.copy(taxCodeDescription = taxCodeDescription)
                                 )
                             }
                             is org.mobilenativefoundation.store.store5.StoreReadResponse.Error.Exception -> {

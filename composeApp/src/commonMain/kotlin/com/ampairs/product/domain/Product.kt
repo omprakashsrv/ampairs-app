@@ -87,6 +87,9 @@ fun ProductEntity.asDomainModel(): Product {
         dp = this.dp,
         baseUnit = null,
         sellingPrice = this.selling_price,
+        description = this.description ?: "",
+        stockQuantity = this.stock_quantity,
+        lowStockAlert = this.low_stock_alert,
         productType = this.product_type?.let { type ->
             try { ProductType.valueOf(type) } catch (e: Exception) { null }
         },
@@ -119,6 +122,9 @@ fun Product.asDatabaseModel(): ProductEntity {
         last_updated = Clock.System.now().toEpochMilliseconds(),
         soft_deleted = if (this.softDeleted) 1 else 0,
         synced = 0,
+        description = this.description,
+        stock_quantity = this.stockQuantity,
+        low_stock_alert = this.lowStockAlert,
         product_type = this.productType?.name,
         service_type = this.serviceType?.name,
         has_variants = if (this.hasVariants) 1 else 0
