@@ -3,7 +3,6 @@ package com.ampairs.product.domain
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.ampairs.domain.Unit
 import com.ampairs.product.api.model.ProductApiModel
 import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.db.model.ProductImageModel

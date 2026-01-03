@@ -14,8 +14,6 @@ import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.dao.TaxCodeDao
 import com.ampairs.product.db.dao.TaxInfoDao
-import com.ampairs.product.db.dao.UnitConversionDao
-import com.ampairs.product.db.dao.UnitDao
 import com.ampairs.product.db.dao.VariantAttributeDao
 import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.entity.CategoryEntity
@@ -27,8 +25,6 @@ import com.ampairs.product.db.entity.ProductVariantEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import com.ampairs.product.db.entity.TaxCodeEntity
 import com.ampairs.product.db.entity.TaxInfoEntity
-import com.ampairs.product.db.entity.UnitConversionEntity
-import com.ampairs.product.db.entity.UnitEntity
 import com.ampairs.product.db.entity.VariantAttributeEntity
 
 @Database(
@@ -36,8 +32,6 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
         ProductEntity::class,
         TaxCodeEntity::class,
         TaxInfoEntity::class,
-        UnitEntity::class,
-        UnitConversionEntity::class,
         GroupEntity::class,
         CategoryEntity::class,
         SubCategoryEntity::class,
@@ -47,7 +41,7 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
         ProductVariantEntity::class,
         VariantAttributeEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @ConstructedBy(ProductRoomDatabaseConstructor::class)
@@ -55,8 +49,6 @@ abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
     abstract fun taxCodeDao(): TaxCodeDao
     abstract fun taxInfoDao(): TaxInfoDao
-    abstract fun unitDao(): UnitDao
-    abstract fun unitConversionDao(): UnitConversionDao
     abstract fun groupDao(): GroupDao
     abstract fun categoryDao(): CategoryDao
     abstract fun subCategoryDao(): SubCategoryDao
