@@ -18,3 +18,8 @@ shared/shared.podspec
 
 # Sentry configuration with auth token
 **/common-sentry.properties
+
+# Android keystore files (contain sensitive signing credentials)
+*.jks
+*.keystore
+ampairs.jks
