@@ -7,6 +7,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import Route
 import com.ampairs.tax.ui.calculator.TaxCalculatorScreen
@@ -17,22 +18,22 @@ import com.ampairs.tax.ui.configuration.TaxConfigurationScreen
 
 // Tax Navigation Routes
 @Serializable
-object TaxListRoute
+object TaxListRoute : NavKey
 
 @Serializable
-object TaxConfigurationRoute
+object TaxConfigurationRoute : NavKey
 
 @Serializable
-object TaxCalculatorRoute
+object TaxCalculatorRoute : NavKey
 
 @Serializable
-object MyTaxCodesRoute
+object MyTaxCodesRoute : NavKey
 
 @Serializable
-data class TaxCodeSearchRoute(val initialQuery: String = "")
+data class TaxCodeSearchRoute(val initialQuery: String = "") : NavKey
 
 @Serializable
-data class TaxCodeDetailRoute(val taxCodeId: String)
+data class TaxCodeDetailRoute(val taxCodeId: String) : NavKey
 
 fun NavGraphBuilder.taxNavigation(
     navController: NavHostController

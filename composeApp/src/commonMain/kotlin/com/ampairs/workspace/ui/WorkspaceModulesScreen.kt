@@ -35,7 +35,7 @@ import SubscriptionRoute
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceModulesScreen(
-    navController: NavController,
+    navController: NavController? = null, // Optional for Nav3 which uses back stack
     onModuleSelected: (moduleCode: String) -> Unit = {},
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     workspaceId: String = "",
@@ -115,7 +115,7 @@ fun WorkspaceModulesScreen(
                     title = "No Active Modules",
                     description = "Install modules from the store to get started with your workspace",
                     onInstallClick = {
-                        navController.navigate(WorkspaceRoute.ModuleStore(workspaceId))
+                        navController?.navigate(WorkspaceRoute.ModuleStore(workspaceId))
                     }
                 )
             }
@@ -151,13 +151,18 @@ fun WorkspaceModulesScreen(
                         InstalledModuleCard(
                             module = module,
                             onSelect = { moduleCode ->
-                                // Try to navigate using module registry first
-                                val navigationSuccess =
-                                    tryNavigateToModule(navController, moduleCode)
-                                if (!navigationSuccess) {
-                                    // Show update dialog for missing module implementation
-                                    missingModuleName = module.name
-                                    showUpdateDialog = true
+                                // For Nav3, use the callback directly
+                                if (navController == null) {
+                                    onModuleSelected(moduleCode)
+                                } else {
+                                    // Try to navigate using module registry first (Nav2)
+                                    val navigationSuccess =
+                                        tryNavigateToModule(navController, moduleCode)
+                                    if (!navigationSuccess) {
+                                        // Show update dialog for missing module implementation
+                                        missingModuleName = module.name
+                                        showUpdateDialog = true
+                                    }
                                 }
                             }
                         )
@@ -186,7 +191,8 @@ fun WorkspaceModulesScreen(
             workspaceId = workspaceId,
             onNavigateToPlanSelection = {
                 showSubscriptionOnboarding = false
-                navController.navigate(SubscriptionRoute.Plans)
+                navController?.navigate(SubscriptionRoute.Plans)
+                    ?: onModuleSelected("subscription") // Nav3 fallback via callback
             },
             onContinueWithFree = {
                 showSubscriptionOnboarding = false

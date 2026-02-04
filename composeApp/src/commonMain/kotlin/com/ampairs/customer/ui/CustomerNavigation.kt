@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import Route
+import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.create.CustomerFormScreen
 import com.ampairs.customer.ui.customergroup.CustomerGroupFormScreen
 import com.ampairs.customer.ui.customergroup.CustomerGroupListScreen
@@ -19,28 +20,28 @@ import com.ampairs.customer.ui.state.StateListScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
-object CustomerListRoute
+object CustomerListRoute : NavKey
 
 @Serializable
-data class CustomerDetailsRoute(val customerId: String)
+data class CustomerDetailsRoute(val customerId: String) : NavKey
 
 @Serializable
-data class CustomerCreateRoute(val customerId: String? = null)
+data class CustomerCreateRoute(val customerId: String? = null) : NavKey
 
 @Serializable
-object StateListRoute
+object StateListRoute : NavKey
 
 @Serializable
-object CustomerTypeListRoute
+object CustomerTypeListRoute : NavKey
 
 @Serializable
-data class CustomerTypeCreateRoute(val customerTypeId: String? = null)
+data class CustomerTypeCreateRoute(val customerTypeId: String? = null) : NavKey
 
 @Serializable
-object CustomerGroupListRoute
+object CustomerGroupListRoute : NavKey
 
 @Serializable
-data class CustomerGroupCreateRoute(val customerGroupId: String? = null)
+data class CustomerGroupCreateRoute(val customerGroupId: String? = null) : NavKey
 
 
 fun NavGraphBuilder.customerNavigation(navController: NavHostController) {

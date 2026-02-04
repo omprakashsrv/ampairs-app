@@ -29,7 +29,7 @@ import org.koin.core.parameter.parametersOf
  */
 @Composable
 fun ModuleStoreScreen(
-    navController: NavController,
+    navController: NavController? = null, // Optional for Nav3 which uses back stack
     workspaceId: String = "",
     paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: WorkspaceModulesViewModel = koinViewModel { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
@@ -215,12 +215,14 @@ fun ModuleStoreScreen(
                                 else -> null
                             }
                             route?.let {
-                                navController.navigate(it) {
+                                // Nav2: Use navController if available
+                                navController?.navigate(it) {
                                     // Clear the module store from back stack
                                     popUpTo(WorkspaceRoute.ModuleStore(workspaceId)) {
                                         inclusive = true
                                     }
                                 }
+                                // Nav3: Navigation handled by entry provider's onModuleSelected callback
                             }
                         }
                     )

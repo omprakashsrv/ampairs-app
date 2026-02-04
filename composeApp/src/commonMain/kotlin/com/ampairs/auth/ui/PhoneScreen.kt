@@ -75,11 +75,16 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun PhoneScreen(
-    viewModelStoreOwner: ViewModelStoreOwner,
+    viewModelStoreOwner: ViewModelStoreOwner? = null,
     onAuthSuccess: (sessionId: String, verificationId: String) -> Unit,
     onExistingUserSelected: () -> Unit = {},
 ) {
-    val viewModel = koinViewModel<LoginViewModel>(viewModelStoreOwner = viewModelStoreOwner)
+    // Nav3 provides ViewModelStoreOwner through entryDecorators, Nav2 passes it explicitly
+    val viewModel = if (viewModelStoreOwner != null) {
+        koinViewModel<LoginViewModel>(viewModelStoreOwner = viewModelStoreOwner)
+    } else {
+        koinViewModel<LoginViewModel>()
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showExistingUserDialog by remember { mutableStateOf(false) }
