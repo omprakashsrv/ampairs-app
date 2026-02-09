@@ -1,7 +1,16 @@
 package com.ampairs.navigation.providers
 
 import SubscriptionRoute
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.subscription.ui.screens.DeviceManagementScreen
@@ -117,5 +126,67 @@ fun subscriptionEntryProvider(
         )
     }
 
+    // Plan details for a specific subscription plan
+    is SubscriptionRoute.PlanDetails -> NavEntry(key) {
+        val viewModel: SubscriptionViewModel = koinViewModel()
+        // Show plan comparison with specific plan highlighted
+        PlanComparisonScreen(
+            viewModel = viewModel,
+            onNavigateBack = { backStack.removeLastOrNull() },
+            onCheckoutUrl = { url ->
+                onOpenCheckoutUrl?.invoke(url)
+            }
+        )
+    }
+
+    // Checkout flow for subscription purchase
+    is SubscriptionRoute.Checkout -> NavEntry(key) {
+        SubscriptionCheckoutPlaceholder(
+            planCode = key.planCode,
+            billingCycle = key.billingCycle,
+            onNavigateBack = { backStack.removeLastOrNull() }
+        )
+    }
+
     else -> null
+}
+
+/**
+ * Placeholder for checkout screen until full implementation.
+ */
+@Composable
+private fun SubscriptionCheckoutPlaceholder(
+    planCode: String,
+    billingCycle: String,
+    onNavigateBack: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Checkout",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Text(
+                text = "Plan: $planCode",
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = "Billing: $billingCycle",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Checkout flow coming soon",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
 }

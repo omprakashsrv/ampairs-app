@@ -22,11 +22,9 @@ import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import androidx.navigation.NavController
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.subscription.ui.screens.SubscriptionOnboardingScreen
-import SubscriptionRoute
 
 /**
  * Workspace modules screen showing active modules
@@ -35,8 +33,9 @@ import SubscriptionRoute
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceModulesScreen(
-    navController: NavController? = null, // Optional for Nav3 which uses back stack
     onModuleSelected: (moduleCode: String) -> Unit = {},
+    onNavigateToModuleStore: (() -> Unit)? = null,
+    onNavigateToSubscription: (() -> Unit)? = null,
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     workspaceId: String = "",
     paddingValues: PaddingValues = PaddingValues(0.dp),
@@ -115,7 +114,7 @@ fun WorkspaceModulesScreen(
                     title = "No Active Modules",
                     description = "Install modules from the store to get started with your workspace",
                     onInstallClick = {
-                        navController?.navigate(WorkspaceRoute.ModuleStore(workspaceId))
+                        onNavigateToModuleStore?.invoke()
                     }
                 )
             }
@@ -151,19 +150,7 @@ fun WorkspaceModulesScreen(
                         InstalledModuleCard(
                             module = module,
                             onSelect = { moduleCode ->
-                                // For Nav3, use the callback directly
-                                if (navController == null) {
-                                    onModuleSelected(moduleCode)
-                                } else {
-                                    // Try to navigate using module registry first (Nav2)
-                                    val navigationSuccess =
-                                        tryNavigateToModule(navController, moduleCode)
-                                    if (!navigationSuccess) {
-                                        // Show update dialog for missing module implementation
-                                        missingModuleName = module.name
-                                        showUpdateDialog = true
-                                    }
-                                }
+                                onModuleSelected(moduleCode)
                             }
                         )
                     }
@@ -191,8 +178,7 @@ fun WorkspaceModulesScreen(
             workspaceId = workspaceId,
             onNavigateToPlanSelection = {
                 showSubscriptionOnboarding = false
-                navController?.navigate(SubscriptionRoute.Plans)
-                    ?: onModuleSelected("subscription") // Nav3 fallback via callback
+                onNavigateToSubscription?.invoke()
             },
             onContinueWithFree = {
                 showSubscriptionOnboarding = false
@@ -348,36 +334,6 @@ private fun UpdateAppDialog(
 private fun extractModuleCodeFromRoute(route: String): String? {
     val regex = "/workspace/modules/([^/]+)".toRegex()
     return regex.find(route)?.groupValues?.get(1)
-}
-
-/**
- * Try to navigate to a module using the ModuleRegistry
- * Returns true if navigation was successful, false otherwise
- */
-private fun tryNavigateToModule(navController: NavController, moduleCode: String): Boolean {
-    return try {
-        // Create a mapping for common module codes to routes
-        val route = when (moduleCode) {
-            "business-profile" -> Route.Business
-            "customer-management" -> Route.Customer
-            "product-management" -> Route.Product
-            "order-management" -> Route.Order
-            "invoice-management" -> Route.Invoice
-            "inventory-management" -> Route.Inventory
-            "tax-code-management" -> Route.Tax
-            else -> null
-        }
-
-        if (route != null) {
-            navController.navigate(route)
-            true
-        } else {
-            false
-        }
-    } catch (e: Exception) {
-        println("Navigation failed for module $moduleCode: ${e.message}")
-        false
-    }
 }
 
 /**

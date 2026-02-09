@@ -26,6 +26,8 @@ import com.ampairs.tax.ui.navigation.TaxCodeDetailRoute
 import com.ampairs.tax.ui.navigation.TaxCodeSearchRoute
 import com.ampairs.tax.ui.navigation.TaxConfigurationRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
+import com.ampairs.unit.ui.UnitFormRoute
+import com.ampairs.unit.ui.UnitListRoute
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
@@ -49,6 +51,7 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(Route.Tax::class)
                 subclass(Route.Business::class)
                 subclass(Route.Subscription::class)
+                subclass(Route.Unit::class)
                 subclass(Route.FormConfig::class)
 
                 // Auth Routes
@@ -142,6 +145,10 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(MyTaxCodesRoute::class)
                 subclass(TaxCodeSearchRoute::class)
                 subclass(TaxCodeDetailRoute::class)
+
+                // Unit Navigation Routes (standalone)
+                subclass(UnitListRoute::class)
+                subclass(UnitFormRoute::class)
             }
         }
     }

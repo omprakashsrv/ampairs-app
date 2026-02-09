@@ -122,7 +122,6 @@ fun workspaceEntryProvider(
 
     is WorkspaceRoute.Modules -> NavEntry(key) {
         WorkspaceModulesScreen(
-            navController = null, // Nav3 doesn't use NavController
             onModuleSelected = { moduleCode ->
                 // Handle module selection based on code
                 when (moduleCode) {
@@ -137,6 +136,12 @@ fun workspaceEntryProvider(
                     else -> println("Unknown module: $moduleCode")
                 }
             },
+            onNavigateToModuleStore = {
+                backStack.add(WorkspaceRoute.ModuleStore(key.workspaceId))
+            },
+            onNavigateToSubscription = {
+                backStack.add(SubscriptionRoute.Plans)
+            },
             onNavigationServiceReady = onNavigationServiceReady,
             workspaceId = key.workspaceId,
             paddingValues = PaddingValues()
@@ -145,9 +150,13 @@ fun workspaceEntryProvider(
 
     is WorkspaceRoute.ModuleStore -> NavEntry(key) {
         ModuleStoreScreen(
-            navController = null, // Nav3 doesn't use NavController
             workspaceId = key.workspaceId,
-            paddingValues = PaddingValues()
+            paddingValues = PaddingValues(),
+            onModuleNavigate = { route ->
+                // Replace current screen with module destination
+                backStack.removeLastOrNull()
+                backStack.add(route as NavKey)
+            }
         )
     }
 

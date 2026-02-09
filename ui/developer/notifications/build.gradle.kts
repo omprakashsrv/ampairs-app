@@ -26,8 +26,9 @@ kotlin {
 
                 implementation(projects.common.ui.compose)
 
-                implementation(compose.material3)
-                implementation(compose.animation)
+                // Compose Multiplatform libraries (explicit dependencies for 1.10.0+)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.animation)
             }
         }
     }

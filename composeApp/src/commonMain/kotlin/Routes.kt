@@ -34,6 +34,9 @@ sealed interface Route : NavKey {
     data object Subscription : Route
 
     @Serializable
+    data object Unit : Route
+
+    @Serializable
     data class FormConfig(
         val entityType: String = ""
     ) : Route

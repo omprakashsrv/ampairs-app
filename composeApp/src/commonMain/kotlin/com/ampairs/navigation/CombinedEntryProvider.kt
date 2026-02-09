@@ -2,6 +2,9 @@ package com.ampairs.navigation
 
 import AuthRoute
 import BusinessRoute
+import InventoryRoute
+import InvoiceRoute
+import OrderRoute
 import ProductRoute
 import Route
 import SubscriptionRoute
@@ -16,11 +19,16 @@ import com.ampairs.form.ui.FormConfigScreen
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
 import com.ampairs.navigation.providers.customerEntryProvider
+import com.ampairs.navigation.providers.inventoryEntryProvider
+import com.ampairs.navigation.providers.invoiceEntryProvider
+import com.ampairs.navigation.providers.orderEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
 import com.ampairs.navigation.providers.subscriptionEntryProvider
 import com.ampairs.navigation.providers.taxEntryProvider
+import com.ampairs.navigation.providers.unitEntryProvider
 import com.ampairs.navigation.providers.workspaceEntryProvider
 import com.ampairs.tax.ui.navigation.TaxListRoute
+import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 
 /**
@@ -46,6 +54,10 @@ fun combinedEntryProvider(
         ?: taxEntryProvider(key, backStack)
         ?: businessEntryProvider(key, backStack)
         ?: subscriptionEntryProvider(key, backStack)
+        ?: unitEntryProvider(key, backStack)
+        ?: orderEntryProvider(key, backStack)
+        ?: invoiceEntryProvider(key, backStack)
+        ?: inventoryEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
         ?: NavEntry(key) { Text("Unknown route: $key") }
 }
@@ -124,17 +136,36 @@ private fun mainRouteEntryProvider(
         )
     }
 
-    // Placeholder routes for modules not yet implemented
-    is Route.Inventory -> NavEntry(key) {
-        Text("Inventory module - Coming Soon")
+    // Route.Unit redirects to UnitListRoute
+    is Route.Unit -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.clear()
+            backStack.add(UnitListRoute)
+        }
     }
 
+    // Route.Order redirects to OrderRoute.Orders
     is Route.Order -> NavEntry(key) {
-        Text("Order module - Coming Soon")
+        LaunchedEffect(Unit) {
+            backStack.clear()
+            backStack.add(OrderRoute.Orders)
+        }
     }
 
+    // Route.Invoice redirects to InvoiceRoute.Invoices
     is Route.Invoice -> NavEntry(key) {
-        Text("Invoice module - Coming Soon")
+        LaunchedEffect(Unit) {
+            backStack.clear()
+            backStack.add(InvoiceRoute.Invoices)
+        }
+    }
+
+    // Route.Inventory redirects to InventoryRoute.Inventory
+    is Route.Inventory -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.clear()
+            backStack.add(InventoryRoute.Inventory)
+        }
     }
 
     else -> null

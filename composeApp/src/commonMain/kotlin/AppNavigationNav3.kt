@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
@@ -276,6 +275,13 @@ private fun extractScreenNameNav3(route: String): String {
         route.contains("SubscriptionRoute.Devices") -> "Subscription_Devices"
         route.contains("SubscriptionRoute.Invoices") -> "Subscription_Invoices"
         route.contains("SubscriptionRoute.InvoiceDetail") -> "Subscription_InvoiceDetail"
+        route.contains("OrderRoute.Root") -> "Order_Create"
+        route.contains("OrderRoute.OrderView") -> "Order_View"
+        route.contains("OrderRoute.Orders") -> "Order_List"
+        route.contains("InvoiceRoute.Root") -> "Invoice_Create"
+        route.contains("InvoiceRoute.InvoiceView") -> "Invoice_View"
+        route.contains("InvoiceRoute.Invoices") -> "Invoice_List"
+        route.contains("InventoryRoute.Inventory") -> "Inventory"
         route.contains("FormConfig") -> "FormConfig"
         else -> route.substringAfterLast(".").substringBefore("(")
     }

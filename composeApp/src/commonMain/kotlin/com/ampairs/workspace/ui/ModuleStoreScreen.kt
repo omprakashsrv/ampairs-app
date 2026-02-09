@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.ModuleDetailResponse
@@ -29,9 +28,9 @@ import org.koin.core.parameter.parametersOf
  */
 @Composable
 fun ModuleStoreScreen(
-    navController: NavController? = null, // Optional for Nav3 which uses back stack
     workspaceId: String = "",
     paddingValues: PaddingValues = PaddingValues(0.dp),
+    onModuleNavigate: ((Any) -> Unit)? = null, // Nav3 callback for module navigation
     viewModel: WorkspaceModulesViewModel = koinViewModel { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -215,14 +214,7 @@ fun ModuleStoreScreen(
                                 else -> null
                             }
                             route?.let {
-                                // Nav2: Use navController if available
-                                navController?.navigate(it) {
-                                    // Clear the module store from back stack
-                                    popUpTo(WorkspaceRoute.ModuleStore(workspaceId)) {
-                                        inclusive = true
-                                    }
-                                }
-                                // Nav3: Navigation handled by entry provider's onModuleSelected callback
+                                onModuleNavigate?.invoke(it)
                             }
                         }
                     )

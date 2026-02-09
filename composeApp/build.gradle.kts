@@ -145,7 +145,7 @@ kotlin {
                 implementation(libs.material3.adaptive)
                 implementation(libs.material3.adaptive.layout)
                 implementation(libs.material3.adaptive.navigation)
-                implementation(libs.navigation.compose)
+//                implementation(libs.navigation.compose)
                 // Navigation 3 (new paradigm with user-owned back stack)
                 implementation(libs.navigation3.ui)
                 implementation(libs.lifecycle.viewmodel)
