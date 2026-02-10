@@ -30,7 +30,6 @@ splash-screen = "1.2.0"
 uuid = "0.8.4"
 adaptive = "1.2.0"
 kermit = "2.0.8"
-navigation-compose = "2.9.1"
 # Navigation 3 (new paradigm with user-owned back stack)
 navigation3-ui = "1.0.0-alpha05"
 lifecycle-viewmodel = "2.9.6"
@@ -122,7 +121,6 @@ uuid = { group = "com.benasher44", name = "uuid", version.ref = "uuid" }
 material3-adaptive = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive", version.ref = "adaptive" }
 material3-adaptive-layout = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-layout", version.ref = "adaptive" }
 material3-adaptive-navigation = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-navigation", version.ref = "adaptive" }
-navigation-compose = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version.ref = "navigation-compose" }
 # Navigation 3 libraries
 navigation3-ui = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3-ui" }
 lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle-viewmodel" }
