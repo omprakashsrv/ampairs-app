@@ -121,8 +121,6 @@ actual val businessPlatformModule: Module = com.ampairs.business.businessPlatfor
 actual val taxPlatformModule: Module = com.ampairs.tax.taxPlatformModule
 actual val unitPlatformModule: Module = com.ampairs.unit.unitPlatformModule
 actual val subscriptionPlatformModule: Module = com.ampairs.subscription.di.subscriptionPlatformModule
-// Temporarily commented out pending customer integration updates
-// actual val orderPlatformModule: Module = com.ampairs.order.orderPlatformModule
-// actual val invoicePlatformModule: Module = com.ampairs.invoice.invoicePlatformModule
-// actual val inventoryPlatformModule: Module = com.ampairs.inventory.inventoryPlatformModule
-// actual val tallyPlatformModule: Module = com.ampairs.tally.tallyPlatformModule
+actual val orderPlatformModule: Module = com.ampairs.order.orderPlatformModule
+actual val invoicePlatformModule: Module = com.ampairs.invoice.invoicePlatformModule
+actual val inventoryPlatformModule: Module = com.ampairs.inventory.inventoryPlatformModule

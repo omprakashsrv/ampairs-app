@@ -20,7 +20,8 @@ kotlin {
         commonMain {
             dependencies {
                 api(libs.paging.common)
-                api(compose.runtime)
+                // Compose Multiplatform library (explicit dependency for 1.10.0+)
+                api(libs.compose.runtime)
             }
         }
 

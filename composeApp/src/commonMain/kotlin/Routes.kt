@@ -1,7 +1,8 @@
+import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed interface Route {
+sealed interface Route : NavKey {
     @Serializable
     data object Login : Route
     
@@ -33,6 +34,9 @@ sealed interface Route {
     data object Subscription : Route
 
     @Serializable
+    data object Unit : Route
+
+    @Serializable
     data class FormConfig(
         val entityType: String = ""
     ) : Route
@@ -40,7 +44,7 @@ sealed interface Route {
 
 // Auth routes
 @Serializable
-sealed interface AuthRoute {
+sealed interface AuthRoute : NavKey {
     @Serializable
     data object LoginRoot : AuthRoute
 
@@ -71,7 +75,7 @@ sealed interface AuthRoute {
 
 // Workspace routes
 @Serializable
-sealed interface WorkspaceRoute {
+sealed interface WorkspaceRoute : NavKey {
     @Serializable
     data object Root : WorkspaceRoute
     
@@ -127,7 +131,7 @@ sealed interface WorkspaceRoute {
 
 // Product routes
 @Serializable
-sealed interface ProductRoute {
+sealed interface ProductRoute : NavKey {
     @Serializable
     data class Group(
         val type: String = "GROUP",
@@ -178,7 +182,7 @@ sealed interface ProductRoute {
 
 // Customer routes
 @Serializable
-sealed interface CustomerRoute {
+sealed interface CustomerRoute : NavKey {
     @Serializable
     data object Root : CustomerRoute
     
@@ -199,14 +203,14 @@ sealed interface CustomerRoute {
 
 // Inventory routes
 @Serializable
-sealed interface InventoryRoute {
+sealed interface InventoryRoute : NavKey {
     @Serializable
     data object Inventory : InventoryRoute
 }
 
 // Order routes
 @Serializable
-sealed interface OrderRoute {
+sealed interface OrderRoute : NavKey {
     @Serializable
     data class Root(
         val fromCustomer: String = "",
@@ -225,7 +229,7 @@ sealed interface OrderRoute {
 
 // Invoice routes
 @Serializable
-sealed interface InvoiceRoute {
+sealed interface InvoiceRoute : NavKey {
     @Serializable
     data class Root(
         val fromCustomer: String = "",
@@ -244,7 +248,7 @@ sealed interface InvoiceRoute {
 
 // Business routes
 @Serializable
-sealed interface BusinessRoute {
+sealed interface BusinessRoute : NavKey {
     @Serializable
     data object Overview : BusinessRoute
 
@@ -266,7 +270,7 @@ sealed interface BusinessRoute {
 
 // Subscription routes
 @Serializable
-sealed interface SubscriptionRoute {
+sealed interface SubscriptionRoute : NavKey {
     @Serializable
     data object Root : SubscriptionRoute
 

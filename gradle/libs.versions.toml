@@ -30,8 +30,10 @@ splash-screen = "1.2.0"
 uuid = "0.8.4"
 adaptive = "1.2.0"
 kermit = "2.0.8"
-navigation-compose = "2.9.1"
+# Navigation 3 (new paradigm with user-owned back stack)
+navigation3-ui = "1.0.0-alpha05"
 lifecycle-viewmodel = "2.9.6"
+lifecycle-viewmodel-navigation3 = "2.10.0-alpha05"
 savedstate = "1.3.6"
 kotlin-inject = "0.8.0"
 crashkios = "0.9.0"
@@ -119,8 +121,10 @@ uuid = { group = "com.benasher44", name = "uuid", version.ref = "uuid" }
 material3-adaptive = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive", version.ref = "adaptive" }
 material3-adaptive-layout = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-layout", version.ref = "adaptive" }
 material3-adaptive-navigation = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-navigation", version.ref = "adaptive" }
-navigation-compose = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version.ref = "navigation-compose" }
+# Navigation 3 libraries
+navigation3-ui = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3-ui" }
 lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle-viewmodel" }
+lifecycle-viewmodel-navigation3 = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycle-viewmodel-navigation3" }
 savedstate = { group = "org.jetbrains.androidx.savedstate", name = "savedstate", version.ref = "savedstate" }
 savedstate-compose = { group = "org.jetbrains.androidx.savedstate", name = "savedstate-compose", version.ref = "savedstate" }
 datastore = { group = "androidx.datastore", name = "datastore", version.ref = "datastore" }
@@ -128,6 +132,15 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx" }
 wire-runtime = { group = "com.squareup.wire", name = "wire-runtime", version.ref = "wire" }
+
+# Compose Multiplatform libraries (explicit dependencies for 1.10.0+)
+compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "compose-plugin" }
+compose-ui = { group = "org.jetbrains.compose.ui", name = "ui", version.ref = "compose-plugin" }
+compose-foundation = { group = "org.jetbrains.compose.foundation", name = "foundation", version.ref = "compose-plugin" }
+compose-animation = { group = "org.jetbrains.compose.animation", name = "animation", version.ref = "compose-plugin" }
+compose-material-icons-extended = { group = "org.jetbrains.compose.material", name = "material-icons-extended", version.ref = "compose-plugin" }
+compose-material3 = { group = "org.jetbrains.compose.material3", name = "material3", version.ref = "compose-plugin" }
+compose-components-resources = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose-plugin" }
 
 coil-core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }

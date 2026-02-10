@@ -58,12 +58,17 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun OtpScreen(
-    viewModelStoreOwner: ViewModelStoreOwner,
+    viewModelStoreOwner: ViewModelStoreOwner? = null,
     sessionId: String,
     verificationId: String = "", // Firebase verification ID (empty for backend auth)
     onAuthSuccess: () -> Unit,
 ) {
-    val viewModel = koinViewModel<LoginViewModel>(viewModelStoreOwner = viewModelStoreOwner)
+    // Nav3 provides ViewModelStoreOwner through entryDecorators, Nav2 passes it explicitly
+    val viewModel = if (viewModelStoreOwner != null) {
+        koinViewModel<LoginViewModel>(viewModelStoreOwner = viewModelStoreOwner)
+    } else {
+        koinViewModel<LoginViewModel>()
+    }
 
     // Phone number is now properly retained in the ViewModel
     val phoneNumber = viewModel.phoneNumber
