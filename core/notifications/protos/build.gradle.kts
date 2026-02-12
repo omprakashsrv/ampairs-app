@@ -23,14 +23,11 @@ kotlin {
     }
 }
 
-wire {
-    kotlin {}
-}
-
 android {
     namespace = "app.tivi.core.notifications.proto"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
+}
+
+wire {
+    kotlin {}
 }

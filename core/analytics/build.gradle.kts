@@ -37,7 +37,4 @@ kotlin {
 android {
     namespace = "app.tivi.core.analytics"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
 }

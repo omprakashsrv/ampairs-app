@@ -40,7 +40,4 @@ kotlin {
 android {
     namespace = "androidx.paging.compose"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
 }

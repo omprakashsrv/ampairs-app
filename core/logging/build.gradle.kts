@@ -54,7 +54,4 @@ kotlin {
 android {
     namespace = "app.tivi.core.logging"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
 }

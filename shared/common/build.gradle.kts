@@ -61,13 +61,6 @@ kotlin {
 android {
     namespace = "app.tivi.shared.common"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }

@@ -42,7 +42,4 @@ android {
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
-    kotlin {
-        jvmToolchain(17)
-    }
 }

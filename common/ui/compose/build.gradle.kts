@@ -91,7 +91,4 @@ kotlin {
 android {
     namespace = "app.tivi.common.compose"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
 }
