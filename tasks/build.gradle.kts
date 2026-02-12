@@ -35,10 +35,4 @@ kotlin {
 android {
     namespace = "app.tivi.tasks"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig {
-        manifestPlaceholders += mapOf("appAuthRedirectScheme" to "empty")
-    }
-    kotlin {
-        jvmToolchain(17)
-    }
 }

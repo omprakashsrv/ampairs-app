@@ -9,10 +9,6 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
 }
 
-android {
-    namespace = "app.tivi.debug.settings"
-}
-
 kotlin {
     jvmToolchain(17)
     androidTarget()
@@ -35,7 +31,4 @@ kotlin {
 android {
     namespace = "app.tivi.settings"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
 }

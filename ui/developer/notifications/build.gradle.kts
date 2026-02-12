@@ -9,10 +9,6 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
 }
 
-android {
-    namespace = "app.tivi.developer.notifications"
-}
-
 kotlin {
     jvmToolchain(17)
     androidTarget()
@@ -34,11 +30,7 @@ kotlin {
     }
 }
 
-
 android {
     namespace = "app.tivi.notification"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
 }

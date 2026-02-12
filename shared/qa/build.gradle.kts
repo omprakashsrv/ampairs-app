@@ -37,9 +37,6 @@ kotlin {
 android {
     namespace = "app.tivi.shared.qa"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
 }
 
 ksp {

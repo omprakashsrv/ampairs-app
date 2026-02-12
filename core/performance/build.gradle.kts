@@ -34,8 +34,4 @@ kotlin {
 android {
     namespace = "app.tivi.core.perf"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
-
 }

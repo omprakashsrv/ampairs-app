@@ -35,7 +35,4 @@ kotlin {
 android {
     namespace = "app.tivi.core.powercontroller"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
-    kotlin {
-        jvmToolchain(17)
-    }
 }
