@@ -9,6 +9,9 @@ pluginManagement {
         maven("https://josm.openstreetmap.de/repository/releases/")
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 
 dependencyResolutionManagement {
     repositories {

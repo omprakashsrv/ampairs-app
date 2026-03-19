@@ -1,5 +1,7 @@
 package com.ampairs.customer.di
 
+import com.ampairs.agent.core.ActionHandlerProvider
+import com.ampairs.customer.agent.CustomerActionHandler
 import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.api.CustomerApiImpl
 import com.ampairs.customer.data.api.CustomerGroupApi
@@ -91,6 +93,13 @@ val customerModule = module {
 
     // CustomerImage ViewModels
     viewModel { (customerId: String) -> CustomerImageViewModel(customerId, get(), get()) }
+
+    // Agent - Lazy handler provider (handler created on first agent dispatch)
+    factory<ActionHandlerProvider> {
+        ActionHandlerProvider("customer", CustomerActionHandler.ACTIONS) {
+            CustomerActionHandler(get())
+        }
+    } bind ActionHandlerProvider::class
 }
 
 expect val customerPlatformModule: org.koin.core.module.Module

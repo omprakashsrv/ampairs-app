@@ -21,6 +21,8 @@ configurations.all {
 
 
 kotlin {
+    jvmToolchain(21)
+
     androidTarget()
 
     jvm("desktop")

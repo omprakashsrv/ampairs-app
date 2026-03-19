@@ -1,3 +1,4 @@
+import com.ampairs.agent.di.agentModule
 import com.ampairs.auth.authModule
 import com.ampairs.business.businessModule
 import com.ampairs.common.firebase.di.firebaseModule
@@ -58,6 +59,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             invoiceModule(),
             inventoryModule(),
             updateModule,
+            agentModule,
         )
     )
     return koinApplication

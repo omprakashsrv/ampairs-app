@@ -53,6 +53,7 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(Route.Subscription::class)
                 subclass(Route.Unit::class)
                 subclass(Route.FormConfig::class)
+                subclass(Route.Agent::class)
 
                 // Auth Routes
                 subclass(AuthRoute.LoginRoot::class)

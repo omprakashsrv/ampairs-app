@@ -1,5 +1,7 @@
 package com.ampairs.product
 
+import com.ampairs.agent.core.ActionHandlerProvider
+import com.ampairs.product.agent.ProductActionHandler
 import com.ampairs.product.data.api.ProductApi
 import com.ampairs.product.data.api.ProductApiImpl
 import com.ampairs.product.db.dao.ProductDao
@@ -42,6 +44,13 @@ val productModule: Module = module {
     // Variant ViewModels
     viewModel { (productId: String) -> VariantManagementViewModel(productId, get()) }
     viewModel { (productId: String, variantId: String?) -> VariantFormViewModel(productId, variantId, get()) }
+
+    // Agent - Lazy handler provider (handler created on first agent dispatch)
+    factory<ActionHandlerProvider> {
+        ActionHandlerProvider("product", ProductActionHandler.ACTIONS) {
+            ProductActionHandler(get())
+        }
+    } bind ActionHandlerProvider::class
 }
 
 fun productModule() = productModule

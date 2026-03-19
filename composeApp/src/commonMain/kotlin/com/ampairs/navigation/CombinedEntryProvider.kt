@@ -16,6 +16,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.CustomerListRoute
 import com.ampairs.form.ui.FormConfigScreen
+import com.ampairs.navigation.providers.agentEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
 import com.ampairs.navigation.providers.customerEntryProvider
@@ -58,6 +59,7 @@ fun combinedEntryProvider(
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key, backStack)
+        ?: agentEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
         ?: NavEntry(key) { Text("Unknown route: $key") }
 }
