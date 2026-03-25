@@ -152,6 +152,7 @@ material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "m
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work-runtime" }
 
 store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
+sentry-kmp = { module = "io.sentry:sentry-kotlin-multiplatform", version.ref = "sentry-kmp" }
 jmapviewer = { module = "org.openstreetmap.jmapviewer:jmapviewer", version.ref = "jmapviewer" }
 
 filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }

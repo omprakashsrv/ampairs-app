@@ -7,10 +7,10 @@ import com.google.firebase.ktx.Firebase
 /**
  * Android implementation of FirebaseAnalytics
  */
-actual class FirebaseAnalytics {
+class FirebaseAnalyticsImpl : FirebaseAnalytics {
     private val analytics = Firebase.analytics
 
-    actual fun logEvent(eventName: String, params: Map<String, Any>?) {
+    override fun logEvent(eventName: String, params: Map<String, Any>?) {
         val bundle = Bundle()
         params?.forEach { (key, value) ->
             when (value) {
@@ -26,15 +26,15 @@ actual class FirebaseAnalytics {
         analytics.logEvent(eventName, bundle)
     }
 
-    actual fun setUserProperty(name: String, value: String?) {
+    override fun setUserProperty(name: String, value: String?) {
         analytics.setUserProperty(name, value)
     }
 
-    actual fun setUserId(userId: String?) {
+    override fun setUserId(userId: String?) {
         analytics.setUserId(userId)
     }
 
-    actual fun setCurrentScreen(screenName: String, screenClass: String?) {
+    override fun setCurrentScreen(screenName: String, screenClass: String?) {
         val params = mapOf(
             AnalyticsParams.SCREEN_NAME to screenName,
             AnalyticsParams.SCREEN_CLASS to (screenClass ?: screenName)
@@ -42,7 +42,7 @@ actual class FirebaseAnalytics {
         logEvent(AnalyticsEvents.SCREEN_VIEW, params)
     }
 
-    actual fun setAnalyticsCollectionEnabled(enabled: Boolean) {
+    override fun setAnalyticsCollectionEnabled(enabled: Boolean) {
         analytics.setAnalyticsCollectionEnabled(enabled)
     }
 }

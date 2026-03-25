@@ -223,7 +223,8 @@ fun authEntryProvider(
         val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
         val userRepository = koinInject<UserRepository>()
 
-        UserUpdateScreen {
+        UserUpdateScreen(
+            onUpdateSuccess = {
             kotlinx.coroutines.runBlocking {
                 val accessToken = tokenRepository.getAccessToken()
                 val refreshToken = tokenRepository.getRefreshToken()
@@ -282,7 +283,15 @@ fun authEntryProvider(
                     }
                 }
             }
-        }
+        },
+            onProfilePictureUpdated = { newThumbnailUrl ->
+                AppHeaderStateManager.instance.updateUser(
+                    AppHeaderStateManager.instance.headerState.value.currentUser?.copy(
+                        profilePictureThumbnailUrl = newThumbnailUrl
+                    )
+                )
+            }
+        )
     }
 
     is AuthRoute.AccountDeletion -> NavEntry(key) {

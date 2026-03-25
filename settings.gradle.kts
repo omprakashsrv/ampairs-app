@@ -28,7 +28,27 @@ dependencyResolutionManagement {
 }
 
 include(":composeApp")
+include(":data:common")
 include(":tallyModule")
+include(
+    ":feature:auth",
+    ":feature:agent",
+    ":feature:aws",
+    ":feature:network",
+    ":feature:form",
+    ":feature:unit",
+    ":feature:update",
+    ":feature:event",
+    ":feature:tax",
+    ":feature:subscription",
+    ":feature:business",
+    ":feature:product",
+    ":feature:customer",
+    ":feature:inventory",
+    ":feature:order",
+    ":feature:invoice",
+    ":feature:workspace"
+)
 include(":thirdparty:androidx:paging:compose")
 include(
     ":core:analytics",
