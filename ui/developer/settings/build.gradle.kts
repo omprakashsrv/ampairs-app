@@ -20,9 +20,8 @@ kotlin {
                 implementation(projects.core.preferences)
                 implementation(projects.common.ui.compose)
 
-                // Compose Multiplatform libraries (explicit dependencies for 1.10.0+)
-                implementation(libs.compose.material3)
-                implementation(libs.compose.animation)
+                implementation(compose.material3)
+                implementation(compose.animation)
             }
         }
     }

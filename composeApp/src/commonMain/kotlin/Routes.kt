@@ -40,6 +40,9 @@ sealed interface Route : NavKey {
     data class FormConfig(
         val entityType: String = ""
     ) : Route
+
+    @Serializable
+    data object Agent : Route
 }
 
 // Auth routes

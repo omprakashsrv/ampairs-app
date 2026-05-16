@@ -21,6 +21,8 @@ configurations.all {
 
 
 kotlin {
+    jvmToolchain(21)
+
     androidTarget()
 
     jvm("desktop")
@@ -112,6 +114,27 @@ kotlin {
 
         val commonMain by getting {
             dependencies {
+                // Extracted common module
+                implementation(projects.data.common)
+
+                // Feature modules
+                implementation(projects.feature.auth)
+                implementation(projects.feature.agent)
+                implementation(projects.feature.aws)
+                implementation(projects.feature.form)
+                implementation(projects.feature.unit)
+                implementation(projects.feature.update)
+                implementation(projects.feature.event)
+                implementation(projects.feature.tax)
+                implementation(projects.feature.subscription)
+                implementation(projects.feature.business)
+                implementation(projects.feature.product)
+                implementation(projects.feature.customer)
+                implementation(projects.feature.inventory)
+                implementation(projects.feature.order)
+                implementation(projects.feature.invoice)
+                implementation(projects.feature.workspace)
+
                 implementation(compose.runtime)
                 implementation(compose.ui)
                 implementation(compose.foundation)

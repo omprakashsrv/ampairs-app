@@ -5,28 +5,28 @@ package com.ampairs.common.firebase.analytics
  * Note: Firebase is not supported on Desktop platforms
  * All methods are no-ops
  */
-actual class FirebaseAnalytics {
-    actual fun logEvent(eventName: String, params: Map<String, Any>?) {
+class FirebaseAnalyticsImpl : FirebaseAnalytics {
+    override fun logEvent(eventName: String, params: Map<String, Any>?) {
         // No-op: Firebase not supported on Desktop
         println("FirebaseAnalytics (Desktop stub): logEvent($eventName, $params)")
     }
 
-    actual fun setUserProperty(name: String, value: String?) {
+    override fun setUserProperty(name: String, value: String?) {
         // No-op: Firebase not supported on Desktop
         println("FirebaseAnalytics (Desktop stub): setUserProperty($name, $value)")
     }
 
-    actual fun setUserId(userId: String?) {
+    override fun setUserId(userId: String?) {
         // No-op: Firebase not supported on Desktop
         println("FirebaseAnalytics (Desktop stub): setUserId($userId)")
     }
 
-    actual fun setCurrentScreen(screenName: String, screenClass: String?) {
+    override fun setCurrentScreen(screenName: String, screenClass: String?) {
         // No-op: Firebase not supported on Desktop
         println("FirebaseAnalytics (Desktop stub): setCurrentScreen($screenName, $screenClass)")
     }
 
-    actual fun setAnalyticsCollectionEnabled(enabled: Boolean) {
+    override fun setAnalyticsCollectionEnabled(enabled: Boolean) {
         // No-op: Firebase not supported on Desktop
         println("FirebaseAnalytics (Desktop stub): setAnalyticsCollectionEnabled($enabled)")
     }

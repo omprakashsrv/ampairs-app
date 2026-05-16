@@ -1,0 +1,609 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "9374f4822505a1a7ab0ee86baa1f92f8",
+    "entities": [
+      {
+        "tableName": "tax_codes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `master_tax_code_id` TEXT NOT NULL, `code` TEXT NOT NULL, `code_type` TEXT NOT NULL, `description` TEXT NOT NULL, `short_description` TEXT NOT NULL, `custom_tax_rule_id` TEXT, `usage_count` INTEGER NOT NULL, `last_used_at` INTEGER, `is_favorite` INTEGER NOT NULL, `notes` TEXT, `is_active` INTEGER NOT NULL, `added_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `sync_status` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "masterTaxCodeId",
+            "columnName": "master_tax_code_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "codeType",
+            "columnName": "code_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shortDescription",
+            "columnName": "short_description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customTaxRuleId",
+            "columnName": "custom_tax_rule_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "usageCount",
+            "columnName": "usage_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUsedAt",
+            "columnName": "last_used_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isFavorite",
+            "columnName": "is_favorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "added_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "sync_status",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tax_codes_is_active",
+            "unique": false,
+            "columnNames": [
+              "is_active"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_codes_is_active` ON `${TABLE_NAME}` (`is_active`)"
+          },
+          {
+            "name": "index_tax_codes_usage_count",
+            "unique": false,
+            "columnNames": [
+              "usage_count"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_codes_usage_count` ON `${TABLE_NAME}` (`usage_count`)"
+          },
+          {
+            "name": "index_tax_codes_master_tax_code_id",
+            "unique": false,
+            "columnNames": [
+              "master_tax_code_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_codes_master_tax_code_id` ON `${TABLE_NAME}` (`master_tax_code_id`)"
+          },
+          {
+            "name": "index_tax_codes_code_type",
+            "unique": false,
+            "columnNames": [
+              "code_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_codes_code_type` ON `${TABLE_NAME}` (`code_type`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tax_component_types",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `country_code` TEXT NOT NULL, `component_code` TEXT NOT NULL, `component_name` TEXT NOT NULL, `short_name` TEXT NOT NULL, `display_name` TEXT NOT NULL, `component_category` TEXT NOT NULL, `calculation_method` TEXT NOT NULL, `is_mandatory` INTEGER NOT NULL, `default_rate` REAL, `sort_order` INTEGER NOT NULL, `metadata` TEXT NOT NULL, `is_active` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "countryCode",
+            "columnName": "country_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentCode",
+            "columnName": "component_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentName",
+            "columnName": "component_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shortName",
+            "columnName": "short_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentCategory",
+            "columnName": "component_category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calculationMethod",
+            "columnName": "calculation_method",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isMandatory",
+            "columnName": "is_mandatory",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultRate",
+            "columnName": "default_rate",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metadata",
+            "columnName": "metadata",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tax_component_types_country_code_component_code",
+            "unique": false,
+            "columnNames": [
+              "country_code",
+              "component_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_component_types_country_code_component_code` ON `${TABLE_NAME}` (`country_code`, `component_code`)"
+          },
+          {
+            "name": "index_tax_component_types_is_active",
+            "unique": false,
+            "columnNames": [
+              "is_active"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_component_types_is_active` ON `${TABLE_NAME}` (`is_active`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tax_components",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `component_type_id` TEXT NOT NULL, `jurisdiction` TEXT NOT NULL, `jurisdiction_level` TEXT NOT NULL, `rate_percentage` REAL NOT NULL, `rate_type` TEXT NOT NULL, `rate_tiers` TEXT, `calculation_order` INTEGER NOT NULL, `is_compound_tax` INTEGER NOT NULL, `compound_on_components` TEXT, `applicable_for` TEXT NOT NULL, `exemptions` TEXT NOT NULL, `effective_from` INTEGER NOT NULL, `effective_to` INTEGER, `gl_account_code` TEXT, `tax_authority_code` TEXT, `is_active` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `sync_status` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentTypeId",
+            "columnName": "component_type_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jurisdiction",
+            "columnName": "jurisdiction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jurisdictionLevel",
+            "columnName": "jurisdiction_level",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ratePercentage",
+            "columnName": "rate_percentage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rateType",
+            "columnName": "rate_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rateTiers",
+            "columnName": "rate_tiers",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "calculationOrder",
+            "columnName": "calculation_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCompoundTax",
+            "columnName": "is_compound_tax",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "compoundOnComponents",
+            "columnName": "compound_on_components",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "applicableFor",
+            "columnName": "applicable_for",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exemptions",
+            "columnName": "exemptions",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "effectiveFrom",
+            "columnName": "effective_from",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "effectiveTo",
+            "columnName": "effective_to",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "glAccountCode",
+            "columnName": "gl_account_code",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "taxAuthorityCode",
+            "columnName": "tax_authority_code",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "sync_status",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tax_components_jurisdiction",
+            "unique": false,
+            "columnNames": [
+              "jurisdiction"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_components_jurisdiction` ON `${TABLE_NAME}` (`jurisdiction`)"
+          },
+          {
+            "name": "index_tax_components_component_type_id",
+            "unique": false,
+            "columnNames": [
+              "component_type_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_components_component_type_id` ON `${TABLE_NAME}` (`component_type_id`)"
+          },
+          {
+            "name": "index_tax_components_is_active",
+            "unique": false,
+            "columnNames": [
+              "is_active"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_components_is_active` ON `${TABLE_NAME}` (`is_active`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tax_rules",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `country_code` TEXT NOT NULL, `tax_code_id` TEXT NOT NULL, `tax_code` TEXT NOT NULL, `tax_code_type` TEXT NOT NULL, `tax_code_description` TEXT, `jurisdiction` TEXT NOT NULL, `jurisdiction_level` TEXT NOT NULL, `component_composition` TEXT NOT NULL, `is_active` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `sync_status` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "countryCode",
+            "columnName": "country_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxCodeId",
+            "columnName": "tax_code_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxCode",
+            "columnName": "tax_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxCodeType",
+            "columnName": "tax_code_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxCodeDescription",
+            "columnName": "tax_code_description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "jurisdiction",
+            "columnName": "jurisdiction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jurisdictionLevel",
+            "columnName": "jurisdiction_level",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "componentComposition",
+            "columnName": "component_composition",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "sync_status",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tax_rules_country_code",
+            "unique": false,
+            "columnNames": [
+              "country_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_rules_country_code` ON `${TABLE_NAME}` (`country_code`)"
+          },
+          {
+            "name": "index_tax_rules_tax_code_jurisdiction",
+            "unique": false,
+            "columnNames": [
+              "tax_code",
+              "jurisdiction"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_rules_tax_code_jurisdiction` ON `${TABLE_NAME}` (`tax_code`, `jurisdiction`)"
+          },
+          {
+            "name": "index_tax_rules_tax_code_id",
+            "unique": false,
+            "columnNames": [
+              "tax_code_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_rules_tax_code_id` ON `${TABLE_NAME}` (`tax_code_id`)"
+          },
+          {
+            "name": "index_tax_rules_is_active",
+            "unique": false,
+            "columnNames": [
+              "is_active"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tax_rules_is_active` ON `${TABLE_NAME}` (`is_active`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tax_configuration",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `country_code` TEXT NOT NULL, `tax_strategy` TEXT NOT NULL, `default_tax_code_system` TEXT NOT NULL, `tax_jurisdictions` TEXT NOT NULL, `industry` TEXT, `auto_subscribe_new_codes` INTEGER NOT NULL, `synced_at` INTEGER NOT NULL, `metadata` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "countryCode",
+            "columnName": "country_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxStrategy",
+            "columnName": "tax_strategy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultTaxCodeSystem",
+            "columnName": "default_tax_code_system",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taxJurisdictions",
+            "columnName": "tax_jurisdictions",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "industry",
+            "columnName": "industry",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "autoSubscribeNewCodes",
+            "columnName": "auto_subscribe_new_codes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncedAt",
+            "columnName": "synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metadata",
+            "columnName": "metadata",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9374f4822505a1a7ab0ee86baa1f92f8')"
+    ]
+  }
+}
