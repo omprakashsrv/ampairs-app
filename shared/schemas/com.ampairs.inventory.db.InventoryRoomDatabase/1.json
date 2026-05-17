@@ -1,0 +1,132 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "e731ee5e3d66a5bb233419b85a080271",
+    "entities": [
+      {
+        "tableName": "inventoryEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `description` TEXT NOT NULL, `product_id` TEXT, `unit_id` TEXT, `custom_fields` TEXT, `mrp` REAL NOT NULL, `buying_price` REAL NOT NULL, `dp` REAL NOT NULL, `selling_price` REAL NOT NULL, `stock` REAL NOT NULL, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `last_updated` INTEGER, `created_at` TEXT, `updated_at` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "product_id",
+            "columnName": "product_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "unit_id",
+            "columnName": "unit_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "custom_fields",
+            "columnName": "custom_fields",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mrp",
+            "columnName": "mrp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "buying_price",
+            "columnName": "buying_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dp",
+            "columnName": "dp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selling_price",
+            "columnName": "selling_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stock",
+            "columnName": "stock",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soft_deleted",
+            "columnName": "soft_deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_updated",
+            "columnName": "last_updated",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "inventory_id_idx",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `inventory_id_idx` ON `${TABLE_NAME}` (`id`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e731ee5e3d66a5bb233419b85a080271')"
+    ]
+  }
+}

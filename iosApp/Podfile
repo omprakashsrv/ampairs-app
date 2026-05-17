@@ -1,7 +1,7 @@
 target 'iosApp' do
   use_frameworks!
   platform :ios, '16.0'
-  pod 'composeApp', :path => '../composeApp'
+  pod 'shared', :path => '../shared'
 end
 
 # Enforce minimum deployment target for all pods

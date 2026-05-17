@@ -1,0 +1,328 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "2cee673a1b77e2ffdfbd71740b844722",
+    "entities": [
+      {
+        "tableName": "invoiceEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `invoice_number` TEXT NOT NULL, `invoice_date` TEXT NOT NULL, `status` TEXT NOT NULL, `from_customer_id` TEXT NOT NULL, `from_customer_name` TEXT NOT NULL, `to_customer_name` TEXT NOT NULL, `from_customer_gst` TEXT NOT NULL, `to_customer_gst` TEXT NOT NULL, `to_customer_id` TEXT NOT NULL, `total_cost` REAL NOT NULL, `total_tax` REAL NOT NULL, `total_items` INTEGER NOT NULL, `total_quantity` REAL NOT NULL, `base_price` REAL NOT NULL, `tax_info` TEXT, `created_by` TEXT NOT NULL, `updated_by` TEXT NOT NULL, `billing_address` TEXT, `shipping_address` TEXT, `discount` TEXT, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `last_updated` INTEGER NOT NULL, `order_ref_id` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "invoice_number",
+            "columnName": "invoice_number",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "invoice_date",
+            "columnName": "invoice_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "from_customer_id",
+            "columnName": "from_customer_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "from_customer_name",
+            "columnName": "from_customer_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "to_customer_name",
+            "columnName": "to_customer_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "from_customer_gst",
+            "columnName": "from_customer_gst",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "to_customer_gst",
+            "columnName": "to_customer_gst",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "to_customer_id",
+            "columnName": "to_customer_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_cost",
+            "columnName": "total_cost",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_tax",
+            "columnName": "total_tax",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_items",
+            "columnName": "total_items",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_quantity",
+            "columnName": "total_quantity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "base_price",
+            "columnName": "base_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tax_info",
+            "columnName": "tax_info",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "created_by",
+            "columnName": "created_by",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_by",
+            "columnName": "updated_by",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "billing_address",
+            "columnName": "billing_address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "shipping_address",
+            "columnName": "shipping_address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "discount",
+            "columnName": "discount",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soft_deleted",
+            "columnName": "soft_deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_updated",
+            "columnName": "last_updated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "order_ref_id",
+            "columnName": "order_ref_id",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "invoice_id_idx",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `invoice_id_idx` ON `${TABLE_NAME}` (`id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "invoiceItemEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `description` TEXT NOT NULL, `product_id` TEXT NOT NULL, `total_cost` REAL NOT NULL, `base_price` REAL NOT NULL, `product_price` REAL NOT NULL, `total_tax` REAL NOT NULL, `invoice_id` TEXT NOT NULL, `tax_code` TEXT NOT NULL, `quantity` REAL NOT NULL, `item_no` INTEGER NOT NULL, `selling_price` REAL NOT NULL, `mrp` REAL NOT NULL, `dp` REAL NOT NULL, `tax_info` TEXT, `discount` TEXT, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "product_id",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_cost",
+            "columnName": "total_cost",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "base_price",
+            "columnName": "base_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "product_price",
+            "columnName": "product_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_tax",
+            "columnName": "total_tax",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "invoice_id",
+            "columnName": "invoice_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tax_code",
+            "columnName": "tax_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "item_no",
+            "columnName": "item_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selling_price",
+            "columnName": "selling_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mrp",
+            "columnName": "mrp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dp",
+            "columnName": "dp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tax_info",
+            "columnName": "tax_info",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "discount",
+            "columnName": "discount",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soft_deleted",
+            "columnName": "soft_deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "invoice_item_id_idx",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `invoice_item_id_idx` ON `${TABLE_NAME}` (`id`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2cee673a1b77e2ffdfbd71740b844722')"
+    ]
+  }
+}

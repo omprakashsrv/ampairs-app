@@ -1,4 +1,4 @@
-package com.ampairs.common.update
+package com.ampairs.app.update
 
 import android.app.Activity
 import android.content.IntentSender
@@ -15,13 +15,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-/**
- * Manager for handling in-app updates using Google Play Core library.
- *
- * Supports both immediate and flexible update flows:
- * - Immediate: Forces user to update before continuing
- * - Flexible: Allows user to continue using app and update in background
- */
 class InAppUpdateManager(private val activity: Activity) {
 
     private val appUpdateManager = AppUpdateManagerFactory.create(activity)
@@ -31,15 +24,10 @@ class InAppUpdateManager(private val activity: Activity) {
         private const val TAG = "InAppUpdateManager"
         private const val UPDATE_REQUEST_CODE = 1001
 
-        // Priority thresholds - adjust based on your update strategy
-        private const val IMMEDIATE_UPDATE_PRIORITY_THRESHOLD = 4 // Critical updates
-        private const val FLEXIBLE_UPDATE_PRIORITY_THRESHOLD = 2 // Normal updates
+        private const val IMMEDIATE_UPDATE_PRIORITY_THRESHOLD = 4
+        private const val FLEXIBLE_UPDATE_PRIORITY_THRESHOLD = 2
     }
 
-    /**
-     * Check for available updates and return update info.
-     * Returns null if no update is available.
-     */
     suspend fun checkForUpdate(): UpdateCheckResult {
         return try {
             val appUpdateInfo = appUpdateManager.appUpdateInfo.await()
@@ -68,37 +56,18 @@ class InAppUpdateManager(private val activity: Activity) {
         }
     }
 
-    /**
-     * Determine the appropriate update type based on update priority.
-     * Higher priority updates use immediate mode, lower priority use flexible.
-     */
     private fun determineUpdateType(appUpdateInfo: AppUpdateInfo): Int {
         val priority = appUpdateInfo.updatePriority()
-
         return when {
-            priority >= IMMEDIATE_UPDATE_PRIORITY_THRESHOLD -> {
-                AppUpdateType.IMMEDIATE
-            }
-            priority >= FLEXIBLE_UPDATE_PRIORITY_THRESHOLD -> {
-                AppUpdateType.FLEXIBLE
-            }
-            else -> {
-                // Default to flexible for low priority updates
-                AppUpdateType.FLEXIBLE
-            }
+            priority >= IMMEDIATE_UPDATE_PRIORITY_THRESHOLD -> AppUpdateType.IMMEDIATE
+            priority >= FLEXIBLE_UPDATE_PRIORITY_THRESHOLD -> AppUpdateType.FLEXIBLE
+            else -> AppUpdateType.FLEXIBLE
         }
     }
 
-    /**
-     * Start the update flow.
-     * For immediate updates, this will block the UI until update completes.
-     * For flexible updates, update downloads in background.
-     */
     fun startUpdate(appUpdateInfo: AppUpdateInfo, updateType: Int = AppUpdateType.FLEXIBLE): Boolean {
         currentType = updateType
-
         return try {
-            // Verify update is allowed for the requested type
             val isUpdateTypeAllowed = when (updateType) {
                 AppUpdateType.IMMEDIATE -> appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
                 AppUpdateType.FLEXIBLE -> appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
@@ -111,14 +80,12 @@ class InAppUpdateManager(private val activity: Activity) {
             }
 
             val updateOptions = AppUpdateOptions.newBuilder(updateType).build()
-
             appUpdateManager.startUpdateFlowForResult(
                 appUpdateInfo,
                 activity,
                 updateOptions,
                 UPDATE_REQUEST_CODE
             )
-
             Log.d(TAG, "Update flow started - Type: ${if (updateType == AppUpdateType.IMMEDIATE) "IMMEDIATE" else "FLEXIBLE"}")
             true
         } catch (e: IntentSender.SendIntentException) {
@@ -127,18 +94,11 @@ class InAppUpdateManager(private val activity: Activity) {
         }
     }
 
-    /**
-     * Monitor installation progress for flexible updates.
-     * Emits installation status updates as a Flow.
-     */
     fun installProgressFlow(): Flow<Int> = callbackFlow {
         val listener = InstallStateUpdatedListener { state ->
             trySend(state.installStatus())
-
             when (state.installStatus()) {
-                InstallStatus.DOWNLOADED -> {
-                    Log.d(TAG, "Update downloaded successfully")
-                }
+                InstallStatus.DOWNLOADED -> Log.d(TAG, "Update downloaded successfully")
                 InstallStatus.INSTALLED -> {
                     Log.d(TAG, "Update installed successfully")
                     appUpdateManager.unregisterListener(this@callbackFlow as InstallStateUpdatedListener)
@@ -149,39 +109,24 @@ class InAppUpdateManager(private val activity: Activity) {
                 }
             }
         }
-
         appUpdateManager.registerListener(listener)
-
-        awaitClose {
-            appUpdateManager.unregisterListener(listener)
-        }
+        awaitClose { appUpdateManager.unregisterListener(listener) }
     }
 
-    /**
-     * Complete the update after flexible download.
-     * This will restart the app to apply the update.
-     */
     fun completeUpdate() {
         appUpdateManager.completeUpdate()
         Log.d(TAG, "Completing update - App will restart")
     }
 
-    /**
-     * Check if an update was interrupted and needs to be resumed.
-     * Call this in onResume() to handle interrupted updates.
-     */
     suspend fun checkForInterruptedUpdate(): Boolean {
         return try {
             val appUpdateInfo = appUpdateManager.appUpdateInfo.await()
-
             when {
-                // Resume immediate update if interrupted
                 appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS -> {
                     Log.d(TAG, "Resuming interrupted immediate update")
                     startUpdate(appUpdateInfo, AppUpdateType.IMMEDIATE)
                     true
                 }
-                // Notify about downloaded flexible update
                 appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED -> {
                     Log.d(TAG, "Flexible update already downloaded, ready to install")
                     true
@@ -195,9 +140,6 @@ class InAppUpdateManager(private val activity: Activity) {
     }
 }
 
-/**
- * Sealed class representing different update check results
- */
 sealed class UpdateCheckResult {
     data class UpdateAvailable(
         val appUpdateInfo: AppUpdateInfo,

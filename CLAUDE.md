@@ -86,19 +86,19 @@ This mobile app is part of a **three-tier Ampairs ecosystem**:
 
 ### **Android**
 ```bash
-./gradlew composeApp:assembleDebug
-./gradlew composeApp:installDebug
+./gradlew androidApp:assembleDebug
+./gradlew androidApp:installDebug
 ```
 
 ### **Desktop**
 ```bash
-./gradlew composeApp:run                    # Run desktop app
-./gradlew composeApp:package               # Create native distributions
+./gradlew shared:run                    # Run desktop app
+./gradlew shared:package               # Create native distributions
 ```
 
 ### **iOS** (Currently commented out)
 ```bash
-./gradlew composeApp:embedAndSignAppleFrameworkForXcode
+./gradlew shared:embedAndSignAppleFrameworkForXcode
 ```
 
 ### **Cleanup**

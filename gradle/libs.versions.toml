@@ -1,5 +1,5 @@
 [versions]
-agp = "9.1.0"
+agp = "9.2.1"
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
@@ -7,14 +7,16 @@ androidx-activity = "1.12.3"
 androidx-core = "1.17.0"
 
 compose-tooling = "1.7.6"
-compose-plugin = "1.10.2"
-kotlin = "2.2.21"
+compose-plugin = "1.11.0"
+compose-material = "1.9.0"
+compose-material-icons = "1.7.3"
+kotlin = "2.3.20"
 ksp = "2.3.2"
 androidx-room = "2.8.3"
 androidx-sqlite-bundled = "2.6.1"
 wire = "5.4.0"
 coil = "3.3.0"
-haze = "1.6.10"
+haze = "1.7.2"
 
 kotlinx-dateTime = "0.7.1"
 kotlinx = "1.10.2"
@@ -138,8 +140,8 @@ compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", v
 compose-ui = { group = "org.jetbrains.compose.ui", name = "ui", version.ref = "compose-plugin" }
 compose-foundation = { group = "org.jetbrains.compose.foundation", name = "foundation", version.ref = "compose-plugin" }
 compose-animation = { group = "org.jetbrains.compose.animation", name = "animation", version.ref = "compose-plugin" }
-compose-material-icons-extended = { group = "org.jetbrains.compose.material", name = "material-icons-extended", version.ref = "compose-plugin" }
-compose-material3 = { group = "org.jetbrains.compose.material3", name = "material3", version.ref = "compose-plugin" }
+compose-material-icons-extended = { group = "org.jetbrains.compose.material", name = "material-icons-extended", version.ref = "compose-material-icons" }
+compose-material3 = { group = "org.jetbrains.compose.material3", name = "material3", version.ref = "compose-material" }
 compose-components-resources = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose-plugin" }
 
 coil-core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil" }

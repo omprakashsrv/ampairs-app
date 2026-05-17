@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
@@ -10,9 +10,14 @@ plugins {
 
 kotlin {
     jvmToolchain(21)
-    androidTarget()
+
+    android {
+        namespace = "com.ampairs.auth"
+        compileSdk { version = release(libs.versions.android.compileSdk.get().toInt()) }
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
+    }
     jvm("desktop")
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 
@@ -25,13 +30,13 @@ kotlin {
                 implementation(libs.koin.compose.viewmodel)
                 implementation(libs.bundles.ktor.common)
                 // Compose
-                implementation(compose.runtime)
-                implementation(compose.ui)
-                implementation(compose.foundation)
-                implementation(compose.animation)
-                implementation(compose.material3)
-                implementation(compose.materialIconsExtended)
-                implementation(compose.components.resources)
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.animation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.material.icons.extended)
+                implementation(libs.compose.components.resources)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 implementation(libs.store5)
@@ -62,12 +67,10 @@ kotlin {
                 implementation(libs.ktor.client.okHttp)
             }
         }
-        val iosX64Main by getting
         val iosArm64Main by getting
         val iosSimulatorArm64Main by getting
         val iosMain by creating {
             dependsOn(commonMain.get())
-            iosX64Main.dependsOn(this)
             iosArm64Main.dependsOn(this)
             iosSimulatorArm64Main.dependsOn(this)
             dependencies {
@@ -85,18 +88,8 @@ dependencies {
     add("kspCommonMainMetadata", libs.room.compiler)
     add("kspAndroid", libs.room.compiler)
     add("kspDesktop", libs.room.compiler)
-    add("kspIosX64", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
-}
-
-android {
-    namespace = "com.ampairs.auth"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
 }
 
 tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {

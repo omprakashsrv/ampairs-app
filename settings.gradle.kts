@@ -27,14 +27,14 @@ dependencyResolutionManagement {
     }
 }
 
-include(":composeApp")
+include(":shared")
+include(":androidApp")
 include(":data:common")
 include(":tallyModule")
 include(
     ":feature:auth",
     ":feature:agent",
     ":feature:aws",
-    ":feature:network",
     ":feature:form",
     ":feature:unit",
     ":feature:update",
@@ -50,23 +50,3 @@ include(
     ":feature:workspace"
 )
 include(":thirdparty:androidx:paging:compose")
-include(
-    ":core:analytics",
-    ":core:base",
-    ":core:logging",
-    ":core:performance",
-    ":core:permissions",
-    ":core:powercontroller",
-    ":core:preferences",
-    ":core:notifications:core",
-    ":core:notifications:protos",
-    ":common:ui:compose",
-    ":common:imageloading",
-    ":shared:common",
-    ":shared:prod",
-    ":shared:qa",
-    ":ui:developer:log",
-    ":ui:developer:notifications",
-    ":ui:developer:settings",
-    ":tasks"
-)
