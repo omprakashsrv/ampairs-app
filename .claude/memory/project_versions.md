@@ -32,7 +32,19 @@ Versions from `gradle/libs.versions.toml`:
 | Kermit (logging) | 2.0.8 |
 | Lifecycle ViewModel | 2.9.6 |
 | Moko Permissions | 0.20.1 |
+| FileKit | 0.12.0 |
+| Haze (UI blur) | 1.7.2 |
+| Material3 Adaptive | 1.2.0 |
+| Maps Compose | 8.1.0 |
+| Play Services Location | 21.3.0 |
+| Play Services Auth | 21.5.0 |
+| Play Integrity | 1.6.0 |
+| benasher44 UUID | 0.8.4 |
+| Firebase Auth | 24.0.1 |
+| JMapViewer (desktop maps) | 2.24 |
 
 **Android SDK**: minSdk 24 / targetSdk 36 / compileSdk 36
+
+**App version**: versionName `1.0.0.17`, versionCode `17` (in `androidApp/build.gradle.kts`)
 
 **Why:** These versions are in the version catalog and are referenced across all modules. When adding dependencies, always add to `gradle/libs.versions.toml` and reference via version catalog aliases, not hardcoded strings.

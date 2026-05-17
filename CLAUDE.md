@@ -100,8 +100,15 @@ feature/{name}/src/
 | Background sync | WorkManager (Android) | 2.11.1 |
 | Paging | AndroidX Paging | 3.3.6 |
 | In-app billing | Play Billing / StoreKit | 8.3.0 |
+| File picking | FileKit | 0.12.0 |
+| Maps | Maps Compose (Android) | 8.1.0 |
+| Permissions | Moko Permissions | 0.20.1 |
+| UI blur | Haze | 1.7.2 |
+| Adaptive UI | Material3 Adaptive | 1.2.0 |
+| Location | Play Services Location (Android) | 21.3.0 |
+| UUID | benasher44/uuid | 0.8.4 |
 
-**Android SDK**: Min 24 / Target 36 / Compile 36 | **Java**: 21+
+**Android SDK**: Min 24 / Target 36 / Compile 36 | **Java**: 21+ | **App version**: 1.0.0.17 (versionCode 17)
 
 ---
 
