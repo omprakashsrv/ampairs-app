@@ -1,8 +1,6 @@
-import com.ampairs.shared.BuildConfig
 import com.ampairs.aws.s3.AwsS3Client
 import com.ampairs.aws.s3.S3Client
 import com.ampairs.common.DeviceService
-import com.ampairs.common.config.PlatformConfig
 import com.ampairs.common.database.AndroidDatabasePathProvider
 import com.ampairs.common.database.DatabasePathProvider
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
@@ -13,14 +11,6 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.dsl.bind
 import org.koin.dsl.module
-
-// Initialize PlatformConfig with BuildConfig values (BuildConfig is only available here in the app module)
-@Suppress("ObjectPropertyName")
-private val _platformConfigInit = PlatformConfig.configure(
-    apiBaseUrl = BuildConfig.API_BASE_URL,
-    environment = BuildConfig.ENVIRONMENT,
-    isDebug = BuildConfig.DEBUG
-)
 
 actual val platformModule: Module = module {
     this.single {

@@ -23,9 +23,9 @@ import com.ampairs.common.validation.phone.PhoneNumberValidator
 import com.ampairs.ui.theme.Dimensions
 import com.ampairs.ui.theme.AmpairsTheme
 import org.jetbrains.compose.resources.stringResource
-import ampairsapp.composeapp.generated.resources.Res
-import ampairsapp.composeapp.generated.resources.code
-import ampairsapp.composeapp.generated.resources.phone
+import ampairsapp.shared.generated.resources.Res
+import ampairsapp.shared.generated.resources.code
+import ampairsapp.shared.generated.resources.phone
 import androidx.compose.material3.TextFieldDefaults
 
 @Composable

@@ -4,29 +4,20 @@
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
 }
-android {
-    namespace = "androidx.paging.compose"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-}
-
 
 kotlin {
     jvmToolchain(17)
-    androidTarget()
     jvm()
     iosArm64()
     iosSimulatorArm64()
+    android {
+        namespace = "androidx.paging.compose"
+        compileSdk { version = release(libs.versions.android.compileSdk.get().toInt()) }
+    }
     sourceSets {
         commonMain {
             dependencies {

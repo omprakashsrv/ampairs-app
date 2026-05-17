@@ -1,24 +1,17 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.kotlinSerialization)
 }
-android {
-    namespace = "com.ampairs.aws"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-}
-
 
 kotlin {
     jvmToolchain(21)
-    androidTarget()
+
+    android {
+        namespace = "com.ampairs.aws"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+    }
     jvm("desktop")
     iosArm64()
     iosSimulatorArm64()

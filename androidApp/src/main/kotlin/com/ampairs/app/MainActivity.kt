@@ -2,7 +2,6 @@ package com.ampairs.app
 
 import MainView
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -11,10 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import coil3.ImageLoader
@@ -28,8 +24,8 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ActivityProvider
 import com.ampairs.common.ImageCacheKeyer
 import com.ampairs.common.httpClient
-import com.ampairs.common.update.InAppUpdateManager
-import com.ampairs.common.update.UpdateCheckResult
+import com.ampairs.app.update.InAppUpdateManager
+import com.ampairs.app.update.UpdateCheckResult
 import com.ampairs.customer.ui.components.contact.ContactPickerResultHolder
 import com.ampairs.customer.ui.components.contact.ContactPickerService
 import com.google.android.play.core.install.model.AppUpdateType

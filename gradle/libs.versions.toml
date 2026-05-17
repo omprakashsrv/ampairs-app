@@ -10,8 +10,8 @@ compose-tooling = "1.7.6"
 compose-plugin = "1.11.0"
 compose-material = "1.9.0"
 compose-material-icons = "1.7.3"
-kotlin = "2.3.20"
-ksp = "2.3.2"
+kotlin = "2.3.21"
+ksp = "2.3.7"
 androidx-room = "2.8.3"
 androidx-sqlite-bundled = "2.6.1"
 wire = "5.4.0"
@@ -179,6 +179,7 @@ androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
+kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

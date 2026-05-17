@@ -1,8 +1,8 @@
 package com.ampairs.common.components
 
-import ampairsapp.composeapp.generated.resources.Res
-import ampairsapp.composeapp.generated.resources.ic_add
-import ampairsapp.composeapp.generated.resources.ic_remove
+import ampairsapp.shared.generated.resources.Res
+import ampairsapp.shared.generated.resources.ic_add
+import ampairsapp.shared.generated.resources.ic_remove
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height

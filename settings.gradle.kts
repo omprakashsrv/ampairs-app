@@ -6,6 +6,7 @@ pluginManagement {
         google()
         gradlePluginPortal()
         mavenCentral()
+        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         maven("https://josm.openstreetmap.de/repository/releases/")
     }
 }
@@ -17,6 +18,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         // Add JOSM repository for OpenStreetMap jmapviewer library
         maven("https://josm.openstreetmap.de/repository/releases/")
     }
@@ -29,6 +31,7 @@ dependencyResolutionManagement {
 
 include(":shared")
 include(":androidApp")
+include(":desktopApp")
 include(":data:common")
 include(":tallyModule")
 include(

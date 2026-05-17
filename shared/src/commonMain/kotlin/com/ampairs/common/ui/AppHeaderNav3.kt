@@ -80,10 +80,10 @@ import com.ampairs.common.theme.ThemePreference
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.ui.LanguageSettingsDialog
-import ampairsapp.composeapp.generated.resources.Res
-import ampairsapp.composeapp.generated.resources.edit
-import ampairsapp.composeapp.generated.resources.settings_language
-import ampairsapp.composeapp.generated.resources.settings_logout
+import ampairsapp.shared.generated.resources.Res
+import ampairsapp.shared.generated.resources.edit
+import ampairsapp.shared.generated.resources.settings_language
+import ampairsapp.shared.generated.resources.settings_logout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject

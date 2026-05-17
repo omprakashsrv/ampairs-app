@@ -92,8 +92,8 @@ This mobile app is part of a **three-tier Ampairs ecosystem**:
 
 ### **Desktop**
 ```bash
-./gradlew shared:run                    # Run desktop app
-./gradlew shared:package               # Create native distributions
+./gradlew desktopApp:run               # Run desktop app
+./gradlew desktopApp:package           # Create native distributions
 ```
 
 ### **iOS** (Currently commented out)
