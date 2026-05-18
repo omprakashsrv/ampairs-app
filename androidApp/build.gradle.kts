@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.compose.compiler)
@@ -10,10 +12,8 @@ kotlin {
     jvmToolchain(21)
 }
 
-val localProperties = java.util.Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) load(f.inputStream())
-}
+val localProperties = Properties()
+rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { localProperties.load(it) }
 
 android {
     namespace = "com.ampairs.app"
