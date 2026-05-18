@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.ampairs.data.common.R
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -32,18 +33,15 @@ class AndroidAppUpdateEnforcer(
     
     private suspend fun showRequiredUpdateDialog() = suspendCancellableCoroutine<Unit> { continuation ->
         val alertDialog = AlertDialog.Builder(context)
-            .setTitle("App Update Required")
-            .setMessage(
-                "This version of the app is no longer supported due to security updates. " +
-                "Please update to the latest version to continue using the app."
-            )
+            .setTitle(context.getString(R.string.update_required_title))
+            .setMessage(context.getString(R.string.update_required_message))
             .setCancelable(false)
-            .setPositiveButton("Update Now") { dialog, _ ->
+            .setPositiveButton(context.getString(R.string.update_button_update_now)) { dialog, _ ->
                 openAppStore()
                 dialog.dismiss()
                 continuation.resume(Unit)
             }
-            .setNegativeButton("Exit") { dialog, _ ->
+            .setNegativeButton(context.getString(R.string.update_button_exit)) { dialog, _ ->
                 dialog.dismiss()
                 // Force close the app
                 android.os.Process.killProcess(android.os.Process.myPid())
@@ -60,18 +58,15 @@ class AndroidAppUpdateEnforcer(
     
     private suspend fun showRecommendedUpdateDialog(reason: String) = suspendCancellableCoroutine<Unit> { continuation ->
         val alertDialog = AlertDialog.Builder(context)
-            .setTitle("App Update Recommended")
-            .setMessage(
-                "A new version of the app is available with important security updates. $reason\n\n" +
-                "Would you like to update now?"
-            )
+            .setTitle(context.getString(R.string.update_recommended_title))
+            .setMessage(context.getString(R.string.update_recommended_message, reason))
             .setCancelable(true)
-            .setPositiveButton("Update Now") { dialog, _ ->
+            .setPositiveButton(context.getString(R.string.update_button_update_now)) { dialog, _ ->
                 openAppStore()
                 dialog.dismiss()
                 continuation.resume(Unit)
             }
-            .setNegativeButton("Later") { dialog, _ ->
+            .setNegativeButton(context.getString(R.string.update_button_later)) { dialog, _ ->
                 dialog.dismiss()
                 continuation.resume(Unit)
             }
