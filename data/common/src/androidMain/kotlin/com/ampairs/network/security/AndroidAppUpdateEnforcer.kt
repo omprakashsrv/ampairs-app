@@ -4,8 +4,16 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import com.ampairs.data.common.R
+import ampairsapp.data.common.generated.resources.Res
+import ampairsapp.data.common.generated.resources.update_button_exit
+import ampairsapp.data.common.generated.resources.update_button_later
+import ampairsapp.data.common.generated.resources.update_button_update_now
+import ampairsapp.data.common.generated.resources.update_recommended_message
+import ampairsapp.data.common.generated.resources.update_recommended_title
+import ampairsapp.data.common.generated.resources.update_required_message
+import ampairsapp.data.common.generated.resources.update_required_title
 import kotlinx.coroutines.suspendCancellableCoroutine
+import org.jetbrains.compose.resources.getString
 import kotlin.coroutines.resume
 
 class AndroidAppUpdateEnforcer(
@@ -31,51 +39,60 @@ class AndroidAppUpdateEnforcer(
         return allowNetworkRequests
     }
     
-    private suspend fun showRequiredUpdateDialog() = suspendCancellableCoroutine<Unit> { continuation ->
-        val alertDialog = AlertDialog.Builder(context)
-            .setTitle(context.getString(R.string.update_required_title))
-            .setMessage(context.getString(R.string.update_required_message))
-            .setCancelable(false)
-            .setPositiveButton(context.getString(R.string.update_button_update_now)) { dialog, _ ->
-                openAppStore()
-                dialog.dismiss()
-                continuation.resume(Unit)
-            }
-            .setNegativeButton(context.getString(R.string.update_button_exit)) { dialog, _ ->
-                dialog.dismiss()
-                // Force close the app
-                android.os.Process.killProcess(android.os.Process.myPid())
-                continuation.resume(Unit)
-            }
-            .create()
-        
-        alertDialog.show()
-        
-        continuation.invokeOnCancellation {
-            alertDialog.dismiss()
+    private suspend fun showRequiredUpdateDialog() {
+        val title = getString(Res.string.update_required_title)
+        val message = getString(Res.string.update_required_message)
+        val updateBtn = getString(Res.string.update_button_update_now)
+        val exitBtn = getString(Res.string.update_button_exit)
+
+        suspendCancellableCoroutine { continuation ->
+            val alertDialog = AlertDialog.Builder(context)
+                .setTitle(title)
+                .setMessage(message)
+                .setCancelable(false)
+                .setPositiveButton(updateBtn) { dialog, _ ->
+                    openAppStore()
+                    dialog.dismiss()
+                    continuation.resume(Unit)
+                }
+                .setNegativeButton(exitBtn) { dialog, _ ->
+                    dialog.dismiss()
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                    continuation.resume(Unit)
+                }
+                .create()
+
+            alertDialog.show()
+
+            continuation.invokeOnCancellation { alertDialog.dismiss() }
         }
     }
-    
-    private suspend fun showRecommendedUpdateDialog(reason: String) = suspendCancellableCoroutine<Unit> { continuation ->
-        val alertDialog = AlertDialog.Builder(context)
-            .setTitle(context.getString(R.string.update_recommended_title))
-            .setMessage(context.getString(R.string.update_recommended_message, reason))
-            .setCancelable(true)
-            .setPositiveButton(context.getString(R.string.update_button_update_now)) { dialog, _ ->
-                openAppStore()
-                dialog.dismiss()
-                continuation.resume(Unit)
-            }
-            .setNegativeButton(context.getString(R.string.update_button_later)) { dialog, _ ->
-                dialog.dismiss()
-                continuation.resume(Unit)
-            }
-            .create()
-        
-        alertDialog.show()
-        
-        continuation.invokeOnCancellation {
-            alertDialog.dismiss()
+
+    private suspend fun showRecommendedUpdateDialog(reason: String) {
+        val title = getString(Res.string.update_recommended_title)
+        val message = getString(Res.string.update_recommended_message, reason)
+        val updateBtn = getString(Res.string.update_button_update_now)
+        val laterBtn = getString(Res.string.update_button_later)
+
+        suspendCancellableCoroutine { continuation ->
+            val alertDialog = AlertDialog.Builder(context)
+                .setTitle(title)
+                .setMessage(message)
+                .setCancelable(true)
+                .setPositiveButton(updateBtn) { dialog, _ ->
+                    openAppStore()
+                    dialog.dismiss()
+                    continuation.resume(Unit)
+                }
+                .setNegativeButton(laterBtn) { dialog, _ ->
+                    dialog.dismiss()
+                    continuation.resume(Unit)
+                }
+                .create()
+
+            alertDialog.show()
+
+            continuation.invokeOnCancellation { alertDialog.dismiss() }
         }
     }
     
