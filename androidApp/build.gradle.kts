@@ -96,9 +96,6 @@ dependencies {
     // Android Activity + Compose integration
     implementation(libs.androidx.activity.compose)
 
-    // Compose Material3 (AlertDialog, Text, TextButton in MainActivity)
-    implementation(libs.compose.material3)
-
     // Koin Android
     implementation(libs.koin.android)
     implementation(libs.koin.core)
