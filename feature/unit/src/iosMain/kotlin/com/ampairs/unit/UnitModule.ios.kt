@@ -1,7 +1,6 @@
 package com.ampairs.unit
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
-import com.ampairs.common.database.createIosDatabase
 import com.ampairs.unit.data.db.UnitDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -19,7 +18,8 @@ import org.koin.dsl.module
 val unitPlatformModule: Module = module {
     factory<UnitDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
-        factory.createIosDatabase(
+        factory.createDatabase(
+            klass = UnitDatabase::class,
             moduleName = "unit"
         )
     }

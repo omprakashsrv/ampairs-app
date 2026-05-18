@@ -8,6 +8,7 @@ import com.ampairs.tax.calculation.model.TaxComponentResult
 import com.ampairs.tax.calculation.model.TransactionType
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
+import com.ampairs.tax.util.formatDecimal
 
 /**
  * UK VAT Strategy - Standard (20%), Reduced (5%), Zero-rated (0%)
@@ -147,7 +148,7 @@ class UKVATStrategy(
                         ratePercentage = componentConfig.rate,
                         taxableAmount = baseAmount,
                         taxAmount = taxAmount,
-                        description = "$vatType @ ${"%.1f".format(componentConfig.rate)}%",
+                        description = "$vatType @ ${componentConfig.rate.formatDecimal(1)}%",
                         isCompound = false
                     )
                 )

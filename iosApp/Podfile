@@ -2,6 +2,8 @@ target 'iosApp' do
   use_frameworks!
   platform :ios, '16.0'
   pod 'shared', :path => '../shared'
+  pod 'FirebaseCore'
+  pod 'FirebaseAuth'
 end
 
 # Enforce minimum deployment target for all pods

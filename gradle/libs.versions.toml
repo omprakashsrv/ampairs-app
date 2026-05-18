@@ -27,7 +27,6 @@ koin-compose = "4.1.1"
 paging-common = "3.3.6"
 image-loader = "1.10.0"
 aws-sdk = "1.5.44"
-file-picker = "3.1.0"
 splash-screen = "1.2.0"
 uuid = "0.8.4"
 adaptive = "1.2.0"
@@ -118,7 +117,6 @@ moko-permissions-core = { module = "dev.icerock.moko:permissions", version.ref =
 moko-permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "moko-permissions" }
 
 aws-s3 = { group = "aws.sdk.kotlin", name = "s3", version.ref = "aws-sdk" }
-file-picker = { group = "com.darkrockstudios", name = "mpfilepicker", version.ref = "file-picker" }
 uuid = { group = "com.benasher44", name = "uuid", version.ref = "uuid" }
 material3-adaptive = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive", version.ref = "adaptive" }
 material3-adaptive-layout = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-layout", version.ref = "adaptive" }

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.calculation.model.*
 import com.ampairs.tax.domain.model.TaxCode
+import com.ampairs.tax.util.formatDecimal
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.clickable
@@ -391,7 +392,7 @@ private fun TaxCalculationResultCard(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "₹${String.format("%.2f", result.baseAmount)}",
+                    text = "₹${result.baseAmount.formatDecimal()}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -423,7 +424,7 @@ private fun TaxCalculationResultCard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "₹${String.format("%.2f", result.totalTaxAmount)}",
+                    text = "₹${result.totalTaxAmount.formatDecimal()}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -442,7 +443,7 @@ private fun TaxCalculationResultCard(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    text = "₹${String.format("%.2f", result.totalAmount)}",
+                    text = "₹${result.totalAmount.formatDecimal()}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -491,12 +492,12 @@ private fun TaxComponentRow(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "on ₹${String.format("%.2f", component.taxableAmount)}",
+                    text = "on ₹${component.taxableAmount.formatDecimal()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "₹${String.format("%.2f", component.taxAmount)}",
+                    text = "₹${component.taxAmount.formatDecimal()}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )

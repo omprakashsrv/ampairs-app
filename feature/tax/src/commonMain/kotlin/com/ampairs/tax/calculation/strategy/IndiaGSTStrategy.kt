@@ -1,6 +1,7 @@
 package com.ampairs.tax.calculation.strategy
 
 import com.ampairs.common.sentry.ErrorTracking
+import com.ampairs.tax.util.formatDecimal
 import com.ampairs.tax.calculation.ITaxCalculationStrategy
 import com.ampairs.tax.calculation.model.TaxCalculationRequest
 import com.ampairs.tax.calculation.model.TaxCalculationResult
@@ -95,7 +96,7 @@ class IndiaGSTStrategy(
                         ratePercentage = componentConfig.rate,
                         taxableAmount = taxableAmount,
                         taxAmount = taxAmount,
-                        description = "${componentConfig.name} @ ${"%.2f".format(componentConfig.rate)}%",
+                        description = "${componentConfig.name} @ ${componentConfig.rate.formatDecimal(2)}%",
                         isCompound = false
                     )
                 )

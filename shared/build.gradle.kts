@@ -156,7 +156,6 @@ kotlin {
                 implementation(libs.filekit.dialogs)
                 implementation(libs.filekit.dialogs.compose)
 
-                implementation(libs.file.picker)
                 implementation(libs.uuid)
                 implementation(libs.material3.adaptive)
                 implementation(libs.material3.adaptive.layout)

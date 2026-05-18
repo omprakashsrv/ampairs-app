@@ -8,6 +8,7 @@ import com.ampairs.tax.calculation.model.TaxComponentResult
 import com.ampairs.tax.calculation.model.TransactionType
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
+import com.ampairs.tax.util.formatDecimal
 
 /**
  * EU VAT Strategy - Harmonized VAT system across EU member states
@@ -145,7 +146,7 @@ class EUVATStrategy(
                         ratePercentage = componentConfig.rate,
                         taxableAmount = baseAmount,
                         taxAmount = taxAmount,
-                        description = "$vatCategory @ ${"%.1f".format(componentConfig.rate)}%",
+                        description = "$vatCategory @ ${componentConfig.rate.formatDecimal(1)}%",
                         isCompound = false
                     )
                 )

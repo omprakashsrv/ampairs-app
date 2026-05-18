@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.kotlinCocoapods)
 }
 
 kotlin {
@@ -76,6 +77,25 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.darwin)
             }
+        }
+    }
+
+    cocoapods {
+        summary = "Ampairs Auth Feature"
+        version = "1.0.0"
+        homepage = "https://ampairs.in"
+        ios.deploymentTarget = "16.0"
+        framework {
+            baseName = "auth"
+            isStatic = true
+        }
+        pod("FirebaseCore") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+        pod("FirebaseAuth") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
         }
     }
 }

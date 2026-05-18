@@ -8,6 +8,7 @@ import com.ampairs.tax.calculation.model.TaxComponentResult
 import com.ampairs.tax.calculation.model.TransactionType
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
+import com.ampairs.tax.util.formatDecimal
 
 /**
  * USA Sales Tax Strategy - State + County + City + Special District taxes
@@ -106,7 +107,7 @@ class USASalesTaxStrategy(
                         ratePercentage = componentConfig.rate,
                         taxableAmount = baseAmount,
                         taxAmount = taxAmount,
-                        description = "${componentConfig.name} @ ${"%.3f".format(componentConfig.rate)}%",
+                        description = "${componentConfig.name} @ ${componentConfig.rate.formatDecimal(3)}%",
                         isCompound = false
                     )
                 )

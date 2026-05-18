@@ -190,15 +190,14 @@ import StoreKit
             var subscriptionInfo: [String: Any] = [:]
 
             // Get subscription period
-            if let period = subscription.subscriptionPeriod {
-                subscriptionInfo["period"] = "\(period.value) \(period.unit)"
-            }
+            let period = subscription.subscriptionPeriod
+            subscriptionInfo["period"] = "\(period.value) \(period.unit)"
 
             // Get subscription offers
             var offers: [[String: Any]] = []
             for offer in subscription.promotionalOffers {
                 offers.append([
-                    "id": offer.id,
+                    "id": offer.id ?? "",
                     "displayPrice": offer.displayPrice
                 ])
             }

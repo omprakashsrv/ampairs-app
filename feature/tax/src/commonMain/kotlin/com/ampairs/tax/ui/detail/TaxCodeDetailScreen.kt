@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.calculation.model.TaxCalculationResult
+import com.ampairs.tax.util.formatDecimal
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -393,7 +394,7 @@ private fun TaxCodeDetailContent(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "₹${String.format("%.2f", calculationResult.baseAmount)}",
+                            text = "₹${calculationResult.baseAmount.formatDecimal()}",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -410,7 +411,7 @@ private fun TaxCodeDetailContent(
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Text(
-                                text = "₹${String.format("%.2f", component.taxAmount)}",
+                                text = "₹${component.taxAmount.formatDecimal()}",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.primary
@@ -432,7 +433,7 @@ private fun TaxCodeDetailContent(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "₹${String.format("%.2f", calculationResult.totalTaxAmount)}",
+                            text = "₹${calculationResult.totalTaxAmount.formatDecimal()}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -450,7 +451,7 @@ private fun TaxCodeDetailContent(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "₹${String.format("%.2f", calculationResult.totalAmount)}",
+                            text = "₹${calculationResult.totalAmount.formatDecimal()}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )

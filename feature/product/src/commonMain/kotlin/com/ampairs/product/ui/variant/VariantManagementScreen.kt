@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.product.domain.ProductVariant
+import com.ampairs.tax.util.formatDecimal
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
@@ -357,7 +358,7 @@ private fun PriceChip(
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
             Text(
-                text = "%.2f".format(value),
+                text = value.formatDecimal(),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer

@@ -7,6 +7,7 @@ import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.calculation.model.TaxComponentResult
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
+import com.ampairs.tax.util.formatDecimal
 
 /**
  * Canada GST/HST/PST/QST Strategy - Complex multi-layered tax system
@@ -150,11 +151,7 @@ class CanadaGSTHSTStrategy(
                         ratePercentage = componentConfig.rate,
                         taxableAmount = taxableAmount,
                         taxAmount = taxAmount,
-                        description = if (false) {
-                            "$taxName @ ${"%.3f".format(componentConfig.rate)}% (compound)"
-                        } else {
-                            "$taxName @ ${"%.1f".format(componentConfig.rate)}%"
-                        },
+                        description = "$taxName @ ${componentConfig.rate.formatDecimal(1)}%",
                         isCompound = false
                     )
                 )
