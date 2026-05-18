@@ -16,7 +16,9 @@ These rules are enforced for all Claude Code interactions in this project.
 - Use `Kermit` or the domain-specific logger (`CustomerLogger`, etc.) — never `println()` or `Log.d()`
 - Add new Gradle dependencies via `gradle/libs.versions.toml` version catalog only — no hardcoded versions
 - Use `ApiUrlBuilder.{domain}Url("v1/path")` for all API URLs — never hardcoded strings
-- Load all user-visible strings from Android string resources (`strings.xml`) via `context.getString(R.string.xxx)` — never hardcode UI text in Kotlin source files; place strings in the module's own `androidMain/res/values/strings.xml`
+- Load all user-visible strings from resources — never hardcode UI text in Kotlin/Compose source files:
+  - **Android** (non-Compose): `context.getString(R.string.xxx)` — strings in the module's own `androidMain/res/values/strings.xml`
+  - **Compose Multiplatform UI**: `stringResource(Res.string.xxx)` — strings in the module's own `commonMain/composeResources/values/strings.xml`
 - Run `./gradlew shared:compileKotlinIosSimulatorArm64` to validate iOS compilation after any commonMain change
 
 ### MUST never do
