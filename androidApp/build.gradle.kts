@@ -10,6 +10,11 @@ kotlin {
     jvmToolchain(21)
 }
 
+val localProperties = java.util.Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(f.inputStream())
+}
+
 android {
     namespace = "com.ampairs.app"
     compileSdk { version = release(libs.versions.android.compileSdk.get().toInt()) }
@@ -40,6 +45,7 @@ android {
 
         buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.11:8080\"")
         buildConfigField("String", "ENVIRONMENT", "\"dev\"")
+        manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
 
     signingConfigs {

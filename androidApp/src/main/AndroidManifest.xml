@@ -11,11 +11,10 @@
         android:theme="@style/Theme.Splash"
         android:usesCleartextTraffic="true">
 
-        <!-- Google Maps API Key -->
-        <!-- TODO: Replace with your own Google Maps API key -->
+        <!-- Google Maps API Key — set MAPS_API_KEY in local.properties -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDGQ8TBa8rolSZaiIa7hFyQrB9JV4gQwqQ" />
+            android:value="${MAPS_API_KEY}" />
 
         <activity
             android:name="com.ampairs.app.MainActivity"
