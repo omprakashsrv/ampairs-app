@@ -16,6 +16,10 @@ iosApp/iosApp.xcodeproj/*
 !iosApp/iosApp.xcodeproj/project.pbxproj
 shared/shared.podspec
 
+# Firebase configuration (contains sensitive API keys)
+google-services.json
+GoogleService-Info.plist
+
 # Sentry configuration with auth token
 **/common-sentry.properties
 
