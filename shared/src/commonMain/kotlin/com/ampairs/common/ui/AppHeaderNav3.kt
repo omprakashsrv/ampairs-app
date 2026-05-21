@@ -74,8 +74,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.common.localization.localizedString
-import com.ampairs.common.theme.ThemeManager
 import com.ampairs.common.theme.ThemePreference
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
@@ -86,7 +84,9 @@ import ampairsapp.shared.generated.resources.settings_language
 import ampairsapp.shared.generated.resources.settings_logout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.ampairs.di.LocalAppGraph
+import com.ampairs.common.localization.LocalLocaleManager
+import com.ampairs.common.theme.LocalThemeManager
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * App header for Navigation 3.
@@ -436,7 +436,7 @@ private fun UserProfileMenuNav3(
         ) {
             ProfileMenuItemNav3(
                 icon = Icons.Default.Edit,
-                text = localizedString(Res.string.edit),
+                text = stringResource(Res.string.edit),
                 onClick = {
                     expanded = false
                     onEditProfile()
@@ -445,7 +445,7 @@ private fun UserProfileMenuNav3(
 
             ProfileMenuItemNav3(
                 icon = Icons.Default.Language,
-                text = localizedString(Res.string.settings_language),
+                text = stringResource(Res.string.settings_language),
                 onClick = {
                     expanded = false
                     showLanguageDialog = true
@@ -492,7 +492,7 @@ private fun UserProfileMenuNav3(
 
             ProfileMenuItemNav3(
                 icon = Icons.AutoMirrored.Filled.Logout,
-                text = localizedString(Res.string.settings_logout),
+                text = stringResource(Res.string.settings_logout),
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false
@@ -504,7 +504,7 @@ private fun UserProfileMenuNav3(
         // Language Settings Dialog
         if (showLanguageDialog) {
             LanguageSettingsDialog(
-                localeManager = LocalAppGraph.current.localeManager,
+                localeManager = LocalLocaleManager.current,
                 onDismiss = { showLanguageDialog = false }
             )
         }
@@ -650,7 +650,7 @@ private fun WorkspaceMenuItemNav3(
 private fun ThemeSettingsDialogNav3(
     onDismiss: () -> Unit
 ) {
-    val themeManager = LocalAppGraph.current.themeManager
+    val themeManager = LocalThemeManager.current
     val currentTheme by themeManager.themePreference.collectAsState()
     val scope = rememberCoroutineScope()
 

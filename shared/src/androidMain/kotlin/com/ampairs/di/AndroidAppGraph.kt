@@ -1,8 +1,6 @@
 package com.ampairs.di
 
 import android.content.Context
-import com.ampairs.aws.s3.AwsS3Client
-import com.ampairs.aws.s3.S3Client
 import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreAppPreferences
@@ -50,9 +48,6 @@ interface AndroidSharedPlatformModule {
 
         @Provides @SingleIn(AppScope::class)
         fun provideDeviceService(context: Context): DeviceService = AndroidDeviceService(context)
-
-        @Provides @SingleIn(AppScope::class)
-        fun provideS3Client(): S3Client = AwsS3Client()
 
         @Provides @SingleIn(AppScope::class)
         fun provideLocationService(context: Context): LocationService = LocationService(context)

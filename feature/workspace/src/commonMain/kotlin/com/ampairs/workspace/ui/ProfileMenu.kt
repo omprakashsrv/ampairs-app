@@ -1,30 +1,46 @@
 package com.ampairs.workspace.ui
 
+import ampairsapp.feature.workspace.generated.resources.Res
+import ampairsapp.feature.workspace.generated.resources.edit
+import ampairsapp.feature.workspace.generated.resources.settings_language
+import ampairsapp.feature.workspace.generated.resources.settings_logout
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import ampairsapp.feature.workspace.generated.resources.Res
-import ampairsapp.feature.workspace.generated.resources.*
-import coil3.compose.AsyncImage
-import com.ampairs.common.localization.localizedString
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ProfileMenu(
@@ -120,7 +136,7 @@ fun ProfileMenu(
         ) {
             ProfileMenuItem(
                 icon = Icons.Default.Edit,
-                text = localizedString(Res.string.edit),
+                text = stringResource(Res.string.edit),
                 onClick = {
                     expanded = false
                     onEditProfile()
@@ -134,7 +150,7 @@ fun ProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.Default.Language,
-                text = localizedString(Res.string.settings_language),
+                text = stringResource(Res.string.settings_language),
                 onClick = {
                     expanded = false
                     onLanguageSettings()
@@ -148,7 +164,7 @@ fun ProfileMenu(
 
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Default.Logout,
-                text = localizedString(Res.string.settings_logout),
+                text = stringResource(Res.string.settings_logout),
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {
                     expanded = false

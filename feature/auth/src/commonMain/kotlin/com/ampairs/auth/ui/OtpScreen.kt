@@ -52,8 +52,8 @@ import ampairsapp.feature.auth.generated.resources.*
 import androidx.compose.material.icons.automirrored.filled.Message
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.ampairs.common.localization.localizedString
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun OtpScreen(
@@ -239,13 +239,13 @@ fun OtpScreen(
                             strokeWidth = 4.dp
                         )
                         Text(
-                            text = localizedString(Res.string.otp_waiting_for_auto_verification),
+                            text = stringResource(Res.string.otp_waiting_for_auto_verification),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = localizedString(Res.string.otp_auto_verification_desc),
+                            text = stringResource(Res.string.otp_auto_verification_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -257,7 +257,7 @@ fun OtpScreen(
                                 waitingForAutoVerification = false
                             }
                         ) {
-                            Text(localizedString(Res.string.otp_enter_manually))
+                            Text(stringResource(Res.string.otp_enter_manually))
                         }
                     }
                 } else {
@@ -350,7 +350,7 @@ fun OtpScreen(
                                     .size(24.dp)
                             )
                         } else {
-                            Text(localizedString(Res.string.otp_verify))
+                            Text(stringResource(Res.string.otp_verify))
                         }
                     }
 
@@ -384,7 +384,7 @@ fun OtpScreen(
                             if (resendTimer > 0) {
                                 "Resend code (${resendTimer}s)"
                             } else {
-                                localizedString(Res.string.otp_resend)
+                                stringResource(Res.string.otp_resend)
                             }
                         )
                     }

@@ -21,7 +21,7 @@ import com.ampairs.auth.ui.UserSelectionScreen
 import com.ampairs.auth.ui.UserUpdateScreen
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.config.AppPreferencesDataStore
-import com.ampairs.common.localization.LocaleManager
+import com.ampairs.common.localization.LocalLocaleManager
 import com.ampairs.common.model.onError
 import com.ampairs.common.model.onSuccess
 import com.ampairs.common.state.AppHeaderStateManager
@@ -106,10 +106,8 @@ fun authEntryProvider(
     is AuthRoute.LoginRoot -> NavEntry(key) {
         val tokenRepository = LocalAppGraph.current.tokenRepository
         val userWorkspaceRepository = LocalAppGraph.current.userWorkspaceRepository
-        val localeManager = LocalAppGraph.current.localeManager
-
         LoginScreen(
-            localeManager = localeManager,
+            localeManager = LocalLocaleManager.current,
             onLoginStatus = { loginStatus, userEntity ->
             if (loginStatus == LoginStatus.LOGGED_IN) {
                 if (userEntity?.first_name.isNullOrBlank()) {

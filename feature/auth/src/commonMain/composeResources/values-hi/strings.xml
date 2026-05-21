@@ -1,0 +1,199 @@
+<resources>
+    <!-- Common -->
+    <string name="app_name">ऐम्पेयर्स</string>
+    <string name="ok">ठीक है</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="save">सहेजें</string>
+    <string name="delete">हटाएं</string>
+    <string name="edit">संपादित करें</string>
+    <string name="search">खोजें</string>
+    <string name="loading">लोड हो रहा है...</string>
+    <string name="error">त्रुटि</string>
+    <string name="success">सफलता</string>
+    <string name="retry">पुनः प्रयास करें</string>
+    <string name="close">बंद करें</string>
+    <string name="yes">हाँ</string>
+    <string name="no">नहीं</string>
+    <string name="next">अगला</string>
+    <string name="confirm">पुष्टि करें</string>
+    <string name="create_new">नया बनाएं</string>
+    <string name="update">अपडेट</string>
+    <string name="discard">छोड़ें</string>
+    <string name="share">साझा करें</string>
+    <string name="please_check_network_connection">कृपया अपना नेटवर्क कनेक्शन जांचें</string>
+
+    <!-- Login Screen -->
+    <string name="login_welcome_tagline">आपका संपूर्ण व्यापार प्रबंधन समाधान</string>
+    <string name="login_get_started">शुरू करें</string>
+    <string name="login_feature_customer_management">ग्राहक प्रबंधन</string>
+    <string name="login_feature_customer_management_desc">अपने ग्राहक संबंधों को कुशलतापूर्वक प्रबंधित करें</string>
+    <string name="login_feature_inventory_control">इन्वेंटरी नियंत्रण</string>
+    <string name="login_feature_inventory_control_desc">उत्पादों और स्टॉक को आसानी से ट्रैक करें</string>
+    <string name="login_feature_smart_invoicing">स्मार्ट बिलिंग</string>
+    <string name="login_feature_smart_invoicing_desc">बिना प्रयास के चालान बनाएं और प्रबंधित करें</string>
+    <string name="login_select_language">भाषा चुनें</string>
+    <string name="login_language_prompt">अपनी पसंदीदा भाषा चुनें</string>
+
+    <!-- Phone Number Screen -->
+    <string name="phone_number_title">अपना फ़ोन नंबर दर्ज करें</string>
+    <string name="phone_number_enter">फ़ोन नंबर</string>
+    <string name="phone_number_placeholder">9876543210</string>
+    <string name="phone_number_continue">जारी रखें</string>
+    <string name="phone_number_invalid">कृपया एक मान्य फ़ोन नंबर दर्ज करें</string>
+    <string name="phone_user_exists">उपयोगकर्ता मौजूद है</string>
+    <string name="phone_user_already_logged_in">उपयोगकर्ता पहले से लॉग इन है</string>
+    <string name="phone_user_already_logged_in_desc">इस फ़ोन नंबर वाला उपयोगकर्ता पहले से लॉग इन है:</string>
+    <string name="phone_would_you_like_to_switch">क्या आप इस खाते पर स्विच करना चाहेंगे?</string>
+    <string name="phone_switch_to_this_user">इस उपयोगकर्ता पर स्विच करें</string>
+    <string name="phone_login">लॉग इन</string>
+
+    <!-- Auth Screen Texts -->
+    <string name="login">लॉग इन करें</string>
+    <string name="verify_otp">OTP सत्यापित करें</string>
+    <string name="resend_otp">OTP पुनः भेजें</string>
+    <string name="device_sessions">डिवाइस सत्र</string>
+    <string name="logout_all_devices">सभी डिवाइस से लॉगआउट करें</string>
+    <string name="loading_device_sessions">डिवाइस सत्र लोड हो रहे हैं...</string>
+    <string name="otp">OTP</string>
+    <string name="enter_otp_instruction">फ़ोन पर प्राप्त 6 अंकों का OTP दर्ज करें</string>
+    <string name="phone">फ़ोन</string>
+    <string name="loading_user_details">उपयोगकर्ता विवरण लोड हो रहा है...</string>
+    <string name="update_your_profile">अपनी प्रोफ़ाइल अपडेट करें</string>
+    <string name="first_name">पहला नाम</string>
+    <string name="last_name">अंतिम नाम</string>
+    <string name="update_profile">प्रोफ़ाइल अपडेट करें</string>
+    <string name="error_colon">त्रुटि: </string>
+
+    <!-- OTP Screen -->
+    <string name="otp_title">OTP सत्यापित करें</string>
+    <string name="otp_enter">OTP दर्ज करें</string>
+    <string name="otp_placeholder">123456</string>
+    <string name="otp_verify">सत्यापित करें</string>
+    <string name="otp_resend">OTP पुनः भेजें</string>
+    <string name="otp_invalid">अमान्य OTP</string>
+    <string name="otp_sent">OTP सफलतापूर्वक भेजा गया</string>
+    <string name="otp_verifying">सत्यापित हो रहा है...</string>
+    <string name="otp_enter_code">अपने फ़ोन पर भेजा गया कोड दर्ज करें</string>
+    <string name="otp_waiting_for_auto_verification">स्वचालित सत्यापन की प्रतीक्षा है...</string>
+    <string name="otp_auto_verification_desc">हम जांच कर रहे हैं कि क्या आपका डिवाइस स्वचालित रूप से सत्यापित हो सकता है।\nइसमें आमतौर पर कुछ सेकंड लगते हैं।</string>
+    <string name="otp_enter_manually">कोड मैन्युअल रूप से दर्ज करें</string>
+
+    <!-- Customer Screen -->
+    <string name="customer_title">ग्राहक</string>
+    <string name="customer_add">ग्राहक जोड़ें</string>
+    <string name="customer_search">ग्राहक खोजें...</string>
+    <string name="customer_name">ग्राहक का नाम</string>
+    <string name="customer_phone">फ़ोन नंबर</string>
+    <string name="customer_email">ईमेल</string>
+    <string name="customer_address">पता</string>
+    <string name="customer_save">ग्राहक सहेजें</string>
+    <string name="customer_delete">ग्राहक हटाएं</string>
+    <string name="customer_edit">ग्राहक संपादित करें</string>
+    <string name="customer_no_customers">कोई ग्राहक नहीं मिला</string>
+    <string name="customer_add_first">अपना पहला ग्राहक जोड़ें</string>
+    <string name="customer_details">ग्राहक विवरण</string>
+    <string name="customer_list">ग्राहक सूची</string>
+    <string name="customer_type">ग्राहक प्रकार</string>
+    <string name="customer_group">ग्राहक समूह</string>
+    <string name="customer_gst_number">GST नंबर</string>
+    <string name="customer_pan_number">PAN नंबर</string>
+
+    <!-- Customer Screen Texts (Legacy) -->
+    <string name="search_customer">ग्राहक खोजें</string>
+    <string name="name">नाम</string>
+    <string name="landline">लैंडलाइन</string>
+    <string name="email">ईमेल</string>
+    <string name="gstin">GSTIN</string>
+    <string name="registered_address">पंजीकृत पता</string>
+    <string name="street">गली</string>
+    <string name="street_1">गली 1</string>
+    <string name="address">पता</string>
+    <string name="city">शहर</string>
+    <string name="pincode">पिनकोड</string>
+    <string name="state">राज्य</string>
+
+    <!-- Product Screen Texts -->
+    <string name="search_products">उत्पाद खोजें</string>
+    <string name="no_categories">कोई श्रेणी नहीं</string>
+    <string name="code">कोड</string>
+    <string name="group">समूह</string>
+    <string name="category">श्रेणी</string>
+    <string name="sub_category">उप-श्रेणी</string>
+    <string name="brand">ब्रांड</string>
+    <string name="tax_code">कर कोड</string>
+    <string name="mrp">MRP</string>
+    <string name="dp">DP</string>
+    <string name="selling_price">विक्रय मूल्य</string>
+    <string name="buying_price">क्रय मूल्य</string>
+    <string name="stock">स्टॉक</string>
+
+    <!-- Inventory Screen Texts -->
+    <string name="search_inventory">इन्वेंटरी खोजें</string>
+
+    <!-- Order Screen Texts -->
+    <string name="discount_percent">छूट % :</string>
+    <string name="price">मूल्य :</string>
+    <string name="create_invoice">चालान बनाएं</string>
+
+    <!-- Tax Screen Texts -->
+    <string name="hsn_sac_code">HSN/SAC कोड</string>
+    <string name="description">विवरण</string>
+    <string name="effective_from">प्रभावी से</string>
+    <string name="tax_spec">कर विनिर्देश</string>
+    <string name="taxes">कर</string>
+    <string name="percent">प्रतिशत</string>
+    <string name="formatted_name">स्वरूपित नाम</string>
+    <string name="search_code">कोड खोजें</string>
+
+    <!-- Business/Workspace Screen -->
+    <string name="workspace_title">कार्यस्थान</string>
+    <string name="workspace_select">कार्यस्थान चुनें</string>
+    <string name="workspace_create">कार्यस्थान बनाएं</string>
+    <string name="workspace_name">कार्यस्थान का नाम</string>
+    <string name="workspace_description">विवरण</string>
+    <string name="workspace_no_workspaces">कोई कार्यस्थान नहीं मिला</string>
+    <string name="workspace_add_first">अपना पहला कार्यस्थान बनाएं</string>
+    <string name="workspace_switch">कार्यस्थान बदलें</string>
+    <string name="workspace_settings">कार्यस्थान सेटिंग</string>
+    <string name="workspace_modules">मॉड्यूल</string>
+    <string name="workspace_no_modules">कोई मॉड्यूल उपलब्ध नहीं</string>
+
+    <!-- Settings -->
+    <string name="settings_title">सेटिंग</string>
+    <string name="settings_language">भाषा</string>
+    <string name="settings_theme">थीम</string>
+    <string name="settings_account">खाता</string>
+    <string name="settings_about">के बारे में</string>
+    <string name="settings_logout">लॉगआउट</string>
+    <string name="settings_version">संस्करण</string>
+    <string name="settings_change_language">भाषा बदलें</string>
+    <string name="settings_select_language">भाषा चुनें</string>
+
+    <!-- Security Messages -->
+    <string name="app_update_required">सुरक्षा कारणों से ऐप अपडेट आवश्यक है</string>
+    <string name="network_requests_blocked">सुरक्षा नीति के कारण नेटवर्क अनुरोध अवरुद्ध हैं</string>
+
+    <!-- Desktop Browser Auth -->
+    <string name="desktop_auth_sign_in">साइन इन करें</string>
+    <string name="desktop_auth_welcome">ऐम्पेयर्स में आपका स्वागत है</string>
+    <string name="desktop_auth_sign_in_securely">अपने वेब ब्राउज़र से सुरक्षित रूप से साइन इन करें</string>
+    <string name="desktop_auth_click_button_below">अपने ब्राउज़र को खोलने और अपने फ़ोन नंबर से प्रमाणीकरण पूरा करने के लिए नीचे दिए गए बटन पर क्लिक करें।</string>
+    <string name="desktop_auth_sign_in_with_browser">ब्राउज़र से साइन इन करें</string>
+    <string name="desktop_auth_waiting_for_authentication">प्रमाणीकरण की प्रतीक्षा है...</string>
+    <string name="desktop_auth_complete_in_browser">अपने ब्राउज़र में प्रमाणीकरण पूरा करें।\nजब हो जाएगा तो यह विंडो स्वचालित रूप से अपडेट हो जाएगी।</string>
+    <string name="desktop_auth_browser_no_deep_links">ब्राउज़र डीप लिंक का समर्थन नहीं करता? यहाँ टोकन पेस्ट करें</string>
+    <string name="desktop_auth_cancel">रद्द करें</string>
+    <string name="desktop_auth_paste_tokens">प्रमाणीकरण टोकन पेस्ट करें</string>
+    <string name="desktop_auth_paste_instructions">अपने ब्राउज़र में प्रमाणीकरण पूरा करने के बाद, JSON टोकन कॉपी करें और नीचे पेस्ट करें।</string>
+    <string name="desktop_auth_json_tokens">JSON टोकन</string>
+    <string name="desktop_auth_paste_entire_json">ब्राउज़र से पूरा JSON ऑब्जेक्ट पेस्ट करें</string>
+    <string name="desktop_auth_back">वापस</string>
+    <string name="desktop_auth_how_it_works">यह कैसे काम करता है:</string>
+    <string name="desktop_auth_step_1">ब्राउज़र सुरक्षित प्रमाणीकरण पृष्ठ पर खुलता है</string>
+    <string name="desktop_auth_step_2">अपना फ़ोन नंबर दर्ज करें और OTP से सत्यापित करें</string>
+    <string name="desktop_auth_step_3">डेस्कटॉप ऐप स्वचालित रूप से साइन इन पूरा करता है</string>
+    <string name="desktop_auth_credentials_not_stored">आपके क्रेडेंशियल इस डिवाइस पर कभी संग्रहीत नहीं किए जाते।</string>
+
+    <!-- General -->
+    <string name="translated_description_image">छवि में क्या है इसका अनुवादित विवरण</string>
+</resources>

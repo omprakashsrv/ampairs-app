@@ -1,7 +1,5 @@
 package com.ampairs.di
 
-import com.ampairs.aws.s3.IosS3Client
-import com.ampairs.aws.s3.S3Client
 import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreAppPreferences
@@ -49,9 +47,6 @@ interface IosSharedPlatformModule {
 
         @Provides @SingleIn(AppScope::class)
         fun provideDeviceService(): DeviceService = IosDeviceService()
-
-        @Provides @SingleIn(AppScope::class)
-        fun provideS3Client(): S3Client = IosS3Client()
 
         @Provides @SingleIn(AppScope::class)
         fun provideLocationService(): LocationService = LocationService()

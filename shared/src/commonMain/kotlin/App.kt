@@ -9,25 +9,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import com.ampairs.common.localization.LocaleProvider
+import com.ampairs.common.localization.LocalLocaleManager
+import com.ampairs.common.theme.LocalThemeManager
+import com.ampairs.di.AppGraph
 import com.ampairs.di.LocalAppGraph
 import com.ampairs.ui.theme.PlatformAmpairsTheme
+import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 
 @Composable
 fun App(
-    appGraph: com.ampairs.di.AppGraph,
-    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
+    appGraph: AppGraph,
+    onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
     CompositionLocalProvider(
         LocalAppGraph provides appGraph,
         LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
+        LocalThemeManager provides appGraph.themeManager,
+        LocalLocaleManager provides appGraph.localeManager,
     ) {
-        val themeManager = appGraph.themeManager
-        val localeManager = appGraph.localeManager
-        val isDarkTheme = themeManager.isDarkTheme()
+        val isDarkTheme = LocalThemeManager.current.isDarkTheme()
 
-        LocaleProvider(localeManager) {
+        LocaleProvider(LocalLocaleManager.current) {
             PlatformAmpairsTheme(darkTheme = isDarkTheme) {
                 Box(
                     modifier = Modifier

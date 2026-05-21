@@ -15,6 +15,9 @@ import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 
+val LocalThemeManager: ProvidableCompositionLocal<ThemeManager> =
+    compositionLocalOf { error("LocalThemeManager not provided") }
+
 @Inject @SingleIn(AppScope::class)
 class ThemeManager(
     private val repository: ThemeRepository

@@ -1,13 +1,60 @@
 package com.ampairs.auth.ui
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.selection.SelectionContainer
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.desktop_auth_back
+import ampairsapp.feature.auth.generated.resources.desktop_auth_browser_no_deep_links
+import ampairsapp.feature.auth.generated.resources.desktop_auth_cancel
+import ampairsapp.feature.auth.generated.resources.desktop_auth_click_button_below
+import ampairsapp.feature.auth.generated.resources.desktop_auth_complete_in_browser
+import ampairsapp.feature.auth.generated.resources.desktop_auth_credentials_not_stored
+import ampairsapp.feature.auth.generated.resources.desktop_auth_how_it_works
+import ampairsapp.feature.auth.generated.resources.desktop_auth_json_tokens
+import ampairsapp.feature.auth.generated.resources.desktop_auth_paste_entire_json
+import ampairsapp.feature.auth.generated.resources.desktop_auth_paste_instructions
+import ampairsapp.feature.auth.generated.resources.desktop_auth_paste_tokens
+import ampairsapp.feature.auth.generated.resources.desktop_auth_sign_in
+import ampairsapp.feature.auth.generated.resources.desktop_auth_sign_in_securely
+import ampairsapp.feature.auth.generated.resources.desktop_auth_sign_in_with_browser
+import ampairsapp.feature.auth.generated.resources.desktop_auth_step_1
+import ampairsapp.feature.auth.generated.resources.desktop_auth_step_2
+import ampairsapp.feature.auth.generated.resources.desktop_auth_step_3
+import ampairsapp.feature.auth.generated.resources.desktop_auth_waiting_for_authentication
+import ampairsapp.feature.auth.generated.resources.desktop_auth_welcome
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -16,12 +63,10 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.auth.deeplink.DeepLinkEvent
 import com.ampairs.auth.deeplink.DeepLinkHandler
 import com.ampairs.auth.viewmodel.LoginViewModel
-import com.ampairs.common.localization.localizedString
-import ampairsapp.feature.auth.generated.resources.Res
-import ampairsapp.feature.auth.generated.resources.*
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Desktop Browser Authentication Screen
@@ -95,7 +140,7 @@ fun DesktopBrowserAuthScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(localizedString(Res.string.desktop_auth_sign_in)) },
+                title = { Text(stringResource(Res.string.desktop_auth_sign_in)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -134,7 +179,7 @@ fun DesktopBrowserAuthScreen(
 
             // Title
             Text(
-                text = localizedString(Res.string.desktop_auth_welcome),
+                text = stringResource(Res.string.desktop_auth_welcome),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
@@ -165,7 +210,7 @@ fun DesktopBrowserAuthScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = localizedString(Res.string.desktop_auth_waiting_for_authentication),
+                                text = stringResource(Res.string.desktop_auth_waiting_for_authentication),
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
@@ -174,7 +219,7 @@ fun DesktopBrowserAuthScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = localizedString(Res.string.desktop_auth_complete_in_browser),
+                                text = stringResource(Res.string.desktop_auth_complete_in_browser),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
@@ -194,7 +239,7 @@ fun DesktopBrowserAuthScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(localizedString(Res.string.desktop_auth_browser_no_deep_links))
+                                Text(stringResource(Res.string.desktop_auth_browser_no_deep_links))
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -208,12 +253,12 @@ fun DesktopBrowserAuthScreen(
                                     pasteError = null
                                 }
                             ) {
-                                Text(localizedString(Res.string.desktop_auth_cancel))
+                                Text(stringResource(Res.string.desktop_auth_cancel))
                             }
                         } else {
                             // Manual token paste UI
                             Text(
-                                text = localizedString(Res.string.desktop_auth_paste_tokens),
+                                text = stringResource(Res.string.desktop_auth_paste_tokens),
                                 style = MaterialTheme.typography.titleMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
@@ -222,7 +267,7 @@ fun DesktopBrowserAuthScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = localizedString(Res.string.desktop_auth_paste_instructions),
+                                text = stringResource(Res.string.desktop_auth_paste_instructions),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
@@ -240,7 +285,7 @@ fun DesktopBrowserAuthScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(120.dp),
-                                label = { Text(localizedString(Res.string.desktop_auth_json_tokens)) },
+                                label = { Text(stringResource(Res.string.desktop_auth_json_tokens)) },
                                 placeholder = {
                                     Text(
                                         """{"access_token": "...", "refresh_token": "..."}""",
@@ -248,7 +293,7 @@ fun DesktopBrowserAuthScreen(
                                     )
                                 },
                                 supportingText = {
-                                    Text(localizedString(Res.string.desktop_auth_paste_entire_json))
+                                    Text(stringResource(Res.string.desktop_auth_paste_entire_json))
                                 },
                                 isError = pasteError != null,
                                 textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
@@ -279,7 +324,7 @@ fun DesktopBrowserAuthScreen(
                                     },
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text(localizedString(Res.string.desktop_auth_back))
+                                    Text(stringResource(Res.string.desktop_auth_back))
                                 }
 
                                 Button(
@@ -306,7 +351,7 @@ fun DesktopBrowserAuthScreen(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(localizedString(Res.string.desktop_auth_sign_in))
+                                    Text(stringResource(Res.string.desktop_auth_sign_in))
                                 }
                             }
 
@@ -321,7 +366,7 @@ fun DesktopBrowserAuthScreen(
                                     pasteError = null
                                 }
                             ) {
-                                Text(localizedString(Res.string.desktop_auth_cancel))
+                                Text(stringResource(Res.string.desktop_auth_cancel))
                             }
                         }
                     }
@@ -339,7 +384,7 @@ fun DesktopBrowserAuthScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = localizedString(Res.string.desktop_auth_sign_in_securely),
+                            text = stringResource(Res.string.desktop_auth_sign_in_securely),
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
@@ -348,7 +393,7 @@ fun DesktopBrowserAuthScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = localizedString(Res.string.desktop_auth_click_button_below),
+                            text = stringResource(Res.string.desktop_auth_click_button_below),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
@@ -376,7 +421,7 @@ fun DesktopBrowserAuthScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = localizedString(Res.string.desktop_auth_sign_in_with_browser),
+                                text = stringResource(Res.string.desktop_auth_sign_in_with_browser),
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
@@ -422,19 +467,19 @@ fun DesktopBrowserAuthScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = localizedString(Res.string.desktop_auth_how_it_works),
+                            text = stringResource(Res.string.desktop_auth_how_it_works),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        BulletPoint(localizedString(Res.string.desktop_auth_step_1))
-                        BulletPoint(localizedString(Res.string.desktop_auth_step_2))
-                        BulletPoint(localizedString(Res.string.desktop_auth_step_3))
+                        BulletPoint(stringResource(Res.string.desktop_auth_step_1))
+                        BulletPoint(stringResource(Res.string.desktop_auth_step_2))
+                        BulletPoint(stringResource(Res.string.desktop_auth_step_3))
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = localizedString(Res.string.desktop_auth_credentials_not_stored),
+                            text = stringResource(Res.string.desktop_auth_credentials_not_stored),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.fillMaxWidth(),

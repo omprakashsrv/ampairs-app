@@ -2,44 +2,41 @@ package com.ampairs.common.localization
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 @Inject @SingleIn(AppScope::class)
 class LocaleManager(
     private val appPreferences: AppPreferencesDataStore
 ) {
-    /**
-     * Current language code flow (e.g., "en", "hi")
-     */
-    val currentLanguageCode: Flow<String> = appPreferences.getLanguagePreference()
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    /**
-     * Current language as enum
-     */
-    val currentLanguage: Flow<Language> = currentLanguageCode.map { code ->
-        Language.fromCode(code)
-    }
+    val currentLanguageCode: StateFlow<String> = appPreferences.getLanguagePreference()
+        .stateIn(scope, SharingStarted.Eagerly, "en")
 
-    /**
-     * Set the application language
-     */
+    val currentLanguage: StateFlow<Language> = currentLanguageCode
+        .map { Language.fromCode(it) }
+        .stateIn(scope, SharingStarted.Eagerly, Language.ENGLISH)
+
     suspend fun setLanguage(language: Language) {
         appPreferences.setLanguagePreference(language.code)
-        // Platform-specific locale configuration will be triggered
         configureLocale(language.code)
     }
 
-    /**
-     * Set language by code
-     */
     suspend fun setLanguageCode(code: String) {
         appPreferences.setLanguagePreference(code)
         configureLocale(code)
@@ -51,6 +48,9 @@ class LocaleManager(
  * This should be implemented using expect/actual pattern for each platform
  */
 expect fun configureLocale(languageCode: String)
+
+val LocalLocaleManager: ProvidableCompositionLocal<LocaleManager> =
+    compositionLocalOf { error("LocalLocaleManager not provided") }
 
 /**
  * CompositionLocal for current language code
@@ -65,14 +65,19 @@ fun LocaleProvider(
     localeManager: LocaleManager,
     content: @Composable () -> Unit
 ) {
-    val languageCode by localeManager.currentLanguageCode.collectAsState("en")
+    val languageCode by localeManager.currentLanguageCode.collectAsState()
 
-    // Apply platform-specific locale configuration
     PlatformLocaleConfiguration(languageCode) {
         CompositionLocalProvider(
             LocalLanguageCode provides languageCode,
-            content = content
-        )
+        ) {
+            // key() forces full subtree recreation when language changes so that
+            // stringResource() re-reads Locale.getDefault() with the new locale.
+            // LocalComposeEnvironment is internal in CMP — this is the official workaround.
+            key(languageCode) {
+                content()
+            }
+        }
     }
 }
 

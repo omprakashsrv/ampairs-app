@@ -1,5 +1,4 @@
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -7,9 +6,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyShortcut
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Window
@@ -111,10 +107,6 @@ private fun ApplicationScope.MainWindow(state: AppWindowState, appGraph: Desktop
 
         MainView(
             appGraph = appGraph,
-            onLoggedIn = {
-                println("MainWindow: onLoggedIn callback - changing from $loggedIn to $it")
-                loggedIn = it
-            },
             onNavigationServiceReady = {
                 println("MainWindow: Callback received navigationService: ${if (it != null) "NOT NULL" else "NULL"}")
                 navigationService = it

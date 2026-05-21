@@ -24,6 +24,7 @@ These rules are enforced for all Claude Code interactions in this project.
 - Run `./gradlew shared:compileKotlinIosSimulatorArm64` to validate iOS compilation after any commonMain change
 
 ### MUST never do
+- Access `LocalAppGraph.current` inside a `@Composable` — screens must only talk to their ViewModel; the ViewModel receives all deps via Metro injection
 - Put `java.*` or `android.*` imports in `commonMain` source sets
 - Create a new `DataStore<Preferences>` instance — always reuse the existing one from `data/common/`
 - Allow the repository to generate UIDs as a fallback
@@ -42,6 +43,25 @@ These rules are enforced for all Claude Code interactions in this project.
 - Shared infrastructure (DB paths, DataStore, factories) → `data/common/`
 - Navigation wiring and top-level DI → `shared/`
 - New feature module → create under `feature/` and add to `settings.gradle.kts`
+
+### UI / ViewModel boundary (Metro pattern)
+
+The strict layering rule — no exceptions:
+```
+Metro injects deps → ViewModel
+ViewModel exposes StateFlow / UiEvent → Screen (@Composable)
+Screen has zero knowledge of repos, managers, or LocalAppGraph
+```
+
+**Screens**: declare `viewModel: XxxViewModel = metroViewModel()` as a trailing default param. Never pass a ViewModel from an entry provider — let Metro create it.
+
+**Entry providers**: only wire navigation callbacks and route key params. They may read `LocalAppGraph.current` solely to pass a **repository** to a pane-screen that still needs it for an AssistedInject ViewModel (e.g. `InvoicePaneScreen(invoiceRepository = graph.invoiceRepository)`). All other `LocalAppGraph.current` usage in entry providers is a migration gap to be removed.
+
+**Cross-cutting ambient values** (ThemeManager, LocaleManager): do NOT pull via `LocalAppGraph.current` inside composables. Provide them as typed `CompositionLocal`s in `App.kt` (e.g. `LocalThemeManager`) so composables remain decoupled from the graph.
+
+**AppGraph interface**: must contain only `val` repository/service/store properties and `val subscriptionViewModelFactory`. No `fun create*ViewModel()` methods — Metro auto-wires ViewModels via `@ContributesIntoMap` + `@ViewModelKey` + `@Inject` on the ViewModel class.
+
+---
 
 ### Koin DI chain for every new feature module
 ```
