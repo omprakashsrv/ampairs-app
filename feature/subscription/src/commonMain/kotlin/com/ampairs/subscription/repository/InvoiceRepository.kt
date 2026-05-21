@@ -2,6 +2,7 @@ package com.ampairs.subscription.repository
 
 import com.ampairs.subscription.api.InvoiceApi
 import com.ampairs.subscription.domain.model.*
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.flow
  * Repository for invoice operations
  * Handles data fetching from API (no local caching for now)
  */
+@Inject
 class InvoiceRepository(
     private val api: InvoiceApi
 ) {

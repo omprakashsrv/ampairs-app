@@ -18,8 +18,11 @@ import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.util.AttributeKey
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+
+val TokenRepositoryKey = AttributeKey<TokenRepository>("TokenRepository")
 
 /**
  * Custom exception for network-related errors
@@ -188,7 +191,7 @@ fun httpClient(
         // Set default content type
         contentType(ContentType.Application.Json)
     }
-}
+}.also { it.attributes.put(TokenRepositoryKey, tokenRepository) }
 
 /**
  * Sends HTTP error details to Sentry for monitoring.

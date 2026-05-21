@@ -19,9 +19,9 @@ import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.common.localization.localizedString
 import ampairsapp.feature.auth.generated.resources.Res
 import ampairsapp.feature.auth.generated.resources.*
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 /**
  * Desktop Browser Authentication Screen
@@ -39,7 +39,7 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DesktopBrowserAuthScreen(
-    viewModel: LoginViewModel = koinInject(),
+    viewModel: LoginViewModel = metroViewModel(),
     onAuthSuccess: () -> Unit
 ) {
     val scope = rememberCoroutineScope()

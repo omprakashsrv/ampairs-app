@@ -9,16 +9,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 
 /**
  * ViewModel for creating and editing product variants
  */
+@AssistedInject
 class VariantFormViewModel(
-    private val productId: String,
-    private val variantId: String?,
+    @Assisted private val productId: String,
+    @Assisted private val variantId: String?,
     private val productRepository: ProductRepository
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(productId: String, variantId: String?): VariantFormViewModel
+    }
 
     private val _uiState = MutableStateFlow(VariantFormUiState())
     val uiState: StateFlow<VariantFormUiState> = _uiState.asStateFlow()

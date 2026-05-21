@@ -8,11 +8,16 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import com.ampairs.inventory.db.InventoryRepository
+import com.ampairs.inventory.viewmodel.InventoryListViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun InventoryPaneScreen() {
+fun InventoryPaneScreen(
+    inventoryListViewModel: InventoryListViewModel,
+    inventoryRepository: InventoryRepository,
+) {
 
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
@@ -26,24 +31,31 @@ fun InventoryPaneScreen() {
         value = navigator.scaffoldValue,
         listPane = {
             AnimatedPane(Modifier) {
-                InventoryListScreen(onNewInventory = {
-                    scope.launch {
-                        navigator.navigateTo(
-                            ListDetailPaneScaffoldRole.Detail,
-                            ""
-                        )
-                    }
-                }, onInventorySelected = { inventoryId, _ ->
-                    scope.launch {
-                        navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, inventoryId)
-                    }
-                })
+                InventoryListScreen(
+                    viewModel = inventoryListViewModel,
+                    onNewInventory = {
+                        scope.launch {
+                            navigator.navigateTo(
+                                ListDetailPaneScaffoldRole.Detail,
+                                ""
+                            )
+                        }
+                    }, onInventorySelected = { inventoryId, _ ->
+                        scope.launch {
+                            navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, inventoryId)
+                        }
+                    })
             }
         },
         detailPane = {
             AnimatedPane(Modifier) {
                 val inventoryId = navigator.currentDestination?.contentKey ?: ""
-                InventoryScreen(modifier = Modifier, inventoryId) {}
+                InventoryScreen(
+                    modifier = Modifier,
+                    id = inventoryId,
+                    inventoryRepository = inventoryRepository,
+                    onInventoryUpdate = {}
+                )
             }
         }
     )

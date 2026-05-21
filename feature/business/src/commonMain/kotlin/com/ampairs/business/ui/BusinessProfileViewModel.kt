@@ -8,12 +8,19 @@ import com.ampairs.business.domain.BusinessProfileUpdateRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.launch
 
 /**
  * ViewModel for Business Profile Form Screen.
  * Manages loading, editing, and saving business profile.
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class BusinessProfileViewModel(
     private val repository: BusinessRepository
 ) : ViewModel() {

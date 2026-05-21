@@ -1,5 +1,7 @@
 package com.ampairs.product.domain
 
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.product.data.repository.ProductRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -12,6 +14,7 @@ import org.mobilenativefoundation.store.store5.StoreBuilder
 data class ProductKey(val productId: String)
 data class ProductListKey(val searchQuery: String = "", val categoryIds: List<String> = emptyList())
 
+@Inject
 @OptIn(ExperimentalStoreApi::class)
 class ProductStore(private val repository: ProductRepository) {
 

@@ -16,8 +16,7 @@ import com.ampairs.workspace.api.model.UserRoleResponse
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.MemberDetailsViewModel
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 /**
  * Comprehensive member details screen with view and edit capabilities
@@ -29,8 +28,8 @@ fun MemberDetailsScreen(
     memberId: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: MemberDetailsViewModel = assistedMetroViewModel<MemberDetailsViewModel, MemberDetailsViewModel.Factory> { create(workspaceId, memberId) },
 ) {
-    val viewModel: MemberDetailsViewModel = koinViewModel { parametersOf(workspaceId, memberId) }
     val state by viewModel.state.collectAsState()
 
     var isEditing by remember { mutableStateOf(false) }

@@ -14,8 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 /**
  * Comprehensive member management screen for workspace administration
@@ -27,8 +26,8 @@ fun WorkspaceMembersScreen(
     onNavigateBack: () -> Unit,
     onMemberClick: (String) -> Unit,
     onInviteClick: () -> Unit,
+    viewModel: WorkspaceMembersViewModel = assistedMetroViewModel<WorkspaceMembersViewModel, WorkspaceMembersViewModel.Factory> { create(workspaceId) },
 ) {
-    val viewModel: WorkspaceMembersViewModel = koinViewModel { parametersOf(workspaceId) }
     val state by viewModel.state.collectAsState()
 
     var showFilters by remember { mutableStateOf(false) }

@@ -1,5 +1,7 @@
 package com.ampairs.agent.core
 
+import dev.zacsweers.metro.Inject
+
 /**
  * Central registry that collects all ActionHandlerProviders.
  *
@@ -8,6 +10,7 @@ package com.ampairs.agent.core
  *
  * Handlers are instantiated lazily — only when their module is first dispatched.
  */
+@Inject
 class ActionRegistry {
 
     private val providers = mutableMapOf<String, ActionHandlerProvider>()

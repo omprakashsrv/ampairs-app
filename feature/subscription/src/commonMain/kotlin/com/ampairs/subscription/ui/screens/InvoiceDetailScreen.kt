@@ -16,7 +16,6 @@ import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.viewmodel.InvoiceViewModel
 import com.ampairs.common.util.formatCurrencyWithCode
-import org.koin.compose.koinInject
 
 /**
  * Screen showing invoice details and payment options
@@ -26,7 +25,7 @@ import org.koin.compose.koinInject
 fun InvoiceDetailScreen(
     invoiceUid: String,
     onNavigateBack: () -> Unit,
-    viewModel: InvoiceViewModel = koinInject()
+    viewModel: InvoiceViewModel
 ) {
     val invoice by viewModel.selectedInvoice.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

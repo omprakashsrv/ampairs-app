@@ -38,6 +38,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 
@@ -181,14 +188,22 @@ data class CustomerFormUiState(
     val entityConfig: EntityConfigSchema? = null
 )
 
+@AssistedInject
 class CustomerFormViewModel(
-    private val customerId: String?,
+    @Assisted private val customerId: String?,
     private val customerStore: CustomerStore,
     private val stateStore: StateStore,
     private val customerTypeStore: CustomerTypeStore,
     private val customerGroupStore: CustomerGroupStore,
     private val configRepository: ConfigRepository
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(customerId: String?): CustomerFormViewModel
+    }
 
     private val _uiState = MutableStateFlow(CustomerFormUiState())
     val uiState: StateFlow<CustomerFormUiState> = _uiState.asStateFlow()

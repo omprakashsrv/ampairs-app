@@ -6,6 +6,13 @@ import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductKey
 import com.ampairs.product.domain.ProductStore
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.mobilenativefoundation.store.store5.StoreReadRequest
@@ -18,11 +25,19 @@ data class ProductDetailsUiState(
     val error: String? = null
 )
 
+@AssistedInject
 class ProductDetailsViewModel(
-    private val productId: String,
+    @Assisted private val productId: String,
     private val productStore: ProductStore,
     private val workspaceContextManager: WorkspaceContextManager
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(productId: String): ProductDetailsViewModel
+    }
 
     private val _uiState = MutableStateFlow(ProductDetailsUiState())
     val uiState: StateFlow<ProductDetailsUiState> = _uiState.asStateFlow()

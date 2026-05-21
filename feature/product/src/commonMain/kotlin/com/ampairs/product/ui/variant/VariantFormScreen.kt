@@ -15,9 +15,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
-
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 /**
  * Variant Form Screen - Create or edit a product variant
  */
@@ -28,7 +26,7 @@ fun VariantFormScreen(
     variantId: String?,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: VariantFormViewModel = koinInject { parametersOf(productId, variantId) }
+    viewModel: VariantFormViewModel = assistedMetroViewModel<VariantFormViewModel, VariantFormViewModel.Factory> { create(productId, variantId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val formState by viewModel.formState.collectAsState()

@@ -7,6 +7,10 @@ import com.ampairs.customer.domain.CustomerType
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.mobilenativefoundation.store.store5.StoreReadResponse
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.FlowPreview
 
 data class CustomerTypeListUiState(
@@ -19,6 +23,9 @@ data class CustomerTypeListUiState(
     val isLoadingImportCustomerTypes: Boolean = false
 )
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class CustomerTypeListViewModel(
     private val customerTypeRepository: CustomerTypeRepository
 ) : ViewModel() {

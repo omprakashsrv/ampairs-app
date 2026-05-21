@@ -25,8 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.util.formatDecimal
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 /**
  * Tax Code Detail Screen
@@ -44,7 +43,7 @@ fun TaxCodeDetailScreen(
     taxCodeId: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: TaxCodeDetailViewModel = koinViewModel { parametersOf(taxCodeId) }
+    viewModel: TaxCodeDetailViewModel = assistedMetroViewModel<TaxCodeDetailViewModel, TaxCodeDetailViewModel.Factory> { create(taxCodeId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showUnsubscribeDialog by remember { mutableStateOf(false) }

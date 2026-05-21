@@ -1,25 +1,26 @@
 package com.ampairs.product
 
+import android.content.Context
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.database.createAndroidDatabase
+import com.ampairs.common.di.AppScope
 import com.ampairs.product.db.ProductRoomDatabase
 import com.ampairs.product.db.migrations.MIGRATION_1_2
 import com.ampairs.product.db.migrations.MIGRATION_2_3
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 import kotlinx.coroutines.Dispatchers
-import org.koin.android.ext.koin.androidContext
-import org.koin.core.module.Module
-import org.koin.dsl.module
 
-val productPlatformModule: Module = module {
-    // Use factory instead of single to ensure fresh database instances after workspace switch
-    // DatabaseScopeManager handles actual singleton behavior per workspace
-    factory<ProductRoomDatabase> {
-        val factory = get<WorkspaceAwareDatabaseFactory>()
-        factory.createAndroidDatabase(
-            context = androidContext(),
-            queryDispatcher = Dispatchers.IO,
-            moduleName = "product",
-            migrations = listOf(MIGRATION_1_2, MIGRATION_2_3)
-        )
+@ContributesTo(AppScope::class)
+interface ProductAndroidModule {
+    companion object {
+        @Provides
+        fun provideProductDatabase(factory: WorkspaceAwareDatabaseFactory, context: Context): ProductRoomDatabase =
+            factory.createAndroidDatabase(
+                context = context,
+                queryDispatcher = Dispatchers.IO,
+                moduleName = "product",
+                migrations = listOf(MIGRATION_1_2, MIGRATION_2_3)
+            )
     }
 }

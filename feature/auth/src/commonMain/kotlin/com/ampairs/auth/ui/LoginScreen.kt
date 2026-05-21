@@ -61,15 +61,15 @@ import com.ampairs.common.localization.LocaleManager
 import com.ampairs.common.localization.localizedString
 import ampairsapp.feature.auth.generated.resources.Res
 import ampairsapp.feature.auth.generated.resources.*
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 @Composable
 fun LoginScreen(
-    viewModel: LoginViewModel = koinInject<LoginViewModel>(),
+    viewModel: LoginViewModel = metroViewModel(),
+    localeManager: LocaleManager,
     onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit,
 ) {
-    val localeManager: LocaleManager = koinInject()
     val scope = rememberCoroutineScope()
     val currentLanguage by localeManager.currentLanguage.collectAsState(Language.ENGLISH)
 

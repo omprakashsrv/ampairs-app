@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.unit.data.repository.UnitRepository
 import com.ampairs.unit.domain.model.Unit
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +41,9 @@ data class UnitListUiState(
  * - Delete operations
  * - Error handling
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class UnitListViewModel(
     private val unitRepository: UnitRepository
 ) : ViewModel() {

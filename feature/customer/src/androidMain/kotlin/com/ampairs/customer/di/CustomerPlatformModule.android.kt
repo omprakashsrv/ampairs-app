@@ -1,30 +1,24 @@
 package com.ampairs.customer.di
 
+import android.content.Context
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.database.createAndroidDatabase
+import com.ampairs.common.di.AppScope
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.repository.AndroidFileManager
 import com.ampairs.customer.data.repository.PlatformFileManager
-import com.ampairs.customer.ui.components.contact.ContactPickerService
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 import kotlinx.coroutines.Dispatchers
-import org.koin.android.ext.koin.androidContext
-import org.koin.dsl.bind
-import org.koin.dsl.module
 
-actual val customerPlatformModule = module {
-    // Use factory instead of single to ensure fresh database instances after workspace switch
-    // DatabaseScopeManager handles actual singleton behavior per workspace
-    factory<CustomerDatabase> {
-        val factory = get<WorkspaceAwareDatabaseFactory>()
-        factory.createAndroidDatabase(
-            context = androidContext(),
-            queryDispatcher = Dispatchers.IO,
-            moduleName = "customer"
-        )
+@ContributesTo(AppScope::class)
+interface CustomerAndroidModule {
+    companion object {
+        @Provides
+        fun provideCustomerDatabase(factory: WorkspaceAwareDatabaseFactory, context: Context): CustomerDatabase =
+            factory.createAndroidDatabase(context = context, queryDispatcher = Dispatchers.IO, moduleName = "customer")
+
+        @Provides
+        fun providePlatformFileManager(context: Context): PlatformFileManager = AndroidFileManager(context)
     }
-
-    single { AndroidFileManager(androidContext()) } bind PlatformFileManager::class
-
-    // Contact Picker Service (Android implementation)
-    single { ContactPickerService() }
 }

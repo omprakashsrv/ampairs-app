@@ -8,9 +8,12 @@ import com.ampairs.inventory.domain.Inventory
 import com.ampairs.inventory.domain.asDatabaseModel
 import com.ampairs.inventory.domain.asDomainModel
 import com.ampairs.inventory.domain.asInventoryApiModel
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.common.model.Response
 import com.ampairs.product.api.model.InventoryApiModel
 
+@Inject
 class InventoryRepository(
     val inventoryDao: InventoryDao,
     val inventoryApi: InventoryApi

@@ -1,6 +1,9 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.time.currentTimeMillis
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.UserInvitationApi
 import com.ampairs.workspace.api.model.UserInvitationResponse
 import com.ampairs.workspace.db.dao.UserInvitationDao
@@ -21,6 +24,8 @@ data class UserInvitationKey(
 // Type aliases for Store5
 typealias UserInvitationStore = Store<UserInvitationKey, List<UserInvitation>>
 
+@Inject
+@SingleIn(AppScope::class)
 class UserInvitationStoreFactory(
     private val invitationApi: UserInvitationApi,
     private val invitationDao: UserInvitationDao,

@@ -16,14 +16,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ampairs.auth.viewmodel.AccountDeletionViewModel
 import com.ampairs.common.model.UiState
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @Composable
 fun AccountRestoreScreen(
+    viewModel: AccountDeletionViewModel = metroViewModel(),
     onRestoreSuccess: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val viewModel: AccountDeletionViewModel = koinViewModel()
 
     // Handle successful restoration
     LaunchedEffect(viewModel.deletionState) {

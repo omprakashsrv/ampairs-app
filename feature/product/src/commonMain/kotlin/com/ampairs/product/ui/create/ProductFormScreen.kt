@@ -31,9 +31,7 @@ import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductImage
 import com.ampairs.product.domain.ProductType
 import com.ampairs.product.domain.ServiceType
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
-
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductFormScreen(
@@ -41,7 +39,7 @@ fun ProductFormScreen(
     onSaveSuccess: () -> Unit,
     onManageVariants: ((String, String) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    viewModel: ProductFormViewModel = koinViewModel { parametersOf(productId) }
+    viewModel: ProductFormViewModel = assistedMetroViewModel<ProductFormViewModel, ProductFormViewModel.Factory> { create(productId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

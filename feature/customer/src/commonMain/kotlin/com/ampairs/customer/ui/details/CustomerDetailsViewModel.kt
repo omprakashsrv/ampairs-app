@@ -4,6 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerStore
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -13,10 +20,18 @@ data class CustomerDetailsUiState(
     val error: String? = null
 )
 
+@AssistedInject
 class CustomerDetailsViewModel(
-    private val customerId: String,
+    @Assisted private val customerId: String,
     private val customerStore: CustomerStore
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(customerId: String): CustomerDetailsViewModel
+    }
 
     private val _uiState = MutableStateFlow(CustomerDetailsUiState())
     val uiState: StateFlow<CustomerDetailsUiState> = _uiState.asStateFlow()

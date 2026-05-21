@@ -19,7 +19,7 @@ import com.ampairs.common.firebase.performance.PerformanceAttributes
 import com.ampairs.common.firebase.performance.PerformanceTraces
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import com.ampairs.di.LocalAppGraph
 
 /**
  * Test screen for Firebase Analytics, Crashlytics, and Performance Monitoring
@@ -38,9 +38,10 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FirebaseTestScreen() {
-    val analytics: FirebaseAnalytics = koinInject()
-    val crashlytics: FirebaseCrashlytics = koinInject()
-    val performance: FirebasePerformance = koinInject()
+    val graph = LocalAppGraph.current
+    val analytics = graph.analytics
+    val crashlytics = graph.crashlytics
+    val performance = graph.performance
 
     val scope = rememberCoroutineScope()
     var testResults by remember { mutableStateOf<List<String>>(emptyList()) }

@@ -4,12 +4,14 @@ import android.app.Application
 import android.content.pm.ApplicationInfo
 import com.ampairs.common.config.PlatformConfig
 import com.ampairs.common.sentry.SentryManager
-import initKoin
-import org.koin.android.ext.koin.androidContext
-import org.koin.android.ext.koin.androidLogger
-import org.koin.core.context.startKoin
+import com.ampairs.di.AndroidAppGraph
+import com.ampairs.di.AppGraphHolder
+import dev.zacsweers.metro.createGraphFactory
 
 class MainApp : Application() {
+
+    lateinit var appGraph: AndroidAppGraph
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -23,11 +25,8 @@ class MainApp : Application() {
 
         initializeSentry(isDebug)
 
-        val koinApplication = startKoin {
-            androidContext(this@MainApp)
-            androidLogger()
-        }
-        initKoin(koinApplication)
+        appGraph = createGraphFactory<AndroidAppGraph.Factory>().create(this)
+        AppGraphHolder.graph = appGraph
     }
 
     private fun initializeSentry(isDebug: Boolean) {
@@ -37,5 +36,4 @@ class MainApp : Application() {
             enableDebug = isDebug
         )
     }
-
 }

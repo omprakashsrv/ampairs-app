@@ -14,16 +14,31 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
+@AssistedInject
 @OptIn(ExperimentalTime::class, FlowPreview::class)
 class ProductFormViewModel(
-    private val productId: String?,
+    @Assisted private val productId: String?,
     private val productStore: ProductStore,
     private val workspaceContextManager: WorkspaceContextManager,
     private val taxCodeRepository: TaxCodeRepository
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(productId: String?): ProductFormViewModel
+    }
 
     private val _uiState = MutableStateFlow(ProductFormUiState())
     val uiState: StateFlow<ProductFormUiState> = _uiState.asStateFlow()

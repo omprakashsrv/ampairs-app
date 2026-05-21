@@ -36,14 +36,14 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
 import com.ampairs.order.viewmodel.OrderViewViewModel
 import com.ampairs.ui.components.TableCell
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
-
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrderViewScreen(orderId: String, onNavigateBack: (orderId: String?) -> Unit) {
-
-    val viewModel: OrderViewViewModel = koinInject { parametersOf(orderId) }
+fun OrderViewScreen(
+    orderId: String,
+    onNavigateBack: (orderId: String?) -> Unit,
+    viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory> { create(orderId) }
+) {
 
     val order = viewModel.order
     Scaffold(

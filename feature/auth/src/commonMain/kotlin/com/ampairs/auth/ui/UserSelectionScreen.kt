@@ -63,23 +63,22 @@ import com.ampairs.auth.domain.UserInfo
 import com.ampairs.auth.viewmodel.UserSelectionViewModel
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.time.currentTimeMillis
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
 
 private val MAX_CONTENT_WIDTH = 480.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserSelectionScreen(
+    appPreferences: AppPreferencesDataStore,
     onUserSelected: (String) -> Unit,
     onAddNewUser: () -> Unit,
     onNoUsers: () -> Unit = {},
-    viewModel: UserSelectionViewModel = koinViewModel(),
+    viewModel: UserSelectionViewModel = metroViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     var hasInitialized by remember { mutableStateOf(false) }
-    val appPreferences: AppPreferencesDataStore = koinInject()
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {

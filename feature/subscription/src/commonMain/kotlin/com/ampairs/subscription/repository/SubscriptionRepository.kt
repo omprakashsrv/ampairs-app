@@ -5,6 +5,7 @@ package com.ampairs.subscription.repository
 import com.ampairs.common.model.PageResponse
 import com.ampairs.subscription.api.SubscriptionApi
 import com.ampairs.subscription.db.*
+import dev.zacsweers.metro.Inject
 import com.ampairs.subscription.domain.model.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -20,6 +21,7 @@ import kotlin.time.Clock
  * 2. Background sync - server operations happen asynchronously
  * 3. Graceful fallback - continues working if server unavailable
  */
+@Inject
 class SubscriptionRepository(
     private val api: SubscriptionApi,
     private val dao: SubscriptionDao

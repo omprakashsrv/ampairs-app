@@ -16,7 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.customer.domain.CustomerGroup
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +24,7 @@ fun CustomerGroupListScreen(
     onCustomerGroupClick: (String) -> Unit,
     onAddCustomerGroup: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CustomerGroupListViewModel = koinViewModel()
+    viewModel: CustomerGroupListViewModel = metroViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showSearchBar by remember { mutableStateOf(false) }

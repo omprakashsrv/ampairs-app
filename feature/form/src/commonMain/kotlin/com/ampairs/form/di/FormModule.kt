@@ -1,36 +1,30 @@
 package com.ampairs.form.di
 
-import com.ampairs.form.data.api.ConfigApi
-import com.ampairs.form.data.api.ConfigApiImpl
+import com.ampairs.common.di.AppScope
+import com.ampairs.form.data.db.EntityAttributeDefinitionDao
+import com.ampairs.form.data.db.EntityFieldConfigDao
 import com.ampairs.form.data.db.FormDatabase
-import com.ampairs.form.data.repository.ConfigRepository
-import com.ampairs.form.ui.FormConfigViewModel
-import org.koin.core.module.dsl.viewModelOf
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 
-/**
- * Platform-specific module for form database
- * Implemented in androidMain, iosMain, desktopMain
- */
-expect val formPlatformModule: org.koin.core.module.Module
+// Replaced Koin formModule and formPlatformModule expect.
+// Injectable classes are annotated with @Inject directly:
+// - ConfigApiImpl: @Inject @SingleIn(AppScope) @ContributesBinding
+// - ConfigRepository: @Inject
+// - FormConfigViewModel: @Inject
+// Platform DB providers are in FormPlatformModule.android/ios/desktop.kt
 
-/**
- * Koin module for form configuration dependencies
- */
-val formModule = module {
-    // Include platform-specific module
-    includes(formPlatformModule)
+@ContributesTo(AppScope::class)
+interface FormDaoModule {
+    companion object {
+        @Provides
+        fun provideEntityFieldConfigDao(db: FormDatabase): EntityFieldConfigDao =
+            db.entityFieldConfigDao()
 
-    // DAOs
-    factory { get<FormDatabase>().entityFieldConfigDao() }
-    factory { get<FormDatabase>().entityAttributeDefinitionDao() }
-
-    // API
-    single<ConfigApi> { ConfigApiImpl(get(), get()) }
-
-    // Repository
-    factory<ConfigRepository> { ConfigRepository(get(), get(), get(), get()) }
-
-    // ViewModels
-    viewModelOf(::FormConfigViewModel)
+        @Provides
+        fun provideEntityAttributeDefinitionDao(db: FormDatabase): EntityAttributeDefinitionDao =
+            db.entityAttributeDefinitionDao()
+    }
 }
+
+fun formModule() = Unit

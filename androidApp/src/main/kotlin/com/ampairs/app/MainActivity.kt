@@ -17,7 +17,6 @@ import coil3.memory.MemoryCache
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import coil3.util.DebugLogger
-import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ActivityProvider
 import com.ampairs.common.ImageCacheKeyer
 import com.ampairs.common.httpClient
@@ -29,10 +28,8 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
-import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toOkioPath
-import org.koin.android.ext.android.get
 
 class MainActivity : ComponentActivity() {
 
@@ -127,8 +124,9 @@ class MainActivity : ComponentActivity() {
 
     // Your shared Ktor client with global auth headers
     private fun generateImageLoader(): ImageLoader {
-        val engine = get<HttpClientEngine>()
-        val tokenRepository = get<TokenRepository>()
+        val appGraph = (application as MainApp).appGraph
+        val engine = appGraph.httpEngine
+        val tokenRepository = appGraph.tokenRepository
         val client = httpClient(engine, tokenRepository)
 
         return ImageLoader.Builder(this@MainActivity)

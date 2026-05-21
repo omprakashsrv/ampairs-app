@@ -2,6 +2,10 @@ package com.ampairs.subscription.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.Response
@@ -12,6 +16,7 @@ import io.ktor.client.engine.HttpClientEngine
 /**
  * Implementation of InvoiceApi using Ktor HTTP client
  */
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class InvoiceApiImpl(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository

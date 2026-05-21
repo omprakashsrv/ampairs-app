@@ -3,6 +3,7 @@ package com.ampairs.tax.data.repository
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.tax.data.api.TaxConfigurationApi
 import com.ampairs.tax.data.db.dao.TaxCodeDao
+import dev.zacsweers.metro.Inject
 import com.ampairs.tax.data.db.entity.toEntity
 import com.ampairs.tax.data.db.entity.toDomain
 import com.ampairs.tax.domain.model.MasterTaxCode
@@ -14,6 +15,7 @@ import kotlin.time.ExperimentalTime
 /**
  * Tax Code Repository - Offline-first repository for tax codes
  */
+@Inject
 @OptIn(ExperimentalTime::class)
 class TaxCodeRepository(
     private val taxConfigApi: TaxConfigurationApi,

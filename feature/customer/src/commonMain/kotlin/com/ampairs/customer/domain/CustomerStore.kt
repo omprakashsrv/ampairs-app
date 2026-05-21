@@ -1,8 +1,11 @@
 package com.ampairs.customer.domain
 
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.customer.data.repository.CustomerImageRepository
 
+@Inject
 class CustomerStore(
     private val repository: CustomerRepository,
     private val imageRepository: CustomerImageRepository

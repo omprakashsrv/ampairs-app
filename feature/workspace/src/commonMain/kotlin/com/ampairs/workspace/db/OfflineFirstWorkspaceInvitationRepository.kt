@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.common.model.PageResult
 import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceInvitationApi
@@ -24,6 +27,8 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
  * Provides comprehensive invitation management with proper offline-first functionality,
  * automatic sync, conflict resolution, and optimistic updates.
  */
+@Inject
+@SingleIn(AppScope::class)
 @OptIn(ExperimentalStoreApi::class)
 class OfflineFirstWorkspaceInvitationRepository(
     private val invitationApi: WorkspaceInvitationApi,

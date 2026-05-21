@@ -46,7 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.auth.viewmodel.UserUpdateViewModel
 import com.ampairs.common.model.UiState
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.auth.generated.resources.Res
 import ampairsapp.feature.auth.generated.resources.loading_user_details
@@ -62,9 +62,9 @@ import com.ampairs.common.ApiUrlBuilder
 @Composable
 fun UserUpdateScreen(
     onUpdateSuccess: () -> Unit,
-    onProfilePictureUpdated: ((newThumbnailUrl: String) -> Unit)? = null
+    onProfilePictureUpdated: ((newThumbnailUrl: String) -> Unit)? = null,
+    viewModel: UserUpdateViewModel = metroViewModel(),
 ) {
-    val viewModel: UserUpdateViewModel = koinViewModel()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Show error/success messages

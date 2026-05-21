@@ -14,8 +14,10 @@ import com.ampairs.inventory.domain.asDomainModel
 import com.ampairs.inventory.ui.InventoryState
 import com.ampairs.inventory.ui.toDomainModel
 import kotlinx.coroutines.Dispatchers
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.launch
 
+@Inject
 class InventoryViewModel(val id: String?, private val inventoryRepository: InventoryRepository) :
     ViewModel() {
 

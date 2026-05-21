@@ -7,6 +7,10 @@ import com.ampairs.agent.core.ActionResultSummary
 import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.common.id_generator.UidGenerator
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +26,9 @@ data class ChatUiState(
     val error: String? = null,
 )
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class ChatViewModel(
     private val orchestrator: AgentOrchestrator,
 ) : ViewModel() {

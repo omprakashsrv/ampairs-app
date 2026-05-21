@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.common.model.PageResult
 import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceMemberApi
@@ -17,6 +20,8 @@ import kotlinx.coroutines.flow.map
  * Offline-first workspace member repository - simplified version for compilation
  * TODO: Implement full Store5 pattern with conflict resolution
  */
+@Inject
+@SingleIn(AppScope::class)
 class OfflineFirstWorkspaceMemberRepository(
     private val memberApi: WorkspaceMemberApi,
     private val memberDao: WorkspaceMemberDao,

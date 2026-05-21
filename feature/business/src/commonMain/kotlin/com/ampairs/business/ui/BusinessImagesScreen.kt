@@ -27,7 +27,7 @@ import coil3.compose.AsyncImage
 import com.ampairs.business.domain.BusinessImage
 import com.ampairs.business.domain.BusinessImageType
 import com.ampairs.common.ApiUrlBuilder
-import org.koin.compose.koinInject
+import com.ampairs.business.ui.BusinessImagesViewModel
 
 /**
  * Business Images Screen.
@@ -36,8 +36,8 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessImagesScreen(
-    modifier: Modifier = Modifier,
-    viewModel: BusinessImagesViewModel = koinInject()
+    viewModel: BusinessImagesViewModel,
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

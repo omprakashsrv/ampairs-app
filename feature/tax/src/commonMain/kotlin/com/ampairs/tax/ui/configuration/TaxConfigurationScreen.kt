@@ -16,7 +16,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Tax Module Configuration Screen
@@ -31,8 +31,8 @@ import org.koin.compose.koinInject
 @Composable
 fun TaxConfigurationScreen(
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: TaxConfigurationViewModel = koinInject()
+    viewModel: TaxConfigurationViewModel = metroViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

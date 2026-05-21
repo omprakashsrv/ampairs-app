@@ -1,6 +1,9 @@
 package com.ampairs.subscription.util
 
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
@@ -8,6 +11,7 @@ import kotlinx.coroutines.flow.first
  * Manages subscription onboarding flow
  * Tracks which workspaces have completed subscription setup
  */
+@Inject @SingleIn(AppScope::class)
 class SubscriptionOnboardingManager(
     private val appPreferences: AppPreferencesDataStore
 ) {

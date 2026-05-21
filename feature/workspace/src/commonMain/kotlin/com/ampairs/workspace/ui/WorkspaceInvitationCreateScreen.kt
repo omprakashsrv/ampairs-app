@@ -20,10 +20,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.common.validation.ValidationResult
 import com.ampairs.common.validation.phone.PhoneNumberValidator
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
 
 /**
  * Create workspace invitation screen with comprehensive form
@@ -34,8 +33,8 @@ fun WorkspaceInvitationCreateScreen(
     workspaceId: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: WorkspaceInvitationsViewModel = assistedMetroViewModel<WorkspaceInvitationsViewModel, WorkspaceInvitationsViewModel.Factory> { create(workspaceId) },
 ) {
-    val viewModel: WorkspaceInvitationsViewModel = koinViewModel { parametersOf(workspaceId) }
     val state by viewModel.state.collectAsState()
 
     // Form state - Phone only for now

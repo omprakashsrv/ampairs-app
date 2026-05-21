@@ -14,8 +14,15 @@ import com.ampairs.common.model.UiState
 import com.ampairs.product.domain.Constants.Companion.PAGE_SIZE
 import com.ampairs.invoice.db.InvoiceRepository
 import kotlinx.coroutines.Dispatchers
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.launch
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class InvoicesViewModel(val invoiceRepository: InvoiceRepository) : ViewModel() {
 
     var searchText by mutableStateOf("")

@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.tax.calculation.model.*
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.util.formatDecimal
-import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Tax Calculator Screen
@@ -37,8 +37,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaxCalculatorScreen(
-    modifier: Modifier = Modifier,
-    viewModel: TaxCalculatorViewModel = koinViewModel()
+    viewModel: TaxCalculatorViewModel = metroViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val workspaceCodes by viewModel.workspaceCodes.collectAsState()

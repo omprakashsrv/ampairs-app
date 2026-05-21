@@ -1,29 +1,26 @@
 package com.ampairs.unit
 
+import android.content.Context
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.database.createAndroidDatabase
+import com.ampairs.common.di.AppScope
 import com.ampairs.unit.data.db.UnitDatabase
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 import kotlinx.coroutines.Dispatchers
-import org.koin.android.ext.koin.androidContext
-import org.koin.core.module.Module
-import org.koin.dsl.module
 
-/**
- * Android-specific Unit Module
- *
- * Provides platform-specific database configuration using:
- * - Android Context
- * - Dispatchers.IO for query execution
- * - WorkspaceAwareDatabaseFactory for workspace isolation
- *
- * CRITICAL: Uses factory scope (NOT single) for workspace isolation.
- * DatabaseScopeManager handles actual singleton behavior per workspace.
- */
-val unitPlatformModule: Module = module {
-    factory<UnitDatabase> {
-        val factory = get<WorkspaceAwareDatabaseFactory>()
-        factory.createAndroidDatabase(
-            context = androidContext(),
+// Replaced Koin unitPlatformModule for Android.
+// UnitDatabase is provided without @SingleIn (workspace-aware factory).
+
+@ContributesTo(AppScope::class)
+interface UnitAndroidModule {
+    companion object {
+        @Provides
+        fun provideUnitDatabase(
+            factory: WorkspaceAwareDatabaseFactory,
+            context: Context
+        ): UnitDatabase = factory.createAndroidDatabase(
+            context = context,
             queryDispatcher = Dispatchers.IO,
             moduleName = "unit"
         )

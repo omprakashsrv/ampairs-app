@@ -6,9 +6,14 @@ import com.ampairs.auth.db.dao.UserSessionDao
 import com.ampairs.auth.db.dao.UserTokenDao
 import com.ampairs.auth.db.entity.UserSessionEntity
 import com.ampairs.auth.db.entity.UserTokenEntity
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.runBlocking
 import com.ampairs.common.time.currentTimeMillis
 
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class TokenRepositoryImpl(
     val userTokenDao: UserTokenDao,
     val userSessionDao: UserSessionDao,

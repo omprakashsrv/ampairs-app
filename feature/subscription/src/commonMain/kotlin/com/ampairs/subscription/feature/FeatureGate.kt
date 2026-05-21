@@ -2,6 +2,7 @@ package com.ampairs.subscription.feature
 
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.repository.SubscriptionRepository
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.map
  * 3. Resource limit checks
  * 4. Upgrade recommendations
  */
+@Inject
 class FeatureGate(
     private val repository: SubscriptionRepository
 ) {

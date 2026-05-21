@@ -8,12 +8,17 @@ import com.ampairs.common.put
 import com.ampairs.common.delete
 import com.ampairs.common.model.Response
 import com.ampairs.product.api.model.ProductApiModel
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpStatusCode
 
 const val PRODUCT_ENDPOINT = "http://localhost:8080"
 
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class ProductApiImpl(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository

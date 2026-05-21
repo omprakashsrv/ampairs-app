@@ -16,7 +16,6 @@ import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.viewmodel.InvoiceViewModel
 import com.ampairs.common.util.formatCurrencyWithCode
-import org.koin.compose.koinInject
 
 /**
  * Screen showing list of subscription invoices
@@ -26,7 +25,7 @@ import org.koin.compose.koinInject
 fun InvoiceListScreen(
     onNavigateToInvoiceDetail: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    viewModel: InvoiceViewModel = koinInject()
+    viewModel: InvoiceViewModel
 ) {
     val invoices by viewModel.invoices.collectAsState()
     val invoiceSummary by viewModel.invoiceSummary.collectAsState()

@@ -1,5 +1,7 @@
 package com.ampairs.product.data.repository
 
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.event.EventManager
 import com.ampairs.event.domain.EventType
@@ -32,6 +34,7 @@ import kotlin.time.ExperimentalTime
  * Repository for product data following Store5 offline-first pattern
  * Similar to CustomerRepository implementation
  */
+@Inject
 @OptIn(ExperimentalTime::class)
 class ProductRepository(
     private val productApi: ProductApi,

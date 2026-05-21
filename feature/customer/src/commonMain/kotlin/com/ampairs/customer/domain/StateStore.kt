@@ -1,5 +1,7 @@
 package com.ampairs.customer.domain
 
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.db.StateDao
 import com.ampairs.customer.data.db.toDomain
@@ -15,6 +17,7 @@ import org.mobilenativefoundation.store.store5.StoreBuilder
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import com.ampairs.customer.util.CustomerLogger
 
+@Inject
 class StateStore(
     private val customerApi: CustomerApi,
     private val stateDao: StateDao

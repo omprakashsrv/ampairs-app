@@ -2,6 +2,7 @@ package com.ampairs.subscription.feature
 
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.repository.SubscriptionRepository
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.map
  * 2. Usage warnings when approaching limits
  * 3. Enforcement decisions (allow/block/warn)
  */
+@Inject
 class LimitChecker(
     private val repository: SubscriptionRepository
 ) {

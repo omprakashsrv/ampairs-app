@@ -1,6 +1,5 @@
 package com.ampairs.auth.ui
 
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,21 +53,15 @@ import androidx.compose.material.icons.automirrored.filled.Message
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.ampairs.common.localization.localizedString
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @Composable
 fun OtpScreen(
-    viewModelStoreOwner: ViewModelStoreOwner? = null,
+    viewModel: LoginViewModel = metroViewModel(),
     sessionId: String,
     verificationId: String = "", // Firebase verification ID (empty for backend auth)
     onAuthSuccess: () -> Unit,
 ) {
-    // Nav3 provides ViewModelStoreOwner through entryDecorators, Nav2 passes it explicitly
-    val viewModel = if (viewModelStoreOwner != null) {
-        koinViewModel<LoginViewModel>(viewModelStoreOwner = viewModelStoreOwner)
-    } else {
-        koinViewModel<LoginViewModel>()
-    }
 
     // Phone number is now properly retained in the ViewModel
     val phoneNumber = viewModel.phoneNumber

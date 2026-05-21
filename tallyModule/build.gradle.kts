@@ -15,7 +15,6 @@ kotlin {
 }
 
 dependencies {
-    api(libs.koin.core)
     api(libs.bundles.ktor.common)
     api(libs.ktor.serialization.kotlinx.xml)
 }

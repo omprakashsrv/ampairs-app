@@ -23,14 +23,15 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.ampairs.common.model.UiState
 import com.ampairs.order.viewmodel.OrdersViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OrdersScreen(onOrderSelected: (String) -> Unit) {
-
-    val viewModel: OrdersViewModel = koinInject<OrdersViewModel>()
+fun OrdersScreen(
+    onOrderSelected: (String) -> Unit,
+    viewModel: OrdersViewModel = metroViewModel()
+) {
 
     val lazyListState = rememberLazyListState()
     val orders = viewModel.orders.collectAsLazyPagingItems()

@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.metro)
 }
 
 kotlin {
@@ -22,9 +23,10 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(projects.data.common)
-                implementation(libs.koin.core)
-                implementation(libs.koin.compose)
-                implementation(libs.koin.compose.viewmodel)
+                implementation(libs.metro.runtime)
+                implementation(libs.metrox.viewmodel.compose)
+                implementation(libs.lifecycle.viewmodel)
+                implementation(libs.lifecycle.viewmodel.navigation3)
                 implementation(libs.bundles.ktor.common)
                 // Compose
                 implementation(libs.compose.runtime)
@@ -38,7 +40,6 @@ kotlin {
         }
         androidMain {
             dependencies {
-                implementation(libs.koin.android)
             }
         }
         val desktopMain by getting { }

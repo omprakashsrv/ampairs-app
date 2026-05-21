@@ -18,10 +18,17 @@ import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.name
 import io.github.vinceglb.filekit.readBytes
 import io.github.vinceglb.filekit.size
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import com.ampairs.auth.db.UserRepository
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class UserUpdateViewModel(
     private val authApi: AuthApi,
     private val userRepository: UserRepository

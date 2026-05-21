@@ -46,13 +46,15 @@ import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.common.util.DateTimeFormatter
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
+import com.ampairs.customer.data.repository.CustomerImageRepository
+import com.ampairs.customer.data.repository.ImageFilePicker
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_NOT_FOUND
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMER_DETAILS
 import com.ampairs.form.data.repository.ConfigRepository
 import kotlinx.coroutines.flow.first
-import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ampairs.customer.ui.components.images.CustomerImageViewModel
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +63,10 @@ fun CustomerDetailsScreen(
     onNavigateBack: () -> Unit,
     onEditCustomer: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CustomerDetailsViewModel = koinViewModel { parametersOf(customerId) }
+    viewModel: CustomerDetailsViewModel = assistedMetroViewModel<CustomerDetailsViewModel, CustomerDetailsViewModel.Factory> { create(customerId) },
+    configRepository: ConfigRepository,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -108,6 +113,9 @@ fun CustomerDetailsScreen(
                 val currentCustomer = uiState.customer ?: return@Column
                 CustomerDetailsContent(
                     customer = currentCustomer,
+                    configRepository = configRepository,
+                    customerImageRepository = customerImageRepository,
+                    imagePicker = imagePicker,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -140,27 +148,41 @@ fun CustomerDetailsScreen(
 @Composable
 private fun CustomerDetailsContent(
     customer: Customer,
+    configRepository: ConfigRepository,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker,
     modifier: Modifier = Modifier
 ) {
-    // Get window size class to determine layout
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isCompactOrMedium = !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
     if (isCompactOrMedium) {
-        // Compact/Medium: Use TabLayout for mobile/tablet
-        CustomerDetailsTabLayout(customer = customer, modifier = modifier)
+        CustomerDetailsTabLayout(
+            customer = customer,
+            configRepository = configRepository,
+            customerImageRepository = customerImageRepository,
+            imagePicker = imagePicker,
+            modifier = modifier
+        )
     } else {
-        // Expanded: Use side-by-side layout for desktop/large screens
-        CustomerDetailsSideBySideLayout(customer = customer, modifier = modifier)
+        CustomerDetailsSideBySideLayout(
+            customer = customer,
+            configRepository = configRepository,
+            customerImageRepository = customerImageRepository,
+            imagePicker = imagePicker,
+            modifier = modifier
+        )
     }
 }
 
 @Composable
 private fun CustomerDetailsTabLayout(
     customer: Customer,
+    configRepository: ConfigRepository,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker,
     modifier: Modifier = Modifier
 ) {
-    val configRepository: ConfigRepository = koinInject()
     var selectedTabIndex by remember { mutableStateOf(0) }
 
     // Load form config for customerImages field
@@ -195,6 +217,8 @@ private fun CustomerDetailsTabLayout(
             1 -> if (tabs.getOrNull(1) == "Images") {
                 CustomerImagesTab(
                     customer = customer,
+                    customerImageRepository = customerImageRepository,
+                    imagePicker = imagePicker,
                     readOnly = imagesFieldConfig?.enabled == false,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -206,9 +230,11 @@ private fun CustomerDetailsTabLayout(
 @Composable
 private fun CustomerDetailsSideBySideLayout(
     customer: Customer,
+    configRepository: ConfigRepository,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker,
     modifier: Modifier = Modifier
 ) {
-    val configRepository: ConfigRepository = koinInject()
 
     // Load form config for customerImages field
     var imagesFieldConfig by remember { mutableStateOf<com.ampairs.form.domain.EntityFieldConfig?>(null) }
@@ -246,6 +272,9 @@ private fun CustomerDetailsSideBySideLayout(
                 CustomerImageManagementScreen(
                     customerId = customer.uid,
                     readOnly = imagesFieldConfig?.enabled == false,
+                    viewModel = viewModel(key = customer.uid) {
+                        CustomerImageViewModel(customer.uid, customerImageRepository, imagePicker)
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
@@ -258,12 +287,17 @@ private fun CustomerDetailsSideBySideLayout(
 @Composable
 private fun CustomerImagesTab(
     customer: Customer,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker,
     readOnly: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     CustomerImageManagementScreen(
         customerId = customer.uid,
         readOnly = readOnly,
+        viewModel = viewModel(key = customer.uid) {
+            CustomerImageViewModel(customer.uid, customerImageRepository, imagePicker)
+        },
         modifier = modifier.padding(16.dp)
     )
 }

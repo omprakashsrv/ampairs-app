@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 /**
  * Desktop-specific location picker that integrates OpenStreetMap
@@ -23,7 +22,7 @@ fun DesktopLocationPickerDialog(
     onLocationSelected: (LocationData, AddressData?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    locationService: LocationService = koinInject()
+    locationService: LocationService
 ) {
     if (!showDialog) return
 

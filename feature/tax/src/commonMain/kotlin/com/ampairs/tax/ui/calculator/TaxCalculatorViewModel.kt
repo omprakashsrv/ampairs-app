@@ -8,12 +8,19 @@ import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
  * Tax Calculator ViewModel
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class TaxCalculatorViewModel(
     private val taxCalculationEngine: TaxCalculationEngine,
     private val taxCodeRepository: TaxCodeRepository,

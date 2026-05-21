@@ -22,7 +22,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.product.domain.ProductListItem
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +31,7 @@ fun ProductsListScreen(
     onCreateProduct: () -> Unit,
     onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: ProductsListViewModel = koinViewModel()
+    viewModel: ProductsListViewModel = metroViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

@@ -16,15 +16,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.unit.domain.model.Unit
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UnitListScreen(
     onUnitClick: (String) -> kotlin.Unit,
     onAddUnit: () -> kotlin.Unit,
-    modifier: Modifier = Modifier,
-    viewModel: UnitListViewModel = koinViewModel()
+    viewModel: UnitListViewModel = metroViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showSearchBar by remember { mutableStateOf(false) }

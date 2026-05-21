@@ -1,12 +1,17 @@
 package com.ampairs.workspace
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.workspace.WorkspaceContext
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Manages workspace switching and database context.
  * Call setCurrentWorkspace() before accessing any module databases.
  */
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceDatabaseManager {
 
     /**

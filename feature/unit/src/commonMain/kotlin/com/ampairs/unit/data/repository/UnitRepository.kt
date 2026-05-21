@@ -3,6 +3,7 @@ package com.ampairs.unit.data.repository
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.unit.data.api.UnitApi
 import com.ampairs.unit.data.db.dao.UnitDao
+import dev.zacsweers.metro.Inject
 import com.ampairs.unit.data.db.entity.toEntity
 import com.ampairs.unit.data.db.entity.toUnit
 import com.ampairs.unit.domain.UnitStore
@@ -25,8 +26,9 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
  * 4. Batch sync with conflict resolution
  * 5. UID generation and correction
  *
- * Constructor dependencies injected via Koin (all as factory scope)
+ * Constructor dependencies injected via Metro (all as unscoped factory).
  */
+@Inject
 class UnitRepository(
     private val unitApi: UnitApi,
     private val unitDao: UnitDao,

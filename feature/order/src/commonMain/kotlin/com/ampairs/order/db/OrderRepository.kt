@@ -22,10 +22,13 @@ import com.ampairs.order.domain.Order
 import com.ampairs.order.domain.asDomainModel
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.domain.asDomainModel
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOn
 
+@Inject
 class OrderRepository(
     val orderDao: OrderDao,
     val orderItemDao: OrderItemDao,

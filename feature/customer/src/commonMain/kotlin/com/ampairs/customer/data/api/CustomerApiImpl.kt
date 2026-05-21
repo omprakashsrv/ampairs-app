@@ -11,8 +11,13 @@ import com.ampairs.common.model.PageResponse
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.MasterState
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class CustomerApiImpl(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository

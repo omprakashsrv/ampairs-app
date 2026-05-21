@@ -18,7 +18,6 @@ import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 import com.ampairs.subscription.viewmodel.InvoiceViewModel
 import com.ampairs.common.util.formatCurrencyWithCode
 import kotlinx.coroutines.flow.collectLatest
-import org.koin.compose.koinInject
 import androidx.compose.foundation.clickable
 
 /**
@@ -28,6 +27,7 @@ import androidx.compose.foundation.clickable
 @Composable
 fun SubscriptionScreen(
     viewModel: SubscriptionViewModel,
+    invoiceViewModel: InvoiceViewModel,
     onNavigateToPlanComparison: () -> Unit,
     onNavigateToBillingHistory: () -> Unit,
     onNavigateToDeviceManagement: () -> Unit,
@@ -35,8 +35,7 @@ fun SubscriptionScreen(
     onNavigateToInvoices: (() -> Unit)? = null,
     onNavigateToInvoiceDetail: ((String) -> Unit)? = null,
     onCheckoutUrl: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    invoiceViewModel: InvoiceViewModel = koinInject()
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val subscription by viewModel.subscription.collectAsState()

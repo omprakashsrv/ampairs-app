@@ -14,8 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.domain.WorkspaceInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 /**
  * Comprehensive invitation management screen for workspace administration
@@ -25,8 +24,8 @@ import org.koin.core.parameter.parametersOf
 fun WorkspaceInvitationsScreen(
     workspaceId: String,
     onInviteClick: () -> Unit,
+    viewModel: WorkspaceInvitationsViewModel = assistedMetroViewModel<WorkspaceInvitationsViewModel, WorkspaceInvitationsViewModel.Factory> { create(workspaceId) },
 ) {
-    val viewModel: WorkspaceInvitationsViewModel = koinViewModel { parametersOf(workspaceId) }
     val state by viewModel.state.collectAsState()
 
     var showFilters by remember { mutableStateOf(false) }

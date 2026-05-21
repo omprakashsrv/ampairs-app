@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.WorkspaceMemberApi
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.api.model.WorkspacePermissionResponse
@@ -15,6 +18,8 @@ import kotlinx.coroutines.flow.map
  * Offline-first repository for workspace roles and permissions
  * Implements Store5 pattern for caching and synchronization
  */
+@Inject
+@SingleIn(AppScope::class)
 class OfflineFirstRolesPermissionsRepository(
     private val memberApi: WorkspaceMemberApi,
     private val roleDao: WorkspaceRoleDao,

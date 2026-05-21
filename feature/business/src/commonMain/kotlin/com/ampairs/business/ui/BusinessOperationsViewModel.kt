@@ -8,12 +8,19 @@ import com.ampairs.business.domain.BusinessOperationsUpdateRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.launch
 
 /**
  * ViewModel for Business Operations Screen.
  * Manages loading, editing, and saving operational settings.
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class BusinessOperationsViewModel(
     private val repository: BusinessRepository
 ) : ViewModel() {

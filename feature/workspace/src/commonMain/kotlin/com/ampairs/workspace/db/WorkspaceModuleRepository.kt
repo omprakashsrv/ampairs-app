@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.workspace.api.WorkspaceModuleApi
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
@@ -25,6 +28,8 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
  * Offline-first repository for workspace modules
  * Follows the existing Store5 patterns used by other workspace repositories
  */
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceModuleRepository(
     private val moduleApi: WorkspaceModuleApi,
     private val moduleDao: WorkspaceModuleDao,

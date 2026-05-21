@@ -86,7 +86,7 @@ import ampairsapp.shared.generated.resources.settings_language
 import ampairsapp.shared.generated.resources.settings_logout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import com.ampairs.di.LocalAppGraph
 
 /**
  * App header for Navigation 3.
@@ -504,6 +504,7 @@ private fun UserProfileMenuNav3(
         // Language Settings Dialog
         if (showLanguageDialog) {
             LanguageSettingsDialog(
+                localeManager = LocalAppGraph.current.localeManager,
                 onDismiss = { showLanguageDialog = false }
             )
         }
@@ -649,7 +650,7 @@ private fun WorkspaceMenuItemNav3(
 private fun ThemeSettingsDialogNav3(
     onDismiss: () -> Unit
 ) {
-    val themeManager: ThemeManager = koinInject()
+    val themeManager = LocalAppGraph.current.themeManager
     val currentTheme by themeManager.themePreference.collectAsState()
     val scope = rememberCoroutineScope()
 

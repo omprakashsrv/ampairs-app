@@ -2,6 +2,7 @@ package com.ampairs.update.service
 
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.update.api.UpdateApi
+import dev.zacsweers.metro.Inject
 import com.ampairs.update.domain.UpdateCheckResult
 import com.ampairs.update.domain.asDomainModel
 import kotlinx.coroutines.flow.first
@@ -15,6 +16,7 @@ import kotlin.time.Duration.Companion.hours
  * - Can be forced with forceCheck = true
  * - Tracks last check time in DataStore
  */
+@Inject
 class UpdateChecker(
     private val updateApi: UpdateApi,
     private val appPreferences: AppPreferencesDataStore,

@@ -9,8 +9,13 @@ import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
 import com.ampairs.customer.domain.CustomerGroup
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class CustomerGroupApiImpl(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository

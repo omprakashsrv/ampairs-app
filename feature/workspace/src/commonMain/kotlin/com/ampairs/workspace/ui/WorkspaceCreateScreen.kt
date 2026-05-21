@@ -28,7 +28,7 @@ import androidx.compose.runtime.collectAsState
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,7 +38,7 @@ fun WorkspaceCreateScreen(
     onWorkspaceCreated: (String) -> Unit,
     workspaceId: String? = null,
     modifier: Modifier = Modifier,
-    viewModel: WorkspaceCreateViewModel = koinViewModel(),
+    viewModel: WorkspaceCreateViewModel = metroViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val scrollState = rememberScrollState()

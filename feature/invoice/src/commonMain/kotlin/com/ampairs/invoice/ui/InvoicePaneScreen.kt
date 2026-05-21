@@ -8,11 +8,19 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ampairs.invoice.db.InvoiceRepository
+import com.ampairs.invoice.viewmodel.InvoiceViewViewModel
+import com.ampairs.invoice.viewmodel.InvoicesViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun InvoicePaneScreen(onInvoiceEdit: (invoiceId: String?) -> Unit) {
+fun InvoicePaneScreen(
+    invoicesViewModel: InvoicesViewModel,
+    invoiceRepository: InvoiceRepository,
+    onInvoiceEdit: (invoiceId: String?) -> Unit
+) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
 
@@ -25,27 +33,37 @@ fun InvoicePaneScreen(onInvoiceEdit: (invoiceId: String?) -> Unit) {
         value = navigator.scaffoldValue,
         listPane = {
             AnimatedPane(Modifier) {
-                InvoicesScreen { selectedInvoiceId ->
-                    scope.launch {
-                        navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, selectedInvoiceId)
+                InvoicesScreen(
+                    viewModel = invoicesViewModel,
+                    onInvoiceSelected = { selectedInvoiceId ->
+                        scope.launch {
+                            navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, selectedInvoiceId)
+                        }
                     }
-                }
+                )
             }
         },
         detailPane = {
             AnimatedPane(Modifier) {
                 val invoiceId = navigator.currentDestination?.contentKey ?: ""
-                InvoiceViewScreen(invoiceId) { invoiceId ->
-                    if (!invoiceId.isNullOrEmpty()) {
-                        onInvoiceEdit(invoiceId)
-                    } else {
-                        if (navigator.canNavigateBack()) {
-                            scope.launch {
-                                navigator.navigateBack()
+                val invoiceViewViewModel = viewModel(key = invoiceId) {
+                    InvoiceViewViewModel(invoiceId, invoiceRepository)
+                }
+                InvoiceViewScreen(
+                    invoiceId = invoiceId,
+                    viewModel = invoiceViewViewModel,
+                    onNavigateBack = { navigatedInvoiceId ->
+                        if (!navigatedInvoiceId.isNullOrEmpty()) {
+                            onInvoiceEdit(navigatedInvoiceId)
+                        } else {
+                            if (navigator.canNavigateBack()) {
+                                scope.launch {
+                                    navigator.navigateBack()
+                                }
                             }
                         }
                     }
-                }
+                )
             }
         }
     )

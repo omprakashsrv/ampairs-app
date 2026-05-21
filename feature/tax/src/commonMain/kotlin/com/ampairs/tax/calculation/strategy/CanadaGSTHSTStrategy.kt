@@ -8,6 +8,7 @@ import com.ampairs.tax.calculation.model.TaxComponentResult
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
 import com.ampairs.tax.util.formatDecimal
+import dev.zacsweers.metro.Inject
 
 /**
  * Canada GST/HST/PST/QST Strategy - Complex multi-layered tax system
@@ -21,6 +22,7 @@ import com.ampairs.tax.util.formatDecimal
  * - Exempt supplies (residential rent, financial services)
  * - Place of supply rules determine applicable tax
  */
+@Inject
 class CanadaGSTHSTStrategy(
     private val taxRuleRepository: TaxRuleRepository,
     private val taxComponentRepository: TaxComponentRepository,

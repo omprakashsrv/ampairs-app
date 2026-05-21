@@ -1,33 +1,27 @@
+import androidx.compose.runtime.remember
 import androidx.compose.ui.window.ComposeUIViewController
 import coil3.compose.setSingletonImageLoaderFactory
 import cocoapods.FirebaseCore.FIRApp
 import com.ampairs.common.sentry.SentryManager
-import initKoin
+import com.ampairs.di.IosAppGraph
+import dev.zacsweers.metro.createGraphFactory
 import kotlinx.cinterop.ExperimentalForeignApi
-import org.koin.core.context.startKoin
 
 @OptIn(ExperimentalForeignApi::class)
 fun MainViewController() = ComposeUIViewController {
-    // Initialize Firebase for iOS
     if (FIRApp.defaultApp() == null) {
         FIRApp.configure()
     }
 
-    // Initialize Sentry early for error tracking (before Koin to capture initialization errors)
     initializeSentry()
 
-    // Initialize Koin for iOS
-    if (org.koin.mp.KoinPlatform.getKoinOrNull() == null) {
-        val koinApplication = startKoin { }
-        initKoin(koinApplication)
+    val appGraph = remember { createGraphFactory<IosAppGraph.Factory>().create() }
+
+    setSingletonImageLoaderFactory { _ ->
+        generateImageLoader(appGraph.httpEngine, appGraph.tokenRepository)
     }
 
-    // Initialize Coil ImageLoader
-    setSingletonImageLoaderFactory { context ->
-        generateImageLoader()
-    }
-
-    App({})
+    App(appGraph, {})
 }
 
 /**

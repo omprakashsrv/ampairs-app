@@ -1,5 +1,7 @@
 package com.ampairs.customer.data.repository
 
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.api.CustomerGroupApi
 import com.ampairs.customer.data.db.CustomerGroupDao
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 
+@Inject
 class CustomerGroupRepository(
     private val customerGroupApi: CustomerGroupApi,
     private val customerGroupDao: CustomerGroupDao,

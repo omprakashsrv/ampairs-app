@@ -19,19 +19,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.inventory.domain.Inventory
 import com.ampairs.inventory.viewmodel.InventoryViewModel
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
 
 
 @Composable
 fun InventoryScreen(
     modifier: Modifier = Modifier,
     id: String?,
+    inventoryRepository: InventoryRepository,
     onInventoryUpdate: (String) -> Unit
 ) {
-    val viewModel: InventoryViewModel = koinInject { parametersOf(id) }
+    val viewModel = viewModel(key = id.orEmpty()) {
+        InventoryViewModel(id = id, inventoryRepository = inventoryRepository)
+    }
 
     if (id.isNullOrEmpty()) {
         viewModel.inventory = InventoryState(Inventory())

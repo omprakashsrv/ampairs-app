@@ -2,6 +2,7 @@ package com.ampairs.form.data.repository
 
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.form.data.api.ConfigApi
+import dev.zacsweers.metro.Inject
 import com.ampairs.form.data.db.EntityAttributeDefinitionDao
 import com.ampairs.form.data.db.EntityFieldConfigDao
 import com.ampairs.form.data.db.toEntity
@@ -19,6 +20,7 @@ import kotlin.time.ExperimentalTime
  * Repository for managing entity configuration schemas
  * Provides offline-first architecture with database caching and reactive updates per entity type
  */
+@Inject
 @OptIn(ExperimentalTime::class)
 class ConfigRepository(
     private val api: ConfigApi,

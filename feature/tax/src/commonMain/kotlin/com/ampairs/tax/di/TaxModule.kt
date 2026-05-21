@@ -1,155 +1,77 @@
 package com.ampairs.tax.di
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.tax.calculation.ITaxCalculationStrategy
-import com.ampairs.tax.calculation.TaxCalculationEngine
-import com.ampairs.tax.calculation.strategy.IndiaGSTStrategy
-import com.ampairs.tax.calculation.strategy.USASalesTaxStrategy
-import com.ampairs.tax.calculation.strategy.UKVATStrategy
-import com.ampairs.tax.calculation.strategy.EUVATStrategy
-import com.ampairs.tax.calculation.strategy.CanadaGSTHSTStrategy
 import com.ampairs.tax.calculation.strategy.AustraliaGSTStrategy
+import com.ampairs.tax.calculation.strategy.CanadaGSTHSTStrategy
 import com.ampairs.tax.calculation.strategy.DefaultTaxStrategy
-import com.ampairs.tax.data.api.TaxConfigurationApi
-import com.ampairs.tax.data.api.TaxConfigurationApiImpl
+import com.ampairs.tax.calculation.strategy.EUVATStrategy
+import com.ampairs.tax.calculation.strategy.IndiaGSTStrategy
+import com.ampairs.tax.calculation.strategy.UKVATStrategy
+import com.ampairs.tax.calculation.strategy.USASalesTaxStrategy
 import com.ampairs.tax.data.db.TaxRoomDatabase
-import com.ampairs.tax.data.repository.TaxCodeRepository
-import com.ampairs.tax.data.repository.TaxComponentRepository
-import com.ampairs.tax.data.repository.TaxConfigurationRepository
-import com.ampairs.tax.data.repository.TaxRuleRepository
+import com.ampairs.tax.data.db.dao.TaxCodeDao
+import com.ampairs.tax.data.db.dao.TaxComponentDao
+import com.ampairs.tax.data.db.dao.TaxComponentTypeDao
+import com.ampairs.tax.data.db.dao.TaxConfigurationDao
+import com.ampairs.tax.data.db.dao.TaxRuleDao
 import com.ampairs.tax.domain.model.TaxStrategy
-import com.ampairs.tax.ui.calculator.TaxCalculatorViewModel
-import com.ampairs.tax.ui.list.MyTaxCodesViewModel
-import com.ampairs.tax.ui.search.TaxCodeSearchViewModel
-import com.ampairs.tax.ui.detail.TaxCodeDetailViewModel
-import com.ampairs.tax.ui.configuration.TaxConfigurationViewModel
-import org.koin.core.module.dsl.factoryOf
-import org.koin.core.module.dsl.singleOf
-import org.koin.core.module.dsl.viewModelOf
-import org.koin.dsl.bind
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 
-/**
- * Tax Module V2 - Common Dependency Injection
- *
- * IMPORTANT: All workspace-aware components use factory scope
- * to ensure fresh instances on workspace switch
- */
-val taxModule = module {
-    // API Layer - Single instance with Ktor client injection
-    single<TaxConfigurationApi> {
-        TaxConfigurationApiImpl(
-            engine = get(),
-            tokenRepository = get()
-        )
+// Replaced Koin taxModule. Injectable classes are annotated with @Inject directly:
+// - TaxConfigurationApiImpl: @Inject @SingleIn(AppScope) @ContributesBinding
+// - TaxCodeRepository, TaxComponentRepository, TaxRuleRepository, TaxConfigurationRepository: @Inject
+// - IndiaGSTStrategy, USASalesTaxStrategy, UKVATStrategy, EUVATStrategy,
+//   CanadaGSTHSTStrategy, AustraliaGSTStrategy, DefaultTaxStrategy: @Inject
+// - TaxCalculationEngine: @Inject
+// - All ViewModels: @Inject
+// Platform DB providers are in TaxModule.android/ios/desktop.kt
+
+@ContributesTo(AppScope::class)
+interface TaxDaoModule {
+    companion object {
+        @Provides
+        fun provideTaxCodeDao(db: TaxRoomDatabase): TaxCodeDao = db.taxCodeDao()
+
+        @Provides
+        fun provideTaxComponentTypeDao(db: TaxRoomDatabase): TaxComponentTypeDao = db.taxComponentTypeDao()
+
+        @Provides
+        fun provideTaxComponentDao(db: TaxRoomDatabase): TaxComponentDao = db.taxComponentDao()
+
+        @Provides
+        fun provideTaxRuleDao(db: TaxRoomDatabase): TaxRuleDao = db.taxRuleDao()
+
+        @Provides
+        fun provideTaxConfigurationDao(db: TaxRoomDatabase): TaxConfigurationDao = db.taxConfigurationDao()
     }
-
-    // DAOs - Factory scoped for workspace isolation
-    factory {
-        val database = get<TaxRoomDatabase>()
-        database.taxCodeDao()
-    }
-
-    factory {
-        val database = get<TaxRoomDatabase>()
-        database.taxComponentTypeDao()
-    }
-
-    factory {
-        val database = get<TaxRoomDatabase>()
-        database.taxComponentDao()
-    }
-
-    factory {
-        val database = get<TaxRoomDatabase>()
-        database.taxRuleDao()
-    }
-
-    factory {
-        val database = get<TaxRoomDatabase>()
-        database.taxConfigurationDao()
-    }
-
-    // Repositories - Factory scoped for workspace isolation
-    factoryOf(::TaxCodeRepository)
-    factoryOf(::TaxComponentRepository)
-    factoryOf(::TaxRuleRepository)
-    factoryOf(::TaxConfigurationRepository)
-
-    // Tax Calculation Strategies - Singletons (stateless)
-    single {
-        IndiaGSTStrategy(
-            taxRuleRepository = get(),
-            taxComponentRepository = get(),
-        )
-    }
-
-    single {
-        USASalesTaxStrategy(
-            taxRuleRepository = get(),
-            taxComponentRepository = get(),
-        )
-    }
-
-    single {
-        UKVATStrategy(
-            taxRuleRepository = get(),
-            taxComponentRepository = get(),
-        )
-    }
-
-    single {
-        EUVATStrategy(
-            taxRuleRepository = get(),
-            taxComponentRepository = get(),
-        )
-    }
-
-    single {
-        CanadaGSTHSTStrategy(
-            taxRuleRepository = get(),
-            taxComponentRepository = get(),
-        )
-    }
-
-    single {
-        AustraliaGSTStrategy(
-            taxRuleRepository = get(),
-            taxComponentRepository = get(),
-        )
-    }
-
-    single {
-        DefaultTaxStrategy(
-            taxRuleRepository = get(),
-            taxComponentRepository = get(),
-        )
-    }
-
-    // Strategy Map - Single instance
-    single<Map<TaxStrategy, ITaxCalculationStrategy>> {
-        mapOf(
-            TaxStrategy.INDIA_GST to get<IndiaGSTStrategy>(),
-            TaxStrategy.USA_SALES_TAX to get<USASalesTaxStrategy>(),
-            TaxStrategy.UK_VAT to get<UKVATStrategy>(),
-            TaxStrategy.EU_VAT to get<EUVATStrategy>(),
-            TaxStrategy.CANADA_GST_HST to get<CanadaGSTHSTStrategy>(),
-            TaxStrategy.AUSTRALIA_GST to get<AustraliaGSTStrategy>(),
-            TaxStrategy.DEFAULT_TAX to get<DefaultTaxStrategy>()
-        )
-    }
-
-    // Tax Calculation Engine - Single instance
-    single {
-        TaxCalculationEngine(
-            taxConfigRepository = get(),
-            strategies = get()
-        )
-    }
-
-    // ViewModels
-    viewModelOf(::TaxCalculatorViewModel)
-    viewModelOf(::MyTaxCodesViewModel)
-    viewModelOf(::TaxCodeSearchViewModel)
-    viewModelOf(::TaxCodeDetailViewModel)
-    viewModelOf(::TaxConfigurationViewModel)
 }
+
+@ContributesTo(AppScope::class)
+interface TaxStrategyModule {
+    companion object {
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideTaxStrategiesMap(
+            indiaGST: IndiaGSTStrategy,
+            usaSalesTax: USASalesTaxStrategy,
+            ukVAT: UKVATStrategy,
+            euVAT: EUVATStrategy,
+            canadaGSTHST: CanadaGSTHSTStrategy,
+            australiaGST: AustraliaGSTStrategy,
+            defaultTax: DefaultTaxStrategy
+        ): Map<TaxStrategy, ITaxCalculationStrategy> = mapOf(
+            TaxStrategy.INDIA_GST to indiaGST,
+            TaxStrategy.USA_SALES_TAX to usaSalesTax,
+            TaxStrategy.UK_VAT to ukVAT,
+            TaxStrategy.EU_VAT to euVAT,
+            TaxStrategy.CANADA_GST_HST to canadaGSTHST,
+            TaxStrategy.AUSTRALIA_GST to australiaGST,
+            TaxStrategy.DEFAULT_TAX to defaultTax
+        )
+    }
+}
+
+fun taxModule() = Unit

@@ -1,6 +1,7 @@
 package com.ampairs.subscription.feature
 
 import com.ampairs.subscription.repository.SubscriptionRepository
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.first
 
 /**
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.first
  * This service checks limits BEFORE allowing create/update operations.
  * When limits are exceeded, workspace enters read-only mode for that resource.
  */
+@Inject
 class SubscriptionEnforcement(
     private val repository: SubscriptionRepository,
     private val limitChecker: LimitChecker

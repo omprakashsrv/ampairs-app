@@ -2,6 +2,7 @@ package com.ampairs.tax.data.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
@@ -11,6 +12,9 @@ import com.ampairs.tax.domain.model.TaxComponentType
 import com.ampairs.tax.domain.model.TaxConfiguration
 import com.ampairs.tax.domain.model.TaxRule
 import com.ampairs.tax.domain.model.WorkspaceTaxComponent
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.request.delete
@@ -26,6 +30,7 @@ import kotlinx.serialization.Serializable
 /**
  * Tax Configuration API Implementation
  */
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class TaxConfigurationApiImpl(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository

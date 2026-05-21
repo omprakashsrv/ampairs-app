@@ -19,9 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.model.MasterTaxCode
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import com.ampairs.tax.domain.model.TaxCodeType
 import com.ampairs.tax.domain.model.TaxCode
-import org.koin.compose.viewmodel.koinViewModel
 
 /**
  * Tax Code Search Screen
@@ -34,8 +34,8 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun TaxCodeSearchScreen(
     onCodeSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: TaxCodeSearchViewModel = koinViewModel()
+    viewModel: TaxCodeSearchViewModel = metroViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()

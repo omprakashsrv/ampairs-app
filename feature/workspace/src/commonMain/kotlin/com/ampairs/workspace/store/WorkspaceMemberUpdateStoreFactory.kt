@@ -1,6 +1,9 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.time.currentTimeMillis
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.WorkspaceMemberApi
 import com.ampairs.workspace.api.model.MemberDetailsResponse
 import com.ampairs.workspace.api.model.UpdateMemberRequest
@@ -28,6 +31,8 @@ data class WorkspaceMemberUpdateRequest(
     val updateRequest: UpdateMemberRequest
 )
 
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceMemberUpdateStoreFactory(
     private val memberApi: WorkspaceMemberApi,
     private val memberDao: WorkspaceMemberDao,

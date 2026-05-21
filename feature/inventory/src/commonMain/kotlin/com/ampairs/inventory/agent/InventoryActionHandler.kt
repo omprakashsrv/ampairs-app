@@ -7,8 +7,11 @@ import com.ampairs.agent.core.ActionResult
 import com.ampairs.agent.core.ActionType
 import com.ampairs.agent.core.AgentAction
 import com.ampairs.agent.core.ParameterType
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.inventory.db.InventoryRepository
 
+@Inject
 class InventoryActionHandler(
     private val inventoryRepository: InventoryRepository,
 ) : ActionHandler {

@@ -8,6 +8,7 @@ import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.calculation.model.TaxComponentResult
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
+import dev.zacsweers.metro.Inject
 
 /**
  * Default Tax Strategy - Simple percentage-based fallback for any country
@@ -19,6 +20,7 @@ import com.ampairs.tax.data.repository.TaxComponentRepository
  * - Tax exemption support
  * - Fallback for countries without specific strategies
  */
+@Inject
 class DefaultTaxStrategy(
     private val taxRuleRepository: TaxRuleRepository,
     private val taxComponentRepository: TaxComponentRepository,

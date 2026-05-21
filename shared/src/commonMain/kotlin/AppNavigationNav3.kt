@@ -14,10 +14,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.ampairs.auth.api.TokenRepository
-import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.common.UnauthenticatedHandler
-import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.firebase.performance.FirebasePerformance
 import com.ampairs.common.firebase.performance.PerformanceAttributes
@@ -26,13 +23,13 @@ import com.ampairs.common.firebase.performance.Trace
 import com.ampairs.common.ui.GlobalAppLayoutNav3
 import com.ampairs.navigation.combinedEntryProvider
 import com.ampairs.navigation.createNav3SavedStateConfig
+import com.ampairs.di.LocalAppGraph
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
-import org.koin.compose.koinInject
 
 /**
  * Navigation 3 implementation of AppNavigation.
@@ -48,12 +45,13 @@ fun AppNavigationNav3(
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
-    val analytics: FirebaseAnalytics = koinInject()
-    val performance: FirebasePerformance = koinInject()
-    val appPreferences: AppPreferencesDataStore = koinInject()
-    val workspaceRepository: OfflineFirstWorkspaceRepository = koinInject()
-    val tokenRepository: TokenRepository = koinInject()
-    val userWorkspaceRepository: UserWorkspaceRepository = koinInject()
+    val graph = LocalAppGraph.current
+    val analytics = graph.analytics
+    val performance = graph.performance
+    val appPreferences = graph.appPreferences
+    val workspaceRepository = graph.offlineFirstWorkspaceRepository
+    val tokenRepository = graph.tokenRepository
+    val userWorkspaceRepository = graph.userWorkspaceRepository
 
     // State for auto-resume: null = checking, true = auto-resume, false = normal flow
     var autoResumeState by remember { mutableStateOf<Pair<Boolean, String?>?>(null) }

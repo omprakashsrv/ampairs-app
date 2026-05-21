@@ -7,6 +7,10 @@ import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.common.viewmodel.handleCancellation
 import com.ampairs.common.viewmodel.shouldShowAsError
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -19,6 +23,9 @@ data class CustomersListUiState(
     val error: String? = null
 )
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class CustomersListViewModel(
     private val customerStore: CustomerStore,
 ) : ViewModel() {

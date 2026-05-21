@@ -4,6 +4,7 @@ import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.tax.data.api.TaxConfigurationApi
 import com.ampairs.tax.data.db.dao.TaxComponentDao
 import com.ampairs.tax.data.db.dao.TaxComponentTypeDao
+import dev.zacsweers.metro.Inject
 import com.ampairs.tax.data.db.entity.toEntity
 import com.ampairs.tax.data.db.entity.toDomain
 import com.ampairs.tax.domain.model.TaxComponentType
@@ -15,6 +16,7 @@ import kotlin.time.ExperimentalTime
 /**
  * Tax Component Repository - Component types and workspace components
  */
+@Inject
 @OptIn(ExperimentalTime::class)
 class TaxComponentRepository(
     private val taxConfigApi: TaxConfigurationApi,

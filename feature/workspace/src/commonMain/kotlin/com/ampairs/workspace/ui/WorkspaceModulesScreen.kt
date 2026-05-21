@@ -17,14 +17,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.workspace.navigation.DynamicModuleNavigation
 import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.subscription.ui.screens.SubscriptionOnboardingScreen
+import com.ampairs.subscription.util.SubscriptionOnboardingManager
+import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 
 /**
  * Workspace modules screen showing active modules
@@ -33,13 +34,15 @@ import com.ampairs.subscription.ui.screens.SubscriptionOnboardingScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceModulesScreen(
+    workspaceId: String,
+    subscriptionViewModel: SubscriptionViewModel,
+    subscriptionOnboardingManager: SubscriptionOnboardingManager,
     onModuleSelected: (moduleCode: String) -> Unit = {},
     onNavigateToModuleStore: (() -> Unit)? = null,
     onNavigateToSubscription: (() -> Unit)? = null,
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
-    workspaceId: String = "",
     paddingValues: PaddingValues = PaddingValues(0.dp),
-    viewModel: WorkspaceModulesViewModel = koinViewModel { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
+    viewModel: WorkspaceModulesViewModel = assistedMetroViewModel<WorkspaceModulesViewModel, WorkspaceModulesViewModel.Factory> { create(workspaceId) },
 ) {
     var showUpdateDialog by remember { mutableStateOf(false) }
     var missingModuleName by remember { mutableStateOf("") }
@@ -185,7 +188,9 @@ fun WorkspaceModulesScreen(
             },
             onDismiss = {
                 showSubscriptionOnboarding = false
-            }
+            },
+            viewModel = subscriptionViewModel,
+            onboardingManager = subscriptionOnboardingManager
         )
     }
 }

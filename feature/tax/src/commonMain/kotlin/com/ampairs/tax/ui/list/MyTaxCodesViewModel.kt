@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.domain.model.TaxCode
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -11,6 +15,9 @@ import kotlinx.coroutines.launch
 /**
  * My Tax Codes ViewModel
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class MyTaxCodesViewModel(
     private val taxCodeRepository: TaxCodeRepository,
     private val taxRuleRepository: com.ampairs.tax.data.repository.TaxRuleRepository,

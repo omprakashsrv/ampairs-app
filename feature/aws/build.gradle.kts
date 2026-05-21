@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.metro)
 }
 
 kotlin {
@@ -19,12 +20,12 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.koin.core)
+                implementation(libs.metro.runtime)
+                implementation(libs.metrox.viewmodel.compose)
             }
         }
         androidMain {
             dependencies {
-                implementation(libs.koin.android)
                 implementation(libs.aws.s3)
             }
         }

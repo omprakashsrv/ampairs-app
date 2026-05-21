@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.metro)
 }
 
 kotlin {
@@ -30,10 +31,8 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
 
-                // Koin
-                implementation(libs.koin.core)
-                implementation(libs.koin.compose)
-                implementation(libs.koin.compose.viewmodel)
+                // Metro
+                implementation(libs.metro.runtime)
 
                 // Ktor HTTP client
                 implementation(libs.bundles.ktor.common)
@@ -71,11 +70,12 @@ kotlin {
 
         androidMain {
             dependencies {
-                implementation(libs.koin.android)
                 implementation(libs.ktor.client.okHttp)
                 // In-app update (InAppUpdateManager)
                 implementation(libs.app.update)
                 implementation(libs.play.services.coroutines)
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.androidx.core)
             }
         }
 

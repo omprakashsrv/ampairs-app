@@ -2,6 +2,7 @@ package com.ampairs.update.service
 
 import com.ampairs.update.domain.UpdateInfo
 import com.ampairs.update.domain.UpdateInstallState
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * - Guides user through manual installation
  * - Platform-specific: .dmg (macOS), .msi (Windows), .deb (Linux)
  */
+@Inject
 class UpdateInstaller {
     private val _installState = MutableStateFlow<UpdateInstallState>(UpdateInstallState.Idle)
     val installState: StateFlow<UpdateInstallState> = _installState.asStateFlow()

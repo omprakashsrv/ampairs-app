@@ -8,8 +8,11 @@ import com.ampairs.agent.core.ActionType
 import com.ampairs.agent.core.AgentAction
 import com.ampairs.agent.core.NavigationTarget
 import com.ampairs.agent.core.ParameterType
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.order.db.OrderRepository
 
+@Inject
 class OrderActionHandler(
     private val orderRepository: OrderRepository,
 ) : ActionHandler {

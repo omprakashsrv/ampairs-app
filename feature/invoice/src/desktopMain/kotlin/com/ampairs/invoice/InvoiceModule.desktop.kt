@@ -1,19 +1,16 @@
 package com.ampairs.invoice
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.di.AppScope
 import com.ampairs.invoice.db.InvoiceRoomDatabase
-import org.koin.core.module.Module
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 
-val invoicePlatformModule: Module = module {
-    // Use factory instead of single to ensure fresh database instances after workspace switch
-    // DatabaseScopeManager handles actual singleton behavior per workspace
-    factory<InvoiceRoomDatabase> {
-        val factory = get<WorkspaceAwareDatabaseFactory>()
-        factory.createDatabase(
-            klass = InvoiceRoomDatabase::class,
-            moduleName = "invoice",
-            migrations = emptyList()
-        )
+@ContributesTo(AppScope::class)
+interface InvoiceDesktopModule {
+    companion object {
+        @Provides
+        fun provideInvoiceDatabase(factory: WorkspaceAwareDatabaseFactory): InvoiceRoomDatabase =
+            factory.createDatabase(klass = InvoiceRoomDatabase::class, moduleName = "invoice", migrations = emptyList())
     }
 }

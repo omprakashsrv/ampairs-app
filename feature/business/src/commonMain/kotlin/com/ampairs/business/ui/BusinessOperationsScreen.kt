@@ -12,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
+import com.ampairs.business.ui.BusinessOperationsViewModel
 
 /**
  * Business Operations Settings Screen.
@@ -28,8 +28,8 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessOperationsScreen(
-    modifier: Modifier = Modifier,
-    viewModel: BusinessOperationsViewModel = koinInject()
+    viewModel: BusinessOperationsViewModel,
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

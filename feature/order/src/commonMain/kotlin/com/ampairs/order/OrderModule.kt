@@ -1,37 +1,19 @@
 package com.ampairs.order
 
-import com.ampairs.agent.core.ActionHandlerProvider
-import com.ampairs.order.agent.OrderActionHandler
-import com.ampairs.order.api.OrderApi
-import com.ampairs.order.api.OrderApiImpl
-import com.ampairs.order.db.OrderRepository
+import com.ampairs.common.di.AppScope
 import com.ampairs.order.db.OrderRoomDatabase
-import com.ampairs.order.viewmodel.OrderViewModel
-import com.ampairs.order.viewmodel.OrderViewViewModel
-import com.ampairs.order.viewmodel.OrdersViewModel
-import org.koin.core.module.Module
-import org.koin.dsl.bind
-import org.koin.dsl.module
+import com.ampairs.order.db.dao.OrderDao
+import com.ampairs.order.db.dao.OrderItemDao
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 
-val orderModule: Module = module {
-    factory { OrderApiImpl(get(), get()) } bind (OrderApi::class)
-    // Database is provided by platform-specific modules (factory for workspace-scoped isolation)
-    factory { get<OrderRoomDatabase>().orderDao() }
-    factory { get<OrderRoomDatabase>().orderItemDao() }
-    factory { OrderRepository(get(), get(), get(), get(), get()) }
+@ContributesTo(AppScope::class)
+interface OrderDaoModule {
+    companion object {
+        @Provides
+        fun provideOrderDao(db: OrderRoomDatabase): OrderDao = db.orderDao()
 
-    factory<ActionHandlerProvider> {
-        ActionHandlerProvider("order", OrderActionHandler.ACTIONS) {
-            OrderActionHandler(get())
-        }
-    } bind ActionHandlerProvider::class
-
-    // Direct ViewModel injection
-    factory { OrdersViewModel(get()) }
-    factory { (fromCustomerId: String?, toCustomerId: String?, id: String?) ->
-        OrderViewModel(fromCustomerId, toCustomerId, id, get(), get(), get(), get())
+        @Provides
+        fun provideOrderItemDao(db: OrderRoomDatabase): OrderItemDao = db.orderItemDao()
     }
-    factory { (orderId: String) -> OrderViewViewModel(orderId, get()) }
 }
-
-fun orderModule() = orderModule

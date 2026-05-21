@@ -1,6 +1,8 @@
 package com.ampairs.customer.data.repository
 
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.api.CustomerImageApi
 import com.ampairs.customer.data.db.CustomerImageDao
@@ -28,6 +30,7 @@ import kotlin.time.ExperimentalTime
  * Repository for customer image operations with offline-first architecture.
  * Provides database-first operations with background server synchronization.
  */
+@Inject
 class CustomerImageRepository(
     private val dao: CustomerImageDao,
     private val api: CustomerImageApi,

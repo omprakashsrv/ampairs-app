@@ -6,12 +6,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/**
- * Manages application locale and language preferences
- */
+@Inject @SingleIn(AppScope::class)
 class LocaleManager(
     private val appPreferences: AppPreferencesDataStore
 ) {

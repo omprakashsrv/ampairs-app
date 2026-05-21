@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.sentryPlugin)
+    alias(libs.plugins.metro)
 }
 
 configurations.all {
@@ -80,7 +81,6 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(libs.androidx.activity.compose)
-                implementation(libs.koin.android)
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.splash.screen)
                 implementation(libs.aws.s3)
@@ -110,25 +110,25 @@ kotlin {
 
         val commonMain by getting {
             dependencies {
-                implementation(projects.data.common)
+                api(projects.data.common)
 
-                // Feature modules
-                implementation(projects.feature.auth)
-                implementation(projects.feature.agent)
-                implementation(projects.feature.aws)
-                implementation(projects.feature.form)
-                implementation(projects.feature.unit)
-                implementation(projects.feature.update)
-                implementation(projects.feature.event)
-                implementation(projects.feature.tax)
-                implementation(projects.feature.subscription)
-                implementation(projects.feature.business)
-                implementation(projects.feature.product)
-                implementation(projects.feature.customer)
-                implementation(projects.feature.inventory)
-                implementation(projects.feature.order)
-                implementation(projects.feature.invoice)
-                implementation(projects.feature.workspace)
+                // Feature modules — api so androidApp can see Metro-generated supertypes
+                api(projects.feature.auth)
+                api(projects.feature.agent)
+                api(projects.feature.aws)
+                api(projects.feature.form)
+                api(projects.feature.unit)
+                api(projects.feature.update)
+                api(projects.feature.event)
+                api(projects.feature.tax)
+                api(projects.feature.subscription)
+                api(projects.feature.business)
+                api(projects.feature.product)
+                api(projects.feature.customer)
+                api(projects.feature.inventory)
+                api(projects.feature.order)
+                api(projects.feature.invoice)
+                api(projects.feature.workspace)
 
                 implementation(libs.compose.runtime)
                 implementation(libs.compose.ui)
@@ -139,9 +139,8 @@ kotlin {
                 implementation(libs.compose.components.resources)
 
                 implementation(libs.kotlinx.dateTime)
-                implementation(libs.koin.core)
-                implementation(libs.koin.compose)
-                implementation(libs.koin.compose.viewmodel)
+                implementation(libs.metro.runtime)
+                implementation(libs.metrox.viewmodel.compose)
 
                 implementation(libs.bundles.ktor.common)
 
@@ -182,7 +181,6 @@ kotlin {
 
         val desktopMain by getting {
             dependencies {
-                implementation(libs.koin.core)
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.aws.s3)

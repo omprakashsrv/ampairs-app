@@ -1,6 +1,9 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.model.PageResult
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceInvitationApi
 import com.ampairs.workspace.api.model.InvitationApiModel
@@ -70,6 +73,8 @@ data class WorkspaceInvitationKey(
     }
 }
 
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceInvitationStoreFactory(
     private val invitationApi: WorkspaceInvitationApi,
     private val invitationDao: WorkspaceInvitationDao,

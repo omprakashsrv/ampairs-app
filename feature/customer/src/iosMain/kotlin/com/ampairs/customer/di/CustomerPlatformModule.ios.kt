@@ -1,25 +1,21 @@
 package com.ampairs.customer.di
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.di.AppScope
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.repository.IosFileManager
 import com.ampairs.customer.data.repository.PlatformFileManager
-import com.ampairs.customer.ui.components.contact.ContactPickerService
-import org.koin.dsl.bind
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 
-actual val customerPlatformModule = module {
-    // Use factory instead of single to ensure fresh database instances after workspace switch
-    // DatabaseScopeManager handles actual singleton behavior per workspace
-    factory<CustomerDatabase> {
-        get<WorkspaceAwareDatabaseFactory>().createDatabase(
-            klass = CustomerDatabase::class,
-            moduleName = "customer"
-        )
+@ContributesTo(AppScope::class)
+interface CustomerIosModule {
+    companion object {
+        @Provides
+        fun provideCustomerDatabase(factory: WorkspaceAwareDatabaseFactory): CustomerDatabase =
+            factory.createDatabase(klass = CustomerDatabase::class, moduleName = "customer")
+
+        @Provides
+        fun providePlatformFileManager(): PlatformFileManager = IosFileManager()
     }
-
-    single { IosFileManager() } bind PlatformFileManager::class
-
-    // Contact Picker Service (iOS implementation)
-    single { ContactPickerService() }
 }

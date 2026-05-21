@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.form.domain.EntityAttributeDefinition
+import dev.zacsweers.metro.Inject
 import com.ampairs.form.domain.EntityConfigSchema
 import com.ampairs.form.domain.EntityFieldConfig
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ data class FormConfigUiState(
     val successMessage: String? = null
 )
 
+@Inject
 class FormConfigViewModel(
     private val entityType: String,
     private val configRepository: ConfigRepository

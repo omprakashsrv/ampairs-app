@@ -18,9 +18,13 @@ import com.ampairs.auth.domain.asDatabaseModel
 import com.ampairs.auth.domain.asDomainModel
 import com.ampairs.auth.service.RecaptchaService
 import com.ampairs.common.DeviceService
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.model.GenericSuccess
 import com.ampairs.common.model.Response
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 
+@Inject @SingleIn(AppScope::class)
 class UserRepository(
     val authApi: AuthApi,
     val userTokenDao: UserTokenDao,

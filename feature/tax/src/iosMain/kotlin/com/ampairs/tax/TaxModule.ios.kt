@@ -1,18 +1,22 @@
 package com.ampairs.tax
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.di.AppScope
 import com.ampairs.tax.data.db.TaxRoomDatabase
-import org.koin.core.module.Module
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 
-val taxPlatformModule: Module = module {
-    // Use factory instead of single to ensure fresh database instances after workspace switch
-    // DatabaseScopeManager handles actual singleton behavior per workspace
-    factory<TaxRoomDatabase> {
-        val factory = get<WorkspaceAwareDatabaseFactory>()
-        factory.createDatabase(
-            klass = TaxRoomDatabase::class,
-            moduleName = "tax"
-        )
+// Replaced Koin taxPlatformModule for iOS.
+// TaxRoomDatabase is provided without @SingleIn (workspace-aware factory).
+
+@ContributesTo(AppScope::class)
+interface TaxIosModule {
+    companion object {
+        @Provides
+        fun provideTaxDatabase(factory: WorkspaceAwareDatabaseFactory): TaxRoomDatabase =
+            factory.createDatabase(
+                klass = TaxRoomDatabase::class,
+                moduleName = "tax"
+            )
     }
 }

@@ -1,6 +1,13 @@
 package com.ampairs.workspace.viewmodel
 
 import androidx.lifecycle.ViewModel
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import com.ampairs.common.di.AppScope
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
@@ -20,10 +27,18 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
  * ViewModel for Workspace Modules matching web implementation
  * Follows web: workspace-modules.component.ts with signals pattern
  */
+@AssistedInject
 class WorkspaceModulesViewModel(
     private val moduleRepository: WorkspaceModuleRepository,
-    private val workspaceId: String? = null // Optional workspace context
+    @Assisted private val workspaceId: String?,
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(workspaceId: String?): WorkspaceModulesViewModel
+    }
 
     // Use global navigation manager instead of local service
     private val globalNavigationManager = GlobalNavigationManager.getInstance()

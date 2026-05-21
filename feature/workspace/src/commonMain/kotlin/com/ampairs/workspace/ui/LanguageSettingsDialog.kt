@@ -22,16 +22,15 @@ import ampairsapp.feature.workspace.generated.resources.Res
 import ampairsapp.feature.workspace.generated.resources.*
 import kotlinx.coroutines.launch
 import com.ampairs.common.localization.localizedString
-import org.koin.compose.koinInject
 
 /**
  * Dialog for selecting app language
  */
 @Composable
 fun LanguageSettingsDialog(
+    localeManager: LocaleManager,
     onDismiss: () -> Unit
 ) {
-    val localeManager: LocaleManager = koinInject()
     val currentLanguage by localeManager.currentLanguage.collectAsState(Language.ENGLISH)
     val scope = rememberCoroutineScope()
 

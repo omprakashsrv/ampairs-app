@@ -1,6 +1,13 @@
 package com.ampairs.workspace.viewmodel
 
 import androidx.lifecycle.ViewModel
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import com.ampairs.common.di.AppScope
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.CreateInvitationRequest
 import com.ampairs.workspace.api.model.ResendInvitationRequest
@@ -21,11 +28,19 @@ import kotlinx.coroutines.launch
  * Manages invitation listing, creation, acceptance, resending, and cancellation
  * with proper offline-first state management, automatic sync, and error handling.
  */
+@AssistedInject
 class WorkspaceInvitationsViewModel(
-    private val workspaceId: String,
+    @Assisted private val workspaceId: String,
     private val invitationRepository: OfflineFirstWorkspaceInvitationRepository,
     private val rolesRepository: OfflineFirstRolesPermissionsRepository,
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(workspaceId: String): WorkspaceInvitationsViewModel
+    }
 
     private val _state = MutableStateFlow(WorkspaceInvitationsState())
     val state: StateFlow<WorkspaceInvitationsState> = _state.asStateFlow()

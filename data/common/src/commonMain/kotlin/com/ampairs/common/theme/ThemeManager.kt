@@ -11,10 +11,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import com.ampairs.common.concurrency.Volatile
 import com.ampairs.common.concurrency.synchronized
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 
-/**
- * Theme manager for handling app-wide theme state with DataStore persistence
- */
+@Inject @SingleIn(AppScope::class)
 class ThemeManager(
     private val repository: ThemeRepository
 ) {
