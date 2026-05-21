@@ -6,8 +6,11 @@ import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.domain.model.InvoiceSummary
 import com.ampairs.subscription.domain.model.PaymentLinkResponse
+import com.ampairs.common.di.AppScope
 import com.ampairs.subscription.repository.InvoiceRepository
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.minutes
@@ -16,11 +19,12 @@ import kotlin.time.Clock
 /**
  * ViewModel for invoice operations
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
 @Inject
 @OptIn(kotlin.time.ExperimentalTime::class)
 class InvoiceViewModel(
     private val repository: InvoiceRepository,
-    private val workspaceIdProvider: () -> String = { "" }
 ) : ViewModel() {
 
     companion object {
@@ -81,7 +85,7 @@ class InvoiceViewModel(
     /**
      * Get current workspace ID
      */
-    private fun getWorkspaceId(): String = workspaceIdProvider()
+    private fun getWorkspaceId(): String = ""
 
     /**
      * Load invoices for current workspace

@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ampairs.business.ui.BusinessOperationsViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Business Operations Settings Screen.
@@ -28,8 +29,8 @@ import com.ampairs.business.ui.BusinessOperationsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessOperationsScreen(
-    viewModel: BusinessOperationsViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: BusinessOperationsViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

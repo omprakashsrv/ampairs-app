@@ -28,6 +28,7 @@ import com.ampairs.business.domain.BusinessImage
 import com.ampairs.business.domain.BusinessImageType
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.business.ui.BusinessImagesViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Business Images Screen.
@@ -36,8 +37,8 @@ import com.ampairs.business.ui.BusinessImagesViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessImagesScreen(
-    viewModel: BusinessImagesViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: BusinessImagesViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

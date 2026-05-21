@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.form.domain.AttributeDataType
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.business.ui.BusinessCustomAttributesViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Business Custom Attributes Screen.
@@ -25,8 +26,8 @@ import com.ampairs.business.ui.BusinessCustomAttributesViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessCustomAttributesScreen(
-    viewModel: BusinessCustomAttributesViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: BusinessCustomAttributesViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

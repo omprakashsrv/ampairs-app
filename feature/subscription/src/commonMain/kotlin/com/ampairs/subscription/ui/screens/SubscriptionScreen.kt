@@ -13,9 +13,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.ui.components.*
+import com.ampairs.subscription.viewmodel.InvoiceViewModel
 import com.ampairs.subscription.viewmodel.SubscriptionEvent
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
-import com.ampairs.subscription.viewmodel.InvoiceViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import com.ampairs.common.util.formatCurrencyWithCode
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.clickable
@@ -27,7 +28,6 @@ import androidx.compose.foundation.clickable
 @Composable
 fun SubscriptionScreen(
     viewModel: SubscriptionViewModel,
-    invoiceViewModel: InvoiceViewModel,
     onNavigateToPlanComparison: () -> Unit,
     onNavigateToBillingHistory: () -> Unit,
     onNavigateToDeviceManagement: () -> Unit,
@@ -35,7 +35,8 @@ fun SubscriptionScreen(
     onNavigateToInvoices: (() -> Unit)? = null,
     onNavigateToInvoiceDetail: ((String) -> Unit)? = null,
     onCheckoutUrl: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    invoiceViewModel: InvoiceViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val subscription by viewModel.subscription.collectAsState()

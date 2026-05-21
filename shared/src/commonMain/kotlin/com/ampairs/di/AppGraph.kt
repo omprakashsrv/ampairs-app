@@ -1,6 +1,5 @@
 package com.ampairs.di
 
-import com.ampairs.agent.ui.ChatViewModel
 import com.ampairs.auth.api.AuthApi
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
@@ -14,12 +13,6 @@ import com.ampairs.auth.viewmodel.UserSelectionViewModel
 import com.ampairs.auth.viewmodel.UserUpdateViewModel
 import com.ampairs.business.data.api.BusinessApi
 import com.ampairs.business.data.repository.BusinessRepository
-import com.ampairs.business.ui.BusinessCustomAttributesViewModel
-import com.ampairs.business.ui.BusinessImagesViewModel
-import com.ampairs.business.ui.BusinessOperationsViewModel
-import com.ampairs.business.ui.BusinessOverviewViewModel
-import com.ampairs.business.ui.BusinessProfileViewModel
-import com.ampairs.business.ui.BusinessTaxConfigViewModel
 import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
@@ -45,9 +38,7 @@ import com.ampairs.customer.ui.list.CustomersListViewModel
 import com.ampairs.customer.ui.state.StateListViewModel
 import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.inventory.db.InventoryRepository
-import com.ampairs.inventory.viewmodel.InventoryListViewModel
 import com.ampairs.invoice.db.InvoiceRepository
-import com.ampairs.invoice.viewmodel.InvoicesViewModel
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.viewmodel.OrdersViewModel
 import com.ampairs.product.data.repository.ProductRepository
@@ -55,7 +46,6 @@ import com.ampairs.product.domain.ProductStore
 import com.ampairs.product.ui.list.ProductsListViewModel
 import com.ampairs.subscription.repository.InvoiceRepository as SubscriptionInvoiceRepository
 import com.ampairs.subscription.util.SubscriptionOnboardingManager
-import com.ampairs.subscription.viewmodel.InvoiceViewModel as SubscriptionInvoiceViewModel
 import com.ampairs.subscription.viewmodel.SubscriptionViewModelFactory
 import com.ampairs.tax.calculation.TaxCalculationEngine
 import com.ampairs.tax.data.repository.TaxCodeRepository
@@ -181,7 +171,6 @@ interface AppGraph : ViewModelGraph {
     fun createWorkspaceCreateViewModel(): WorkspaceCreateViewModel
     fun createOrdersViewModel(): OrdersViewModel
     fun createUnitListViewModel(): UnitListViewModel
-    fun createInvoicesViewModel(): InvoicesViewModel
     fun createCustomerTypeListViewModel(): CustomerTypeListViewModel
     fun createCustomerGroupListViewModel(): CustomerGroupListViewModel
     fun createStateListViewModel(): StateListViewModel
@@ -191,13 +180,4 @@ interface AppGraph : ViewModelGraph {
     fun createTaxCalculatorViewModel(): TaxCalculatorViewModel
     fun createTaxCodeSearchViewModel(): TaxCodeSearchViewModel
     fun createMyTaxCodesViewModel(): MyTaxCodesViewModel
-    fun createBusinessOperationsViewModel(): BusinessOperationsViewModel
-    fun createBusinessTaxConfigViewModel(): BusinessTaxConfigViewModel
-    fun createBusinessOverviewViewModel(): BusinessOverviewViewModel
-    fun createBusinessProfileViewModel(): BusinessProfileViewModel
-    fun createBusinessImagesViewModel(): BusinessImagesViewModel
-    fun createBusinessCustomAttributesViewModel(): BusinessCustomAttributesViewModel
-    fun createInventoryListViewModel(): InventoryListViewModel
-    fun createChatViewModel(): ChatViewModel
-    fun createSubscriptionInvoiceViewModel(): SubscriptionInvoiceViewModel
 }

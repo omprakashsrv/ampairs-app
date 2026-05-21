@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.business.ui.BusinessOverviewViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.form.domain.EntityType
 import kotlinx.coroutines.flow.first
@@ -35,7 +36,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessOverviewScreen(
-    viewModel: BusinessOverviewViewModel,
     configRepository: ConfigRepository,
     onNavigateToProfile: () -> Unit = {},
     onNavigateToOperations: () -> Unit = {},
@@ -43,7 +43,8 @@ fun BusinessOverviewScreen(
     onNavigateToCustomAttributes: () -> Unit = {},
     onNavigateToFormConfig: () -> Unit = {},
     onNavigateToImages: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: BusinessOverviewViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.ampairs.business.ui.BusinessTaxConfigViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Business Tax Configuration Screen.
@@ -31,8 +32,8 @@ import com.ampairs.business.ui.BusinessTaxConfigViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessTaxConfigScreen(
-    viewModel: BusinessTaxConfigViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: BusinessTaxConfigViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

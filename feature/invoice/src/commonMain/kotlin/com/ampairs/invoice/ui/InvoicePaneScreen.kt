@@ -12,14 +12,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.viewmodel.InvoiceViewViewModel
 import com.ampairs.invoice.viewmodel.InvoicesViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun InvoicePaneScreen(
-    invoicesViewModel: InvoicesViewModel,
     invoiceRepository: InvoiceRepository,
-    onInvoiceEdit: (invoiceId: String?) -> Unit
+    onInvoiceEdit: (invoiceId: String?) -> Unit,
+    invoicesViewModel: InvoicesViewModel = metroViewModel(),
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()

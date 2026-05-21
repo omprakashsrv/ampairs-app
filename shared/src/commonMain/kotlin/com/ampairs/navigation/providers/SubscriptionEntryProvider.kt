@@ -23,7 +23,6 @@ import com.ampairs.subscription.ui.screens.PaymentMethodsScreen
 import com.ampairs.subscription.ui.screens.PlanComparisonScreen
 import com.ampairs.subscription.ui.screens.SubscriptionScreen
 import com.ampairs.subscription.ui.screens.UsageDetailsScreen
-import com.ampairs.subscription.viewmodel.InvoiceViewModel
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 
 /**
@@ -38,10 +37,8 @@ fun subscriptionEntryProvider(
     is SubscriptionRoute.Root -> NavEntry(key) {
         val graph = LocalAppGraph.current
         val viewModel: SubscriptionViewModel = viewModel { graph.subscriptionViewModelFactory.create() }
-        val invoiceViewModel: InvoiceViewModel = viewModel(key = "invoice") { graph.createSubscriptionInvoiceViewModel() }
         SubscriptionScreen(
             viewModel = viewModel,
-            invoiceViewModel = invoiceViewModel,
             onNavigateToPlanComparison = {
                 backStack.add(SubscriptionRoute.Plans)
             },
@@ -121,24 +118,18 @@ fun subscriptionEntryProvider(
     }
 
     is SubscriptionRoute.Invoices -> NavEntry(key) {
-        val graph = LocalAppGraph.current
-        val invoiceViewModel: InvoiceViewModel = viewModel { graph.createSubscriptionInvoiceViewModel() }
         InvoiceListScreen(
             onNavigateToInvoiceDetail = { invoiceUid ->
                 backStack.add(SubscriptionRoute.InvoiceDetail(invoiceUid))
             },
             onNavigateBack = { backStack.removeLastOrNull() },
-            viewModel = invoiceViewModel
         )
     }
 
     is SubscriptionRoute.InvoiceDetail -> NavEntry(key) {
-        val graph = LocalAppGraph.current
-        val invoiceViewModel: InvoiceViewModel = viewModel { graph.createSubscriptionInvoiceViewModel() }
         InvoiceDetailScreen(
             invoiceUid = key.invoiceUid,
             onNavigateBack = { backStack.removeLastOrNull() },
-            viewModel = invoiceViewModel
         )
     }
 
