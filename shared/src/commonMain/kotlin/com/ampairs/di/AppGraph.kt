@@ -6,11 +6,6 @@ import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.db.dao.UserDao
 import com.ampairs.auth.firebase.FirebaseAuthRepository
-import com.ampairs.auth.viewmodel.AccountDeletionViewModel
-import com.ampairs.auth.viewmodel.DeviceManagementViewModel
-import com.ampairs.auth.viewmodel.LoginViewModel
-import com.ampairs.auth.viewmodel.UserSelectionViewModel
-import com.ampairs.auth.viewmodel.UserUpdateViewModel
 import com.ampairs.business.data.api.BusinessApi
 import com.ampairs.business.data.repository.BusinessRepository
 import com.ampairs.common.DeviceService
@@ -32,18 +27,12 @@ import com.ampairs.customer.domain.CustomerGroupStore
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.CustomerTypeStore
 import com.ampairs.customer.domain.StateStore
-import com.ampairs.customer.ui.customergroup.CustomerGroupListViewModel
-import com.ampairs.customer.ui.customertype.CustomerTypeListViewModel
-import com.ampairs.customer.ui.list.CustomersListViewModel
-import com.ampairs.customer.ui.state.StateListViewModel
 import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.order.db.OrderRepository
-import com.ampairs.order.viewmodel.OrdersViewModel
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.domain.ProductStore
-import com.ampairs.product.ui.list.ProductsListViewModel
 import com.ampairs.subscription.repository.InvoiceRepository as SubscriptionInvoiceRepository
 import com.ampairs.subscription.util.SubscriptionOnboardingManager
 import com.ampairs.subscription.viewmodel.SubscriptionViewModelFactory
@@ -52,12 +41,7 @@ import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
 import com.ampairs.tax.data.repository.TaxConfigurationRepository
 import com.ampairs.tax.data.repository.TaxRuleRepository
-import com.ampairs.tax.ui.calculator.TaxCalculatorViewModel
-import com.ampairs.tax.ui.configuration.TaxConfigurationViewModel
-import com.ampairs.tax.ui.list.MyTaxCodesViewModel
-import com.ampairs.tax.ui.search.TaxCodeSearchViewModel
 import com.ampairs.unit.data.repository.UnitRepository
-import com.ampairs.unit.ui.list.UnitListViewModel
 import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceInvitationRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
@@ -69,8 +53,6 @@ import com.ampairs.workspace.store.WorkspaceMemberStore
 import com.ampairs.workspace.store.WorkspaceMemberUpdateStoreFactory
 import com.ampairs.workspace.store.WorkspacePermissionsStore
 import com.ampairs.workspace.store.WorkspaceRolesStore
-import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
-import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import io.ktor.client.engine.HttpClientEngine
 
@@ -161,23 +143,4 @@ interface AppGraph : ViewModelGraph {
     val subscriptionOnboardingManager: SubscriptionOnboardingManager
     val subscriptionInvoiceRepository: SubscriptionInvoiceRepository
 
-    // ── ViewModel factories (Metro auto-implements from @Inject constructors) ─
-    fun createLoginViewModel(): LoginViewModel
-    fun createUserSelectionViewModel(): UserSelectionViewModel
-    fun createUserUpdateViewModel(): UserUpdateViewModel
-    fun createAccountDeletionViewModel(): AccountDeletionViewModel
-    fun createDeviceManagementViewModel(): DeviceManagementViewModel
-    fun createWorkspaceListViewModel(): WorkspaceListViewModel
-    fun createWorkspaceCreateViewModel(): WorkspaceCreateViewModel
-    fun createOrdersViewModel(): OrdersViewModel
-    fun createUnitListViewModel(): UnitListViewModel
-    fun createCustomerTypeListViewModel(): CustomerTypeListViewModel
-    fun createCustomerGroupListViewModel(): CustomerGroupListViewModel
-    fun createStateListViewModel(): StateListViewModel
-    fun createCustomersListViewModel(): CustomersListViewModel
-    fun createProductsListViewModel(): ProductsListViewModel
-    fun createTaxConfigurationViewModel(): TaxConfigurationViewModel
-    fun createTaxCalculatorViewModel(): TaxCalculatorViewModel
-    fun createTaxCodeSearchViewModel(): TaxCodeSearchViewModel
-    fun createMyTaxCodesViewModel(): MyTaxCodesViewModel
 }
