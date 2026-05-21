@@ -7,6 +7,10 @@ import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +22,9 @@ data class UserSelectionState(
     val error: String? = null
 )
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class UserSelectionViewModel(
     private val userRepository: UserRepository,
     private val tokenRepository: TokenRepository,

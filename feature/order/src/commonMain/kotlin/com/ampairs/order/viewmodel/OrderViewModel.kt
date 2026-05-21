@@ -18,17 +18,32 @@ import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.domain.asDatabaseModel
 import com.ampairs.product.domain.Product
 import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 
 
+@AssistedInject
 class OrderViewModel(
-    fromCustomerId: String?, toCustomerId: String?, id: String?,
+    @Assisted fromCustomerId: String?, @Assisted toCustomerId: String?, @Assisted id: String?,
     val customerRepository: CustomerRepository,
     val orderRepository: OrderRepository,
     val productRepository: ProductRepository,
     val userRepository: UserRepository,
 ) :
     ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): OrderViewModel
+    }
     fun updateOrderItems(products: List<Product>) {
         orderItems.removeAll(orderItems.filter { orderItem ->
             !products.map { it.id }.contains(orderItem.product?.id)

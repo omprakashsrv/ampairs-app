@@ -11,6 +11,10 @@ import com.ampairs.common.viewmodel.shouldShowAsError
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 
@@ -22,6 +26,9 @@ data class ProductsListUiState(
     val error: String? = null
 )
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class ProductsListViewModel(
     private val productStore: ProductStore,
     private val workspaceContextManager: WorkspaceContextManager

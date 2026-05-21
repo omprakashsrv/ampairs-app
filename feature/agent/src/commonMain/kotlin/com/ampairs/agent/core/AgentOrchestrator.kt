@@ -1,15 +1,20 @@
 package com.ampairs.agent.core
 
+import com.ampairs.agent.di.OfflineIntentResolver
+import com.ampairs.agent.di.OnlineIntentResolver
+import dev.zacsweers.metro.Inject
+
 /**
  * Coordinates the full pipeline: input -> intent -> action -> result -> response.
  * Handles online/offline mode transparently.
  *
  * DI-agnostic: depends only on interfaces from agent/core.
  */
+@Inject
 class AgentOrchestrator(
     private val actionRegistry: ActionRegistry,
-    private val onlineResolver: IntentResolver,
-    private val offlineResolver: IntentResolver,
+    @OnlineIntentResolver private val onlineResolver: IntentResolver,
+    @OfflineIntentResolver private val offlineResolver: IntentResolver,
 ) {
 
     /**

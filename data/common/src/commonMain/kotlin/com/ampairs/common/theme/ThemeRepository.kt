@@ -1,11 +1,12 @@
 package com.ampairs.common.theme
 
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Repository for theme preferences with DataStore persistence
- */
+@Inject @SingleIn(AppScope::class)
 class ThemeRepository(
     private val appPreferences: AppPreferencesDataStore
 ) {

@@ -22,8 +22,7 @@ kotlinx-dateTime = "0.7.1"
 kotlinx = "1.10.2"
 
 ktor = "3.3.2"
-koin = "4.1.1"
-koin-compose = "4.1.1"
+metro = "1.1.1"
 paging-common = "3.3.6"
 image-loader = "1.10.0"
 aws-sdk = "1.5.44"
@@ -72,10 +71,8 @@ androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidx-cor
 
 splash-screen = { module = "androidx.core:core-splashscreen", version.ref = "splash-screen" }
 
-koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
-koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
-koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin-compose" }
-koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin-compose" }
+metro-runtime = { module = "dev.zacsweers.metro:runtime", version.ref = "metro" }
+metrox-viewmodel-compose = { module = "dev.zacsweers.metro:metrox-viewmodel-compose", version.ref = "metro" }
 
 kotlinx-dateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-dateTime" }
 
@@ -189,6 +186,7 @@ firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version.ref = "f
 firebasePerf = { id = "com.google.firebase.firebase-perf", version.ref = "firebase-perf-gradle" }
 kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
 sentryPlugin = { id = "io.sentry.kotlin.multiplatform.gradle", version.ref = "sentry-kmp" }
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 
 [bundles]
 ktor-common = ["ktor-client-core", "ktor-client-logging", "ktor-client-serialization", "ktor-client-contentNegotiation", "ktor-client-auth", "ktor-client-cio", "ktor-client-websockets"]

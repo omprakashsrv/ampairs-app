@@ -25,9 +25,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.product.domain.Product
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
-
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailsScreen(
@@ -36,7 +34,7 @@ fun ProductDetailsScreen(
     onEditProduct: (String) -> Unit,
     onManageVariants: ((String, String) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    viewModel: ProductDetailsViewModel = koinViewModel { parametersOf(productId) }
+    viewModel: ProductDetailsViewModel = assistedMetroViewModel<ProductDetailsViewModel, ProductDetailsViewModel.Factory> { create(productId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }

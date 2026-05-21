@@ -1,6 +1,5 @@
 package com.ampairs.common
 
-import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.domain.asRefreshTokens
@@ -269,20 +268,8 @@ suspend inline fun <reified T> handleResponse(response: HttpResponse): T {
     }
 }
 
-/**
- * Get TokenRepository from HttpClient attributes - placeholder for now
- * In a real implementation, this would extract the token repository from client configuration
- */
 fun getTokenRepository(client: HttpClient): com.ampairs.auth.api.TokenRepository {
-    // For now, we'll get the token repository from Koin DI
-    return org.koin.mp.KoinPlatform.getKoin().get()
-}
-
-/**
- * Get DeviceService from Koin DI to retrieve device ID
- */
-fun getDeviceService(): com.ampairs.common.DeviceService {
-    return org.koin.mp.KoinPlatform.getKoin().get()
+    return client.attributes[TokenRepositoryKey]
 }
 
 /**
@@ -310,15 +297,9 @@ suspend fun refreshTokens(tokenRepository: com.ampairs.auth.api.TokenRepository)
             expectSuccess = false // Don't throw exceptions for this client
         }
         
-        // Get device ID for the refresh request
-        val deviceService = getDeviceService()
-        val deviceId = deviceService.getDeviceId()
-        
-        println("🔑 Using device ID for refresh: ${deviceId.take(10)}...")
-        
         val response = refreshClient.post(ApiUrlBuilder.authUrl("auth/v1/refresh_token")) {
             contentType(ContentType.Application.Json)
-            setBody(RefreshToken(refreshToken, deviceId))
+            setBody(RefreshToken(refreshToken, null))
         }
         
         if (response.status == HttpStatusCode.OK) {

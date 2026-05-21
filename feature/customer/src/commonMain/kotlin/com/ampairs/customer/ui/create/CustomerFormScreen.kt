@@ -62,8 +62,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.customer.domain.CustomerGroup
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
 import com.ampairs.auth.ui.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
 import com.ampairs.customer.ui.components.StringAutocomplete
@@ -74,7 +72,10 @@ import com.ampairs.customer.ui.components.location.AddressData
 import com.ampairs.customer.domain.State
 import com.ampairs.form.data.repository.ConfigRepository
 import kotlinx.coroutines.flow.first
-import org.koin.compose.koinInject
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ampairs.customer.ui.components.images.CustomerImageViewModel
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import com.ampairs.customer.ui.components.location.LocationService
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_GROUP
 import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
@@ -83,6 +84,8 @@ import com.ampairs.customer.util.CustomerConstants.STATUS_INACTIVE
 import com.ampairs.customer.util.CustomerConstants.STATUS_SUSPENDED
 import com.ampairs.customer.domain.CustomerType
 import com.ampairs.customer.ui.components.contact.ContactPickerService
+import com.ampairs.customer.data.repository.CustomerImageRepository
+import com.ampairs.customer.data.repository.ImageFilePicker
 import com.ampairs.customer.ui.components.contact.ContactData
 import kotlinx.coroutines.launch
 
@@ -92,7 +95,12 @@ fun CustomerFormScreen(
     customerId: String? = null,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CustomerFormViewModel = koinViewModel { parametersOf(customerId) }
+    viewModel: CustomerFormViewModel = assistedMetroViewModel<CustomerFormViewModel, CustomerFormViewModel.Factory> { create(customerId) },
+    configRepository: ConfigRepository,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker,
+    contactPickerService: ContactPickerService,
+    locationService: LocationService
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -152,6 +160,11 @@ fun CustomerFormScreen(
                     customerGroups = uiState.customerGroups,
                     onCustomerGroupSelected = viewModel::onCustomerGroupSelected,
                     entityConfig = uiState.entityConfig,
+                    configRepository = configRepository,
+                    customerImageRepository = customerImageRepository,
+                    imagePicker = imagePicker,
+                    contactPickerService = contactPickerService,
+                    locationService = locationService,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -178,6 +191,11 @@ private fun CustomerForm(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    configRepository: ConfigRepository,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker,
+    contactPickerService: ContactPickerService,
+    locationService: LocationService,
     modifier: Modifier = Modifier
 ) {
     // Get window size class to determine layout
@@ -186,7 +204,6 @@ private fun CustomerForm(
 
     // Only show adaptive layout for existing customers (when images are present)
     if (customerId != null && isCompactOrMedium) {
-        // Compact/Medium: Use TabLayout for mobile/tablet
         CustomerFormTabLayout(
             customerId = customerId,
             formState = formState,
@@ -204,10 +221,14 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            configRepository = configRepository,
+            customerImageRepository = customerImageRepository,
+            imagePicker = imagePicker,
+            contactPickerService = contactPickerService,
+            locationService = locationService,
             modifier = modifier
         )
     } else if (customerId != null) {
-        // Expanded: Use side-by-side layout for desktop/large screens
         CustomerFormSideBySideLayout(
             customerId = customerId,
             formState = formState,
@@ -225,10 +246,14 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            configRepository = configRepository,
+            customerImageRepository = customerImageRepository,
+            imagePicker = imagePicker,
+            contactPickerService = contactPickerService,
+            locationService = locationService,
             modifier = modifier
         )
     } else {
-        // New customer: No images, show form only
         CustomerFormFields(
             formState = formState,
             onFormChange = onFormChange,
@@ -245,6 +270,8 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            contactPickerService = contactPickerService,
+            locationService = locationService,
             modifier = modifier
         )
     }
@@ -268,9 +295,13 @@ private fun CustomerFormTabLayout(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    configRepository: ConfigRepository,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker,
+    contactPickerService: ContactPickerService,
+    locationService: LocationService,
     modifier: Modifier = Modifier
 ) {
-    val configRepository: ConfigRepository = koinInject()
     var selectedTabIndex by remember { mutableStateOf(0) }
 
     // Load form config for customerImages field
@@ -317,12 +348,17 @@ private fun CustomerFormTabLayout(
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
                 entityConfig = entityConfig,
+                contactPickerService = contactPickerService,
+                locationService = locationService,
                 modifier = Modifier.fillMaxSize()
             )
             1 -> if (tabs.getOrNull(1) == "Images") {
                 CustomerImageManagementScreen(
                     customerId = customerId,
                     readOnly = imagesFieldConfig?.enabled == false,
+                    viewModel = viewModel(key = customerId) {
+                        CustomerImageViewModel(customerId, customerImageRepository, imagePicker)
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
@@ -350,9 +386,13 @@ private fun CustomerFormSideBySideLayout(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    configRepository: ConfigRepository,
+    customerImageRepository: CustomerImageRepository,
+    imagePicker: ImageFilePicker,
+    contactPickerService: ContactPickerService,
+    locationService: LocationService,
     modifier: Modifier = Modifier
 ) {
-    val configRepository: ConfigRepository = koinInject()
 
     // Load form config for customerImages field
     var imagesFieldConfig by remember { mutableStateOf<com.ampairs.form.domain.EntityFieldConfig?>(null) }
@@ -390,11 +430,12 @@ private fun CustomerFormSideBySideLayout(
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
                 entityConfig = entityConfig,
+                contactPickerService = contactPickerService,
+                locationService = locationService,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // Right side: Customer Images (40% width) - if visible and editing existing customer
         if (imagesFieldConfig?.visible != false && customerId.isNotBlank()) {
             OutlinedCard(
                 modifier = Modifier
@@ -404,6 +445,9 @@ private fun CustomerFormSideBySideLayout(
                 CustomerImageManagementScreen(
                     customerId = customerId,
                     readOnly = imagesFieldConfig?.enabled == false,
+                    viewModel = viewModel(key = customerId) {
+                        CustomerImageViewModel(customerId, customerImageRepository, imagePicker)
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
@@ -431,11 +475,12 @@ private fun CustomerFormFields(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    contactPickerService: ContactPickerService,
+    locationService: LocationService,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
-    val contactPickerService: ContactPickerService = koinInject()
     var isImportingContact by remember { mutableStateOf(false) }
     var contactImportError by remember { mutableStateOf<String?>(null) }
 
@@ -927,6 +972,7 @@ private fun CustomerFormFields(
             LocationSection(
                 latitude = formState.latitude,
                 longitude = formState.longitude,
+                locationService = locationService,
                 onLocationSelected = { latitude, longitude, address ->
                     var updatedForm = formState.copy(
                         latitude = latitude,
@@ -1291,6 +1337,7 @@ private fun ConfiguredAttributeField(
 private fun LocationSection(
     latitude: Double?,
     longitude: Double?,
+    locationService: LocationService,
     onLocationSelected: (latitude: Double, longitude: Double, address: AddressData?) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1376,6 +1423,7 @@ private fun LocationSection(
         },
         onDismiss = {
             showLocationPicker = false
-        }
+        },
+        locationService = locationService
     )
 }

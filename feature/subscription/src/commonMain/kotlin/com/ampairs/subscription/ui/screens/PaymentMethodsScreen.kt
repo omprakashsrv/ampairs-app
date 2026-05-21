@@ -22,7 +22,6 @@ import com.ampairs.subscription.domain.model.PaymentMethodType
 import com.ampairs.subscription.viewmodel.SubscriptionEvent
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 /**
  * Screen to manage saved payment methods
@@ -30,7 +29,7 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentMethodsScreen(
-    viewModel: SubscriptionViewModel = koinInject(),
+    viewModel: SubscriptionViewModel,
     onNavigateBack: () -> Unit
 ) {
     val methods by viewModel.paymentMethods.collectAsState()

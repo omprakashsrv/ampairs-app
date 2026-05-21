@@ -8,11 +8,20 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ampairs.order.db.OrderRepository
+import com.ampairs.order.viewmodel.OrderViewViewModel
+import com.ampairs.order.viewmodel.OrdersViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun OrderPaneScreen(onOrderEdit: (orderId: String?) -> Unit) {
+fun OrderPaneScreen(
+    orderRepository: OrderRepository,
+    onOrderEdit: (orderId: String?) -> Unit,
+    ordersViewModel: OrdersViewModel = metroViewModel(),
+) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
 
@@ -25,27 +34,37 @@ fun OrderPaneScreen(onOrderEdit: (orderId: String?) -> Unit) {
         value = navigator.scaffoldValue,
         listPane = {
             AnimatedPane(Modifier) {
-                OrdersScreen { selectedOrderId ->
-                    scope.launch {
-                        navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, selectedOrderId)
-                    }
-                }
+                OrdersScreen(
+                    onOrderSelected = { selectedOrderId ->
+                        scope.launch {
+                            navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, selectedOrderId)
+                        }
+                    },
+                    viewModel = ordersViewModel
+                )
             }
         },
         detailPane = {
             AnimatedPane(Modifier) {
                 val orderId = navigator.currentDestination?.contentKey ?: ""
-                OrderViewScreen(orderId) { orderId ->
-                    if (!orderId.isNullOrEmpty()) {
-                        onOrderEdit(orderId)
-                    } else {
-                        if (navigator.canNavigateBack()) {
-                            scope.launch {
-                                navigator.navigateBack()
+                val orderViewViewModel = viewModel(key = orderId) {
+                    OrderViewViewModel(orderId, orderRepository)
+                }
+                OrderViewScreen(
+                    orderId = orderId,
+                    onNavigateBack = { navigateBackOrderId ->
+                        if (!navigateBackOrderId.isNullOrEmpty()) {
+                            onOrderEdit(navigateBackOrderId)
+                        } else {
+                            if (navigator.canNavigateBack()) {
+                                scope.launch {
+                                    navigator.navigateBack()
+                                }
                             }
                         }
-                    }
-                }
+                    },
+                    viewModel = orderViewViewModel
+                )
             }
         }
     )

@@ -9,6 +9,7 @@ import com.ampairs.tax.calculation.model.TransactionType
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
 import com.ampairs.tax.util.formatDecimal
+import dev.zacsweers.metro.Inject
 
 /**
  * USA Sales Tax Strategy - State + County + City + Special District taxes
@@ -20,6 +21,7 @@ import com.ampairs.tax.util.formatDecimal
  * - No federal sales tax in USA
  * - Economic nexus thresholds determine tax obligation
  */
+@Inject
 class USASalesTaxStrategy(
     private val taxRuleRepository: TaxRuleRepository,
     private val taxComponentRepository: TaxComponentRepository,

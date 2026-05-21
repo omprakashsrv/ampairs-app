@@ -1,6 +1,8 @@
 package com.ampairs.customer.data.repository
 
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.db.CustomerDao
 import com.ampairs.customer.data.db.CustomerImageDao
@@ -24,6 +26,7 @@ import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_UID_REQUIRED
 import com.ampairs.customer.util.CustomerLogger
 
+@Inject
 class CustomerRepository(
     private val customerDao: CustomerDao,
     private val customerApi: CustomerApi,

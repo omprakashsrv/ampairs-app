@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.workspace.api.WorkspaceApi
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.db.dao.WorkspaceDao
 import com.ampairs.workspace.domain.Workspace
@@ -12,10 +15,12 @@ import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceRepository(
     private val workspaceApi: WorkspaceApi,
     private val workspaceDao: WorkspaceDao,
-    private val tokenRepository: TokenRepository, // Add dependency to get current user
+    private val tokenRepository: TokenRepository,
 ) {
 
     private suspend fun getCurrentUserId(): String? {

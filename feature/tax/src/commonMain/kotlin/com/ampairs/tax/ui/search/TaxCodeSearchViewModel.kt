@@ -7,6 +7,10 @@ import com.ampairs.tax.domain.model.MasterTaxCode
 import com.ampairs.tax.domain.model.TaxCodeType
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +33,9 @@ import kotlinx.coroutines.launch
  * - Favorite management
  * - Usage count tracking
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class TaxCodeSearchViewModel(
     private val taxCodeRepository: TaxCodeRepository,
     private val workspaceContext: WorkspaceContextManager

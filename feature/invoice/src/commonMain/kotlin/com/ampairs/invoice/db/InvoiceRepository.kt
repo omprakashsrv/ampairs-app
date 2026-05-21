@@ -10,8 +10,11 @@ import com.ampairs.invoice.db.entity.InvoiceEntity
 import com.ampairs.invoice.db.entity.InvoiceItemEntity
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 
+@Inject
 class InvoiceRepository(
     val invoiceDao: InvoiceDao,
     val productDao: ProductDao,

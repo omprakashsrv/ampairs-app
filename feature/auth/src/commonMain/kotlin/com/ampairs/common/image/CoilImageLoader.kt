@@ -11,7 +11,6 @@ import coil3.util.DebugLogger
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.config.ConfigurationManager
 import okio.Path.Companion.toPath
-import org.koin.mp.KoinPlatform
 
 /**
  * Creates a configured Coil ImageLoader optimized for customer image caching
@@ -20,6 +19,7 @@ import org.koin.mp.KoinPlatform
 fun createImageLoader(
     context: PlatformContext,
     cacheDirectory: String,
+    tokenRepository: TokenRepository,
     debug: Boolean = false
 ): ImageLoader {
     return ImageLoader.Builder(context)
@@ -38,7 +38,7 @@ fun createImageLoader(
         }
         .components {
             // Add network cache interceptor for better offline support and auth headers
-            add(AuthenticatedNetworkInterceptor())
+            add(AuthenticatedNetworkInterceptor(tokenRepository))
         }
         .apply {
             if (debug) {
@@ -54,7 +54,9 @@ fun createImageLoader(
  * Network interceptor that adds authentication headers for API URLs
  * and provides offline-first image loading capabilities.
  */
-private class AuthenticatedNetworkInterceptor : coil3.intercept.Interceptor {
+private class AuthenticatedNetworkInterceptor(
+    private val tokenRepository: TokenRepository,
+) : coil3.intercept.Interceptor {
     override suspend fun intercept(chain: coil3.intercept.Interceptor.Chain): coil3.request.ImageResult {
         val request = chain.request
         val url = request.data.toString()
@@ -68,7 +70,6 @@ private class AuthenticatedNetworkInterceptor : coil3.intercept.Interceptor {
                 // Add auth header for API URLs
                 if (needsAuth) {
                     try {
-                        val tokenRepository = KoinPlatform.getKoin().get<TokenRepository>()
                         val accessToken = tokenRepository.getAccessToken()
                         if (!accessToken.isNullOrBlank()) {
                             httpHeaders(

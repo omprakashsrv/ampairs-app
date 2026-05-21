@@ -1,5 +1,7 @@
 package com.ampairs.business.domain
 
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.business.data.repository.BusinessRepository
 import kotlinx.coroutines.flow.Flow
 import org.mobilenativefoundation.store.core5.ExperimentalStoreApi
@@ -10,6 +12,7 @@ import org.mobilenativefoundation.store.store5.StoreBuilder
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 
+@Inject
 @OptIn(ExperimentalStoreApi::class)
 class BusinessStore(
     private val repository: BusinessRepository

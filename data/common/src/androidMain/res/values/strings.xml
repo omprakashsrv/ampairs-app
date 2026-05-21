@@ -1,9 +1,0 @@
-<resources>
-    <string name="update_required_title">App Update Required</string>
-    <string name="update_required_message">This version of the app is no longer supported due to security updates. Please update to the latest version to continue using the app.</string>
-    <string name="update_recommended_title">App Update Recommended</string>
-    <string name="update_recommended_message">A new version of the app is available with important security updates. %1$s\n\nWould you like to update now?</string>
-    <string name="update_button_update_now">Update Now</string>
-    <string name="update_button_later">Later</string>
-    <string name="update_button_exit">Exit</string>
-</resources>

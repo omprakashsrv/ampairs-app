@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.googleServices)
     alias(libs.plugins.firebaseCrashlytics)
     alias(libs.plugins.firebasePerf)
+    alias(libs.plugins.metro)
 }
 
 kotlin {
@@ -96,9 +97,9 @@ dependencies {
     // Android Activity + Compose integration
     implementation(libs.androidx.activity.compose)
 
-    // Koin Android
-    implementation(libs.koin.android)
-    implementation(libs.koin.core)
+    // Metro
+    implementation(libs.metro.runtime)
+    implementation(libs.metrox.viewmodel.compose)
 
     // Coil image loading
     implementation(libs.coil.core)

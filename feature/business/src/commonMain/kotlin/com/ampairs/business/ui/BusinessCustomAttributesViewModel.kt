@@ -10,12 +10,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.launch
 
 /**
  * ViewModel for Business Custom Attributes Screen.
  * Manages loading custom attribute definitions and business profile data.
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class BusinessCustomAttributesViewModel(
     private val businessRepository: BusinessRepository,
     private val configRepository: ConfigRepository

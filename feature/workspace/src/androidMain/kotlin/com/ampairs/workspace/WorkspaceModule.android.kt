@@ -1,25 +1,31 @@
 package com.ampairs.workspace
 
+import android.content.Context
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.ampairs.common.di.AppScope
 import com.ampairs.workspace.db.WorkspaceRoomDatabase
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.Dispatchers
-import org.koin.android.ext.koin.androidContext
-import org.koin.core.module.Module
-import org.koin.dsl.module
 
-val workspacePlatformModule: Module = module {
-    single<WorkspaceRoomDatabase> {
-        val context = androidContext()
-        val dbFile = context.getDatabasePath("workspace.db")
-        Room.databaseBuilder<WorkspaceRoomDatabase>(
-            context = context,
-            name = dbFile.absolutePath
-        )
-            .setDriver(BundledSQLiteDriver())
-            .setQueryCoroutineContext(Dispatchers.IO)
-            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
-            .enableMultiInstanceInvalidation() // Support multi-process scenarios
-            .build()
+@ContributesTo(AppScope::class)
+interface WorkspaceAndroidModule {
+    companion object {
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideWorkspaceRoomDatabase(context: Context): WorkspaceRoomDatabase {
+            val dbFile = context.getDatabasePath("workspace.db")
+            return Room.databaseBuilder<WorkspaceRoomDatabase>(
+                context = context,
+                name = dbFile.absolutePath
+            )
+                .setDriver(BundledSQLiteDriver())
+                .setQueryCoroutineContext(Dispatchers.IO)
+                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
+                .enableMultiInstanceInvalidation()
+                .build()
+        }
     }
 }

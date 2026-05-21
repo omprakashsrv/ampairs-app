@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
+import com.ampairs.business.ui.BusinessProfileViewModel
 
 /**
  * Business Profile & Registration Form Screen.
@@ -34,8 +34,8 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessProfileFormScreen(
-    modifier: Modifier = Modifier,
-    viewModel: BusinessProfileViewModel = koinInject()
+    viewModel: BusinessProfileViewModel,
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

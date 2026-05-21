@@ -2,6 +2,7 @@ package com.ampairs.unit.domain
 
 import com.ampairs.unit.data.api.UnitApi
 import com.ampairs.unit.data.db.dao.UnitDao
+import dev.zacsweers.metro.Inject
 import com.ampairs.unit.data.db.entity.toEntity
 import com.ampairs.unit.data.db.entity.toUnit
 import com.ampairs.unit.domain.model.Unit
@@ -28,6 +29,7 @@ import org.mobilenativefoundation.store.store5.StoreBuilder
  * - Concurrent request deduplication
  * - Error handling
  */
+@Inject
 class UnitStore(
     private val unitApi: UnitApi,
     private val unitDao: UnitDao

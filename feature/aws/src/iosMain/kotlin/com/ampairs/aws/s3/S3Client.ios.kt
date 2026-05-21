@@ -1,5 +1,8 @@
 package com.ampairs.aws.s3
 
+import dev.zacsweers.metro.Inject
+
+@Inject
 class IosS3Client : S3Client {
 
     override suspend fun getPreSignedUrl(bucketName: String, keyName: String): String {

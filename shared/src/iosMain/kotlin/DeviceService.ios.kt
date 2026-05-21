@@ -1,3 +1,5 @@
+package com.ampairs.di
+
 import com.ampairs.auth.domain.DeviceInfo
 import com.ampairs.common.DeviceService
 import platform.Foundation.NSUUID

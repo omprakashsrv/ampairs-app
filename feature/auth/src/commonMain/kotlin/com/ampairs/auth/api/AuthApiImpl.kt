@@ -19,6 +19,10 @@ import com.ampairs.common.post
 import com.ampairs.common.postMultiPart
 import com.ampairs.common.model.GenericSuccess
 import com.ampairs.common.model.Response
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
@@ -27,6 +31,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.content.PartData
 import io.ktor.utils.io.ByteReadChannel
 
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRepository) : AuthApi {
 
     private val client = httpClient(engine, tokenRepository)

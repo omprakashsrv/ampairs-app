@@ -6,11 +6,13 @@ import com.ampairs.agent.core.AgentAction
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.IntentResolver
 import com.ampairs.agent.core.ResolvedIntent
+import dev.zacsweers.metro.Inject
 
 /**
  * Simple keyword/pattern-based intent resolver for offline use.
  * Handles common CRUD patterns without needing an LLM.
  */
+@Inject
 class RuleBasedIntentResolver : IntentResolver {
 
     override suspend fun resolve(

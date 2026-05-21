@@ -8,12 +8,15 @@ import com.ampairs.agent.core.ActionType
 import com.ampairs.agent.core.AgentAction
 import com.ampairs.agent.core.NavigationTarget
 import com.ampairs.agent.core.ParameterType
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.util.CustomerConstants
 import kotlinx.coroutines.flow.first
 
+@Inject
 class CustomerActionHandler(
     private val customerRepository: CustomerRepository,
 ) : ActionHandler {

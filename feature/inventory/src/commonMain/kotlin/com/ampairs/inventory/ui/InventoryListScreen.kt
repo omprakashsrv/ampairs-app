@@ -30,16 +30,15 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.ampairs.inventory.viewmodel.InventoryListViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun InventoryListScreen(
+    viewModel: InventoryListViewModel,
     onNewInventory: (() -> (Unit))?,
     onInventorySelected: (String, String) -> Unit,
 ) {
-    val viewModel: InventoryListViewModel = koinInject<InventoryListViewModel>()
 
     val inventories = viewModel.inventories.collectAsLazyPagingItems()
     val lazyListState = rememberLazyListState()

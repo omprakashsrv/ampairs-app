@@ -4,10 +4,12 @@ import InvoiceRoute
 import OrderRoute
 import ProductRoute
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.agent.ui.ChatScreen
 import com.ampairs.customer.ui.CustomerDetailsRoute
+import com.ampairs.di.LocalAppGraph
 import Route
 
 /**
@@ -19,7 +21,10 @@ fun agentEntryProvider(
     backStack: MutableList<NavKey>,
 ): NavEntry<NavKey>? = when (key) {
     is Route.Agent -> NavEntry(key) {
+        val graph = LocalAppGraph.current
+        val viewModel = viewModel { graph.createChatViewModel() }
         ChatScreen(
+            viewModel = viewModel,
             onNavigateToRoute = { routeData ->
                 when {
                     routeData.containsKey("customerId") -> {

@@ -9,6 +9,7 @@ import com.ampairs.tax.calculation.model.TransactionType
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
 import com.ampairs.tax.util.formatDecimal
+import dev.zacsweers.metro.Inject
 
 /**
  * UK VAT Strategy - Standard (20%), Reduced (5%), Zero-rated (0%)
@@ -20,6 +21,7 @@ import com.ampairs.tax.util.formatDecimal
  * - Reverse charge for B2B services from outside UK
  * - Northern Ireland special rules (Windsor Framework)
  */
+@Inject
 class UKVATStrategy(
     private val taxRuleRepository: TaxRuleRepository,
     private val taxComponentRepository: TaxComponentRepository,

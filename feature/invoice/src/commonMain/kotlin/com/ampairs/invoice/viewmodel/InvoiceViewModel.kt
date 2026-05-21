@@ -18,17 +18,34 @@ import com.ampairs.invoice.domain.TaxSpec
 import com.ampairs.invoice.domain.asDatabaseModel
 import com.ampairs.product.domain.Product
 import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 
 
+@AssistedInject
 class InvoiceViewModel(
-    fromCustomerId: String?, toCustomerId: String?, id: String?,
+    @Assisted fromCustomerId: String?,
+    @Assisted toCustomerId: String?,
+    @Assisted id: String?,
     val customerRepository: CustomerRepository,
     val invoiceRepository: InvoiceRepository,
     val productRepository: ProductRepository,
     val userRepository: UserRepository,
 ) :
     ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): InvoiceViewModel
+    }
     fun updateInvoiceItems(products: List<Product>) {
         invoiceItems.removeAll(invoiceItems.filter { invoiceItem ->
             !products.map { it.id }.contains(invoiceItem.product?.id)

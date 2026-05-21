@@ -1,6 +1,13 @@
 package com.ampairs.workspace.viewmodel
 
 import androidx.lifecycle.ViewModel
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import com.ampairs.common.di.AppScope
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.UserRoleResponse
@@ -31,9 +38,10 @@ import kotlinx.coroutines.launch
  * - repository methods return plain domain models or flows and throw exceptions on error.
  * - OfflineFirstRolesPermissionsRepository exposes cached data and Flows for fresh data.
  */
+@AssistedInject
 class MemberDetailsViewModel(
-    private val workspaceId: String,
-    private val memberId: String,
+    @Assisted private val workspaceId: String,
+    @Assisted private val memberId: String,
     private val memberStore: WorkspaceMemberStore,
     private val memberUpdateStoreFactory: WorkspaceMemberUpdateStoreFactory,
     private val memberRepository: WorkspaceMemberRepository, // Keep for methods not yet using Store5
@@ -41,6 +49,13 @@ class MemberDetailsViewModel(
     private val permissionsStore: WorkspacePermissionsStore,
     private val tokenRepository: TokenRepository,
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(workspaceId: String, memberId: String): MemberDetailsViewModel
+    }
 
     data class MemberDetailsState(
         val isLoading: Boolean = false,

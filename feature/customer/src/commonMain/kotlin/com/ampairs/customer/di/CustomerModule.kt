@@ -1,105 +1,31 @@
 package com.ampairs.customer.di
 
-import com.ampairs.agent.core.ActionHandlerProvider
-import com.ampairs.customer.agent.CustomerActionHandler
-import com.ampairs.customer.data.api.CustomerApi
-import com.ampairs.customer.data.api.CustomerApiImpl
-import com.ampairs.customer.data.api.CustomerGroupApi
-import com.ampairs.customer.data.api.CustomerGroupApiImpl
-import com.ampairs.customer.data.api.CustomerImageApi
-import com.ampairs.customer.data.api.CustomerImageApiImpl
-import com.ampairs.customer.data.api.CustomerTypeApi
-import com.ampairs.customer.data.api.CustomerTypeApiImpl
+import com.ampairs.common.di.AppScope
 import com.ampairs.customer.data.db.CustomerDatabase
-import com.ampairs.customer.data.repository.CustomerGroupRepository
-import com.ampairs.customer.data.repository.CustomerImageRepository
-import com.ampairs.customer.data.repository.CustomerRepository
-import com.ampairs.customer.data.repository.CustomerTypeRepository
-import com.ampairs.customer.data.repository.PlatformFileManager
-import com.ampairs.customer.data.repository.ImageFilePicker
-import com.ampairs.customer.data.repository.FileKitImagePicker
-import com.ampairs.customer.domain.CustomerGroupStore
-import com.ampairs.customer.domain.CustomerStore
-import com.ampairs.customer.domain.CustomerTypeStore
-import com.ampairs.customer.domain.StateStore
-import com.ampairs.customer.ui.components.images.CustomerImageViewModel
-import com.ampairs.customer.ui.create.CustomerFormViewModel
-import com.ampairs.customer.ui.customergroup.CustomerGroupFormViewModel
-import com.ampairs.customer.ui.customergroup.CustomerGroupListViewModel
-import com.ampairs.customer.ui.customertype.CustomerTypeFormViewModel
-import com.ampairs.customer.ui.customertype.CustomerTypeListViewModel
-import com.ampairs.customer.ui.details.CustomerDetailsViewModel
-import com.ampairs.customer.ui.list.CustomersListViewModel
-import com.ampairs.customer.ui.state.StateListViewModel
-import org.koin.core.module.dsl.singleOf
-import org.koin.core.module.dsl.viewModel
-import org.koin.core.module.dsl.viewModelOf
-import org.koin.dsl.bind
-import org.koin.dsl.module
+import com.ampairs.customer.data.db.CustomerDao
+import com.ampairs.customer.data.db.CustomerTypeDao
+import com.ampairs.customer.data.db.CustomerGroupDao
+import com.ampairs.customer.data.db.CustomerImageDao
+import com.ampairs.customer.data.db.StateDao
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 
-val customerModule = module {
-    includes(customerPlatformModule)
+@ContributesTo(AppScope::class)
+interface CustomerDaoModule {
+    companion object {
+        @Provides
+        fun provideCustomerDao(db: CustomerDatabase): CustomerDao = db.customerDao()
 
-    // API Layer
-    singleOf(::CustomerApiImpl) bind CustomerApi::class
-    singleOf(::CustomerTypeApiImpl) bind CustomerTypeApi::class
-    singleOf(::CustomerGroupApiImpl) bind CustomerGroupApi::class
-    singleOf(::CustomerImageApiImpl) bind CustomerImageApi::class
+        @Provides
+        fun provideCustomerTypeDao(db: CustomerDatabase): CustomerTypeDao = db.customerTypeDao()
 
-    // Database Layer - Use factory to get fresh DAOs with new database instance
-    factory { get<CustomerDatabase>().customerDao() }
-    factory { get<CustomerDatabase>().customerTypeDao() }
-    factory { get<CustomerDatabase>().customerGroupDao() }
-    factory { get<CustomerDatabase>().customerImageDao() }
-    factory { get<CustomerDatabase>().stateDao() }
+        @Provides
+        fun provideCustomerGroupDao(db: CustomerDatabase): CustomerGroupDao = db.customerGroupDao()
 
-    // File Picker
-    singleOf(::FileKitImagePicker) bind ImageFilePicker::class
+        @Provides
+        fun provideCustomerImageDao(db: CustomerDatabase): CustomerImageDao = db.customerImageDao()
 
-    // Repository Layer - Use factory to recreate with new DAOs after workspace switch
-    factory { CustomerRepository(get(), get(), get(), get()) }
-    factory { CustomerTypeRepository(get(), get(), get()) }
-    factory { CustomerGroupRepository(get(), get(), get()) }
-    factory { CustomerImageRepository(get(), get(), get(), get()) }
-
-    // Domain Layer - Use factory to recreate Stores with new repositories/DAOs
-    factory { CustomerStore(get(), get()) }
-    factory { CustomerTypeStore(get(), get()) }
-    factory { CustomerGroupStore(get(), get()) }
-    factory { StateStore(get(), get()) }
-
-    // ViewModels
-    viewModelOf(::CustomersListViewModel)
-    viewModel { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get()) }
-    viewModel { (customerId: String?) ->
-        CustomerFormViewModel(
-            customerId,
-            get(),
-            get(),
-            get(),
-            get(),
-            get()
-        )
+        @Provides
+        fun provideStateDao(db: CustomerDatabase): StateDao = db.stateDao()
     }
-    viewModelOf(::StateListViewModel)
-
-    // CustomerType ViewModels
-    viewModelOf(::CustomerTypeListViewModel)
-    viewModel { (customerTypeId: String?) -> CustomerTypeFormViewModel(get(), customerTypeId) }
-
-    // CustomerGroup ViewModels
-    viewModelOf(::CustomerGroupListViewModel)
-    viewModel { (customerGroupId: String?) -> CustomerGroupFormViewModel(get(), customerGroupId) }
-
-    // CustomerImage ViewModels
-    viewModel { (customerId: String) -> CustomerImageViewModel(customerId, get(), get()) }
-
-    // Agent - Lazy handler provider (handler created on first agent dispatch)
-    factory<ActionHandlerProvider> {
-        ActionHandlerProvider("customer", CustomerActionHandler.ACTIONS) {
-            CustomerActionHandler(get())
-        }
-    } bind ActionHandlerProvider::class
 }
-
-expect val customerPlatformModule: org.koin.core.module.Module

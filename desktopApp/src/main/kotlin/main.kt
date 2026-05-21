@@ -22,18 +22,13 @@ import com.ampairs.common.desktop.DataDirectoryManager
 import com.ampairs.common.desktop.DataDirectoryPickerDialog
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.DynamicModulesMenu
-import coil3.compose.LocalPlatformContext
 import coil3.compose.setSingletonImageLoaderFactory
-import coil3.PlatformContext
-import org.koin.compose.koinInject
-
 import com.ampairs.common.sentry.SentryManager
-import org.koin.core.context.GlobalContext
-import org.koin.core.context.startKoin
-import org.koin.java.KoinJavaComponent.get
+import com.ampairs.di.DesktopAppGraph
+import dev.zacsweers.metro.createGraphFactory
 
 fun main() = application {
-    // Check if data directory is set before initializing Koin
+    // Check if data directory is set before initializing the graph
     var showDataDirectoryPicker by remember { mutableStateOf(!DataDirectoryManager.isDataDirectorySet()) }
     var dataDirectoryReady by remember { mutableStateOf(DataDirectoryManager.isDataDirectorySet()) }
 
@@ -56,12 +51,10 @@ fun main() = application {
     if (!dataDirectoryReady) {
         return@application
     }
-    if (GlobalContext.getOrNull() == null) {
-        // Initialize Sentry early in the application lifecycle
-        initializeSentry()
 
-        val koinApplication = startKoin {}
-        initKoin(koinApplication)
+    val appGraph = remember {
+        initializeSentry()
+        createGraphFactory<DesktopAppGraph.Factory>().create()
     }
 
     // Setup deep link handler for desktop authentication
@@ -73,13 +66,13 @@ fun main() = application {
 
     val applicationState = remember { ApplicationState() }
     applicationState.windows
-    setSingletonImageLoaderFactory { context ->
-        generateImageLoader()
+    setSingletonImageLoaderFactory { _ ->
+        generateImageLoader(appGraph.httpEngine, appGraph.tokenRepository)
     }
     for (window in applicationState.windows) {
         key(window) {
             if (window.title == "Main") {
-                MainWindow(window)
+                MainWindow(window, appGraph)
             } else if (window.title == "Tally") {
                 TallyWindow(window)
             }
@@ -100,7 +93,7 @@ private fun ApplicationScope.TallyWindow(
 }
 
 @Composable
-private fun ApplicationScope.MainWindow(state: AppWindowState) =
+private fun ApplicationScope.MainWindow(state: AppWindowState, appGraph: DesktopAppGraph) =
     Window(
         onCloseRequest = ::exitApplication,
         state = WindowState(placement = WindowPlacement.Maximized),
@@ -117,6 +110,7 @@ private fun ApplicationScope.MainWindow(state: AppWindowState) =
 
 
         MainView(
+            appGraph = appGraph,
             onLoggedIn = {
                 println("MainWindow: onLoggedIn callback - changing from $loggedIn to $it")
                 loggedIn = it

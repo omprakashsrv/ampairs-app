@@ -10,13 +10,12 @@ import com.ampairs.auth.firebase.FirebaseAuthProvider
 import com.ampairs.auth.service.RecaptchaConfig
 import com.ampairs.auth.service.RecaptchaService
 import com.ampairs.common.coroutines.DispatcherProvider
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.platform.getIosDatabasePath
-import org.koin.core.module.Module
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 
-/**
- * Migration from version 2 to 3: Add profile picture columns to userEntity
- */
 val AUTH_MIGRATION_2_3 = object : Migration(2, 3) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE userEntity ADD COLUMN profile_picture_url TEXT")
@@ -24,31 +23,30 @@ val AUTH_MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-val authPlatformModule: Module = module {
-    // Auth database is NOT workspace-aware - login happens before workspace selection
-    single<AuthRoomDatabase> {
-        Room.databaseBuilder<AuthRoomDatabase>(
-            name = getIosDatabasePath("auth.db")
-        )
-            .setDriver(BundledSQLiteDriver())
-            .setQueryCoroutineContext(DispatcherProvider.io)
-            .addMigrations(AUTH_MIGRATION_2_3)
-            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
-            .build()
-    }
-
-    single {
-        RecaptchaService(
-            RecaptchaConfig(
-                siteKey = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", // Test key
-                enabled = false // Disabled for development
+@ContributesTo(AppScope::class)
+interface AuthIosModule {
+    companion object {
+        @Provides @SingleIn(AppScope::class)
+        fun provideAuthDatabase(): AuthRoomDatabase {
+            return Room.databaseBuilder<AuthRoomDatabase>(
+                name = getIosDatabasePath("auth.db")
             )
-        )
+                .setDriver(BundledSQLiteDriver())
+                .setQueryCoroutineContext(DispatcherProvider.io)
+                .addMigrations(AUTH_MIGRATION_2_3)
+                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
+                .build()
+        }
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideFirebaseAuthProvider(): FirebaseAuthProvider = FirebaseAuthProvider()
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideRecaptchaService(): RecaptchaService =
+            RecaptchaService(
+                RecaptchaConfig(siteKey = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", enabled = false)
+            )
+
+        // TODO: Add iOS-specific certificate pinning and security components when needed
     }
-
-    // Firebase authentication provider
-    single { FirebaseAuthProvider() }
-
-    // TODO: Add iOS-specific certificate pinning and security components when needed
-    // For now, providing minimal implementation to get compilation working
 }

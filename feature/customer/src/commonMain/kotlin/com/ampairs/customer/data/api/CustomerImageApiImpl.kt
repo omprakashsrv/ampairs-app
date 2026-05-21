@@ -17,6 +17,10 @@ import com.ampairs.customer.domain.CustomerImageUpdateRequest
 import com.ampairs.customer.domain.CustomerImageBulkRequest
 import com.ampairs.customer.domain.ThumbnailResponse
 import com.ampairs.customer.util.CustomerLogger
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.request.get
 import io.ktor.client.request.put
@@ -34,6 +38,7 @@ import io.ktor.utils.io.ByteReadChannel
  * Implementation of CustomerImageApi using Ktor HTTP client.
  * Provides REST API integration for customer image operations.
  */
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class CustomerImageApiImpl(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository

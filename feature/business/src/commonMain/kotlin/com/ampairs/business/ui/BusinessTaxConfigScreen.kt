@@ -18,7 +18,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
+import com.ampairs.business.ui.BusinessTaxConfigViewModel
 
 /**
  * Business Tax Configuration Screen.
@@ -31,8 +31,8 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessTaxConfigScreen(
-    modifier: Modifier = Modifier,
-    viewModel: BusinessTaxConfigViewModel = koinInject()
+    viewModel: BusinessTaxConfigViewModel,
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

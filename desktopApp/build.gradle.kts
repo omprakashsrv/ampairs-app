@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.metro)
 }
 
 kotlin {
@@ -21,9 +22,10 @@ dependencies {
     // Compose Desktop runtime
     implementation(compose.desktop.currentOs)
 
-    // Koin
-    implementation(libs.koin.core)
-    implementation(libs.koin.compose)
+    // Metro
+    implementation(libs.metro.runtime)
+    implementation(libs.metrox.viewmodel.compose)
+    implementation(kotlin("reflect"))
 
     // Coil image loading
     implementation(libs.coil.core)

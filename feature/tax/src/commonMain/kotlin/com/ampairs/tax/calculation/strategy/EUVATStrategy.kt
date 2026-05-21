@@ -9,6 +9,7 @@ import com.ampairs.tax.calculation.model.TransactionType
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
 import com.ampairs.tax.util.formatDecimal
+import dev.zacsweers.metro.Inject
 
 /**
  * EU VAT Strategy - Harmonized VAT system across EU member states
@@ -22,6 +23,7 @@ import com.ampairs.tax.util.formatDecimal
  * - Intra-community supply rules
  * - Digital services VAT (place of consumption)
  */
+@Inject
 class EUVATStrategy(
     private val taxRuleRepository: TaxRuleRepository,
     private val taxComponentRepository: TaxComponentRepository,

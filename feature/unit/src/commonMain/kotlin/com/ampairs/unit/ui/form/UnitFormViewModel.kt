@@ -4,6 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.unit.data.repository.UnitRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import com.ampairs.unit.domain.model.Unit
 import com.ampairs.unit.util.UnitConstants
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,10 +43,18 @@ data class UnitFormState(
  * - UID generation for new units
  * - Offline-first save pattern
  */
+@AssistedInject
 class UnitFormViewModel(
     private val unitRepository: UnitRepository,
-    private val unitId: String?
+    @Assisted private val unitId: String?
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(unitId: String?): UnitFormViewModel
+    }
 
     private val _formState = MutableStateFlow(UnitFormState())
     val formState: StateFlow<UnitFormState> = _formState.asStateFlow()

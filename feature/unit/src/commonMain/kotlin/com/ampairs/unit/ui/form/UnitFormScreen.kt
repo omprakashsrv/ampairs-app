@@ -14,8 +14,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,7 +22,7 @@ fun UnitFormScreen(
     unitId: String? = null,
     onSaveSuccess: () -> kotlin.Unit,
     modifier: Modifier = Modifier,
-    viewModel: UnitFormViewModel = koinViewModel { parametersOf(unitId) }
+    viewModel: UnitFormViewModel = assistedMetroViewModel<UnitFormViewModel, UnitFormViewModel.Factory> { create(unitId) }
 ) {
     val formState by viewModel.formState.collectAsState()
     val focusManager = LocalFocusManager.current

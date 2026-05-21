@@ -16,7 +16,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.form.domain.AttributeDataType
 import com.ampairs.form.domain.EntityAttributeDefinition
-import org.koin.compose.koinInject
+import com.ampairs.business.ui.BusinessCustomAttributesViewModel
 
 /**
  * Business Custom Attributes Screen.
@@ -25,8 +25,8 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessCustomAttributesScreen(
-    modifier: Modifier = Modifier,
-    viewModel: BusinessCustomAttributesViewModel = koinInject()
+    viewModel: BusinessCustomAttributesViewModel,
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

@@ -7,6 +7,7 @@ import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.domain.model.InvoiceSummary
 import com.ampairs.subscription.domain.model.PaymentLinkResponse
 import com.ampairs.subscription.repository.InvoiceRepository
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.minutes
@@ -15,6 +16,7 @@ import kotlin.time.Clock
 /**
  * ViewModel for invoice operations
  */
+@Inject
 @OptIn(kotlin.time.ExperimentalTime::class)
 class InvoiceViewModel(
     private val repository: InvoiceRepository,

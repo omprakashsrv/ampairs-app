@@ -1,6 +1,9 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.time.currentTimeMillis
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.WorkspaceModuleApi
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.InstalledModule
@@ -47,6 +50,8 @@ data class AvailableModuleKey(
     }
 }
 
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceModuleStoreFactory(
     private val moduleApi: WorkspaceModuleApi,
     private val moduleDao: WorkspaceModuleDao,

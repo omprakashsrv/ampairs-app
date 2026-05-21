@@ -16,9 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.product.domain.ProductVariant
 import com.ampairs.tax.util.formatDecimal
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
-
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 /**
  * Variant Management Screen - Shows list of variants for a product
  */
@@ -29,7 +27,7 @@ fun VariantManagementScreen(
     productName: String,
     onNavigateToForm: (variantId: String?) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: VariantManagementViewModel = koinInject { parametersOf(productId) }
+    viewModel: VariantManagementViewModel = assistedMetroViewModel<VariantManagementViewModel, VariantManagementViewModel.Factory> { create(productId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

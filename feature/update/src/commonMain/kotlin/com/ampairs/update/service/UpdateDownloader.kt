@@ -2,6 +2,7 @@ package com.ampairs.update.service
 
 import com.ampairs.update.domain.UpdateDownloadState
 import com.ampairs.update.domain.UpdateInfo
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * - Checksum verification (if provided)
  * - Platform-specific file storage
  */
+@Inject
 class UpdateDownloader {
     private val _downloadState = MutableStateFlow<UpdateDownloadState>(UpdateDownloadState.Idle)
     val downloadState: StateFlow<UpdateDownloadState> = _downloadState.asStateFlow()

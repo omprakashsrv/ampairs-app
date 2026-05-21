@@ -1,6 +1,10 @@
 package com.ampairs.workspace.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
@@ -19,6 +23,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class WorkspaceListViewModel(
     private val workspaceRepository: OfflineFirstWorkspaceRepository,
     private val userWorkspaceRepository: UserWorkspaceRepository,
@@ -26,12 +33,11 @@ class WorkspaceListViewModel(
     private val userRepository: UserRepository,
     private val invitationRepository: UserInvitationRepository,
     private val deviceService: DeviceService,
+    private val eventConnectionManager: EventConnectionManager,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceListState())
     val state: StateFlow<WorkspaceListState> = _state.asStateFlow()
-
-    private val eventConnectionManager = EventConnectionManager()
 
     init {
         loadUserData()

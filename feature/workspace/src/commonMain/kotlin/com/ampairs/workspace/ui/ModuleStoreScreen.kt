@@ -19,8 +19,7 @@ import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.ModuleDetailResponse
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 /**
  * Module Store Screen
@@ -31,7 +30,7 @@ fun ModuleStoreScreen(
     workspaceId: String = "",
     paddingValues: PaddingValues = PaddingValues(0.dp),
     onModuleNavigate: ((Any) -> Unit)? = null, // Nav3 callback for module navigation
-    viewModel: WorkspaceModulesViewModel = koinViewModel { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
+    viewModel: WorkspaceModulesViewModel = assistedMetroViewModel<WorkspaceModulesViewModel, WorkspaceModulesViewModel.Factory> { create(workspaceId) },
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
@@ -215,7 +214,7 @@ fun ModuleStoreScreen(
     if (showModuleDetails && selectedModuleId != null) {
         ModuleDetailsDialog(
             moduleId = selectedModuleId!!,
-            workspaceId = workspaceId,
+            viewModel = viewModel,
             onDismiss = {
                 showModuleDetails = false
                 selectedModuleId = null
@@ -543,9 +542,8 @@ private fun InstalledModuleCard(
 @Composable
 private fun ModuleDetailsDialog(
     moduleId: String,
-    workspaceId: String,
+    viewModel: WorkspaceModulesViewModel,
     onDismiss: () -> Unit,
-    viewModel: WorkspaceModulesViewModel = koinViewModel { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
 ) {
     var moduleDetails by remember { mutableStateOf<ModuleDetailResponse?>(null) }
     var isLoading by remember { mutableStateOf(true) }

@@ -1,6 +1,9 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.model.PageResult
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.model.WorkspaceApiModel
@@ -47,6 +50,8 @@ data class WorkspaceKey(
     }
 }
 
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceStoreFactory(
     private val workspaceApi: WorkspaceApi,
     private val workspaceDao: WorkspaceDao,

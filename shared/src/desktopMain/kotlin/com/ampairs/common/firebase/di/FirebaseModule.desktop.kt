@@ -1,21 +1,28 @@
 package com.ampairs.common.firebase.di
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.firebase.analytics.FirebaseAnalyticsImpl
 import com.ampairs.common.firebase.crashlytics.FirebaseCrashlytics
 import com.ampairs.common.firebase.messaging.FirebaseMessaging
 import com.ampairs.common.firebase.performance.FirebasePerformance
-import org.koin.core.module.Module
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 
-/**
- * Desktop implementation of Firebase platform module
- * Note: Firebase is not supported on Desktop, so these are stub implementations
- */
-actual val firebasePlatformModule: Module = module {
-    // Stub implementations for Desktop (all no-ops with console logging)
-    single<FirebaseAnalytics> { FirebaseAnalyticsImpl() }
-    single { FirebaseCrashlytics() }
-    single { FirebasePerformance() }
-    single { FirebaseMessaging() }
+@ContributesTo(AppScope::class)
+interface DesktopFirebaseModule {
+    companion object {
+        @Provides @SingleIn(AppScope::class)
+        fun provideAnalytics(): FirebaseAnalytics = FirebaseAnalyticsImpl()
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideCrashlytics(): FirebaseCrashlytics = FirebaseCrashlytics()
+
+        @Provides @SingleIn(AppScope::class)
+        fun providePerformance(): FirebasePerformance = FirebasePerformance()
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideMessaging(): FirebaseMessaging = FirebaseMessaging()
+    }
 }

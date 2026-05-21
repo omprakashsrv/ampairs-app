@@ -8,10 +8,12 @@ import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.calculation.model.TaxComponentResult
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
+import dev.zacsweers.metro.Inject
 
 /**
  * India GST Strategy - CGST + SGST (intra-state) / IGST (inter-state) + CESS
  */
+@Inject
 class IndiaGSTStrategy(
     private val taxRuleRepository: TaxRuleRepository,
     private val taxComponentRepository: TaxComponentRepository,

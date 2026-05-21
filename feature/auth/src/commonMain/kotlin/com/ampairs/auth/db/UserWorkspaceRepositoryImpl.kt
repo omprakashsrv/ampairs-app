@@ -3,7 +3,12 @@ package com.ampairs.auth.db
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.dao.UserSessionDao
 import com.ampairs.auth.db.entity.UserSessionEntity
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class UserWorkspaceRepositoryImpl(
     private val userSessionDao: UserSessionDao,
 ) : UserWorkspaceRepository {

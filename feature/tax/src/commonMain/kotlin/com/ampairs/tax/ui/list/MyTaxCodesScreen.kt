@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.model.TaxCode
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * My Tax Codes Screen
@@ -33,8 +33,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun MyTaxCodesScreen(
     onNavigateToEdit: (String) -> Unit,
     onNavigateToSearch: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: MyTaxCodesViewModel = koinViewModel()
+    viewModel: MyTaxCodesViewModel = metroViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val taxCodes by viewModel.taxCodes.collectAsState()

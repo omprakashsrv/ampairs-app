@@ -2,14 +2,15 @@ package com.ampairs.business
 
 import com.ampairs.business.data.db.BusinessDatabase
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
-import org.koin.core.module.Module
-import org.koin.dsl.module
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 
-val businessPlatformModule: Module = module {
-    factory<BusinessDatabase> {
-        get<WorkspaceAwareDatabaseFactory>().createDatabase(
-            klass = BusinessDatabase::class,
-            moduleName = "business"
-        )
+@ContributesTo(AppScope::class)
+interface BusinessDesktopModule {
+    companion object {
+        @Provides
+        fun provideBusinessDatabase(factory: WorkspaceAwareDatabaseFactory): BusinessDatabase =
+            factory.createDatabase(klass = BusinessDatabase::class, moduleName = "business")
     }
 }

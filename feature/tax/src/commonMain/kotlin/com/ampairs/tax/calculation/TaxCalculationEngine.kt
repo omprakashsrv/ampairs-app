@@ -5,11 +5,13 @@ import com.ampairs.tax.calculation.model.TaxCalculationRequest
 import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.data.repository.TaxConfigurationRepository
 import com.ampairs.tax.domain.model.TaxStrategy
+import dev.zacsweers.metro.Inject
 
 /**
  * Tax Calculation Engine - Orchestrator for tax calculation
  * Selects appropriate strategy based on workspace configuration
  */
+@Inject
 class TaxCalculationEngine(
     private val taxConfigRepository: TaxConfigurationRepository,
     private val strategies: Map<TaxStrategy, ITaxCalculationStrategy>

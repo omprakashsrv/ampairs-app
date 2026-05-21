@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.metro)
 }
 
 kotlin {
@@ -24,9 +25,8 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(projects.data.common)
-                implementation(libs.koin.core)
-                implementation(libs.koin.compose)
-                implementation(libs.koin.compose.viewmodel)
+                implementation(libs.metro.runtime)
+                implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
                 // Compose
                 implementation(libs.compose.runtime)
@@ -59,7 +59,6 @@ kotlin {
         }
         androidMain {
             dependencies {
-                implementation(libs.koin.android)
                 implementation(libs.ktor.client.okHttp)
                 // Google Play Services - Location
                 implementation(libs.play.services.location)

@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.workspace.api.UserInvitationApi
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.model.InvitationActionResponse
 import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.store.UserInvitationKey
@@ -12,6 +15,8 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
 /**
  * Repository for user invitation management with offline-first support using Store5
  */
+@Inject
+@SingleIn(AppScope::class)
 class UserInvitationRepository(
     private val invitationStore: UserInvitationStore,
     private val invitationApi: UserInvitationApi,

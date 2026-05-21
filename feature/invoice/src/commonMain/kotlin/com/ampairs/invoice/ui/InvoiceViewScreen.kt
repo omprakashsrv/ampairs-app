@@ -32,14 +32,14 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
 import com.ampairs.invoice.viewmodel.InvoiceViewViewModel
 import com.ampairs.ui.components.TableCell
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
-
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InvoiceViewScreen(invoiceId: String, onNavigateBack: (invoiceId: String?) -> Unit) {
-
-    val viewModel: InvoiceViewViewModel = koinInject { parametersOf(invoiceId) }
+fun InvoiceViewScreen(
+    invoiceId: String,
+    onNavigateBack: (invoiceId: String?) -> Unit,
+    viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory> { create(invoiceId) }
+) {
 
     val invoice = viewModel.invoice
     Scaffold(

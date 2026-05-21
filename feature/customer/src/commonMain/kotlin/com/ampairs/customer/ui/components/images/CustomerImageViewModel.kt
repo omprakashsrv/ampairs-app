@@ -10,6 +10,7 @@ import com.ampairs.customer.domain.CustomerImageListItem
 import com.ampairs.customer.domain.CustomerImageUpdateRequest
 import com.ampairs.customer.util.CustomerConstants.CUSTOMER_IMAGE_UID_PREFIX
 import com.ampairs.customer.util.CustomerLogger
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -26,6 +27,7 @@ data class CustomerImageUiState(
     val syncError: Boolean = false // Track if error occurred during sync
 )
 
+@Inject
 class CustomerImageViewModel(
     private val customerId: String,
     private val repository: CustomerImageRepository,

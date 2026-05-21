@@ -2,6 +2,9 @@ package com.ampairs.auth.firebase
 
 import com.ampairs.auth.domain.FirebaseAuthResult
 import com.ampairs.auth.domain.PhoneVerificationState
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -10,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
  * Provides a higher-level API over FirebaseAuthProvider
  * Handles country code formatting and error handling
  */
+@Inject @SingleIn(AppScope::class)
 class FirebaseAuthRepository(
     private val firebaseAuthProvider: FirebaseAuthProvider
 ) {

@@ -1,6 +1,9 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.time.currentTimeMillis
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.WorkspaceMemberApi
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.db.convertPermissionsListToMap
@@ -25,6 +28,8 @@ data class WorkspaceRolesKey(
     val userId: String
 )
 
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceRolesStoreFactory(
     private val memberApi: WorkspaceMemberApi,
     private val roleDao: WorkspaceRoleDao,
@@ -79,6 +84,8 @@ data class WorkspacePermissionsKey(
     val userId: String
 )
 
+@Inject
+@SingleIn(AppScope::class)
 class WorkspacePermissionsStoreFactory(
     private val memberApi: WorkspaceMemberApi,
     private val permissionDao: WorkspacePermissionDao,

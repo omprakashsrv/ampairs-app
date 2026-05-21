@@ -1,9 +1,10 @@
 package com.ampairs.navigation.providers
 
 import InvoiceRoute
-import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.di.LocalAppGraph
 import com.ampairs.invoice.ui.InvoicePaneScreen
 import com.ampairs.invoice.ui.InvoiceScreen
 import com.ampairs.invoice.ui.InvoiceViewScreen
@@ -41,7 +42,11 @@ fun invoiceEntryProvider(
     }
 
     is InvoiceRoute.Invoices -> NavEntry(key) {
+        val graph = LocalAppGraph.current
+        val invoicesViewModel = viewModel { graph.createInvoicesViewModel() }
         InvoicePaneScreen(
+            invoicesViewModel = invoicesViewModel,
+            invoiceRepository = graph.invoiceRepository,
             onInvoiceEdit = { invoiceId ->
                 if (!invoiceId.isNullOrEmpty()) {
                     backStack.add(InvoiceRoute.Root(id = invoiceId))

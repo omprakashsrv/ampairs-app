@@ -1,22 +1,29 @@
 package com.ampairs.workspace
 
+import com.ampairs.common.di.AppScope
 import com.ampairs.customer.data.repository.CustomerRepository
-import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.event.EventManager
+import com.ampairs.event.EventManagerFactory
 import com.ampairs.event.util.EventLogger
+import com.ampairs.product.data.repository.ProductRepository
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-import org.koin.core.parameter.parametersOf
 
 /**
  * Helper class to manage EventManager connection and repository event listeners.
  * Simplifies workspace selection by centralizing event setup.
  */
-class EventConnectionManager : KoinComponent {
+@Inject
+@SingleIn(AppScope::class)
+class EventConnectionManager(
+    private val customerRepository: CustomerRepository,
+    private val productRepository: ProductRepository,
+    private val eventManagerProvider: EventManagerProvider,
+) {
     private var connectionJob: Job? = null
     private var currentEventManager: EventManager? = null
 
@@ -39,9 +46,7 @@ class EventConnectionManager : KoinComponent {
         connectionJob = scope.launch(Dispatchers.Default) {
             try {
                 // 1. Get EventManager for this workspace
-                val eventManager: EventManager by inject {
-                    parametersOf(workspaceId, userId, deviceId)
-                }
+                val eventManager = eventManagerProvider.get(workspaceId, userId, deviceId)
                 currentEventManager = eventManager
 
                 // 2. Connect to WebSocket
@@ -64,20 +69,12 @@ class EventConnectionManager : KoinComponent {
      */
     private fun setupRepositoryListeners(eventManager: EventManager) {
         try {
-            // Customer module
-            val customerRepo: CustomerRepository by inject()
-            customerRepo.setupEventListener(eventManager)
-
-            // Product module
-            val productRepo: ProductRepository by inject()
-            productRepo.setupEventListener(eventManager)
+            customerRepository.setupEventListener(eventManager)
+            productRepository.setupEventListener(eventManager)
 
             // Add other repositories as they implement event listeners:
-            // val orderRepo: OrderRepository by inject()
-            // orderRepo.setupEventListener(eventManager)
-
-            // val invoiceRepo: InvoiceRepository by inject()
-            // invoiceRepo.setupEventListener(eventManager)
+            // orderRepository.setupEventListener(eventManager)
+            // invoiceRepository.setupEventListener(eventManager)
 
             EventLogger.i("EventConnectionManager", "Repository event listeners configured")
         } catch (e: Exception) {
@@ -101,11 +98,8 @@ class EventConnectionManager : KoinComponent {
 
         // Stop repository listeners
         try {
-            val customerRepo: CustomerRepository by inject()
-            customerRepo.stopEventListener()
-
-            val productRepo: ProductRepository by inject()
-            productRepo.stopEventListener()
+            customerRepository.stopEventListener()
+            productRepository.stopEventListener()
         } catch (e: Exception) {
             // Ignore if repository not available
         }
@@ -119,4 +113,12 @@ class EventConnectionManager : KoinComponent {
     fun isConnected(): Boolean {
         return currentEventManager?.isConnected() ?: false
     }
+}
+
+/**
+ * Interface for providing workspace-scoped EventManager instances.
+ * Implement this in the DI layer to bridge the event module's infrastructure.
+ */
+fun interface EventManagerProvider {
+    fun get(workspaceId: String, userId: String, deviceId: String): EventManager
 }

@@ -1,6 +1,10 @@
 package com.ampairs.workspace.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
@@ -23,6 +27,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class WorkspaceCreateViewModel(
     private val workspaceRepository: WorkspaceRepository,
     private val workspaceApi: WorkspaceApi,

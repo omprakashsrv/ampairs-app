@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.common.model.PageResult
 import com.ampairs.workspace.api.WorkspaceMemberApi
 import com.ampairs.workspace.api.model.UpdateMemberRequest
@@ -21,6 +24,8 @@ import kotlinx.coroutines.flow.first
  * Handles member-related operations including viewing, updating, and removing
  * members with proper data transformation and error handling.
  */
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceMemberRepository(
     private val memberApi: WorkspaceMemberApi,
     private val memberDao: WorkspaceMemberDao,

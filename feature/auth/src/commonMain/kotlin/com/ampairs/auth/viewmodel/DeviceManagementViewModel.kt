@@ -6,6 +6,10 @@ import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.DeviceSession
 import com.ampairs.common.model.onError
 import com.ampairs.common.model.onSuccess
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +23,9 @@ data class DeviceManagementUiState(
     val deviceSessions: List<DeviceSession> = emptyList()
 )
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class DeviceManagementViewModel(
     private val userRepository: UserRepository
 ) : ViewModel() {

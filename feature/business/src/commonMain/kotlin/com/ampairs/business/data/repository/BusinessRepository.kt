@@ -1,5 +1,7 @@
 package com.ampairs.business.data.repository
 
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
 import com.ampairs.business.data.api.BusinessApi
 import com.ampairs.business.data.db.BusinessDao
 import com.ampairs.business.data.db.BusinessEntity
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
+@Inject
 @OptIn(ExperimentalTime::class)
 class BusinessRepository(
     private val businessDao: BusinessDao,

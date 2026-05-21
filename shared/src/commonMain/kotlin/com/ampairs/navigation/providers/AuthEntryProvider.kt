@@ -20,11 +20,13 @@ import com.ampairs.auth.ui.PhoneScreen
 import com.ampairs.auth.ui.UserSelectionScreen
 import com.ampairs.auth.ui.UserUpdateScreen
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.localization.LocaleManager
 import com.ampairs.common.model.onError
 import com.ampairs.common.model.onSuccess
 import com.ampairs.common.state.AppHeaderStateManager
+import com.ampairs.di.LocalAppGraph
 import getPlatformName
-import org.koin.compose.koinInject
 
 /**
  * Entry provider for Auth module routes in Navigation 3.
@@ -36,11 +38,13 @@ fun authEntryProvider(
     onLoginSuccess: () -> Unit
 ): NavEntry<NavKey>? = when (key) {
     is AuthRoute.UserSelection -> NavEntry(key) {
-        val tokenRepository = koinInject<TokenRepository>()
-        val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
-        val userRepository = koinInject<UserRepository>()
+        val tokenRepository = LocalAppGraph.current.tokenRepository
+        val userWorkspaceRepository = LocalAppGraph.current.userWorkspaceRepository
+        val userRepository = LocalAppGraph.current.userRepository
+        val appPreferences = LocalAppGraph.current.appPreferences
 
         UserSelectionScreen(
+            appPreferences = appPreferences,
             onUserSelected = { userId ->
                 kotlinx.coroutines.runBlocking {
                     tokenRepository.setCurrentUser(userId)
@@ -100,10 +104,13 @@ fun authEntryProvider(
     }
 
     is AuthRoute.LoginRoot -> NavEntry(key) {
-        val tokenRepository = koinInject<TokenRepository>()
-        val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+        val tokenRepository = LocalAppGraph.current.tokenRepository
+        val userWorkspaceRepository = LocalAppGraph.current.userWorkspaceRepository
+        val localeManager = LocalAppGraph.current.localeManager
 
-        LoginScreen { loginStatus, userEntity ->
+        LoginScreen(
+            localeManager = localeManager,
+            onLoginStatus = { loginStatus, userEntity ->
             if (loginStatus == LoginStatus.LOGGED_IN) {
                 if (userEntity?.first_name.isNullOrBlank()) {
                     backStack.add(AuthRoute.UserUpdate)
@@ -136,12 +143,12 @@ fun authEntryProvider(
                 val authRoute = getAuthRouteForPlatform()
                 backStack.add(authRoute)
             }
-        }
+        })
     }
 
     is AuthRoute.DesktopBrowserAuth -> NavEntry(key) {
-        val tokenRepository = koinInject<TokenRepository>()
-        val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+        val tokenRepository = LocalAppGraph.current.tokenRepository
+        val userWorkspaceRepository = LocalAppGraph.current.userWorkspaceRepository
 
         DesktopBrowserAuthScreen {
             kotlinx.coroutines.runBlocking {
@@ -162,11 +169,10 @@ fun authEntryProvider(
     }
 
     is AuthRoute.Phone -> NavEntry(key) {
-        val tokenRepository = koinInject<TokenRepository>()
-        val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+        val tokenRepository = LocalAppGraph.current.tokenRepository
+        val userWorkspaceRepository = LocalAppGraph.current.userWorkspaceRepository
 
         PhoneScreen(
-            viewModelStoreOwner = null,
             onAuthSuccess = { sessionId, verificationId ->
                 backStack.add(
                     AuthRoute.Otp(
@@ -195,10 +201,9 @@ fun authEntryProvider(
     }
 
     is AuthRoute.Otp -> NavEntry(key) {
-        val userRepository = koinInject<UserRepository>()
+        val userRepository = LocalAppGraph.current.userRepository
 
         OtpScreen(
-            viewModelStoreOwner = null,
             sessionId = key.sessionId,
             verificationId = key.verificationId,
             onAuthSuccess = {
@@ -219,9 +224,9 @@ fun authEntryProvider(
     }
 
     is AuthRoute.UserUpdate -> NavEntry(key) {
-        val tokenRepository = koinInject<TokenRepository>()
-        val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
-        val userRepository = koinInject<UserRepository>()
+        val tokenRepository = LocalAppGraph.current.tokenRepository
+        val userWorkspaceRepository = LocalAppGraph.current.userWorkspaceRepository
+        val userRepository = LocalAppGraph.current.userRepository
 
         UserUpdateScreen(
             onUpdateSuccess = {
@@ -295,8 +300,8 @@ fun authEntryProvider(
     }
 
     is AuthRoute.AccountDeletion -> NavEntry(key) {
-        val tokenRepository = koinInject<TokenRepository>()
-        val userRepository = koinInject<UserRepository>()
+        val tokenRepository = LocalAppGraph.current.tokenRepository
+        val userRepository = LocalAppGraph.current.userRepository
 
         AccountDeletionScreen(
             onDeletionSuccess = {
@@ -321,8 +326,8 @@ fun authEntryProvider(
     }
 
     is AuthRoute.AccountRestore -> NavEntry(key) {
-        val tokenRepository = koinInject<TokenRepository>()
-        val userRepository = koinInject<UserRepository>()
+        val tokenRepository = LocalAppGraph.current.tokenRepository
+        val userRepository = LocalAppGraph.current.userRepository
 
         AccountRestoreScreen(
             onRestoreSuccess = {

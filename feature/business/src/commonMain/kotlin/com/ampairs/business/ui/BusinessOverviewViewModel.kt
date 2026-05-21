@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -17,6 +21,9 @@ import kotlin.time.ExperimentalTime
  * ViewModel for Business Overview Screen.
  * Manages loading and displaying business overview dashboard.
  */
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class BusinessOverviewViewModel(
     private val repository: BusinessRepository,
     private val businessApi: BusinessApi

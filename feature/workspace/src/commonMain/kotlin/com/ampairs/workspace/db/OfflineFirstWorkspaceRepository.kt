@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.common.model.PageResult
 import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceApi
@@ -21,6 +24,8 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
  * Offline-first workspace repository using Store5 pattern
  * Provides consistent offline-first data access with automatic sync
  */
+@Inject
+@SingleIn(AppScope::class)
 class OfflineFirstWorkspaceRepository(
     private val workspaceApi: WorkspaceApi,
     private val workspaceDao: WorkspaceDao,

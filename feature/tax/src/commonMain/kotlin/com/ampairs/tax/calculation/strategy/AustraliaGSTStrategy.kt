@@ -8,6 +8,7 @@ import com.ampairs.tax.calculation.model.TaxComponentResult
 import com.ampairs.tax.calculation.model.TransactionType
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
+import dev.zacsweers.metro.Inject
 
 /**
  * Australia GST Strategy - Simple 10% GST on most goods and services
@@ -20,6 +21,7 @@ import com.ampairs.tax.data.repository.TaxComponentRepository
  * - Reverse charge for imported services
  * - Simplified BAS (Business Activity Statement) reporting
  */
+@Inject
 class AustraliaGSTStrategy(
     private val taxRuleRepository: TaxRuleRepository,
     private val taxComponentRepository: TaxComponentRepository,

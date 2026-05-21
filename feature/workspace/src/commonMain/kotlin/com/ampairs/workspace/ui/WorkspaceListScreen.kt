@@ -40,22 +40,21 @@ import com.ampairs.common.config.DataStoreManager
 import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.common.config.AppPreferencesDataStore
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.compose.koinInject
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceListScreen(
+    appPreferences: AppPreferencesDataStore,
     onNavigateToCreateWorkspace: () -> Unit,
     onWorkspaceSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     onWorkspaceEdit: (String) -> Unit = {},
-    viewModel: WorkspaceListViewModel = koinViewModel(),
+    viewModel: WorkspaceListViewModel = metroViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
-    val appPreferences: AppPreferencesDataStore = koinInject()
 
     LaunchedEffect(Unit) {
         // Load workspaces only once when screen loads

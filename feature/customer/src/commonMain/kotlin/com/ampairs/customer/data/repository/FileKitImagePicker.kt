@@ -6,6 +6,10 @@ import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.FileKitMode
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.github.vinceglb.filekit.name
 import io.github.vinceglb.filekit.readBytes
 import io.github.vinceglb.filekit.size
@@ -14,6 +18,7 @@ import io.github.vinceglb.filekit.size
  * FileKit-based implementation of ImageFilePicker.
  * Provides cross-platform image file selection using FileKit.
  */
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class FileKitImagePicker : ImageFilePicker {
 
     companion object {

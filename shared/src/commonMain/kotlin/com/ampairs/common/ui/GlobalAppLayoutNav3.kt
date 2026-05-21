@@ -25,15 +25,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavKey
-import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.firebase.analytics.AnalyticsEvents
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.state.AppHeaderStateManager
+import com.ampairs.di.LocalAppGraph
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.domain.WorkspaceList
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
@@ -45,7 +44,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import navigateToMenuItemNav3
-import org.koin.compose.koinInject
 
 /**
  * Global App Layout for Navigation 3 that wraps NavDisplay.
@@ -59,12 +57,13 @@ fun GlobalAppLayoutNav3(
     modifier: Modifier = Modifier,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val userRepository: UserRepository = koinInject()
-    val workspaceRepository: WorkspaceRepository = koinInject()
-    val userWorkspaceRepository: UserWorkspaceRepository = koinInject()
-    val tokenRepository: TokenRepository = koinInject()
-    val analytics: FirebaseAnalytics = koinInject()
-    val appPreferences: AppPreferencesDataStore = koinInject()
+    val graph = LocalAppGraph.current
+    val userRepository = graph.userRepository
+    val workspaceRepository = graph.workspaceRepository
+    val userWorkspaceRepository = graph.userWorkspaceRepository
+    val tokenRepository = graph.tokenRepository
+    val analytics = graph.analytics
+    val appPreferences = graph.appPreferences
     val headerStateManager = remember { AppHeaderStateManager.instance }
     val headerState by headerStateManager.headerState.collectAsState()
 

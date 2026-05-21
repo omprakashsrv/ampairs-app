@@ -3,6 +3,7 @@ package com.ampairs.tax.data.repository
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.tax.data.api.TaxConfigurationApi
 import com.ampairs.tax.data.db.dao.TaxRuleDao
+import dev.zacsweers.metro.Inject
 import com.ampairs.tax.data.db.entity.toEntity
 import com.ampairs.tax.data.db.entity.toDomain
 import com.ampairs.tax.domain.model.TaxRule
@@ -13,6 +14,7 @@ import kotlin.time.ExperimentalTime
 /**
  * Tax Rule Repository - Offline-first repository for tax rules
  */
+@Inject
 @OptIn(ExperimentalTime::class)
 class TaxRuleRepository(
     private val taxConfigApi: TaxConfigurationApi,

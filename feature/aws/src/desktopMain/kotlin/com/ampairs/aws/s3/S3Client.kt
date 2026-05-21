@@ -3,8 +3,10 @@ package com.ampairs.aws.s3
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.model.GetObjectRequest
 import aws.sdk.kotlin.services.s3.presigners.presignGetObject
+import dev.zacsweers.metro.Inject
 import kotlin.time.Duration.Companion.hours
 
+@Inject
 class AwsS3Client : com.ampairs.aws.s3.S3Client {
     private var s3Client: S3Client
 

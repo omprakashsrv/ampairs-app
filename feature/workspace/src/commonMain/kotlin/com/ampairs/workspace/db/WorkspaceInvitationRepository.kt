@@ -1,6 +1,9 @@
 package com.ampairs.workspace.db
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import com.ampairs.common.model.PageResult
 import com.ampairs.workspace.api.WorkspaceInvitationApi
 import com.ampairs.workspace.api.model.AcceptInvitationResponse
@@ -15,6 +18,8 @@ import com.ampairs.workspace.domain.InvitationAcceptanceResult
  * Handles invitation-related operations including creation, acceptance,
  * tracking, and management with proper data transformation and error handling.
  */
+@Inject
+@SingleIn(AppScope::class)
 class WorkspaceInvitationRepository(
     private val invitationApi: WorkspaceInvitationApi,
     private val tokenRepository: TokenRepository,

@@ -8,7 +8,6 @@ import ampairsapp.feature.auth.generated.resources.phone_user_already_logged_in
 import ampairsapp.feature.auth.generated.resources.phone_user_already_logged_in_desc
 import ampairsapp.feature.auth.generated.resources.phone_user_exists
 import ampairsapp.feature.auth.generated.resources.phone_would_you_like_to_switch
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,22 +66,15 @@ import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.common.localization.localizedString
 import com.ampairs.common.navigation.ExitApp
 import com.ampairs.common.navigation.PlatformBackHandler
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun PhoneScreen(
-    viewModelStoreOwner: ViewModelStoreOwner? = null,
+    viewModel: LoginViewModel = metroViewModel(),
     onAuthSuccess: (sessionId: String, verificationId: String) -> Unit,
     onExistingUserSelected: () -> Unit = {},
 ) {
-    // Nav3 provides ViewModelStoreOwner through entryDecorators, Nav2 passes it explicitly
-    val viewModel = if (viewModelStoreOwner != null) {
-        koinViewModel<LoginViewModel>(viewModelStoreOwner = viewModelStoreOwner)
-    } else {
-        koinViewModel<LoginViewModel>()
-    }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showExistingUserDialog by remember { mutableStateOf(false) }

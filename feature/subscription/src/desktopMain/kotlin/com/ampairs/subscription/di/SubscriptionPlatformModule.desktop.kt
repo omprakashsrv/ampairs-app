@@ -1,17 +1,24 @@
 package com.ampairs.subscription.di
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.di.AppScope
 import com.ampairs.subscription.db.SubscriptionDatabase
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 import java.net.InetAddress
 import java.net.NetworkInterface
 import java.util.prefs.Preferences
 
-actual val subscriptionPlatformModule = module {
-    // Use factory instead of single to ensure fresh database instances after workspace switch
-    // DatabaseScopeManager handles actual singleton behavior per workspace
-    factory<SubscriptionDatabase> {
-        get<WorkspaceAwareDatabaseFactory>().createDatabase(
+// Replaced Koin subscriptionPlatformModule (actual) for Desktop.
+// SubscriptionDatabase is provided without @SingleIn (workspace-aware factory).
+
+@ContributesTo(AppScope::class)
+interface SubscriptionDesktopModule {
+    companion object {
+        @Provides
+        fun provideSubscriptionDatabase(
+            factory: WorkspaceAwareDatabaseFactory
+        ): SubscriptionDatabase = factory.createDatabase(
             klass = SubscriptionDatabase::class,
             moduleName = "subscription"
         )
@@ -19,18 +26,13 @@ actual val subscriptionPlatformModule = module {
 }
 
 /**
- * Get desktop device ID - uses MAC address or generates a persistent ID
+ * Get desktop device ID — kept for non-DI usage if needed.
  */
-actual fun getDeviceId(): String {
+fun getDesktopDeviceId(): String {
     return try {
-        // Try to get stored device ID first
         val prefs = Preferences.userRoot().node("com/ampairs/subscription")
         val storedId = prefs.get("device_id", null)
-        if (storedId != null) {
-            return storedId
-        }
-
-        // Generate new device ID based on hardware
+        if (storedId != null) return storedId
         val deviceId = getHardwareBasedId()
         prefs.put("device_id", deviceId)
         deviceId

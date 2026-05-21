@@ -10,8 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.di.LocalAppGraph
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.ModuleStoreScreen
@@ -32,7 +34,9 @@ fun workspaceEntryProvider(
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)?
 ): NavEntry<NavKey>? = when (key) {
     is WorkspaceRoute.Root -> NavEntry(key) {
+        val appPreferences = LocalAppGraph.current.appPreferences
         WorkspaceListScreen(
+            appPreferences = appPreferences,
             onNavigateToCreateWorkspace = {
                 backStack.add(WorkspaceRoute.Create)
             },
@@ -121,7 +125,14 @@ fun workspaceEntryProvider(
     }
 
     is WorkspaceRoute.Modules -> NavEntry(key) {
+        val graph = LocalAppGraph.current
+        val subscriptionViewModel = viewModel(key = key.workspaceId + "_subscription") {
+            graph.subscriptionViewModelFactory.create()
+        }
         WorkspaceModulesScreen(
+            workspaceId = key.workspaceId,
+            subscriptionViewModel = subscriptionViewModel,
+            subscriptionOnboardingManager = graph.subscriptionOnboardingManager,
             onModuleSelected = { moduleCode ->
                 // Handle module selection based on code
                 when (moduleCode) {
@@ -143,7 +154,6 @@ fun workspaceEntryProvider(
                 backStack.add(SubscriptionRoute.Plans)
             },
             onNavigationServiceReady = onNavigationServiceReady,
-            workspaceId = key.workspaceId,
             paddingValues = PaddingValues()
         )
     }
@@ -153,7 +163,6 @@ fun workspaceEntryProvider(
             workspaceId = key.workspaceId,
             paddingValues = PaddingValues(),
             onModuleNavigate = { route ->
-                // Replace current screen with module destination
                 backStack.removeLastOrNull()
                 backStack.add(route as NavKey)
             }

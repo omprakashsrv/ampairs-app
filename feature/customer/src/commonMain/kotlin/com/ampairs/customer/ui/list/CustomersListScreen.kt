@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.customer.domain.CustomerListItem
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMERS
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +32,7 @@ fun CustomersListScreen(
     onCreateCustomer: () -> Unit,
     onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: CustomersListViewModel = koinViewModel()
+    viewModel: CustomersListViewModel = metroViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

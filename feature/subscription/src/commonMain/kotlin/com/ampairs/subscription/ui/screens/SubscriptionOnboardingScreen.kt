@@ -12,7 +12,6 @@ import com.ampairs.subscription.domain.model.SubscriptionStatus
 import com.ampairs.subscription.util.SubscriptionOnboardingManager
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 /**
  * Onboarding screen shown after workspace creation or selection
@@ -24,8 +23,8 @@ fun SubscriptionOnboardingScreen(
     onNavigateToPlanSelection: () -> Unit,
     onContinueWithFree: () -> Unit,
     onDismiss: () -> Unit,
-    viewModel: SubscriptionViewModel = koinInject(),
-    onboardingManager: SubscriptionOnboardingManager = koinInject()
+    viewModel: SubscriptionViewModel,
+    onboardingManager: SubscriptionOnboardingManager
 ) {
     val subscription by viewModel.subscription.collectAsState()
     val currentPlan by viewModel.currentPlan.collectAsState()

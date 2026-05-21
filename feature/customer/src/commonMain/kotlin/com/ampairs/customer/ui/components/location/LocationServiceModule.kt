@@ -1,8 +1,4 @@
 package com.ampairs.customer.ui.components.location
 
-import org.koin.core.module.Module
-
-/**
- * Platform-specific Koin module for location services
- */
-expect val locationServiceModule: Module
+// LocationService is provided via the platform AppGraph (AndroidAppGraph, IosAppGraph, DesktopAppGraph).
+// This file is intentionally empty — no Koin module needed.

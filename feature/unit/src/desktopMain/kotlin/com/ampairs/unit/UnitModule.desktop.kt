@@ -1,27 +1,22 @@
 package com.ampairs.unit
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.di.AppScope
 import com.ampairs.unit.data.db.UnitDatabase
-import org.koin.core.module.Module
-import org.koin.dsl.module
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
 
-/**
- * Desktop-specific Unit Module
- *
- * Provides platform-specific database configuration using:
- * - Desktop home directory for database storage
- * - Dispatchers.IO for query execution
- * - WorkspaceAwareDatabaseFactory for workspace isolation
- *
- * CRITICAL: Uses factory scope (NOT single) for workspace isolation.
- * DatabaseScopeManager handles actual singleton behavior per workspace.
- */
-val unitPlatformModule: Module = module {
-    factory<UnitDatabase> {
-        val factory = get<WorkspaceAwareDatabaseFactory>()
-        factory.createDatabase(
-            klass = UnitDatabase::class,
-            moduleName = "unit"
-        )
+// Replaced Koin unitPlatformModule for Desktop.
+// UnitDatabase is provided without @SingleIn (workspace-aware factory).
+
+@ContributesTo(AppScope::class)
+interface UnitDesktopModule {
+    companion object {
+        @Provides
+        fun provideUnitDatabase(factory: WorkspaceAwareDatabaseFactory): UnitDatabase =
+            factory.createDatabase(
+                klass = UnitDatabase::class,
+                moduleName = "unit"
+            )
     }
 }

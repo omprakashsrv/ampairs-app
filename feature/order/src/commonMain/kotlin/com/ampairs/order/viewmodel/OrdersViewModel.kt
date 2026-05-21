@@ -17,8 +17,15 @@ import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.db.dto.asDomainModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.launch
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class OrdersViewModel(val orderRepository: OrderRepository) : ViewModel() {
 
     var searchText by mutableStateOf("")

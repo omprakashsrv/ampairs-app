@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.MasterState
 import com.ampairs.workspace.context.WorkspaceContextManager
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +27,7 @@ fun StateListScreen(
     onStateClick: (String) -> Unit,
     onImportStates: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: StateListViewModel = koinViewModel()
+    viewModel: StateListViewModel = metroViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()

@@ -6,10 +6,14 @@ import com.ampairs.common.httpClient
 import com.ampairs.common.post
 import com.ampairs.common.model.Response
 import com.ampairs.order.api.model.OrderApiModel
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
 import io.ktor.client.engine.HttpClientEngine
 
 const val ORDER_ENDPOINT = "http://localhost:8080"
 
+@Inject @ContributesBinding(AppScope::class)
 class OrderApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository) : OrderApi {
 
     private val client = httpClient(engine, tokenRepository)

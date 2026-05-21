@@ -35,19 +35,18 @@ import com.ampairs.common.format.toDecimal
 import com.ampairs.order.domain.Discount
 import com.ampairs.order.viewmodel.OrderViewModel
 import com.ampairs.product.ui.list.ProductsListScreen
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderScreen(
     fromCustomerId: String?,
     toCustomerId: String?,
     id: String?,
-    onOrderSaved: (String) -> Unit
+    onOrderSaved: (String) -> Unit,
+    viewModel: OrderViewModel = assistedMetroViewModel<OrderViewModel, OrderViewModel.Factory> { create(fromCustomerId, toCustomerId, id) }
 ) {
-    val orderViewModel: OrderViewModel = koinInject { parametersOf(fromCustomerId, toCustomerId, id) }
+    val orderViewModel = viewModel
 
     val scope = rememberCoroutineScope()
     val bottomSheetState =

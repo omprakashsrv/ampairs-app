@@ -1,39 +1,38 @@
 package com.ampairs.agent.di
 
-import com.ampairs.agent.core.ActionHandlerProvider
-import com.ampairs.agent.core.ActionRegistry
-import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.IntentResolver
 import com.ampairs.agent.offline.RuleBasedIntentResolver
-import com.ampairs.agent.ui.ChatViewModel
-import org.koin.core.module.dsl.viewModelOf
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.Qualifier
 
-val agentModule = module {
-    // Collect all ActionHandlerProviders and build registry
-    factory {
-        ActionRegistry().apply {
-            getAll<ActionHandlerProvider>().forEach { register(it) }
-        }
+// Replaced Koin agentModule. Injectable classes are annotated with @Inject directly:
+// - ActionRegistry: @Inject
+// - RuleBasedIntentResolver: @Inject
+// - AgentOrchestrator: @Inject
+// - ChatViewModel: @Inject
+//
+// Note: The original Koin module used named("offline"/"online") qualifiers.
+// IntentResolver bindings are provided here via @Provides with qualifier annotations.
+
+@Qualifier
+annotation class OfflineIntentResolver
+
+@Qualifier
+annotation class OnlineIntentResolver
+
+@ContributesTo(AppScope::class)
+interface AgentModule {
+    companion object {
+        @Provides
+        @OfflineIntentResolver
+        fun provideOfflineIntentResolver(): IntentResolver = RuleBasedIntentResolver()
+
+        @Provides
+        @OnlineIntentResolver
+        fun provideOnlineIntentResolver(): IntentResolver = RuleBasedIntentResolver()
     }
-
-    // Offline intent resolver (rule-based)
-    factory<IntentResolver>(named("offline")) { RuleBasedIntentResolver() }
-
-    // TODO: Phase 2 - Add LlmIntentResolver(named("online"))
-    // For now, use offline resolver for both slots
-    factory<IntentResolver>(named("online")) { RuleBasedIntentResolver() }
-
-    // Agent Orchestrator
-    factory {
-        AgentOrchestrator(
-            actionRegistry = get(),
-            onlineResolver = get(named("online")),
-            offlineResolver = get(named("offline")),
-        )
-    }
-
-    // Chat ViewModel
-    viewModelOf(::ChatViewModel)
 }
+
+fun agentModule() = Unit

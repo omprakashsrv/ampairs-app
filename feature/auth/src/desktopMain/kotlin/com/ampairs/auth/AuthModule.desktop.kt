@@ -9,24 +9,23 @@ import com.ampairs.auth.db.AuthRoomDatabase
 import com.ampairs.auth.firebase.FirebaseAuthProvider
 import com.ampairs.auth.service.RecaptchaConfig
 import com.ampairs.auth.service.RecaptchaService
+import com.ampairs.common.desktop.DataDirectoryManager
+import com.ampairs.common.di.AppScope
 import com.ampairs.network.security.AppUpdateEnforcer
 import com.ampairs.network.security.CertificateManager
 import com.ampairs.network.security.CertificatePinningService
 import com.ampairs.network.security.CertificateStorage
 import com.ampairs.network.security.DesktopAppUpdateEnforcer
-import com.ampairs.network.security.DesktopCertificateStorage
 import com.ampairs.network.security.DesktopCertificatePinningService
+import com.ampairs.network.security.DesktopCertificateStorage
 import com.ampairs.network.security.DesktopSecureEngineFactory
 import com.ampairs.network.security.SecureKtorClientFactory
-import com.ampairs.common.desktop.DataDirectoryManager
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.Dispatchers
-import org.koin.core.module.Module
-import org.koin.dsl.module
 import java.io.File
 
-/**
- * Migration from version 2 to 3: Add profile picture columns to userEntity
- */
 val AUTH_MIGRATION_2_3 = object : Migration(2, 3) {
     override fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE userEntity ADD COLUMN profile_picture_url TEXT")
@@ -34,56 +33,61 @@ val AUTH_MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-val authPlatformModule: Module = module {
-    // Auth database is NOT workspace-aware - login happens before workspace selection
-    single<AuthRoomDatabase> {
-        val dbFile = File(DataDirectoryManager.getDatabaseDir(), "auth.db")
-        Room.databaseBuilder<AuthRoomDatabase>(
-            name = dbFile.absolutePath
-        )
-            .setDriver(BundledSQLiteDriver())
-            .setQueryCoroutineContext(Dispatchers.IO)
-            .addMigrations(AUTH_MIGRATION_2_3)
-            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true) // Only destroy on version downgrades
-            .build()
-    }
-    
-    single {
-        RecaptchaService(
-            RecaptchaConfig(
-                siteKey = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", // Test key
-                enabled = false // Disabled for development
+@ContributesTo(AppScope::class)
+interface AuthDesktopModule {
+    companion object {
+        @Provides @SingleIn(AppScope::class)
+        fun provideAuthDatabase(): AuthRoomDatabase {
+            val dbFile = File(DataDirectoryManager.getDatabaseDir(), "auth.db")
+            return Room.databaseBuilder<AuthRoomDatabase>(
+                name = dbFile.absolutePath
             )
-        )
-    }
+                .setDriver(BundledSQLiteDriver())
+                .setQueryCoroutineContext(Dispatchers.IO)
+                .addMigrations(AUTH_MIGRATION_2_3)
+                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
+                .build()
+        }
 
-    // Firebase authentication provider (stub for desktop)
-    single { FirebaseAuthProvider() }
+        @Provides @SingleIn(AppScope::class)
+        fun provideFirebaseAuthProvider(): FirebaseAuthProvider = FirebaseAuthProvider()
 
-    // Certificate pinning components
-    single<CertificateStorage> { 
-        DesktopCertificateStorage() 
-    }
-    
-    single { 
-        CertificateManager(get()) 
-    }
-    
-    single<AppUpdateEnforcer> { 
-        DesktopAppUpdateEnforcer() 
-    }
-    
-    single<CertificatePinningService> { 
-        val service = DesktopCertificatePinningService(get())
-        service.setAppUpdateEnforcer(get())
-        service
-    }
-    
-    single { 
-        DesktopSecureEngineFactory(get<CertificatePinningService>() as DesktopCertificatePinningService) 
-    }
-    
-    single { 
-        SecureKtorClientFactory(get(), get()) 
+        @Provides @SingleIn(AppScope::class)
+        fun provideRecaptchaService(): RecaptchaService =
+            RecaptchaService(
+                RecaptchaConfig(siteKey = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", enabled = false)
+            )
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideCertificateStorage(): CertificateStorage = DesktopCertificateStorage()
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideCertificateManager(storage: CertificateStorage): CertificateManager =
+            CertificateManager(storage)
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideAppUpdateEnforcer(): AppUpdateEnforcer = DesktopAppUpdateEnforcer()
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideCertificatePinningService(
+            manager: CertificateManager,
+            enforcer: AppUpdateEnforcer
+        ): CertificatePinningService {
+            val service = DesktopCertificatePinningService(manager)
+            service.setAppUpdateEnforcer(enforcer)
+            return service
+        }
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideSecureEngineFactory(
+            pinningService: CertificatePinningService
+        ): DesktopSecureEngineFactory =
+            DesktopSecureEngineFactory(pinningService as DesktopCertificatePinningService)
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideSecureKtorClientFactory(
+            pinningService: CertificatePinningService,
+            enforcer: AppUpdateEnforcer
+        ): SecureKtorClientFactory = SecureKtorClientFactory(pinningService, enforcer)
     }
 }

@@ -43,14 +43,14 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.auth.api.model.BlockingWorkspace
 import com.ampairs.auth.viewmodel.AccountDeletionViewModel
 import com.ampairs.common.model.UiState
-import org.koin.compose.viewmodel.koinViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @Composable
 fun AccountDeletionScreen(
+    viewModel: AccountDeletionViewModel = metroViewModel(),
     onDeletionSuccess: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val viewModel: AccountDeletionViewModel = koinViewModel()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Show error/success messages

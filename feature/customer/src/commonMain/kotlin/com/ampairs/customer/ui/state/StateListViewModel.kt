@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.FlowPreview
 
 data class StateListUiState(
@@ -21,6 +25,9 @@ data class StateListUiState(
     val isLoadingImportStates: Boolean = false
 )
 
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
+@Inject
 class StateListViewModel(
     private val stateStore: StateStore
 ) : ViewModel() {

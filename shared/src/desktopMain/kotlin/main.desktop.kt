@@ -5,24 +5,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import com.ampairs.update.service.UpdateChecker
-import com.ampairs.update.service.UpdateDownloader
-import com.ampairs.update.service.UpdateInstaller
+import com.ampairs.di.DesktopAppGraph
 import com.ampairs.update.ui.UpdateDialog
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 actual fun getPlatformName(): String = "Desktop"
 
 @Composable
 fun MainView(
+    appGraph: DesktopAppGraph,
     onLoggedIn: (Boolean) -> Unit,
     onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
     onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
-    val updateChecker: UpdateChecker = koinInject()
-    val updateDownloader: UpdateDownloader = koinInject()
-    val updateInstaller: UpdateInstaller = koinInject()
+    val updateChecker = appGraph.updateChecker
+    val updateDownloader = appGraph.updateDownloader
+    val updateInstaller = appGraph.updateInstaller
     val scope = rememberCoroutineScope()
 
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -83,5 +81,5 @@ fun MainView(
     }
 
     // Show main app
-    App(onNavigationServiceReady, onNavigationReady)
+    App(appGraph, onNavigationServiceReady, onNavigationReady)
 }

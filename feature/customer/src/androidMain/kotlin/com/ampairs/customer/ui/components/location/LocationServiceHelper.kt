@@ -13,7 +13,6 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 /**
  * Composable that listens for location service requests (map selection and permissions)
@@ -33,8 +32,7 @@ import org.koin.compose.koinInject
  * ```
  */
 @Composable
-fun LocationServiceMapHandler() {
-    val locationService: LocationService = koinInject()
+fun LocationServiceMapHandler(locationService: LocationService) {
     val scope = rememberCoroutineScope()
 
     // Map selection state

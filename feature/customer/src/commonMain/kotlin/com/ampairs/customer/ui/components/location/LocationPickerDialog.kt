@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 /**
  * Location picker state using LocationService architecture
@@ -72,7 +71,7 @@ fun LocationPickerDialog(
     onLocationSelected: (LocationData, AddressData?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    locationService: LocationService = koinInject()
+    locationService: LocationService
 ) {
     PlatformLocationPickerDialog(
         showDialog = showDialog,
@@ -94,7 +93,7 @@ fun CommonLocationPickerDialog(
     onLocationSelected: (LocationData, AddressData?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    locationService: LocationService = koinInject()
+    locationService: LocationService
 ) {
     if (!showDialog) return
 

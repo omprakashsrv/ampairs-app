@@ -1,49 +1,26 @@
 package com.ampairs.auth
 
-import com.ampairs.auth.api.AuthApi
-import com.ampairs.auth.api.AuthApiImpl
-import com.ampairs.auth.api.TokenRepository
-import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.AuthRoomDatabase
-import com.ampairs.auth.db.TokenRepositoryImpl
-import com.ampairs.auth.db.UserRepository
-import com.ampairs.auth.db.UserWorkspaceRepositoryImpl
-import com.ampairs.auth.firebase.FirebaseAuthRepository
-import com.ampairs.auth.ui.LoginScope
-import com.ampairs.auth.viewmodel.AccountDeletionViewModel
-import com.ampairs.auth.viewmodel.DeviceManagementViewModel
-import com.ampairs.auth.viewmodel.LoginViewModel
-import com.ampairs.auth.viewmodel.UserSelectionViewModel
-import com.ampairs.auth.viewmodel.UserUpdateViewModel
-import org.koin.core.module.Module
-import org.koin.core.module.dsl.viewModelOf
-import org.koin.dsl.bind
-import org.koin.dsl.module
+import com.ampairs.auth.db.dao.UserDao
+import com.ampairs.auth.db.dao.UserSessionDao
+import com.ampairs.auth.db.dao.UserTokenDao
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 
-val authModule: Module = module {
-    single { AuthApiImpl(get(), get()) } bind (AuthApi::class)
-    single { TokenRepositoryImpl(get(), get(), get()) } bind (TokenRepository::class)
-    single { UserWorkspaceRepositoryImpl(get()) } bind (UserWorkspaceRepository::class)
-    // Database is provided by platform-specific modules
-    single { get<AuthRoomDatabase>().userDao() }
-    single { get<AuthRoomDatabase>().userTokenDao() }
-    single { get<AuthRoomDatabase>().userSessionDao() }
-    // DeviceService and RecaptchaService are provided by platform-specific modules
-    single { UserRepository(get(), get(), get(), get(), get(), get()) }
+@ContributesTo(AppScope::class)
+interface AuthDaoModule {
+    companion object {
+        @Provides @SingleIn(AppScope::class)
+        fun provideUserDao(db: AuthRoomDatabase): UserDao = db.userDao()
 
-    // Firebase authentication repository (FirebaseAuthProvider provided by platform modules)
-    single { FirebaseAuthRepository(get()) }
+        @Provides @SingleIn(AppScope::class)
+        fun provideTokenDao(db: AuthRoomDatabase): UserTokenDao = db.userTokenDao()
 
-    // Direct ViewModel injection
-    viewModelOf(::LoginViewModel)
-    viewModelOf(::DeviceManagementViewModel)
-    viewModelOf(::UserUpdateViewModel)
-    viewModelOf(::UserSelectionViewModel)
-    viewModelOf(::AccountDeletionViewModel)
-
-    scope<LoginScope> {
-        scoped { LoginViewModel(get(), get(), get(), get()) }
+        @Provides @SingleIn(AppScope::class)
+        fun provideSessionDao(db: AuthRoomDatabase): UserSessionDao = db.userSessionDao()
     }
 }
 
-fun authModule() = authModule
+fun authModule() = Unit

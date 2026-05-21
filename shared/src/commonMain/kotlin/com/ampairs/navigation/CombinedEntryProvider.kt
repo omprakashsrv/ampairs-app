@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.CustomerListRoute
+import com.ampairs.di.LocalAppGraph
 import com.ampairs.form.ui.FormConfigScreen
 import com.ampairs.navigation.providers.agentEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
@@ -132,8 +133,10 @@ private fun mainRouteEntryProvider(
 
     // Route.FormConfig - Form configuration screen
     is Route.FormConfig -> NavEntry(key) {
+        val graph = LocalAppGraph.current
         FormConfigScreen(
             entityType = key.entityType,
+            configRepository = graph.configRepository,
             onNavigateBack = { backStack.removeLastOrNull() }
         )
     }

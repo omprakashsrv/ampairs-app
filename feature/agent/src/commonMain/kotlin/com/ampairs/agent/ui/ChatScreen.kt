@@ -41,14 +41,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ampairs.agent.ui.components.MessageBubble
 import com.ampairs.agent.ui.components.VoiceInputButton
-import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
+    viewModel: ChatViewModel,
     onNavigateToRoute: (Map<String, String>) -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: ChatViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()

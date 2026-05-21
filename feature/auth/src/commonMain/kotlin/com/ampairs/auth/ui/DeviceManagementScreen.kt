@@ -51,13 +51,13 @@ import ampairsapp.feature.auth.generated.resources.device_sessions
 import ampairsapp.feature.auth.generated.resources.loading_device_sessions
 import ampairsapp.feature.auth.generated.resources.logout_all_devices
 import androidx.compose.foundation.layout.imePadding
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.filterNotNull
-import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeviceManagementScreen(
-    viewModel: DeviceManagementViewModel = koinViewModel(),
+    viewModel: DeviceManagementViewModel = metroViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
