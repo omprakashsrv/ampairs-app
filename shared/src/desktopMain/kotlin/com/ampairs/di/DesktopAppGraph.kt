@@ -1,8 +1,6 @@
 package com.ampairs.di
 
 import DesktopDeviceService
-import com.ampairs.aws.s3.AwsS3Client
-import com.ampairs.aws.s3.S3Client
 import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreAppPreferences
@@ -64,9 +62,6 @@ interface DesktopSharedPlatformModule {
 
         @Provides @SingleIn(AppScope::class)
         fun provideDeviceService(): DeviceService = DesktopDeviceService()
-
-        @Provides @SingleIn(AppScope::class)
-        fun provideS3Client(): S3Client = AwsS3Client()
 
         @Provides @SingleIn(AppScope::class)
         fun provideLocationService(): LocationService = LocationService()
