@@ -20,6 +20,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.business.ui.BusinessProfileViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Business Profile & Registration Form Screen.
@@ -34,8 +35,8 @@ import com.ampairs.business.ui.BusinessProfileViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessProfileFormScreen(
-    viewModel: BusinessProfileViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: BusinessProfileViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()

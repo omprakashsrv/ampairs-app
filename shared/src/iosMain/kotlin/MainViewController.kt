@@ -17,9 +17,7 @@ fun MainViewController() = ComposeUIViewController {
 
     val appGraph = remember { createGraphFactory<IosAppGraph.Factory>().create() }
 
-    setSingletonImageLoaderFactory { _ ->
-        generateImageLoader(appGraph.httpEngine, appGraph.tokenRepository)
-    }
+    setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
 
     App(appGraph, {})
 }

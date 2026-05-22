@@ -61,7 +61,6 @@ import com.ampairs.common.ApiUrlBuilder
 
 @Composable
 fun UserUpdateScreen(
-    onUpdateSuccess: () -> Unit,
     onProfilePictureUpdated: ((newThumbnailUrl: String) -> Unit)? = null,
     viewModel: UserUpdateViewModel = metroViewModel(),
 ) {
@@ -172,7 +171,7 @@ fun UserUpdateScreen(
 
                         // Bottom-aligned button
                         Button(
-                            onClick = { viewModel.updateUser(onUpdateSuccess) },
+                            onClick = { viewModel.updateUser { viewModel.handleUpdateSuccess() } },
                             modifier = Modifier
                                 .widthIn(max = 400.dp)
                                 .fillMaxWidth()

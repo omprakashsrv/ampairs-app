@@ -14,7 +14,6 @@ actual fun getPlatformName(): String = "Desktop"
 @Composable
 fun MainView(
     appGraph: DesktopAppGraph,
-    onLoggedIn: (Boolean) -> Unit,
     onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
     onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {

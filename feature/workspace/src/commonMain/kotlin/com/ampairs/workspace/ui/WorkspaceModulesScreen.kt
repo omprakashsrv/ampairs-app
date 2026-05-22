@@ -24,8 +24,8 @@ import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.subscription.ui.screens.SubscriptionOnboardingScreen
-import com.ampairs.subscription.util.SubscriptionOnboardingManager
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Workspace modules screen showing active modules
@@ -35,13 +35,12 @@ import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 @Composable
 fun WorkspaceModulesScreen(
     workspaceId: String,
-    subscriptionViewModel: SubscriptionViewModel,
-    subscriptionOnboardingManager: SubscriptionOnboardingManager,
     onModuleSelected: (moduleCode: String) -> Unit = {},
     onNavigateToModuleStore: (() -> Unit)? = null,
     onNavigateToSubscription: (() -> Unit)? = null,
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     paddingValues: PaddingValues = PaddingValues(0.dp),
+    subscriptionViewModel: SubscriptionViewModel = metroViewModel(),
     viewModel: WorkspaceModulesViewModel = assistedMetroViewModel<WorkspaceModulesViewModel, WorkspaceModulesViewModel.Factory> { create(workspaceId) },
 ) {
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -190,7 +189,7 @@ fun WorkspaceModulesScreen(
                 showSubscriptionOnboarding = false
             },
             viewModel = subscriptionViewModel,
-            onboardingManager = subscriptionOnboardingManager
+            onboardingManager = viewModel.onboardingManager
         )
     }
 }

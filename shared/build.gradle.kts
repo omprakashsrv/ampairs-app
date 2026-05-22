@@ -83,7 +83,6 @@ kotlin {
                 implementation(libs.androidx.activity.compose)
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.splash.screen)
-                implementation(libs.aws.s3)
 
                 // Location and Maps
                 implementation(libs.play.services.location)
@@ -115,7 +114,6 @@ kotlin {
                 // Feature modules — api so androidApp can see Metro-generated supertypes
                 api(projects.feature.auth)
                 api(projects.feature.agent)
-                api(projects.feature.aws)
                 api(projects.feature.form)
                 api(projects.feature.unit)
                 api(projects.feature.update)
@@ -183,7 +181,6 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okHttp)
-                implementation(libs.aws.s3)
                 implementation(libs.jmapviewer)
 
                 implementation(project(":tallyModule"))

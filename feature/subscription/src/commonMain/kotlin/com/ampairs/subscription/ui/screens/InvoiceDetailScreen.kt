@@ -16,6 +16,7 @@ import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.viewmodel.InvoiceViewModel
 import com.ampairs.common.util.formatCurrencyWithCode
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Screen showing invoice details and payment options
@@ -25,7 +26,7 @@ import com.ampairs.common.util.formatCurrencyWithCode
 fun InvoiceDetailScreen(
     invoiceUid: String,
     onNavigateBack: () -> Unit,
-    viewModel: InvoiceViewModel
+    viewModel: InvoiceViewModel = metroViewModel(),
 ) {
     val invoice by viewModel.selectedInvoice.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

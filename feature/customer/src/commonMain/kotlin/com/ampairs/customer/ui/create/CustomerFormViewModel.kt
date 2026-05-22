@@ -21,6 +21,9 @@ import com.ampairs.customer.domain.CustomerGroupStore
 import com.ampairs.customer.domain.CustomerGroupKey
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.util.CustomerConstants
+import com.ampairs.customer.ui.components.contact.ContactData
+import com.ampairs.customer.ui.components.contact.ContactPickerService
+import com.ampairs.customer.ui.components.location.LocationService
 import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.form.domain.EntityConfigSchema
 import com.ampairs.form.domain.EntityType
@@ -33,6 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -185,7 +189,11 @@ data class CustomerFormUiState(
     val isLoadingCustomerTypes: Boolean = false,
     val customerGroups: List<CustomerGroup> = emptyList(),
     val isLoadingCustomerGroups: Boolean = false,
-    val entityConfig: EntityConfigSchema? = null
+    val entityConfig: EntityConfigSchema? = null,
+    val showCustomerImages: Boolean = true,
+    val customerImagesReadOnly: Boolean = false,
+    val isImportingContact: Boolean = false,
+    val contactImportError: String? = null
 )
 
 @AssistedInject
@@ -195,8 +203,12 @@ class CustomerFormViewModel(
     private val stateStore: StateStore,
     private val customerTypeStore: CustomerTypeStore,
     private val customerGroupStore: CustomerGroupStore,
-    private val configRepository: ConfigRepository
+    private val configRepository: ConfigRepository,
+    val contactPickerService: ContactPickerService,
+    val locationService: LocationService
 ) : ViewModel() {
+
+    val isContactPickerAvailable: Boolean get() = contactPickerService.isAvailable()
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
@@ -217,6 +229,57 @@ class CustomerFormViewModel(
         loadCustomerTypes()
         loadCustomerGroups()
         loadEntityConfig()
+        loadCustomerImagesConfig()
+    }
+
+    private fun loadCustomerImagesConfig() {
+        viewModelScope.launch {
+            val config = configRepository.observeConfigSchema("customer").first()
+            val fieldConfig = config?.fieldConfigs?.find { it.fieldName == "customerImages" }
+            _uiState.update {
+                it.copy(
+                    showCustomerImages = fieldConfig?.visible != false,
+                    customerImagesReadOnly = fieldConfig?.enabled == false
+                )
+            }
+        }
+    }
+
+    fun pickContactAndImport() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImportingContact = true, contactImportError = null) }
+            contactPickerService.pickContact()
+                .onSuccess { contactData -> importContact(contactData) }
+                .onFailure { error ->
+                    val msg = error.message
+                    if (msg?.contains("cancelled", ignoreCase = true) != true) {
+                        _uiState.update { it.copy(contactImportError = msg ?: "Failed to import contact") }
+                    }
+                }
+            _uiState.update { it.copy(isImportingContact = false) }
+        }
+    }
+
+    private fun importContact(contactData: ContactData) {
+        val current = _uiState.value.formState
+        var updated = current
+        if (contactData.name.isNotBlank() && current.name.isBlank()) updated = updated.copy(name = contactData.name)
+        if (contactData.email.isNotBlank() && current.email.isBlank()) updated = updated.copy(email = contactData.email)
+        if (contactData.phone.isNotBlank() && current.phone.isBlank()) {
+            val parsedCode = contactData.countryCode.removePrefix("+").toIntOrNull()
+            val countryCodeInt = if (parsedCode == null || parsedCode == 0) 91 else parsedCode
+            updated = updated.copy(phone = contactData.phone, countryCode = countryCodeInt)
+        }
+        if (contactData.street.isNotBlank() && current.street.isBlank()) updated = updated.copy(street = contactData.street)
+        if (contactData.city.isNotBlank() && current.city.isBlank()) updated = updated.copy(city = contactData.city)
+        if (contactData.state.isNotBlank() && current.state.isBlank()) updated = updated.copy(state = contactData.state)
+        if (contactData.pincode.isNotBlank() && current.pincode.isBlank()) updated = updated.copy(pincode = contactData.pincode)
+        if (contactData.country.isNotBlank() && current.country.isBlank()) updated = updated.copy(country = contactData.country)
+        _uiState.update { it.copy(formState = validateForm(updated)) }
+    }
+
+    fun clearContactImportError() {
+        _uiState.update { it.copy(contactImportError = null) }
     }
 
     fun loadCustomer() {

@@ -14,21 +14,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.form.domain.EntityFieldConfig
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormConfigScreen(
     entityType: String,
-    configRepository: ConfigRepository,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: FormConfigViewModel = assistedMetroViewModel<FormConfigViewModel, FormConfigViewModel.Factory>(key = entityType) { create(entityType) }
 ) {
-    val viewModel = viewModel(key = entityType) {
-        FormConfigViewModel(entityType = entityType, configRepository = configRepository)
-    }
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState.successMessage) {

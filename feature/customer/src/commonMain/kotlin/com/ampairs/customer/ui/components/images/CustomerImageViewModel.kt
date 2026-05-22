@@ -10,7 +10,13 @@ import com.ampairs.customer.domain.CustomerImageListItem
 import com.ampairs.customer.domain.CustomerImageUpdateRequest
 import com.ampairs.customer.util.CustomerConstants.CUSTOMER_IMAGE_UID_PREFIX
 import com.ampairs.customer.util.CustomerLogger
-import dev.zacsweers.metro.Inject
+import com.ampairs.common.di.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -27,12 +33,19 @@ data class CustomerImageUiState(
     val syncError: Boolean = false // Track if error occurred during sync
 )
 
-@Inject
+@AssistedInject
 class CustomerImageViewModel(
-    private val customerId: String,
+    @Assisted private val customerId: String,
     private val repository: CustomerImageRepository,
     private val imagePicker: ImageFilePicker
 ) : ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(customerId: String): CustomerImageViewModel
+    }
 
     private val _uiState = MutableStateFlow(CustomerImageUiState())
     val uiState: StateFlow<CustomerImageUiState> = _uiState.asStateFlow()

@@ -4,7 +4,6 @@ import OrderRoute
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
-import com.ampairs.di.LocalAppGraph
 import com.ampairs.order.ui.OrderPaneScreen
 import com.ampairs.order.ui.OrderScreen
 import com.ampairs.order.ui.OrderViewScreen
@@ -45,9 +44,7 @@ fun orderEntryProvider(
     }
 
     is OrderRoute.Orders -> NavEntry(key) {
-        val graph = LocalAppGraph.current
         OrderPaneScreen(
-            orderRepository = graph.orderRepository,
             onOrderEdit = { orderId ->
                 if (!orderId.isNullOrEmpty()) {
                     backStack.add(OrderRoute.Root(id = orderId))

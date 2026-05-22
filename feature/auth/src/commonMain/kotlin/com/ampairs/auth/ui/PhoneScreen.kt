@@ -63,11 +63,11 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.AuthMethod
 import com.ampairs.auth.viewmodel.LoginViewModel
-import com.ampairs.common.localization.localizedString
 import com.ampairs.common.navigation.ExitApp
 import com.ampairs.common.navigation.PlatformBackHandler
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PhoneScreen(
@@ -91,7 +91,7 @@ fun PhoneScreen(
             onSelectUser = {
                 viewModel.selectExistingUser(viewModel.existingUser!!.id) {
                     showExistingUserDialog = false
-                    onExistingUserSelected()
+                    viewModel.handleExistingUserWorkspaceCheck()
                 }
             },
             onDismiss = {
@@ -292,7 +292,7 @@ fun PhoneScreen(
                                 .size(24.dp)
                         )
                     } else {
-                        Text(localizedString(Res.string.phone_login))
+                        Text(stringResource(Res.string.phone_login))
                     }
                 }
 
@@ -442,7 +442,7 @@ fun PhoneScreenPreview() {
                                 .size(24.dp)
                         )
                     } else {
-                        Text(localizedString(Res.string.phone_login))
+                        Text(stringResource(Res.string.phone_login))
                     }
                 }
             }
@@ -461,14 +461,14 @@ private fun ExistingUserDialog(
         icon = {
             Icon(
                 Icons.Default.AccountCircle,
-                contentDescription = localizedString(Res.string.phone_user_exists),
+                contentDescription = stringResource(Res.string.phone_user_exists),
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
         },
         title = {
             Text(
-                text = localizedString(Res.string.phone_user_already_logged_in),
+                text = stringResource(Res.string.phone_user_already_logged_in),
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -477,7 +477,7 @@ private fun ExistingUserDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = localizedString(Res.string.phone_user_already_logged_in_desc),
+                    text = stringResource(Res.string.phone_user_already_logged_in_desc),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Card(
@@ -503,7 +503,7 @@ private fun ExistingUserDialog(
                     }
                 }
                 Text(
-                    text = localizedString(Res.string.phone_would_you_like_to_switch),
+                    text = stringResource(Res.string.phone_would_you_like_to_switch),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -513,12 +513,12 @@ private fun ExistingUserDialog(
             Button(
                 onClick = onSelectUser
             ) {
-                Text(localizedString(Res.string.phone_switch_to_this_user))
+                Text(stringResource(Res.string.phone_switch_to_this_user))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(localizedString(Res.string.cancel))
+                Text(stringResource(Res.string.cancel))
             }
         }
     )

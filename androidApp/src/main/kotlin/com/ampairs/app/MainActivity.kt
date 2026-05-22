@@ -10,16 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
-import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
-import coil3.disk.DiskCache
-import coil3.memory.MemoryCache
-import coil3.network.ktor3.KtorNetworkFetcherFactory
-import coil3.request.crossfade
-import coil3.util.DebugLogger
 import com.ampairs.common.ActivityProvider
-import com.ampairs.common.ImageCacheKeyer
-import com.ampairs.common.httpClient
 import com.ampairs.app.update.InAppUpdateManager
 import com.ampairs.app.update.UpdateCheckResult
 import com.ampairs.customer.ui.components.contact.ContactPickerResultHolder
@@ -29,7 +21,6 @@ import com.google.android.play.core.install.model.InstallStatus
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
 import kotlinx.coroutines.launch
-import okio.Path.Companion.toOkioPath
 
 class MainActivity : ComponentActivity() {
 
@@ -61,10 +52,9 @@ class MainActivity : ComponentActivity() {
         // Initialize in-app update manager
         updateManager = InAppUpdateManager(this)
 
+        val appGraph = (application as MainApp).appGraph
         setContent {
-            setSingletonImageLoaderFactory { _ ->
-                generateImageLoader()
-            }
+            setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
 
             MainView()
         }
@@ -120,34 +110,6 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "Resumed interrupted update")
             }
         }
-    }
-
-    // Your shared Ktor client with global auth headers
-    private fun generateImageLoader(): ImageLoader {
-        val appGraph = (application as MainApp).appGraph
-        val engine = appGraph.httpEngine
-        val tokenRepository = appGraph.tokenRepository
-        val client = httpClient(engine, tokenRepository)
-
-        return ImageLoader.Builder(this@MainActivity)
-            .memoryCache {
-                MemoryCache.Builder()
-                    .maxSizePercent(this@MainActivity, 0.25) // Increased for better on-demand performance
-                    .build()
-            }
-            .diskCache {
-                DiskCache.Builder()
-                    .directory(this@MainActivity.cacheDir.resolve("customer_images_cache").toOkioPath())
-                    .maxSizeBytes(100L * 1024 * 1024) // Increased to 100MB for better offline experience
-                    .build()
-            }
-            .components {
-                add(KtorNetworkFetcherFactory(client))
-                add(ImageCacheKeyer())
-            }
-            .crossfade(true)
-            .logger(DebugLogger())
-            .build()
     }
 
     private fun showUpdateAvailableDialog(updateInfo: UpdateCheckResult.UpdateAvailable) {

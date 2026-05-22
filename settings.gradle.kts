@@ -37,7 +37,6 @@ include(":tallyModule")
 include(
     ":feature:auth",
     ":feature:agent",
-    ":feature:aws",
     ":feature:form",
     ":feature:unit",
     ":feature:update",

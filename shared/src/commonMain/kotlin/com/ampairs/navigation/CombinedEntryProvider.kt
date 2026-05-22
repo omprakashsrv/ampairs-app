@@ -10,12 +10,10 @@ import Route
 import SubscriptionRoute
 import WorkspaceRoute
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.CustomerListRoute
-import com.ampairs.di.LocalAppGraph
 import com.ampairs.form.ui.FormConfigScreen
 import com.ampairs.navigation.providers.agentEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
@@ -59,7 +57,7 @@ fun combinedEntryProvider(
         ?: unitEntryProvider(key, backStack)
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
-        ?: inventoryEntryProvider(key, backStack)
+        ?: inventoryEntryProvider(key)
         ?: agentEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
         ?: NavEntry(key) { Text("Unknown route: $key") }
@@ -133,10 +131,8 @@ private fun mainRouteEntryProvider(
 
     // Route.FormConfig - Form configuration screen
     is Route.FormConfig -> NavEntry(key) {
-        val graph = LocalAppGraph.current
         FormConfigScreen(
             entityType = key.entityType,
-            configRepository = graph.configRepository,
             onNavigateBack = { backStack.removeLastOrNull() }
         )
     }

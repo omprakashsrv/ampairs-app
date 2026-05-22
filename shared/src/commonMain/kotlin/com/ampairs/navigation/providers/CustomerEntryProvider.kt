@@ -20,7 +20,6 @@ import com.ampairs.customer.ui.customertype.CustomerTypeListScreen
 import com.ampairs.customer.ui.details.CustomerDetailsScreen
 import com.ampairs.customer.ui.list.CustomersListScreen
 import com.ampairs.customer.ui.state.StateListScreen
-import com.ampairs.di.LocalAppGraph
 
 /**
  * Entry provider for Customer module routes in Navigation 3.
@@ -46,30 +45,20 @@ fun customerEntryProvider(
     }
 
     is CustomerDetailsRoute -> NavEntry(key) {
-        val graph = LocalAppGraph.current
         CustomerDetailsScreen(
             customerId = key.customerId,
             onNavigateBack = { backStack.removeLastOrNull() },
             onEditCustomer = { customerId ->
                 backStack.add(CustomerCreateRoute(customerId))
             },
-            configRepository = graph.configRepository,
-            customerImageRepository = graph.customerImageRepository,
-            imagePicker = graph.imagePicker,
             modifier = Modifier
         )
     }
 
     is CustomerCreateRoute -> NavEntry(key) {
-        val graph = LocalAppGraph.current
         CustomerFormScreen(
             customerId = key.customerId,
             onSaveSuccess = { backStack.removeLastOrNull() },
-            configRepository = graph.configRepository,
-            customerImageRepository = graph.customerImageRepository,
-            imagePicker = graph.imagePicker,
-            contactPickerService = graph.contactPickerService,
-            locationService = graph.locationService,
             modifier = Modifier
         )
     }

@@ -16,6 +16,7 @@ import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.viewmodel.InvoiceViewModel
 import com.ampairs.common.util.formatCurrencyWithCode
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Screen showing list of subscription invoices
@@ -25,7 +26,7 @@ import com.ampairs.common.util.formatCurrencyWithCode
 fun InvoiceListScreen(
     onNavigateToInvoiceDetail: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    viewModel: InvoiceViewModel
+    viewModel: InvoiceViewModel = metroViewModel(),
 ) {
     val invoices by viewModel.invoices.collectAsState()
     val invoiceSummary by viewModel.invoiceSummary.collectAsState()

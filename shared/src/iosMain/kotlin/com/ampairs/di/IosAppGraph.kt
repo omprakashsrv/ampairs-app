@@ -1,7 +1,7 @@
 package com.ampairs.di
 
-import com.ampairs.aws.s3.IosS3Client
-import com.ampairs.aws.s3.S3Client
+import coil3.ImageLoader
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreAppPreferences
@@ -51,12 +51,15 @@ interface IosSharedPlatformModule {
         fun provideDeviceService(): DeviceService = IosDeviceService()
 
         @Provides @SingleIn(AppScope::class)
-        fun provideS3Client(): S3Client = IosS3Client()
-
-        @Provides @SingleIn(AppScope::class)
         fun provideLocationService(): LocationService = LocationService()
 
         @Provides @SingleIn(AppScope::class)
         fun provideContactPickerService(): ContactPickerService = ContactPickerService()
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideImageLoader(
+            engine: HttpClientEngine,
+            tokenRepository: TokenRepository
+        ): ImageLoader = generateImageLoader(engine, tokenRepository)
     }
 }

@@ -39,13 +39,11 @@ import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.common.config.DataStoreManager
 import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.context.WorkspaceContextManager
-import com.ampairs.common.config.AppPreferencesDataStore
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceListScreen(
-    appPreferences: AppPreferencesDataStore,
     onNavigateToCreateWorkspace: () -> Unit,
     onWorkspaceSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -342,11 +340,6 @@ fun WorkspaceListScreen(
                                         println("WorkspaceListScreen: ✅ Workspace context updated to: ${workspace.slug}")
 
                                         println("WorkspaceListScreen: ✅ Workspace selected: ${workspace.name}")
-
-                                        // Save last workspace ID for auto-resume on app relaunch
-                                        coroutineScope.launch {
-                                            appPreferences.setLastWorkspaceId(workspace.id)
-                                        }
 
                                         // Initialize global navigation service for this workspace
                                         GlobalNavigationManager.getInstance().onWorkspaceSelected()

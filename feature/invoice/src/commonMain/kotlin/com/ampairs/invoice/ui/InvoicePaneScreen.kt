@@ -8,18 +8,17 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.viewmodel.InvoiceViewViewModel
 import com.ampairs.invoice.viewmodel.InvoicesViewModel
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun InvoicePaneScreen(
-    invoicesViewModel: InvoicesViewModel,
-    invoiceRepository: InvoiceRepository,
-    onInvoiceEdit: (invoiceId: String?) -> Unit
+    onInvoiceEdit: (invoiceId: String?) -> Unit,
+    invoicesViewModel: InvoicesViewModel = metroViewModel(),
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
@@ -46,12 +45,9 @@ fun InvoicePaneScreen(
         detailPane = {
             AnimatedPane(Modifier) {
                 val invoiceId = navigator.currentDestination?.contentKey ?: ""
-                val invoiceViewViewModel = viewModel(key = invoiceId) {
-                    InvoiceViewViewModel(invoiceId, invoiceRepository)
-                }
                 InvoiceViewScreen(
                     invoiceId = invoiceId,
-                    viewModel = invoiceViewViewModel,
+                    viewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory> { create(invoiceId) },
                     onNavigateBack = { navigatedInvoiceId ->
                         if (!navigatedInvoiceId.isNullOrEmpty()) {
                             onInvoiceEdit(navigatedInvoiceId)

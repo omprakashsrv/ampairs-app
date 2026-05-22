@@ -2,6 +2,9 @@ package com.ampairs.subscription.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.DeviceService
+import com.ampairs.common.di.AppScope
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.feature.FeatureGate
 import com.ampairs.subscription.feature.LimitChecker
@@ -9,21 +12,28 @@ import com.ampairs.subscription.feature.LimitUpgradeSuggestion
 import com.ampairs.subscription.feature.UsageStatus
 import com.ampairs.subscription.repository.SubscriptionRepository
 import com.ampairs.workspace.context.WorkspaceContextManager
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Clock
 
 /**
  * ViewModel for subscription management screens
  */
+@Inject
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
 @OptIn(kotlin.time.ExperimentalTime::class)
 class SubscriptionViewModel(
     private val repository: SubscriptionRepository,
     private val featureGate: FeatureGate,
     private val limitChecker: LimitChecker,
-    private val userIdProvider: () -> String,
-    private val deviceIdProvider: () -> String
+    private val tokenRepository: TokenRepository,
+    private val deviceService: DeviceService
 ) : ViewModel() {
 
     companion object {
@@ -62,10 +72,10 @@ class SubscriptionViewModel(
         get() = WorkspaceContextManager.getInstance().currentWorkspace.value?.id ?: ""
 
     private val userId: String
-        get() = userIdProvider()
+        get() = runBlocking { tokenRepository.getCurrentUserId() ?: "" }
 
     private val deviceId: String
-        get() = deviceIdProvider()
+        get() = deviceService.getDeviceId()
 
     // ======================
     // UI State
