@@ -31,6 +31,7 @@ interface TokenRepository {
     
     // Workspace management
     suspend fun getWorkspaceId(): String
+    fun getWorkspaceIdSync(): String
 }
 
 /**

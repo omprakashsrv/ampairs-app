@@ -10,6 +10,7 @@ import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.runBlocking
 import com.ampairs.common.time.currentTimeMillis
 
@@ -21,6 +22,7 @@ class TokenRepositoryImpl(
 ) : TokenRepository {
 
     private var currentUserId: String? = null
+    @Volatile private var cachedWorkspaceId: String = ""
 
     // Legacy single-user methods (for backward compatibility)
     override fun getRefreshToken(): String? {
@@ -113,6 +115,7 @@ class TokenRepositoryImpl(
         userSessionDao.setCurrentUser(userId)
         userTokenDao.activateUser(userId)
         currentUserId = userId
+        cachedWorkspaceId = userWorkspaceRepository.getWorkspaceIdForUser(userId)
     }
 
     override suspend fun clearCurrentUser() {
@@ -246,9 +249,11 @@ class TokenRepositoryImpl(
     override suspend fun getWorkspaceId(): String {
         val userId = getCurrentUserId()
         return if (userId != null) {
-            userWorkspaceRepository.getWorkspaceIdForUser(userId)
+            userWorkspaceRepository.getWorkspaceIdForUser(userId).also { cachedWorkspaceId = it }
         } else {
             ""
         }
     }
+
+    override fun getWorkspaceIdSync(): String = cachedWorkspaceId
 }

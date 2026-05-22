@@ -30,6 +30,7 @@ kotlin {
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
+                implementation(libs.kermit)
                 // Compose
                 implementation(libs.compose.runtime)
                 implementation(libs.compose.ui)
