@@ -26,7 +26,6 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 - **AI Agent** — Conversational agentic actions across business domains
 - **Real-Time** — WebSocket/STOMP live updates when online
 - **Business Modules** — CRM, Products, Orders, Invoices, Inventory, Tax, Tally ERP
-- **Cloud Storage** — AWS S3 image/file uploads
 - **In-App Billing** — Google Play Billing (Android) and StoreKit (iOS)
 
 ---
@@ -40,33 +39,33 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 | Kotlin KMP | 2.3.21 | Language & multiplatform |
 | Compose Multiplatform | 1.11.0 | Declarative UI across platforms |
 | Material 3 + Material Kolor | 1.9.0 / 3.0.1 | Design system + dynamic colors |
-| Koin | 4.1.1 | Dependency injection |
-| Room KMP | 2.8.3 | Local database |
+| Metro | 1.1.1 | Dependency injection (compile-time) |
+| Room KMP | 2.8.4 | Local database |
 | Store5 | 5.1.0-alpha08 | Offline-first cache layer |
-| Ktor | 3.3.2 | HTTP client + WebSockets |
-| Navigation3 | 1.0.0-alpha06 | Back-stack navigation with NavKey |
-| kotlinx.coroutines | 1.10.2 | Async & concurrency |
-| kotlinx.datetime | 0.7.1 | Cross-platform date/time |
-| DataStore | 1.2.0 | Key-value preferences |
+| Ktor | 3.5.0 | HTTP client + WebSockets |
+| Navigation3 | 1.1.1 | Back-stack navigation with NavKey |
+| kotlinx.coroutines | 1.11.0 | Async & concurrency |
+| kotlinx.datetime | 0.8.0 | Cross-platform date/time |
+| DataStore | 1.2.1 | Key-value preferences |
 
 ### Platform & Integration
 
 | Library | Version | Purpose |
 |---|---|---|
-| Firebase BOM | 34.9.0 | Crashlytics, Analytics, Perf, FCM |
-| Sentry KMP | 0.23.1 | Error monitoring |
-| AWS SDK Kotlin | 1.5.44 | S3 file storage |
+| Firebase BOM | 34.13.0 | Crashlytics, Analytics, Perf, FCM |
+| Sentry KMP | 0.26.0 | Error monitoring |
 | Krossbow | 9.3.0 | STOMP/WebSocket real-time |
-| Wire | 5.4.0 | Protocol Buffers (Tally) |
-| Coil | 3.3.0 | Image loading & caching |
-| Kermit | 2.0.8 | Multiplatform logging |
+| Wire | 5.4.0 | Protocol Buffers (Tally ERP) |
+| Coil | 3.4.0 | Image loading & caching |
+| Kermit | 2.1.0 | Multiplatform logging |
 | Moko Permissions | 0.20.1 | Cross-platform permissions |
-| FileKit | 0.12.0 | Cross-platform file picker |
+| FileKit | 0.14.1 | Cross-platform file picker |
 | WorkManager | 2.11.1 | Android background sync |
-| Play Billing | 8.3.0 | Android in-app purchases |
-| Maps Compose | 8.1.0 | Android Google Maps |
+| Play Billing | 9.0.0 | Android in-app purchases |
+| Maps Compose | 8.3.0 | Android Google Maps |
 | Haze | 1.7.2 | UI blur / glassmorphism |
 | Adaptive Layouts | 1.2.0 | Multi-pane adaptive UI |
+| Lifecycle ViewModel | 2.10.0 | ViewModel + SavedState |
 
 ### Platform Targets
 
@@ -95,7 +94,6 @@ ampairs-app/
 ├── feature/
 │   ├── auth/               # Phone/OTP login, JWT, device management, Firebase Auth
 │   ├── agent/              # AI agent chat & agentic actions
-│   ├── aws/                # AWS S3 file/image uploads
 │   ├── business/           # Business profile, tax config, custom attributes
 │   ├── customer/           # CRM: customers, groups, types, images, states
 │   ├── event/              # Event management
@@ -128,11 +126,10 @@ feature/{name}/src/
 │   ├── data/db/            # Room database, DAOs, entities
 │   ├── data/repository/    # Repository implementations
 │   ├── domain/             # Store5 store definitions
-│   ├── di/                 # Koin module (common)
-│   └── ui/                 # Compose screens + ViewModels
-├── androidMain/            # Android DB factory, platform DI
-├── iosMain/                # iOS DB factory, platform DI
-└── desktopMain/            # Desktop DB factory, platform DI
+│   └── ui/                 # Compose screens + ViewModels (@Inject / @AssistedInject)
+├── androidMain/            # Android DB factory (@ContributesTo platform module)
+├── iosMain/                # iOS DB factory (@ContributesTo platform module)
+└── desktopMain/            # Desktop DB factory (@ContributesTo platform module)
 ```
 
 ---
@@ -156,7 +153,23 @@ All writes go to Room first with `synced = false`. Server sync happens asynchron
 
 ### Workspace-Scoped Databases
 
-Each workspace gets isolated Room database instances. The `DatabaseScopeManager` in `data/common` manages the lifecycle. All workspace-aware Koin components (`Database → DAO → Repository → Store`) must use `factory {}` scope to avoid stale references after workspace switching.
+Each workspace gets isolated Room database instances. The `DatabaseScopeManager` in `data/common` manages the lifecycle. Each platform's `@ContributesTo` Metro module provides the database via `@Provides @SingleIn(AppScope::class)`. DAOs, Repositories, and Stores are unscoped (`@Inject` without `@SingleIn`) so they are created fresh per injection site and are safe across workspace switches.
+
+### Dependency Injection (Metro)
+
+Metro provides compile-time DI with zero runtime reflection. The layering rule is strict:
+
+```
+Metro injects deps → ViewModel
+ViewModel exposes StateFlow / UiEvent → Screen (@Composable)
+Screen has zero knowledge of repositories or the DI graph
+```
+
+- **Plain ViewModel**: `@Inject` + `@ContributesIntoMap(AppScope::class)` + `@ViewModelKey`; screen uses `metroViewModel()`
+- **Assisted ViewModel** (needs a runtime param like an ID): `@AssistedInject` + inner `Factory` interface; screen uses `assistedMetroViewModel<VM, VM.Factory>(key = id) { create(id) }`
+- **Platform bindings**: `@ContributesTo(AppScope::class)` interfaces with `@Provides` companion objects in each platform source set
+
+The `AppGraph` interface exposes exactly four properties for use at platform entry points: `themeManager`, `localeManager`, `imageLoader`, `locationService`.
 
 ### Navigation (Navigation3)
 
@@ -170,7 +183,7 @@ Uses AndroidX Navigation3 with user-owned back stack. Routes implement `NavKey`:
 }
 ```
 
-Entry providers per feature module are combined in `shared/` via `CombinedEntryProvider`.
+Entry providers per feature module are combined in `shared/` via `CombinedEntryProvider`. Entry providers only wire navigation callbacks and route key params — all dependencies flow through Metro-injected ViewModels.
 
 ### Dynamic Module Navigation
 
@@ -269,11 +282,12 @@ For physical device — update `iosApp/Configuration/Config.xcconfig` with your 
 
 On iOS: use `Dispatchers.Default` — `Dispatchers.IO` does not exist on Kotlin/Native.
 
-### Koin Scoping
+### Metro DI Rules
 
-- `factory {}` — all workspace-aware components (Database, DAOs, Repositories, Stores)
-- `single {}` — only `AuthRoomDatabase` and `WorkspaceRoomDatabase`
-- `viewModel {}` / `viewModelOf {}` — all ViewModels
+- **Never** access `LocalAppGraph.current` inside any `@Composable`
+- **Never** access `AppGraphHolder.graph` inside entry providers or screens — only platform entry points (`MainView`, `MainViewController`, `main.kt`) may touch it
+- **Never** add repositories or services to `AppGraph` — only the four infrastructure properties belong there
+- All feature dependencies flow exclusively through Metro-injected ViewModels
 
 ### Offline-First Rules
 
@@ -285,9 +299,9 @@ On iOS: use `Dispatchers.Default` — `Dispatchers.IO` does not exist on Kotlin/
 ### API Conventions
 
 ```kotlin
-ApiUrlBuilder.customerUrl("v1/groups")          // URL building
-if (response.data != null && response.error == null) { }  // response check
-SomeLogger.w("Tag", "message", exception)        // logger: w/e/i/d
+ApiUrlBuilder.customerUrl("v1/groups")                             // URL building
+if (response.data != null && response.error == null) { }          // response check
+SomeLogger.w("Tag", "message", exception)                         // logger: w/e/i/d
 ```
 
 ---
