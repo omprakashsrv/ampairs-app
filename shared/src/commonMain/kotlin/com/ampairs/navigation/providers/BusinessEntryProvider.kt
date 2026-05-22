@@ -11,16 +11,12 @@ import com.ampairs.business.ui.BusinessOperationsScreen
 import com.ampairs.business.ui.BusinessOverviewScreen
 import com.ampairs.business.ui.BusinessProfileFormScreen
 import com.ampairs.business.ui.BusinessTaxConfigScreen
-import com.ampairs.di.LocalAppGraph
-
 fun businessEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>
 ): NavEntry<NavKey>? = when (key) {
     is BusinessRoute.Overview -> NavEntry(key) {
-        val graph = LocalAppGraph.current
         BusinessOverviewScreen(
-            configRepository = graph.configRepository,
             onNavigateToProfile = {
                 backStack.add(BusinessRoute.Profile)
             },

@@ -62,9 +62,7 @@ fun main() = application {
 
     val applicationState = remember { ApplicationState() }
     applicationState.windows
-    setSingletonImageLoaderFactory { _ ->
-        generateImageLoader(appGraph.httpEngine, appGraph.tokenRepository)
-    }
+    setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
     for (window in applicationState.windows) {
         key(window) {
             if (window.title == "Main") {

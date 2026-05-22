@@ -8,17 +8,15 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.viewmodel.OrderViewViewModel
 import com.ampairs.order.viewmodel.OrdersViewModel
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun OrderPaneScreen(
-    orderRepository: OrderRepository,
     onOrderEdit: (orderId: String?) -> Unit,
     ordersViewModel: OrdersViewModel = metroViewModel(),
 ) {
@@ -47,9 +45,6 @@ fun OrderPaneScreen(
         detailPane = {
             AnimatedPane(Modifier) {
                 val orderId = navigator.currentDestination?.contentKey ?: ""
-                val orderViewViewModel = viewModel(key = orderId) {
-                    OrderViewViewModel(orderId, orderRepository)
-                }
                 OrderViewScreen(
                     orderId = orderId,
                     onNavigateBack = { navigateBackOrderId ->
@@ -63,7 +58,7 @@ fun OrderPaneScreen(
                             }
                         }
                     },
-                    viewModel = orderViewViewModel
+                    viewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory> { create(orderId) }
                 )
             }
         }

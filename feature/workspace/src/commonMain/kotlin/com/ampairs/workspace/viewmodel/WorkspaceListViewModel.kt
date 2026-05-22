@@ -10,6 +10,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.common.DeviceService
+import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.workspace.EventConnectionManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.UserInvitationRepository
@@ -34,6 +35,7 @@ class WorkspaceListViewModel(
     private val invitationRepository: UserInvitationRepository,
     private val deviceService: DeviceService,
     private val eventConnectionManager: EventConnectionManager,
+    private val appPreferences: AppPreferencesDataStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceListState())
@@ -73,6 +75,7 @@ class WorkspaceListViewModel(
         val currentUserId = tokenRepository.getCurrentUserId()
         if (currentUserId != null) {
             userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspaceId)
+            appPreferences.setLastWorkspaceId(workspaceId)
 
             // Connect to workspace events for real-time sync
             val deviceId = deviceService.getDeviceId()

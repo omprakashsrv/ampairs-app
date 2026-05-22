@@ -91,7 +91,7 @@ fun PhoneScreen(
             onSelectUser = {
                 viewModel.selectExistingUser(viewModel.existingUser!!.id) {
                     showExistingUserDialog = false
-                    onExistingUserSelected()
+                    viewModel.handleExistingUserWorkspaceCheck()
                 }
             },
             onDismiss = {

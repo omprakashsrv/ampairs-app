@@ -210,6 +210,21 @@ class AccountDeletionViewModel(
         showBlockingWorkspacesDialog = false
     }
 
+    fun logout(onLogoutComplete: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val currentUserId = tokenRepository.getCurrentUserId()
+                tokenRepository.clearTokens()
+                currentUserId?.let { userId ->
+                    try {
+                        userDao.deleteById(userId)
+                    } catch (e: Exception) { }
+                }
+            } catch (e: Exception) { }
+            onLogoutComplete()
+        }
+    }
+
     fun clearMessage() {
         displayMessage = ""
     }

@@ -25,10 +25,6 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.business.ui.BusinessOverviewViewModel
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import com.ampairs.form.data.repository.ConfigRepository
-import com.ampairs.form.domain.EntityType
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 /**
  * Business Overview Screen - Dashboard with key business information.
@@ -36,7 +32,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessOverviewScreen(
-    configRepository: ConfigRepository,
     onNavigateToProfile: () -> Unit = {},
     onNavigateToOperations: () -> Unit = {},
     onNavigateToTax: () -> Unit = {},
@@ -47,19 +42,9 @@ fun BusinessOverviewScreen(
     viewModel: BusinessOverviewViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val hasCustomAttributes by viewModel.hasCustomAttributes.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()
     var isRefreshing by remember { mutableStateOf(false) }
-
-    // Check if custom attributes exist for business entity
-    var hasCustomAttributes by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            val config = configRepository.observeConfigSchema(EntityType.BUSINESS).first()
-            hasCustomAttributes = config?.attributeDefinitions?.any { it.visible } ?: false
-        }
-    }
 
     LaunchedEffect(uiState.isLoading) {
         if (!uiState.isLoading) {

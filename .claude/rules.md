@@ -7,7 +7,10 @@ These rules are enforced for all Claude Code interactions in this project.
 ## Code Rules
 
 ### MUST always do
-- Use `factory {}` (never `single {}`) for any workspace-aware Koin component (Database, DAO, Repository, Store)
+- Use `@Inject` + `@ContributesIntoMap(AppScope::class)` + `@ViewModelKey` on every plain ViewModel class
+- Use `@AssistedInject` + inner `Factory` interface (`@AssistedFactory` + `@ManualViewModelAssistedFactoryKey` + `@ContributesIntoMap(AppScope::class)`) for ViewModels that need a runtime param (e.g. an ID)
+- Declare the ViewModel as a trailing default param in every screen: `viewModel: XxxViewModel = metroViewModel()` or `assistedMetroViewModel<VM, VM.Factory>(key = id) { create(id) }`
+- Use `@SingleIn(AppScope::class)` on `@Provides` functions for app-scoped singletons in `@ContributesTo` platform modules
 - Generate UIDs in the ViewModel layer using `UidGenerator.generateUid(prefix)` before calling the repository
 - Null-check `Response<T>.data` before use — there is no `.success` property
 - Use `kotlinx.datetime.Clock.System.now()` for timestamps, never `System.currentTimeMillis()`
@@ -24,12 +27,13 @@ These rules are enforced for all Claude Code interactions in this project.
 - Run `./gradlew shared:compileKotlinIosSimulatorArm64` to validate iOS compilation after any commonMain change
 
 ### MUST never do
-- Access `LocalAppGraph.current` inside a `@Composable` — screens must only talk to their ViewModel; the ViewModel receives all deps via Metro injection
+- Access `LocalAppGraph.current` inside any `@Composable` — all deps flow through Metro-injected ViewModels
+- Access `AppGraphHolder.graph` inside navigation entry providers or screens — only platform entry points (`MainView`, `MainViewController`, `main.kt`) may touch it
+- Expose repositories, stores, or feature services in `AppGraph` — only `ThemeManager`, `LocaleManager`, `ImageLoader`, `LocationService` belong there
+- Add `fun create*ViewModel()` methods to `AppGraph` — Metro auto-wires ViewModels via `@ContributesIntoMap`
 - Put `java.*` or `android.*` imports in `commonMain` source sets
 - Create a new `DataStore<Preferences>` instance — always reuse the existing one from `data/common/`
 - Allow the repository to generate UIDs as a fallback
-- Use `single {}` for Database/DAO/Repository/Store in workspace-aware feature modules
-- Add `AuthRoomDatabase` or `WorkspaceRoomDatabase` as `factory` — these must stay `single`
 - Add feature code directly to `shared/` or `androidApp/`/`desktopApp/` — use the appropriate `feature/` module
 - Skip compilation validation after changing a shared module that affects multiple platforms
 
@@ -55,28 +59,59 @@ Screen has zero knowledge of repos, managers, or LocalAppGraph
 
 **Screens**: declare `viewModel: XxxViewModel = metroViewModel()` as a trailing default param. Never pass a ViewModel from an entry provider — let Metro create it.
 
-**Entry providers**: only wire navigation callbacks and route key params. They may read `LocalAppGraph.current` solely to pass a **repository** to a pane-screen that still needs it for an AssistedInject ViewModel (e.g. `InvoicePaneScreen(invoiceRepository = graph.invoiceRepository)`). All other `LocalAppGraph.current` usage in entry providers is a migration gap to be removed.
+**Entry providers**: only wire navigation callbacks and route key params. Never read `LocalAppGraph.current` — all dependencies reach screens through Metro-injected ViewModels.
 
-**Cross-cutting ambient values** (ThemeManager, LocaleManager): do NOT pull via `LocalAppGraph.current` inside composables. Provide them as typed `CompositionLocal`s in `App.kt` (e.g. `LocalThemeManager`) so composables remain decoupled from the graph.
+**Cross-cutting ambient values** (ThemeManager, LocaleManager): provided as typed `CompositionLocal`s in `App.kt`; never access via the graph inside a composable.
 
-**AppGraph interface**: must contain only `val` repository/service/store properties and `val subscriptionViewModelFactory`. No `fun create*ViewModel()` methods — Metro auto-wires ViewModels via `@ContributesIntoMap` + `@ViewModelKey` + `@Inject` on the ViewModel class.
+**AppGraph interface** (`shared/commonMain/di/AppGraph.kt`): contains exactly four properties — `themeManager`, `localeManager`, `imageLoader`, `locationService`. No repositories, no services, no factories, no `fun create*ViewModel()` methods.
 
 ---
 
-### Koin DI chain for every new feature module
+### Metro DI chain for every new feature module
+
+**Platform `@ContributesTo` module** (per platform source set):
+```kotlin
+@ContributesTo(AppScope::class)
+interface MyFeaturePlatformModule {
+    companion object {
+        @Provides @SingleIn(AppScope::class)
+        fun provideDatabase(...): MyFeatureDatabase = ...
+    }
+}
 ```
-PlatformModule.{platform}.kt  → factory<Database>
-{Feature}Module.kt (common)   → factory DAOs, factory Repositories, factory Stores, viewModel/viewModelOf ViewModels
+
+**Common classes** (annotate directly — no module file needed):
+```kotlin
+@Inject class MyDao(private val db: MyFeatureDatabase)
+@Inject class MyRepository(private val dao: MyDao, private val api: MyApi)
+
+// Plain ViewModel
+@ContributesIntoMap(AppScope::class) @ViewModelKey @Inject
+class MyViewModel(private val repo: MyRepository) : ViewModel()
+
+// Assisted ViewModel (needs runtime param)
+@AssistedInject
+class MyViewModel(@Assisted val id: String, private val repo: MyRepository) : ViewModel() {
+    @AssistedFactory @ManualViewModelAssistedFactoryKey @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory { fun create(id: String): MyViewModel }
+}
+```
+
+**Screen**:
+```kotlin
+@Composable fun MyScreen(
+    id: String,
+    viewModel: MyViewModel = assistedMetroViewModel<MyViewModel, MyViewModel.Factory>(key = id) { create(id) }
+)
 ```
 
 ### New workspace-aware module checklist
-- [ ] Database: `factory` in platform module
-- [ ] DAOs: `factory` in common module
-- [ ] Repositories: `factory` in common module
-- [ ] Stores: `factory` in common module
-- [ ] ViewModels: `viewModel` or `viewModelOf`
+- [ ] Database: `@Provides @SingleIn(AppScope::class)` in platform `@ContributesTo` module
+- [ ] DAOs and Repositories: `@Inject` class (unscoped — new instance per injection site, safe across workspace switches)
+- [ ] Stores: `@Inject` class (unscoped)
+- [ ] ViewModels: `@Inject` + `@ContributesIntoMap(AppScope::class)` + `@ViewModelKey`; or `@AssistedInject` + inner `Factory` if a runtime param is needed
 - [ ] Platform DB path handles Android (`workspace_{slug}_{module}.db`) vs iOS/Desktop (`workspace_{slug}/{module}.db`)
-- [ ] `DatabaseScopeManager` integrated in platform factory
+- [ ] `DatabaseScopeManager` integrated in the platform `@Provides` function
 
 ---
 

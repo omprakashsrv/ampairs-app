@@ -1,5 +1,7 @@
 package com.ampairs.di
 
+import coil3.ImageLoader
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreAppPreferences
@@ -53,5 +55,11 @@ interface IosSharedPlatformModule {
 
         @Provides @SingleIn(AppScope::class)
         fun provideContactPickerService(): ContactPickerService = ContactPickerService()
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideImageLoader(
+            engine: HttpClientEngine,
+            tokenRepository: TokenRepository
+        ): ImageLoader = generateImageLoader(engine, tokenRepository)
     }
 }

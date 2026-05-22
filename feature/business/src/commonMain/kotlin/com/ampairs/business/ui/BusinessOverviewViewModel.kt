@@ -6,14 +6,19 @@ import com.ampairs.business.data.api.BusinessApi
 import com.ampairs.business.data.repository.BusinessRepository
 import com.ampairs.business.domain.BusinessOverview
 import com.ampairs.common.ApiUrlBuilder
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import com.ampairs.common.di.AppScope
+import com.ampairs.form.data.repository.ConfigRepository
+import com.ampairs.form.domain.EntityType
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -26,11 +31,17 @@ import kotlin.time.ExperimentalTime
 @Inject
 class BusinessOverviewViewModel(
     private val repository: BusinessRepository,
-    private val businessApi: BusinessApi
+    private val businessApi: BusinessApi,
+    private val configRepository: ConfigRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BusinessOverviewUiState())
     val uiState: StateFlow<BusinessOverviewUiState> = _uiState.asStateFlow()
+
+    val hasCustomAttributes: StateFlow<Boolean> = configRepository
+        .observeConfigSchema(EntityType.BUSINESS)
+        .map { config -> config?.attributeDefinitions?.any { it.visible } ?: false }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
         loadOverview()

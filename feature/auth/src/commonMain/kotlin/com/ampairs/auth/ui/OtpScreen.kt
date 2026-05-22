@@ -116,9 +116,8 @@ fun OtpScreen(
                     waitingForAutoVerification = false
                     // completedState.userId contains the Firebase JWT ID token for backend verification
                     viewModel.completeFirebaseAuthenticationWithToken(
-                        completedState.userId,
-                        onAuthSuccess
-                    )
+                        completedState.userId
+                    ) { onAuthSuccess() }
                 }
             }
 
@@ -331,13 +330,13 @@ fun OtpScreen(
                     Button(
                         onClick = {
                             when (viewModel.authMethod) {
-                                AuthMethod.BACKEND_API -> viewModel.completeAuthentication(
-                                    onAuthSuccess
-                                )
+                                AuthMethod.BACKEND_API -> viewModel.completeAuthentication {
+                                    onAuthSuccess()
+                                }
 
-                                AuthMethod.FIREBASE -> viewModel.completeFirebaseAuthentication(
-                                    onAuthSuccess
-                                )
+                                AuthMethod.FIREBASE -> viewModel.completeFirebaseAuthentication {
+                                    onAuthSuccess()
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),

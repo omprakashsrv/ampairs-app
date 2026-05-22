@@ -3,10 +3,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -14,22 +13,12 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.ampairs.common.UnauthenticatedHandler
-import com.ampairs.common.firebase.analytics.FirebaseAnalytics
-import com.ampairs.common.firebase.performance.FirebasePerformance
-import com.ampairs.common.firebase.performance.PerformanceAttributes
-import com.ampairs.common.firebase.performance.PerformanceTraces
-import com.ampairs.common.firebase.performance.Trace
 import com.ampairs.common.ui.GlobalAppLayoutNav3
 import com.ampairs.navigation.combinedEntryProvider
 import com.ampairs.navigation.createNav3SavedStateConfig
-import com.ampairs.di.LocalAppGraph
-import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
-import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
-import com.ampairs.workspace.navigation.GlobalNavigationManager
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 
 /**
  * Navigation 3 implementation of AppNavigation.
@@ -45,54 +34,8 @@ fun AppNavigationNav3(
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
-    val graph = LocalAppGraph.current
-    val analytics = graph.analytics
-    val performance = graph.performance
-    val appPreferences = graph.appPreferences
-    val workspaceRepository = graph.offlineFirstWorkspaceRepository
-    val tokenRepository = graph.tokenRepository
-    val userWorkspaceRepository = graph.userWorkspaceRepository
-
-    // State for auto-resume: null = checking, true = auto-resume, false = normal flow
-    var autoResumeState by remember { mutableStateOf<Pair<Boolean, String?>?>(null) }
-
-    // Check for auto-resume on initial load - BEFORE rendering NavDisplay
-    LaunchedEffect(Unit) {
-        val lastUserId = appPreferences.getLastUserId().first()
-        val lastWorkspaceId = appPreferences.getLastWorkspaceId().first()
-
-        if (!lastUserId.isNullOrBlank() && !lastWorkspaceId.isNullOrBlank()) {
-            println("AppNavigationNav3: Checking auto-resume for user: $lastUserId, workspace: $lastWorkspaceId")
-
-            // Verify user exists and set as current
-            tokenRepository.setCurrentUser(lastUserId)
-            val hasWorkspace =
-                userWorkspaceRepository.getWorkspaceIdForUser(lastUserId).isNotBlank()
-
-            if (hasWorkspace) {
-                // Load workspace from local database
-                val workspace = workspaceRepository.getWorkspaceById(lastWorkspaceId)
-                if (workspace != null) {
-                    println("AppNavigationNav3: Auto-resume: Setting workspace context for ${workspace.name}")
-                    // Set workspace context BEFORE navigation
-                    WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
-                    GlobalNavigationManager.getInstance().onWorkspaceSelected()
-                    autoResumeState = Pair(true, lastWorkspaceId)
-                } else {
-                    println("AppNavigationNav3: Workspace not found, clearing preferences")
-                    appPreferences.clearLastWorkspaceId()
-                    autoResumeState = Pair(false, null)
-                }
-            } else {
-                println("AppNavigationNav3: User has no workspace, clearing preferences")
-                appPreferences.clearLastWorkspaceId()
-                autoResumeState = Pair(false, null)
-            }
-        } else {
-            println("AppNavigationNav3: No auto-resume data found, normal flow")
-            autoResumeState = Pair(false, null)
-        }
-    }
+    val viewModel: AppNavigationViewModel = metroViewModel()
+    val autoResumeState by viewModel.autoResumeState.collectAsState()
 
     // Show loading while checking auto-resume
     if (autoResumeState == null) {
@@ -114,55 +57,19 @@ fun AppNavigationNav3(
     // NavBackStack is essentially a SnapshotStateList<NavKey>
     val backStack = rememberNavBackStack(savedStateConfig, startDestination)
 
-    // Track active performance traces
-    var activeScreenTrace: Trace? = null
-
     // Track screen views with Firebase Analytics and Performance
     LaunchedEffect(backStack) {
         snapshotFlow { backStack.lastOrNull() }
             .collectLatest { currentRoute ->
                 if (currentRoute != null) {
-                    // Stop previous screen trace
-                    activeScreenTrace?.let { trace ->
-                        trace.stop()
-                        println("Performance: Screen load trace stopped")
-                    }
-
-                    // Extract screen name from route
-                    val screenName = extractScreenNameNav3(currentRoute.toString())
-                    val screenClass = currentRoute::class.simpleName ?: "Unknown"
-
-                    // Log screen view to Firebase Analytics
-                    analytics.setCurrentScreen(screenName, screenClass)
-                    println("Analytics: Screen view tracked - $screenName")
-
-                    // Start new screen load performance trace
-                    activeScreenTrace = performance.newTrace(PerformanceTraces.SCREEN_LOAD).apply {
-                        putAttribute(PerformanceAttributes.SCREEN_NAME, screenName)
-                        putAttribute(PerformanceAttributes.SCREEN_CLASS, screenClass)
-                        start()
-                        println("Performance: Screen load trace started - $screenName")
-                    }
-
-                    // Auto-stop trace after 3 seconds
-                    kotlinx.coroutines.delay(3000)
-                    activeScreenTrace?.let { trace ->
-                        trace.putAttribute(PerformanceAttributes.SUCCESS, "true")
-                        trace.stop()
-                        activeScreenTrace = null
-                        println("Performance: Screen load trace auto-stopped - $screenName")
-                    }
+                    viewModel.onScreenChanged(currentRoute.toString())
                 }
             }
     }
 
-    // Handle unauthenticated events
+    // Handle unauthenticated events — business logic in ViewModel, backStack manipulation here
     LaunchedEffect(Unit) {
-        UnauthenticatedHandler.onUnauthenticated.collectLatest {
-            // Clear workspace context and navigation service on logout
-            WorkspaceContextIntegration.clearWorkspaceContext()
-            // Clear last workspace ID to prevent auto-resume after logout
-            appPreferences.clearLastWorkspaceId()
+        viewModel.logoutEvent.collectLatest {
             backStack.clear()
             backStack.add(Route.Login)
         }
@@ -220,68 +127,6 @@ fun AppNavigationNav3(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(globalPaddingValues)
         )
-    }
-}
-
-/**
- * Extract a human-readable screen name from a Navigation 3 route
- */
-private fun extractScreenNameNav3(route: String): String {
-    return when {
-        route.contains("Login") -> "Login"
-        route.contains("UserSelection") -> "UserSelection"
-        route.contains("Phone") -> "Phone"
-        route.contains("Otp") -> "Otp"
-        route.contains("UserUpdate") -> "UserUpdate"
-        route.contains("AccountDeletion") -> "AccountDeletion"
-        route.contains("AccountRestore") -> "AccountRestore"
-        route.contains("DesktopBrowserAuth") -> "DesktopBrowserAuth"
-        route.contains("WorkspaceRoute.Root") -> "Workspace_List"
-        route.contains("WorkspaceRoute.Create") -> "Workspace_Create"
-        route.contains("WorkspaceRoute.Edit") -> "Workspace_Edit"
-        route.contains("WorkspaceRoute.Members") -> "Workspace_Members"
-        route.contains("WorkspaceRoute.MemberDetail") -> "Workspace_MemberDetail"
-        route.contains("WorkspaceRoute.Modules") -> "Workspace_Modules"
-        route.contains("WorkspaceRoute.ModuleStore") -> "Workspace_ModuleStore"
-        route.contains("CustomerList") -> "Customer_List"
-        route.contains("CustomerDetails") -> "Customer_Details"
-        route.contains("CustomerCreate") -> "Customer_Create"
-        route.contains("CustomerType") -> "Customer_Type"
-        route.contains("CustomerGroup") -> "Customer_Group"
-        route.contains("StateList") -> "Customer_States"
-        route.contains("ProductRoute.Products") -> "Product_List"
-        route.contains("ProductRoute.ProductDetails") -> "Product_Details"
-        route.contains("ProductRoute.ProductForm") -> "Product_Form"
-        route.contains("VariantManagement") -> "Product_Variants"
-        route.contains("VariantForm") -> "Product_VariantForm"
-        route.contains("TaxList") -> "Tax_List"
-        route.contains("TaxCalculator") -> "Tax_Calculator"
-        route.contains("TaxConfiguration") -> "Tax_Configuration"
-        route.contains("MyTaxCodes") -> "Tax_MyCodes"
-        route.contains("TaxCodeSearch") -> "Tax_Search"
-        route.contains("TaxCodeDetail") -> "Tax_Detail"
-        route.contains("BusinessRoute.Overview") -> "Business_Overview"
-        route.contains("BusinessRoute.Profile") -> "Business_Profile"
-        route.contains("BusinessRoute.Operations") -> "Business_Operations"
-        route.contains("BusinessRoute.TaxConfig") -> "Business_TaxConfig"
-        route.contains("BusinessRoute.CustomAttributes") -> "Business_CustomAttributes"
-        route.contains("BusinessRoute.Images") -> "Business_Images"
-        route.contains("SubscriptionRoute.Root") -> "Subscription_Root"
-        route.contains("SubscriptionRoute.Plans") -> "Subscription_Plans"
-        route.contains("SubscriptionRoute.Usage") -> "Subscription_Usage"
-        route.contains("SubscriptionRoute.PaymentHistory") -> "Subscription_PaymentHistory"
-        route.contains("SubscriptionRoute.Devices") -> "Subscription_Devices"
-        route.contains("SubscriptionRoute.Invoices") -> "Subscription_Invoices"
-        route.contains("SubscriptionRoute.InvoiceDetail") -> "Subscription_InvoiceDetail"
-        route.contains("OrderRoute.Root") -> "Order_Create"
-        route.contains("OrderRoute.OrderView") -> "Order_View"
-        route.contains("OrderRoute.Orders") -> "Order_List"
-        route.contains("InvoiceRoute.Root") -> "Invoice_Create"
-        route.contains("InvoiceRoute.InvoiceView") -> "Invoice_View"
-        route.contains("InvoiceRoute.Invoices") -> "Invoice_List"
-        route.contains("InventoryRoute.Inventory") -> "Inventory"
-        route.contains("FormConfig") -> "FormConfig"
-        else -> route.substringAfterLast(".").substringBefore("(")
     }
 }
 

@@ -46,7 +46,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,25 +60,20 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.auth.viewmodel.UserSelectionViewModel
-import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.time.currentTimeMillis
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import kotlinx.coroutines.launch
 
 private val MAX_CONTENT_WIDTH = 480.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserSelectionScreen(
-    appPreferences: AppPreferencesDataStore,
-    onUserSelected: (String) -> Unit,
     onAddNewUser: () -> Unit,
     onNoUsers: () -> Unit = {},
     viewModel: UserSelectionViewModel = metroViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     var hasInitialized by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.loadUsers()
@@ -91,14 +85,6 @@ fun UserSelectionScreen(
         if (hasInitialized && !state.isLoading && state.users.isEmpty()) {
             onNoUsers()
         }
-    }
-
-    // Wrapper to save user ID when selected
-    val onUserSelectedWithSave: (String) -> Unit = { userId ->
-        coroutineScope.launch {
-            appPreferences.setLastUserId(userId)
-        }
-        onUserSelected(userId)
     }
 
     Scaffold(
@@ -192,7 +178,7 @@ fun UserSelectionScreen(
                         items(state.users) { user ->
                             UserCard(
                                 user = user,
-                                onClick = { onUserSelectedWithSave(user.id) }
+                                onClick = { viewModel.selectUser(user.id) }
                             )
                         }
 

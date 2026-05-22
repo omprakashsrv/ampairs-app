@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.AuthMethod
@@ -25,7 +26,17 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+
+sealed interface LoginNavEvent {
+    object LoginSuccess : LoginNavEvent
+    object NavigateToWorkspace : LoginNavEvent
+    object NavigateToUserUpdate : LoginNavEvent
+    object NavigateToAccountRestore : LoginNavEvent
+}
 
 @ContributesIntoMap(AppScope::class)
 @ViewModelKey
@@ -33,9 +44,13 @@ import kotlinx.coroutines.launch
 class LoginViewModel(
     private val userRepository: UserRepository,
     private val tokenRepository: TokenRepository,
+    private val userWorkspaceRepository: UserWorkspaceRepository,
     private val firebaseAuthRepository: FirebaseAuthRepository,
     private val analytics: FirebaseAnalytics,
 ) : ViewModel() {
+
+    private val _navEvent = MutableSharedFlow<LoginNavEvent>()
+    val navEvent: SharedFlow<LoginNavEvent> = _navEvent.asSharedFlow()
     var phoneNumber by mutableStateOf("")
     var otp by mutableStateOf("")
     var sessionId by mutableStateOf("")
@@ -181,6 +196,51 @@ class LoginViewModel(
                     recaptchaLoading = false
                     progressMessage = ""
                 }
+            }
+        }
+    }
+
+    fun handlePostLoginNavigation(userEntity: UserEntity?) {
+        viewModelScope.launch {
+            if (userEntity?.first_name.isNullOrBlank()) {
+                _navEvent.emit(LoginNavEvent.NavigateToUserUpdate)
+            } else {
+                val userId = userEntity!!.id
+                val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(userId).isNotBlank()
+                if (hasWorkspace) {
+                    _navEvent.emit(LoginNavEvent.LoginSuccess)
+                } else {
+                    _navEvent.emit(LoginNavEvent.NavigateToWorkspace)
+                }
+            }
+        }
+    }
+
+    fun handleOtpSuccess() {
+        viewModelScope.launch {
+            try {
+                val deletionStatusResponse = userRepository.getAccountDeletionStatus()
+                var navigateToRestore = false
+                deletionStatusResponse.onSuccess { navigateToRestore = isDeleted && canRestore }
+                if (navigateToRestore) {
+                    _navEvent.emit(LoginNavEvent.NavigateToAccountRestore)
+                } else {
+                    _navEvent.emit(LoginNavEvent.NavigateToUserUpdate)
+                }
+            } catch (e: Exception) {
+                _navEvent.emit(LoginNavEvent.NavigateToUserUpdate)
+            }
+        }
+    }
+
+    fun handleExistingUserWorkspaceCheck() {
+        viewModelScope.launch {
+            val currentUserId = tokenRepository.getCurrentUserId() ?: return@launch
+            val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
+            if (hasWorkspace) {
+                _navEvent.emit(LoginNavEvent.LoginSuccess)
+            } else {
+                _navEvent.emit(LoginNavEvent.NavigateToWorkspace)
             }
         }
     }

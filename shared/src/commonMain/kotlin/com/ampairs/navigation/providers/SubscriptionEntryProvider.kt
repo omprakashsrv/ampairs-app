@@ -11,10 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
-import com.ampairs.di.LocalAppGraph
 import com.ampairs.subscription.ui.screens.DeviceManagementScreen
 import com.ampairs.subscription.ui.screens.InvoiceDetailScreen
 import com.ampairs.subscription.ui.screens.InvoiceListScreen
@@ -24,6 +22,7 @@ import com.ampairs.subscription.ui.screens.PlanComparisonScreen
 import com.ampairs.subscription.ui.screens.SubscriptionScreen
 import com.ampairs.subscription.ui.screens.UsageDetailsScreen
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Entry provider for Subscription module routes in Navigation 3.
@@ -35,10 +34,8 @@ fun subscriptionEntryProvider(
     onOpenCheckoutUrl: ((String) -> Unit)? = null
 ): NavEntry<NavKey>? = when (key) {
     is SubscriptionRoute.Root -> NavEntry(key) {
-        val graph = LocalAppGraph.current
-        val viewModel: SubscriptionViewModel = viewModel { graph.subscriptionViewModelFactory.create() }
         SubscriptionScreen(
-            viewModel = viewModel,
+            viewModel = metroViewModel<SubscriptionViewModel>(),
             onNavigateToPlanComparison = {
                 backStack.add(SubscriptionRoute.Plans)
             },
@@ -64,10 +61,8 @@ fun subscriptionEntryProvider(
     }
 
     is SubscriptionRoute.Plans -> NavEntry(key) {
-        val factory = LocalAppGraph.current.subscriptionViewModelFactory
-        val viewModel: SubscriptionViewModel = viewModel { factory.create() }
         PlanComparisonScreen(
-            viewModel = viewModel,
+            viewModel = metroViewModel<SubscriptionViewModel>(),
             onNavigateBack = { backStack.removeLastOrNull() },
             onCheckoutUrl = { url ->
                 onOpenCheckoutUrl?.invoke(url)
@@ -76,10 +71,8 @@ fun subscriptionEntryProvider(
     }
 
     is SubscriptionRoute.Usage -> NavEntry(key) {
-        val factory = LocalAppGraph.current.subscriptionViewModelFactory
-        val viewModel: SubscriptionViewModel = viewModel { factory.create() }
         UsageDetailsScreen(
-            viewModel = viewModel,
+            viewModel = metroViewModel<SubscriptionViewModel>(),
             onNavigateBack = { backStack.removeLastOrNull() },
             onNavigateToPlans = {
                 backStack.add(SubscriptionRoute.Plans)
@@ -88,28 +81,22 @@ fun subscriptionEntryProvider(
     }
 
     is SubscriptionRoute.PaymentHistory -> NavEntry(key) {
-        val factory = LocalAppGraph.current.subscriptionViewModelFactory
-        val viewModel: SubscriptionViewModel = viewModel { factory.create() }
         PaymentHistoryScreen(
-            viewModel = viewModel,
+            viewModel = metroViewModel<SubscriptionViewModel>(),
             onNavigateBack = { backStack.removeLastOrNull() }
         )
     }
 
     is SubscriptionRoute.PaymentMethods -> NavEntry(key) {
-        val factory = LocalAppGraph.current.subscriptionViewModelFactory
-        val viewModel: SubscriptionViewModel = viewModel { factory.create() }
         PaymentMethodsScreen(
-            viewModel = viewModel,
+            viewModel = metroViewModel<SubscriptionViewModel>(),
             onNavigateBack = { backStack.removeLastOrNull() }
         )
     }
 
     is SubscriptionRoute.Devices -> NavEntry(key) {
-        val factory = LocalAppGraph.current.subscriptionViewModelFactory
-        val viewModel: SubscriptionViewModel = viewModel { factory.create() }
         DeviceManagementScreen(
-            viewModel = viewModel,
+            viewModel = metroViewModel<SubscriptionViewModel>(),
             onNavigateBack = { backStack.removeLastOrNull() },
             onNavigateToPlans = {
                 backStack.add(SubscriptionRoute.Plans)
@@ -135,11 +122,9 @@ fun subscriptionEntryProvider(
 
     // Plan details for a specific subscription plan
     is SubscriptionRoute.PlanDetails -> NavEntry(key) {
-        val factory = LocalAppGraph.current.subscriptionViewModelFactory
-        val viewModel: SubscriptionViewModel = viewModel { factory.create() }
         // Show plan comparison with specific plan highlighted
         PlanComparisonScreen(
-            viewModel = viewModel,
+            viewModel = metroViewModel<SubscriptionViewModel>(),
             onNavigateBack = { backStack.removeLastOrNull() },
             onCheckoutUrl = { url ->
                 onOpenCheckoutUrl?.invoke(url)

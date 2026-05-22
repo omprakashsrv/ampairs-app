@@ -167,7 +167,7 @@ fun AccountRestoreScreen(
 
             // Logout Button
             TextButton(
-                onClick = onLogout,
+                onClick = { viewModel.logout(onLogout) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !viewModel.isLoading
             ) {

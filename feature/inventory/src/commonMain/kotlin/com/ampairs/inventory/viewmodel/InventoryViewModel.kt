@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.coroutines.DispatcherProvider
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.inventory.domain.Inventory
@@ -13,13 +14,25 @@ import com.ampairs.inventory.domain.asDatabaseModel
 import com.ampairs.inventory.domain.asDomainModel
 import com.ampairs.inventory.ui.InventoryState
 import com.ampairs.inventory.ui.toDomainModel
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.Dispatchers
-import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.launch
 
-@Inject
-class InventoryViewModel(val id: String?, private val inventoryRepository: InventoryRepository) :
+@AssistedInject
+class InventoryViewModel(@Assisted val id: String?, private val inventoryRepository: InventoryRepository) :
     ViewModel() {
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(id: String?): InventoryViewModel
+    }
 
     var loading by mutableStateOf(false)
     var inventory by mutableStateOf(InventoryState(Inventory()))

@@ -8,7 +8,6 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.inventory.viewmodel.InventoryListViewModel
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.launch
@@ -16,7 +15,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun InventoryPaneScreen(
-    inventoryRepository: InventoryRepository,
     inventoryListViewModel: InventoryListViewModel = metroViewModel(),
 ) {
 
@@ -54,7 +52,6 @@ fun InventoryPaneScreen(
                 InventoryScreen(
                     modifier = Modifier,
                     id = inventoryId,
-                    inventoryRepository = inventoryRepository,
                     onInventoryUpdate = {}
                 )
             }

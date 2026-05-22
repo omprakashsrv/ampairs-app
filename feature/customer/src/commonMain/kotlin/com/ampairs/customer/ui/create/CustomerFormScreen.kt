@@ -51,7 +51,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,9 +69,6 @@ import com.ampairs.customer.ui.components.location.LocationPickerDialog
 import com.ampairs.customer.ui.components.location.LocationData
 import com.ampairs.customer.ui.components.location.AddressData
 import com.ampairs.customer.domain.State
-import com.ampairs.form.data.repository.ConfigRepository
-import kotlinx.coroutines.flow.first
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ampairs.customer.ui.components.images.CustomerImageViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.customer.ui.components.location.LocationService
@@ -83,11 +79,6 @@ import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
 import com.ampairs.customer.util.CustomerConstants.STATUS_INACTIVE
 import com.ampairs.customer.util.CustomerConstants.STATUS_SUSPENDED
 import com.ampairs.customer.domain.CustomerType
-import com.ampairs.customer.ui.components.contact.ContactPickerService
-import com.ampairs.customer.data.repository.CustomerImageRepository
-import com.ampairs.customer.data.repository.ImageFilePicker
-import com.ampairs.customer.ui.components.contact.ContactData
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,11 +87,6 @@ fun CustomerFormScreen(
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CustomerFormViewModel = assistedMetroViewModel<CustomerFormViewModel, CustomerFormViewModel.Factory> { create(customerId) },
-    configRepository: ConfigRepository,
-    customerImageRepository: CustomerImageRepository,
-    imagePicker: ImageFilePicker,
-    contactPickerService: ContactPickerService,
-    locationService: LocationService
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -160,11 +146,13 @@ fun CustomerFormScreen(
                     customerGroups = uiState.customerGroups,
                     onCustomerGroupSelected = viewModel::onCustomerGroupSelected,
                     entityConfig = uiState.entityConfig,
-                    configRepository = configRepository,
-                    customerImageRepository = customerImageRepository,
-                    imagePicker = imagePicker,
-                    contactPickerService = contactPickerService,
-                    locationService = locationService,
+                    showCustomerImages = uiState.showCustomerImages,
+                    customerImagesReadOnly = uiState.customerImagesReadOnly,
+                    isContactPickerAvailable = viewModel.isContactPickerAvailable,
+                    isImportingContact = uiState.isImportingContact,
+                    contactImportError = uiState.contactImportError,
+                    onPickContact = viewModel::pickContactAndImport,
+                    locationService = viewModel.locationService,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -191,18 +179,18 @@ private fun CustomerForm(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
-    configRepository: ConfigRepository,
-    customerImageRepository: CustomerImageRepository,
-    imagePicker: ImageFilePicker,
-    contactPickerService: ContactPickerService,
+    showCustomerImages: Boolean,
+    customerImagesReadOnly: Boolean,
+    isContactPickerAvailable: Boolean,
+    isImportingContact: Boolean,
+    contactImportError: String?,
+    onPickContact: () -> Unit,
     locationService: LocationService,
     modifier: Modifier = Modifier
 ) {
-    // Get window size class to determine layout
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isCompactOrMedium = !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
-    // Only show adaptive layout for existing customers (when images are present)
     if (customerId != null && isCompactOrMedium) {
         CustomerFormTabLayout(
             customerId = customerId,
@@ -221,10 +209,12 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
-            configRepository = configRepository,
-            customerImageRepository = customerImageRepository,
-            imagePicker = imagePicker,
-            contactPickerService = contactPickerService,
+            showCustomerImages = showCustomerImages,
+            customerImagesReadOnly = customerImagesReadOnly,
+            isContactPickerAvailable = isContactPickerAvailable,
+            isImportingContact = isImportingContact,
+            contactImportError = contactImportError,
+            onPickContact = onPickContact,
             locationService = locationService,
             modifier = modifier
         )
@@ -246,10 +236,12 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
-            configRepository = configRepository,
-            customerImageRepository = customerImageRepository,
-            imagePicker = imagePicker,
-            contactPickerService = contactPickerService,
+            showCustomerImages = showCustomerImages,
+            customerImagesReadOnly = customerImagesReadOnly,
+            isContactPickerAvailable = isContactPickerAvailable,
+            isImportingContact = isImportingContact,
+            contactImportError = contactImportError,
+            onPickContact = onPickContact,
             locationService = locationService,
             modifier = modifier
         )
@@ -270,7 +262,10 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
-            contactPickerService = contactPickerService,
+            isContactPickerAvailable = isContactPickerAvailable,
+            isImportingContact = isImportingContact,
+            contactImportError = contactImportError,
+            onPickContact = onPickContact,
             locationService = locationService,
             modifier = modifier
         )
@@ -295,27 +290,20 @@ private fun CustomerFormTabLayout(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
-    configRepository: ConfigRepository,
-    customerImageRepository: CustomerImageRepository,
-    imagePicker: ImageFilePicker,
-    contactPickerService: ContactPickerService,
+    showCustomerImages: Boolean,
+    customerImagesReadOnly: Boolean,
+    isContactPickerAvailable: Boolean,
+    isImportingContact: Boolean,
+    contactImportError: String?,
+    onPickContact: () -> Unit,
     locationService: LocationService,
     modifier: Modifier = Modifier
 ) {
     var selectedTabIndex by remember { mutableStateOf(0) }
 
-    // Load form config for customerImages field
-    var imagesFieldConfig by remember { mutableStateOf<com.ampairs.form.domain.EntityFieldConfig?>(null) }
-
-    LaunchedEffect(Unit) {
-        val config = configRepository.observeConfigSchema("customer").first()
-        imagesFieldConfig = config?.fieldConfigs?.find { it.fieldName == "customerImages" }
-    }
-
-    // Filter tabs based on visibility configuration
     val tabs = buildList {
         add("Details")
-        if (imagesFieldConfig?.visible != false && customerId.isNotBlank()) {
+        if (showCustomerImages && customerId.isNotBlank()) {
             add("Images")
         }
     }
@@ -348,17 +336,18 @@ private fun CustomerFormTabLayout(
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
                 entityConfig = entityConfig,
-                contactPickerService = contactPickerService,
+                isContactPickerAvailable = isContactPickerAvailable,
+                isImportingContact = isImportingContact,
+                contactImportError = contactImportError,
+                onPickContact = onPickContact,
                 locationService = locationService,
                 modifier = Modifier.fillMaxSize()
             )
             1 -> if (tabs.getOrNull(1) == "Images") {
                 CustomerImageManagementScreen(
                     customerId = customerId,
-                    readOnly = imagesFieldConfig?.enabled == false,
-                    viewModel = viewModel(key = customerId) {
-                        CustomerImageViewModel(customerId, customerImageRepository, imagePicker)
-                    },
+                    readOnly = customerImagesReadOnly,
+                    viewModel = assistedMetroViewModel<CustomerImageViewModel, CustomerImageViewModel.Factory> { create(customerId) },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
@@ -386,32 +375,24 @@ private fun CustomerFormSideBySideLayout(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
-    configRepository: ConfigRepository,
-    customerImageRepository: CustomerImageRepository,
-    imagePicker: ImageFilePicker,
-    contactPickerService: ContactPickerService,
+    showCustomerImages: Boolean,
+    customerImagesReadOnly: Boolean,
+    isContactPickerAvailable: Boolean,
+    isImportingContact: Boolean,
+    contactImportError: String?,
+    onPickContact: () -> Unit,
     locationService: LocationService,
     modifier: Modifier = Modifier
 ) {
-
-    // Load form config for customerImages field
-    var imagesFieldConfig by remember { mutableStateOf<com.ampairs.form.domain.EntityFieldConfig?>(null) }
-
-    LaunchedEffect(Unit) {
-        val config = configRepository.observeConfigSchema("customer").first()
-        imagesFieldConfig = config?.fieldConfigs?.find { it.fieldName == "customerImages" }
-    }
-
     Row(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Left side: Customer Form (60% width or full if images hidden)
         OutlinedCard(
             modifier = Modifier
-                .weight(if (imagesFieldConfig?.visible == false || customerId.isBlank()) 1f else 0.6f)
+                .weight(if (!showCustomerImages || customerId.isBlank()) 1f else 0.6f)
                 .fillMaxHeight()
         ) {
             CustomerFormFields(
@@ -430,13 +411,16 @@ private fun CustomerFormSideBySideLayout(
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
                 entityConfig = entityConfig,
-                contactPickerService = contactPickerService,
+                isContactPickerAvailable = isContactPickerAvailable,
+                isImportingContact = isImportingContact,
+                contactImportError = contactImportError,
+                onPickContact = onPickContact,
                 locationService = locationService,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        if (imagesFieldConfig?.visible != false && customerId.isNotBlank()) {
+        if (showCustomerImages && customerId.isNotBlank()) {
             OutlinedCard(
                 modifier = Modifier
                     .weight(0.4f)
@@ -444,10 +428,8 @@ private fun CustomerFormSideBySideLayout(
             ) {
                 CustomerImageManagementScreen(
                     customerId = customerId,
-                    readOnly = imagesFieldConfig?.enabled == false,
-                    viewModel = viewModel(key = customerId) {
-                        CustomerImageViewModel(customerId, customerImageRepository, imagePicker)
-                    },
+                    readOnly = customerImagesReadOnly,
+                    viewModel = assistedMetroViewModel<CustomerImageViewModel, CustomerImageViewModel.Factory> { create(customerId) },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
@@ -475,14 +457,14 @@ private fun CustomerFormFields(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
-    contactPickerService: ContactPickerService,
+    isContactPickerAvailable: Boolean,
+    isImportingContact: Boolean,
+    contactImportError: String?,
+    onPickContact: () -> Unit,
     locationService: LocationService,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    val coroutineScope = rememberCoroutineScope()
-    var isImportingContact by remember { mutableStateOf(false) }
-    var contactImportError by remember { mutableStateOf<String?>(null) }
 
     // Helper functions for field config
     fun isFieldVisible(fieldName: String): Boolean {
@@ -502,50 +484,6 @@ private fun CustomerFormFields(
 
     fun getFieldPlaceholder(fieldName: String): String? {
         return entityConfig?.getFieldConfig(fieldName)?.placeholder
-    }
-
-    // Function to import contact data into form
-    fun importContactToForm(contactData: ContactData) {
-        // Debug log
-        println("ContactData received - Name: ${contactData.name}, Phone: ${contactData.phone}, CountryCode: ${contactData.countryCode}")
-
-        var updatedForm = formState
-
-        // Only update fields that have values and are currently empty
-        if (contactData.name.isNotBlank() && formState.name.isBlank()) {
-            updatedForm = updatedForm.copy(name = contactData.name)
-        }
-        if (contactData.email.isNotBlank() && formState.email.isBlank()) {
-            updatedForm = updatedForm.copy(email = contactData.email)
-        }
-        if (contactData.phone.isNotBlank() && formState.phone.isBlank()) {
-            // Convert country code string ("+91") to integer (91)
-            // Default to 91 (India) if country code is invalid, empty, or 0
-            val parsedCode = contactData.countryCode.removePrefix("+").toIntOrNull()
-            val countryCodeInt = if (parsedCode == null || parsedCode == 0) 91 else parsedCode
-            println("Updating phone - Number: ${contactData.phone}, CountryCode: $countryCodeInt (raw: ${contactData.countryCode})")
-            updatedForm = updatedForm.copy(
-                phone = contactData.phone,
-                countryCode = countryCodeInt
-            )
-        }
-        if (contactData.street.isNotBlank() && formState.street.isBlank()) {
-            updatedForm = updatedForm.copy(street = contactData.street)
-        }
-        if (contactData.city.isNotBlank() && formState.city.isBlank()) {
-            updatedForm = updatedForm.copy(city = contactData.city)
-        }
-        if (contactData.state.isNotBlank() && formState.state.isBlank()) {
-            updatedForm = updatedForm.copy(state = contactData.state)
-        }
-        if (contactData.pincode.isNotBlank() && formState.pincode.isBlank()) {
-            updatedForm = updatedForm.copy(pincode = contactData.pincode)
-        }
-        if (contactData.country.isNotBlank() && formState.country.isBlank()) {
-            updatedForm = updatedForm.copy(country = contactData.country)
-        }
-
-        onFormChange(updatedForm)
     }
 
     Column(
@@ -576,7 +514,7 @@ private fun CustomerFormFields(
                 )
             ) {
                 Text(
-                    text = contactImportError ?: "",
+                    text = contactImportError,
                     modifier = Modifier.padding(16.dp),
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -586,24 +524,9 @@ private fun CustomerFormFields(
         // Basic Information
         FormSection(title = "Basic Information") {
             // Import from Contact Button (only on Android/iOS, only for new customers)
-            if (contactPickerService.isAvailable() && formState.uid.isBlank()) {
+            if (isContactPickerAvailable && formState.uid.isBlank()) {
                 OutlinedButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            isImportingContact = true
-                            contactImportError = null
-                            contactPickerService.pickContact()
-                                .onSuccess { contactData ->
-                                    importContactToForm(contactData)
-                                }
-                                .onFailure { error ->
-                                    if (error.message?.contains("cancelled", ignoreCase = true) != true) {
-                                        contactImportError = error.message ?: "Failed to import contact"
-                                    }
-                                }
-                            isImportingContact = false
-                        }
-                    },
+                    onClick = onPickContact,
                     enabled = !isImportingContact,
                     modifier = Modifier.fillMaxWidth()
                 ) {

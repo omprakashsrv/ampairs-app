@@ -6,8 +6,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.AuthApi
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.api.model.UserApiModel
 import com.ampairs.auth.api.model.UserUpdateRequest
+import com.ampairs.auth.domain.UserInfo
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.model.UiState
 import com.ampairs.common.model.onError
@@ -22,17 +25,30 @@ import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import com.ampairs.auth.db.UserRepository
+
+sealed interface UserUpdateNavEvent {
+    data class LoginSuccess(val userInfo: UserInfo?) : UserUpdateNavEvent
+    data class NavigateToWorkspace(val userInfo: UserInfo?) : UserUpdateNavEvent
+}
 
 @ContributesIntoMap(AppScope::class)
 @ViewModelKey
 @Inject
 class UserUpdateViewModel(
     private val authApi: AuthApi,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val tokenRepository: TokenRepository,
+    private val userWorkspaceRepository: UserWorkspaceRepository,
 ) : ViewModel() {
+
+    private val _navEvent = MutableSharedFlow<UserUpdateNavEvent>()
+    val navEvent: SharedFlow<UserUpdateNavEvent> = _navEvent.asSharedFlow()
 
     companion object {
         private val SUPPORTED_IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "webp")
@@ -221,6 +237,54 @@ class UserUpdateViewModel(
                 val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to update user details" }
                 updateUserState = UiState.Error(errorMessage)
                 displayMessage = errorMessage
+            }
+        }
+    }
+
+    fun handleUpdateSuccess() {
+        viewModelScope.launch {
+            val accessToken = tokenRepository.getAccessToken()
+            val refreshToken = tokenRepository.getRefreshToken()
+            if (!accessToken.isNullOrBlank()) {
+                val currentUserId = tokenRepository.getCurrentUserId() ?: return@launch
+                tokenRepository.addAuthenticatedUser(
+                    userId = currentUserId,
+                    accessToken = accessToken,
+                    refreshToken = refreshToken
+                )
+
+                var userInfo: UserInfo? = null
+                userRepository.getUserById(currentUserId)?.let { userEntity ->
+                    val profilePictureUrl = userEntity.profile_picture_url?.let { url ->
+                        if (url.isNotBlank() && !url.startsWith("http")) ApiUrlBuilder.currentUserPictureUrl()
+                        else url.takeIf { it.isNotBlank() }
+                    }
+                    val profilePictureThumbnailUrl = userEntity.profile_picture_thumbnail_url?.let { url ->
+                        if (url.isNotBlank() && !url.startsWith("http")) ApiUrlBuilder.currentUserPictureThumbnailUrl()
+                        else url.takeIf { it.isNotBlank() }
+                    }
+                    userInfo = UserInfo(
+                        id = userEntity.id,
+                        firstName = userEntity.first_name,
+                        lastName = userEntity.last_name,
+                        userName = userEntity.user_name,
+                        countryCode = userEntity.country_code,
+                        phone = userEntity.phone,
+                        profilePictureUrl = profilePictureUrl,
+                        profilePictureThumbnailUrl = profilePictureThumbnailUrl,
+                        lastLogin = 0L,
+                        loginCount = 0,
+                        isAuthenticated = true,
+                        hasSelectedWorkspace = true
+                    )
+                }
+
+                val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
+                if (hasWorkspace) {
+                    _navEvent.emit(UserUpdateNavEvent.LoginSuccess(userInfo))
+                } else {
+                    _navEvent.emit(UserUpdateNavEvent.NavigateToWorkspace(userInfo))
+                }
             }
         }
     }

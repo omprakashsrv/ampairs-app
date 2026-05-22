@@ -53,8 +53,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.LoginStatus
+import com.ampairs.auth.viewmodel.LoginNavEvent
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.common.localization.Language
 import com.ampairs.common.localization.LocaleManager
@@ -62,13 +62,17 @@ import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.auth.generated.resources.Res
 import ampairsapp.feature.auth.generated.resources.*
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel = metroViewModel(),
     localeManager: LocaleManager,
-    onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit,
+    onLoginSuccess: () -> Unit,
+    onNavigateToWorkspace: () -> Unit,
+    onNavigateToUserUpdate: () -> Unit,
+    onNavigateToAuthRoute: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val currentLanguage by localeManager.currentLanguage.collectAsState(Language.ENGLISH)
@@ -78,6 +82,17 @@ fun LoginScreen(
     var isCheckingLogin by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
+        viewModel.navEvent.collectLatest { event ->
+            when (event) {
+                LoginNavEvent.LoginSuccess -> onLoginSuccess()
+                LoginNavEvent.NavigateToWorkspace -> onNavigateToWorkspace()
+                LoginNavEvent.NavigateToUserUpdate -> onNavigateToUserUpdate()
+                LoginNavEvent.NavigateToAccountRestore -> {}
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
         // Check login status with callback
         viewModel.checkUserLogin { status, user ->
             if (status == LoginStatus.NOT_LOGGED_IN) {
@@ -85,9 +100,12 @@ fun LoginScreen(
                 isCheckingLogin = false
                 showWelcomeScreen = true
                 isVisible = true
+            } else if (status == LoginStatus.LOGGED_IN) {
+                // User is logged in - delegate to ViewModel for navigation decision
+                viewModel.handlePostLoginNavigation(user)
             } else {
-                // User is logged in - proceed immediately
-                onLoginStatus(status, user)
+                // LOGIN_FAILED - navigate to auth route
+                onNavigateToAuthRoute()
             }
         }
     }
@@ -251,7 +269,7 @@ fun LoginScreen(
             // Get Started Button
             Button(
                 onClick = {
-                    onLoginStatus(LoginStatus.NOT_LOGGED_IN, null)
+                    onNavigateToAuthRoute()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
