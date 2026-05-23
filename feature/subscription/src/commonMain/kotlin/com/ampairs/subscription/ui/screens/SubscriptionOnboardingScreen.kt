@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ampairs.subscription.domain.model.SubscriptionStatus
-import com.ampairs.subscription.util.SubscriptionOnboardingManager
+import com.ampairs.subscription.util.SubscriptionOnboardingLookup
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 import kotlinx.coroutines.launch
 
@@ -24,7 +24,7 @@ fun SubscriptionOnboardingScreen(
     onContinueWithFree: () -> Unit,
     onDismiss: () -> Unit,
     viewModel: SubscriptionViewModel,
-    onboardingManager: SubscriptionOnboardingManager
+    onboardingManager: SubscriptionOnboardingLookup
 ) {
     val subscription by viewModel.subscription.collectAsState()
     val currentPlan by viewModel.currentPlan.collectAsState()

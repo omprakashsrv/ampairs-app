@@ -6,16 +6,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.order.db.entity.OrderItemEntity
-import com.ampairs.product.domain.Product
+import com.ampairs.product.domain.ProductSummary
 import kotlinx.serialization.json.Json
 
 const val ORDER_ITEM_PREFIX = "OIT"
 
-class OrderItem(var product: Product?) {
+class OrderItem(var product: ProductSummary?) {
     var quantity: Double = product?.quantity ?: 0.0
         set(value) {
             field = value
-            product?.quantity = value
+            if (product != null) product!!.quantity = value
             updateTotal()
         }
 

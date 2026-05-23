@@ -214,26 +214,26 @@ Zero inter-impl cross-feature dependencies.
 
 ### Tasks
 
-- [ ] **4.1** Extract `CartItem` to shared UI
+- [x] **4.1** Extract `CartItem` to shared UI
   - Move `CartItem` composable to `data:common` or a new `core:ui` module
   - Both `invoice` and `product` reference it from the shared location
   - Compile-validate all 3 targets
 
-- [ ] **4.2** Replace `ProductsListScreen` embedding in invoice with navigation slot
+- [x] **4.2** Replace `ProductsListScreen` embedding in invoice with navigation slot
   - Add `productPickerSlot: @Composable (onSelected: (ProductSummary) -> Unit, onDismiss: () -> Unit) -> Unit` param to `InvoiceScreen`
   - `InvoiceEntryProvider` in `shared` supplies the real `ProductsListScreen` as the slot
   - Remove `feature:product` UI imports from `feature:invoice`
   - Test: invoice → product picker → select → item appears in invoice
   - Compile-validate all 3 targets
 
-- [ ] **4.3** Replace `SubscriptionOnboardingScreen` embedding in workspace with navigation slot
+- [x] **4.3** Replace `SubscriptionOnboardingScreen` embedding in workspace with navigation slot
   - Add `subscriptionSlot: @Composable () -> Unit` param to `WorkspaceModulesScreen`
   - `WorkspaceEntryProvider` in `shared` supplies `SubscriptionOnboardingScreen`
   - Remove `feature:subscription` UI imports from `feature:workspace`
   - Test: workspace modules → subscription upsell flow still works
   - Compile-validate all 3 targets
 
-- [ ] **4.4** Replace `Phone` UI component usage in customer
+- [x] **4.4** Replace `Phone` UI component usage in customer
   - `customer` imports `Phone` from `feature:auth` (a Composable)
   - Move `Phone` to `auth:api` or `data:common` core UI
   - Remove UI dependency on `auth:impl` from `customer` for this component
@@ -270,21 +270,21 @@ After all 4 phases:
 | 1.1 Move agent plugin contracts | ✅ Done | 6 files → data:common/agent; 5 consumer modules updated; 2 pre-existing iOS/Desktop compile bugs fixed |
 | 1.2 Move EventManager to data:common | ✅ Done | IEventManager + EventType/WorkspaceEvent/ConnectionState/EventLogger → data:common/event; EventManager implements IEventManager |
 | 1.3 Move WorkspaceContextManager | ✅ Done | Already in data:common — no action needed |
-| 2.1 Split auth:api / auth:impl | ⬜ Pending | Blocks all Phase 2 tasks |
-| 2.2 Split customer:api / customer:impl | ⬜ Pending | |
-| 2.3 Split product:api / product:impl | ⬜ Pending | |
-| 2.4 Split tax:api / tax:impl | ⬜ Pending | |
-| 2.5 Split form:api / form:impl | ⬜ Pending | |
-| 2.6 Split unit:api / unit:impl | ⬜ Pending | |
-| 2.7 Split subscription:api / subscription:impl | ⬜ Pending | |
-| 3.1 CustomerDataService interface | ⬜ Pending | Needs 2.2 |
-| 3.2 ProductDataService interface | ⬜ Pending | Needs 2.3 |
-| 3.3 Migrate invoice to service interfaces | ⬜ Pending | Needs 3.1, 3.2 |
-| 3.4 Migrate order to service interfaces | ⬜ Pending | Needs 3.1, 3.2 |
-| 3.5 CacheCleanable multi-binding | ⬜ Pending | Needs 3.1, 3.2 |
-| 3.6 Migrate workspace EventManager | ⬜ Pending | Needs 1.2 |
-| 4.1 Extract CartItem to shared UI | ⬜ Pending | |
-| 4.2 ProductsListScreen navigation slot | ⬜ Pending | Needs 2.3, 4.1 |
-| 4.3 SubscriptionOnboardingScreen slot | ⬜ Pending | Needs 2.7 |
-| 4.4 Phone component extraction | ⬜ Pending | Needs 2.1 |
+| 2.1 Split auth:api / auth:impl | ✅ Done | Created feature/auth-api with TokenRepository, UserWorkspaceRepository, Token, RefreshToken, DeviceInfo, DeviceSession, DeviceService, KtorClient, KtorApiClientRequest; 8 consumer modules switched to authApi; event stale dep removed |
+| 2.2 Split customer:api / customer:impl | ✅ Done | Customer, CustomerAddress, CustomerListItem → customer-api; inventory switched to customerApi |
+| 2.3 Split product:api / product:impl | ✅ Done | ProductSummary, InventoryApiModel, Constants, ProductType/ServiceType → product-api; inventory switched to productApi |
+| 2.4 Split tax:api / tax:impl | ✅ Done | TaxCode, TaxCodeType, formatDecimal → tax-api; TaxCodeLookup interface + binding; product switched to taxApi |
+| 2.5 Split form:api / form:impl | ✅ Done | EntityType, EntityConfigSchema, EntityFieldConfig, EntityAttributeDefinition, AttributeDataType, ConfigLookup interface → form-api; customer + business switched to formApi |
+| 2.6 Split unit:api / unit:impl | ✅ Done | Unit + UnitListItem → unit-api; inventory switched to unitApi |
+| 2.7 Split subscription:api / subscription:impl | ✅ Done | SubscriptionOnboardingLookup interface → subscription-api; SubscriptionOnboardingManager implements it; DI binding added |
+| 3.1 CustomerDataService interface | ✅ Done | CustomerDataService in customer-api; CustomerRepository implements it; @Provides binding in CustomerModule |
+| 3.2 ProductDataService interface | ✅ Done | ProductDataService in product-api; ProductSummary.quantity added; ProductRepository implements it; @Provides binding in ProductModule |
+| 3.3 Migrate invoice to service interfaces | ✅ Done | InvoiceItem uses ProductSummary; InvoiceViewModel/InvoiceRepository use CustomerDataService+ProductDataService |
+| 3.4 Migrate order to service interfaces | ✅ Done | OrderItem uses ProductSummary; OrderViewModel/OrderRepository use CustomerDataService+ProductDataService |
+| 3.5 CacheCleanable multi-binding | ✅ Done | CacheCleanable in data:common; CustomerRepository+ProductRepository implement it; Set<CacheCleanable> @Provides in shared |
+| 3.6 Migrate workspace EventManager | ✅ Done | EventManagerProvider returns IEventManager; EventManagerProvider binding moved from workspace to shared/EventManagerModule; feature:event+customer+product removed from workspace deps |
+| 4.1 Extract CartItem to shared UI | ✅ Done | |
+| 4.2 ProductsListScreen navigation slot | ✅ Done | |
+| 4.3 SubscriptionOnboardingScreen slot | ✅ Done | |
+| 4.4 Phone component extraction | ✅ Done | |
 | Final validation | ⬜ Pending | Needs all above |

@@ -24,7 +24,7 @@ import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.customer.ui.components.contact.ContactData
 import com.ampairs.customer.ui.components.contact.ContactPickerService
 import com.ampairs.customer.ui.components.location.LocationService
-import com.ampairs.form.data.repository.ConfigRepository
+import com.ampairs.form.data.repository.ConfigLookup
 import com.ampairs.form.domain.EntityConfigSchema
 import com.ampairs.form.domain.EntityType
 import com.ampairs.customer.util.CustomerConstants.DEFAULT_COUNTRY_CODE
@@ -203,7 +203,7 @@ class CustomerFormViewModel(
     private val stateStore: StateStore,
     private val customerTypeStore: CustomerTypeStore,
     private val customerGroupStore: CustomerGroupStore,
-    private val configRepository: ConfigRepository,
+    private val configRepository: ConfigLookup,
     val contactPickerService: ContactPickerService,
     val locationService: LocationService
 ) : ViewModel() {
@@ -721,8 +721,8 @@ private fun Customer.toFormState(): CustomerFormState {
         attributes = attributes ?: emptyMap(),
         // Billing Address
         useBillingAsMainAddress = billingAddress == null ||
-                (billingAddress.street == street && billingAddress.city == city &&
-                        billingAddress.state == state && billingAddress.pincode == pincode),
+                (billingAddress?.street == street && billingAddress?.city == city &&
+                        billingAddress?.state == state && billingAddress?.pincode == pincode),
         billingStreet = billingAddress?.street ?: "",
         billingCity = billingAddress?.city ?: "",
         billingState = billingAddress?.state ?: "",
@@ -730,8 +730,8 @@ private fun Customer.toFormState(): CustomerFormState {
         billingCountry = billingAddress?.country ?: "India",
         // Shipping Address
         useShippingAsMainAddress = shippingAddress == null ||
-                (shippingAddress.street == street && shippingAddress.city == city &&
-                        shippingAddress.state == state && shippingAddress.pincode == pincode),
+                (shippingAddress?.street == street && shippingAddress?.city == city &&
+                        shippingAddress?.state == state && shippingAddress?.pincode == pincode),
         shippingStreet = shippingAddress?.street ?: "",
         shippingCity = shippingAddress?.city ?: "",
         shippingState = shippingAddress?.state ?: "",

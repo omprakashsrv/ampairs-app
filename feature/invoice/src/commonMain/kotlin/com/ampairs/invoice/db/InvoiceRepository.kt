@@ -2,14 +2,14 @@ package com.ampairs.invoice.db
 
 import androidx.paging.PagingSource
 import com.ampairs.common.flower_core.Resource
-import com.ampairs.customer.data.db.CustomerDao
+import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.invoice.api.InvoiceApi
 import com.ampairs.invoice.api.model.InvoiceApiModel
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.entity.InvoiceEntity
 import com.ampairs.invoice.db.entity.InvoiceItemEntity
 import com.ampairs.invoice.domain.Invoice
-import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.product.data.ProductDataService
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
@@ -17,8 +17,8 @@ import kotlinx.coroutines.flow.Flow
 @Inject
 class InvoiceRepository(
     val invoiceDao: InvoiceDao,
-    val productDao: ProductDao,
-    val customerDao: CustomerDao,
+    val productDataService: ProductDataService,
+    val customerDataService: CustomerDataService,
     val invoiceApi: InvoiceApi,
 ) {
     

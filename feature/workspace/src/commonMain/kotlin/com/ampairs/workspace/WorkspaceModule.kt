@@ -1,12 +1,6 @@
 package com.ampairs.workspace
 
-import com.ampairs.auth.api.AuthApi
-import com.ampairs.auth.api.TokenRepository
-import com.ampairs.common.config.ConfigurationManager
 import com.ampairs.common.di.AppScope
-import com.ampairs.event.EventManagerFactory
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.HttpClientEngine
 import com.ampairs.workspace.db.WorkspaceRoomDatabase
 import com.ampairs.workspace.db.dao.UserInvitationDao
 import com.ampairs.workspace.db.dao.WorkspaceDao
@@ -32,35 +26,6 @@ import com.ampairs.workspace.store.WorkspaceStoreFactory
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-
-/**
- * Provides EventManagerProvider that bridges DI with the static EventManagerFactory.
- */
-@ContributesTo(AppScope::class)
-interface WorkspaceEventModule {
-    companion object {
-        @Provides
-        @SingleIn(AppScope::class)
-        fun provideEventManagerProvider(
-            engine: HttpClientEngine,
-            tokenRepository: TokenRepository,
-            authApi: AuthApi
-        ): EventManagerProvider {
-            val httpClient = HttpClient(engine)
-            return EventManagerProvider { workspaceId, userId, deviceId ->
-                EventManagerFactory.getOrCreate(
-                    workspaceId = workspaceId,
-                    userId = userId,
-                    deviceId = deviceId,
-                    httpClient = httpClient,
-                    tokenProvider = { tokenRepository.getAccessToken() ?: "" },
-                    tokenRefresher = { authApi.refreshToken().data != null },
-                    baseUrl = ConfigurationManager.apiBaseUrl
-                )
-            }
-        }
-    }
-}
 
 /**
  * Metro bindings for workspace DAOs (sourced from the WorkspaceRoomDatabase).

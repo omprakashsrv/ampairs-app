@@ -15,6 +15,8 @@ import com.ampairs.tax.data.db.dao.TaxComponentDao
 import com.ampairs.tax.data.db.dao.TaxComponentTypeDao
 import com.ampairs.tax.data.db.dao.TaxConfigurationDao
 import com.ampairs.tax.data.db.dao.TaxRuleDao
+import com.ampairs.tax.data.repository.TaxCodeLookup
+import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.domain.model.TaxStrategy
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -32,6 +34,9 @@ import dev.zacsweers.metro.SingleIn
 @ContributesTo(AppScope::class)
 interface TaxDaoModule {
     companion object {
+        @Provides
+        fun provideTaxCodeLookup(repo: TaxCodeRepository): TaxCodeLookup = repo
+
         @Provides
         fun provideTaxCodeDao(db: TaxRoomDatabase): TaxCodeDao = db.taxCodeDao()
 

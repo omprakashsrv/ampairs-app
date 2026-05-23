@@ -3,7 +3,7 @@ package com.ampairs.inventory.domain
 import com.ampairs.unit.domain.model.Unit
 import com.ampairs.inventory.db.entity.InventoryEntity
 import com.ampairs.product.api.model.InventoryApiModel
-import com.ampairs.product.domain.Product
+import com.ampairs.product.domain.ProductSummary
 import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -22,7 +22,7 @@ data class Inventory(
     var unitId: String? = null,
     var unit: Unit? = null,
     var productId: String? = null,
-    var product: Product? = null,
+    var product: ProductSummary? = null,
     var customerFields: List<CustomField>? = null
 )
 

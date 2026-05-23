@@ -35,7 +35,14 @@ include(":desktopApp")
 include(":data:common")
 include(":tallyModule")
 include(
+    ":feature:auth-api",
     ":feature:auth",
+    ":feature:customer-api",
+    ":feature:product-api",
+    ":feature:tax-api",
+    ":feature:form-api",
+    ":feature:unit-api",
+    ":feature:subscription-api",
     ":feature:agent",
     ":feature:form",
     ":feature:unit",

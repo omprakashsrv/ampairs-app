@@ -6,6 +6,7 @@ import androidx.navigation3.runtime.NavKey
 import com.ampairs.invoice.ui.InvoicePaneScreen
 import com.ampairs.invoice.ui.InvoiceScreen
 import com.ampairs.invoice.ui.InvoiceViewScreen
+import com.ampairs.product.ui.list.ProductsListScreen
 
 /**
  * Entry provider for Invoice module routes in Navigation 3.
@@ -22,6 +23,13 @@ fun invoiceEntryProvider(
             id = key.id.ifEmpty { null },
             onInvoiceSaved = { invoiceId ->
                 backStack.add(InvoiceRoute.InvoiceView(id = invoiceId))
+            },
+            productPickerSlot = { onProductClick ->
+                ProductsListScreen(
+                    onProductClick = onProductClick,
+                    onCreateProduct = {},
+                    onFormConfig = {}
+                )
             }
         )
     }

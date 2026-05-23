@@ -61,7 +61,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.customer.domain.CustomerGroup
-import com.ampairs.auth.ui.Phone
+import com.ampairs.common.components.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
 import com.ampairs.customer.ui.components.StringAutocomplete
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen

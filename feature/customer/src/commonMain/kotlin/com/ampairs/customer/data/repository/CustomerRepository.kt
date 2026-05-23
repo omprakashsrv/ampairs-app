@@ -24,6 +24,8 @@ import kotlinx.coroutines.launch
 import kotlin.time.ExperimentalTime
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_UID_REQUIRED
+import com.ampairs.common.cache.CacheCleanable
+import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.util.CustomerLogger
 
 @Inject
@@ -32,7 +34,7 @@ class CustomerRepository(
     private val customerApi: CustomerApi,
     private val appPreferences: AppPreferencesDataStore,
     private val customerImageDao: CustomerImageDao
-) {
+) : CustomerDataService, CacheCleanable {
     // Event listener job for cleanup
     private var eventListenerJob: Job? = null
 
@@ -161,6 +163,10 @@ class CustomerRepository(
     suspend fun getCustomer(customerId: String): Customer? {
         return customerDao.getCustomerById(customerId)?.toDomain()
     }
+
+    override suspend fun getById(uid: String): Customer? = getCustomer(uid)
+
+    override suspend fun clearCache() { customerDao.clearWorkspaceCustomers() }
 
     suspend fun createCustomer(customer: Customer): Result<Customer> {
         // Customer should already have UID assigned by ViewModel

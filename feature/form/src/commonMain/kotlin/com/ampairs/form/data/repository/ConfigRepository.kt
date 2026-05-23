@@ -27,7 +27,7 @@ class ConfigRepository(
     private val fieldConfigDao: EntityFieldConfigDao,
     private val attributeDefinitionDao: EntityAttributeDefinitionDao,
     private val appPreferences: AppPreferencesDataStore
-) {
+) : ConfigLookup {
     // Cache configs by entity type
     private val _configCache = MutableStateFlow<Map<String, EntityConfigSchema>>(emptyMap())
 
@@ -79,7 +79,7 @@ class ConfigRepository(
      * Observe config schema for specific entity type from database
      * Returns Flow that emits data from local database
      */
-    fun observeConfigSchema(entityType: String): Flow<EntityConfigSchema?> {
+    override fun observeConfigSchema(entityType: String): Flow<EntityConfigSchema?> {
         return combine(
             fieldConfigDao.getFieldConfigsByEntityType(entityType),
             attributeDefinitionDao.getAttributeDefinitionsByEntityType(entityType)
@@ -99,7 +99,7 @@ class ConfigRepository(
     /**
      * Refresh config from backend
      */
-    suspend fun refreshConfig(entityType: String): Result<EntityConfigSchema> {
+    override suspend fun refreshConfig(entityType: String): Result<EntityConfigSchema> {
         return getConfigSchema(entityType)
     }
 
@@ -143,7 +143,7 @@ class ConfigRepository(
      * Sync all form configurations from backend
      * Uses incremental sync based on last sync time
      */
-    suspend fun syncFormConfigs(): Result<Int> {
+    override suspend fun syncFormConfigs(): Result<Int> {
         return try {
             // Get last sync time
             val lastSyncTime = appPreferences.getFormConfigLastSyncTime().first()

@@ -60,30 +60,3 @@ data class MasterTaxCode(
     @SerialName("updated_at")
     val updatedAt: Long
 )
-
-/**
- * Tax Code Type Enum
- */
-@Serializable
-enum class TaxCodeType {
-    @SerialName("HSN_CODE")
-    HSN_CODE,          // India Harmonized System of Nomenclature (Goods)
-
-    @SerialName("SAC_CODE")
-    SAC_CODE,          // India Services Accounting Code (Services)
-
-    @SerialName("HS_CODE")
-    HS_CODE,           // International Harmonized System
-
-    @SerialName("TAX_CATEGORY")
-    TAX_CATEGORY,      // Generic category (USA, UK, etc.)
-
-    @SerialName("NAICS")
-    NAICS,             // North America Industry Classification
-
-    @SerialName("CN_CODE")
-    CN_CODE,           // EU Combined Nomenclature
-
-    @SerialName("CUSTOM")
-    CUSTOM             // Custom classification
-}

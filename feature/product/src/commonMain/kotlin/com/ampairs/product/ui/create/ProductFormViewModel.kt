@@ -6,7 +6,7 @@ import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductImage
 import com.ampairs.product.domain.ProductStore
-import com.ampairs.tax.data.repository.TaxCodeRepository
+import com.ampairs.tax.data.repository.TaxCodeLookup
 import com.ampairs.tax.domain.model.TaxCode
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +30,7 @@ class ProductFormViewModel(
     @Assisted private val productId: String?,
     private val productStore: ProductStore,
     private val workspaceContextManager: WorkspaceContextManager,
-    private val taxCodeRepository: TaxCodeRepository
+    private val taxCodeRepository: TaxCodeLookup
 ) : ViewModel() {
 
     @AssistedFactory

@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.customer.data.repository.CustomerRepository
+import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.domain.Customer
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.domain.Order
@@ -16,8 +16,8 @@ import com.ampairs.order.domain.OrderItem
 import com.ampairs.order.domain.TaxInfo
 import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.domain.asDatabaseModel
-import com.ampairs.product.domain.Product
-import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.domain.ProductSummary
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -31,9 +31,9 @@ import kotlinx.coroutines.launch
 @AssistedInject
 class OrderViewModel(
     @Assisted fromCustomerId: String?, @Assisted toCustomerId: String?, @Assisted id: String?,
-    val customerRepository: CustomerRepository,
+    val customerDataService: CustomerDataService,
     val orderRepository: OrderRepository,
-    val productRepository: ProductRepository,
+    val productDataService: ProductDataService,
     val userRepository: UserRepository,
 ) :
     ViewModel() {
@@ -44,7 +44,7 @@ class OrderViewModel(
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): OrderViewModel
     }
-    fun updateOrderItems(products: List<Product>) {
+    fun updateOrderItems(products: List<ProductSummary>) {
         orderItems.removeAll(orderItems.filter { orderItem ->
             !products.map { it.id }.contains(orderItem.product?.id)
         })
@@ -97,9 +97,9 @@ class OrderViewModel(
                 orderItems.addAll(order.items)
             } else {
                 fromCustomer =
-                    fromCustomerId?.let { customerRepository.getCustomer(it) }
+                    fromCustomerId?.let { customerDataService.getById(it) }
                 toCustomer =
-                    toCustomerId?.let { customerRepository.getCustomer(it) }
+                    toCustomerId?.let { customerDataService.getById(it) }
                 order.fromCustomer = fromCustomer
                 order.toCustomer = toCustomer
             }

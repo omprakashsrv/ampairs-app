@@ -26,6 +26,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                api(projects.feature.authApi)
                 implementation(projects.data.common)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)

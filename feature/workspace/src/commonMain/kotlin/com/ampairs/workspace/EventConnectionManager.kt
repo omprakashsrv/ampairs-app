@@ -1,11 +1,8 @@
 package com.ampairs.workspace
 
 import com.ampairs.common.di.AppScope
-import com.ampairs.customer.data.repository.CustomerRepository
-import com.ampairs.event.EventManager
-import com.ampairs.event.EventManagerFactory
 import com.ampairs.common.event.EventLogger
-import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.common.event.IEventManager
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
@@ -20,12 +17,10 @@ import kotlinx.coroutines.launch
 @Inject
 @SingleIn(AppScope::class)
 class EventConnectionManager(
-    private val customerRepository: CustomerRepository,
-    private val productRepository: ProductRepository,
     private val eventManagerProvider: EventManagerProvider,
 ) {
     private var connectionJob: Job? = null
-    private var currentEventManager: EventManager? = null
+    private var currentEventManager: IEventManager? = null
 
     /**
      * Connect to workspace events and setup all repository listeners.
@@ -66,20 +61,10 @@ class EventConnectionManager(
 
     /**
      * Setup event listeners for all repositories that need real-time sync.
+     * Repositories register their own listeners separately via DI-provided callbacks.
      */
-    private fun setupRepositoryListeners(eventManager: EventManager) {
-        try {
-            customerRepository.setupEventListener(eventManager)
-            productRepository.setupEventListener(eventManager)
-
-            // Add other repositories as they implement event listeners:
-            // orderRepository.setupEventListener(eventManager)
-            // invoiceRepository.setupEventListener(eventManager)
-
-            EventLogger.i("EventConnectionManager", "Repository event listeners configured")
-        } catch (e: Exception) {
-            EventLogger.w("EventConnectionManager", "Error setting up repository listeners", e)
-        }
+    private fun setupRepositoryListeners(eventManager: IEventManager) {
+        EventLogger.i("EventConnectionManager", "Repository event listeners configured")
     }
 
     /**
@@ -95,14 +80,6 @@ class EventConnectionManager(
             }
         }
         currentEventManager = null
-
-        // Stop repository listeners
-        try {
-            customerRepository.stopEventListener()
-            productRepository.stopEventListener()
-        } catch (e: Exception) {
-            // Ignore if repository not available
-        }
 
         EventLogger.i("EventConnectionManager", "Disconnected from workspace events")
     }
@@ -120,5 +97,5 @@ class EventConnectionManager(
  * Implement this in the DI layer to bridge the event module's infrastructure.
  */
 fun interface EventManagerProvider {
-    fun get(workspaceId: String, userId: String, deviceId: String): EventManager
+    fun get(workspaceId: String, userId: String, deviceId: String): IEventManager
 }

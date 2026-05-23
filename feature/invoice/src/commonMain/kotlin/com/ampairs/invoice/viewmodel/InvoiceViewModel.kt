@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.customer.data.repository.CustomerRepository
+import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.domain.Customer
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.domain.Invoice
@@ -16,8 +16,8 @@ import com.ampairs.invoice.domain.InvoiceItem
 import com.ampairs.invoice.domain.TaxInfo
 import com.ampairs.invoice.domain.TaxSpec
 import com.ampairs.invoice.domain.asDatabaseModel
-import com.ampairs.product.domain.Product
-import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.domain.ProductSummary
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -33,9 +33,9 @@ class InvoiceViewModel(
     @Assisted fromCustomerId: String?,
     @Assisted toCustomerId: String?,
     @Assisted id: String?,
-    val customerRepository: CustomerRepository,
+    val customerDataService: CustomerDataService,
     val invoiceRepository: InvoiceRepository,
-    val productRepository: ProductRepository,
+    val productDataService: ProductDataService,
     val userRepository: UserRepository,
 ) :
     ViewModel() {
@@ -46,7 +46,7 @@ class InvoiceViewModel(
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): InvoiceViewModel
     }
-    fun updateInvoiceItems(products: List<Product>) {
+    fun updateInvoiceItems(products: List<ProductSummary>) {
         invoiceItems.removeAll(invoiceItems.filter { invoiceItem ->
             !products.map { it.id }.contains(invoiceItem.product?.id)
         })
@@ -103,9 +103,9 @@ class InvoiceViewModel(
                 invoiceItems.addAll(invoice.items)
             } else {
                 fromCustomer =
-                    fromCustomerId?.let { customerRepository.getCustomer(it) }
+                    fromCustomerId?.let { customerDataService.getById(it) }
                 toCustomer =
-                    toCustomerId?.let { customerRepository.getCustomer(it) }
+                    toCustomerId?.let { customerDataService.getById(it) }
                 invoice.fromCustomer = fromCustomer
                 invoice.toCustomer = toCustomer
             }

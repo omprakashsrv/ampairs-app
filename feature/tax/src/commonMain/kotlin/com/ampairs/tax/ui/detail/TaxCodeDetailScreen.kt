@@ -247,7 +247,7 @@ private fun TaxCodeDetailContent(
                 DetailRow(label = "Master Code ID", value = taxCode.masterTaxCodeId)
 
                 if (taxCode.customTaxRuleId != null) {
-                    DetailRow(label = "Custom Tax Rule", value = taxCode.customTaxRuleId)
+                    DetailRow(label = "Custom Tax Rule", value = taxCode.customTaxRuleId!!)
                 }
 
                 DetailRow(
@@ -478,7 +478,7 @@ private fun TaxCodeDetailContent(
                 if (taxCode.lastUsedAt != null) {
                     DetailRow(
                         label = "Last Used",
-                        value = formatTimestamp(taxCode.lastUsedAt)
+                        value = formatTimestamp(taxCode.lastUsedAt!!)
                     )
                 }
 
@@ -604,7 +604,7 @@ private fun TaxCodeDetailContent(
                         )
                     } else {
                         Text(
-                            text = taxCode.notes,
+                            text = taxCode.notes!!,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }

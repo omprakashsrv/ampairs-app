@@ -208,7 +208,7 @@ private fun CustomerCard(
             ) {
                 if (!customer.primaryThumbnailUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = ApiUrlBuilder.buildCompleteUrl(customer.primaryThumbnailUrl),
+                        model = ApiUrlBuilder.buildCompleteUrl(customer.primaryThumbnailUrl!!),
                         contentDescription = "Customer image",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -234,7 +234,7 @@ private fun CustomerCard(
 
                 if (customer.phone != null) {
                     Text(
-                        text = customer.phone,
+                        text = customer.phone!!,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -242,7 +242,7 @@ private fun CustomerCard(
 
                 if (customer.city != null) {
                     Text(
-                        text = customer.city,
+                        text = customer.city!!,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -21,6 +21,9 @@ import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
 import com.ampairs.workspace.ui.WorkspaceMembersScreen
 import com.ampairs.workspace.ui.WorkspaceModulesScreen
+import com.ampairs.subscription.ui.screens.SubscriptionOnboardingScreen
+import com.ampairs.subscription.viewmodel.SubscriptionViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Entry provider for Workspace module routes in Navigation 3.
@@ -144,7 +147,18 @@ fun workspaceEntryProvider(
                 backStack.add(SubscriptionRoute.Plans)
             },
             onNavigationServiceReady = onNavigationServiceReady,
-            paddingValues = PaddingValues()
+            paddingValues = PaddingValues(),
+            subscriptionOnboardingSlot = { onboardingManager, onNavigateToPlanSelection, onContinueWithFree, onDismiss ->
+                val subscriptionViewModel: SubscriptionViewModel = metroViewModel()
+                SubscriptionOnboardingScreen(
+                    workspaceId = key.workspaceId,
+                    onNavigateToPlanSelection = onNavigateToPlanSelection,
+                    onContinueWithFree = onContinueWithFree,
+                    onDismiss = onDismiss,
+                    viewModel = subscriptionViewModel,
+                    onboardingManager = onboardingManager
+                )
+            }
         )
     }
 
