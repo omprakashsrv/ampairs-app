@@ -1,4 +1,4 @@
-package com.ampairs.agent.core
+package com.ampairs.common.agent
 
 data class ActionDescriptor(
     val actionType: ActionType,

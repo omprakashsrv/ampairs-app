@@ -37,8 +37,6 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.auth)
-                implementation(projects.feature.agent)
-                implementation(projects.feature.event)
                 implementation(projects.feature.tax)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)

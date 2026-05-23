@@ -1,9 +1,10 @@
 package com.ampairs.event
 
-import com.ampairs.event.domain.ConnectionState
-import com.ampairs.event.domain.EventType
-import com.ampairs.event.domain.WorkspaceEvent
-import com.ampairs.event.util.EventLogger
+import com.ampairs.common.event.ConnectionState
+import com.ampairs.common.event.EventLogger
+import com.ampairs.common.event.EventType
+import com.ampairs.common.event.IEventManager
+import com.ampairs.common.event.WorkspaceEvent
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
@@ -72,17 +73,17 @@ class EventManager(
     private val tokenProvider: suspend () -> String,
     private val tokenRefresher: suspend () -> Boolean,
     private val baseUrl: String
-) {
+) : IEventManager {
     // Connection state exposed as StateFlow
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+    override val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
     // Events stream exposed as SharedFlow
     private val _events = MutableSharedFlow<WorkspaceEvent>(
         replay = 0, // Don't replay old events to new subscribers
         extraBufferCapacity = 100 // Buffer up to 100 events if collector is slow
     )
-    val events: SharedFlow<WorkspaceEvent> = _events.asSharedFlow()
+    override val events: SharedFlow<WorkspaceEvent> = _events.asSharedFlow()
 
     // Internal state
     private var stompSession: StompSession? = null
@@ -118,7 +119,7 @@ class EventManager(
      * Safe to call multiple times - will not reconnect if already connected.
      * Enables automatic reconnection on connection failure.
      */
-    suspend fun connect() {
+    override suspend fun connect() {
         if (_connectionState.value is ConnectionState.Connected) {
             EventLogger.w("EventManager", "Already connected to workspace: $workspaceId")
             return
@@ -349,7 +350,7 @@ class EventManager(
      * Safe to call multiple times.
      * Disables automatic reconnection.
      */
-    suspend fun disconnect() {
+    override suspend fun disconnect() {
         EventLogger.i("EventManager", "Disconnecting from workspace: $workspaceId")
         shouldReconnect = false // Disable auto-reconnect
         reconnectionJob?.cancel()
@@ -391,21 +392,21 @@ class EventManager(
     /**
      * Check if currently connected
      */
-    fun isConnected(): Boolean {
+    override fun isConnected(): Boolean {
         return _connectionState.value is ConnectionState.Connected
     }
 
     /**
      * Get events for a specific entity type as Flow
      */
-    fun getEventsForEntityType(entityType: String): SharedFlow<WorkspaceEvent> {
+    override fun getEventsForEntityType(entityType: String): SharedFlow<WorkspaceEvent> {
         return events
     }
 
     /**
      * Get events matching specific event types as Flow
      */
-    fun getEventsByType(vararg eventTypes: EventType): SharedFlow<WorkspaceEvent> {
+    override fun getEventsByType(vararg eventTypes: EventType): SharedFlow<WorkspaceEvent> {
         return events
     }
 

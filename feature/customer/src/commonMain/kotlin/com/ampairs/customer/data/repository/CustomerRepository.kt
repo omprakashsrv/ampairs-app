@@ -11,8 +11,8 @@ import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.toListItem
-import com.ampairs.event.EventManager
-import com.ampairs.event.domain.EventType
+import com.ampairs.common.event.IEventManager
+import com.ampairs.common.event.EventType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,7 +42,7 @@ class CustomerRepository(
      *
      * @param eventManager The EventManager instance for the current workspace
      */
-    fun setupEventListener(eventManager: EventManager) {
+    fun setupEventListener(eventManager: IEventManager) {
         // Cancel existing listener if any
         eventListenerJob?.cancel()
 

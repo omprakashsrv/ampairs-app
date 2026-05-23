@@ -3,9 +3,9 @@ package com.ampairs.product.data.repository
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.common.sentry.ErrorTracking
-import com.ampairs.event.EventManager
-import com.ampairs.event.domain.EventType
-import com.ampairs.event.util.EventLogger
+import com.ampairs.common.event.IEventManager
+import com.ampairs.common.event.EventType
+import com.ampairs.common.event.EventLogger
 import com.ampairs.product.data.api.ProductApi
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductVariantDao
@@ -51,7 +51,7 @@ class ProductRepository(
      *
      * @param eventManager The EventManager instance for the current workspace
      */
-    fun setupEventListener(eventManager: EventManager) {
+    fun setupEventListener(eventManager: IEventManager) {
         // Cancel existing listener if any
         eventListenerJob?.cancel()
 

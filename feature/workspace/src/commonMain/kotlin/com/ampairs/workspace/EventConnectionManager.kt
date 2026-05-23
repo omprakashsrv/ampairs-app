@@ -4,7 +4,7 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.event.EventManager
 import com.ampairs.event.EventManagerFactory
-import com.ampairs.event.util.EventLogger
+import com.ampairs.common.event.EventLogger
 import com.ampairs.product.data.repository.ProductRepository
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn

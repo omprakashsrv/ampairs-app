@@ -1,5 +1,9 @@
 package com.ampairs.agent.core
 
+import com.ampairs.common.agent.ActionDescriptor
+import com.ampairs.common.agent.ActionHandlerProvider
+import com.ampairs.common.agent.ActionResult
+import com.ampairs.common.agent.AgentAction
 import dev.zacsweers.metro.Inject
 
 /**

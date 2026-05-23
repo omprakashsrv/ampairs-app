@@ -1,6 +1,6 @@
 package com.ampairs.event
 
-import com.ampairs.event.util.EventLogger
+import com.ampairs.common.event.EventLogger
 import io.ktor.client.HttpClient
 
 /**

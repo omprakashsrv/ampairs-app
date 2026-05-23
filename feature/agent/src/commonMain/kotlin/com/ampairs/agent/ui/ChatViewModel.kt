@@ -2,10 +2,10 @@ package com.ampairs.agent.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.agent.core.ActionResult
 import com.ampairs.agent.core.ActionResultSummary
 import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.ChatMessage
+import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesIntoMap

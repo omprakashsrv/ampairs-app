@@ -36,7 +36,6 @@ kotlin {
                 implementation(libs.compose.material3)
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
-                implementation(projects.feature.agent)
                 implementation(projects.feature.auth)
                 implementation(projects.feature.customer)
                 implementation(projects.feature.product)
