@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.auth.db.UserRepository
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.domain.Customer
@@ -34,7 +34,7 @@ class OrderViewModel(
     val customerDataService: CustomerDataService,
     val orderRepository: OrderRepository,
     val productDataService: ProductDataService,
-    val userRepository: UserRepository,
+    val tokenRepository: TokenRepository,
 ) :
     ViewModel() {
 
@@ -66,10 +66,11 @@ class OrderViewModel(
         viewModelScope.launch(DispatcherProvider.io) {
             order.updateTaxes()
             order.updateDiscount()
+            val userId = tokenRepository.getCurrentUserId() ?: ""
             if (order.createdBy.isEmpty()) {
-                order.createdBy = userRepository.getUser()?.id ?: ""
+                order.createdBy = userId
             }
-            order.updatedBy = userRepository.getUser()?.id ?: ""
+            order.updatedBy = userId
             val orderEntity = order.asDatabaseModel()
             orderRepository.saveOrder(orderEntity, orderItems.asDatabaseModel(orderEntity.id))
             onOrderSaved(orderEntity.id)

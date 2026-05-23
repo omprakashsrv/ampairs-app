@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.auth.db.UserRepository
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.domain.Customer
@@ -36,7 +36,7 @@ class InvoiceViewModel(
     val customerDataService: CustomerDataService,
     val invoiceRepository: InvoiceRepository,
     val productDataService: ProductDataService,
-    val userRepository: UserRepository,
+    val tokenRepository: TokenRepository,
 ) :
     ViewModel() {
 
@@ -68,10 +68,11 @@ class InvoiceViewModel(
         viewModelScope.launch(DispatcherProvider.io) {
             invoice.updateTaxes()
             invoice.updateDiscount()
+            val userId = tokenRepository.getCurrentUserId() ?: ""
             if (invoice.createdBy.isEmpty()) {
-                invoice.createdBy = userRepository.getUser()?.id ?: ""
+                invoice.createdBy = userId
             }
-            invoice.updatedBy = userRepository.getUser()?.id ?: ""
+            invoice.updatedBy = userId
             val invoiceEntity = invoice.asDatabaseModel()
             invoiceRepository.saveInvoice(
                 invoiceEntity,
