@@ -19,13 +19,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-        // Add JOSM repository for OpenStreetMap jmapviewer library
         maven("https://josm.openstreetmap.de/repository/releases/")
-    }
-    versionCatalogs {
-        create("awssdk") {
-            from("aws.sdk.kotlin:version-catalog:1.4.6")
-        }
     }
 }
 
