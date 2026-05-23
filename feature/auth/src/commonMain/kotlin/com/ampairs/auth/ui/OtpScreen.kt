@@ -59,18 +59,18 @@ import org.jetbrains.compose.resources.stringResource
 fun OtpScreen(
     viewModel: LoginViewModel = metroViewModel(),
     sessionId: String,
-    verificationId: String = "", // Firebase verification ID (empty for backend auth)
+    verificationId: String = "",
+    phoneNumber: String = "",
     onAuthSuccess: () -> Unit,
 ) {
 
-    // Phone number is now properly retained in the ViewModel
-    val phoneNumber = viewModel.phoneNumber
-
-    // Set the sessionId and verificationId from navigation parameters
-    LaunchedEffect(sessionId, verificationId) {
+    LaunchedEffect(sessionId, verificationId, phoneNumber) {
         viewModel.sessionId = sessionId
         viewModel.firebaseVerificationId = verificationId
+        if (phoneNumber.isNotEmpty()) viewModel.phoneNumber = phoneNumber
     }
+
+    val phoneNumber = viewModel.phoneNumber
 
     // State to track if we're waiting for auto-verification (Firebase only)
     var waitingForAutoVerification by remember {

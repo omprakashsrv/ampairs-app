@@ -115,7 +115,8 @@ fun authEntryProvider(
                 backStack.add(
                     AuthRoute.Otp(
                         sessionId = sessionId,
-                        verificationId = verificationId
+                        verificationId = verificationId,
+                        phoneNumber = viewModel.phoneNumber
                     )
                 )
             }
@@ -137,6 +138,7 @@ fun authEntryProvider(
             viewModel = viewModel,
             sessionId = key.sessionId,
             verificationId = key.verificationId,
+            phoneNumber = key.phoneNumber,
             onAuthSuccess = { viewModel.handleOtpSuccess() }
         )
     }
