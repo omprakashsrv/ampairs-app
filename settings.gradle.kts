@@ -58,4 +58,3 @@ include(
     ":feature:invoice",
     ":feature:workspace"
 )
-include(":thirdparty:androidx:paging:compose")

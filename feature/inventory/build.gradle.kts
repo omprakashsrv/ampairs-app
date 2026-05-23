@@ -46,7 +46,7 @@ kotlin {
                 implementation(libs.sqlite.bundled)
                 implementation(libs.store5)
                 implementation(libs.paging.common)
-                implementation(projects.thirdparty.androidx.paging.compose)
+                implementation(libs.paging.componse.common)
                 // Material3 Adaptive
                 implementation(libs.material3.adaptive)
                 implementation(libs.material3.adaptive.layout)
