@@ -44,18 +44,18 @@ class WorkspaceInvitationApiImpl(
             "sortBy" to sortBy,
             "sortDir" to sortDir
         )
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/invitation"), params)
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/invitations"), params)
     }
 
     override suspend fun createInvitation(
         workspaceId: String,
         request: CreateInvitationRequest,
     ): Response<InvitationApiModel> {
-        return post(client, ApiUrlBuilder.workspaceUrl("v1/invitation"), request)
+        return post(client, ApiUrlBuilder.workspaceUrl("v1/invitations"), request)
     }
 
     override suspend fun acceptInvitation(token: String): Response<AcceptInvitationResponse> {
-        return post(client, ApiUrlBuilder.workspaceUrl("v1/invitation/$token/accept"), null)
+        return post(client, ApiUrlBuilder.workspaceUrl("v1/invitations/$token/accept"), null)
     }
 
     override suspend fun resendInvitation(
@@ -63,13 +63,13 @@ class WorkspaceInvitationApiImpl(
         invitationId: String,
         request: ResendInvitationRequest,
     ): Response<InvitationApiModel> {
-        return post(client, ApiUrlBuilder.workspaceUrl("v1/invitation/$invitationId/resend"), request)
+        return post(client, ApiUrlBuilder.workspaceUrl("v1/invitations/$invitationId/resend"), request)
     }
 
     override suspend fun cancelInvitation(
         workspaceId: String,
         invitationId: String,
     ): Response<String> {
-        return delete(client, ApiUrlBuilder.workspaceUrl("v1/invitation/$invitationId"))
+        return delete(client, ApiUrlBuilder.workspaceUrl("v1/invitations/$invitationId"))
     }
 }

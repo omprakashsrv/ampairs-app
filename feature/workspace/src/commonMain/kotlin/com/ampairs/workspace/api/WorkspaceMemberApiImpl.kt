@@ -45,14 +45,14 @@ class WorkspaceMemberApiImpl(
             "sortBy" to sortBy,
             "sortDir" to sortDir
         )
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/member"), params)
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/members"), params)
     }
 
     override suspend fun getMemberDetails(
         workspaceId: String,
         memberId: String,
     ): Response<MemberDetailsResponse> {
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/member/$memberId"))
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/members/$memberId"))
     }
 
     override suspend fun updateMember(
@@ -60,25 +60,25 @@ class WorkspaceMemberApiImpl(
         memberId: String,
         request: UpdateMemberRequest,
     ): Response<MemberDetailsResponse> {
-        return put(client, ApiUrlBuilder.workspaceUrl("v1/member/$memberId"), request)
+        return put(client, ApiUrlBuilder.workspaceUrl("v1/members/$memberId"), request)
     }
 
     override suspend fun removeMember(
         workspaceId: String,
         memberId: String,
     ): Response<String> {
-        return delete(client, ApiUrlBuilder.workspaceUrl("v1/member/$memberId"))
+        return delete(client, ApiUrlBuilder.workspaceUrl("v1/members/$memberId"))
     }
 
     override suspend fun getMyRole(workspaceId: String): Response<UserRoleResponse> {
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/member/my-role"))
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/members/my-role"))
     }
 
     override suspend fun getAvailableRoles(workspaceId: String): Response<List<WorkspaceRole>> {
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/member/roles"))
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/members/roles"))
     }
 
     override suspend fun getAvailablePermissions(workspaceId: String): Response<List<WorkspacePermissionResponse>> {
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/member/permissions"))
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/members/permissions"))
     }
 }

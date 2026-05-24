@@ -1,6 +1,7 @@
 package com.ampairs.inventory.api
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
@@ -11,20 +12,18 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import io.ktor.client.engine.HttpClientEngine
 
-
-const val PRODUCT_ENDPOINT = "http://localhost:8080"
-
 @Inject @ContributesBinding(AppScope::class)
 class InventoryApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository) : InventoryApi {
 
     private val client = httpClient(engine, tokenRepository)
+
     override suspend fun getProducts(
         lastUpdated: Long?,
         groupId: String?,
     ): Response<List<InventoryApiModel>> {
         return get(
             client,
-            PRODUCT_ENDPOINT + "/inventpry/v1",
+            ApiUrlBuilder.inventoryUrl("v1/items"),
             buildMap {
                 lastUpdated?.let { put("last_updated", it) }
                 groupId?.let { put("group_id", it) }
@@ -34,7 +33,7 @@ class InventoryApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepositor
     override suspend fun updateProducts(products: List<InventoryApiModel>): Response<List<InventoryApiModel>> {
         return post(
             client,
-            "${PRODUCT_ENDPOINT}/inventory/v1/inventories",
+            ApiUrlBuilder.inventoryUrl("v1/items"),
             products
         )
     }

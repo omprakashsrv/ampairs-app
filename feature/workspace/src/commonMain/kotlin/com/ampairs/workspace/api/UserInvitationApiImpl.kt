@@ -28,14 +28,14 @@ class UserInvitationApiImpl(
     private val client = httpClient(engine, tokenRepository)
 
     override suspend fun getPendingInvitations(): Response<List<UserInvitationResponse>> {
-        return get(client, ApiUrlBuilder.userUrl("v1/invitation/pending"))
+        return get(client, ApiUrlBuilder.userUrl("v1/invitations/pending"))
     }
 
     override suspend fun acceptInvitation(invitationId: String): Response<InvitationActionResponse> {
-        return post(client, ApiUrlBuilder.userUrl("v1/invitation/$invitationId/accept"), null)
+        return post(client, ApiUrlBuilder.userUrl("v1/invitations/$invitationId/accept"), null)
     }
 
     override suspend fun rejectInvitation(invitationId: String): Response<InvitationActionResponse> {
-        return post(client, ApiUrlBuilder.userUrl("v1/invitation/$invitationId/reject"), null)
+        return post(client, ApiUrlBuilder.userUrl("v1/invitations/$invitationId/reject"), null)
     }
 }
