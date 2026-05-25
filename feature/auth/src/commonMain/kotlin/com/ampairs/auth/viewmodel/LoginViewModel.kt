@@ -169,6 +169,7 @@ class LoginViewModel(
     }
 
     fun authenticate(onAuthSuccess: (String) -> Unit) {
+        if (loading) return
         loading = true
         recaptchaLoading = true
         progressMessage = "Verifying reCAPTCHA..."
@@ -251,6 +252,7 @@ class LoginViewModel(
     }
 
     fun completeAuthentication(onAuthComplete: () -> Unit) {
+        if (loading) return
         loading = true
         recaptchaLoading = true
         progressMessage = "Verifying reCAPTCHA..."
@@ -329,6 +331,7 @@ class LoginViewModel(
     }
 
     fun resendOtp(onResendSuccess: (String) -> Unit) {
+        if (loading) return
         loading = true
         recaptchaLoading = true
         progressMessage = "Preparing to resend OTP..."
@@ -363,6 +366,7 @@ class LoginViewModel(
      * Send OTP via Firebase
      */
     fun authenticateWithFirebase(onAuthSuccess: (String) -> Unit) {
+        if (loading) return
         loading = true
         progressMessage = "Sending verification code..."
 
@@ -397,6 +401,7 @@ class LoginViewModel(
      * Verify Firebase OTP and complete authentication
      */
     fun completeFirebaseAuthentication(onAuthComplete: () -> Unit) {
+        if (loading) return
         loading = true
         progressMessage = "Verifying code..."
 
@@ -408,8 +413,7 @@ class LoginViewModel(
                 is FirebaseAuthResult.Success -> {
                     val firebaseIdToken = result.data
 
-                    // Get the phone number that was used for Firebase verification
-                    val verifiedPhoneNumber = firebaseAuthRepository.getLastPhoneNumber()
+                    val verifiedPhoneNumber = phoneNumber
 
                     // After Firebase auth succeeds, verify with backend and get JWT tokens
                     viewModelScope.launch(DispatcherProvider.io) {
@@ -498,6 +502,7 @@ class LoginViewModel(
      * Resend OTP via Firebase
      */
     fun resendFirebaseOtp(onResendSuccess: (String) -> Unit) {
+        if (loading) return
         loading = true
         progressMessage = "Resending verification code..."
 
@@ -532,6 +537,7 @@ class LoginViewModel(
      * This is called when auto-verification completes and we already have the Firebase ID token
      */
     fun completeFirebaseAuthenticationWithToken(firebaseIdToken: String, onAuthComplete: () -> Unit) {
+        if (loading) return
         loading = true
         progressMessage = "Completing authentication..."
 
@@ -539,8 +545,7 @@ class LoginViewModel(
             // Create dummy user session for token operations during auth flow
             tokenRepository.createDummyUserSession()
 
-            // Get the phone number that was used for Firebase verification
-            val verifiedPhoneNumber = firebaseAuthRepository.getLastPhoneNumber()
+            val verifiedPhoneNumber = phoneNumber
 
             // Verify with backend using the auto-verified Firebase ID token
             userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber).onSuccess {

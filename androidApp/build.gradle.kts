@@ -41,26 +41,24 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 17
-        versionName = "1.0.0.17"
+        versionCode = 18
+        versionName = "1.0.0.18"
 
-        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.11:8080\"")
-        buildConfigField("String", "ENVIRONMENT", "\"dev\"")
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
 
     signingConfigs {
         val release by creating {
             storeFile = file("$rootDir/ampairs.jks")
-            storePassword = "SKFNNFJ234329898g723g47823gr8"
-            keyPassword = "SKFNNFJ234329898g723g47823gr8"
-            keyAlias = "ampairs"
+            storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
+            keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+            keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS", "ampairs")
         }
     }
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.11:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.4:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
 

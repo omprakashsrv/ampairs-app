@@ -307,7 +307,6 @@ class WorkspaceCreateViewModel(
             name = _state.value.name.trim(),
             description = _state.value.description.trim().ifEmpty { null },
             workspaceType = _state.value.workspaceType,
-            avatarUrl = _state.value.avatarUrl,
             timezone = _state.value.timezone,
             language = _state.value.language
         )

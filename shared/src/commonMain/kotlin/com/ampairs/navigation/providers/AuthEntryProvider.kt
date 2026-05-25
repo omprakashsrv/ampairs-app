@@ -3,6 +3,7 @@ package com.ampairs.navigation.providers
 import AuthRoute
 import Route
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.auth.DesktopBrowserAuthScreen
@@ -32,7 +33,8 @@ import kotlinx.coroutines.flow.collectLatest
 fun authEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    sharedViewModelStoreOwner: ViewModelStoreOwner
 ): NavEntry<NavKey>? = when (key) {
     is AuthRoute.UserSelection -> NavEntry(key) {
         val viewModel: UserSelectionViewModel = metroViewModel()
@@ -64,7 +66,12 @@ fun authEntryProvider(
     }
 
     is AuthRoute.LoginRoot -> NavEntry(key) {
+        val viewModel: LoginViewModel = metroViewModel(
+            viewModelStoreOwner = sharedViewModelStoreOwner,
+            key = "auth_flow_login_viewmodel"
+        )
         LoginScreen(
+            viewModel = viewModel,
             localeManager = LocalLocaleManager.current,
             onLoginSuccess = onLoginSuccess,
             onNavigateToWorkspace = {
@@ -77,7 +84,10 @@ fun authEntryProvider(
     }
 
     is AuthRoute.DesktopBrowserAuth -> NavEntry(key) {
-        val viewModel: LoginViewModel = metroViewModel()
+        val viewModel: LoginViewModel = metroViewModel(
+            viewModelStoreOwner = sharedViewModelStoreOwner,
+            key = "auth_flow_login_viewmodel"
+        )
         LaunchedEffect(Unit) {
             viewModel.navEvent.collectLatest { event ->
                 when (event) {
@@ -96,7 +106,10 @@ fun authEntryProvider(
     }
 
     is AuthRoute.Phone -> NavEntry(key) {
-        val viewModel: LoginViewModel = metroViewModel()
+        val viewModel: LoginViewModel = metroViewModel(
+            viewModelStoreOwner = sharedViewModelStoreOwner,
+            key = "auth_flow_login_viewmodel"
+        )
         LaunchedEffect(Unit) {
             viewModel.navEvent.collectLatest { event ->
                 when (event) {
@@ -124,7 +137,10 @@ fun authEntryProvider(
     }
 
     is AuthRoute.Otp -> NavEntry(key) {
-        val viewModel: LoginViewModel = metroViewModel()
+        val viewModel: LoginViewModel = metroViewModel(
+            viewModelStoreOwner = sharedViewModelStoreOwner,
+            key = "auth_flow_login_viewmodel"
+        )
         LaunchedEffect(Unit) {
             viewModel.navEvent.collectLatest { event ->
                 when (event) {

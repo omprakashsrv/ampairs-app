@@ -8,6 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -101,6 +103,27 @@ fun AppNavigationNav3(
             }
     }
 
+    // Create a ViewModelStore specifically for the Auth flow
+    // This allows sharing LoginViewModel between Phone and OTP screens
+    // while keeping it scoped only to the authentication process.
+    val authViewModelStore = remember { ViewModelStore() }
+    val authViewModelStoreOwner = remember(authViewModelStore) {
+        object : ViewModelStoreOwner {
+            override val viewModelStore: ViewModelStore = authViewModelStore
+        }
+    }
+
+    // Automatically clear auth ViewModels when leaving the auth flow (e.g., navigating to Workspace)
+    LaunchedEffect(backStack) {
+        snapshotFlow { backStack.any { it is AuthRoute || it is Route.Login } }
+            .collect { isInAuth ->
+                if (!isInAuth) {
+                    println("AppNavigationNav3: Clearing Auth ViewModelStore")
+                    authViewModelStore.clear()
+                }
+            }
+    }
+
     // Global App Layout wraps NavDisplay - header is rendered ONCE here
     GlobalAppLayoutNav3(
         backStack = backStack
@@ -120,7 +143,8 @@ fun AppNavigationNav3(
                         backStack.clear()
                         backStack.add(Route.Workspace)
                     },
-                    onNavigationServiceReady = onNavigationServiceReady
+                    onNavigationServiceReady = onNavigationServiceReady,
+                    sharedViewModelStoreOwner = authViewModelStoreOwner
                 )
             },
             modifier = Modifier
