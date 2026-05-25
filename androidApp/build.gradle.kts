@@ -44,8 +44,6 @@ android {
         versionCode = 18
         versionName = "1.0.0.18"
 
-        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.11:8080\"")
-        buildConfigField("String", "ENVIRONMENT", "\"dev\"")
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
 
@@ -60,7 +58,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.11:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.4:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
 

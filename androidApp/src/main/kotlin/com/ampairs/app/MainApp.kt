@@ -1,7 +1,7 @@
 package com.ampairs.app
 
 import android.app.Application
-import android.content.pm.ApplicationInfo
+import com.ampairs.app.BuildConfig
 import com.ampairs.common.config.PlatformConfig
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.AndroidAppGraph
@@ -16,10 +16,10 @@ class MainApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val isDebug = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        val isDebug = BuildConfig.DEBUG
         PlatformConfig.configure(
-            apiBaseUrl = if (isDebug) "http://10.50.51.11:8080" else "https://api.ampairs.in",
-            environment = if (isDebug) "dev" else "production",
+            apiBaseUrl = BuildConfig.API_BASE_URL,
+            environment = BuildConfig.ENVIRONMENT,
             isDebug = isDebug
         )
 
