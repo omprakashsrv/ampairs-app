@@ -11,10 +11,3 @@ actual fun getCurrentPlatform(): DesktopPlatform {
     // Android doesn't use desktop update system - returns LINUX as fallback
     return DesktopPlatform.LINUX
 }
-
-/**
- * Android implementation for getting current time
- */
-actual fun currentTimeMillis(): Long {
-    return System.currentTimeMillis()
-}

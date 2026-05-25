@@ -6,7 +6,9 @@ import dev.zacsweers.metro.Inject
 import com.ampairs.update.domain.UpdateCheckResult
 import com.ampairs.update.domain.asDomainModel
 import kotlinx.coroutines.flow.first
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.ExperimentalTime
 
 /**
  * Service to check for app updates with rate limiting
@@ -32,10 +34,11 @@ class UpdateChecker(
      * @param forceCheck If true, bypasses rate limiting and checks immediately
      * @return UpdateCheckResult with update information, or null if rate limited
      */
+    @OptIn(ExperimentalTime::class)
     suspend fun checkForUpdates(forceCheck: Boolean = false): UpdateCheckResult? {
         // Get last check time
         val lastCheckTime = appPreferences.getLastUpdateCheckTime().first()
-        val currentTime = currentTimeMillis()
+        val currentTime = Clock.System.now().toEpochMilliseconds()
         val timeSinceLastCheck = currentTime - lastCheckTime
 
         // Check if we should skip due to rate limiting
@@ -90,8 +93,3 @@ class UpdateChecker(
     }
 
 }
-
-/**
- * Get current time in milliseconds - platform-specific implementation
- */
-expect fun currentTimeMillis(): Long
