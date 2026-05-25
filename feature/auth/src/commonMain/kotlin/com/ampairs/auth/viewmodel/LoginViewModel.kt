@@ -408,8 +408,7 @@ class LoginViewModel(
                 is FirebaseAuthResult.Success -> {
                     val firebaseIdToken = result.data
 
-                    // Get the phone number that was used for Firebase verification
-                    val verifiedPhoneNumber = firebaseAuthRepository.getLastPhoneNumber()
+                    val verifiedPhoneNumber = phoneNumber
 
                     // After Firebase auth succeeds, verify with backend and get JWT tokens
                     viewModelScope.launch(DispatcherProvider.io) {
@@ -539,8 +538,7 @@ class LoginViewModel(
             // Create dummy user session for token operations during auth flow
             tokenRepository.createDummyUserSession()
 
-            // Get the phone number that was used for Firebase verification
-            val verifiedPhoneNumber = firebaseAuthRepository.getLastPhoneNumber()
+            val verifiedPhoneNumber = phoneNumber
 
             // Verify with backend using the auto-verified Firebase ID token
             userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber).onSuccess {

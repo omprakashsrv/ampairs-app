@@ -132,7 +132,7 @@ fun httpClient(
             refreshTokens {
                 try {
                     val response: Response<Token> = client.post {
-                        url(ApiUrlBuilder.authUrl("auth/v1/refresh_token"))
+                        url(ApiUrlBuilder.authUrl("auth/v1/refresh-token"))
                         contentType(ContentType.Application.Json)
                         setBody(RefreshToken(oldTokens?.refreshToken ?: tokenRepository.getRefreshToken()))
                         markAsRefreshTokenRequest()
