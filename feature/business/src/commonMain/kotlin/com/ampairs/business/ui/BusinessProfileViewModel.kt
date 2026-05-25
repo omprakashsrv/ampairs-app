@@ -3,6 +3,7 @@ package com.ampairs.business.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.business.data.repository.BusinessRepository
+import com.ampairs.business.domain.BusinessCreateRequest
 import com.ampairs.business.domain.BusinessProfile
 import com.ampairs.business.domain.BusinessProfileUpdateRequest
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -87,7 +88,7 @@ class BusinessProfileViewModel(
 
             if (isCreateMode) {
                 // Create new business profile
-                val createRequest = com.ampairs.business.domain.BusinessCreateRequest(
+                val createRequest = BusinessCreateRequest(
                     name = formState.name,
                     businessType = formState.businessType,
                     description = formState.description.takeIf { it.isNotBlank() },

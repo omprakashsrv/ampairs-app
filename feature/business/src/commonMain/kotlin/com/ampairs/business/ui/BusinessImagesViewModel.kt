@@ -126,6 +126,7 @@ class BusinessImagesViewModel(
     /**
      * Pick and upload logo in one action using FileKit
      */
+    @OptIn(ExperimentalTime::class)
     fun pickAndUploadLogo() {
         viewModelScope.launch {
             try {
@@ -172,9 +173,7 @@ class BusinessImagesViewModel(
                 // Upload
                 businessApi.uploadLogo(bytes, fileName, contentType)
                     .onSuccess { business ->
-                        // After upload, logo URLs should be available
                         val hasLogo = !business.logoUrl.isNullOrBlank()
-                        @OptIn(ExperimentalTime::class)
                         val cacheBuster = Clock.System.now().toEpochMilliseconds()
                         _uiState.update { it.copy(
                             business = business,
@@ -229,6 +228,7 @@ class BusinessImagesViewModel(
     /**
      * Upload business logo
      */
+    @OptIn(ExperimentalTime::class)
     fun uploadLogo() {
         val state = _uiState.value
         val bytes = state.selectedLogoBytes ?: return
@@ -241,7 +241,6 @@ class BusinessImagesViewModel(
             businessApi.uploadLogo(bytes, fileName, contentType)
                 .onSuccess { business ->
                     val hasLogo = !business.logoUrl.isNullOrBlank()
-                    @OptIn(ExperimentalTime::class)
                     val cacheBuster = Clock.System.now().toEpochMilliseconds()
                     _uiState.update { it.copy(
                         business = business,
