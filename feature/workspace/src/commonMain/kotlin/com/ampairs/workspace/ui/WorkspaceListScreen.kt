@@ -317,33 +317,15 @@ fun WorkspaceListScreen(
                                 isOfflineMode = state.isOfflineMode,
                                 onClick = {
                                     coroutineScope.launch {
-                                        println("WorkspaceListScreen: 🔄 Switching to workspace: ${workspace.name} (slug: ${workspace.slug})")
-
-                                        // Get previously selected workspace slug to clear its databases
-                                        val previousWorkspace = WorkspaceContextManager.getInstance().currentWorkspace.value
-                                        val previousSlug = previousWorkspace?.slug
-                                        println("WorkspaceListScreen: Previous workspace slug: $previousSlug")
-
-                                        // Clear old workspace databases and DataStores before switching
+                                        val previousSlug = WorkspaceContextManager.getInstance().currentWorkspace.value?.slug
                                         if (previousSlug != null && previousSlug != workspace.slug) {
-                                            println("WorkspaceListScreen: Clearing databases and DataStores for previous workspace: $previousSlug")
                                             DatabaseScopeManager.getInstance().clearWorkspaceDatabases(previousSlug)
                                             DataStoreManager.clearDataStoresForWorkspace(previousSlug)
-                                        } else {
-                                            println("WorkspaceListScreen: No previous workspace or same workspace, skipping clear")
                                         }
 
                                         viewModel.selectWorkSpace(workspace.id)
-
-                                        // Set workspace context for both business logic and database
                                         WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
-                                        println("WorkspaceListScreen: ✅ Workspace context updated to: ${workspace.slug}")
-
-                                        println("WorkspaceListScreen: ✅ Workspace selected: ${workspace.name}")
-
-                                        // Initialize global navigation service for this workspace
                                         GlobalNavigationManager.getInstance().onWorkspaceSelected()
-
                                         onWorkspaceSelected(workspace.id)
                                     }
                                 },

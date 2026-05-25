@@ -45,7 +45,6 @@ object WorkspaceContextIntegration {
         val databaseManager = WorkspaceDatabaseManager()
         databaseManager.setCurrentWorkspace(workspace.slug)
 
-        println("WorkspaceContextIntegration: Set workspace context for '${workspace.name}' with slug '${workspace.slug}'")
     }
 
     /**
@@ -77,7 +76,6 @@ object WorkspaceContextIntegration {
         val databaseManager = WorkspaceDatabaseManager()
         databaseManager.clearWorkspace()
 
-        println("WorkspaceContextIntegration: Cleared all workspace contexts")
     }
 
     /**

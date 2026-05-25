@@ -57,7 +57,7 @@ class WorkspaceListViewModel(
                     userFullName = fullName,
                     isUserLoading = false
                 )
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _state.value = _state.value.copy(
                     userFullName = "User",
                     isUserLoading = false

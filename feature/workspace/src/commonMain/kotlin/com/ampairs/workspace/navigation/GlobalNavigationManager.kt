@@ -74,31 +74,18 @@ class GlobalNavigationManager private constructor() {
      * Called when workspace is selected - creates navigation service and resets state
      */
     fun onWorkspaceSelected() {
-        println("GlobalNavigationManager: onWorkspaceSelected() called")
-        // Always create a new service to ensure fresh state
         val currentService = _navigationService.value
-        if (currentService != null) {
-            println("GlobalNavigationManager: Resetting existing navigation service")
-            // Reset state when switching workspaces
-            currentService.reset()
-        }
-
-        // Always create a new service instance to ensure StateFlow emits a change
-        val newService = DynamicModuleNavigationService()
-        _navigationService.value = newService
-        println("GlobalNavigationManager: Created new navigation service, shouldShowHamburger will update")
+        currentService?.reset()
+        _navigationService.value = DynamicModuleNavigationService()
     }
 
     /**
      * Called when workspace is cleared - destroys navigation service
      */
     fun onWorkspaceCleared() {
-        println("GlobalNavigationManager: onWorkspaceCleared() called")
-        // Reset the service before clearing
         _navigationService.value?.reset()
         _navigationService.value = null
         _isLoadingModules.value = false
-        println("GlobalNavigationManager: Navigation service cleared, shouldShowHamburger = false")
     }
 
     /**

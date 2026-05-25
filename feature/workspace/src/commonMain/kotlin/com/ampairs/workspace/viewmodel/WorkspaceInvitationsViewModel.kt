@@ -63,8 +63,6 @@ class WorkspaceInvitationsViewModel(
             _state.value = _state.value.copy(isLoading = true, error = null)
             currentPage = page
 
-            println("📝 WorkspaceInvitationsViewModel: Loading invitations for workspace $workspaceId (page=$page, refresh=$refresh)")
-
             try {
                 invitationRepository.getWorkspaceInvitations(
                     workspaceId = workspaceId,
@@ -74,13 +72,11 @@ class WorkspaceInvitationsViewModel(
                     sortDir = sortDir,
                     refresh = refresh
                 ).catch { error ->
-                    println("❌ WorkspaceInvitationsViewModel: Error loading invitations: ${error.message}")
                     _state.value = _state.value.copy(
                         isLoading = false,
                         error = error.message ?: "Failed to load invitations"
                     )
                 }.collectLatest { pageResult ->
-                    println("✅ WorkspaceInvitationsViewModel: Received ${pageResult.content.size} invitations")
                     allInvitations = pageResult.content
                     _state.value = _state.value.copy(
                         invitations = allInvitations,
@@ -92,7 +88,6 @@ class WorkspaceInvitationsViewModel(
                     )
                 }
             } catch (e: Exception) {
-                println("❌ WorkspaceInvitationsViewModel: Exception during load: ${e.message}")
                 _state.value = _state.value.copy(
                     isLoading = false,
                     error = e.message ?: "Failed to load invitations"
@@ -378,14 +373,12 @@ class WorkspaceInvitationsViewModel(
         viewModelScope.launch {
             try {
                 rolesRepository.getWorkspaceRoles(workspaceId)
-                    .catch { error ->
-                        println("Failed to load roles: ${error.message}")
-                    }.collectLatest { roles ->
+                    .catch { _ -> }
+                    .collectLatest { roles ->
                         _state.value = _state.value.copy(availableRoles = roles)
                     }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Silently fail for roles loading - use fallback roles in UI
-                println("Failed to load roles: ${e.message}")
             }
         }
     }

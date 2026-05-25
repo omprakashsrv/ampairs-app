@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 class EventConnectionManager(
     private val eventManagerProvider: EventManagerProvider,
 ) {
+    private val scope = CoroutineScope(Dispatchers.Default)
     private var connectionJob: Job? = null
     private var currentEventManager: IEventManager? = null
 
@@ -75,7 +76,7 @@ class EventConnectionManager(
         connectionJob = null
 
         currentEventManager?.let { manager ->
-            CoroutineScope(Dispatchers.Default).launch {
+            scope.launch {
                 manager.disconnect()
             }
         }

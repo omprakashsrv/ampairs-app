@@ -471,10 +471,7 @@ class WorkspaceCreateViewModel(
                     selectedAvatarContentType = contentType,
                     avatarMessage = null
                 )
-
-                println("Workspace avatar selected: $fileName ($fileSize bytes)")
-            } catch (e: Exception) {
-                println("Error picking workspace avatar: ${e.message}")
+            } catch (_: Exception) {
                 _state.value = _state.value.copy(
                     avatarMessage = "Failed to select image"
                 )
@@ -531,7 +528,6 @@ class WorkspaceCreateViewModel(
                     isUploadingAvatar = false,
                     avatarMessage = "Avatar updated successfully"
                 )
-                println("WorkspaceCreateViewModel: ✅ Avatar uploaded successfully")
             } else {
                 val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to upload avatar" }
                 _state.value = _state.value.copy(
@@ -564,7 +560,6 @@ class WorkspaceCreateViewModel(
                     isUploadingAvatar = false,
                     avatarMessage = "Avatar removed successfully"
                 )
-                println("WorkspaceCreateViewModel: ✅ Avatar deleted successfully")
             } else {
                 val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to delete avatar" }
                 _state.value = _state.value.copy(

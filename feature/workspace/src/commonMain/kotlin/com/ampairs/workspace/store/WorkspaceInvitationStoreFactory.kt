@@ -91,14 +91,11 @@ class WorkspaceInvitationStoreFactory(
 
     private fun createFetcher(): Fetcher<WorkspaceInvitationKey, PageResult<WorkspaceInvitation>> {
         return Fetcher.of { key ->
-            println("🌐 Store5 Fetcher: Fetching invitations for workspace ${key.workspaceId} (page=${key.page})")
             val result: PageResult<WorkspaceInvitation> = if (key.invitationId != null) {
                 // Fetch single invitation (if API supports it)
                 // For now, we'll throw an exception as the current API doesn't support single invitation fetch
                 throw UnsupportedOperationException("Single invitation fetch not supported by API")
             } else {
-                // Fetch paginated workspace invitations
-                println("🌐 Store5 Fetcher: Making API call to getWorkspaceInvitations")
                 val response = invitationApi.getWorkspaceInvitations(
                     workspaceId = key.workspaceId,
                     page = key.page,
@@ -107,7 +104,6 @@ class WorkspaceInvitationStoreFactory(
                     sortDir = key.sortDir
                 )
 
-                println("🌐 Store5 Fetcher: API response - data=${response.data != null}, error=${response.error}")
                 if (response.data != null && response.error == null) {
                     val pagedResponse = response.data!!
                     val invitations =

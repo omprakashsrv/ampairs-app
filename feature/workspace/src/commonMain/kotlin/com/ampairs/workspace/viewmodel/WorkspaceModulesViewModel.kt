@@ -87,13 +87,10 @@ class WorkspaceModulesViewModel(
      */
     fun loadInstalledModules() {
         val wsId = workspaceId ?: run {
-            println("WorkspaceModulesViewModel: loadInstalledModules - workspaceId is null!")
             _isLoading.value = false
             return
         }
-        println("WorkspaceModulesViewModel: loadInstalledModules called for workspaceId: $wsId")
         viewModelScope.launch {
-            // Only show loading if we haven't received any data yet
             if (!hasReceivedData) {
                 _isLoading.value = true
                 globalNavigationManager.setModuleLoading(true)
@@ -102,28 +99,20 @@ class WorkspaceModulesViewModel(
 
             try {
                 val key = InstalledModuleKey.refresh(wsId)
-                println("WorkspaceModulesViewModel: Streaming from moduleStore with key: $key")
                 moduleRepository.moduleStore
                     .stream(StoreReadRequest.cached(key, refresh = true))
                     .collect { response ->
-                        println("WorkspaceModulesViewModel: Store response type: ${response::class.simpleName}")
                         when (response) {
                             is StoreReadResponse.Data -> {
-                                println("WorkspaceModulesViewModel: Received ${response.value.size} installed modules (origin: ${response.origin})")
                                 _installedModules.value = response.value
                                 hasReceivedData = true
-                                // Hide loading after first data (cached or network)
                                 _isLoading.value = false
                                 globalNavigationManager.setModuleLoading(false)
                                 _errorMessage.value = null
-                                // Sync modules to global navigation manager
                                 globalNavigationManager.updateInstalledModules(response.value)
                             }
 
                             is StoreReadResponse.Loading -> {
-                                println("WorkspaceModulesViewModel: Loading... (hasReceivedData=$hasReceivedData)")
-                                // Only show loading spinner if we haven't received any data yet
-                                // This prevents spinner from showing during background refresh
                                 if (!hasReceivedData) {
                                     _isLoading.value = true
                                     globalNavigationManager.setModuleLoading(true)
@@ -131,11 +120,8 @@ class WorkspaceModulesViewModel(
                             }
 
                             is StoreReadResponse.Error.Exception -> {
-                                println("WorkspaceModulesViewModel: Error.Exception: ${response.error.message}")
-                                response.error.printStackTrace()
                                 _isLoading.value = false
                                 globalNavigationManager.setModuleLoading(false)
-                                // Only show error if we have no cached data
                                 if (_installedModules.value.isEmpty()) {
                                     _errorMessage.value = response.error.message ?: "Failed to load modules"
                                     globalNavigationManager.setNavigationError(_errorMessage.value)
@@ -143,27 +129,20 @@ class WorkspaceModulesViewModel(
                             }
 
                             is StoreReadResponse.Error.Message -> {
-                                println("WorkspaceModulesViewModel: Error.Message: ${response.message}")
                                 _isLoading.value = false
                                 globalNavigationManager.setModuleLoading(false)
-                                // Only show error if we have no cached data
                                 if (_installedModules.value.isEmpty()) {
                                     _errorMessage.value = response.message
                                     globalNavigationManager.setNavigationError(_errorMessage.value)
                                 }
                             }
 
-                            else -> {
-                                println("WorkspaceModulesViewModel: Other response type: ${response::class.simpleName}")
-                            }
+                            else -> Unit
                         }
                     }
             } catch (e: Exception) {
-                println("WorkspaceModulesViewModel: Exception in loadInstalledModules: ${e.message}")
-                e.printStackTrace()
                 _isLoading.value = false
                 globalNavigationManager.setModuleLoading(false)
-                // Only show error if we have no cached data
                 if (_installedModules.value.isEmpty()) {
                     _errorMessage.value = e.message ?: "Failed to load modules"
                     globalNavigationManager.setNavigationError(_errorMessage.value)
@@ -181,32 +160,17 @@ class WorkspaceModulesViewModel(
         featured: Boolean = false,
         refresh: Boolean = false
     ) {
-        println("WorkspaceModulesViewModel: loadAvailableModules called - category=$category, featured=$featured, refresh=$refresh")
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
-
-                println("WorkspaceModulesViewModel: Calling repository.getAvailableModules...")
-                // Call actual API through repository (Store5 handles caching automatically)
                 val modules = moduleRepository.getAvailableModules(category, featured, refresh)
-                println("WorkspaceModulesViewModel: Received ${modules.size} available modules from repository")
                 _availableModules.value = modules
-
-            } catch (e: Exception) {
-                println("WorkspaceModulesViewModel: Exception loading available modules: ${e.message}")
-                e.printStackTrace()
-                // Check if we have existing cached data
-                val currentModules = _availableModules.value
-                if (currentModules.isEmpty()) {
-                    // No cached data available, use mock data as fallback
-                    println("WorkspaceModulesViewModel: Using mock data as fallback")
-                    val mockModules = createMockAvailableModules()
-                    _availableModules.value = mockModules
+            } catch (_: Exception) {
+                if (_availableModules.value.isEmpty()) {
+                    _availableModules.value = createMockAvailableModules()
                     _errorMessage.value = "Using sample data - connection unavailable"
                 } else {
-                    // We have cached data, show subtle connectivity warning
-                    println("WorkspaceModulesViewModel: Using cached data")
                     _errorMessage.value = "Using offline data - connection unavailable"
                 }
             } finally {
