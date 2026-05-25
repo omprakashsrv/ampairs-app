@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 data class FormConfigUiState(
@@ -149,9 +150,7 @@ class FormConfigViewModel(
     @OptIn(ExperimentalTime::class)
     fun addNewAttribute() {
         val newAttribute = EntityAttributeDefinition(
-            uid = "temp-${
-                kotlin.time.Clock.System.now().toEpochMilliseconds()
-            }", // Temporary UID until saved
+            uid = "temp-${Clock.System.now().toEpochMilliseconds()}",
             entityType = entityType,
             attributeKey = "", // User will fill this
             displayName = "",
