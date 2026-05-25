@@ -33,27 +33,18 @@ class UpdateInstaller {
      * @return true if installer opened successfully, false otherwise
      */
     suspend fun installUpdate(filePath: String, updateInfo: UpdateInfo): Boolean {
-        println("🔧 Starting update installation...")
-        println("   File: $filePath")
-        println("   Version: ${updateInfo.version}")
-
         _installState.value = UpdateInstallState.Installing
 
         return try {
             val success = openInstaller(filePath, updateInfo)
-
             if (success) {
-                println("✅ Installer opened successfully")
-                println("👤 Please follow the installer instructions")
                 _installState.value = UpdateInstallState.Installed
                 true
             } else {
-                println("❌ Failed to open installer")
                 _installState.value = UpdateInstallState.Failed("Failed to open installer")
                 false
             }
         } catch (e: Exception) {
-            println("❌ Installation error: ${e.message}")
             _installState.value = UpdateInstallState.Failed(e.message ?: "Unknown error")
             false
         }

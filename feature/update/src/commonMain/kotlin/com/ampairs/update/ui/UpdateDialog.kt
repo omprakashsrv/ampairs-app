@@ -1,7 +1,16 @@
 package com.ampairs.update.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,7 +104,7 @@ fun UpdateDialog(
 
                 // Release notes
                 if (!updateInfo.releaseNotes.isNullOrBlank()) {
-                    Divider()
+                    HorizontalDivider()
                     Text(
                         text = "What's New:",
                         style = MaterialTheme.typography.titleSmall,
