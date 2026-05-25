@@ -11,6 +11,7 @@ import SubscriptionRoute
 import WorkspaceRoute
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.CustomerListRoute
@@ -44,10 +45,11 @@ fun combinedEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>,
     onLoginSuccess: () -> Unit,
-    onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)?
+    onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)?,
+    sharedViewModelStoreOwner: ViewModelStoreOwner
 ): NavEntry<NavKey> {
     // Try each module's entry provider in sequence
-    return authEntryProvider(key, backStack, onLoginSuccess)
+    return authEntryProvider(key, backStack, onLoginSuccess, sharedViewModelStoreOwner)
         ?: workspaceEntryProvider(key, backStack, onNavigationServiceReady)
         ?: customerEntryProvider(key, backStack)
         ?: productEntryProvider(key, backStack)
