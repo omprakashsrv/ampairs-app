@@ -15,7 +15,7 @@ import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.api.model.ModuleDetailResponse
 import com.ampairs.workspace.db.WorkspaceModuleRepository
-import com.ampairs.subscription.util.SubscriptionOnboardingManager
+import com.ampairs.subscription.util.SubscriptionOnboardingLookup
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.store.InstalledModuleKey
@@ -31,7 +31,7 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
 @AssistedInject
 class WorkspaceModulesViewModel(
     private val moduleRepository: WorkspaceModuleRepository,
-    val onboardingManager: SubscriptionOnboardingManager,
+    val onboardingManager: SubscriptionOnboardingLookup,
     @Assisted private val workspaceId: String?,
 ) : ViewModel() {
 

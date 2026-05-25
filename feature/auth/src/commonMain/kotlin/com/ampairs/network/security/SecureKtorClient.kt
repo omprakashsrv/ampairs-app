@@ -5,7 +5,7 @@ import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
-import com.ampairs.auth.domain.asRefreshTokens
+import com.ampairs.auth.api.model.asRefreshTokens
 import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.common.model.Response
 import com.ampairs.common.security.SecurityException

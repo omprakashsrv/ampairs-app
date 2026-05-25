@@ -19,13 +19,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-        // Add JOSM repository for OpenStreetMap jmapviewer library
         maven("https://josm.openstreetmap.de/repository/releases/")
-    }
-    versionCatalogs {
-        create("awssdk") {
-            from("aws.sdk.kotlin:version-catalog:1.4.6")
-        }
     }
 }
 
@@ -35,7 +29,14 @@ include(":desktopApp")
 include(":data:common")
 include(":tallyModule")
 include(
+    ":feature:auth-api",
     ":feature:auth",
+    ":feature:customer-api",
+    ":feature:product-api",
+    ":feature:tax-api",
+    ":feature:form-api",
+    ":feature:unit-api",
+    ":feature:subscription-api",
     ":feature:agent",
     ":feature:form",
     ":feature:unit",
@@ -51,4 +52,3 @@ include(
     ":feature:invoice",
     ":feature:workspace"
 )
-include(":thirdparty:androidx:paging:compose")

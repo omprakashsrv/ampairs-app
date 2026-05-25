@@ -1,6 +1,7 @@
 package com.ampairs.product.data.api
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
@@ -16,8 +17,6 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpStatusCode
 
-const val PRODUCT_ENDPOINT = "http://localhost:8080"
-
 @Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class ProductApiImpl(
     engine: HttpClientEngine,
@@ -30,7 +29,7 @@ class ProductApiImpl(
         return try {
             val response: Response<List<ProductApiModel>> = get(
                 client,
-                "$PRODUCT_ENDPOINT/api/v1/products"
+                ApiUrlBuilder.productUrl("v1/products")
             )
             Result.success(response.data ?: emptyList())
         } catch (e: Exception) {
@@ -42,7 +41,7 @@ class ProductApiImpl(
         return try {
             val response: Response<ProductApiModel> = get(
                 client,
-                "$PRODUCT_ENDPOINT/api/v1/products/$productId"
+                ApiUrlBuilder.productUrl("v1/products/$productId")
             )
             response.data?.let { Result.success(it) }
                 ?: Result.failure(Exception("Product not found"))
@@ -55,7 +54,7 @@ class ProductApiImpl(
         return try {
             val response: Response<ProductApiModel> = post(
                 client,
-                "$PRODUCT_ENDPOINT/api/v1/products",
+                ApiUrlBuilder.productUrl("v1/products"),
                 product
             )
             response.data?.let { Result.success(it) }
@@ -67,22 +66,20 @@ class ProductApiImpl(
 
     override suspend fun updateProduct(workspaceId: String, productId: String, product: ProductApiModel): Result<ProductApiModel> {
         return try {
-            // First try PUT (update existing)
             try {
                 val response: Response<ProductApiModel> = put(
                     client,
-                    "$PRODUCT_ENDPOINT/api/v1/products/$productId",
+                    ApiUrlBuilder.productUrl("v1/products/$productId"),
                     product
                 )
                 response.data?.let { Result.success(it) }
                     ?: Result.failure(Exception("Failed to update product"))
             } catch (e: ClientRequestException) {
                 if (e.response.status == HttpStatusCode.NotFound) {
-                    // Entity doesn't exist on backend (created offline), fallback to POST
                     try {
                         val createResponse: Response<ProductApiModel> = post(
                             client,
-                            "$PRODUCT_ENDPOINT/api/v1/products",
+                            ApiUrlBuilder.productUrl("v1/products"),
                             product
                         )
                         createResponse.data?.let { Result.success(it) }
@@ -103,7 +100,7 @@ class ProductApiImpl(
         return try {
             delete<Response<Unit>>(
                 client,
-                "$PRODUCT_ENDPOINT/api/v1/products/$productId"
+                ApiUrlBuilder.productUrl("v1/products/$productId")
             )
             Result.success(Unit)
         } catch (e: Exception) {
@@ -116,7 +113,7 @@ class ProductApiImpl(
             val params = mapOf("q" to query)
             val response: Response<List<ProductApiModel>> = get(
                 client,
-                "$PRODUCT_ENDPOINT/api/v1/products/search",
+                ApiUrlBuilder.productUrl("v1/products/search"),
                 params
             )
             Result.success(response.data ?: emptyList())

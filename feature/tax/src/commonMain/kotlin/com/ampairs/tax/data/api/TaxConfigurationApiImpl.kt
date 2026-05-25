@@ -40,7 +40,7 @@ class TaxConfigurationApiImpl(
 
     override suspend fun getWorkspaceConfiguration(): Result<TaxConfiguration> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/configuration")
+            val url = ApiUrlBuilder.taxUrl("v1/configurations")
             val response: Response<TaxConfiguration> = httpClient.get(url).body()
 
             if (response.data != null && response.error == null) {
@@ -57,7 +57,7 @@ class TaxConfigurationApiImpl(
         config: TaxConfiguration
     ): Result<TaxConfiguration> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/configuration")
+            val url = ApiUrlBuilder.taxUrl("v1/configurations")
             val response: Response<TaxConfiguration> = httpClient.post(url) {
                 contentType(ContentType.Application.Json)
                 setBody(config)
@@ -77,7 +77,7 @@ class TaxConfigurationApiImpl(
         config: TaxConfiguration
     ): Result<TaxConfiguration> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/configuration")
+            val url = ApiUrlBuilder.taxUrl("v1/configurations")
             val response: Response<TaxConfiguration> = httpClient.put(url) {
                 contentType(ContentType.Application.Json)
                 setBody(config)
@@ -103,7 +103,7 @@ class TaxConfigurationApiImpl(
     ): Result<PageResponse<MasterTaxCode>> {
         return try {
             val url = ApiUrlBuilder.taxUrl(
-                "v1/master-code/search",
+                "v1/master-codes/search",
                 mapOf(
                     "query" to query,
                     "countryCode" to countryCode,
@@ -127,7 +127,7 @@ class TaxConfigurationApiImpl(
 
     override suspend fun getMasterTaxCode(codeId: String): Result<MasterTaxCode> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/master-code/$codeId")
+            val url = ApiUrlBuilder.taxUrl("v1/master-codes/$codeId")
             val response: Response<MasterTaxCode> = httpClient.get(url).body()
 
             if (response.data != null && response.error == null) {
@@ -147,7 +147,7 @@ class TaxConfigurationApiImpl(
     ): Result<List<MasterTaxCode>> {
         return try {
             val url = ApiUrlBuilder.taxUrl(
-                "v1/master-code/popular",
+                "v1/master-codes/popular",
                 mapOf(
                     "countryCode" to countryCode,
                     "industry" to industry,
@@ -173,7 +173,7 @@ class TaxConfigurationApiImpl(
     ): Result<PageResponse<TaxCode>> {
         return try {
             val url = ApiUrlBuilder.taxUrl(
-                "v1/code",
+                "v1/codes",
                 mapOf(
                     "modifiedAfter" to modifiedAfter?.toString(),
                     "page" to page.toString(),
@@ -199,7 +199,7 @@ class TaxConfigurationApiImpl(
         notes: String?
     ): Result<TaxCode> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/code/subscribe")
+            val url = ApiUrlBuilder.taxUrl("v1/codes/subscribe")
             val request = SubscribeTaxCodeRequest(
                 masterTaxCodeId = masterTaxCodeId,
                 customTaxRuleId = customTaxRuleId,
@@ -225,7 +225,7 @@ class TaxConfigurationApiImpl(
         workspaceTaxCodeId: String
     ): Result<Unit> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/code/$workspaceTaxCodeId")
+            val url = ApiUrlBuilder.taxUrl("v1/codes/$workspaceTaxCodeId")
             httpClient.delete(url)
             Result.success(Unit)
         } catch (e: Exception) {
@@ -238,7 +238,7 @@ class TaxConfigurationApiImpl(
         applyDefaultRules: Boolean
     ): Result<BulkSubscribeResult> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/code/bulk-subscribe")
+            val url = ApiUrlBuilder.taxUrl("v1/codes/bulk-subscribe")
             val request = BulkSubscribeRequest(
                 masterTaxCodeIds = masterTaxCodeIds,
                 applyDefaultRules = applyDefaultRules
@@ -260,7 +260,7 @@ class TaxConfigurationApiImpl(
 
     override suspend fun getComponentTypes(countryCode: String): Result<List<TaxComponentType>> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/component-type/$countryCode")
+            val url = ApiUrlBuilder.taxUrl("v1/component-types/$countryCode")
             val response: Response<List<TaxComponentType>> = httpClient.get(url).body()
 
             if (response.data != null && response.error == null) {
@@ -280,7 +280,7 @@ class TaxConfigurationApiImpl(
     ): Result<PageResponse<WorkspaceTaxComponent>> {
         return try {
             val url = ApiUrlBuilder.taxUrl(
-                "v1/component",
+                "v1/components",
                 mapOf(
                     "modifiedAfter" to modifiedAfter?.toString(),
                     "page" to page.toString(),
@@ -306,7 +306,7 @@ class TaxConfigurationApiImpl(
     ): Result<PageResponse<TaxRule>> {
         return try {
             val url = ApiUrlBuilder.taxUrl(
-                "v1/rule",
+                "v1/rules",
                 mapOf(
                     "modifiedAfter" to modifiedAfter?.toString(),
                     "page" to page.toString(),
@@ -329,7 +329,7 @@ class TaxConfigurationApiImpl(
         taxCodeId: String
     ): Result<List<TaxRule>> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/rule/tax-code/$taxCodeId")
+            val url = ApiUrlBuilder.taxUrl("v1/rules/tax-code/$taxCodeId")
             val response: Response<List<TaxRule>> = httpClient.get(url).body()
 
             if (response.data != null && response.error == null) {
@@ -346,7 +346,7 @@ class TaxConfigurationApiImpl(
         rule: TaxRule
     ): Result<TaxRule> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/rule")
+            val url = ApiUrlBuilder.taxUrl("v1/rules")
             val response: Response<TaxRule> = httpClient.post(url) {
                 contentType(ContentType.Application.Json)
                 setBody(rule)
@@ -367,7 +367,7 @@ class TaxConfigurationApiImpl(
         rule: TaxRule
     ): Result<TaxRule> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/rule/$ruleId")
+            val url = ApiUrlBuilder.taxUrl("v1/rules/$ruleId")
             val response: Response<TaxRule> = httpClient.put(url) {
                 contentType(ContentType.Application.Json)
                 setBody(rule)
@@ -387,7 +387,7 @@ class TaxConfigurationApiImpl(
         rules: List<TaxRule>
     ): Result<BulkImportResult> {
         return try {
-            val url = ApiUrlBuilder.taxUrl("v1/rule/bulk-import")
+            val url = ApiUrlBuilder.taxUrl("v1/rules/bulk-import")
             val response: Response<BulkImportResult> = httpClient.post(url) {
                 contentType(ContentType.Application.Json)
                 setBody(rules)

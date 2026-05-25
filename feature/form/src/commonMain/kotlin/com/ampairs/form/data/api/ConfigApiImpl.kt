@@ -28,7 +28,7 @@ class ConfigApiImpl(
 
     override suspend fun getConfigSchema(entityType: String): EntityConfigSchema {
         val response: Response<EntityConfigSchema> = client.get(
-            ApiUrlBuilder.formUrl("v1/schema")
+            ApiUrlBuilder.formUrl("v1/config/schema")
         ) {
             parameter("entity_type", entityType)
         }.body()
@@ -38,7 +38,7 @@ class ConfigApiImpl(
 
     override suspend fun getAllConfigSchemas(): List<EntityConfigSchema> {
         val response: Response<List<EntityConfigSchema>> = client.get(
-            ApiUrlBuilder.formUrl("v1/schemas")
+            ApiUrlBuilder.formUrl("v1/config/schemas")
         ).body()
 
         return response.data ?: emptyList()
@@ -46,7 +46,7 @@ class ConfigApiImpl(
 
     override suspend fun getConfigSchemasSince(lastUpdated: String): List<EntityConfigSchema> {
         val response: Response<List<EntityConfigSchema>> = client.get(
-            ApiUrlBuilder.formUrl("v1/schemas")
+            ApiUrlBuilder.formUrl("v1/config/schemas")
         ) {
             parameter("last_updated", lastUpdated)
         }.body()
@@ -56,7 +56,7 @@ class ConfigApiImpl(
 
     override suspend fun updateFieldConfig(fieldConfig: EntityFieldConfig): EntityFieldConfig {
         val response = client.put(
-            ApiUrlBuilder.formUrl("v1/field-config/${fieldConfig.uid}")
+            ApiUrlBuilder.formUrl("v1/config/field-config/${fieldConfig.uid}")
         ) {
             setBody(fieldConfig)
         }.body<Response<EntityFieldConfig>>()
@@ -66,7 +66,7 @@ class ConfigApiImpl(
 
     override suspend fun updateAttributeDefinition(attributeDefinition: EntityAttributeDefinition): EntityAttributeDefinition {
         val response = client.put(
-            ApiUrlBuilder.formUrl("v1/attribute-definition/${attributeDefinition.uid}")
+            ApiUrlBuilder.formUrl("v1/config/attribute-definition/${attributeDefinition.uid}")
         ) {
             setBody(attributeDefinition)
         }.body<Response<EntityAttributeDefinition>>()
@@ -76,7 +76,7 @@ class ConfigApiImpl(
 
     override suspend fun updateFieldConfigs(entityType: String, fieldConfigs: List<EntityFieldConfig>): List<EntityFieldConfig> {
         val response = client.put(
-            ApiUrlBuilder.formUrl("v1/field-configs/$entityType")
+            ApiUrlBuilder.formUrl("v1/config/field-configs/$entityType")
         ) {
             setBody(fieldConfigs)
         }.body<Response<List<EntityFieldConfig>>>()
@@ -86,7 +86,7 @@ class ConfigApiImpl(
 
     override suspend fun updateAttributeDefinitions(entityType: String, attributeDefinitions: List<EntityAttributeDefinition>): List<EntityAttributeDefinition> {
         val response = client.put(
-            ApiUrlBuilder.formUrl("v1/attribute-definitions/$entityType")
+            ApiUrlBuilder.formUrl("v1/config/attribute-definitions/$entityType")
         ) {
             setBody(attributeDefinitions)
         }.body<Response<List<EntityAttributeDefinition>>>()
@@ -101,7 +101,7 @@ class ConfigApiImpl(
         )
 
         val response = client.post(
-            ApiUrlBuilder.formUrl("v1/config")
+            ApiUrlBuilder.formUrl("v1/config/config")
         ) {
             setBody(request)
         }.body<Response<EntityConfigSchema>>()

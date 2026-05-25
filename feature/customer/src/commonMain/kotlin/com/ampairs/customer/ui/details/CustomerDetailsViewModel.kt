@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.common.di.AppScope
-import com.ampairs.form.data.repository.ConfigRepository
+import com.ampairs.form.data.repository.ConfigLookup
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -31,7 +31,7 @@ data class CustomerDetailsUiState(
 class CustomerDetailsViewModel(
     @Assisted private val customerId: String,
     private val customerStore: CustomerStore,
-    private val configRepository: ConfigRepository
+    private val configRepository: ConfigLookup
 ) : ViewModel() {
 
     @AssistedFactory

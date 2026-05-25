@@ -2,6 +2,8 @@ package com.ampairs.agent.core
 
 import com.ampairs.agent.di.OfflineIntentResolver
 import com.ampairs.agent.di.OnlineIntentResolver
+import com.ampairs.common.agent.ActionResult
+import com.ampairs.common.agent.AgentAction
 import dev.zacsweers.metro.Inject
 
 /**

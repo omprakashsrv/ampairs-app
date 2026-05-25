@@ -43,42 +43,42 @@ class WorkspaceApiImpl(engine: HttpClientEngine, private val tokenRepository: To
             "sortBy" to sortBy,
             "sortDir" to sortDir
         )
-        return get(client, ApiUrlBuilder.workspaceUrl("v1"), params)
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/workspaces"), params)
     }
 
     override suspend fun getWorkspace(workspaceId: String): Response<WorkspaceApiModel> {
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId"))
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/$workspaceId"))
     }
 
     override suspend fun getWorkspaceBySlug(slug: String): Response<WorkspaceApiModel> {
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/by-slug/$slug"))
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/by-slug/$slug"))
     }
 
     override suspend fun createWorkspace(request: CreateWorkspaceRequest): Response<WorkspaceApiModel> {
-        return post(client, ApiUrlBuilder.workspaceUrl("v1"), request)
+        return post(client, ApiUrlBuilder.workspaceUrl("v1/workspaces"), request)
     }
 
     override suspend fun updateWorkspace(
         workspaceId: String,
         request: UpdateWorkspaceRequest,
     ): Response<WorkspaceApiModel> {
-        return put(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId"), request)
+        return put(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/$workspaceId"), request)
     }
 
     override suspend fun checkSlugAvailability(slug: String): Response<Map<String, Boolean>> {
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/check-slug/$slug"))
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/check-slug/$slug"))
     }
 
     override suspend fun archiveWorkspace(workspaceId: String): Response<String> {
-        return post(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/archive"), null)
+        return post(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/$workspaceId/archive"), null)
     }
 
     override suspend fun restoreWorkspace(workspaceId: String): Response<String> {
-        return post(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/restore"), null)
+        return post(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/$workspaceId/restore"), null)
     }
 
     override suspend fun getMyRole(workspaceId: String): Response<Map<String, Any>> {
-        return get(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/my-role"))
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/$workspaceId/my-role"))
     }
 
     override suspend fun uploadAvatar(
@@ -97,10 +97,10 @@ class WorkspaceApiImpl(engine: HttpClientEngine, private val tokenRepository: To
                 }
             )
         )
-        return postMultiPart(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/avatar"), parts)
+        return postMultiPart(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/$workspaceId/avatar"), parts)
     }
 
     override suspend fun deleteAvatar(workspaceId: String): Response<WorkspaceApiModel> {
-        return delete(client, ApiUrlBuilder.workspaceUrl("v1/$workspaceId/avatar"))
+        return delete(client, ApiUrlBuilder.workspaceUrl("v1/workspaces/$workspaceId/avatar"))
     }
 }

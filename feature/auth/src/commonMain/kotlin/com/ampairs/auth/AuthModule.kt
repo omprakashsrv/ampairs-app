@@ -1,6 +1,8 @@
 package com.ampairs.auth
 
+import com.ampairs.auth.api.UserDataService
 import com.ampairs.auth.db.AuthRoomDatabase
+import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.db.dao.UserDao
 import com.ampairs.auth.db.dao.UserSessionDao
 import com.ampairs.auth.db.dao.UserTokenDao
@@ -20,6 +22,9 @@ interface AuthDaoModule {
 
         @Provides @SingleIn(AppScope::class)
         fun provideSessionDao(db: AuthRoomDatabase): UserSessionDao = db.userSessionDao()
+
+        @Provides
+        fun provideUserDataService(repo: UserRepository): UserDataService = repo
     }
 }
 

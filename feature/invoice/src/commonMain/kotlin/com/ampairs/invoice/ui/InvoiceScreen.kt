@@ -30,11 +30,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.ampairs.product.ui.components.CartItem
+import com.ampairs.common.components.CartItem
 import com.ampairs.common.format.toDecimal
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.viewmodel.InvoiceViewModel
-import com.ampairs.product.ui.list.ProductsListScreen
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +43,7 @@ fun InvoiceScreen(
     toCustomerId: String?,
     id: String?,
     onInvoiceSaved: (String) -> Unit,
+    productPickerSlot: @Composable (onProductClick: (String) -> Unit) -> Unit = {},
     viewModel: InvoiceViewModel = assistedMetroViewModel<InvoiceViewModel, InvoiceViewModel.Factory> { create(fromCustomerId, toCustomerId, id) }
 ) {
 
@@ -177,14 +177,9 @@ fun InvoiceScreen(
                         }
                     }
                 }) {
-                ProductsListScreen(
-                    onProductClick = { productId ->
-                        // Product selected for invoice item
-                    },
-                    onCreateProduct = { /* no-op in invoice context */ },
-                    onFormConfig = { /* no-op in invoice context */ },
-                    modifier = Modifier
-                )
+                productPickerSlot { productId ->
+                    // Product selected for invoice item
+                }
             }
 
         }

@@ -1,3 +1,5 @@
+package com.ampairs.di
+
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.disk.DiskCache

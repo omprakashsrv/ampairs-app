@@ -60,7 +60,8 @@ sealed interface AuthRoute : NavKey {
     @Serializable
     data class Otp(
         val sessionId: String,
-        val verificationId: String = "" // Firebase verification ID (empty for backend API auth)
+        val verificationId: String = "",
+        val phoneNumber: String = ""
     ) : AuthRoute
 
     @Serializable

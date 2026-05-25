@@ -3,7 +3,7 @@ package com.ampairs.business.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.business.data.repository.BusinessRepository
-import com.ampairs.form.data.repository.ConfigRepository
+import com.ampairs.form.data.repository.ConfigLookup
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.form.domain.EntityType
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 @Inject
 class BusinessCustomAttributesViewModel(
     private val businessRepository: BusinessRepository,
-    private val configRepository: ConfigRepository
+    private val configRepository: ConfigLookup
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomAttributesUiState())

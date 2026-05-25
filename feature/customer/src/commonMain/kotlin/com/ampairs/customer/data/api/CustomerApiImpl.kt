@@ -44,7 +44,7 @@ class CustomerApiImpl(
 
         val response: Response<PageResponse<Customer>> = get(
             client,
-            ApiUrlBuilder.customerUrl("v1"),
+            ApiUrlBuilder.customerUrl("v1/customers"),
             params
         )
         return response.data ?: PageResponse(
@@ -63,7 +63,7 @@ class CustomerApiImpl(
     override suspend fun createCustomer(customer: Customer): Customer {
         val response: Response<Customer> = post(
             client,
-            ApiUrlBuilder.customerUrl("v1"),
+            ApiUrlBuilder.customerUrl("v1/customers"),
             customer
         )
         return response.data ?: throw Exception("Failed to create customer")
@@ -72,7 +72,7 @@ class CustomerApiImpl(
     override suspend fun updateCustomer(customer: Customer): Customer {
         val response: Response<Customer> = post(
             client,
-            ApiUrlBuilder.customerUrl("v1"),
+            ApiUrlBuilder.customerUrl("v1/customers"),
             customer
         )
         return response.data ?: throw Exception("Failed to update customer")
@@ -81,7 +81,7 @@ class CustomerApiImpl(
     override suspend fun deleteCustomer(customerId: String) {
         val response = delete<Response<Unit>>(
             client,
-            ApiUrlBuilder.customerUrl("v1/$customerId")
+            ApiUrlBuilder.customerUrl("v1/customers/$customerId")
         )
         // Check for error in response and throw if delete failed
         response.error?.let { error ->
@@ -93,7 +93,7 @@ class CustomerApiImpl(
         return try {
             val response: Response<Customer> = get(
                 client,
-                ApiUrlBuilder.customerUrl("v1/$customerId")
+                ApiUrlBuilder.customerUrl("v1/customers/$customerId")
             )
             response.data
         } catch (_: Exception) {

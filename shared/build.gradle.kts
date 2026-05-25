@@ -162,7 +162,7 @@ kotlin {
                 implementation(libs.lifecycle.viewmodel.navigation3)
                 implementation(libs.savedstate)
                 implementation(libs.savedstate.compose)
-                implementation(projects.thirdparty.androidx.paging.compose)
+                implementation(libs.paging.componse.common)
 
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)

@@ -3,9 +3,11 @@ package com.ampairs.product.data.repository
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.common.sentry.ErrorTracking
-import com.ampairs.event.EventManager
-import com.ampairs.event.domain.EventType
-import com.ampairs.event.util.EventLogger
+import com.ampairs.common.event.IEventManager
+import com.ampairs.common.event.EventType
+import com.ampairs.common.event.EventLogger
+import com.ampairs.common.cache.CacheCleanable
+import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.data.api.ProductApi
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductVariantDao
@@ -14,10 +16,13 @@ import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.db.entity.VariantAttributeEntity
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductListItem
+import com.ampairs.product.domain.ProductSummary
 import com.ampairs.product.domain.ProductVariant
+import com.ampairs.product.domain.asDomainModel
 import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toDomain
 import com.ampairs.product.domain.toDomainList
+import com.ampairs.product.domain.toSummary
 import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +46,7 @@ class ProductRepository(
     private val productDao: ProductDao,
     private val variantDao: ProductVariantDao,
     private val attributeDao: VariantAttributeDao
-) {
+) : ProductDataService, CacheCleanable {
     // Event listener job for cleanup
     private var eventListenerJob: Job? = null
 
@@ -51,7 +56,7 @@ class ProductRepository(
      *
      * @param eventManager The EventManager instance for the current workspace
      */
-    fun setupEventListener(eventManager: EventManager) {
+    fun setupEventListener(eventManager: IEventManager) {
         // Cancel existing listener if any
         eventListenerJob?.cancel()
 
@@ -185,6 +190,13 @@ class ProductRepository(
             entity.toDomainProduct()
         }
     }
+
+    override suspend fun getById(uid: String): ProductSummary? = getProduct(uid)?.toSummary()
+
+    override suspend fun getByIds(ids: List<String>): List<ProductSummary> =
+        productDao.productsByIds(ids).map { it.asDomainModel().toSummary() }
+
+    override suspend fun clearCache() { productDao.deleteAll() }
 
     /**
      * Create a new product

@@ -1,6 +1,6 @@
 package com.ampairs.common.database
 
-import getDatabaseDir
+import com.ampairs.di.getDatabaseDir
 import java.io.File
 
 /**

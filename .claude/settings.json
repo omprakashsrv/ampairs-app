@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew androidApp:compileDebugKotlinAndroid *)",
+      "Bash(./gradlew :androidApp:compileDebugKotlinAndroid *)",
+      "Bash(./gradlew shared:compileKotlinIosSimulatorArm64 *)",
+      "Bash(./gradlew :shared:compileKotlinIosSimulatorArm64 *)",
+      "Bash(./gradlew desktopApp:compileKotlin *)",
+      "Bash(./gradlew :desktopApp:compileKotlin *)",
+      "Bash(./gradlew androidApp:compileDebugSources *)",
+      "Bash(./gradlew :androidApp:compileDebugSources *)",
+      "Bash(./gradlew compileDebugSources *)",
+      "Bash(./gradlew androidApp:tasks *)",
+      "Bash(./gradlew :feature:auth:compileKotlinDesktop *)",
+      "Bash(./gradlew :feature:auth:compileKotlinIosSimulatorArm64 *)",
+      "Bash(xcodebuild -workspace *)"
+    ]
+  }
+}

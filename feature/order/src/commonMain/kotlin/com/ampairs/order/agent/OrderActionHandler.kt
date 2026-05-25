@@ -1,13 +1,13 @@
 package com.ampairs.order.agent
 
-import com.ampairs.agent.core.ActionDescriptor
-import com.ampairs.agent.core.ActionHandler
-import com.ampairs.agent.core.ActionParameter
-import com.ampairs.agent.core.ActionResult
-import com.ampairs.agent.core.ActionType
-import com.ampairs.agent.core.AgentAction
-import com.ampairs.agent.core.NavigationTarget
-import com.ampairs.agent.core.ParameterType
+import com.ampairs.common.agent.ActionDescriptor
+import com.ampairs.common.agent.ActionHandler
+import com.ampairs.common.agent.ActionParameter
+import com.ampairs.common.agent.ActionResult
+import com.ampairs.common.agent.ActionType
+import com.ampairs.common.agent.AgentAction
+import com.ampairs.common.agent.NavigationTarget
+import com.ampairs.common.agent.ParameterType
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.order.db.OrderRepository

@@ -1,11 +1,11 @@
 package com.ampairs.agent.offline
 
-import com.ampairs.agent.core.ActionDescriptor
-import com.ampairs.agent.core.ActionType
-import com.ampairs.agent.core.AgentAction
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.IntentResolver
 import com.ampairs.agent.core.ResolvedIntent
+import com.ampairs.common.agent.ActionDescriptor
+import com.ampairs.common.agent.ActionType
+import com.ampairs.common.agent.AgentAction
 import dev.zacsweers.metro.Inject
 
 /**

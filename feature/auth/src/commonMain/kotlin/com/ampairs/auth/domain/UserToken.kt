@@ -2,7 +2,6 @@ package com.ampairs.auth.domain
 
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.db.entity.UserTokenEntity
-import io.ktor.client.plugins.auth.providers.BearerTokens
 import kotlinx.datetime.*
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -48,6 +47,3 @@ fun UserTokenEntity.asDomainModel(): UserToken {
     )
 }
 
-fun Token.asRefreshTokens(): BearerTokens {
-    return BearerTokens(accessToken = accessToken, refreshToken = refreshToken)
-}

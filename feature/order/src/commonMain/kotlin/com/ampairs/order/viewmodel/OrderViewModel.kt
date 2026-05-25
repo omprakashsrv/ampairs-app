@@ -6,9 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.auth.db.UserRepository
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.customer.data.repository.CustomerRepository
+import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.domain.Customer
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.domain.Order
@@ -16,8 +16,8 @@ import com.ampairs.order.domain.OrderItem
 import com.ampairs.order.domain.TaxInfo
 import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.domain.asDatabaseModel
-import com.ampairs.product.domain.Product
-import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.domain.ProductSummary
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -31,10 +31,10 @@ import kotlinx.coroutines.launch
 @AssistedInject
 class OrderViewModel(
     @Assisted fromCustomerId: String?, @Assisted toCustomerId: String?, @Assisted id: String?,
-    val customerRepository: CustomerRepository,
+    val customerDataService: CustomerDataService,
     val orderRepository: OrderRepository,
-    val productRepository: ProductRepository,
-    val userRepository: UserRepository,
+    val productDataService: ProductDataService,
+    val tokenRepository: TokenRepository,
 ) :
     ViewModel() {
 
@@ -44,7 +44,7 @@ class OrderViewModel(
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): OrderViewModel
     }
-    fun updateOrderItems(products: List<Product>) {
+    fun updateOrderItems(products: List<ProductSummary>) {
         orderItems.removeAll(orderItems.filter { orderItem ->
             !products.map { it.id }.contains(orderItem.product?.id)
         })
@@ -66,10 +66,11 @@ class OrderViewModel(
         viewModelScope.launch(DispatcherProvider.io) {
             order.updateTaxes()
             order.updateDiscount()
+            val userId = tokenRepository.getCurrentUserId() ?: ""
             if (order.createdBy.isEmpty()) {
-                order.createdBy = userRepository.getUser()?.id ?: ""
+                order.createdBy = userId
             }
-            order.updatedBy = userRepository.getUser()?.id ?: ""
+            order.updatedBy = userId
             val orderEntity = order.asDatabaseModel()
             orderRepository.saveOrder(orderEntity, orderItems.asDatabaseModel(orderEntity.id))
             onOrderSaved(orderEntity.id)
@@ -97,9 +98,9 @@ class OrderViewModel(
                 orderItems.addAll(order.items)
             } else {
                 fromCustomer =
-                    fromCustomerId?.let { customerRepository.getCustomer(it) }
+                    fromCustomerId?.let { customerDataService.getById(it) }
                 toCustomer =
-                    toCustomerId?.let { customerRepository.getCustomer(it) }
+                    toCustomerId?.let { customerDataService.getById(it) }
                 order.fromCustomer = fromCustomer
                 order.toCustomer = toCustomer
             }

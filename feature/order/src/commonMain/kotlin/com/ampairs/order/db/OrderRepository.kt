@@ -6,8 +6,7 @@ import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.flower_core.networkResource
 import com.ampairs.common.model.Response
-import com.ampairs.customer.data.db.CustomerDao
-import com.ampairs.customer.data.db.toDomain
+import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.order.api.OrderApi
 import com.ampairs.order.api.model.OrderApiModel
 import com.ampairs.order.api.model.toApiModel
@@ -20,8 +19,7 @@ import com.ampairs.order.db.entity.OrderEntity
 import com.ampairs.order.db.entity.OrderItemEntity
 import com.ampairs.order.domain.Order
 import com.ampairs.order.domain.asDomainModel
-import com.ampairs.product.db.dao.ProductDao
-import com.ampairs.product.domain.asDomainModel
+import com.ampairs.product.data.ProductDataService
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
@@ -32,8 +30,8 @@ import kotlinx.coroutines.flow.flowOn
 class OrderRepository(
     val orderDao: OrderDao,
     val orderItemDao: OrderItemDao,
-    val productDao: ProductDao,
-    val customerDao: CustomerDao,
+    val productDataService: ProductDataService,
+    val customerDataService: CustomerDataService,
     val orderApi: OrderApi,
 ) {
     @Transaction
@@ -70,15 +68,14 @@ class OrderRepository(
 
         val orderDomain = orderWithItems.order.asDomainModel()
         orderDomain.fromCustomer =
-            orderDomain.fromCustomer?.uid?.let { customerDao.getCustomerById(it)?.toDomain() }
+            orderDomain.fromCustomer?.uid?.let { customerDataService.getById(it) }
                 ?: orderDomain.fromCustomer
         orderDomain.toCustomer =
-            orderDomain.toCustomer?.uid?.let { customerDao.getCustomerById(it)?.toDomain() }
+            orderDomain.toCustomer?.uid?.let { customerDataService.getById(it) }
                 ?: orderDomain.toCustomer
 
         val products =
-            productDao.productsByIds(orderWithItems.orderItems.map { it.product_id })
-                .map { it.asDomainModel() }
+            productDataService.getByIds(orderWithItems.orderItems.map { it.product_id })
         orderDomain.items.forEach {
             val product = products.find { product -> product.id == it.product?.id }
             it.product = product ?: it.product

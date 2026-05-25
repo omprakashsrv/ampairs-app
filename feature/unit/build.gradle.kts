@@ -24,6 +24,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                api(projects.feature.unitApi)
                 implementation(projects.data.common)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
@@ -36,7 +37,7 @@ kotlin {
                 implementation(libs.compose.material3)
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
-                implementation(projects.feature.auth)
+                implementation(projects.feature.authApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 implementation(libs.store5)

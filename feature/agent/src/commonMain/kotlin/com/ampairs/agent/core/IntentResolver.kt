@@ -1,5 +1,8 @@
 package com.ampairs.agent.core
 
+import com.ampairs.common.agent.ActionDescriptor
+import com.ampairs.common.agent.AgentAction
+
 /**
  * Resolves natural language text into an AgentAction.
  *

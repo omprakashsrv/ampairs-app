@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ampairs.workspace.api.model.InstalledModule
+import com.ampairs.subscription.util.SubscriptionOnboardingLookup
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.workspace.navigation.DynamicModuleNavigation
@@ -23,9 +24,6 @@ import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
-import com.ampairs.subscription.ui.screens.SubscriptionOnboardingScreen
-import com.ampairs.subscription.viewmodel.SubscriptionViewModel
-import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Workspace modules screen showing active modules
@@ -40,7 +38,7 @@ fun WorkspaceModulesScreen(
     onNavigateToSubscription: (() -> Unit)? = null,
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     paddingValues: PaddingValues = PaddingValues(0.dp),
-    subscriptionViewModel: SubscriptionViewModel = metroViewModel(),
+    subscriptionOnboardingSlot: @Composable (onboardingManager: SubscriptionOnboardingLookup, onNavigateToPlanSelection: () -> Unit, onContinueWithFree: () -> Unit, onDismiss: () -> Unit) -> Unit = { _, _, _, _ -> },
     viewModel: WorkspaceModulesViewModel = assistedMetroViewModel<WorkspaceModulesViewModel, WorkspaceModulesViewModel.Factory> { create(workspaceId) },
 ) {
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -176,20 +174,14 @@ fun WorkspaceModulesScreen(
 
     // Subscription Onboarding Dialog
     if (showSubscriptionOnboarding && workspaceId.isNotEmpty()) {
-        SubscriptionOnboardingScreen(
-            workspaceId = workspaceId,
-            onNavigateToPlanSelection = {
+        subscriptionOnboardingSlot(
+            viewModel.onboardingManager,
+            {
                 showSubscriptionOnboarding = false
                 onNavigateToSubscription?.invoke()
             },
-            onContinueWithFree = {
-                showSubscriptionOnboarding = false
-            },
-            onDismiss = {
-                showSubscriptionOnboarding = false
-            },
-            viewModel = subscriptionViewModel,
-            onboardingManager = viewModel.onboardingManager
+            { showSubscriptionOnboarding = false },
+            { showSubscriptionOnboarding = false }
         )
     }
 }

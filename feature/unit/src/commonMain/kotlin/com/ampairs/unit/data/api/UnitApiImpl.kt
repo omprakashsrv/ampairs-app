@@ -47,7 +47,7 @@ class UnitApiImpl(
 
         return get(
             client,
-            ApiUrlBuilder.productUrl("v1/units"),
+            ApiUrlBuilder.unitUrl("v1/units"),
             params
         )
     }
@@ -65,7 +65,7 @@ class UnitApiImpl(
 
         return get(
             client,
-            ApiUrlBuilder.productUrl("v1/units/search"),
+            ApiUrlBuilder.unitUrl("v1/units/search"),
             params
         )
     }
@@ -73,14 +73,14 @@ class UnitApiImpl(
     override suspend fun getUnitById(id: String): Response<Unit> {
         return get(
             client,
-            ApiUrlBuilder.productUrl("v1/units/$id")
+            ApiUrlBuilder.unitUrl("v1/units/$id")
         )
     }
 
     override suspend fun createUnit(unit: Unit): Response<Unit> {
         return post(
             client,
-            ApiUrlBuilder.productUrl("v1/units"),
+            ApiUrlBuilder.unitUrl("v1/units"),
             unit
         )
     }
@@ -88,7 +88,7 @@ class UnitApiImpl(
     override suspend fun updateUnit(id: String, unit: Unit): Response<Unit> {
         return post(
             client,
-            ApiUrlBuilder.productUrl("v1/units/$id"),
+            ApiUrlBuilder.unitUrl("v1/units/$id"),
             unit
         )
     }
@@ -96,7 +96,7 @@ class UnitApiImpl(
     override suspend fun deleteUnit(id: String): Response<kotlin.Unit> {
         return delete(
             client,
-            ApiUrlBuilder.productUrl("v1/units/$id")
+            ApiUrlBuilder.unitUrl("v1/units/$id")
         )
     }
 }

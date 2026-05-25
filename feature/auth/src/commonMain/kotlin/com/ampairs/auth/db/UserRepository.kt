@@ -18,6 +18,7 @@ import com.ampairs.auth.domain.asDatabaseModel
 import com.ampairs.auth.domain.asDomainModel
 import com.ampairs.auth.service.RecaptchaService
 import com.ampairs.common.DeviceService
+import com.ampairs.auth.api.UserDataService
 import com.ampairs.common.di.AppScope
 import com.ampairs.common.model.GenericSuccess
 import com.ampairs.common.model.Response
@@ -32,7 +33,7 @@ class UserRepository(
     val deviceService: DeviceService,
     val recaptchaService: RecaptchaService,
     val tokenRepository: TokenRepository,
-) {
+) : UserDataService {
     suspend fun initAuth(phoneNumber: String): Response<AuthInitResponse> {
         val deviceInfo = deviceService.getDeviceInfo()
         val recaptchaToken = recaptchaService.executeLogin()
@@ -171,4 +172,8 @@ class UserRepository(
         return userDao.findByCountryCodeAndPhone(countryCode, phone)
     }
 
+    override suspend fun getUserDisplayName(): String? {
+        val user = getUser() ?: return null
+        return "${user.first_name} ${user.last_name}".trim().ifEmpty { null }
+    }
 }

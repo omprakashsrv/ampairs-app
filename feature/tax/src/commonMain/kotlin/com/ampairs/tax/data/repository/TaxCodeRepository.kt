@@ -20,7 +20,7 @@ import kotlin.time.ExperimentalTime
 class TaxCodeRepository(
     private val taxConfigApi: TaxConfigurationApi,
     private val workspaceTaxCodeDao: TaxCodeDao,
-) {
+) : TaxCodeLookup {
 
     // ==================== Workspace Tax Codes (Offline Available) ====================
 
@@ -57,7 +57,7 @@ class TaxCodeRepository(
     /**
      * Search workspace tax codes (offline)
      */
-    suspend fun searchWorkspaceTaxCodes(query: String, limit: Int = 50): List<TaxCode> {
+    override suspend fun searchWorkspaceTaxCodes(query: String, limit: Int): List<TaxCode> {
         return workspaceTaxCodeDao.searchTaxCodes(query, limit)
             .map { it.toDomain() }
     }
@@ -65,7 +65,7 @@ class TaxCodeRepository(
     /**
      * Increment usage count when tax code is used
      */
-    suspend fun incrementUsageCount(id: String) {
+    override suspend fun incrementUsageCount(id: String) {
         val timestamp = kotlin.time.Clock.System.now().toEpochMilliseconds()
         workspaceTaxCodeDao.incrementUsageCount(id, timestamp)
     }

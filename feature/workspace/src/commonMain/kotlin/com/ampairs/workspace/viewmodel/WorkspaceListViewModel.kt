@@ -7,8 +7,8 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserDataService
 import com.ampairs.auth.api.UserWorkspaceRepository
-import com.ampairs.auth.db.UserRepository
 import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.workspace.EventConnectionManager
@@ -31,7 +31,7 @@ class WorkspaceListViewModel(
     private val workspaceRepository: OfflineFirstWorkspaceRepository,
     private val userWorkspaceRepository: UserWorkspaceRepository,
     private val tokenRepository: TokenRepository,
-    private val userRepository: UserRepository,
+    private val userDataService: UserDataService,
     private val invitationRepository: UserInvitationRepository,
     private val deviceService: DeviceService,
     private val eventConnectionManager: EventConnectionManager,
@@ -51,12 +51,7 @@ class WorkspaceListViewModel(
             _state.value = _state.value.copy(isUserLoading = true)
 
             try {
-                val user = userRepository.getUser()
-                val fullName = if (user != null) {
-                    "${user.first_name} ${user.last_name}".trim()
-                } else {
-                    "User"
-                }
+                val fullName = userDataService.getUserDisplayName() ?: "User"
 
                 _state.value = _state.value.copy(
                     userFullName = fullName,

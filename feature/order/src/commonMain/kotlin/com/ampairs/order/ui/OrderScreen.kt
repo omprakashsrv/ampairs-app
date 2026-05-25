@@ -30,11 +30,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.ampairs.product.ui.components.CartItem
+import com.ampairs.common.components.CartItem
 import com.ampairs.common.format.toDecimal
 import com.ampairs.order.domain.Discount
 import com.ampairs.order.viewmodel.OrderViewModel
-import com.ampairs.product.ui.list.ProductsListScreen
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +43,7 @@ fun OrderScreen(
     toCustomerId: String?,
     id: String?,
     onOrderSaved: (String) -> Unit,
+    productPickerSlot: @Composable (onProductClick: (String) -> Unit) -> Unit = {},
     viewModel: OrderViewModel = assistedMetroViewModel<OrderViewModel, OrderViewModel.Factory> { create(fromCustomerId, toCustomerId, id) }
 ) {
     val orderViewModel = viewModel
@@ -176,14 +176,9 @@ fun OrderScreen(
                         }
                     }
                 }) { innerPadding ->
-                ProductsListScreen(
-                    onProductClick = { productId ->
-                        // Product selected for order item
-                    },
-                    onCreateProduct = { /* no-op in order context */ },
-                    onFormConfig = { /* no-op in order context */ },
-                    modifier = Modifier
-                )
+                productPickerSlot { productId ->
+                    // Product selected for order item
+                }
             }
 
         }

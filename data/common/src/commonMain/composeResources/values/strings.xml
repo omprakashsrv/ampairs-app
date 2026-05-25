@@ -6,4 +6,6 @@
     <string name="update_button_update_now">Update Now</string>
     <string name="update_button_later">Later</string>
     <string name="update_button_exit">Exit</string>
+    <string name="phone_field_label">Phone</string>
+    <string name="phone_code_label">Code</string>
 </resources>

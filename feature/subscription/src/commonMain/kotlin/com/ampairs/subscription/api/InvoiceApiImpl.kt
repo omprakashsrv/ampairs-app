@@ -30,7 +30,7 @@ class InvoiceApiImpl(
         page: Int,
         size: Int
     ): Response<PagedResponse<Invoice>> {
-        val url = ApiUrlBuilder.subscriptionUrl("v1/subscription/invoices") +
+        val url = ApiUrlBuilder.subscriptionUrl("v1/invoices") +
                 "?workspaceId=$workspaceId" +
                 (status?.let { "&status=${it.name}" } ?: "") +
                 "&page=$page&size=$size&sort=createdAt,DESC"
@@ -39,11 +39,11 @@ class InvoiceApiImpl(
     }
 
     override suspend fun getInvoice(invoiceUid: String): Response<Invoice> {
-        return get(client, ApiUrlBuilder.subscriptionUrl("v1/subscription/invoices/$invoiceUid"))
+        return get(client, ApiUrlBuilder.subscriptionUrl("v1/invoices/$invoiceUid"))
     }
 
     override suspend fun getInvoiceSummary(workspaceId: String): Response<InvoiceSummary> {
-        val url = ApiUrlBuilder.subscriptionUrl("v1/subscription/invoices/summary") +
+        val url = ApiUrlBuilder.subscriptionUrl("v1/invoices/summary") +
                 "?workspaceId=$workspaceId"
         return get(client, url)
     }
@@ -54,7 +54,7 @@ class InvoiceApiImpl(
     ): Response<PaymentLinkResponse> {
         return post(
             client,
-            ApiUrlBuilder.subscriptionUrl("v1/subscription/invoices/$invoiceUid/pay"),
+            ApiUrlBuilder.subscriptionUrl("v1/invoices/$invoiceUid/pay"),
             request
         )
     }
@@ -62,7 +62,7 @@ class InvoiceApiImpl(
     override suspend fun retryPayment(invoiceUid: String): Response<PaymentLinkResponse> {
         return post(
             client,
-            ApiUrlBuilder.subscriptionUrl("v1/subscription/invoices/$invoiceUid/retry-payment"),
+            ApiUrlBuilder.subscriptionUrl("v1/invoices/$invoiceUid/retry-payment"),
             Unit  // Empty body
         )
     }
