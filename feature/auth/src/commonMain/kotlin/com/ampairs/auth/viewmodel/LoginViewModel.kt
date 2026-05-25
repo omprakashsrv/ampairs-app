@@ -169,6 +169,7 @@ class LoginViewModel(
     }
 
     fun authenticate(onAuthSuccess: (String) -> Unit) {
+        if (loading) return
         loading = true
         recaptchaLoading = true
         progressMessage = "Verifying reCAPTCHA..."
@@ -251,6 +252,7 @@ class LoginViewModel(
     }
 
     fun completeAuthentication(onAuthComplete: () -> Unit) {
+        if (loading) return
         loading = true
         recaptchaLoading = true
         progressMessage = "Verifying reCAPTCHA..."
@@ -329,6 +331,7 @@ class LoginViewModel(
     }
 
     fun resendOtp(onResendSuccess: (String) -> Unit) {
+        if (loading) return
         loading = true
         recaptchaLoading = true
         progressMessage = "Preparing to resend OTP..."
@@ -363,6 +366,7 @@ class LoginViewModel(
      * Send OTP via Firebase
      */
     fun authenticateWithFirebase(onAuthSuccess: (String) -> Unit) {
+        if (loading) return
         loading = true
         progressMessage = "Sending verification code..."
 
@@ -397,6 +401,7 @@ class LoginViewModel(
      * Verify Firebase OTP and complete authentication
      */
     fun completeFirebaseAuthentication(onAuthComplete: () -> Unit) {
+        if (loading) return
         loading = true
         progressMessage = "Verifying code..."
 
@@ -497,6 +502,7 @@ class LoginViewModel(
      * Resend OTP via Firebase
      */
     fun resendFirebaseOtp(onResendSuccess: (String) -> Unit) {
+        if (loading) return
         loading = true
         progressMessage = "Resending verification code..."
 
@@ -531,6 +537,7 @@ class LoginViewModel(
      * This is called when auto-verification completes and we already have the Firebase ID token
      */
     fun completeFirebaseAuthenticationWithToken(firebaseIdToken: String, onAuthComplete: () -> Unit) {
+        if (loading) return
         loading = true
         progressMessage = "Completing authentication..."
 

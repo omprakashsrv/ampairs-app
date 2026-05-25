@@ -21,10 +21,8 @@ fun Token.asDatabaseModel(userId: String = "legacy_user"): UserTokenEntity {
         user_id = userId,
         refresh_token = refreshToken,
         access_token = accessToken,
-        access_token_expires_at = accessTokenExpiresAt?.toInstant(TimeZone.currentSystemDefault())
-            ?.toEpochMilliseconds(),
-        refresh_token_expires_at = refreshTokenExpiresAt?.toInstant(TimeZone.currentSystemDefault())
-            ?.toEpochMilliseconds(),
+        access_token_expires_at = accessTokenExpiresAt?.toEpochMilliseconds(),
+        refresh_token_expires_at = refreshTokenExpiresAt?.toEpochMilliseconds(),
         expires_at = null // Deprecated field
     )
 }

@@ -1,5 +1,7 @@
 package com.ampairs.workspace.api.model
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -44,15 +46,32 @@ data class WorkspaceListApiModel(
     @SerialName("created_at") val createdAt: String,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class CreateWorkspaceRequest(
     @SerialName("name") val name: String,
     @SerialName("slug") val slug: String? = null,
     @SerialName("description") val description: String? = null,
-    @SerialName("workspace_type") val workspaceType: String = "BUSINESS",
+    @EncodeDefault @SerialName("workspace_type") val workspaceType: String = "BUSINESS",
     @SerialName("avatar_url") val avatarUrl: String? = null,
-    @SerialName("timezone") val timezone: String = "UTC",
-    @SerialName("language") val language: String = "en",
+    @EncodeDefault @SerialName("timezone") val timezone: String = "UTC",
+    @EncodeDefault @SerialName("language") val language: String = "en",
+    @EncodeDefault @SerialName("currency") val currency: String = "INR",
+    @EncodeDefault @SerialName("date_format") val dateFormat: String = "DD-MM-YYYY",
+    @EncodeDefault @SerialName("time_format") val timeFormat: String = "12H",
+    @SerialName("address_line1") val addressLine1: String? = null,
+    @SerialName("address_line2") val addressLine2: String? = null,
+    @SerialName("city") val city: String? = null,
+    @SerialName("state") val state: String? = null,
+    @SerialName("postal_code") val postalCode: String? = null,
+    @SerialName("country") val country: String? = null,
+    @SerialName("phone") val phone: String? = null,
+    @SerialName("email") val email: String? = null,
+    @SerialName("website") val website: String? = null,
+    @SerialName("tax_id") val taxId: String? = null,
+    @SerialName("registration_number") val registrationNumber: String? = null,
+    @SerialName("business_hours_start") val businessHoursStart: String? = null,
+    @SerialName("business_hours_end") val businessHoursEnd: String? = null,
 )
 
 @Serializable
@@ -60,9 +79,24 @@ data class UpdateWorkspaceRequest(
     @SerialName("name") val name: String? = null,
     @SerialName("description") val description: String? = null,
     @SerialName("workspace_type") val workspaceType: String? = null,
-    @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("timezone") val timezone: String? = null,
     @SerialName("language") val language: String? = null,
+    @SerialName("address_line1") val addressLine1: String? = null,
+    @SerialName("address_line2") val addressLine2: String? = null,
+    @SerialName("city") val city: String? = null,
+    @SerialName("state") val state: String? = null,
+    @SerialName("postal_code") val postalCode: String? = null,
+    @SerialName("country") val country: String? = null,
+    @SerialName("phone") val phone: String? = null,
+    @SerialName("email") val email: String? = null,
+    @SerialName("website") val website: String? = null,
+    @SerialName("tax_id") val taxId: String? = null,
+    @SerialName("registration_number") val registrationNumber: String? = null,
+    @SerialName("currency") val currency: String? = null,
+    @SerialName("date_format") val dateFormat: String? = null,
+    @SerialName("time_format") val timeFormat: String? = null,
+    @SerialName("business_hours_start") val businessHoursStart: String? = null,
+    @SerialName("business_hours_end") val businessHoursEnd: String? = null,
 )
 
 
