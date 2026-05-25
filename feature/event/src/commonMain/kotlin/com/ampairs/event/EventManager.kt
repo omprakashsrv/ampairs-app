@@ -12,6 +12,8 @@ import io.ktor.http.encodeURLParameter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,7 +69,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 class EventManager(
     private val workspaceId: String,
-    private val userId: String,
+    @Suppress("unused") private val userId: String,
     private val deviceId: String,
     private val httpClient: HttpClient,
     private val tokenProvider: suspend () -> String,
@@ -84,6 +86,9 @@ class EventManager(
         extraBufferCapacity = 100 // Buffer up to 100 events if collector is slow
     )
     override val events: SharedFlow<WorkspaceEvent> = _events.asSharedFlow()
+
+    // Coroutine scope for all internal launches — single scope, cancelled on disconnect()
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     // Internal state
     private var stompSession: StompSession? = null
@@ -108,11 +113,7 @@ class EventManager(
         connectionTimeout = 30.seconds
     }
 
-    // JSON parser for manual deserialization
-    private val json = Json {
-        ignoreUnknownKeys = true
-        prettyPrint = false
-    }
+    private val json = Json { ignoreUnknownKeys = true }
 
     /**
      * Connect to WebSocket and subscribe to workspace events.
@@ -216,7 +217,7 @@ class EventManager(
 
         EventLogger.i("EventManager", "Scheduling reconnection in ${delay}ms (attempt $reconnectionAttempts)")
 
-        reconnectionJob = CoroutineScope(Dispatchers.Default).launch {
+        reconnectionJob = scope.launch {
             delay(delay)
 
             if (shouldReconnect && isActive) {
@@ -250,7 +251,7 @@ class EventManager(
             EventLogger.i("EventManager", "Subscribing to: $destination")
 
             // Subscribe to STOMP messages and manually deserialize
-            subscriptionJob = CoroutineScope(Dispatchers.Default).launch {
+            subscriptionJob = scope.launch {
                 try {
                     val headers = StompSubscribeHeaders(destination)
                     val subscription = session.subscribe(headers)
@@ -329,7 +330,7 @@ class EventManager(
      * Backend expects heartbeat every 30 seconds to /app/heartbeat
      */
     private fun startHeartbeat() {
-        heartbeatJob = CoroutineScope(Dispatchers.Default).launch {
+        heartbeatJob = scope.launch {
             while (isActive && stompSession != null) {
                 delay(heartbeatIntervalMillis)
 
@@ -352,10 +353,11 @@ class EventManager(
      */
     override suspend fun disconnect() {
         EventLogger.i("EventManager", "Disconnecting from workspace: $workspaceId")
-        shouldReconnect = false // Disable auto-reconnect
+        shouldReconnect = false
         reconnectionJob?.cancel()
         reconnectionJob = null
         cleanup()
+        scope.cancel()
         _connectionState.value = ConnectionState.Disconnected
     }
 
@@ -375,40 +377,13 @@ class EventManager(
         stompSession = null
     }
 
-    /**
-     * Send a text message to a STOMP destination (for future use).
-     * Currently not used as backend auto-broadcasts events.
-     */
-    suspend fun sendTextMessage(destination: String, message: String) {
-        try {
-            val headers = StompSendHeaders(destination)
-            stompSession?.send(headers, FrameBody.Text(message))
-            EventLogger.d("EventManager", "Sent message to: $destination")
-        } catch (e: Exception) {
-            EventLogger.e("EventManager", "Failed to send message", e)
-        }
-    }
-
-    /**
-     * Check if currently connected
-     */
     override fun isConnected(): Boolean {
         return _connectionState.value is ConnectionState.Connected
     }
 
-    /**
-     * Get events for a specific entity type as Flow
-     */
-    override fun getEventsForEntityType(entityType: String): SharedFlow<WorkspaceEvent> {
-        return events
-    }
+    override fun getEventsForEntityType(entityType: String): SharedFlow<WorkspaceEvent> = events
 
-    /**
-     * Get events matching specific event types as Flow
-     */
-    override fun getEventsByType(vararg eventTypes: EventType): SharedFlow<WorkspaceEvent> {
-        return events
-    }
+    override fun getEventsByType(vararg eventTypes: EventType): SharedFlow<WorkspaceEvent> = events
 
     private fun Throwable.isAuthenticationFailure(): Boolean {
         var current: Throwable? = this
