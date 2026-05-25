@@ -94,10 +94,8 @@ fun OtpScreen(
     // Restarts whenever waitingForAutoVerification becomes true
     LaunchedEffect(waitingForAutoVerification) {
         if (waitingForAutoVerification) {
-            println("OtpScreen: ⏳ Starting 8-second timeout for auto-verification")
-            delay(8000) // 8 seconds
+            delay(8000)
             if (waitingForAutoVerification) {
-                println("OtpScreen: ⏰ Auto-verification timeout reached, showing manual OTP input")
                 waitingForAutoVerification = false
             }
         }
@@ -108,33 +106,17 @@ fun OtpScreen(
     LaunchedEffect(verificationState) {
         when (verificationState) {
             is PhoneVerificationState.VerificationCompleted -> {
-                // Auto-verification succeeded
                 if (viewModel.authMethod == AuthMethod.FIREBASE) {
-                    val completedState =
-                        verificationState as PhoneVerificationState.VerificationCompleted
-                    println("OtpScreen: ✅ Auto-verification succeeded, proceeding with authentication")
+                    val completedState = verificationState as PhoneVerificationState.VerificationCompleted
                     waitingForAutoVerification = false
-                    // completedState.userId contains the Firebase JWT ID token for backend verification
-                    viewModel.completeFirebaseAuthenticationWithToken(
-                        completedState.userId
-                    ) { onAuthSuccess() }
+                    viewModel.completeFirebaseAuthenticationWithToken(completedState.userId) { onAuthSuccess() }
                 }
             }
-
             is PhoneVerificationState.VerificationFailed -> {
-                // Auto-verification failed, show manual OTP input
-                println("OtpScreen: ❌ Auto-verification failed, showing manual OTP input")
                 waitingForAutoVerification = false
             }
-
-            is PhoneVerificationState.CodeSent -> {
-                // Code sent, continue waiting for auto-verification
-                println("OtpScreen: 📨 Code sent, waiting for auto-verification...")
-            }
-
-            PhoneVerificationState.Idle -> {
-                // Idle state
-            }
+            is PhoneVerificationState.CodeSent -> Unit
+            PhoneVerificationState.Idle -> Unit
         }
     }
 
@@ -251,10 +233,7 @@ fun OtpScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(
-                            onClick = {
-                                println("OtpScreen: 👆 User chose to enter code manually")
-                                waitingForAutoVerification = false
-                            }
+                            onClick = { waitingForAutoVerification = false }
                         ) {
                             Text(stringResource(Res.string.otp_enter_manually))
                         }

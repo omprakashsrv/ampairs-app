@@ -157,9 +157,7 @@ class UserUpdateViewModel(
                 selectedImageFileName = fileName
                 selectedImageContentType = contentType
 
-                println("Profile picture selected: $fileName ($fileSize bytes)")
             } catch (e: Exception) {
-                println("Error picking profile picture: ${e.message}")
                 displayMessage = "Failed to select image"
             }
         }
@@ -189,8 +187,6 @@ class UserUpdateViewModel(
                 val updatedUser = response.data!!
                 // Save updated user (with new profile picture) to local database
                 userRepository.saveUser(updatedUser)
-                println("UserUpdateViewModel: ✅ Saved user with new profile picture to local database")
-
                 uploadPictureState = UiState.Success(updatedUser)
                 // Use API endpoint URL for profile picture, not the raw storage path
                 this@UserUpdateViewModel.profilePictureUrl = if (!updatedUser.profilePictureUrl.isNullOrBlank()) {
@@ -228,8 +224,6 @@ class UserUpdateViewModel(
                 val updatedUser = response.data!!
                 // Save updated user to local database
                 userRepository.saveUser(updatedUser)
-                println("UserUpdateViewModel: ✅ Saved updated user to local database: ${updatedUser.firstName} ${updatedUser.lastName}")
-
                 updateUserState = UiState.Success(updatedUser)
                 displayMessage = "Profile updated successfully"
                 onSuccess()

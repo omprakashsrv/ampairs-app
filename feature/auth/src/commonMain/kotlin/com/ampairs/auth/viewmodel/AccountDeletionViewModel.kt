@@ -70,29 +70,11 @@ class AccountDeletionViewModel(
                 authApi.requestAccountDeletion(
                     AccountDeletionRequest(confirmed = false, reason = null)
                 ).onSuccess {
-                    println("🔍 Account deletion check - deletionRequested: ${this.deletionRequested}")
-                    println("🔍 blockingWorkspaces: ${this.blockingWorkspaces?.joinToString { it.workspaceName } ?: "null"}")
-
-                    // The backend returns blockingWorkspaces if user owns any workspaces
-                    val workspaces = this.blockingWorkspaces ?: emptyList()
-                    ownedWorkspaces = workspaces
-
-                    if (workspaces.isNotEmpty()) {
-                        println("✅ Found ${workspaces.size} owned workspace(s):")
-                        workspaces.forEach {
-                            println("   - ${it.workspaceName} (${it.memberCount} members)")
-                        }
-                    } else {
-                        println("✅ No owned workspaces - user can proceed with deletion")
-                    }
+                    ownedWorkspaces = this.blockingWorkspaces ?: emptyList()
                 }.onError {
-                    println("❌ Error checking owned workspaces: ${this.message}")
-                    // On error, assume no owned workspaces (backend will validate on actual deletion)
                     ownedWorkspaces = emptyList()
                 }
             } catch (e: Exception) {
-                println("❌ Network error checking owned workspaces: ${e.message}")
-                // On network error, assume no owned workspaces (backend will validate on actual deletion)
                 ownedWorkspaces = emptyList()
             }
 
@@ -119,8 +101,6 @@ class AccountDeletionViewModel(
                     statusState = UiState.Empty
                 }
             } catch (e: Exception) {
-                println("❌ Network error loading deletion status: ${e.message}")
-                // On network error, assume no pending deletion
                 statusState = UiState.Empty
             }
         }
@@ -156,12 +136,9 @@ class AccountDeletionViewModel(
                                 authApi.clearToken()
 
                                 // Delete user entity from local database
-                                currentUserId?.let { userId ->
-                                    userDao.deleteById(userId)
-                                    println("✅ Deleted user entity from local database: $userId")
-                                }
-                            } catch (e: Exception) {
-                                println("⚠️ Failed to cleanup user data: ${e.message}")
+                                currentUserId?.let { userId -> userDao.deleteById(userId) }
+                            } catch (_: Exception) {
+                                // cleanup failure is non-fatal — account deletion already succeeded
                             }
                         }
 
@@ -177,8 +154,7 @@ class AccountDeletionViewModel(
                     deletionState = UiState.Error(this.message.ifEmpty { "Failed to delete account" })
                     displayMessage = this.message.ifEmpty { "Failed to delete account" }
                 }
-            } catch (e: Exception) {
-                println("❌ Network error requesting account deletion: ${e.message}")
+            } catch (_: Exception) {
                 deletionState = UiState.Error("Unable to connect to server. Please check your network connection.")
                 displayMessage = "Unable to connect to server. Please check your network connection."
             }
@@ -198,8 +174,7 @@ class AccountDeletionViewModel(
                     deletionState = UiState.Error(this.message.ifEmpty { "Failed to cancel deletion" })
                     displayMessage = this.message.ifEmpty { "Failed to cancel deletion" }
                 }
-            } catch (e: Exception) {
-                println("❌ Network error canceling account deletion: ${e.message}")
+            } catch (_: Exception) {
                 deletionState = UiState.Error("Unable to connect to server. Please check your network connection.")
                 displayMessage = "Unable to connect to server. Please check your network connection."
             }
@@ -218,9 +193,9 @@ class AccountDeletionViewModel(
                 currentUserId?.let { userId ->
                     try {
                         userDao.deleteById(userId)
-                    } catch (e: Exception) { }
+                    } catch (_: Exception) { }
                 }
-            } catch (e: Exception) { }
+            } catch (_: Exception) { }
             onLogoutComplete()
         }
     }

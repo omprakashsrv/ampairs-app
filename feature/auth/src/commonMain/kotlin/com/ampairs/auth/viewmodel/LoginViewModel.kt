@@ -13,7 +13,6 @@ import com.ampairs.auth.domain.AuthMethod
 import com.ampairs.auth.domain.FirebaseAuthResult
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.firebase.FirebaseAuthRepository
-import com.ampairs.common.DeviceService
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.firebase.analytics.AnalyticsEvents
 import com.ampairs.common.firebase.analytics.AnalyticsParams
@@ -30,6 +29,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed interface LoginNavEvent {
     object LoginSuccess : LoginNavEvent
@@ -59,86 +59,60 @@ class LoginViewModel(
     var loading by mutableStateOf(false)
     var recaptchaLoading by mutableStateOf(false)
     var progressMessage by mutableStateOf("")
-    var loginStatus by mutableStateOf(
-        LoginStatus.INIT
-    )
+    var loginStatus by mutableStateOf(LoginStatus.INIT)
 
-    // Firebase-specific state
     var firebaseVerificationId by mutableStateOf("")
 
-    // Store Firebase ID token from auto-verification (if available)
-    // When auto-verification completes, this token can be used directly
-    private var autoVerifiedFirebaseToken: String? = null
-
-    // Authentication method selection
     var authMethod by mutableStateOf(
         if (firebaseAuthRepository.isSupported()) AuthMethod.FIREBASE else AuthMethod.BACKEND_API
     )
 
-    // Check if Firebase is supported on this platform
-    val isFirebaseSupported: Boolean = firebaseAuthRepository.isSupported()
-
-    // Firebase verification state (for auto-verification detection)
     val firebaseVerificationState = firebaseAuthRepository.verificationState
 
-    // Existing user state
     var existingUser by mutableStateOf<UserEntity?>(null)
 
     fun checkUserLogin(onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit) {
         viewModelScope.launch(DispatcherProvider.io) {
             val token = userRepository.getToken()
-            if (token != null) {
-                if (token.refreshToken.isEmpty() || token.accessToken.isEmpty()) {
-                    viewModelScope.launch(Dispatchers.Main) {
-                        loginStatus = LoginStatus.NOT_LOGGED_IN
-                        onLoginStatus(loginStatus, null)
-                    }
-                    return@launch
+            if (token == null) {
+                withContext(Dispatchers.Main) {
+                    loginStatus = LoginStatus.NOT_LOGGED_IN
+                    onLoginStatus(loginStatus, null)
                 }
-                val userEntity = userRepository.getUser()
-                if (userEntity == null) {
-                    val userApiResponse = userRepository.getUserApi()
-                    userApiResponse.onSuccess {
-                        val userData = this
-                        viewModelScope.launch(DispatcherProvider.io) {
-                            // Save the new user
-                            userRepository.saveUser(userData)
-
-                            // Associate the current token with this user
-                            tokenRepository.addAuthenticatedUser(userData.id, token.accessToken, token.refreshToken)
-
-                            // Set this user as the current user
-                            tokenRepository.setCurrentUser(userData.id)
-
-                            // Get the saved user entity
-                            val savedUserEntity = userRepository.getUserById(userData.id)
-                            
-                            delay(1000)
-                            viewModelScope.launch(Dispatchers.Main) {
-                                loginStatus = LoginStatus.LOGGED_IN
-                                onLoginStatus(loginStatus, savedUserEntity)
-                            }
-                        }
-                    }.onError {
-                        viewModelScope.launch(Dispatchers.Main) {
-                            loginStatus = LoginStatus.LOGIN_FAILED
-                            onLoginStatus(loginStatus, null)
-                        }
+                return@launch
+            }
+            if (token.refreshToken.isEmpty() || token.accessToken.isEmpty()) {
+                withContext(Dispatchers.Main) {
+                    loginStatus = LoginStatus.NOT_LOGGED_IN
+                    onLoginStatus(loginStatus, null)
+                }
+                return@launch
+            }
+            val userEntity = userRepository.getUser()
+            if (userEntity == null) {
+                val apiResult = userRepository.getUserApi()
+                if (apiResult.data != null && apiResult.error == null) {
+                    val userData = apiResult.data!!
+                    userRepository.saveUser(userData)
+                    tokenRepository.addAuthenticatedUser(userData.id, token.accessToken, token.refreshToken)
+                    tokenRepository.setCurrentUser(userData.id)
+                    val savedUserEntity = userRepository.getUserById(userData.id)
+                    delay(1000)
+                    withContext(Dispatchers.Main) {
+                        loginStatus = LoginStatus.LOGGED_IN
+                        onLoginStatus(loginStatus, savedUserEntity)
                     }
                 } else {
-                    // User exists, make sure they're set as current user
-                    viewModelScope.launch(DispatcherProvider.io) {
-                        tokenRepository.setCurrentUser(userEntity.id)
-                        viewModelScope.launch(Dispatchers.Main) {
-                            loginStatus = LoginStatus.LOGGED_IN
-                            onLoginStatus(loginStatus, userEntity)
-                        }
+                    withContext(Dispatchers.Main) {
+                        loginStatus = LoginStatus.LOGIN_FAILED
+                        onLoginStatus(loginStatus, null)
                     }
                 }
             } else {
-                viewModelScope.launch(Dispatchers.Main) {
-                    loginStatus = LoginStatus.NOT_LOGGED_IN
-                    onLoginStatus(loginStatus, null)
+                tokenRepository.setCurrentUser(userEntity.id)
+                withContext(Dispatchers.Main) {
+                    loginStatus = LoginStatus.LOGGED_IN
+                    onLoginStatus(loginStatus, userEntity)
                 }
             }
         }
@@ -147,7 +121,7 @@ class LoginViewModel(
     fun checkExistingUser(onExistingUserFound: (UserEntity) -> Unit, onNoExistingUser: () -> Unit) {
         viewModelScope.launch(DispatcherProvider.io) {
             val user = userRepository.findExistingUser(countryCode = 91, phone = phoneNumber)
-            viewModelScope.launch(Dispatchers.Main) {
+            withContext(Dispatchers.Main) {
                 if (user != null) {
                     existingUser = user
                     onExistingUserFound(user)
@@ -162,9 +136,7 @@ class LoginViewModel(
     fun selectExistingUser(userId: String, onUserSelected: () -> Unit) {
         viewModelScope.launch(DispatcherProvider.io) {
             tokenRepository.setCurrentUser(userId)
-            viewModelScope.launch(Dispatchers.Main) {
-                onUserSelected()
-            }
+            withContext(Dispatchers.Main) { onUserSelected() }
         }
     }
 
@@ -175,24 +147,24 @@ class LoginViewModel(
         progressMessage = "Verifying reCAPTCHA..."
 
         viewModelScope.launch(DispatcherProvider.io) {
-            // Create dummy user session for token operations during auth flow
             tokenRepository.createDummyUserSession()
-
-            userRepository.initAuth(phoneNumber).onSuccess {
-                viewModelScope.launch(Dispatchers.Main) {
+            val result = userRepository.initAuth(phoneNumber)
+            if (result.data != null && result.error == null) {
+                val data = result.data!!
+                withContext(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
                     progressMessage = ""
-                    if (this@onSuccess.success && this@onSuccess.sessionId != null) {
-                        this@LoginViewModel.sessionId = this@onSuccess.sessionId
-                        onAuthSuccess(this@onSuccess.sessionId)
+                    if (data.success && data.sessionId != null) {
+                        this@LoginViewModel.sessionId = data.sessionId
+                        onAuthSuccess(data.sessionId)
                     } else {
-                        displayMessage = this@onSuccess.error?.message ?: "Authentication failed"
+                        displayMessage = data.error?.message ?: "Authentication failed"
                     }
                 }
-            }.onError {
-                displayMessage = this@onError.message
-                viewModelScope.launch(Dispatchers.Main) {
+            } else {
+                withContext(Dispatchers.Main) {
+                    displayMessage = result.error?.message ?: ""
                     loading = false
                     recaptchaLoading = false
                     progressMessage = ""
@@ -206,13 +178,9 @@ class LoginViewModel(
             if (userEntity?.first_name.isNullOrBlank()) {
                 _navEvent.emit(LoginNavEvent.NavigateToUserUpdate)
             } else {
-                val userId = userEntity!!.id
+                val userId = userEntity.id
                 val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(userId).isNotBlank()
-                if (hasWorkspace) {
-                    _navEvent.emit(LoginNavEvent.LoginSuccess)
-                } else {
-                    _navEvent.emit(LoginNavEvent.NavigateToWorkspace)
-                }
+                _navEvent.emit(if (hasWorkspace) LoginNavEvent.LoginSuccess else LoginNavEvent.NavigateToWorkspace)
             }
         }
     }
@@ -223,12 +191,11 @@ class LoginViewModel(
                 val deletionStatusResponse = userRepository.getAccountDeletionStatus()
                 var navigateToRestore = false
                 deletionStatusResponse.onSuccess { navigateToRestore = isDeleted && canRestore }
-                if (navigateToRestore) {
-                    _navEvent.emit(LoginNavEvent.NavigateToAccountRestore)
-                } else {
-                    _navEvent.emit(LoginNavEvent.NavigateToUserUpdate)
-                }
-            } catch (e: Exception) {
+                _navEvent.emit(
+                    if (navigateToRestore) LoginNavEvent.NavigateToAccountRestore
+                    else LoginNavEvent.NavigateToUserUpdate
+                )
+            } catch (_: Exception) {
                 _navEvent.emit(LoginNavEvent.NavigateToUserUpdate)
             }
         }
@@ -238,11 +205,7 @@ class LoginViewModel(
         viewModelScope.launch {
             val currentUserId = tokenRepository.getCurrentUserId() ?: return@launch
             val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
-            if (hasWorkspace) {
-                _navEvent.emit(LoginNavEvent.LoginSuccess)
-            } else {
-                _navEvent.emit(LoginNavEvent.NavigateToWorkspace)
-            }
+            _navEvent.emit(if (hasWorkspace) LoginNavEvent.LoginSuccess else LoginNavEvent.NavigateToWorkspace)
         }
     }
 
@@ -258,74 +221,40 @@ class LoginViewModel(
         progressMessage = "Verifying reCAPTCHA..."
 
         viewModelScope.launch(DispatcherProvider.io) {
-            userRepository.completeAuth(sessionId, otp).onSuccess {
-                // Store tokens to dummy session (now getCurrentUserId() will work)
-                tokenRepository.updateToken(this.accessToken, this.refreshToken)
-
-                // Store the token response for later use
-                val authResponse = this
-
-                // Now fetch user information (API call will work because dummy session has tokens)
-                viewModelScope.launch(DispatcherProvider.io) {
-                    val userApiResponse = userRepository.getUserApi()
-                    userApiResponse.onSuccess {
-                        val userData = this
-                        viewModelScope.launch(DispatcherProvider.io) {
-                            // Check if user already exists (login) or is new (sign up)
-                            val existingUser = userRepository.getUserById(userData.id)
-                            val isNewUser = existingUser == null
-
-                            // Save user to database
-                            userRepository.saveUser(userData)
-
-                            // Replace dummy session with real user session and tokens
-                            tokenRepository.updateDummySessionWithRealUser(
-                                userData.id,
-                                authResponse.accessToken, authResponse.refreshToken
-                            )
-
-                            // Set Firebase Analytics user ID
-                            analytics.setUserId(userData.id)
-
-                            // Log analytics event
-                            if (isNewUser) {
-                                analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
-                                    AnalyticsParams.METHOD to "backend_api"
-                                ))
-                            } else {
-                                analytics.logEvent(AnalyticsEvents.LOGIN, mapOf(
-                                    AnalyticsParams.METHOD to "backend_api"
-                                ))
-                            }
-
-                            // Normal flow - auth complete
-                            viewModelScope.launch(Dispatchers.Main) {
-                                delay(1000)
-                                onAuthComplete()
-                                loading = false
-                                recaptchaLoading = false
-                                progressMessage = ""
-                            }
-                        }
-                    }.onError {
-                        // Even if user fetch fails, continue with authentication complete
-                        // The user will be fetched later in checkUserLogin()
-                        viewModelScope.launch(Dispatchers.Main) {
-                            delay(1000)
-                            onAuthComplete()
-                            loading = false
-                            recaptchaLoading = false
-                            progressMessage = ""
-                        }
-                    }
-                }
-            }.onError {
-                displayMessage = this@onError.message
-                viewModelScope.launch(Dispatchers.Main) {
+            val authResult = userRepository.completeAuth(sessionId, otp)
+            if (authResult.data == null || authResult.error != null) {
+                withContext(Dispatchers.Main) {
+                    displayMessage = authResult.error?.message ?: ""
                     loading = false
                     recaptchaLoading = false
                     progressMessage = ""
                 }
+                return@launch
+            }
+            val authData = authResult.data!!
+            tokenRepository.updateToken(authData.accessToken, authData.refreshToken)
+
+            val userResult = userRepository.getUserApi()
+            if (userResult.data != null && userResult.error == null) {
+                val userData = userResult.data!!
+                val isNewUser = userRepository.getUserById(userData.id) == null
+                userRepository.saveUser(userData)
+                tokenRepository.updateDummySessionWithRealUser(
+                    userData.id, authData.accessToken, authData.refreshToken
+                )
+                analytics.setUserId(userData.id)
+                analytics.logEvent(
+                    if (isNewUser) AnalyticsEvents.SIGN_UP else AnalyticsEvents.LOGIN,
+                    mapOf(AnalyticsParams.METHOD to "backend_api")
+                )
+            }
+            // Even if user fetch fails, complete auth — user fetched later in checkUserLogin()
+            withContext(Dispatchers.Main) {
+                delay(1000)
+                onAuthComplete()
+                loading = false
+                recaptchaLoading = false
+                progressMessage = ""
             }
         }
     }
@@ -337,21 +266,23 @@ class LoginViewModel(
         progressMessage = "Preparing to resend OTP..."
 
         viewModelScope.launch(DispatcherProvider.io) {
-            userRepository.resendOtp(phoneNumber).onSuccess {
-                viewModelScope.launch(Dispatchers.Main) {
+            val result = userRepository.resendOtp(phoneNumber)
+            if (result.data != null && result.error == null) {
+                val data = result.data!!
+                withContext(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
                     progressMessage = ""
-                    if (this@onSuccess.success && this@onSuccess.sessionId != null) {
-                        this@LoginViewModel.sessionId = this@onSuccess.sessionId
-                        onResendSuccess(this@onSuccess.sessionId)
+                    if (data.success && data.sessionId != null) {
+                        this@LoginViewModel.sessionId = data.sessionId
+                        onResendSuccess(data.sessionId)
                     } else {
-                        displayMessage = this@onSuccess.error?.message ?: "Failed to resend OTP"
+                        displayMessage = data.error?.message ?: "Failed to resend OTP"
                     }
                 }
-            }.onError {
-                displayMessage = this@onError.message
-                viewModelScope.launch(Dispatchers.Main) {
+            } else {
+                withContext(Dispatchers.Main) {
+                    displayMessage = result.error?.message ?: ""
                     loading = false
                     recaptchaLoading = false
                     progressMessage = ""
@@ -362,145 +293,90 @@ class LoginViewModel(
 
     // ========== Firebase Authentication Methods ==========
 
-    /**
-     * Send OTP via Firebase
-     */
     fun authenticateWithFirebase(onAuthSuccess: (String) -> Unit) {
         if (loading) return
         loading = true
         progressMessage = "Sending verification code..."
 
         viewModelScope.launch(DispatcherProvider.io) {
-            // Extract country code (assuming 91 for now, can be made dynamic)
             val countryCode = "91"
-
             when (val result = firebaseAuthRepository.sendOtp(countryCode, phoneNumber)) {
                 is FirebaseAuthResult.Success -> {
-                    firebaseVerificationId = result.data
-                    viewModelScope.launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
+                        firebaseVerificationId = result.data
                         loading = false
                         progressMessage = ""
                         onAuthSuccess(result.data)
                     }
                 }
                 is FirebaseAuthResult.Error -> {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         loading = false
                         progressMessage = ""
                         displayMessage = result.message
                     }
                 }
-                FirebaseAuthResult.Loading -> {
-                    // Already in loading state
-                }
+                FirebaseAuthResult.Loading -> Unit
             }
         }
     }
 
-    /**
-     * Verify Firebase OTP and complete authentication
-     */
     fun completeFirebaseAuthentication(onAuthComplete: () -> Unit) {
         if (loading) return
         loading = true
         progressMessage = "Verifying code..."
 
         viewModelScope.launch(DispatcherProvider.io) {
-            // Create dummy user session for token operations during auth flow
             tokenRepository.createDummyUserSession()
-
             when (val result = firebaseAuthRepository.verifyOtp(firebaseVerificationId, otp)) {
                 is FirebaseAuthResult.Success -> {
                     val firebaseIdToken = result.data
-
                     val verifiedPhoneNumber = phoneNumber
-
-                    // After Firebase auth succeeds, verify with backend and get JWT tokens
-                    viewModelScope.launch(DispatcherProvider.io) {
-                        userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber).onSuccess {
-                            // Store tokens to dummy session (now getCurrentUserId() will work)
-                            tokenRepository.updateToken(this.accessToken, this.refreshToken)
-
-                            // Store the token response for later use
-                            val authResponse = this
-
-                            // Now fetch user information (API call will work because dummy session has tokens)
-                            viewModelScope.launch(DispatcherProvider.io) {
-                                val userApiResponse = userRepository.getUserApi()
-                                userApiResponse.onSuccess {
-                                    val userData = this
-                                    viewModelScope.launch(DispatcherProvider.io) {
-                                        // Check if user already exists (login) or is new (sign up)
-                                        val existingUser = userRepository.getUserById(userData.id)
-                                        val isNewUser = existingUser == null
-
-                                        // Save user to database
-                                        userRepository.saveUser(userData)
-
-                                        // Replace dummy session with real user session and tokens
-                                        tokenRepository.updateDummySessionWithRealUser(
-                                            userData.id,
-                                            authResponse.accessToken, authResponse.refreshToken
-                                        )
-
-                                        // Set Firebase Analytics user ID
-                                        analytics.setUserId(userData.id)
-
-                                        // Log analytics event
-                                        if (isNewUser) {
-                                            analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
-                                                AnalyticsParams.METHOD to "firebase_phone"
-                                            ))
-                                        } else {
-                                            analytics.logEvent(AnalyticsEvents.LOGIN, mapOf(
-                                                AnalyticsParams.METHOD to "firebase_phone"
-                                            ))
-                                        }
-
-                                        viewModelScope.launch(Dispatchers.Main) {
-                                            delay(1000)
-                                            onAuthComplete()
-                                            loading = false
-                                            progressMessage = ""
-                                        }
-                                    }
-                                }.onError {
-                                    // Even if user fetch fails, continue with authentication complete
-                                    // The user will be fetched later in checkUserLogin()
-                                    viewModelScope.launch(Dispatchers.Main) {
-                                        delay(1000)
-                                        onAuthComplete()
-                                        loading = false
-                                        progressMessage = ""
-                                    }
-                                }
-                            }
-                        }.onError {
-                            displayMessage = this@onError.message
-                            viewModelScope.launch(Dispatchers.Main) {
-                                loading = false
-                                progressMessage = ""
-                            }
+                    val backendResult = userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber)
+                    if (backendResult.data == null || backendResult.error != null) {
+                        withContext(Dispatchers.Main) {
+                            displayMessage = backendResult.error?.message ?: ""
+                            loading = false
+                            progressMessage = ""
                         }
+                        return@launch
+                    }
+                    val authData = backendResult.data!!
+                    tokenRepository.updateToken(authData.accessToken, authData.refreshToken)
+
+                    val userResult = userRepository.getUserApi()
+                    if (userResult.data != null && userResult.error == null) {
+                        val userData = userResult.data!!
+                        val isNewUser = userRepository.getUserById(userData.id) == null
+                        userRepository.saveUser(userData)
+                        tokenRepository.updateDummySessionWithRealUser(
+                            userData.id, authData.accessToken, authData.refreshToken
+                        )
+                        analytics.setUserId(userData.id)
+                        analytics.logEvent(
+                            if (isNewUser) AnalyticsEvents.SIGN_UP else AnalyticsEvents.LOGIN,
+                            mapOf(AnalyticsParams.METHOD to "firebase_phone")
+                        )
+                    }
+                    withContext(Dispatchers.Main) {
+                        delay(1000)
+                        onAuthComplete()
+                        loading = false
+                        progressMessage = ""
                     }
                 }
                 is FirebaseAuthResult.Error -> {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         loading = false
                         progressMessage = ""
                         displayMessage = result.message
                     }
                 }
-                FirebaseAuthResult.Loading -> {
-                    // Already in loading state
-                }
+                FirebaseAuthResult.Loading -> Unit
             }
         }
     }
 
-    /**
-     * Resend OTP via Firebase
-     */
     fun resendFirebaseOtp(onResendSuccess: (String) -> Unit) {
         if (loading) return
         loading = true
@@ -508,120 +384,72 @@ class LoginViewModel(
 
         viewModelScope.launch(DispatcherProvider.io) {
             val countryCode = "91"
-
             when (val result = firebaseAuthRepository.resendOtp(countryCode, phoneNumber)) {
                 is FirebaseAuthResult.Success -> {
-                    firebaseVerificationId = result.data
-                    viewModelScope.launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
+                        firebaseVerificationId = result.data
                         loading = false
                         progressMessage = ""
                         onResendSuccess(result.data)
                     }
                 }
                 is FirebaseAuthResult.Error -> {
-                    viewModelScope.launch(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
                         loading = false
                         progressMessage = ""
                         displayMessage = result.message
                     }
                 }
-                FirebaseAuthResult.Loading -> {
-                    // Already in loading state
-                }
+                FirebaseAuthResult.Loading -> Unit
             }
         }
     }
 
-    /**
-     * Complete Firebase authentication using auto-verified token
-     * This is called when auto-verification completes and we already have the Firebase ID token
-     */
     fun completeFirebaseAuthenticationWithToken(firebaseIdToken: String, onAuthComplete: () -> Unit) {
         if (loading) return
         loading = true
         progressMessage = "Completing authentication..."
 
         viewModelScope.launch(DispatcherProvider.io) {
-            // Create dummy user session for token operations during auth flow
             tokenRepository.createDummyUserSession()
-
             val verifiedPhoneNumber = phoneNumber
-
-            // Verify with backend using the auto-verified Firebase ID token
-            userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber).onSuccess {
-                // Store tokens to dummy session (now getCurrentUserId() will work)
-                tokenRepository.updateToken(this.accessToken, this.refreshToken)
-
-                // Store the token response for later use
-                val authResponse = this
-
-                // Now fetch user information (API call will work because dummy session has tokens)
-                viewModelScope.launch(DispatcherProvider.io) {
-                    val userApiResponse = userRepository.getUserApi()
-                    userApiResponse.onSuccess {
-                        val userData = this
-                        viewModelScope.launch(DispatcherProvider.io) {
-                            // Check if user already exists (login) or is new (sign up)
-                            val existingUser = userRepository.getUserById(userData.id)
-                            val isNewUser = existingUser == null
-
-                            // Save user to database
-                            userRepository.saveUser(userData)
-
-                            // Replace dummy session with real user session and tokens
-                            tokenRepository.updateDummySessionWithRealUser(
-                                userData.id,
-                                authResponse.accessToken, authResponse.refreshToken
-                            )
-
-                            // Set Firebase Analytics user ID
-                            analytics.setUserId(userData.id)
-
-                            // Log analytics event
-                            if (isNewUser) {
-                                analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
-                                    AnalyticsParams.METHOD to "firebase_phone_auto"
-                                ))
-                            } else {
-                                analytics.logEvent(AnalyticsEvents.LOGIN, mapOf(
-                                    AnalyticsParams.METHOD to "firebase_phone_auto"
-                                ))
-                            }
-
-                            viewModelScope.launch(Dispatchers.Main) {
-                                delay(1000)
-                                onAuthComplete()
-                                loading = false
-                                progressMessage = ""
-                            }
-                        }
-                    }.onError {
-                        // Even if user fetch fails, continue with authentication complete
-                        // The user will be fetched later in checkUserLogin()
-                        viewModelScope.launch(Dispatchers.Main) {
-                            delay(1000)
-                            onAuthComplete()
-                            loading = false
-                            progressMessage = ""
-                        }
-                    }
-                }
-            }.onError {
-                displayMessage = this@onError.message
-                viewModelScope.launch(Dispatchers.Main) {
+            val backendResult = userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber)
+            if (backendResult.data == null || backendResult.error != null) {
+                withContext(Dispatchers.Main) {
+                    displayMessage = backendResult.error?.message ?: ""
                     loading = false
                     progressMessage = ""
                 }
+                return@launch
+            }
+            val authData = backendResult.data!!
+            tokenRepository.updateToken(authData.accessToken, authData.refreshToken)
+
+            val userResult = userRepository.getUserApi()
+            if (userResult.data != null && userResult.error == null) {
+                val userData = userResult.data!!
+                val isNewUser = userRepository.getUserById(userData.id) == null
+                userRepository.saveUser(userData)
+                tokenRepository.updateDummySessionWithRealUser(
+                    userData.id, authData.accessToken, authData.refreshToken
+                )
+                analytics.setUserId(userData.id)
+                analytics.logEvent(
+                    if (isNewUser) AnalyticsEvents.SIGN_UP else AnalyticsEvents.LOGIN,
+                    mapOf(AnalyticsParams.METHOD to "firebase_phone_auto")
+                )
+            }
+            withContext(Dispatchers.Main) {
+                delay(1000)
+                onAuthComplete()
+                loading = false
+                progressMessage = ""
             }
         }
     }
 
     // ========== Desktop Browser Authentication Methods ==========
 
-    /**
-     * Handle authentication tokens received from browser deep link
-     * This is called when the desktop app receives tokens via ampairs://auth deep link
-     */
     fun handleBrowserAuthTokens(
         accessToken: String,
         refreshToken: String,
@@ -633,61 +461,34 @@ class LoginViewModel(
 
         viewModelScope.launch(DispatcherProvider.io) {
             try {
-                // Create dummy user session for token operations
                 tokenRepository.createDummyUserSession()
-
-                // Store tokens to dummy session
                 tokenRepository.updateToken(accessToken, refreshToken)
-
-                // Fetch user information using the tokens
-                val userApiResponse = userRepository.getUserApi()
-                userApiResponse.onSuccess {
-                    val userData = this
-                    viewModelScope.launch(DispatcherProvider.io) {
-                        // Check if user already exists (login) or is new (sign up)
-                        val existingUser = userRepository.getUserById(userData.id)
-                        val isNewUser = existingUser == null
-
-                        // Save user to database
-                        userRepository.saveUser(userData)
-
-                        // Replace dummy session with real user session and tokens
-                        tokenRepository.updateDummySessionWithRealUser(
-                            userData.id,
-                            accessToken,
-                            refreshToken
-                        )
-
-                        // Set Firebase Analytics user ID
-                        analytics.setUserId(userData.id)
-
-                        // Log analytics event
-                        if (isNewUser) {
-                            analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
-                                AnalyticsParams.METHOD to "desktop_browser"
-                            ))
-                        } else {
-                            analytics.logEvent(AnalyticsEvents.LOGIN, mapOf(
-                                AnalyticsParams.METHOD to "desktop_browser"
-                            ))
-                        }
-
-                        viewModelScope.launch(Dispatchers.Main) {
-                            loading = false
-                            progressMessage = ""
-                            delay(500) // Small delay for better UX
-                            onSuccess()
-                        }
-                    }
-                }.onError {
-                    viewModelScope.launch(Dispatchers.Main) {
+                val userResult = userRepository.getUserApi()
+                if (userResult.data != null && userResult.error == null) {
+                    val userData = userResult.data!!
+                    val isNewUser = userRepository.getUserById(userData.id) == null
+                    userRepository.saveUser(userData)
+                    tokenRepository.updateDummySessionWithRealUser(userData.id, accessToken, refreshToken)
+                    analytics.setUserId(userData.id)
+                    analytics.logEvent(
+                        if (isNewUser) AnalyticsEvents.SIGN_UP else AnalyticsEvents.LOGIN,
+                        mapOf(AnalyticsParams.METHOD to "desktop_browser")
+                    )
+                    withContext(Dispatchers.Main) {
                         loading = false
                         progressMessage = ""
-                        onError("Failed to fetch user information: ${this@onError.message}")
+                        delay(500)
+                        onSuccess()
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        loading = false
+                        progressMessage = ""
+                        onError("Failed to fetch user information: ${userResult.error?.message}")
                     }
                 }
             } catch (e: Exception) {
-                viewModelScope.launch(Dispatchers.Main) {
+                withContext(Dispatchers.Main) {
                     loading = false
                     progressMessage = ""
                     onError("Authentication error: ${e.message}")
@@ -695,5 +496,4 @@ class LoginViewModel(
             }
         }
     }
-
 }
