@@ -11,6 +11,7 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.common.firebase.analytics.AnalyticsEvents
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.state.AppHeaderStateManager
+import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.WorkspaceList
@@ -47,6 +48,20 @@ class GlobalAppLayoutViewModel(
 
     init {
         loadHeaderData()
+        observeWorkspaceContext()
+    }
+
+    // Observe WorkspaceContextManager so the header updates immediately whenever
+    // the user switches workspaces (WorkspaceContextIntegration.setWorkspaceFromDomain
+    // updates WorkspaceContextManager but not AppHeaderStateManager directly).
+    private fun observeWorkspaceContext() {
+        viewModelScope.launch {
+            WorkspaceContextManager.getInstance().currentWorkspace.collect { context ->
+                if (context != null) {
+                    loadWorkspaceById(context.id)
+                }
+            }
+        }
     }
 
     private fun loadHeaderData() {
