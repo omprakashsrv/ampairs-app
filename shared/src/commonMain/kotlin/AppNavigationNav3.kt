@@ -59,12 +59,16 @@ fun AppNavigationNav3(
     // NavBackStack is essentially a SnapshotStateList<NavKey>
     val backStack = rememberNavBackStack(savedStateConfig, startDestination)
 
-    // Track screen views with Firebase Analytics and Performance
+    // Track screen views and clear navigationService in a single collector
     LaunchedEffect(backStack) {
         snapshotFlow { backStack.lastOrNull() }
             .collectLatest { currentRoute ->
                 if (currentRoute != null) {
                     viewModel.onScreenChanged(currentRoute.toString())
+                    val routeName = currentRoute.toString()
+                    if (!routeName.contains("Modules") && !routeName.contains("Customer")) {
+                        onNavigationServiceReady?.invoke(null)
+                    }
                 }
             }
     }
@@ -78,29 +82,8 @@ fun AppNavigationNav3(
     }
 
     // Set up navigation callback for desktop menu integration
-    LaunchedEffect(backStack) {
-        val navigationCallback: (String) -> Unit = { route ->
-            println("AppNavigationNav3: Received navigation request for: $route")
-            navigateToMenuItemNav3(backStack, route)
-        }
-        onNavigationReady?.invoke(navigationCallback)
-    }
-
-    // Clear navigationService when navigating away from workspace modules
-    LaunchedEffect(backStack) {
-        snapshotFlow { backStack.lastOrNull() }
-            .collectLatest { currentRoute ->
-                if (currentRoute != null) {
-                    val routeName = currentRoute.toString()
-                    val isInWorkspaceModules = routeName.contains("Modules")
-                    val isInCustomerModule = routeName.contains("Customer")
-
-                    if (!isInWorkspaceModules && !isInCustomerModule) {
-                        println("AppNavigationNav3: Clearing navigationService - not in workspace/customer modules")
-                        onNavigationServiceReady?.invoke(null)
-                    }
-                }
-            }
+    LaunchedEffect(Unit) {
+        onNavigationReady?.invoke { route -> navigateToMenuItemNav3(backStack, route) }
     }
 
     // Create a ViewModelStore specifically for the Auth flow
@@ -118,7 +101,6 @@ fun AppNavigationNav3(
         snapshotFlow { backStack.any { it is AuthRoute || it is Route.Login } }
             .collect { isInAuth ->
                 if (!isInAuth) {
-                    println("AppNavigationNav3: Clearing Auth ViewModelStore")
                     authViewModelStore.clear()
                 }
             }

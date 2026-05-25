@@ -11,7 +11,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import coil3.compose.setSingletonImageLoaderFactory
-import com.ampairs.common.ActivityProvider
 import com.ampairs.app.update.InAppUpdateManager
 import com.ampairs.app.update.UpdateCheckResult
 import com.ampairs.customer.ui.components.contact.ContactPickerResultHolder
@@ -32,9 +31,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Register activity for Firebase Phone Auth
-        ActivityProvider.setActivity(this)
 
         // Configure edge-to-edge display for Android 15+ (SDK 35) compatibility
         // This ensures proper handling of system bars and display cutouts
@@ -146,8 +142,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Clear activity reference to avoid memory leaks
-        ActivityProvider.clearActivity()
         // Clear contact picker callbacks
         ContactPickerResultHolder.clearCallbacks()
     }

@@ -2,7 +2,7 @@ package com.ampairs.auth.firebase
 
 import com.ampairs.auth.domain.FirebaseAuthResult
 import com.ampairs.auth.domain.PhoneVerificationState
-import com.ampairs.common.ActivityProvider
+import com.ampairs.common.CurrentActivity
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -21,14 +21,14 @@ import kotlin.coroutines.resumeWithException
  *
  * Uses official Firebase Android SDK for phone authentication
  * Requires:
- * - google-services.json in composeApp/ (automatically processed by Google Services plugin)
- * - Activity context for reCAPTCHA verification (provided via ActivityProvider)
+ * - google-services.json in androidApp/ (automatically processed by Google Services plugin)
  * - Firebase project with Phone Auth enabled
  *
  * Firebase is automatically initialized by the Google Services Gradle plugin
  * which processes google-services.json at build time.
  *
- * Activity context is obtained from ActivityProvider which is registered in MainActivity.
+ * Activity context is obtained from CurrentActivity, which tracks the foreground Activity
+ * automatically via Application.ActivityLifecycleCallbacks registered in MainApp.
  */
 actual class FirebaseAuthProvider {
 
@@ -62,7 +62,7 @@ actual class FirebaseAuthProvider {
             try {
                 println("FirebaseAuth: 📱 Starting verification for: $phoneNumber")
 
-                val activity = ActivityProvider.getActivity()
+                val activity = CurrentActivity.get()
                 if (activity == null) {
                     println("FirebaseAuth: ❌ No activity available")
                     _verificationState.value = PhoneVerificationState.VerificationFailed(
@@ -283,7 +283,7 @@ actual class FirebaseAuthProvider {
     actual suspend fun resendVerificationCode(phoneNumber: String): FirebaseAuthResult<String> {
         return suspendCancellableCoroutine { continuation ->
             try {
-                val activity = ActivityProvider.getActivity()
+                val activity = CurrentActivity.get()
                 if (activity == null) {
                     _verificationState.value = PhoneVerificationState.VerificationFailed(
                         "Activity not available. Please ensure the app is in foreground."

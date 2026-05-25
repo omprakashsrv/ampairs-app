@@ -123,10 +123,10 @@ fun AppHeaderNav3(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Navigation button logic - platform-aware
-            val globalNavManager = GlobalNavigationManager.getInstance()
+            val globalNavManager = remember { GlobalNavigationManager.getInstance() }
             val shouldShowHamburger by globalNavManager.shouldShowHamburgerMenu.collectAsState()
             val canNavigateBack = backStack.size > 1
-            val platformRequiresBackButton = PlatformNavigationDetector.requiresBackButton()
+            val platformRequiresBackButton = remember { PlatformNavigationDetector.requiresBackButton() }
 
             // iOS Navigation Pattern:
             // - Show hamburger at root level (no back stack)
