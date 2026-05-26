@@ -6,7 +6,9 @@ import dev.zacsweers.metro.Inject
 import com.ampairs.update.domain.UpdateCheckResult
 import com.ampairs.update.domain.asDomainModel
 import kotlinx.coroutines.flow.first
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.ExperimentalTime
 
 /**
  * Service to check for app updates with rate limiting
@@ -32,58 +34,37 @@ class UpdateChecker(
      * @param forceCheck If true, bypasses rate limiting and checks immediately
      * @return UpdateCheckResult with update information, or null if rate limited
      */
+    @OptIn(ExperimentalTime::class)
     suspend fun checkForUpdates(forceCheck: Boolean = false): UpdateCheckResult? {
         // Get last check time
         val lastCheckTime = appPreferences.getLastUpdateCheckTime().first()
-        val currentTime = getCurrentTimeMillis()
+        val currentTime = Clock.System.now().toEpochMilliseconds()
         val timeSinceLastCheck = currentTime - lastCheckTime
 
         // Check if we should skip due to rate limiting
         if (!forceCheck && lastCheckTime > 0 && timeSinceLastCheck < CHECK_INTERVAL) {
-            val remainingMinutes = ((CHECK_INTERVAL - timeSinceLastCheck) / 1000 / 60)
-            println("⏰ Update check rate limited. Last check: ${timeSinceLastCheck / 1000 / 60}m ago. Next check in: ${remainingMinutes}m")
             return null
         }
 
-        // Get current platform and version
         val platform = getCurrentPlatform()
         val currentVersion = AppVersion.VERSION_NAME
         val versionCode = AppVersion.VERSION_CODE
 
-        println("🔍 Checking for updates...")
-        println("   Platform: ${platform.platformCode}")
-        println("   Current version: $currentVersion ($versionCode)")
-
         return try {
-            // Call API to check for updates
             val response = updateApi.checkForUpdates(
                 platform = platform.platformCode,
                 currentVersion = currentVersion,
                 versionCode = versionCode
             )
 
-            // Handle response
             val responseData = response.data
             if (responseData != null && response.error == null) {
-                val result = responseData.asDomainModel()
-
-                if (result.updateAvailable) {
-                    println("✅ Update available: ${result.updateInfo?.version}")
-                    println("   Mandatory: ${result.updateInfo?.isMandatory}")
-                    println("   Size: ${result.updateInfo?.fileSizeMb} MB")
-                } else {
-                    println("✅ App is up to date")
-                }
-
-                // Update last check time
                 appPreferences.setLastUpdateCheckTime(currentTime)
-                result
+                responseData.asDomainModel()
             } else {
-                println("⚠️ Failed to check for updates: ${response.error}")
                 null
             }
-        } catch (e: Exception) {
-            println("❌ Error checking for updates: ${e.message}")
+        } catch (_: Exception) {
             // Update last check time even on error to avoid hammering the server
             appPreferences.setLastUpdateCheckTime(currentTime)
             null
@@ -102,7 +83,6 @@ class UpdateChecker(
      */
     suspend fun dismissUpdate(version: String) {
         appPreferences.setUpdateVersionDismissed(version, true)
-        println("👤 User dismissed update version: $version")
     }
 
     /**
@@ -112,15 +92,4 @@ class UpdateChecker(
         appPreferences.setUpdateVersionDismissed(version, false)
     }
 
-    /**
-     * Get current time in milliseconds
-     */
-    private fun getCurrentTimeMillis(): Long {
-        return currentTimeMillis()
-    }
 }
-
-/**
- * Get current time in milliseconds - platform-specific implementation
- */
-expect fun currentTimeMillis(): Long

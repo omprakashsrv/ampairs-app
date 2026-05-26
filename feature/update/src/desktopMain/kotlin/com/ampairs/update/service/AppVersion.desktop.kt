@@ -15,10 +15,3 @@ actual fun getCurrentPlatform(): DesktopPlatform {
         else -> DesktopPlatform.LINUX // Default to Linux for unknown platforms
     }
 }
-
-/**
- * Desktop implementation for getting current time
- */
-actual fun currentTimeMillis(): Long {
-    return System.currentTimeMillis()
-}

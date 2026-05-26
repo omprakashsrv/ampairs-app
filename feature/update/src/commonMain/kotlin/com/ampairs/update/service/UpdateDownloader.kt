@@ -32,14 +32,9 @@ class UpdateDownloader {
         updateInfo: UpdateInfo,
         onProgress: ((Float) -> Unit)? = null
     ): String? {
-        println("📥 Starting update download...")
-        println("   URL: ${updateInfo.downloadUrl}")
-        println("   Size: ${updateInfo.fileSizeMb} MB")
-
         _downloadState.value = UpdateDownloadState.Downloading(0f)
 
         return try {
-            // Use platform-specific download implementation
             val filePath = downloadUpdateFile(
                 url = updateInfo.downloadUrl,
                 fileName = getUpdateFileName(updateInfo),
@@ -50,29 +45,21 @@ class UpdateDownloader {
             )
 
             if (filePath != null) {
-                // Verify checksum if provided
                 if (updateInfo.checksum != null) {
-                    println("🔐 Verifying checksum...")
                     val isValid = verifyChecksum(filePath, updateInfo.checksum)
                     if (!isValid) {
-                        println("❌ Checksum verification failed!")
                         _downloadState.value = UpdateDownloadState.Failed("Checksum verification failed")
                         deleteFile(filePath)
                         return null
                     }
-                    println("✅ Checksum verified")
                 }
-
-                println("✅ Download complete: $filePath")
                 _downloadState.value = UpdateDownloadState.Downloaded(filePath)
                 filePath
             } else {
-                println("❌ Download failed")
                 _downloadState.value = UpdateDownloadState.Failed("Download failed")
                 null
             }
         } catch (e: Exception) {
-            println("❌ Download error: ${e.message}")
             _downloadState.value = UpdateDownloadState.Failed(e.message ?: "Unknown error")
             null
         }
@@ -84,7 +71,6 @@ class UpdateDownloader {
     fun cancelDownload() {
         if (_downloadState.value is UpdateDownloadState.Downloading) {
             _downloadState.value = UpdateDownloadState.Idle
-            println("⏹️ Download cancelled")
         }
     }
 

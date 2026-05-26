@@ -199,4 +199,5 @@
 
     <!-- General -->
     <string name="translated_description_image">चित्र में क्या है इसका अनुवादित विवरण</string>
+    <string name="press_back_again_to_exit">बाहर निकलने के लिए फिर से बैक दबाएं</string>
 </resources>

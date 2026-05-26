@@ -70,13 +70,13 @@ fun MenuBarScope.DynamicModulesMenu(
  */
 private fun getModuleNavigationPath(moduleCode: String): String {
     return when (moduleCode) {
-        "customer-management" -> "customer"
-        "product-management" -> "product"
-        "order-management" -> "order"
-        "invoice-management" -> "invoice"
-        "inventory-management" -> "inventory"
-        "tax-code-management" -> "tax"
-        "tax-management" -> "tax"
+        ModuleCodes.CUSTOMER_MANAGEMENT -> "customer"
+        ModuleCodes.PRODUCT_MANAGEMENT -> "product"
+        ModuleCodes.ORDER_MANAGEMENT -> "order"
+        ModuleCodes.INVOICE_BILLING -> "invoice"
+        ModuleCodes.INVENTORY_MANAGEMENT -> "inventory"
+        ModuleCodes.TAX_CODE_MANAGEMENT -> "tax"
+        ModuleCodes.BUSINESS_PROFILE -> "business"
         else -> "unknown"
     }
 }

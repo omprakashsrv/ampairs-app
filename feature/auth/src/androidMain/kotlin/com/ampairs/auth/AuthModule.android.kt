@@ -19,7 +19,6 @@ import com.ampairs.network.security.AppUpdateEnforcer
 import com.ampairs.network.security.CertificateManager
 import com.ampairs.network.security.CertificatePinningService
 import com.ampairs.network.security.CertificateStorage
-import com.ampairs.network.security.SecureKtorClientFactory
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -89,10 +88,10 @@ interface AuthAndroidModule {
         ): AndroidSecureEngineFactory =
             AndroidSecureEngineFactory(pinningService as AndroidCertificatePinningService)
 
-        @Provides @SingleIn(AppScope::class)
-        fun provideSecureKtorClientFactory(
-            pinningService: CertificatePinningService,
-            enforcer: AppUpdateEnforcer
-        ): SecureKtorClientFactory = SecureKtorClientFactory(pinningService, enforcer)
+//        @Provides @SingleIn(AppScope::class)
+//        fun provideSecureKtorClientFactory(
+//            pinningService: CertificatePinningService,
+//            enforcer: AppUpdateEnforcer
+//        ): SecureKtorClientFactory = SecureKtorClientFactory(pinningService, enforcer)
     }
 }

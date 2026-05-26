@@ -94,7 +94,7 @@ private fun mainRouteEntryProvider(
     // Route.Customer redirects to CustomerListRoute
     is Route.Customer -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(CustomerListRoute)
         }
     }
@@ -102,7 +102,7 @@ private fun mainRouteEntryProvider(
     // Route.Product redirects to ProductRoute.Products
     is Route.Product -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(ProductRoute.Products)
         }
     }
@@ -110,7 +110,7 @@ private fun mainRouteEntryProvider(
     // Route.Tax redirects to TaxListRoute
     is Route.Tax -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(TaxListRoute)
         }
     }
@@ -118,7 +118,7 @@ private fun mainRouteEntryProvider(
     // Route.Business redirects to BusinessRoute.Overview
     is Route.Business -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(BusinessRoute.Overview)
         }
     }
@@ -126,7 +126,7 @@ private fun mainRouteEntryProvider(
     // Route.Subscription redirects to SubscriptionRoute.Root
     is Route.Subscription -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(SubscriptionRoute.Root)
         }
     }
@@ -142,7 +142,7 @@ private fun mainRouteEntryProvider(
     // Route.Unit redirects to UnitListRoute
     is Route.Unit -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(UnitListRoute)
         }
     }
@@ -150,7 +150,7 @@ private fun mainRouteEntryProvider(
     // Route.Order redirects to OrderRoute.Orders
     is Route.Order -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(OrderRoute.Orders)
         }
     }
@@ -158,7 +158,7 @@ private fun mainRouteEntryProvider(
     // Route.Invoice redirects to InvoiceRoute.Invoices
     is Route.Invoice -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(InvoiceRoute.Invoices)
         }
     }
@@ -166,7 +166,7 @@ private fun mainRouteEntryProvider(
     // Route.Inventory redirects to InventoryRoute.Inventory
     is Route.Inventory -> NavEntry(key) {
         LaunchedEffect(Unit) {
-            backStack.clear()
+            backStack.removeLastOrNull()
             backStack.add(InventoryRoute.Inventory)
         }
     }

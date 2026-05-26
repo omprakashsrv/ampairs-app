@@ -4,7 +4,7 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
-import com.ampairs.common.ActivityProvider
+import com.ampairs.common.CurrentActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -15,7 +15,7 @@ actual class ContactPickerService {
     actual fun isAvailable(): Boolean = true
 
     actual suspend fun pickContact(): Result<ContactData> = withContext(Dispatchers.Main) {
-        val activity = ActivityProvider.getActivity()
+        val activity = CurrentActivity.get()
             ?: return@withContext Result.failure(ContactPickerError.NotAvailable)
 
         // Use phone picker which grants temporary permission to the selected phone contact

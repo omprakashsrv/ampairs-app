@@ -12,8 +12,9 @@ kotlin {
 
     android {
         namespace = "com.ampairs.data.common"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        compileSdk { version = release(libs.versions.android.compileSdk.get().toInt()) }
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
     jvm("desktop")   // must match shared — named target
     iosArm64()

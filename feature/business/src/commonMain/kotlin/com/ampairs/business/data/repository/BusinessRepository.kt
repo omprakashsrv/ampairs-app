@@ -1,24 +1,22 @@
 package com.ampairs.business.data.repository
 
-import com.ampairs.common.di.AppScope
-import dev.zacsweers.metro.Inject
 import com.ampairs.business.data.api.BusinessApi
 import com.ampairs.business.data.db.BusinessDao
 import com.ampairs.business.data.db.BusinessEntity
 import com.ampairs.business.data.db.toDomain
 import com.ampairs.business.data.db.toEntity
-import com.ampairs.business.domain.Business
-import com.ampairs.business.domain.toPayload
+import com.ampairs.business.domain.*
 import com.ampairs.business.util.BusinessConstants
+import com.ampairs.common.di.AppScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.workspace.context.WorkspaceContextManager
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @Inject
-@OptIn(ExperimentalTime::class)
 class BusinessRepository(
     private val businessDao: BusinessDao,
     private val businessApi: BusinessApi,
@@ -29,6 +27,7 @@ class BusinessRepository(
 
     suspend fun getCachedBusiness(): Business? = businessDao.getBusiness()?.toDomain()
 
+    @OptIn(ExperimentalTime::class)
     suspend fun saveLocal(business: Business, markSynced: Boolean) {
         val workspaceId = business.workspaceId ?: workspaceContextManager.getCurrentWorkspaceId()
         val existing = businessDao.getBusiness()
@@ -58,14 +57,13 @@ class BusinessRepository(
         return businessApi.checkBusinessExists()
     }
 
-    suspend fun createBusinessProfile(request: com.ampairs.business.domain.BusinessCreateRequest): Result<com.ampairs.business.domain.BusinessProfile> {
+    suspend fun createBusinessProfile(request: BusinessCreateRequest): Result<BusinessProfile> {
         val workspaceId = workspaceContextManager.getCurrentWorkspaceId()
             ?: return Result.failure(IllegalStateException("Workspace not selected"))
 
-        // Convert BusinessCreateRequest to BusinessPayload for unified endpoint
-        val payload = com.ampairs.business.domain.BusinessPayload(
+        val payload = BusinessPayload(
             name = request.name,
-            businessType = com.ampairs.business.domain.BusinessType.valueOf(request.businessType),
+            businessType = BusinessType.valueOf(request.businessType),
             description = request.description,
             ownerName = request.ownerName,
             addressLine1 = request.addressLine1,
@@ -81,37 +79,19 @@ class BusinessRepository(
             website = request.website,
             taxId = request.taxId,
             registrationNumber = request.registrationNumber,
+            timezone = request.timezone,
+            currency = request.currency,
+            language = request.language,
+            dateFormat = request.dateFormat,
+            timeFormat = request.timeFormat,
+            openingHours = request.openingHours,
+            closingHours = request.closingHours,
+            operatingDays = request.operatingDays,
             active = true,
             customAttributes = null
         )
 
-        return businessApi.createBusiness(payload).map { business ->
-            com.ampairs.business.domain.BusinessProfile(
-                uid = business.id,
-                seqId = business.seqId ?: "",
-                name = business.name,
-                businessType = business.businessType.name,
-                description = business.description,
-                ownerName = business.ownerName,
-                addressLine1 = business.addressLine1,
-                addressLine2 = business.addressLine2,
-                city = business.city,
-                state = business.state,
-                postalCode = business.postalCode,
-                country = business.country,
-                latitude = business.latitude,
-                longitude = business.longitude,
-                phone = business.phone,
-                email = business.email,
-                website = business.website,
-                taxId = business.taxId,
-                registrationNumber = business.registrationNumber,
-                active = business.active,
-                customAttributes = business.customAttributes,
-                createdAt = business.createdAt,
-                updatedAt = business.updatedAt
-            )
-        }
+        return businessApi.createBusiness(payload).map { it.toProfile() }
     }
 
     suspend fun fetchFromRemote(): Result<Business> {
@@ -194,7 +174,7 @@ class BusinessRepository(
     /**
      * Get business overview from remote.
      */
-    suspend fun fetchBusinessOverview(): Result<com.ampairs.business.domain.BusinessOverview> {
+    suspend fun fetchBusinessOverview(): Result<BusinessOverview> {
         return businessApi.getBusinessOverview()
     }
 
@@ -202,47 +182,18 @@ class BusinessRepository(
      * Get business profile from remote.
      * Maps unified Business response to BusinessProfile DTO for UI.
      */
-    suspend fun fetchBusinessProfile(): Result<com.ampairs.business.domain.BusinessProfile> {
-        return businessApi.getBusiness().map { business ->
-            com.ampairs.business.domain.BusinessProfile(
-                uid = business.id,
-                seqId = business.seqId ?: "",
-                name = business.name,
-                businessType = business.businessType.name,
-                description = business.description,
-                ownerName = business.ownerName,
-                addressLine1 = business.addressLine1,
-                addressLine2 = business.addressLine2,
-                city = business.city,
-                state = business.state,
-                postalCode = business.postalCode,
-                country = business.country,
-                latitude = business.latitude,
-                longitude = business.longitude,
-                phone = business.phone,
-                email = business.email,
-                website = business.website,
-                taxId = business.taxId,
-                registrationNumber = business.registrationNumber,
-                active = business.active,
-                customAttributes = business.customAttributes,
-                createdAt = business.createdAt,
-                updatedAt = business.updatedAt
-            )
-        }
+    suspend fun fetchBusinessProfile(): Result<BusinessProfile> {
+        return businessApi.getBusiness().map { it.toProfile() }
     }
 
     /**
      * Update business profile.
      * Uses unified update endpoint with all business fields.
      */
-    suspend fun updateBusinessProfile(
-        request: com.ampairs.business.domain.BusinessProfileUpdateRequest
-    ): Result<com.ampairs.business.domain.BusinessProfile> {
-        // Convert ProfileUpdateRequest to full BusinessPayload
-        val payload = com.ampairs.business.domain.BusinessPayload(
+    suspend fun updateBusinessProfile(request: BusinessProfileUpdateRequest): Result<BusinessProfile> {
+        val payload = BusinessPayload(
             name = request.name,
-            businessType = com.ampairs.business.domain.BusinessType.valueOf(request.businessType),
+            businessType = BusinessType.valueOf(request.businessType),
             description = request.description,
             ownerName = request.ownerName,
             addressLine1 = request.addressLine1,
@@ -262,42 +213,16 @@ class BusinessRepository(
             customAttributes = request.customAttributes
         )
 
-        return businessApi.updateBusiness(payload).map { business ->
-            com.ampairs.business.domain.BusinessProfile(
-                uid = business.id,
-                seqId = business.seqId ?: "",
-                name = business.name,
-                businessType = business.businessType.name,
-                description = business.description,
-                ownerName = business.ownerName,
-                addressLine1 = business.addressLine1,
-                addressLine2 = business.addressLine2,
-                city = business.city,
-                state = business.state,
-                postalCode = business.postalCode,
-                country = business.country,
-                latitude = business.latitude,
-                longitude = business.longitude,
-                phone = business.phone,
-                email = business.email,
-                website = business.website,
-                taxId = business.taxId,
-                registrationNumber = business.registrationNumber,
-                active = business.active,
-                customAttributes = business.customAttributes,
-                createdAt = business.createdAt,
-                updatedAt = business.updatedAt
-            )
-        }
+        return businessApi.updateBusiness(payload).map { it.toProfile() }
     }
 
     /**
      * Get business operations from remote.
      * Maps unified Business response to BusinessOperations DTO for UI.
      */
-    suspend fun fetchBusinessOperations(): Result<com.ampairs.business.domain.BusinessOperations> {
+    suspend fun fetchBusinessOperations(): Result<BusinessOperations> {
         return businessApi.getBusiness().map { business ->
-            com.ampairs.business.domain.BusinessOperations(
+            BusinessOperations(
                 uid = business.id,
                 timezone = business.timezone,
                 currency = business.currency,
@@ -315,10 +240,7 @@ class BusinessRepository(
      * Update business operations.
      * Uses unified update endpoint with all business fields.
      */
-    suspend fun updateBusinessOperations(
-        request: com.ampairs.business.domain.BusinessOperationsUpdateRequest
-    ): Result<com.ampairs.business.domain.BusinessOperations> {
-        // First get current business to preserve other fields
+    suspend fun updateBusinessOperations(request: BusinessOperationsUpdateRequest): Result<BusinessOperations> {
         val currentResult = businessApi.getBusiness()
         if (currentResult.isFailure) {
             return Result.failure(currentResult.exceptionOrNull() ?: Exception("Failed to get current business"))
@@ -326,8 +248,7 @@ class BusinessRepository(
 
         val current = currentResult.getOrThrow()
 
-        // Create payload with updated operations fields
-        val payload = com.ampairs.business.domain.BusinessPayload(
+        val payload = BusinessPayload(
             name = current.name,
             businessType = current.businessType,
             description = current.description,
@@ -358,7 +279,7 @@ class BusinessRepository(
         )
 
         return businessApi.updateBusiness(payload).map { business ->
-            com.ampairs.business.domain.BusinessOperations(
+            BusinessOperations(
                 uid = business.id,
                 timezone = business.timezone,
                 currency = business.currency,
@@ -376,9 +297,9 @@ class BusinessRepository(
      * Get tax configuration from remote.
      * Maps unified Business response to TaxConfiguration DTO for UI.
      */
-    suspend fun fetchTaxConfiguration(): Result<com.ampairs.business.domain.TaxConfiguration> {
+    suspend fun fetchTaxConfiguration(): Result<TaxConfiguration> {
         return businessApi.getBusiness().map { business ->
-            com.ampairs.business.domain.TaxConfiguration(
+            TaxConfiguration(
                 uid = business.id,
                 taxId = business.taxId,
                 registrationNumber = business.registrationNumber,
@@ -391,10 +312,7 @@ class BusinessRepository(
      * Update tax configuration.
      * Uses unified update endpoint with all business fields.
      */
-    suspend fun updateTaxConfiguration(
-        request: com.ampairs.business.domain.TaxConfigurationUpdateRequest
-    ): Result<com.ampairs.business.domain.TaxConfiguration> {
-        // First get current business to preserve other fields
+    suspend fun updateTaxConfiguration(request: TaxConfigurationUpdateRequest): Result<TaxConfiguration> {
         val currentResult = businessApi.getBusiness()
         if (currentResult.isFailure) {
             return Result.failure(currentResult.exceptionOrNull() ?: Exception("Failed to get current business"))
@@ -402,8 +320,7 @@ class BusinessRepository(
 
         val current = currentResult.getOrThrow()
 
-        // Create payload with updated tax fields
-        val payload = com.ampairs.business.domain.BusinessPayload(
+        val payload = BusinessPayload(
             name = current.name,
             businessType = current.businessType,
             description = current.description,
@@ -435,7 +352,7 @@ class BusinessRepository(
         )
 
         return businessApi.updateBusiness(payload).map { business ->
-            com.ampairs.business.domain.TaxConfiguration(
+            TaxConfiguration(
                 uid = business.id,
                 taxId = business.taxId,
                 registrationNumber = business.registrationNumber,
@@ -444,3 +361,29 @@ class BusinessRepository(
         }
     }
 }
+
+private fun Business.toProfile() = BusinessProfile(
+    uid = id,
+    seqId = seqId ?: "",
+    name = name,
+    businessType = businessType.name,
+    description = description,
+    ownerName = ownerName,
+    addressLine1 = addressLine1,
+    addressLine2 = addressLine2,
+    city = city,
+    state = state,
+    postalCode = postalCode,
+    country = country,
+    latitude = latitude,
+    longitude = longitude,
+    phone = phone,
+    email = email,
+    website = website,
+    taxId = taxId,
+    registrationNumber = registrationNumber,
+    active = active,
+    customAttributes = customAttributes,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)

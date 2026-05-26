@@ -11,6 +11,7 @@ import com.ampairs.common.model.Response
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.form.domain.EntityConfigSchema
 import com.ampairs.form.domain.EntityFieldConfig
+import com.ampairs.form.domain.SaveConfigSchemaRequest
 import io.ktor.client.call.*
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.request.*
@@ -95,7 +96,7 @@ class ConfigApiImpl(
     }
 
     override suspend fun saveConfigSchema(entityType: String, schema: EntityConfigSchema): EntityConfigSchema {
-        val request = com.ampairs.form.domain.SaveConfigSchemaRequest(
+        val request = SaveConfigSchemaRequest(
             fieldConfigs = schema.fieldConfigs,
             attributeDefinitions = schema.attributeDefinitions
         )

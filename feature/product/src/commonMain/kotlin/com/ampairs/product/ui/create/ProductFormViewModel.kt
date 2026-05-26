@@ -5,7 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductImage
+import com.ampairs.product.domain.ProductKey
 import com.ampairs.product.domain.ProductStore
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.ampairs.tax.data.repository.TaxCodeLookup
 import com.ampairs.tax.domain.model.TaxCode
 import kotlinx.coroutines.FlowPreview
@@ -25,7 +28,7 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @AssistedInject
-@OptIn(ExperimentalTime::class, FlowPreview::class)
+@OptIn(FlowPreview::class)
 class ProductFormViewModel(
     @Assisted private val productId: String?,
     private val productStore: ProductStore,
@@ -67,12 +70,12 @@ class ProductFormViewModel(
 
         viewModelScope.launch {
             try {
-                val key = com.ampairs.product.domain.ProductKey(productId)
+                val key = ProductKey(productId)
                 productStore.productStore
-                    .stream(org.mobilenativefoundation.store.store5.StoreReadRequest.cached(key, refresh = false))
+                    .stream(StoreReadRequest.cached(key, refresh = false))
                     .collect { response ->
                         when (response) {
-                            is org.mobilenativefoundation.store.store5.StoreReadResponse.Data -> {
+                            is StoreReadResponse.Data -> {
                                 val product = response.value
                                 val formState = product.toFormState()
 
@@ -95,13 +98,13 @@ class ProductFormViewModel(
                                     formState = formState.copy(taxCodeDescription = taxCodeDescription)
                                 )
                             }
-                            is org.mobilenativefoundation.store.store5.StoreReadResponse.Error.Exception -> {
+                            is StoreReadResponse.Error.Exception -> {
                                 _uiState.value = _uiState.value.copy(
                                     isLoading = false,
                                     error = response.error.message ?: "Failed to load product"
                                 )
                             }
-                            is org.mobilenativefoundation.store.store5.StoreReadResponse.Error.Message -> {
+                            is StoreReadResponse.Error.Message -> {
                                 _uiState.value = _uiState.value.copy(
                                     isLoading = false,
                                     error = response.message
@@ -130,9 +133,8 @@ class ProductFormViewModel(
         )
     }
 
+    @OptIn(ExperimentalTime::class)
     fun addImage() {
-        // In a real implementation, this would open image picker
-        // For now, we'll add a placeholder
         val currentImages = _uiState.value.formState.images.toMutableList()
         currentImages.add(
             ProductImage(

@@ -3,6 +3,7 @@ package com.ampairs.business.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.business.data.repository.BusinessRepository
+import com.ampairs.business.domain.BusinessProfileUpdateRequest
 import com.ampairs.form.data.repository.ConfigLookup
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.form.domain.EntityType
@@ -50,10 +51,6 @@ class BusinessCustomAttributesViewModel(
                     val profile = profileResult.getOrThrow()
                     businessName = profile.name
                     customAttributeValues = profile.customAttributes?.mapValues { it.value as Any? } ?: emptyMap()
-
-                    println("📋 CustomAttributes: Loaded business profile")
-                    println("   Business Name: $businessName")
-                    println("   Custom Attributes: $customAttributeValues")
                 } else {
                     businessName = ""
                     customAttributeValues = emptyMap()
@@ -79,10 +76,6 @@ class BusinessCustomAttributesViewModel(
                     isLoading = false,
                     error = null
                 )
-
-                println("📋 CustomAttributes: Initial load complete")
-                println("   Attributes loaded: ${attributes.size}")
-                println("   Values set: $customAttributeValues")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -96,9 +89,6 @@ class BusinessCustomAttributesViewModel(
         val currentValues = _uiState.value.customAttributeValues.toMutableMap()
         currentValues[attributeKey] = value
         _uiState.value = _uiState.value.copy(customAttributeValues = currentValues)
-
-        println("✏️ CustomAttributes: Updated value for '$attributeKey' = '$value'")
-        println("   All values: $currentValues")
     }
 
     fun saveCustomAttributes() {
@@ -110,17 +100,11 @@ class BusinessCustomAttributesViewModel(
                 val profileResult = businessRepository.fetchBusinessProfile()
 
                 profileResult.onSuccess { currentProfile ->
-                    // Convert custom attribute values to Map<String, String>
                     val customAttributesMap = _uiState.value.customAttributeValues.mapValues { (_, value) ->
                         value?.toString() ?: ""
                     }
 
-                    println("💾 CustomAttributes: Saving custom attributes")
-                    println("   Values to save: ${_uiState.value.customAttributeValues}")
-                    println("   Converted to strings: $customAttributesMap")
-
-                    // Create update request with existing profile data + new custom attributes
-                    val updateRequest = com.ampairs.business.domain.BusinessProfileUpdateRequest(
+                    val updateRequest = BusinessProfileUpdateRequest(
                         name = currentProfile.name,
                         businessType = currentProfile.businessType,
                         description = currentProfile.description,
@@ -142,22 +126,13 @@ class BusinessCustomAttributesViewModel(
                         customAttributes = customAttributesMap
                     )
 
-                    // Update business profile with custom attributes
                     businessRepository.updateBusinessProfile(updateRequest)
                         .onSuccess { updatedProfile ->
-                            println("✅ CustomAttributes: Save successful")
-                            println("   Server returned custom attributes: ${updatedProfile.customAttributes}")
-
-                            // Use the values we sent if server doesn't return them (some APIs don't echo back)
                             val savedCustomAttributes = if (updatedProfile.customAttributes.isNullOrEmpty()) {
-                                println("   ⚠️ Server didn't return custom attributes, using local values")
                                 customAttributesMap.mapValues { it.value as Any? }
                             } else {
-                                println("   ✓ Using server-returned custom attributes")
                                 updatedProfile.customAttributes.mapValues { it.value as Any? }
                             }
-
-                            println("   Final values to set in state: $savedCustomAttributes")
 
                             _uiState.value = _uiState.value.copy(
                                 isSaving = false,
@@ -165,12 +140,8 @@ class BusinessCustomAttributesViewModel(
                                 error = null,
                                 customAttributeValues = savedCustomAttributes
                             )
-
-                            println("   State updated, current values: ${_uiState.value.customAttributeValues}")
                         }
                         .onFailure { error ->
-                            println("❌ CustomAttributes: Save failed: ${error.message}")
-
                             _uiState.value = _uiState.value.copy(
                                 isSaving = false,
                                 saveSuccess = false,

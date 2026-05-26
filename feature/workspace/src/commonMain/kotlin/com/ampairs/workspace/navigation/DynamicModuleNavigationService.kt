@@ -115,16 +115,15 @@ class DynamicModuleNavigationService {
      * Check if a module has a local implementation available
      */
     private fun isModuleImplementationAvailable(moduleCode: String): Boolean {
-        return try {
-            // Check if the module has a registered navigation provider
-            when (moduleCode) {
-                "business-profile", "customer-management", "product-management",
-                "order-management", "invoice-management", "tax-code-management" -> true
-                "inventory-management" -> false // Not implemented yet
-                else -> false
-            }
-        } catch (e: Exception) {
-            false
+        return when (moduleCode) {
+            ModuleCodes.BUSINESS_PROFILE,
+            ModuleCodes.CUSTOMER_MANAGEMENT,
+            ModuleCodes.PRODUCT_MANAGEMENT,
+            ModuleCodes.ORDER_MANAGEMENT,
+            ModuleCodes.INVOICE_BILLING,
+            ModuleCodes.INVENTORY_MANAGEMENT,
+            ModuleCodes.TAX_CODE_MANAGEMENT -> true
+            else -> false
         }
     }
 

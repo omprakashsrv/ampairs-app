@@ -1,5 +1,7 @@
 package com.ampairs.business.domain
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -76,6 +78,7 @@ data class Business(
  * Excludes immutable audit fields.
  */
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class BusinessPayload(
     val name: String,
     @SerialName("business_type")
@@ -103,20 +106,17 @@ data class BusinessPayload(
     val registrationNumber: String? = null,
     @SerialName("tax_settings")
     val taxSettings: Map<String, String>? = null,
-    val timezone: String = "UTC",
-    val currency: String = "INR",
-    val language: String = "en",
-    @SerialName("date_format")
-    val dateFormat: String = "DD-MM-YYYY",
-    @SerialName("time_format")
-    val timeFormat: String = "12H",
+    @EncodeDefault val timezone: String = "UTC",
+    @EncodeDefault val currency: String = "INR",
+    @EncodeDefault val language: String = "en",
+    @EncodeDefault @SerialName("date_format") val dateFormat: String = "DD-MM-YYYY",
+    @EncodeDefault @SerialName("time_format") val timeFormat: String = "12H",
     @SerialName("opening_hours")
     val openingHours: String? = null,
     @SerialName("closing_hours")
     val closingHours: String? = null,
-    @SerialName("operating_days")
-    val operatingDays: List<String> = emptyList(),
-    val active: Boolean = true,
+    @EncodeDefault @SerialName("operating_days") val operatingDays: List<String> = emptyList(),
+    @EncodeDefault val active: Boolean = true,
     @SerialName("custom_attributes")
     val customAttributes: Map<String, String>? = null
 )

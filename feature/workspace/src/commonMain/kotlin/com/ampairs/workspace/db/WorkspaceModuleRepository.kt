@@ -92,53 +92,30 @@ class WorkspaceModuleRepository(
         featured: Boolean = false,
         refresh: Boolean = false
     ): List<AvailableModule> {
-        println("WorkspaceModuleRepository: getAvailableModules - category=$category, featured=$featured, refresh=$refresh")
         val key = when {
             featured -> AvailableModuleKey.featured()
             category != null -> AvailableModuleKey.category(category)
             else -> AvailableModuleKey.all()
         }
-        println("WorkspaceModuleRepository: Using key: $key")
 
         val request = if (refresh) {
-            println("WorkspaceModuleRepository: Creating FRESH request")
             StoreReadRequest.fresh(key)
         } else {
-            println("WorkspaceModuleRepository: Creating CACHED request")
             StoreReadRequest.cached(key, refresh = false)
         }
 
-        // Wait for first Data or Error response from Store5 (skip Loading/Initial states)
         return availableModuleStore.stream(request)
             .map { response ->
-                println("WorkspaceModuleRepository: Store response type: ${response::class.simpleName}")
                 when (response) {
-                    is StoreReadResponse.Data -> {
-                        println("WorkspaceModuleRepository: Data received with ${response.value.size} modules")
-                        response.value
-                    }
-                    is StoreReadResponse.Loading -> {
-                        println("WorkspaceModuleRepository: Loading... continuing to wait")
-                        null // Return null to skip this emission
-                    }
-                    is StoreReadResponse.Error -> {
-                        val data: List<AvailableModule>? = response.dataOrNull()
-                        println("WorkspaceModuleRepository: Error response - returning ${data?.size ?: 0} modules")
-                        data ?: emptyList() // Return empty on error
-                    }
-                    is StoreReadResponse.NoNewData -> {
-                        val data: List<AvailableModule>? = response.dataOrNull()
-                        println("WorkspaceModuleRepository: NoNewData - returning ${data?.size ?: 0} modules")
-                        data ?: emptyList()
-                    }
-                    is StoreReadResponse.Initial -> {
-                        println("WorkspaceModuleRepository: Initial... continuing to wait")
-                        null // Return null to skip this emission
-                    }
+                    is StoreReadResponse.Data -> response.value
+                    is StoreReadResponse.Loading -> null
+                    is StoreReadResponse.Error -> response.dataOrNull() ?: emptyList()
+                    is StoreReadResponse.NoNewData -> response.dataOrNull() ?: emptyList()
+                    is StoreReadResponse.Initial -> null
                 }
             }
-            .filterNotNull() // Skip null values (Loading and Initial states)
-            .first() // Get first non-null response (Data, Error, or NoNewData)
+            .filterNotNull()
+            .first()
     }
 
     /**

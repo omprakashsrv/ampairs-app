@@ -72,31 +72,10 @@ fun ModuleStoreScreen(
         }
     }
 
-    // Load data on first composition
     LaunchedEffect(workspaceId) {
-        println("ModuleStoreScreen: LaunchedEffect triggered with workspaceId: $workspaceId")
         if (workspaceId.isNotEmpty()) {
-            println("ModuleStoreScreen: Loading installed modules...")
             viewModel.loadInstalledModules()
-            println("ModuleStoreScreen: Loading available modules...")
             viewModel.loadAvailableModules(refresh = true)
-        } else {
-            println("ModuleStoreScreen: ERROR - workspaceId is empty!")
-        }
-    }
-
-    // Debug: Log state changes
-    LaunchedEffect(isLoading) {
-        println("ModuleStoreScreen: isLoading = $isLoading")
-    }
-
-    LaunchedEffect(availableModules.size, installedModules.size) {
-        println("ModuleStoreScreen: availableModules.size = ${availableModules.size}, installedModules.size = ${installedModules.size}")
-    }
-
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let {
-            println("ModuleStoreScreen: Error = $it")
         }
     }
 

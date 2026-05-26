@@ -53,8 +53,6 @@ class OfflineFirstWorkspaceInvitationRepository(
         refresh: Boolean = false
     ): Flow<PageResult<WorkspaceInvitation>> {
         val currentUserId = getCurrentUserId()
-        println("🏪 Repository: Getting invitations for workspace $workspaceId, user $currentUserId (refresh=$refresh)")
-        
         val key = WorkspaceInvitationKey.forPage(
             userId = currentUserId,
             workspaceId = workspaceId,
@@ -69,46 +67,22 @@ class OfflineFirstWorkspaceInvitationRepository(
         }
         
         return invitationStore.stream(request).map { response ->
-            println("🏪 Repository: Store5 response type: ${response::class.simpleName}")
             when (response) {
-                is StoreReadResponse.Data -> {
-                    println("✅ Repository: Got data with ${response.value.content.size} invitations")
-                    response.value
-                }
-                is StoreReadResponse.Error.Exception -> {
-                    println("❌ Repository: Store5 exception: ${response.error.message}")
-                    throw response.error
-                }
-                is StoreReadResponse.Error.Message -> {
-                    println("❌ Repository: Store5 error message: ${response.message}")
-                    throw Exception(response.message)
-                }
-                is StoreReadResponse.Loading -> {
-                    println("⏳ Repository: Loading state - returning empty while loading")
-                    // For loading state, return empty data while loading
-                    // The Store5 will eventually provide the actual data
-                    PageResult(
-                        content = emptyList(),
-                        totalElements = 0,
-                        totalPages = 0,
-                        currentPage = page,
-                        pageSize = size,
-                        isFirst = true,
-                        isLast = true,
-                        isEmpty = true
-                    )
-                }
-                is StoreReadResponse.NoNewData -> {
-                    println("📦 Repository: NoNewData - this indicates cached data exists")
-                    // NoNewData means we have cached data but no new network data
-                    // This should not throw an exception but return cached data
-                    // However, the Store5 should have provided the cached data
-                    throw Exception("No cached data available in NoNewData response")
-                }
-                else -> {
-                    println("❓ Repository: Unknown Store response type: ${response::class.simpleName}")
-                    throw Exception("Unknown Store response type: ${response::class.simpleName}")
-                }
+                is StoreReadResponse.Data -> response.value
+                is StoreReadResponse.Error.Exception -> throw response.error
+                is StoreReadResponse.Error.Message -> throw Exception(response.message)
+                is StoreReadResponse.Loading -> PageResult(
+                    content = emptyList(),
+                    totalElements = 0,
+                    totalPages = 0,
+                    currentPage = page,
+                    pageSize = size,
+                    isFirst = true,
+                    isLast = true,
+                    isEmpty = true
+                )
+                is StoreReadResponse.NoNewData -> throw Exception("No cached data available in NoNewData response")
+                else -> throw Exception("Unknown Store response type: ${response::class.simpleName}")
             }
         }
     }

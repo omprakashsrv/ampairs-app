@@ -397,26 +397,18 @@ class MemberDetailsViewModel(
                 val success = memberUpdateStoreFactory.updateMember(updateKey, updateRequest)
                 
                 if (success) {
-                    // Reload member details to get fresh data from Store5
+                    clearPendingChanges()
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        hasChanges = false,
+                        successMessage = "Member updated successfully",
+                        error = null
+                    )
+                    // Reload in background to get fresh server state
                     loadMemberDetails(forceRefresh = true)
                 } else {
                     throw Exception("Failed to update member")
                 }
-                
-                // For backward compatibility, get the updated member from state
-                val updatedMember = _state.value.member!!
-
-                 _state.value = _state.value.copy(
-                     isLoading = false,
-                     member = updatedMember,
-                     originalMember = updatedMember,
-                     displayMember = updatedMember,
-                     hasChanges = false,
-                     successMessage = "Member updated successfully",
-                     error = null
-                 )
-
-                 clearPendingChanges()
              } catch (e: Exception) {
                  _state.value = _state.value.copy(
                      isLoading = false,

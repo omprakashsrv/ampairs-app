@@ -105,27 +105,27 @@ fun GlobalAppLayoutNav3(
             .ifEmpty { "User" }
         val profilePictureThumbnailUrl = headerState.currentUser?.profilePictureThumbnailUrl
 
-        val onWorkspaceClick: () -> Unit = {
-            if (!isWorkspaceSelection) viewModel.clearWorkspace()
+        val onWorkspaceClick: () -> Unit = remember(isWorkspaceSelection) {
+            { if (!isWorkspaceSelection) viewModel.clearWorkspace() }
         }
 
-        val onEditProfile: () -> Unit = {
-            backStack.add(AuthRoute.UserUpdate)
+        val onEditProfile: () -> Unit = remember {
+            { backStack.add(AuthRoute.UserUpdate) }
         }
 
-        val onLogout: () -> Unit = { viewModel.logout() }
+        val onLogout: () -> Unit = remember { { viewModel.logout() } }
 
-        val onSwitchUser: () -> Unit = { viewModel.switchUser() }
+        val onSwitchUser: () -> Unit = remember { { viewModel.switchUser() } }
 
-        val onDeleteAccount: () -> Unit = {
-            backStack.add(AuthRoute.AccountDeletion)
+        val onDeleteAccount: () -> Unit = remember {
+            { backStack.add(AuthRoute.AccountDeletion) }
         }
 
         // Observe global navigation state
-        val globalNavManager = GlobalNavigationManager.getInstance()
+        val globalNavManager = remember { GlobalNavigationManager.getInstance() }
         val navigationService by globalNavManager.navigationService.collectAsState()
         val isNavigationAvailable by globalNavManager.isNavigationAvailable.collectAsState()
-        val navigationPattern = PlatformNavigationDetector.getNavigationPattern()
+        val navigationPattern = remember { PlatformNavigationDetector.getNavigationPattern() }
 
         // Only show navigation drawer when platform supports it and navigation is available
         val hasActiveWorkspace = !currentWorkspaceId.isNullOrBlank()

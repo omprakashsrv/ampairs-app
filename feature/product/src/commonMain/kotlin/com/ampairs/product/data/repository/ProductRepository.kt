@@ -17,7 +17,9 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductListItem
 import com.ampairs.product.domain.ProductSummary
+import com.ampairs.product.domain.ProductType
 import com.ampairs.product.domain.ProductVariant
+import com.ampairs.product.domain.ServiceType
 import com.ampairs.product.domain.asDomainModel
 import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toDomain
@@ -27,6 +29,8 @@ import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
@@ -40,14 +44,13 @@ import kotlin.time.ExperimentalTime
  * Similar to CustomerRepository implementation
  */
 @Inject
-@OptIn(ExperimentalTime::class)
 class ProductRepository(
     private val productApi: ProductApi,
     private val productDao: ProductDao,
     private val variantDao: ProductVariantDao,
     private val attributeDao: VariantAttributeDao
 ) : ProductDataService, CacheCleanable {
-    // Event listener job for cleanup
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var eventListenerJob: Job? = null
 
     /**
@@ -61,7 +64,7 @@ class ProductRepository(
         eventListenerJob?.cancel()
 
         // Set up new listener
-        eventListenerJob = CoroutineScope(Dispatchers.Default).launch {
+        eventListenerJob = scope.launch {
             eventManager.events
                 .filter { it.isForEntityType("product") }
                 .collect { event ->
@@ -77,6 +80,7 @@ class ProductRepository(
     fun stopEventListener() {
         eventListenerJob?.cancel()
         eventListenerJob = null
+        scope.cancel()
         EventLogger.i("ProductRepository", "Real-time event listener stopped")
     }
 
@@ -248,6 +252,7 @@ class ProductRepository(
         }
     }
 
+    @OptIn(ExperimentalTime::class)
     private fun generateLocalId(): String {
         return "local_${Clock.System.now().toEpochMilliseconds()}_${(1000..9999).random()}"
     }
@@ -261,7 +266,9 @@ class ProductRepository(
     }
 
     // Extension functions for data conversion
+    @OptIn(ExperimentalTime::class)
     private fun Product.toEntity(): ProductEntity {
+        val now = Clock.System.now()
         return ProductEntity(
             id = this.id,
             name = this.name,
@@ -282,9 +289,9 @@ class ProductRepository(
             product_type = this.productType?.name,
             service_type = this.serviceType?.name,
             has_variants = if (this.hasVariants) 1 else 0,
-            last_updated = Clock.System.now().toEpochMilliseconds(),
-            created_at = Clock.System.now().toString(),
-            updated_at = Clock.System.now().toString(),
+            last_updated = now.toEpochMilliseconds(),
+            created_at = now.toString(),
+            updated_at = now.toString(),
             synced = 0 // Mark as unsynced initially
         )
     }
@@ -315,10 +322,10 @@ class ProductRepository(
             stockQuantity = this.stock_quantity,
             lowStockAlert = this.low_stock_alert,
             productType = this.product_type?.let { type ->
-                try { com.ampairs.product.domain.ProductType.valueOf(type) } catch (e: Exception) { null }
+                try { ProductType.valueOf(type) } catch (_: Exception) { null }
             },
             serviceType = this.service_type?.let { type ->
-                try { com.ampairs.product.domain.ServiceType.valueOf(type) } catch (e: Exception) { null }
+                try { ServiceType.valueOf(type) } catch (_: Exception) { null }
             },
             hasVariants = this.has_variants == 1,
             variants = variants
@@ -367,6 +374,7 @@ class ProductRepository(
     /**
      * Create variant (database-first with background sync)
      */
+    @OptIn(ExperimentalTime::class)
     suspend fun createVariant(variant: ProductVariant): Result<ProductVariant> {
         return try {
             require(variant.id.isNotBlank()) { "Variant ID must be set" }
@@ -387,14 +395,7 @@ class ProductRepository(
             // 2. Update variant attributes for searchability
             updateVariantAttributes(variant.productId, variant)
 
-            // 3. Background sync to server (graceful failure)
-            try {
-                // TODO: API call when backend is ready
-                // val serverVariant = productApi.createVariant(variantWithTimestamps)
-                // variantDao.insertVariant(serverVariant.toEntity().copy(synced = 1))
-            } catch (e: Exception) {
-                EventLogger.w("ProductRepository", "Variant sync failed, will retry later", e)
-            }
+            // TODO: Background sync to server when backend is ready
 
             Result.success(variantWithTimestamps)
         } catch (e: Exception) {
@@ -406,6 +407,7 @@ class ProductRepository(
     /**
      * Update variant (database-first with background sync)
      */
+    @OptIn(ExperimentalTime::class)
     suspend fun updateVariant(variant: ProductVariant): Result<ProductVariant> {
         return try {
             val now = Clock.System.now()
@@ -421,14 +423,7 @@ class ProductRepository(
             // 2. Update variant attributes
             updateVariantAttributes(variant.productId, variant)
 
-            // 3. Background sync to server
-            try {
-                // TODO: API call when backend is ready
-                // val serverVariant = productApi.updateVariant(updatedVariant)
-                // variantDao.insertVariant(serverVariant.toEntity().copy(synced = 1))
-            } catch (e: Exception) {
-                EventLogger.w("ProductRepository", "Variant sync failed, will retry later", e)
-            }
+            // TODO: Background sync to server when backend is ready
 
             Result.success(updatedVariant)
         } catch (e: Exception) {
@@ -443,15 +438,7 @@ class ProductRepository(
     suspend fun deleteVariant(variantId: String): Result<Unit> {
         return try {
             variantDao.deleteVariant(variantId)
-
-            // Background sync
-            try {
-                // TODO: API call when backend is ready
-                // productApi.deleteVariant(variantId)
-            } catch (e: Exception) {
-                EventLogger.w("ProductRepository", "Variant delete sync failed", e)
-            }
-
+            // TODO: Background sync to server when backend is ready
             Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "ProductRepository.deleteVariant")
@@ -480,9 +467,7 @@ class ProductRepository(
         return attributeDao.getAttributeValues(productId, attributeName)
     }
 
-    /**
-     * Update searchable variant attributes
-     */
+    @OptIn(ExperimentalTime::class)
     private suspend fun updateVariantAttributes(productId: String, variant: ProductVariant) {
         try {
             val now = Clock.System.now().toString()

@@ -1,7 +1,7 @@
 package com.ampairs.auth.api.model
 
 import io.ktor.client.plugins.auth.providers.BearerTokens
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

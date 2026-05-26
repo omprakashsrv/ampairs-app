@@ -2,6 +2,7 @@ package com.ampairs.app
 
 import android.app.Application
 import com.ampairs.app.BuildConfig
+import com.ampairs.common.CurrentActivity
 import com.ampairs.common.config.PlatformConfig
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.AndroidAppGraph
@@ -15,6 +16,7 @@ class MainApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CurrentActivity.init(this)
 
         val isDebug = BuildConfig.DEBUG
         PlatformConfig.configure(
