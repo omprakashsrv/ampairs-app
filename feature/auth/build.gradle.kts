@@ -42,7 +42,6 @@ kotlin {
                 implementation(libs.compose.components.resources)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 implementation(libs.kotlinx.dateTime)
                 // FileKit for cross-platform file picking
                 implementation(libs.filekit.core)

@@ -168,8 +168,6 @@ kotlin {
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
 
-                implementation(libs.store5)
-
                 implementation(libs.bundles.krossbow)
 
                 implementation(libs.datastore)

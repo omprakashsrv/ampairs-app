@@ -42,7 +42,6 @@ kotlin {
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 implementation(libs.paging.common)
                 implementation(libs.paging.componse.common)
                 // Material3 Adaptive

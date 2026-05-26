@@ -41,7 +41,6 @@ firebase-perf = "21.0.5"
 firebase-messaging = "24.1.2"
 datastore = "1.2.1"
 androidx-work-runtime = "2.11.2"
-store5 = "5.1.0-alpha08"
 jmapviewer = "2.24"
 filekit = "0.14.1"
 play-services-location = "21.3.0"
@@ -139,7 +138,6 @@ haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work-runtime" }
 
-store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
 sentry-kmp = { module = "io.sentry:sentry-kotlin-multiplatform", version.ref = "sentry-kmp" }
 jmapviewer = { module = "org.openstreetmap.jmapviewer:jmapviewer", version.ref = "jmapviewer" }
 

@@ -40,7 +40,6 @@ kotlin {
                 implementation(projects.feature.authApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 implementation(libs.kotlinx.dateTime)
             }
         }
