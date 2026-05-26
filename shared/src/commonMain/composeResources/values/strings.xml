@@ -199,4 +199,5 @@
 
     <!-- General -->
     <string name="translated_description_image">Translated description of what the image contains</string>
+    <string name="press_back_again_to_exit">Press back again to exit</string>
 </resources>

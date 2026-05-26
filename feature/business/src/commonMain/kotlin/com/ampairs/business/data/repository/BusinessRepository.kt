@@ -79,6 +79,14 @@ class BusinessRepository(
             website = request.website,
             taxId = request.taxId,
             registrationNumber = request.registrationNumber,
+            timezone = request.timezone,
+            currency = request.currency,
+            language = request.language,
+            dateFormat = request.dateFormat,
+            timeFormat = request.timeFormat,
+            openingHours = request.openingHours,
+            closingHours = request.closingHours,
+            operatingDays = request.operatingDays,
             active = true,
             customAttributes = null
         )

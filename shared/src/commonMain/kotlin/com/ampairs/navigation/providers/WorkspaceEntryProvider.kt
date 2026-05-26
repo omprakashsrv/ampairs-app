@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
+import com.ampairs.workspace.navigation.ModuleCodes
 import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.ModuleStoreScreen
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
@@ -56,7 +57,7 @@ fun workspaceEntryProvider(
                 backStack.removeLastOrNull()
             },
             onWorkspaceCreated = { workspaceId ->
-                backStack.add(SubscriptionRoute.Plans)
+                backStack.removeLastOrNull()
             },
             modifier = Modifier
         )
@@ -129,13 +130,13 @@ fun workspaceEntryProvider(
             onModuleSelected = { moduleCode ->
                 // Handle module selection based on code
                 when (moduleCode) {
-                    "customer-management" -> backStack.add(Route.Customer)
-                    "product-management" -> backStack.add(Route.Product)
-                    "order-management" -> backStack.add(Route.Order)
-                    "invoice-management" -> backStack.add(Route.Invoice)
-                    "inventory-management" -> backStack.add(Route.Inventory)
-                    "tax" -> backStack.add(Route.Tax)
-                    "business" -> backStack.add(Route.Business)
+                    ModuleCodes.CUSTOMER_MANAGEMENT -> backStack.add(Route.Customer)
+                    ModuleCodes.PRODUCT_MANAGEMENT -> backStack.add(Route.Product)
+                    ModuleCodes.ORDER_MANAGEMENT -> backStack.add(Route.Order)
+                    ModuleCodes.INVOICE_BILLING -> backStack.add(Route.Invoice)
+                    ModuleCodes.INVENTORY_MANAGEMENT -> backStack.add(Route.Inventory)
+                    ModuleCodes.TAX_CODE_MANAGEMENT -> backStack.add(Route.Tax)
+                    ModuleCodes.BUSINESS_PROFILE -> backStack.add(Route.Business)
                     "subscription" -> backStack.add(Route.Subscription)
                     else -> println("Unknown module: $moduleCode")
                 }

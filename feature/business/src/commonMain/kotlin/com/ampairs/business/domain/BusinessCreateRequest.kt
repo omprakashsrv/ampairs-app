@@ -1,11 +1,15 @@
 package com.ampairs.business.domain
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Request for creating a new business profile.
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class BusinessCreateRequest(
     @SerialName("name")
@@ -63,19 +67,27 @@ data class BusinessCreateRequest(
     @SerialName("registration_number")
     val registrationNumber: String? = null,
 
-    // Operational Config
+    @SerialName("custom_attributes")
+    val customAttributes: JsonObject? = null,
+
+    // Operational Config — @EncodeDefault forces inclusion when KtorClient uses encodeDefaults=false
+    @EncodeDefault
     @SerialName("timezone")
     val timezone: String = "UTC",
 
+    @EncodeDefault
     @SerialName("currency")
     val currency: String = "INR",
 
+    @EncodeDefault
     @SerialName("language")
     val language: String = "en",
 
+    @EncodeDefault
     @SerialName("date_format")
     val dateFormat: String = "DD-MM-YYYY",
 
+    @EncodeDefault
     @SerialName("time_format")
     val timeFormat: String = "12H",
 
@@ -86,6 +98,7 @@ data class BusinessCreateRequest(
     @SerialName("closing_hours")
     val closingHours: String? = null,
 
+    @EncodeDefault
     @SerialName("operating_days")
     val operatingDays: List<String> = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 )
