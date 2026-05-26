@@ -5,17 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductImage
-import com.ampairs.product.domain.ProductKey
-import com.ampairs.product.domain.ProductStore
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
+import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.tax.data.repository.TaxCodeLookup
 import com.ampairs.tax.domain.model.TaxCode
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Assisted
@@ -31,7 +32,7 @@ import kotlin.time.ExperimentalTime
 @OptIn(FlowPreview::class)
 class ProductFormViewModel(
     @Assisted private val productId: String?,
-    private val productStore: ProductStore,
+    private val productRepository: ProductRepository,
     private val workspaceContextManager: WorkspaceContextManager,
     private val taxCodeRepository: TaxCodeLookup
 ) : ViewModel() {
@@ -65,63 +66,29 @@ class ProductFormViewModel(
 
     fun loadProduct() {
         if (productId == null) return
-
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
-        viewModelScope.launch {
-            try {
-                val key = ProductKey(productId)
-                productStore.productStore
-                    .stream(StoreReadRequest.cached(key, refresh = false))
-                    .collect { response ->
-                        when (response) {
-                            is StoreReadResponse.Data -> {
-                                val product = response.value
-                                val formState = product.toFormState()
-
-                                // Load tax code description if tax code is set
-                                val taxCodeDescription = if (product.taxCode.isNotBlank()) {
-                                    try {
-                                        val taxCodes = taxCodeRepository.searchWorkspaceTaxCodes(product.taxCode, limit = 1)
-                                        taxCodes.firstOrNull()?.let { taxCode ->
-                                            "${taxCode.code} - ${taxCode.shortDescription}"
-                                        }
-                                    } catch (e: Exception) {
-                                        null
-                                    }
-                                } else {
-                                    null
-                                }
-
-                                _uiState.value = _uiState.value.copy(
-                                    isLoading = false,
-                                    formState = formState.copy(taxCodeDescription = taxCodeDescription)
-                                )
-                            }
-                            is StoreReadResponse.Error.Exception -> {
-                                _uiState.value = _uiState.value.copy(
-                                    isLoading = false,
-                                    error = response.error.message ?: "Failed to load product"
-                                )
-                            }
-                            is StoreReadResponse.Error.Message -> {
-                                _uiState.value = _uiState.value.copy(
-                                    isLoading = false,
-                                    error = response.message
-                                )
-                            }
-                            else -> {
-                                // Handle loading state
-                            }
-                        }
-                    }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Failed to load product"
-                )
+        productRepository.observeProduct(productId)
+            .onEach { product ->
+                if (product != null) {
+                    val formState = product.toFormState()
+                    val taxCodeDescription = if (product.taxCode.isNotBlank()) {
+                        try {
+                            val taxCodes = taxCodeRepository.searchWorkspaceTaxCodes(product.taxCode, limit = 1)
+                            taxCodes.firstOrNull()?.let { "${it.code} - ${it.shortDescription}" }
+                        } catch (_: Exception) { null }
+                    } else null
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        formState = formState.copy(taxCodeDescription = taxCodeDescription)
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = "Product not found")
+                }
             }
-        }
+            .catch { e ->
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Failed to load product")
+            }
+            .launchIn(viewModelScope)
     }
 
     fun updateForm(newFormState: ProductFormState) {
@@ -168,9 +135,9 @@ class ProductFormViewModel(
                 val product = formState.toProduct()
 
                 val result = if (productId == null) {
-                    productStore.createProduct(product)
+                    productRepository.createProduct(product)
                 } else {
-                    productStore.updateProduct(product.copy(id = productId))
+                    productRepository.updateProduct(product.copy(id = productId))
                 }
 
                 if (result.isSuccess) {

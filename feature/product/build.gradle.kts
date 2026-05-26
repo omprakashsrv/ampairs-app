@@ -41,7 +41,6 @@ kotlin {
                 implementation(projects.feature.taxApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 implementation(libs.paging.common)
                 implementation(libs.room.paging)
                 implementation(libs.kotlinx.dateTime)

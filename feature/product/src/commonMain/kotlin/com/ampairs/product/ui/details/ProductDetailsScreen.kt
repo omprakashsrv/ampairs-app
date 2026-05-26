@@ -39,9 +39,8 @@ fun ProductDetailsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Refresh product data when returning from edit or variant management
     LaunchedEffect(productId) {
-        viewModel.refreshProduct()
+        // Product is observed reactively — no explicit reload needed
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -73,7 +72,7 @@ fun ProductDetailsScreen(
                 val errorMessage = uiState.error ?: return@Column
                 ErrorMessage(
                     error = errorMessage,
-                    onRetry = viewModel::loadProduct,
+                    onRetry = {},
                     modifier = Modifier.fillMaxSize()
                 )
             }

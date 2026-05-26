@@ -40,7 +40,6 @@ kotlin {
                 implementation(projects.feature.authApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 // Navigation 3 for NavKey
                 implementation(libs.navigation3.ui)
                 implementation(libs.lifecycle.viewmodel.navigation3)

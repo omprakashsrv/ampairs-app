@@ -30,8 +30,6 @@ fun CustomerTypeListScreen(
     var showSearchBar by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // Offline-first pattern: load from DB reactively, sync with server in background
-        viewModel.loadCustomerTypes()
         viewModel.syncCustomerTypes()
     }
 

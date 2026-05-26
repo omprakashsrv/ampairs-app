@@ -35,9 +35,8 @@ fun ProductsListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Load products when screen is first shown
     LaunchedEffect(Unit) {
-        viewModel.loadProducts(forceRefresh = true)
+        viewModel.syncProducts()
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -91,7 +90,7 @@ fun ProductsListScreen(
                 val errorMessage = uiState.error ?: return@Column
                 ErrorMessage(
                     error = errorMessage,
-                    onRetry = viewModel::loadProducts,
+                    onRetry = viewModel::syncProducts,
                     modifier = Modifier.fillMaxSize()
                 )
             }

@@ -40,7 +40,6 @@ kotlin {
                 implementation(projects.feature.formApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 // Coil for image loading
                 implementation(libs.coil.core)
                 implementation(libs.coil.compose)

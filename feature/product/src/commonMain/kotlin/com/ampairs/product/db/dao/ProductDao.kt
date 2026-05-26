@@ -9,9 +9,19 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.ampairs.product.db.entity.ImageEntity
 import com.ampairs.product.db.entity.ProductEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ProductDao {
+
+    @Query("SELECT * FROM productEntity WHERE active = 1 ORDER BY name ASC")
+    fun observeAllProducts(): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM productEntity WHERE name LIKE '%' || :query || '%' AND active = 1 ORDER BY name ASC")
+    fun observeProductsByName(query: String): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM productEntity WHERE id = :id")
+    fun observeProductById(id: String): Flow<ProductEntity?>
 
     @Query("SELECT * FROM productEntity WHERE id = :id")
     suspend fun productById(id: String): ProductEntity?

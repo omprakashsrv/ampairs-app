@@ -18,11 +18,8 @@ import com.ampairs.workspace.db.WorkspaceModuleRepository
 import com.ampairs.subscription.util.SubscriptionOnboardingLookup
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
-import com.ampairs.workspace.store.InstalledModuleKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 /**
  * ViewModel for Workspace Modules matching web implementation
@@ -90,57 +87,22 @@ class WorkspaceModulesViewModel(
             _isLoading.value = false
             return
         }
-        viewModelScope.launch {
-            if (!hasReceivedData) {
-                _isLoading.value = true
-                globalNavigationManager.setModuleLoading(true)
+        if (!hasReceivedData) {
+            _isLoading.value = true
+            globalNavigationManager.setModuleLoading(true)
+        }
+        _errorMessage.value = null
+
+        moduleRepository.getInstalledModulesFlow(wsId)
+            .onEach { modules ->
+                _installedModules.value = modules
+                hasReceivedData = true
+                _isLoading.value = false
+                globalNavigationManager.setModuleLoading(false)
+                _errorMessage.value = null
+                globalNavigationManager.updateInstalledModules(modules)
             }
-            _errorMessage.value = null
-
-            try {
-                val key = InstalledModuleKey.refresh(wsId)
-                moduleRepository.moduleStore
-                    .stream(StoreReadRequest.cached(key, refresh = true))
-                    .collect { response ->
-                        when (response) {
-                            is StoreReadResponse.Data -> {
-                                _installedModules.value = response.value
-                                hasReceivedData = true
-                                _isLoading.value = false
-                                globalNavigationManager.setModuleLoading(false)
-                                _errorMessage.value = null
-                                globalNavigationManager.updateInstalledModules(response.value)
-                            }
-
-                            is StoreReadResponse.Loading -> {
-                                if (!hasReceivedData) {
-                                    _isLoading.value = true
-                                    globalNavigationManager.setModuleLoading(true)
-                                }
-                            }
-
-                            is StoreReadResponse.Error.Exception -> {
-                                _isLoading.value = false
-                                globalNavigationManager.setModuleLoading(false)
-                                if (_installedModules.value.isEmpty()) {
-                                    _errorMessage.value = response.error.message ?: "Failed to load modules"
-                                    globalNavigationManager.setNavigationError(_errorMessage.value)
-                                }
-                            }
-
-                            is StoreReadResponse.Error.Message -> {
-                                _isLoading.value = false
-                                globalNavigationManager.setModuleLoading(false)
-                                if (_installedModules.value.isEmpty()) {
-                                    _errorMessage.value = response.message
-                                    globalNavigationManager.setNavigationError(_errorMessage.value)
-                                }
-                            }
-
-                            else -> Unit
-                        }
-                    }
-            } catch (e: Exception) {
+            .catch { e ->
                 _isLoading.value = false
                 globalNavigationManager.setModuleLoading(false)
                 if (_installedModules.value.isEmpty()) {
@@ -148,6 +110,11 @@ class WorkspaceModulesViewModel(
                     globalNavigationManager.setNavigationError(_errorMessage.value)
                 }
             }
+            .launchIn(viewModelScope)
+
+        // Sync from network in background
+        viewModelScope.launch {
+            moduleRepository.syncInstalledModules(wsId)
         }
     }
 

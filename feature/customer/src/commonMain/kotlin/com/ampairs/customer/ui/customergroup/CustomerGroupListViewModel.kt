@@ -4,14 +4,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.customer.domain.CustomerGroup
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class CustomerGroupListUiState(
     val customerGroups: List<CustomerGroup> = emptyList(),
@@ -34,11 +42,10 @@ class CustomerGroupListViewModel(
     val uiState: StateFlow<CustomerGroupListUiState> = _uiState.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     init {
-        refreshCustomerGroups()
-        observeSearchQuery()
+        observeCustomerGroups()
+        syncCustomerGroups()
     }
 
     fun updateSearchQuery(query: String) {
@@ -49,98 +56,31 @@ class CustomerGroupListViewModel(
     fun deleteCustomerGroup(customerGroupId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
-
             val result = customerGroupRepository.deleteCustomerGroup(customerGroupId)
             if (result.isFailure) {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to delete customer group")
                 }
-            } else {
-                // Refresh the list after successful deletion
-                refreshCustomerGroups()
             }
         }
     }
 
-    @OptIn(FlowPreview::class)
-    private fun observeSearchQuery() {
-        _searchQuery
-            .debounce(300) // Wait 300ms after the user stops typing
-            .distinctUntilChanged()
-            .onEach { query ->
-                if (query.isNotBlank()) {
-                    searchCustomerGroups(query)
-                } else {
-                    refreshCustomerGroups()
-                }
+    fun syncCustomerGroups() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, error = null) }
+            try {
+                customerGroupRepository.syncCustomerGroups()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "Sync failed") }
+            } finally {
+                _uiState.update { it.copy(isRefreshing = false) }
             }
-            .launchIn(viewModelScope)
-    }
-
-    private fun refreshCustomerGroups() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            customerGroupRepository.getCustomerGroupsFlow(page = 0, size = 100, forceRefresh = true)
-                .collect { response ->
-                    when (response) {
-                        is StoreReadResponse.Data -> {
-                            _uiState.update {
-                                it.copy(
-                                    customerGroups = response.value,
-                                    isLoading = false,
-                                    error = null
-                                )
-                            }
-                        }
-                        is StoreReadResponse.Loading -> {
-                            _uiState.update { it.copy(isLoading = true) }
-                        }
-                        is StoreReadResponse.Error.Exception -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = response.error.message ?: "Failed to load customer groups"
-                                )
-                            }
-                        }
-                        is StoreReadResponse.Error.Message -> {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = response.message
-                                )
-                            }
-                        }
-                        else -> {
-                            // Handle other response types if needed
-                        }
-                    }
-                }
-        }
-    }
-
-    private fun searchCustomerGroups(query: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            customerGroupRepository.searchCustomerGroups(query)
-                .collect { customerGroups ->
-                    _uiState.update {
-                        it.copy(
-                            customerGroups = customerGroups,
-                            isLoading = false,
-                            error = null
-                        )
-                    }
-                }
         }
     }
 
     fun loadAvailableCustomerGroupsForImport() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingImportCustomerGroups = true) }
-
             val result = customerGroupRepository.getAvailableCustomerGroupsForImport()
             _uiState.update {
                 it.copy(
@@ -154,15 +94,13 @@ class CustomerGroupListViewModel(
     fun importCustomerGroup(customerGroup: CustomerGroup) {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
-
             val result = customerGroupRepository.importCustomerGroup(customerGroup)
             if (result.isFailure) {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer group")
                 }
             } else {
-                refreshCustomerGroups()
-                loadAvailableCustomerGroupsForImport() // Refresh available list
+                loadAvailableCustomerGroupsForImport()
             }
         }
     }
@@ -170,81 +108,30 @@ class CustomerGroupListViewModel(
     fun bulkImportCustomerGroups(customerGroups: List<CustomerGroup>) {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
-
             val result = customerGroupRepository.bulkImportCustomerGroups(customerGroups)
             if (result.isFailure) {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer groups")
                 }
             } else {
-                refreshCustomerGroups()
-                loadAvailableCustomerGroupsForImport() // Refresh available list
+                loadAvailableCustomerGroupsForImport()
             }
         }
     }
 
-    /**
-     * Load customer groups from local database (reactive)
-     */
-    fun loadCustomerGroups() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            try {
-                customerGroupRepository.getAllCustomerGroupsFlow()
-                    .catch { throwable ->
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = throwable.message ?: "Unknown error"
-                            )
-                        }
-                    }
-                    .collect { groups ->
-                        _uiState.update {
-                            it.copy(
-                                customerGroups = groups,
-                                isLoading = false,
-                                error = null
-                            )
-                        }
-                    }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Failed to load customer groups"
-                    )
-                }
+    @OptIn(FlowPreview::class)
+    private fun observeCustomerGroups() {
+        _uiState.update { it.copy(isLoading = true) }
+        _searchQuery
+            .debounce(300)
+            .distinctUntilChanged()
+            .flatMapLatest { query -> customerGroupRepository.searchCustomerGroups(query) }
+            .onEach { groups ->
+                _uiState.update { it.copy(customerGroups = groups, isLoading = false, error = null) }
             }
-        }
-    }
-
-    /**
-     * Sync customer groups with server in background
-     */
-    fun syncCustomerGroups() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, error = null) }
-
-            try {
-                val result = customerGroupRepository.syncCustomerGroups()
-                _uiState.update {
-                    it.copy(
-                        isRefreshing = false,
-                        error = if (result.isFailure) {
-                            result.exceptionOrNull()?.message ?: "Sync failed"
-                        } else null
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isRefreshing = false,
-                        error = e.message ?: "Sync failed"
-                    )
-                }
+            .catch { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
-        }
+            .launchIn(viewModelScope)
     }
 }

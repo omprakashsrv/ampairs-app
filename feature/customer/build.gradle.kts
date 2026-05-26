@@ -41,7 +41,6 @@ kotlin {
                 implementation(projects.feature.formApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 // FileKit for cross-platform file picking
                 implementation(libs.filekit.core)
                 implementation(libs.filekit.dialogs)
