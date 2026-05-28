@@ -160,6 +160,10 @@
     <string name="workspace_settings">Workspace Settings</string>
     <string name="workspace_modules">Modules</string>
     <string name="workspace_no_modules">No modules available</string>
+    <string name="workspace_modules_subtitle">%1$d of %2$d active</string>
+    <string name="workspace_modules_fetching">Fetching modules…</string>
+    <string name="workspace_module_core">core</string>
+    <string name="workspace_module_dismiss_error">Dismiss</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
