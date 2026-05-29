@@ -31,6 +31,7 @@ Consult these files for deeper guidance. They are not auto-loaded — read them 
 | SKIE, Flow→Swift, UIKitView, Swift interop | `references/ios-swift-interop.md` | iOS interop, SKIE setup |
 | MVI discipline, naming, anti-overengineering | `references/clean-code.md` | Code review, ViewModel design |
 | RemoteMediator, offline-first paging | `references/paging-offline.md` | Paged lists with Room + Ktor |
+| Metro DI — ViewModel, Repository, platform modules | `references/metro-di.md` | Any new screen, ViewModel, or feature module |
 
 ---
 
