@@ -265,14 +265,4 @@ class UserUpdateViewModel(
         }
     }
 
-    val isLoading: Boolean
-        get() = _state.value.run {
-            userState is UiState.Loading || updateUserState is UiState.Loading || uploadPictureState is UiState.Loading
-        }
-
-    val isFormValid: Boolean
-        get() = _state.value.firstName.isNotBlank()
-
-    val hasSelectedImage: Boolean
-        get() = _state.value.selectedImageData != null
 }

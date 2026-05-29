@@ -46,7 +46,7 @@ class UserSelectionViewModel(
     private val _state = MutableStateFlow(UserSelectionState())
     val state: StateFlow<UserSelectionState> = _state.asStateFlow()
 
-    private val _navEvent = MutableSharedFlow<UserSelectionNavEvent>()
+    private val _navEvent = MutableSharedFlow<UserSelectionNavEvent>(extraBufferCapacity = 1)
     val navEvent: SharedFlow<UserSelectionNavEvent> = _navEvent.asSharedFlow()
 
     fun loadUsers() {

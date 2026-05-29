@@ -204,17 +204,4 @@ class AccountDeletionViewModel(
         }
     }
 
-    val isLoading: Boolean
-        get() = _state.value.run { deletionState is UiState.Loading || statusState is UiState.Loading }
-
-    val isFormValid: Boolean
-        get() = _state.value.confirmed
-
-    val isDeletionPending: Boolean
-        get() = _state.value.statusState.let {
-            it is UiState.Success && it.data?.isDeleted == true
-        }
-
-    val daysRemaining: Int?
-        get() = (_state.value.statusState as? UiState.Success<AccountDeletionStatus>)?.data?.daysRemaining
 }
