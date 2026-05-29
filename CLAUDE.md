@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @.claude/memory/project_versions.md
 @.claude/memory/feedback_critical_patterns.md
 @.claude/memory/feedback_kmp_rules.md
+@.claude/skills/cmp-practices/SKILL.md
 
 ## Project Overview
 

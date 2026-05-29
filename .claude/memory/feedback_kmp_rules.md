@@ -34,9 +34,9 @@ Never use JVM-specific APIs in `commonMain`. If the import starts with `java.*` 
 
 ## iOS-Specific Dispatcher Rule
 
-On iOS, `Dispatchers.IO` does not exist. Use:
-- `Dispatchers.Default` for CPU/IO operations
-- `DispatcherProvider.io` (the project's expect/actual wrapper)
+**Updated (coroutines 1.7+):** `Dispatchers.IO` is now available on all KMP targets including iOS. This project uses `kotlinx.coroutines 1.10.2`, so `Dispatchers.IO` is safe to use in `commonMain`.
+
+The old advice (`Dispatchers.Default` or `DispatcherProvider.io` on iOS) was correct for coroutines < 1.7 only. Do not warn about `Dispatchers.IO` in this project.
 
 **Why:** Kotlin/Native does not have a thread pool for IO dispatching. Using `Dispatchers.IO` on iOS causes a crash at runtime.
 
