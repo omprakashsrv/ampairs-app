@@ -1,5 +1,20 @@
 package com.ampairs.auth.ui
 
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.user_selection_add_account
+import ampairsapp.feature.auth.generated.resources.user_selection_cd_add_user
+import ampairsapp.feature.auth.generated.resources.user_selection_cd_profile
+import ampairsapp.feature.auth.generated.resources.user_selection_cd_profile_picture
+import ampairsapp.feature.auth.generated.resources.user_selection_choose_account
+import ampairsapp.feature.auth.generated.resources.user_selection_days_ago
+import ampairsapp.feature.auth.generated.resources.user_selection_default_name
+import ampairsapp.feature.auth.generated.resources.user_selection_hours_ago
+import ampairsapp.feature.auth.generated.resources.user_selection_just_now
+import ampairsapp.feature.auth.generated.resources.user_selection_loading
+import ampairsapp.feature.auth.generated.resources.user_selection_long_ago
+import ampairsapp.feature.auth.generated.resources.user_selection_minutes_ago
+import ampairsapp.feature.auth.generated.resources.user_selection_redirecting
+import ampairsapp.feature.auth.generated.resources.user_selection_welcome
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -42,7 +57,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,11 +71,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.auth.viewmodel.UserSelectionViewModel
 import com.ampairs.common.time.currentTimeMillis
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import org.jetbrains.compose.resources.stringResource
 
 private val MAX_CONTENT_WIDTH = 480.dp
 
@@ -72,7 +88,7 @@ fun UserSelectionScreen(
     onNoUsers: () -> Unit = {},
     viewModel: UserSelectionViewModel = metroViewModel(),
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var hasInitialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -80,7 +96,6 @@ fun UserSelectionScreen(
         hasInitialized = true
     }
 
-    // Auto-navigate to login if no users are found, but only after initialization
     LaunchedEffect(state.users, state.isLoading, hasInitialized) {
         if (hasInitialized && !state.isLoading && state.users.isEmpty()) {
             onNoUsers()
@@ -92,9 +107,7 @@ fun UserSelectionScreen(
         topBar = {
             TopAppBar(
                 title = { },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }
     ) { paddingValues ->
@@ -112,34 +125,24 @@ fun UserSelectionScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (state.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator()
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Loading users...",
+                                text = stringResource(Res.string.user_selection_loading),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 } else if (state.users.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator()
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Redirecting to login...",
+                                text = stringResource(Res.string.user_selection_redirecting),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -151,27 +154,22 @@ fun UserSelectionScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Header section
                         item {
                             Spacer(modifier = Modifier.height(24.dp))
-
                             Text(
-                                text = "Welcome back",
+                                text = stringResource(Res.string.user_selection_welcome),
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 textAlign = TextAlign.Center
                             )
-
                             Spacer(modifier = Modifier.height(8.dp))
-
                             Text(
-                                text = "Choose an account to continue",
+                                text = stringResource(Res.string.user_selection_choose_account),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
-
                             Spacer(modifier = Modifier.height(32.dp))
                         }
 
@@ -205,51 +203,37 @@ private fun UserCard(
     val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
-        targetValue = when {
-            isPressed -> 0.98f
-            isHovered -> 1.01f
-            else -> 1f
-        },
+        targetValue = when { isPressed -> 0.98f; isHovered -> 1.01f; else -> 1f },
         animationSpec = tween(durationMillis = 150),
         label = "scale"
     )
-
     val elevation by animateFloatAsState(
-        targetValue = when {
-            isHovered -> 6f
-            else -> 2f
-        },
+        targetValue = if (isHovered) 6f else 2f,
         animationSpec = tween(durationMillis = 150),
         label = "elevation"
     )
-
     val borderColor by animateColorAsState(
-        targetValue = when {
-            isHovered || isPressed -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-            else -> Color.Transparent
+        targetValue = if (isHovered || isPressed) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+        } else {
+            Color.Transparent
         },
         animationSpec = tween(durationMillis = 150),
         label = "borderColor"
     )
 
+    val defaultName = stringResource(Res.string.user_selection_default_name)
+    val displayName = "${user.firstName} ${user.lastName}".trim().ifEmpty { defaultName }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .border(
-                width = 2.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { onClick() },
+            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(16.dp))
+            .clickable(interactionSource = interactionSource, indication = null) { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = elevation.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -257,7 +241,6 @@ private fun UserCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // User Avatar
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -268,7 +251,7 @@ private fun UserCard(
                 if (!user.profilePictureThumbnailUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = user.profilePictureThumbnailUrl,
-                        contentDescription = "Profile picture",
+                        contentDescription = stringResource(Res.string.user_selection_cd_profile_picture),
                         modifier = Modifier.size(56.dp),
                         contentScale = ContentScale.Crop
                     )
@@ -284,7 +267,7 @@ private fun UserCard(
                     } else {
                         Icon(
                             Icons.Default.AccountCircle,
-                            contentDescription = "Profile",
+                            contentDescription = stringResource(Res.string.user_selection_cd_profile),
                             modifier = Modifier.size(32.dp),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -294,21 +277,16 @@ private fun UserCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // User Info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${user.firstName} ${user.lastName}".trim().ifEmpty { "User" },
+                    text = displayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
                 Spacer(modifier = Modifier.height(2.dp))
-
                 Text(
                     text = "+${user.countryCode} ${user.phone}",
                     style = MaterialTheme.typography.bodyMedium,
@@ -316,7 +294,6 @@ private fun UserCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
                 if (user.lastLogin > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -327,7 +304,6 @@ private fun UserCard(
                 }
             }
 
-            // Arrow indicator
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
@@ -348,19 +324,15 @@ private fun AddAccountCard(
     val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
-        targetValue = when {
-            isPressed -> 0.98f
-            isHovered -> 1.01f
-            else -> 1f
-        },
+        targetValue = when { isPressed -> 0.98f; isHovered -> 1.01f; else -> 1f },
         animationSpec = tween(durationMillis = 150),
         label = "scale"
     )
-
     val borderColor by animateColorAsState(
-        targetValue = when {
-            isHovered || isPressed -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-            else -> MaterialTheme.colorScheme.outlineVariant
+        targetValue = if (isHovered || isPressed) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+        } else {
+            MaterialTheme.colorScheme.outlineVariant
         },
         animationSpec = tween(durationMillis = 150),
         label = "borderColor"
@@ -370,15 +342,8 @@ private fun AddAccountCard(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .border(
-                width = 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { onClick() },
+            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(16.dp))
+            .clickable(interactionSource = interactionSource, indication = null) { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -400,7 +365,7 @@ private fun AddAccountCard(
             ) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = "Add user",
+                    contentDescription = stringResource(Res.string.user_selection_cd_add_user),
                     modifier = Modifier.size(28.dp),
                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
@@ -409,7 +374,7 @@ private fun AddAccountCard(
             Spacer(modifier = Modifier.width(16.dp))
 
             Text(
-                text = "Add another account",
+                text = stringResource(Res.string.user_selection_add_account),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -426,15 +391,15 @@ private fun AddAccountCard(
     }
 }
 
+@Composable
 private fun formatLastLogin(timestamp: Long): String {
     val now = currentTimeMillis()
     val diff = now - timestamp
-    
     return when {
-        diff < 60_000 -> "Just now"
-        diff < 3600_000 -> "${diff / 60_000}m ago"
-        diff < 86400_000 -> "${diff / 3600_000}h ago"
-        diff < 604800_000 -> "${diff / 86400_000}d ago"
-        else -> "Long ago"
+        diff < 60_000 -> stringResource(Res.string.user_selection_just_now)
+        diff < 3_600_000 -> stringResource(Res.string.user_selection_minutes_ago, (diff / 60_000).toInt())
+        diff < 86_400_000 -> stringResource(Res.string.user_selection_hours_ago, (diff / 3_600_000).toInt())
+        diff < 604_800_000 -> stringResource(Res.string.user_selection_days_ago, (diff / 86_400_000).toInt())
+        else -> stringResource(Res.string.user_selection_long_ago)
     }
 }

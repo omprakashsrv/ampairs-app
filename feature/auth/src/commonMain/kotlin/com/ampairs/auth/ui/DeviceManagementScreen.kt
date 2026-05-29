@@ -1,5 +1,18 @@
 package com.ampairs.auth.ui
 
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.device_cd_logout
+import ampairsapp.feature.auth.generated.resources.device_cd_refresh
+import ampairsapp.feature.auth.generated.resources.device_current_device
+import ampairsapp.feature.auth.generated.resources.device_ip_address
+import ampairsapp.feature.auth.generated.resources.device_last_activity
+import ampairsapp.feature.auth.generated.resources.device_location
+import ampairsapp.feature.auth.generated.resources.device_login_time
+import ampairsapp.feature.auth.generated.resources.device_no_active_sessions
+import ampairsapp.feature.auth.generated.resources.device_operating_system
+import ampairsapp.feature.auth.generated.resources.device_sessions
+import ampairsapp.feature.auth.generated.resources.loading_device_sessions
+import ampairsapp.feature.auth.generated.resources.logout_all_devices
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -15,8 +29,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tablet
@@ -36,7 +50,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -44,15 +57,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.auth.viewmodel.DeviceManagementViewModel
-import org.jetbrains.compose.resources.stringResource
-import ampairsapp.feature.auth.generated.resources.Res
-import ampairsapp.feature.auth.generated.resources.device_sessions
-import ampairsapp.feature.auth.generated.resources.loading_device_sessions
-import ampairsapp.feature.auth.generated.resources.logout_all_devices
-import androidx.compose.foundation.layout.imePadding
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import kotlinx.coroutines.flow.filterNotNull
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,20 +68,19 @@ fun DeviceManagementScreen(
     viewModel: DeviceManagementViewModel = metroViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.loadDeviceSessions()
     }
 
-    LaunchedEffect(viewModel.errorMessage) {
-        viewModel.errorMessage.filterNotNull().collect { message ->
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.clearErrorMessage()
+    LaunchedEffect(Unit) {
+        viewModel.errorMessage.collect { message ->
+            if (message != null) {
+                snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
+                viewModel.clearErrorMessage()
+            }
         }
     }
 
@@ -89,7 +96,7 @@ fun DeviceManagementScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = stringResource(Res.string.device_cd_refresh)
                         )
                     }
                 }
@@ -122,9 +129,7 @@ fun DeviceManagementScreen(
                             items(uiState.deviceSessions) { session ->
                                 DeviceSessionCard(
                                     session = session,
-                                    onLogoutDevice = { deviceId ->
-                                        viewModel.logoutDevice(deviceId)
-                                    },
+                                    onLogoutDevice = { deviceId -> viewModel.logoutDevice(deviceId) },
                                     isLoggingOut = uiState.isLoggingOut
                                 )
                             }
@@ -132,7 +137,6 @@ fun DeviceManagementScreen(
 
                         if (uiState.deviceSessions.size > 1) {
                             Spacer(modifier = Modifier.height(16.dp))
-                            
                             Button(
                                 onClick = { viewModel.logoutAllDevices() },
                                 modifier = Modifier.fillMaxWidth(),
@@ -161,9 +165,7 @@ private fun LoadingIndicator() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator()
             Spacer(modifier = Modifier.height(16.dp))
             Text(stringResource(Res.string.loading_device_sessions))
@@ -177,9 +179,7 @@ private fun EmptyDevicesMessage() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector = Icons.Default.Phone,
                 contentDescription = null,
@@ -188,7 +188,7 @@ private fun EmptyDevicesMessage() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No active device sessions found",
+                text = stringResource(Res.string.device_no_active_sessions),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -202,6 +202,13 @@ private fun DeviceSessionCard(
     onLogoutDevice: (String) -> Unit,
     isLoggingOut: Boolean
 ) {
+    val currentDeviceLabel = stringResource(Res.string.device_current_device)
+    val lastActivityLabel = stringResource(Res.string.device_last_activity)
+    val loginTimeLabel = stringResource(Res.string.device_login_time)
+    val ipAddressLabel = stringResource(Res.string.device_ip_address)
+    val osLabel = stringResource(Res.string.device_operating_system)
+    val locationLabel = stringResource(Res.string.device_location)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -214,9 +221,7 @@ private fun DeviceSessionCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -232,20 +237,17 @@ private fun DeviceSessionCard(
                         modifier = Modifier.size(32.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    
                     Spacer(modifier = Modifier.width(12.dp))
-                    
                     Column {
                         Text(
                             text = session.deviceName,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        
                         Row {
                             if (session.isCurrentDevice) {
                                 Text(
-                                    text = "Current Device",
+                                    text = currentDeviceLabel,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium
@@ -260,7 +262,7 @@ private fun DeviceSessionCard(
                         }
                     }
                 }
-                
+
                 if (!session.isCurrentDevice) {
                     IconButton(
                         onClick = { onLogoutDevice(session.deviceId) },
@@ -268,23 +270,21 @@ private fun DeviceSessionCard(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Default.Logout,
-                            contentDescription = "Logout device",
+                            contentDescription = stringResource(Res.string.device_cd_logout),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Column {
-                DeviceInfoRow("Last activity:", formatRelativeTime(session.lastActivity))
-                DeviceInfoRow("Login time:", formatRelativeTime(session.loginTime))
-                DeviceInfoRow("IP Address:", session.ipAddress)
-                DeviceInfoRow("Operating System:", session.os)
-                session.location?.let { location ->
-                    DeviceInfoRow("Location:", location)
-                }
+                DeviceInfoRow(lastActivityLabel, formatRelativeTime(session.lastActivity))
+                DeviceInfoRow(loginTimeLabel, formatRelativeTime(session.loginTime))
+                DeviceInfoRow(ipAddressLabel, session.ipAddress)
+                DeviceInfoRow(osLabel, session.os)
+                session.location?.let { location -> DeviceInfoRow(locationLabel, location) }
             }
         }
     }
@@ -321,7 +321,5 @@ private fun getDeviceIcon(deviceType: String): ImageVector {
 }
 
 private fun formatRelativeTime(timestamp: String): String {
-    // For now, return the timestamp as-is
-    // In a real implementation, you would parse the timestamp and format it relative to now
     return timestamp
 }

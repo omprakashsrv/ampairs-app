@@ -1,8 +1,5 @@
 package com.ampairs.auth.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.AuthApi
@@ -19,7 +16,37 @@ import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.auth_error_confirm_deletion
+import ampairsapp.feature.auth.generated.resources.auth_error_network
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_delete_account
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_cancel_deletion
+
+data class AccountDeletionUiState(
+    val reason: String = "",
+    val confirmed: Boolean = false,
+    val deletionState: UiState<AccountDeletionResponse> = UiState.Empty,
+    val statusState: UiState<AccountDeletionStatus> = UiState.Empty,
+    val blockingWorkspaces: List<BlockingWorkspace> = emptyList(),
+    val showBlockingWorkspacesDialog: Boolean = false,
+    val ownedWorkspaces: List<BlockingWorkspace> = emptyList(),
+    val isLoadingOwnedWorkspaces: Boolean = false,
+)
+
+sealed interface AccountDeletionNavEvent {
+    data object DeletionSuccess : AccountDeletionNavEvent
+    data object CancellationSuccess : AccountDeletionNavEvent
+    data object LogoutComplete : AccountDeletionNavEvent
+}
 
 @ContributesIntoMap(AppScope::class)
 @ViewModelKey
@@ -30,31 +57,14 @@ class AccountDeletionViewModel(
     private val userDao: UserDao
 ) : ViewModel() {
 
-    var reason by mutableStateOf("")
-        private set
+    private val _state = MutableStateFlow(AccountDeletionUiState())
+    val state: StateFlow<AccountDeletionUiState> = _state.asStateFlow()
 
-    var confirmed by mutableStateOf(false)
-        private set
+    private val _navEvent = MutableSharedFlow<AccountDeletionNavEvent>(extraBufferCapacity = 1)
+    val navEvent: SharedFlow<AccountDeletionNavEvent> = _navEvent.asSharedFlow()
 
-    var deletionState by mutableStateOf<UiState<AccountDeletionResponse>>(UiState.Empty)
-        private set
-
-    var statusState by mutableStateOf<UiState<AccountDeletionStatus>>(UiState.Empty)
-        private set
-
-    var displayMessage by mutableStateOf("")
-
-    var blockingWorkspaces by mutableStateOf<List<BlockingWorkspace>>(emptyList())
-        private set
-
-    var showBlockingWorkspacesDialog by mutableStateOf(false)
-        private set
-
-    var ownedWorkspaces by mutableStateOf<List<BlockingWorkspace>>(emptyList())
-        private set
-
-    var isLoadingOwnedWorkspaces by mutableStateOf(false)
-        private set
+    private val _snackbarMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
 
     init {
         loadDeletionStatus()
@@ -63,156 +73,148 @@ class AccountDeletionViewModel(
 
     fun loadOwnedWorkspaces() {
         viewModelScope.launch {
-            isLoadingOwnedWorkspaces = true
-
+            _state.update { it.copy(isLoadingOwnedWorkspaces = true) }
             try {
-                // Make a deletion check request with confirmed=false to get blocking workspaces
                 authApi.requestAccountDeletion(
                     AccountDeletionRequest(confirmed = false, reason = null)
                 ).onSuccess {
-                    ownedWorkspaces = this.blockingWorkspaces ?: emptyList()
+                    _state.update { s -> s.copy(ownedWorkspaces = this.blockingWorkspaces ?: emptyList()) }
                 }.onError {
-                    ownedWorkspaces = emptyList()
+                    _state.update { it.copy(ownedWorkspaces = emptyList()) }
                 }
-            } catch (e: Exception) {
-                ownedWorkspaces = emptyList()
+            } catch (_: Exception) {
+                _state.update { it.copy(ownedWorkspaces = emptyList()) }
             }
-
-            isLoadingOwnedWorkspaces = false
+            _state.update { it.copy(isLoadingOwnedWorkspaces = false) }
         }
     }
 
     fun updateReason(newReason: String) {
-        reason = newReason
+        _state.update { it.copy(reason = newReason) }
     }
 
     fun toggleConfirmation() {
-        confirmed = !confirmed
+        _state.update { it.copy(confirmed = !it.confirmed) }
     }
 
     fun loadDeletionStatus() {
         viewModelScope.launch {
-            statusState = UiState.Loading(null)
+            _state.update { it.copy(statusState = UiState.Loading(null)) }
             try {
                 authApi.getAccountDeletionStatus().onSuccess {
-                    statusState = UiState.Success(this)
+                    _state.update { s -> s.copy(statusState = UiState.Success(this)) }
                 }.onError {
-                    // If account is not marked for deletion, this might return an error
-                    statusState = UiState.Empty
+                    _state.update { it.copy(statusState = UiState.Empty) }
                 }
-            } catch (e: Exception) {
-                statusState = UiState.Empty
+            } catch (_: Exception) {
+                _state.update { it.copy(statusState = UiState.Empty) }
             }
         }
     }
 
-    fun requestAccountDeletion(onSuccess: () -> Unit) {
-        if (!confirmed) {
-            displayMessage = "Please confirm that you want to delete your account"
-            return
-        }
-
+    fun requestAccountDeletion() {
         viewModelScope.launch {
-            deletionState = UiState.Loading(null)
+            if (!_state.value.confirmed) {
+                _snackbarMessage.emit(getString(Res.string.auth_error_confirm_deletion))
+                return@launch
+            }
+            _state.update { it.copy(deletionState = UiState.Loading(null)) }
             val request = AccountDeletionRequest(
                 confirmed = true,
-                reason = reason.trim().ifBlank { null }
+                reason = _state.value.reason.trim().ifBlank { null }
             )
-
             try {
-                authApi.requestAccountDeletion(request).onSuccess {
-                    if (this.deletionRequested) {
-                        deletionState = UiState.Success(this)
-                        displayMessage = this.message
-
-                        // Clear local user data and logout in a coroutine
+                val response = authApi.requestAccountDeletion(request)
+                if (response.data != null && response.error == null) {
+                    val data = response.data!!
+                    if (data.deletionRequested) {
+                        _state.update { s -> s.copy(deletionState = UiState.Success(data)) }
+                        _snackbarMessage.emit(data.message)
                         viewModelScope.launch {
                             try {
-                                // Get current user ID before clearing
                                 val currentUserId = tokenRepository.getCurrentUserId()
-
-                                // Clear tokens
                                 tokenRepository.clearTokens()
                                 authApi.clearToken()
-
-                                // Delete user entity from local database
                                 currentUserId?.let { userId -> userDao.deleteById(userId) }
-                            } catch (_: Exception) {
-                                // cleanup failure is non-fatal — account deletion already succeeded
-                            }
+                            } catch (_: Exception) { }
                         }
-
-                        onSuccess()
+                        _navEvent.emit(AccountDeletionNavEvent.DeletionSuccess)
                     } else {
-                        // Account deletion blocked due to workspace ownership
-                        this@AccountDeletionViewModel.blockingWorkspaces = this.blockingWorkspaces ?: emptyList()
-                        this@AccountDeletionViewModel.showBlockingWorkspacesDialog = true
-                        deletionState = UiState.Error(this.message)
-                        displayMessage = this.message
+                        _state.update { s ->
+                            s.copy(
+                                blockingWorkspaces = data.blockingWorkspaces ?: emptyList(),
+                                showBlockingWorkspacesDialog = true,
+                                deletionState = UiState.Error(data.message),
+                            )
+                        }
+                        _snackbarMessage.emit(data.message)
                     }
-                }.onError {
-                    deletionState = UiState.Error(this.message.ifEmpty { "Failed to delete account" })
-                    displayMessage = this.message.ifEmpty { "Failed to delete account" }
+                } else {
+                    val errMsg = response.error?.message.orEmpty().ifEmpty { getString(Res.string.auth_error_failed_delete_account) }
+                    _state.update { it.copy(deletionState = UiState.Error(errMsg)) }
+                    _snackbarMessage.emit(errMsg)
                 }
             } catch (_: Exception) {
-                deletionState = UiState.Error("Unable to connect to server. Please check your network connection.")
-                displayMessage = "Unable to connect to server. Please check your network connection."
+                val errMsg = getString(Res.string.auth_error_network)
+                _state.update { it.copy(deletionState = UiState.Error(errMsg)) }
+                _snackbarMessage.emit(errMsg)
             }
         }
     }
 
-    fun cancelAccountDeletion(onSuccess: () -> Unit) {
+    fun cancelAccountDeletion() {
         viewModelScope.launch {
-            deletionState = UiState.Loading(null)
+            _state.update { it.copy(deletionState = UiState.Loading(null)) }
             try {
-                authApi.cancelAccountDeletion().onSuccess {
-                    deletionState = UiState.Success(this)
-                    displayMessage = this.message
-                    statusState = UiState.Empty
-                    onSuccess()
-                }.onError {
-                    deletionState = UiState.Error(this.message.ifEmpty { "Failed to cancel deletion" })
-                    displayMessage = this.message.ifEmpty { "Failed to cancel deletion" }
+                val response = authApi.cancelAccountDeletion()
+                if (response.data != null && response.error == null) {
+                    val data = response.data!!
+                    _state.update { s ->
+                        s.copy(deletionState = UiState.Success(data), statusState = UiState.Empty)
+                    }
+                    _snackbarMessage.emit(data.message)
+                    _navEvent.emit(AccountDeletionNavEvent.CancellationSuccess)
+                } else {
+                    val errMsg = response.error?.message.orEmpty().ifEmpty { getString(Res.string.auth_error_failed_cancel_deletion) }
+                    _state.update { it.copy(deletionState = UiState.Error(errMsg)) }
+                    _snackbarMessage.emit(errMsg)
                 }
             } catch (_: Exception) {
-                deletionState = UiState.Error("Unable to connect to server. Please check your network connection.")
-                displayMessage = "Unable to connect to server. Please check your network connection."
+                val errMsg = getString(Res.string.auth_error_network)
+                _state.update { it.copy(deletionState = UiState.Error(errMsg)) }
+                _snackbarMessage.emit(errMsg)
             }
         }
     }
 
     fun dismissBlockingWorkspacesDialog() {
-        showBlockingWorkspacesDialog = false
+        _state.update { it.copy(showBlockingWorkspacesDialog = false) }
     }
 
-    fun logout(onLogoutComplete: () -> Unit) {
+    fun logout() {
         viewModelScope.launch {
             try {
                 val currentUserId = tokenRepository.getCurrentUserId()
                 tokenRepository.clearTokens()
                 currentUserId?.let { userId ->
-                    try {
-                        userDao.deleteById(userId)
-                    } catch (_: Exception) { }
+                    try { userDao.deleteById(userId) } catch (_: Exception) { }
                 }
             } catch (_: Exception) { }
-            onLogoutComplete()
+            _navEvent.emit(AccountDeletionNavEvent.LogoutComplete)
         }
     }
 
-    fun clearMessage() {
-        displayMessage = ""
-    }
-
     val isLoading: Boolean
-        get() = deletionState is UiState.Loading || statusState is UiState.Loading
+        get() = _state.value.run { deletionState is UiState.Loading || statusState is UiState.Loading }
 
     val isFormValid: Boolean
-        get() = confirmed
+        get() = _state.value.confirmed
 
     val isDeletionPending: Boolean
-        get() = statusState is UiState.Success && (statusState as UiState.Success<AccountDeletionStatus>).data?.isDeleted == true
+        get() = _state.value.statusState.let {
+            it is UiState.Success && it.data?.isDeleted == true
+        }
 
     val daysRemaining: Int?
-        get() = (statusState as? UiState.Success<AccountDeletionStatus>)?.data?.daysRemaining
+        get() = (_state.value.statusState as? UiState.Success<AccountDeletionStatus>)?.data?.daysRemaining
 }

@@ -38,8 +38,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,7 +53,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.viewmodel.LoginNavEvent
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.common.localization.Language
@@ -75,7 +74,7 @@ fun LoginScreen(
     onNavigateToAuthRoute: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val currentLanguage by localeManager.currentLanguage.collectAsState(Language.ENGLISH)
+    val currentLanguage by localeManager.currentLanguage.collectAsStateWithLifecycle(Language.ENGLISH)
 
     var isVisible by remember { mutableStateOf(false) }
     var showWelcomeScreen by remember { mutableStateOf(false) }
@@ -87,27 +86,19 @@ fun LoginScreen(
                 LoginNavEvent.LoginSuccess -> onLoginSuccess()
                 LoginNavEvent.NavigateToWorkspace -> onNavigateToWorkspace()
                 LoginNavEvent.NavigateToUserUpdate -> onNavigateToUserUpdate()
-                LoginNavEvent.NavigateToAccountRestore -> {}
+                LoginNavEvent.NavigateToAuthRoute -> onNavigateToAuthRoute()
+                LoginNavEvent.NotLoggedIn -> {
+                    isCheckingLogin = false
+                    showWelcomeScreen = true
+                    isVisible = true
+                }
+                else -> {}
             }
         }
     }
 
     LaunchedEffect(Unit) {
-        // Check login status with callback
-        viewModel.checkUserLogin { status, user ->
-            if (status == LoginStatus.NOT_LOGGED_IN) {
-                // User not logged in - show welcome screen with button
-                isCheckingLogin = false
-                showWelcomeScreen = true
-                isVisible = true
-            } else if (status == LoginStatus.LOGGED_IN) {
-                // User is logged in - delegate to ViewModel for navigation decision
-                viewModel.handlePostLoginNavigation(user)
-            } else {
-                // LOGIN_FAILED - navigate to auth route
-                onNavigateToAuthRoute()
-            }
-        }
+        viewModel.checkUserLogin()
     }
 
     val alpha by animateFloatAsState(
@@ -397,7 +388,7 @@ private fun LanguageSelector(
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(Res.string.auth_cd_selected),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )

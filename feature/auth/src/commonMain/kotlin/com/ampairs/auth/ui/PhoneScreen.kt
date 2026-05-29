@@ -8,6 +8,19 @@ import ampairsapp.feature.auth.generated.resources.phone_user_already_logged_in
 import ampairsapp.feature.auth.generated.resources.phone_user_already_logged_in_desc
 import ampairsapp.feature.auth.generated.resources.phone_user_exists
 import ampairsapp.feature.auth.generated.resources.phone_would_you_like_to_switch
+import ampairsapp.feature.auth.generated.resources.phone_welcome_title
+import ampairsapp.feature.auth.generated.resources.phone_tagline
+import ampairsapp.feature.auth.generated.resources.phone_enter_number_label
+import ampairsapp.feature.auth.generated.resources.phone_feature_secure_title
+import ampairsapp.feature.auth.generated.resources.phone_feature_secure_desc
+import ampairsapp.feature.auth.generated.resources.phone_feature_fast_title
+import ampairsapp.feature.auth.generated.resources.phone_feature_fast_desc
+import ampairsapp.feature.auth.generated.resources.phone_by_continuing
+import ampairsapp.feature.auth.generated.resources.phone_terms_of_service
+import ampairsapp.feature.auth.generated.resources.phone_and
+import ampairsapp.feature.auth.generated.resources.phone_privacy_policy_text
+import ampairsapp.feature.auth.generated.resources.phone_cd_app_icon
+import ampairsapp.feature.auth.generated.resources.user_selection_default_name
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,14 +52,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,13 +72,14 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.AuthMethod
+import com.ampairs.auth.viewmodel.LoginNavEvent
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.common.navigation.ExitApp
 import com.ampairs.common.navigation.PlatformBackHandler
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -75,54 +88,55 @@ fun PhoneScreen(
     onAuthSuccess: (sessionId: String, verificationId: String) -> Unit,
     onExistingUserSelected: () -> Unit = {},
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
     var showExistingUserDialog by remember { mutableStateOf(false) }
 
-    // Handle back button to exit app since this is the initial screen
-    PlatformBackHandler(enabled = true) {
-        ExitApp()
+    PlatformBackHandler(enabled = true) { ExitApp() }
+
+    LaunchedEffect(Unit) {
+        viewModel.navEvent.collect { event ->
+            when (event) {
+                is LoginNavEvent.NavigateToOtp -> onAuthSuccess(event.sessionId, event.verificationId)
+                else -> {}
+            }
+        }
     }
 
-    // Existing user dialog
-    if (showExistingUserDialog && viewModel.existingUser != null) {
+    LaunchedEffect(Unit) {
+        viewModel.snackbarMessage.collect { message ->
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
+        }
+    }
+
+    LaunchedEffect(state.existingUser) {
+        if (state.existingUser != null) showExistingUserDialog = true
+    }
+
+    if (showExistingUserDialog && state.existingUser != null) {
         ExistingUserDialog(
-            user = viewModel.existingUser!!,
+            user = state.existingUser!!,
             onSelectUser = {
-                viewModel.selectExistingUser(viewModel.existingUser!!.id) {
-                    showExistingUserDialog = false
-                    viewModel.handleExistingUserWorkspaceCheck()
-                }
+                showExistingUserDialog = false
+                viewModel.clearExistingUser()
+                viewModel.selectExistingUser(state.existingUser!!.id)
             },
             onDismiss = {
                 showExistingUserDialog = false
+                viewModel.clearExistingUser()
             }
         )
     }
+
+    val byContinuing = stringResource(Res.string.phone_by_continuing)
+    val termsOfService = stringResource(Res.string.phone_terms_of_service)
+    val andText = stringResource(Res.string.phone_and)
+    val privacyPolicy = stringResource(Res.string.phone_privacy_policy_text)
 
     Scaffold(
         modifier = Modifier.imePadding(),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        // Handle error messages
-        if (viewModel.displayMessage.isNotEmpty()) {
-            coroutineScope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = viewModel.displayMessage,
-                    duration = SnackbarDuration.Short
-                )
-                when (result) {
-                    SnackbarResult.Dismissed -> {
-                        viewModel.displayMessage = ""
-                    }
-
-                    SnackbarResult.ActionPerformed -> {
-                        viewModel.displayMessage = ""
-                    }
-                }
-            }
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -131,46 +145,38 @@ fun PhoneScreen(
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top section - Welcome and branding
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 Spacer(modifier = Modifier.height(32.dp))
-
-                // App icon/logo placeholder
                 Box(
                     modifier = Modifier
                         .size(80.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = CircleShape
-                        ),
+                        .background(color = MaterialTheme.colorScheme.primaryContainer, shape = CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Phone,
-                        contentDescription = "Ampairs",
+                        contentDescription = stringResource(Res.string.phone_cd_app_icon),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(40.dp)
                     )
                 }
-
-                // Welcome text
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Welcome to Ampairs",
+                        text = stringResource(Res.string.phone_welcome_title),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "Empowering Retail, One byte at a time",
+                        text = stringResource(Res.string.phone_tagline),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -178,7 +184,6 @@ fun PhoneScreen(
                 }
             }
 
-            // Middle section - Phone input and features
             Column(
                 modifier = Modifier
                     .widthIn(min = 280.dp, max = 400.dp)
@@ -186,40 +191,33 @@ fun PhoneScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Phone input
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Enter your phone number",
+                        text = stringResource(Res.string.phone_enter_number_label),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-
                     Phone(
                         countryCode = 91,
-                        readOnly = viewModel.loading,
-                        phone = viewModel.phoneNumber,
-                        onValueChange = { viewModel.phoneNumber = it },
-                        onValidChange = { viewModel.validPhoneNumber = it }
+                        readOnly = state.loading,
+                        phone = state.phoneNumber,
+                        onValueChange = viewModel::updatePhoneNumber,
+                        onValidChange = viewModel::updateValidPhoneNumber
                     )
-
-                    // Show progress message
-                    if (viewModel.progressMessage.isNotEmpty()) {
+                    if (state.progressMessage.isNotEmpty()) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (viewModel.recaptchaLoading || viewModel.loading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp
-                                )
+                            if (state.recaptchaLoading || state.loading) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                             }
                             Text(
-                                text = viewModel.progressMessage,
+                                text = state.progressMessage,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -227,104 +225,59 @@ fun PhoneScreen(
                     }
                 }
 
-                // Feature highlights
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     FeatureItem(
                         icon = Icons.Default.Security,
-                        title = "Secure & Private",
-                        description = "Your data is encrypted end-to-end"
+                        title = stringResource(Res.string.phone_feature_secure_title),
+                        description = stringResource(Res.string.phone_feature_secure_desc)
                     )
                     FeatureItem(
                         icon = Icons.Default.Speed,
-                        title = "Fast & Reliable",
-                        description = "Lightning fast performance"
+                        title = stringResource(Res.string.phone_feature_fast_title),
+                        description = stringResource(Res.string.phone_feature_fast_desc)
                     )
                 }
             }
 
-            // Login button - Bottom section
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Button(
                     onClick = {
-                        // First check if user already exists
-                        viewModel.checkExistingUser(
-                            onExistingUserFound = { user ->
-                                // Show dialog with existing user
-                                showExistingUserDialog = true
-                            },
-                            onNoExistingUser = {
-                                // Proceed with authentication
-                                when (viewModel.authMethod) {
-                                    AuthMethod.BACKEND_API -> {
-                                        viewModel.authenticate { sessionId ->
-                                            onAuthSuccess(
-                                                sessionId,
-                                                ""
-                                            ) // Backend API: sessionId populated, verificationId empty
-                                        }
-                                    }
-
-                                    AuthMethod.FIREBASE -> {
-                                        viewModel.authenticateWithFirebase { verificationId ->
-                                            onAuthSuccess(
-                                                "",
-                                                verificationId
-                                            ) // Firebase: verificationId populated, sessionId empty
-                                        }
-                                    }
-                                }
+                        viewModel.checkExistingUser {
+                            when (state.authMethod) {
+                                AuthMethod.BACKEND_API -> viewModel.authenticate()
+                                AuthMethod.FIREBASE -> viewModel.authenticateWithFirebase()
                             }
-                        )
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = viewModel.validPhoneNumber && !viewModel.loading
+                    enabled = state.validPhoneNumber && !state.loading
                 ) {
-                    if (viewModel.loading) {
+                    if (state.loading) {
                         CircularProgressIndicator(
-                            modifier = Modifier
-                                .progressSemantics()
-                                .size(24.dp)
+                            modifier = Modifier.progressSemantics().size(24.dp)
                         )
                     } else {
                         Text(stringResource(Res.string.phone_login))
                     }
                 }
 
-                // Privacy note with clickable links
                 val linkColor = MaterialTheme.colorScheme.primary
                 val textColor = MaterialTheme.colorScheme.onSurfaceVariant
-
                 val linkStyle = TextLinkStyles(
-                    style = SpanStyle(
-                        color = linkColor,
-                        textDecoration = TextDecoration.Underline
-                    )
+                    style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
                 )
-
                 val annotatedText = buildAnnotatedString {
-                    withStyle(SpanStyle(color = textColor)) {
-                        append("By continuing, you agree to our ")
-                    }
-
-                    withLink(LinkAnnotation.Url("https://www.ampairs.in/terms", linkStyle)) {
-                        append("Terms of Service")
-                    }
-
-                    withStyle(SpanStyle(color = textColor)) {
-                        append(" and ")
-                    }
-
-                    withLink(LinkAnnotation.Url("https://www.ampairs.in/privacy", linkStyle)) {
-                        append("Privacy Policy")
-                    }
+                    withStyle(SpanStyle(color = textColor)) { append(byContinuing) }
+                    withLink(LinkAnnotation.Url("https://www.ampairs.in/terms", linkStyle)) { append(termsOfService) }
+                    withStyle(SpanStyle(color = textColor)) { append(andText) }
+                    withLink(LinkAnnotation.Url("https://www.ampairs.in/privacy", linkStyle)) { append(privacyPolicy) }
                 }
-
                 Text(
                     text = annotatedText,
                     style = MaterialTheme.typography.bodySmall,
@@ -354,9 +307,7 @@ private fun FeatureItem(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp)
         )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
@@ -368,84 +319,6 @@ private fun FeatureItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-    }
-}
-
-@Composable
-fun PhoneScreenPreview() {
-    MaterialTheme {
-        // Mock ViewModel state for preview
-        var phoneNumber by remember { mutableStateOf("9876543210") }
-        var validPhoneNumber by remember { mutableStateOf(true) }
-        var recaptchaMessage by remember { mutableStateOf("Verifying you're human...") }
-        var recaptchaLoading by remember { mutableStateOf(true) }
-        var loading by remember { mutableStateOf(false) }
-
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(min = 280.dp, max = 400.dp)
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Phone input section
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Phone(
-                        countryCode = 91,
-                        readOnly = loading,
-                        phone = phoneNumber,
-                        onValueChange = { phoneNumber = it },
-                        onValidChange = { validPhoneNumber = it }
-                    )
-
-                    // Show reCAPTCHA status message
-                    if (recaptchaMessage.isNotEmpty()) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (recaptchaLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            }
-                            Text(
-                                text = recaptchaMessage,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-
-                // Login button
-                Button(
-                    onClick = { loading = !loading },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = validPhoneNumber && !loading
-                ) {
-                    if (loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .progressSemantics()
-                                .size(24.dp)
-                        )
-                    } else {
-                        Text(stringResource(Res.string.phone_login))
-                    }
-                }
-            }
         }
     }
 }
@@ -473,25 +346,21 @@ private fun ExistingUserDialog(
             )
         },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = stringResource(Res.string.phone_user_already_logged_in_desc),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "${user.first_name} ${user.last_name}".trim().ifEmpty { "User" },
+                            text = "${user.first_name} ${user.last_name}".trim().ifEmpty { stringResource(Res.string.user_selection_default_name) },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -510,9 +379,7 @@ private fun ExistingUserDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = onSelectUser
-            ) {
+            Button(onClick = onSelectUser) {
                 Text(stringResource(Res.string.phone_switch_to_this_user))
             }
         },
