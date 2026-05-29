@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.workspace.generated.resources.Res
@@ -31,10 +32,10 @@ fun ModuleStoreScreen(
     paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: WorkspaceModulesViewModel = assistedMetroViewModel<WorkspaceModulesViewModel, WorkspaceModulesViewModel.Factory> { create(workspaceId) },
 ) {
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val availableModules by viewModel.availableModules.collectAsState()
-    val installedModules by viewModel.installedModules.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val availableModules by viewModel.availableModules.collectAsStateWithLifecycle()
+    val installedModules by viewModel.installedModules.collectAsStateWithLifecycle()
     var togglingModules by remember { mutableStateOf(setOf<String>()) }
 
     LaunchedEffect(workspaceId) {

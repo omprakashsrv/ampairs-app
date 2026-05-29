@@ -20,12 +20,19 @@ import io.github.vinceglb.filekit.name
 import io.github.vinceglb.filekit.readBytes
 import io.github.vinceglb.filekit.size
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+
+sealed interface WorkspaceCreateEvent {
+    data object ArchiveSuccess : WorkspaceCreateEvent
+    data object RestoreSuccess : WorkspaceCreateEvent
+}
 
 @ContributesIntoMap(AppScope::class)
 @ViewModelKey
@@ -42,6 +49,9 @@ class WorkspaceCreateViewModel(
 
     private val _state = MutableStateFlow(WorkspaceCreateState())
     val state: StateFlow<WorkspaceCreateState> = _state.asStateFlow()
+
+    private val _events = Channel<WorkspaceCreateEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
 
     private var slugCheckJob: Job? = null
 
@@ -334,10 +344,7 @@ class WorkspaceCreateViewModel(
         }
     }
 
-    /**
-     * Archive workspace (soft delete)
-     */
-    fun archiveWorkspace(onSuccess: () -> Unit) {
+    fun archiveWorkspace() {
         val currentWorkspaceId = _state.value.workspaceId
         if (currentWorkspaceId == null) {
             _state.value = _state.value.copy(error = "No workspace ID provided")
@@ -345,20 +352,11 @@ class WorkspaceCreateViewModel(
         }
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(
-                isDeleting = true,
-                deleteError = null
-            )
-
+            _state.value = _state.value.copy(isDeleting = true, deleteError = null)
             try {
                 workspaceRepository.archiveWorkspace(currentWorkspaceId)
-
-                _state.value = _state.value.copy(
-                    isDeleting = false,
-                    deleteError = null
-                )
-
-                onSuccess()
+                _state.value = _state.value.copy(isDeleting = false, deleteError = null)
+                _events.send(WorkspaceCreateEvent.ArchiveSuccess)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isDeleting = false,
@@ -368,10 +366,7 @@ class WorkspaceCreateViewModel(
         }
     }
 
-    /**
-     * Restore archived workspace
-     */
-    fun restoreWorkspace(onSuccess: () -> Unit) {
+    fun restoreWorkspace() {
         val currentWorkspaceId = _state.value.workspaceId
         if (currentWorkspaceId == null) {
             _state.value = _state.value.copy(error = "No workspace ID provided")
@@ -379,20 +374,11 @@ class WorkspaceCreateViewModel(
         }
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(
-                isLoading = true,
-                error = null
-            )
-
+            _state.value = _state.value.copy(isLoading = true, error = null)
             try {
                 workspaceRepository.restoreWorkspace(currentWorkspaceId)
-
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = null
-                )
-
-                onSuccess()
+                _state.value = _state.value.copy(isLoading = false, error = null)
+                _events.send(WorkspaceCreateEvent.RestoreSuccess)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,

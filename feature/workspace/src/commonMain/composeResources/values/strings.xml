@@ -165,6 +165,177 @@
     <string name="workspace_module_core">core</string>
     <string name="workspace_module_dismiss_error">Dismiss</string>
 
+    <!-- Workspace List Screen -->
+    <string name="workspace_search_hint">Search workspaces…</string>
+    <string name="workspace_loading_workspaces">Loading workspaces…</string>
+    <string name="workspace_refreshing">Refreshing…</string>
+    <string name="workspace_empty_title">No Workspaces Yet</string>
+    <string name="workspace_empty_desc">Create your first workspace to get started</string>
+    <string name="workspace_no_results_title">No workspaces found</string>
+    <string name="workspace_no_results_hint">Try a different search term</string>
+    <string name="workspace_showing_cached_data">Showing cached data • %1$s</string>
+    <string name="workspace_offline_label">Cached</string>
+    <string name="workspace_offline_badge">Offline</string>
+    <string name="workspace_dismiss">Dismiss</string>
+
+    <!-- Workspace Invitations (list screen) -->
+    <string name="workspace_invitations_title">Workspace Invitations</string>
+    <string name="workspace_invitations_loading">Loading invitations…</string>
+    <string name="workspace_invitation_accept">Accept</string>
+    <string name="workspace_invitation_decline">Decline</string>
+    <string name="workspace_invitation_role_prefix">Role: %1$s</string>
+    <string name="workspace_invitation_invited_by">Invited by %1$s</string>
+    <string name="workspace_invitation_expires_in">Expires in %1$d days</string>
+    <string name="workspace_invitation_expires_soon">Expires soon</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_search">Search</string>
+    <string name="cd_workspace_avatar">Workspace avatar</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_retry">Retry</string>
+    <string name="cd_refresh">Refresh invitations</string>
+    <string name="cd_edit_workspace">Edit workspace</string>
+    <string name="cd_no_workspaces">No workspaces</string>
+    <string name="cd_offline">Offline</string>
+    <string name="cd_create_workspace">Create workspace</string>
+
+    <!-- Workspace member count (plural) -->
+    <plurals name="workspace_members_count">
+        <item quantity="one">%1$d member</item>
+        <item quantity="other">%1$d members</item>
+    </plurals>
+
+    <!-- Workspace Create/Edit Screen -->
+    <string name="workspace_create_title">Create a new workspace</string>
+    <string name="workspace_edit_title">Edit workspace</string>
+    <string name="workspace_create_subtitle">Set up your workspace with basic information. You can always change these settings later.</string>
+    <string name="workspace_edit_subtitle">Update your workspace information. Changes will be saved automatically.</string>
+    <string name="workspace_name_label">Workspace Name *</string>
+    <string name="workspace_name_placeholder">My Company</string>
+    <string name="workspace_slug_label">Workspace Slug *</string>
+    <string name="workspace_slug_placeholder">my-company</string>
+    <string name="workspace_description_label">Description (optional)</string>
+    <string name="workspace_description_placeholder">Brief description of your workspace…</string>
+
+    <string name="workspace_slug_url_hint">This will be used in your workspace URL: workspace/%1$s</string>
+    <string name="workspace_type_label">Workspace Type</string>
+    <string name="workspace_creating">Creating…</string>
+    <string name="workspace_updating">Updating…</string>
+    <string name="workspace_create_button">Create Workspace</string>
+    <string name="workspace_update_button">Update Workspace</string>
+    <string name="workspace_delete_button">Delete Workspace</string>
+
+    <!-- Workspace Avatar -->
+    <string name="workspace_avatar_label">Workspace Avatar</string>
+    <string name="cd_selected_avatar">Selected avatar</string>
+    <string name="cd_default_avatar">Default avatar</string>
+    <string name="cd_change_avatar">Change avatar</string>
+    <string name="cd_clear_avatar_selection">Clear selection</string>
+    <string name="workspace_avatar_upload">Upload</string>
+    <string name="workspace_avatar_remove">Remove</string>
+    <string name="workspace_avatar_hint">You can add an avatar after creating the workspace</string>
+
+    <!-- Workspace Delete Dialog -->
+    <string name="workspace_delete_dialog_title">Delete Workspace?</string>
+    <string name="workspace_delete_dialog_message">You are about to archive the workspace \"%1$s\". This action will mark it as archived and it can be restored later.</string>
+    <string name="workspace_delete_confirm_instruction">To confirm, please type the workspace slug:</string>
+    <string name="workspace_delete_slug_label">Type workspace slug</string>
+    <string name="workspace_delete_slug_mismatch">Slug doesn\'t match</string>
+    <string name="cd_slug_available">Available</string>
+    <string name="cd_slug_not_available">Not available</string>
+    <string name="cd_warning">Warning</string>
+
+    <!-- Workspace Modules Screen (active modules view) -->
+    <string name="workspace_no_active_modules_title">No Active Modules</string>
+    <string name="workspace_no_active_modules_desc">Install modules from the store to get started with your workspace</string>
+    <string name="workspace_install_modules">Install Modules</string>
+    <string name="workspace_update_required_title">Update Required</string>
+    <string name="workspace_update_required_hint">Please update the app to access this module.</string>
+    <string name="workspace_update_app">Update App</string>
+    <string name="workspace_update_later">Later</string>
+
+    <!-- Team Members Screen -->
+    <string name="workspace_team_members_title">Team Members</string>
+
+    <!-- Common actions (reused across screens) -->
+    <string name="try_again">Try Again</string>
+    <string name="done">Done</string>
+
+    <!-- Workspace Invitations List Screen (additional strings) -->
+    <string name="workspace_invitations_header">Invitations</string>
+    <string name="cd_toggle_filters">Toggle Filters</string>
+    <string name="workspace_invitation_send_invite">Send Invite</string>
+    <string name="workspace_invitation_filters">Filters</string>
+    <string name="workspace_invitation_status_label">Status</string>
+    <string name="workspace_invitation_role_label">Role</string>
+    <string name="workspace_invitation_total_sent">Total Sent</string>
+    <string name="workspace_invitation_pending_label">Pending</string>
+    <string name="workspace_invitation_accepted_label">Accepted</string>
+    <string name="workspace_invitation_expired_label">Expired</string>
+    <string name="cd_invitation_actions">Invitation Actions</string>
+    <string name="workspace_invitation_resend">Resend Invitation</string>
+    <string name="workspace_invitation_cancel_action">Cancel Invitation</string>
+    <string name="workspace_invitation_sent_by">Sent by %1$s</string>
+    <string name="workspace_invitation_created_at">Created: %1$s</string>
+    <string name="workspace_invitation_expires_at_label">Expires: %1$s</string>
+    <string name="workspace_invitation_resent_count">Resent %1$d time(s)</string>
+    <string name="workspace_invitation_delivery_sent">Sent</string>
+    <string name="workspace_invitation_delivery_delivered">Delivered</string>
+    <string name="workspace_invitation_delivery_opened">Opened</string>
+    <string name="workspace_invitation_delivery_clicked">Clicked</string>
+    <string name="workspace_invitation_empty_title">No invitations sent yet</string>
+    <string name="workspace_invitation_empty_desc">Send your first invitation to grow your team</string>
+    <string name="workspace_invitation_send_first">Send Your First Invitation</string>
+    <string name="workspace_invitation_error_title">Failed to load invitations</string>
+
+    <!-- Workspace Invitation Create Screen -->
+    <string name="workspace_invitation_create_title">Create Invitation</string>
+    <string name="workspace_invitation_recipient_info">Recipient Information</string>
+    <string name="workspace_invitation_country_label">Country</string>
+    <string name="workspace_invitation_phone_label">Mobile Number *</string>
+    <string name="workspace_invitation_name_label">Full Name (Optional)</string>
+    <string name="workspace_invitation_name_placeholder">John Smith</string>
+    <string name="workspace_invitation_dept_label">Department (Optional)</string>
+    <string name="workspace_invitation_dept_placeholder">Engineering, Sales, Marketing…</string>
+    <string name="workspace_invitation_role_assignment">Role Assignment</string>
+    <string name="workspace_invitation_settings_card">Invitation Settings</string>
+    <string name="workspace_invitation_expires_label">Expires in (days) *</string>
+    <string name="workspace_invitation_expires_hint">Valid range: 1-30 days</string>
+    <string name="workspace_invitation_message_label">Custom Message (Optional)</string>
+    <string name="workspace_invitation_message_placeholder">Welcome to our team! Looking forward to working with you.</string>
+    <string name="workspace_invitation_send_button">Send Invitation</string>
+    <string name="workspace_invitation_sent_title">Invitation Sent!</string>
+    <string name="workspace_invitation_sent_message">The invitation has been sent to %1$s. They will receive an SMS with instructions to join the workspace.</string>
+    <string name="workspace_invitation_select_role">Select Role *</string>
+
+    <!-- Member Details Screen -->
+    <string name="workspace_member_details_title">Member Details</string>
+    <string name="workspace_member_profile">Profile</string>
+    <string name="workspace_member_role_status">Role &amp; Status</string>
+    <string name="workspace_member_role_label">Role</string>
+    <string name="workspace_member_status_label">Status</string>
+    <string name="workspace_member_permissions">Permissions</string>
+    <string name="workspace_member_activity">Activity</string>
+    <string name="workspace_member_joined">Joined</string>
+    <string name="workspace_member_last_activity">Last Activity</string>
+    <string name="workspace_member_danger_zone">Danger Zone</string>
+    <string name="workspace_member_remove">Remove Member</string>
+    <string name="workspace_member_remove_confirm">Are you sure you want to remove %1$s from this workspace? This action cannot be undone.</string>
+    <string name="workspace_member_remove_action">Remove</string>
+    <string name="cd_member_avatar">Member Avatar</string>
+    <string name="workspace_member_loading_permissions">Loading permissions…</string>
+    <string name="workspace_member_no_permissions">No specific permissions assigned</string>
+    <string name="workspace_member_error_title">Failed to load member details</string>
+    <string name="workspace_member_offline_mode">Offline Mode</string>
+    <string name="workspace_member_offline_desc">Showing cached member details</string>
+    <string name="workspace_member_refresh">Refresh</string>
+    <string name="workspace_member_deactivate_title">Deactivate Member</string>
+    <string name="workspace_member_reactivate_title">Reactivate Member</string>
+    <string name="workspace_member_deactivate">Deactivate</string>
+    <string name="workspace_member_reactivate">Reactivate</string>
+    <string name="workspace_member_deactivate_confirm">Are you sure you want to deactivate %1$s? This member will be deactivated and lose access to the workspace.</string>
+    <string name="workspace_member_reactivate_confirm">Are you sure you want to reactivate %1$s? This member will be reactivated and regain access to the workspace.</string>
+
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_language">Language</string>

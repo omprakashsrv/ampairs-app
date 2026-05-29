@@ -24,12 +24,52 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.workspace.viewmodel.WorkspaceCreateEvent
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlin.random.Random
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.workspace.generated.resources.Res
+import ampairsapp.feature.workspace.generated.resources.workspace_create_title
+import ampairsapp.feature.workspace.generated.resources.workspace_edit_title
+import ampairsapp.feature.workspace.generated.resources.workspace_create_subtitle
+import ampairsapp.feature.workspace.generated.resources.workspace_edit_subtitle
+import ampairsapp.feature.workspace.generated.resources.workspace_dismiss
+import ampairsapp.feature.workspace.generated.resources.workspace_name_label
+import ampairsapp.feature.workspace.generated.resources.workspace_name_placeholder
+import ampairsapp.feature.workspace.generated.resources.workspace_slug_label
+import ampairsapp.feature.workspace.generated.resources.workspace_slug_placeholder
+import ampairsapp.feature.workspace.generated.resources.workspace_slug_url_hint
+import ampairsapp.feature.workspace.generated.resources.workspace_description_label
+import ampairsapp.feature.workspace.generated.resources.workspace_description_placeholder
+import ampairsapp.feature.workspace.generated.resources.workspace_type_label
+import ampairsapp.feature.workspace.generated.resources.workspace_creating
+import ampairsapp.feature.workspace.generated.resources.workspace_updating
+import ampairsapp.feature.workspace.generated.resources.workspace_create_button
+import ampairsapp.feature.workspace.generated.resources.workspace_update_button
+import ampairsapp.feature.workspace.generated.resources.workspace_delete_button
+import ampairsapp.feature.workspace.generated.resources.workspace_avatar_label
+import ampairsapp.feature.workspace.generated.resources.workspace_avatar_upload
+import ampairsapp.feature.workspace.generated.resources.workspace_avatar_remove
+import ampairsapp.feature.workspace.generated.resources.workspace_avatar_hint
+import ampairsapp.feature.workspace.generated.resources.workspace_delete_dialog_title
+import ampairsapp.feature.workspace.generated.resources.workspace_delete_dialog_message
+import ampairsapp.feature.workspace.generated.resources.workspace_delete_confirm_instruction
+import ampairsapp.feature.workspace.generated.resources.workspace_delete_slug_label
+import ampairsapp.feature.workspace.generated.resources.workspace_delete_slug_mismatch
+import ampairsapp.feature.workspace.generated.resources.cd_selected_avatar
+import ampairsapp.feature.workspace.generated.resources.cd_default_avatar
+import ampairsapp.feature.workspace.generated.resources.cd_change_avatar
+import ampairsapp.feature.workspace.generated.resources.cd_clear_avatar_selection
+import ampairsapp.feature.workspace.generated.resources.cd_slug_available
+import ampairsapp.feature.workspace.generated.resources.cd_slug_not_available
+import ampairsapp.feature.workspace.generated.resources.cd_warning
+import ampairsapp.feature.workspace.generated.resources.cd_workspace_avatar
+import ampairsapp.feature.workspace.generated.resources.cancel
+import ampairsapp.feature.workspace.generated.resources.delete
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,7 +80,7 @@ fun WorkspaceCreateScreen(
     modifier: Modifier = Modifier,
     viewModel: WorkspaceCreateViewModel = metroViewModel(),
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val isEditMode = workspaceId != null
 
@@ -58,6 +98,16 @@ fun WorkspaceCreateScreen(
         }
     }
 
+    // Handle one-off navigation events
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is WorkspaceCreateEvent.ArchiveSuccess,
+                is WorkspaceCreateEvent.RestoreSuccess -> onNavigateBack()
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -67,16 +117,13 @@ fun WorkspaceCreateScreen(
     ) {
         // Header
         Text(
-            text = if (isEditMode) "Edit workspace" else "Create a new workspace",
+            text = if (isEditMode) stringResource(Res.string.workspace_edit_title) else stringResource(Res.string.workspace_create_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
 
         Text(
-            text = if (isEditMode)
-                "Update your workspace information. Changes will be saved automatically."
-            else
-                "Set up your workspace with basic information. You can always change these settings later.",
+            text = if (isEditMode) stringResource(Res.string.workspace_edit_subtitle) else stringResource(Res.string.workspace_create_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline
         )
@@ -124,7 +171,7 @@ fun WorkspaceCreateScreen(
                     TextButton(
                         onClick = { viewModel.clearAvatarMessage() }
                     ) {
-                        Text("Dismiss")
+                        Text(stringResource(Res.string.workspace_dismiss))
                     }
                 }
             }
@@ -156,7 +203,7 @@ fun WorkspaceCreateScreen(
                     TextButton(
                         onClick = { viewModel.clearError() }
                     ) {
-                        Text("Dismiss")
+                        Text(stringResource(Res.string.workspace_dismiss))
                     }
                 }
             }
@@ -166,8 +213,8 @@ fun WorkspaceCreateScreen(
         OutlinedTextField(
             value = state.name,
             onValueChange = { viewModel.updateName(it) },
-            label = { Text("Workspace Name *") },
-            placeholder = { Text("My Company") },
+            label = { Text(stringResource(Res.string.workspace_name_label)) },
+            placeholder = { Text(stringResource(Res.string.workspace_name_placeholder)) },
             isError = state.validationErrors.containsKey("name"),
             supportingText = {
                 state.validationErrors["name"]?.let { error ->
@@ -185,8 +232,8 @@ fun WorkspaceCreateScreen(
         OutlinedTextField(
             value = state.slug,
             onValueChange = { viewModel.updateSlug(it) },
-            label = { Text("Workspace Slug *") },
-            placeholder = { Text("my-company") },
+            label = { Text(stringResource(Res.string.workspace_slug_label)) },
+            placeholder = { Text(stringResource(Res.string.workspace_slug_placeholder)) },
             isError = state.validationErrors.containsKey("slug"),
             supportingText = {
                 state.validationErrors["slug"]?.let { error ->
@@ -195,7 +242,7 @@ fun WorkspaceCreateScreen(
                         color = MaterialTheme.colorScheme.error
                     )
                 } ?: Text(
-                    text = "This will be used in your workspace URL: workspace/${state.slug}",
+                    text = stringResource(Res.string.workspace_slug_url_hint, state.slug),
                     style = MaterialTheme.typography.bodySmall
                 )
             },
@@ -213,7 +260,7 @@ fun WorkspaceCreateScreen(
                     ) -> {
                         Icon(
                             Icons.Default.Check,
-                            contentDescription = "Available",
+                            contentDescription = stringResource(Res.string.cd_slug_available),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -221,7 +268,7 @@ fun WorkspaceCreateScreen(
                     state.slug.length >= 2 && !state.isSlugAvailable -> {
                         Icon(
                             Icons.Default.Warning,
-                            contentDescription = "Not available",
+                            contentDescription = stringResource(Res.string.cd_slug_not_available),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -235,8 +282,8 @@ fun WorkspaceCreateScreen(
         OutlinedTextField(
             value = state.description,
             onValueChange = { viewModel.updateDescription(it) },
-            label = { Text("Description (optional)") },
-            placeholder = { Text("Brief description of your workspace...") },
+            label = { Text(stringResource(Res.string.workspace_description_label)) },
+            placeholder = { Text(stringResource(Res.string.workspace_description_placeholder)) },
             isError = state.validationErrors.containsKey("description"),
             supportingText = {
                 state.validationErrors["description"]?.let { error ->
@@ -261,7 +308,7 @@ fun WorkspaceCreateScreen(
                 value = state.workspaceType,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Workspace Type") },
+                label = { Text(stringResource(Res.string.workspace_type_label)) },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 },
@@ -307,9 +354,9 @@ fun WorkspaceCreateScreen(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isEditMode) "Updating..." else "Creating...")
+                Text(if (isEditMode) stringResource(Res.string.workspace_updating) else stringResource(Res.string.workspace_creating))
             } else {
-                Text(if (isEditMode) "Update Workspace" else "Create Workspace")
+                Text(if (isEditMode) stringResource(Res.string.workspace_update_button) else stringResource(Res.string.workspace_create_button))
             }
         }
 
@@ -319,7 +366,7 @@ fun WorkspaceCreateScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading
         ) {
-            Text("Cancel")
+            Text(stringResource(Res.string.cancel))
         }
 
         // Delete Button (only in edit mode)
@@ -334,11 +381,11 @@ fun WorkspaceCreateScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Delete Workspace")
+                Text(stringResource(Res.string.workspace_delete_button))
             }
         }
 
@@ -355,11 +402,7 @@ fun WorkspaceCreateScreen(
             isDeleting = state.isDeleting,
             deleteError = state.deleteError,
             isConfirmationValid = viewModel.isDeleteConfirmationValid,
-            onConfirm = {
-                viewModel.archiveWorkspace {
-                    onNavigateBack()
-                }
-            },
+            onConfirm = { viewModel.archiveWorkspace() },
             onDismiss = viewModel::hideDeleteDialog
         )
     }
@@ -383,7 +426,7 @@ private fun WorkspaceAvatarSection(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Workspace Avatar",
+            text = stringResource(Res.string.workspace_avatar_label),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Medium,
             modifier = Modifier
@@ -415,7 +458,7 @@ private fun WorkspaceAvatarSection(
                         // Show selected image preview using Coil's AsyncImage with ByteArray
                         AsyncImage(
                             model = selectedImageData,
-                            contentDescription = "Selected avatar",
+                            contentDescription = stringResource(Res.string.cd_selected_avatar),
                             modifier = Modifier
                                 .size(120.dp)
                                 .clip(CircleShape),
@@ -431,7 +474,7 @@ private fun WorkspaceAvatarSection(
                         }
                         AsyncImage(
                             model = imageUrl,
-                            contentDescription = "Workspace avatar",
+                            contentDescription = stringResource(Res.string.cd_workspace_avatar),
                             modifier = Modifier
                                 .size(120.dp)
                                 .clip(CircleShape),
@@ -455,7 +498,7 @@ private fun WorkspaceAvatarSection(
                         // Show default icon
                         Icon(
                             Icons.Default.Business,
-                            contentDescription = "Default avatar",
+                            contentDescription = stringResource(Res.string.cd_default_avatar),
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -493,7 +536,7 @@ private fun WorkspaceAvatarSection(
                 ) {
                     Icon(
                         Icons.Default.CameraAlt,
-                        contentDescription = "Change avatar",
+                        contentDescription = stringResource(Res.string.cd_change_avatar),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
@@ -514,7 +557,7 @@ private fun WorkspaceAvatarSection(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Clear selection",
+                        contentDescription = stringResource(Res.string.cd_clear_avatar_selection),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -544,7 +587,7 @@ private fun WorkspaceAvatarSection(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Text("Upload", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(Res.string.workspace_avatar_upload), style = MaterialTheme.typography.bodySmall)
                 }
             }
 
@@ -564,7 +607,7 @@ private fun WorkspaceAvatarSection(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Remove", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(Res.string.workspace_avatar_remove), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -572,7 +615,7 @@ private fun WorkspaceAvatarSection(
         // Help text for new workspace
         if (!isEditMode) {
             Text(
-                text = "You can add an avatar after creating the workspace",
+                text = stringResource(Res.string.workspace_avatar_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(top = 8.dp)
@@ -598,25 +641,24 @@ private fun WorkspaceDeleteConfirmationDialog(
         icon = {
             Icon(
                 imageVector = Icons.Default.Warning,
-                contentDescription = "Warning",
+                contentDescription = stringResource(Res.string.cd_warning),
                 tint = MaterialTheme.colorScheme.error
             )
         },
         title = {
-            Text("Delete Workspace?")
+            Text(stringResource(Res.string.workspace_delete_dialog_title))
         },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "You are about to archive the workspace \"$workspaceName\". " +
-                            "This action will mark it as archived and it can be restored later.",
+                    text = stringResource(Res.string.workspace_delete_dialog_message, workspaceName),
                     style = MaterialTheme.typography.bodyMedium
                 )
 
                 Text(
-                    text = "To confirm, please type the workspace slug:",
+                    text = stringResource(Res.string.workspace_delete_confirm_instruction),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -638,13 +680,13 @@ private fun WorkspaceDeleteConfirmationDialog(
                 OutlinedTextField(
                     value = confirmationSlug,
                     onValueChange = onConfirmationSlugChange,
-                    label = { Text("Type workspace slug") },
+                    label = { Text(stringResource(Res.string.workspace_delete_slug_label)) },
                     singleLine = true,
                     enabled = !isDeleting,
                     isError = confirmationSlug.isNotEmpty() && !isConfirmationValid,
                     supportingText = {
                         if (confirmationSlug.isNotEmpty() && !isConfirmationValid) {
-                            Text("Slug doesn't match", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(Res.string.workspace_delete_slug_mismatch), color = MaterialTheme.colorScheme.error)
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -683,7 +725,7 @@ private fun WorkspaceDeleteConfirmationDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
-                Text("Delete")
+                Text(stringResource(Res.string.delete))
             }
         },
         dismissButton = {
@@ -691,7 +733,7 @@ private fun WorkspaceDeleteConfirmationDialog(
                 onClick = onDismiss,
                 enabled = !isDeleting
             ) {
-                Text("Cancel")
+                Text(stringResource(Res.string.cancel))
             }
         }
     )

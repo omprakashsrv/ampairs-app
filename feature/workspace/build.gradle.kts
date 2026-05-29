@@ -37,6 +37,7 @@ kotlin {
                 implementation(libs.compose.material3)
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
+                implementation(libs.lifecycle.runtime.compose)
                 implementation(projects.feature.authApi)
                 implementation(projects.feature.subscriptionApi)
                 implementation(libs.room.runtime)

@@ -11,17 +11,28 @@ import com.ampairs.auth.api.UserDataService
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.config.DataStoreManager
+import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.EventConnectionManager
+import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.UserInvitationRepository
+import com.ampairs.workspace.integration.WorkspaceContextIntegration
+import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.ui.WorkspaceListState
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+
+sealed interface WorkspaceListEvent {
+    data class NavigateToModules(val workspaceId: String) : WorkspaceListEvent
+}
 
 @ContributesIntoMap(AppScope::class)
 @ViewModelKey
@@ -39,6 +50,9 @@ class WorkspaceListViewModel(
 
     private val _state = MutableStateFlow(WorkspaceListState())
     val state: StateFlow<WorkspaceListState> = _state.asStateFlow()
+
+    private val _events = Channel<WorkspaceListEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
 
     init {
         loadUserData()
@@ -114,11 +128,20 @@ class WorkspaceListViewModel(
         invitationRepository.syncUserInvitations(userId)
     }
 
-    suspend fun selectWorkSpace(workspaceId: String) {
-        val currentUserId = tokenRepository.getCurrentUserId()
-        if (currentUserId != null) {
+    fun selectWorkSpace(workspaceId: String) {
+        viewModelScope.launch {
+            val workspace = _state.value.workspaces.find { it.id == workspaceId } ?: return@launch
+            val currentUserId = tokenRepository.getCurrentUserId() ?: return@launch
+
+            val previousSlug = WorkspaceContextManager.getInstance().currentWorkspace.value?.slug
+            if (previousSlug != null && previousSlug != workspace.slug) {
+                DatabaseScopeManager.getInstance().clearWorkspaceDatabases(previousSlug)
+                DataStoreManager.clearDataStoresForWorkspace(previousSlug)
+            }
+
             userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspaceId)
             appPreferences.setLastWorkspaceId(workspaceId)
+            WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
 
             val deviceId = deviceService.getDeviceId()
             eventConnectionManager.connectToWorkspace(
@@ -127,6 +150,9 @@ class WorkspaceListViewModel(
                 deviceId = deviceId,
                 scope = viewModelScope
             )
+
+            GlobalNavigationManager.getInstance().onWorkspaceSelected()
+            _events.send(WorkspaceListEvent.NavigateToModules(workspaceId))
         }
     }
 

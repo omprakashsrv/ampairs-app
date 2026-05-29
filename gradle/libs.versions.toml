@@ -114,6 +114,7 @@ material3-adaptive-navigation = { group = "org.jetbrains.compose.material3.adapt
 navigation3-ui = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3-ui" }
 lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle-viewmodel" }
 lifecycle-viewmodel-navigation3 = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycle-viewmodel-navigation3" }
+lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle-viewmodel" }
 savedstate = { group = "org.jetbrains.androidx.savedstate", name = "savedstate", version.ref = "savedstate" }
 savedstate-compose = { group = "org.jetbrains.androidx.savedstate", name = "savedstate-compose", version.ref = "savedstate" }
 datastore = { group = "androidx.datastore", name = "datastore", version.ref = "datastore" }

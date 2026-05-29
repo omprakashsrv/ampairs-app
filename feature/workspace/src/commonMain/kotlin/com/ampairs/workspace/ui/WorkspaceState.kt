@@ -1,8 +1,10 @@
 package com.ampairs.workspace.ui
 
+import androidx.compose.runtime.Immutable
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.UserInvitation
 
+@Immutable
 data class WorkspaceListState(
     val workspaces: List<Workspace> = emptyList(),
     val isLoading: Boolean = false,
@@ -21,6 +23,7 @@ data class WorkspaceListState(
     val processingInvitationIds: Set<String> = emptySet() // Track invitations being processed
 )
 
+@Immutable
 data class WorkspaceCreateState(
     val workspaceId: String? = null, // For edit mode
     val name: String = "",
@@ -54,6 +57,7 @@ data class WorkspaceCreateState(
     val deleteError: String? = null,
 )
 
+@Immutable
 data class WorkspaceDetailState(
     val workspace: Workspace? = null,
     val isLoading: Boolean = false,
