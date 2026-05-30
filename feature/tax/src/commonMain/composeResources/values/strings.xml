@@ -1,0 +1,96 @@
+<resources>
+    <!-- Tax list screen -->
+    <string name="tax_list_title">Tax Codes</string>
+    <string name="tax_list_count">%d codes</string>
+    <string name="tax_list_add_code">Add Code</string>
+    <string name="tax_list_cd_sync">Sync</string>
+    <string name="tax_list_syncing">Syncing…</string>
+    <string name="tax_list_search_placeholder">Search by code or description…</string>
+    <string name="tax_list_cd_search">Search</string>
+    <string name="tax_list_cd_search_clear">Clear search</string>
+    <string name="tax_list_filter_favorites">Favorites</string>
+    <string name="tax_list_filter_most_used">Most Used</string>
+    <string name="tax_list_filter_recently_added">Recently Added</string>
+    <string name="tax_list_filter_by_code">By Code</string>
+    <string name="tax_list_empty_title">No tax codes yet</string>
+    <string name="tax_list_empty_desc">Add codes from the master registry to start using them</string>
+    <string name="tax_list_browse_codes">Browse Tax Codes</string>
+    <string name="tax_list_stats_total">Total</string>
+    <string name="tax_list_stats_favorites">Favorites</string>
+    <string name="tax_list_stats_unsynced">Unsynced</string>
+    <string name="tax_list_used_times_format">Used %sx</string>
+    <string name="tax_list_cd_favorite">Toggle favorite</string>
+    <string name="tax_list_cd_unsubscribe">Unsubscribe</string>
+    <string name="tax_list_col_code">Code</string>
+    <string name="tax_list_col_type">Type</string>
+    <string name="tax_list_col_status">Status</string>
+    <string name="tax_list_col_usage">Usage</string>
+
+    <!-- Shared states -->
+    <string name="tax_active">Active</string>
+    <string name="tax_inactive">Inactive</string>
+    <string name="tax_sync_synced">Synced</string>
+    <string name="tax_sync_pending">Pending</string>
+    <string name="tax_sync_deleting">Deleting</string>
+    <string name="tax_cancel">Cancel</string>
+    <string name="tax_ok">OK</string>
+    <string name="tax_retry">Retry</string>
+    <string name="tax_error_go_back">Go Back</string>
+    <string name="tax_dismiss">Dismiss</string>
+
+    <!-- Unsubscribe dialog -->
+    <string name="tax_unsub_dialog_title">Unsubscribe from Tax Code?</string>
+    <string name="tax_unsub_dialog_text">Are you sure you want to unsubscribe from this tax code?</string>
+    <string name="tax_unsub_used_times_format">This code has been used %d times.</string>
+    <string name="tax_unsub_confirm">Unsubscribe</string>
+
+    <!-- Detail screen -->
+    <string name="tax_detail_title">Tax Code Details</string>
+    <string name="tax_detail_cd_back">Back</string>
+    <string name="tax_detail_cd_favorite">Toggle Favorite</string>
+    <string name="tax_detail_cd_unsubscribe">Unsubscribe</string>
+    <string name="tax_detail_section_details">Details</string>
+    <string name="tax_detail_code_type">Code Type</string>
+    <string name="tax_detail_master_code_id">Master Code ID</string>
+    <string name="tax_detail_custom_rule">Custom Tax Rule</string>
+    <string name="tax_detail_status_label">Status</string>
+    <string name="tax_detail_sync_status">Sync Status</string>
+    <string name="tax_detail_section_calc">Tax Calculation Preview</string>
+    <string name="tax_detail_calc_hint">Test this tax code with sample values</string>
+    <string name="tax_detail_calc_amount">Amount</string>
+    <string name="tax_detail_calc_qty">Qty</string>
+    <string name="tax_detail_calc_from_state">From State</string>
+    <string name="tax_detail_calc_to_state">To State</string>
+    <string name="tax_detail_calc_calculating">Calculating…</string>
+    <string name="tax_detail_calc_btn">Calculate Preview</string>
+    <string name="tax_detail_calc_cd_calc">Calculate</string>
+    <string name="tax_detail_base_amount">Base Amount:</string>
+    <string name="tax_detail_total_tax">Total Tax:</string>
+    <string name="tax_detail_grand_total">Grand Total:</string>
+    <string name="tax_detail_section_usage">Usage Statistics</string>
+    <string name="tax_detail_usage_count">Usage Count</string>
+    <string name="tax_detail_last_used">Last Used</string>
+    <string name="tax_detail_added">Added</string>
+    <string name="tax_detail_last_updated">Last Updated</string>
+    <string name="tax_detail_section_rules">Tax Rules</string>
+    <string name="tax_detail_no_rules">No tax rules configured for this code</string>
+    <string name="tax_detail_section_notes">Notes</string>
+    <string name="tax_detail_no_notes">No notes added yet</string>
+    <string name="tax_detail_notes_placeholder">Add notes about this tax code…</string>
+    <string name="tax_detail_cd_edit_notes">Edit Notes</string>
+    <string name="tax_detail_save_notes">Save</string>
+    <string name="tax_detail_cancel_notes">Cancel</string>
+    <string name="tax_detail_cd_save">Save</string>
+    <string name="tax_detail_saving">Saving…</string>
+    <string name="tax_rule_intra_state">Intra-State</string>
+    <string name="tax_rule_inter_state">Inter-State</string>
+    <string name="tax_rule_standard">Standard</string>
+    <string name="tax_rule_b2b">B2B</string>
+    <string name="tax_rule_b2c">B2C</string>
+    <string name="tax_rule_jurisdiction_format">Jurisdiction: %s</string>
+    <string name="tax_rule_tax_code_label">Tax Code:</string>
+    <string name="tax_rule_components_label">Tax Components:</string>
+    <string name="tax_rule_active">Active</string>
+    <string name="tax_rate_format">%s%%</string>
+    <string name="tax_total_rate_format">%s (Total: %s%%)</string>
+</resources>

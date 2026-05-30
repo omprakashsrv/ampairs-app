@@ -40,6 +40,8 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
+                // Adaptive layout
+                implementation(libs.material3.adaptive)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 // Navigation 3 for NavKey
