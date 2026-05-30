@@ -1,5 +1,13 @@
 package com.ampairs.order.ui
 
+import ampairsapp.feature.order.generated.resources.Res
+import ampairsapp.feature.order.generated.resources.ord_edit_discount_label
+import ampairsapp.feature.order.generated.resources.ord_edit_next
+import ampairsapp.feature.order.generated.resources.ord_edit_ok
+import ampairsapp.feature.order.generated.resources.ord_edit_price_label
+import ampairsapp.feature.order.generated.resources.ord_edit_save
+import ampairsapp.feature.order.generated.resources.ord_view_discount
+import ampairsapp.feature.order.generated.resources.ord_view_items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -36,6 +44,8 @@ import com.ampairs.order.domain.Discount
 import com.ampairs.order.viewmodel.OrderViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderScreen(
@@ -62,7 +72,7 @@ fun OrderScreen(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Text(
-                    orderViewModel.order.totalItems.toString() + " Items",
+                    stringResource(Res.string.ord_view_items, orderViewModel.order.totalItems),
                     modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -86,7 +96,12 @@ fun OrderScreen(
                                 .progressSemantics()
                                 .size(24.dp)
                         )
-                    else Text(if (scaffoldState.bottomSheetState.isVisible) "Save" else "Next")
+                    else Text(
+                        if (scaffoldState.bottomSheetState.isVisible)
+                            stringResource(Res.string.ord_edit_save)
+                        else
+                            stringResource(Res.string.ord_edit_next)
+                    )
                 }
             }
         }
@@ -106,7 +121,7 @@ fun OrderScreen(
                 sheetContent = {
                     LazyColumn {
                         items(orderViewModel.orderItems.size) { index ->
-                            val orderItem = orderViewModel.orderItems.get(index)
+                            val orderItem = orderViewModel.orderItems[index]
                             ListItem(
                                 modifier = Modifier.clickable {
                                     orderViewModel.selectedOrderItem = orderItem
@@ -116,7 +131,6 @@ fun OrderScreen(
                                         orderItem.description,
                                         style = MaterialTheme.typography.labelMedium
                                     )
-
                                 },
                                 leadingContent = {
                                     Text(
@@ -147,7 +161,7 @@ fun OrderScreen(
                                     }
                                     if (orderItem.discountPercent > 0) {
                                         Text(
-                                            "Discount : " + orderItem.discountPercent.toDecimal() + "%",
+                                            "${stringResource(Res.string.ord_view_discount)}: ${orderItem.discountPercent.toDecimal()}%",
                                             style = MaterialTheme.typography.labelMedium
                                         )
                                     }
@@ -176,11 +190,8 @@ fun OrderScreen(
                         }
                     }
                 }) { innerPadding ->
-                productPickerSlot { productId ->
-                    // Product selected for order item
-                }
+                productPickerSlot { _ -> }
             }
-
         }
 
         if (orderViewModel.selectedOrderItem != null) {
@@ -191,7 +202,7 @@ fun OrderScreen(
                 text = {
                     Column {
                         Row {
-                            Text(text = "Discount % : ")
+                            Text(text = stringResource(Res.string.ord_edit_discount_label))
                             Column(
                                 modifier = Modifier.weight(1f),
                                 horizontalAlignment = Alignment.End
@@ -200,10 +211,8 @@ fun OrderScreen(
                                     id = orderViewModel.selectedOrderItem?.product?.id + orderViewModel.selectedOrderItem?.product?.quantity,
                                     qty = orderViewModel.selectedOrderItem?.discountPercent ?: 0.0
                                 ) { discountPercent ->
-                                    orderViewModel.selectedOrderItem?.discountPercent =
-                                        discountPercent
-                                    val productPrice =
-                                        orderViewModel.selectedOrderItem?.productPrice ?: 0.0
+                                    orderViewModel.selectedOrderItem?.discountPercent = discountPercent
+                                    val productPrice = orderViewModel.selectedOrderItem?.productPrice ?: 0.0
                                     orderViewModel.selectedOrderItem?.price =
                                         productPrice * (if (discountPercent > 0) 1 - (discountPercent / 100) else 1.0)
                                     orderViewModel.selectedOrderItem?.discount?.clear()
@@ -211,8 +220,7 @@ fun OrderScreen(
                                         orderViewModel.selectedOrderItem?.discount?.add(
                                             Discount(
                                                 discountPercent,
-                                                productPrice - (orderViewModel.selectedOrderItem?.price
-                                                    ?: 0.0)
+                                                productPrice - (orderViewModel.selectedOrderItem?.price ?: 0.0)
                                             )
                                         )
                                     }
@@ -225,7 +233,7 @@ fun OrderScreen(
                         }
 
                         Row {
-                            Text(text = "Price : ")
+                            Text(text = stringResource(Res.string.ord_edit_price_label))
                             Column(
                                 modifier = Modifier.weight(1f),
                                 horizontalAlignment = Alignment.End
@@ -236,21 +244,16 @@ fun OrderScreen(
                                 ) { price ->
                                     orderViewModel.selectedOrderItem?.price = price
                                     orderViewModel.selectedOrderItem?.updateTotal()
-                                    val productPrice =
-                                        (orderViewModel.selectedOrderItem?.productPrice
-                                            ?: 0.0)
+                                    val productPrice = (orderViewModel.selectedOrderItem?.productPrice ?: 0.0)
                                     val discount = productPrice - price
-                                    val discountPercent = if (discount > 0.0)
-                                        ((discount * 100) / productPrice) else 0.0
-                                    orderViewModel.selectedOrderItem?.discountPercent =
-                                        discountPercent
+                                    val discountPercent = if (discount > 0.0) ((discount * 100) / productPrice) else 0.0
+                                    orderViewModel.selectedOrderItem?.discountPercent = discountPercent
                                     orderViewModel.selectedOrderItem?.discount?.clear()
                                     if (discountPercent > 0) {
                                         orderViewModel.selectedOrderItem?.discount?.add(
                                             Discount(
                                                 discountPercent,
-                                                productPrice - (orderViewModel.selectedOrderItem?.price
-                                                    ?: 0.0)
+                                                productPrice - (orderViewModel.selectedOrderItem?.price ?: 0.0)
                                             )
                                         )
                                     }
@@ -264,37 +267,26 @@ fun OrderScreen(
                         Row {
                             Text(
                                 modifier = Modifier.padding(4.dp),
-                                text = "Discount @ " + orderViewModel.selectedOrderItem?.discountPercent.toDecimal() + " % : "
+                                text = "${stringResource(Res.string.ord_view_discount)} @ ${orderViewModel.selectedOrderItem?.discountPercent.toDecimal()} %: "
                             )
                             LazyColumn {
-                                items(
-                                    orderViewModel.selectedOrderItem?.discount?.size ?: 0
-                                ) { discountIndex ->
+                                items(orderViewModel.selectedOrderItem?.discount?.size ?: 0) { discountIndex ->
                                     Text(
                                         modifier = Modifier.padding(4.dp),
-                                        text = orderViewModel.selectedOrderItem?.discount?.get(
-                                            discountIndex
-                                        )?.value.toDecimal()
+                                        text = orderViewModel.selectedOrderItem?.discount?.get(discountIndex)?.value.toDecimal()
                                     )
                                 }
                             }
                         }
                     }
                 },
-                onDismissRequest = {
-                    orderViewModel.selectedOrderItem = null
-                },
+                onDismissRequest = { orderViewModel.selectedOrderItem = null },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            orderViewModel.selectedOrderItem = null
-                        }
-                    ) {
-                        Text("OK")
+                    TextButton(onClick = { orderViewModel.selectedOrderItem = null }) {
+                        Text(stringResource(Res.string.ord_edit_ok))
                     }
                 }
             )
         }
     }
 }
-

@@ -1,0 +1,34 @@
+<resources>
+    <!-- Order list screen -->
+    <string name="ord_list_title">Orders</string>
+    <string name="ord_list_count">%d orders</string>
+    <string name="ord_list_search_placeholder">Search orders…</string>
+    <string name="ord_list_cd_search_clear">Clear search</string>
+    <string name="ord_list_empty_title">No orders yet</string>
+    <string name="ord_list_empty_desc">Orders will appear here once created</string>
+    <string name="ord_list_col_number">Order #</string>
+    <string name="ord_list_col_customer">Customer</string>
+    <string name="ord_list_col_status">Status</string>
+    <string name="ord_list_col_total">Total</string>
+
+    <!-- Order view screen -->
+    <string name="ord_view_cd_back">Go back</string>
+    <string name="ord_view_cd_edit">Edit order</string>
+    <string name="ord_view_from">From</string>
+    <string name="ord_view_to">To</string>
+    <string name="ord_view_items">%d Items</string>
+    <string name="ord_view_discount">Discount</string>
+    <string name="ord_view_save">Save</string>
+    <string name="ord_view_create_invoice">Create Invoice</string>
+    <string name="ord_view_col_particulars">Particulars</string>
+    <string name="ord_view_col_rate">Rate</string>
+    <string name="ord_view_col_qty">Qty</string>
+    <string name="ord_view_col_total">Total</string>
+
+    <!-- Order edit screen -->
+    <string name="ord_edit_next">Next</string>
+    <string name="ord_edit_save">Save</string>
+    <string name="ord_edit_ok">OK</string>
+    <string name="ord_edit_discount_label">Discount %% :</string>
+    <string name="ord_edit_price_label">Price :</string>
+</resources>
