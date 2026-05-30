@@ -1,30 +1,66 @@
 package com.ampairs.customer.ui.list
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.customer.domain.CustomerListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMERS
 import ampairsapp.feature.customer.generated.resources.Res
 import ampairsapp.feature.customer.generated.resources.customer_form_settings_cd
 import ampairsapp.feature.customer.generated.resources.customer_list_refresh_cd
@@ -37,7 +73,21 @@ import ampairsapp.feature.customer.generated.resources.customer_list_error_title
 import ampairsapp.feature.customer.generated.resources.customer_list_search_hint
 import ampairsapp.feature.customer.generated.resources.customer_retry
 import ampairsapp.feature.customer.generated.resources.customer_image_content_desc
+import ampairsapp.feature.customer.generated.resources.customer_list_title
+import ampairsapp.feature.customer.generated.resources.customer_list_filter_all
+import ampairsapp.feature.customer.generated.resources.customer_list_filter_with_dues
+import ampairsapp.feature.customer.generated.resources.customer_list_filter_paid_up
+import ampairsapp.feature.customer.generated.resources.customer_list_count
+import ampairsapp.feature.customer.generated.resources.customer_list_new_party
+import ampairsapp.feature.customer.generated.resources.customer_list_balance_placeholder
+import ampairsapp.feature.customer.generated.resources.customer_list_col_name
+import ampairsapp.feature.customer.generated.resources.customer_list_col_type
+import ampairsapp.feature.customer.generated.resources.customer_list_col_city
+import ampairsapp.feature.customer.generated.resources.customer_list_col_phone
+import ampairsapp.feature.customer.generated.resources.customer_list_col_outstanding
 import org.jetbrains.compose.resources.stringResource
+
+private enum class CustomerFilter { ALL, WITH_DUES, PAID_UP }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,99 +99,163 @@ fun CustomersListScreen(
     viewModel: CustomersListViewModel = metroViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var activeFilter by remember { mutableStateOf(CustomerFilter.ALL) }
+
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val isExpanded = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
     LaunchedEffect(Unit) {
         viewModel.syncCustomers()
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(TITLE_CUSTOMERS) },
-            actions = {
-                IconButton(onClick = onFormConfig) {
-                    Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.customer_form_settings_cd))
-                }
-                IconButton(
-                    onClick = viewModel::syncCustomers,
-                    enabled = !uiState.isRefreshing
-                ) {
-                    if (uiState.isRefreshing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.customer_list_refresh_cd))
-                    }
-                }
-                IconButton(onClick = onCreateCustomer) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_list_add_cd))
-                }
-            }
-        )
-
-        SearchBar(
-            query = uiState.searchQuery,
-            onQueryChange = viewModel::updateSearchQuery,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        )
-
-        when {
-            uiState.isLoading && uiState.customers.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            uiState.error != null && uiState.customers.isEmpty() -> {
-                val errorMessage = uiState.error ?: return@Column
-                ErrorMessage(
-                    error = errorMessage,
-                    onRetry = viewModel::loadCustomers,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            uiState.customers.isEmpty() -> {
-                EmptyState(
-                    onCreateCustomer = onCreateCustomer,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            else -> {
-                CustomersList(
-                    customers = uiState.customers,
-                    onCustomerClick = onCustomerClick,
-                    isRefreshing = uiState.isRefreshing,
-                    modifier = Modifier.fillMaxSize()
+    Scaffold(
+        modifier = modifier,
+        floatingActionButton = {
+            if (!isExpanded) {
+                ExtendedFloatingActionButton(
+                    onClick = onCreateCustomer,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text(stringResource(Res.string.customer_list_new_party)) }
                 )
             }
         }
-    }
-}
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Header
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(Res.string.customer_list_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            if (uiState.customers.isNotEmpty()) {
+                                Text(
+                                    text = stringResource(Res.string.customer_list_count, uiState.customers.size),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        if (isExpanded) {
+                            IconButton(onClick = onCreateCustomer) {
+                                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_list_add_cd))
+                            }
+                        }
+                        IconButton(onClick = onFormConfig) {
+                            Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.customer_form_settings_cd))
+                        }
+                        IconButton(
+                            onClick = viewModel::syncCustomers,
+                            enabled = !uiState.isRefreshing
+                        ) {
+                            if (uiState.isRefreshing) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.customer_list_refresh_cd))
+                            }
+                        }
+                    }
 
-@Composable
-private fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        placeholder = { Text(stringResource(Res.string.customer_list_search_hint)) },
-        leadingIcon = {
-            Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.customer_form_settings_cd))
-        },
-        modifier = modifier,
-        singleLine = true
-    )
+                    // Search
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = viewModel::updateSearchQuery,
+                        placeholder = { Text(stringResource(Res.string.customer_list_search_hint)) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 8.dp),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                        )
+                    )
+
+                    // Filter chips
+                    Row(
+                        modifier = Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = activeFilter == CustomerFilter.ALL,
+                            onClick = { activeFilter = CustomerFilter.ALL },
+                            label = { Text(stringResource(Res.string.customer_list_filter_all)) }
+                        )
+                        FilterChip(
+                            selected = activeFilter == CustomerFilter.WITH_DUES,
+                            onClick = { activeFilter = CustomerFilter.WITH_DUES },
+                            label = { Text(stringResource(Res.string.customer_list_filter_with_dues)) }
+                        )
+                        FilterChip(
+                            selected = activeFilter == CustomerFilter.PAID_UP,
+                            onClick = { activeFilter = CustomerFilter.PAID_UP },
+                            label = { Text(stringResource(Res.string.customer_list_filter_paid_up)) }
+                        )
+                    }
+                }
+            }
+
+            when {
+                uiState.isLoading && uiState.customers.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                uiState.error != null && uiState.customers.isEmpty() -> {
+                    ErrorMessage(
+                        error = uiState.error!!,
+                        onRetry = viewModel::loadCustomers,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                uiState.customers.isEmpty() -> {
+                    EmptyState(onCreateCustomer = onCreateCustomer, modifier = Modifier.fillMaxSize())
+                }
+
+                else -> {
+                    if (isExpanded) {
+                        CustomerTable(
+                            customers = uiState.customers,
+                            onCustomerClick = onCustomerClick,
+                            isRefreshing = uiState.isRefreshing,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        CustomersList(
+                            customers = uiState.customers,
+                            onCustomerClick = onCustomerClick,
+                            isRefreshing = uiState.isRefreshing,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -153,110 +267,266 @@ private fun CustomersList(
 ) {
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         if (isRefreshing) {
             item {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Text(
-                            text = stringResource(Res.string.customer_list_refreshing),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Text(
+                        text = stringResource(Res.string.customer_list_refreshing),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
-
         items(customers, key = { it.id }) { customer ->
             CustomerCard(
                 customer = customer,
                 onClick = { onCustomerClick(customer.id) }
             )
         }
+        item { Spacer(Modifier.height(80.dp)) }
     }
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomerCard(
     customer: CustomerListItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ElevatedCard(
+    Surface(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                contentAlignment = Alignment.Center
-            ) {
-                if (!customer.primaryThumbnailUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = ApiUrlBuilder.buildCompleteUrl(customer.primaryThumbnailUrl!!),
-                        contentDescription = stringResource(Res.string.customer_image_content_desc),
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+            CustomerAvatar(
+                name = customer.name,
+                imageUrl = customer.primaryThumbnailUrl,
+                size = 44
+            )
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = customer.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-
-                if (customer.phone != null) {
+                val subtitle = listOfNotNull(customer.phone, customer.city)
+                    .joinToString(" · ")
+                if (subtitle.isNotEmpty()) {
                     Text(
-                        text = customer.phone!!,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+            }
 
-                if (customer.city != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = stringResource(Res.string.customer_list_balance_placeholder),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomerTable(
+    customers: List<CustomerListItem>,
+    onCustomerClick: (String) -> Unit,
+    isRefreshing: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val balancePlaceholder = stringResource(Res.string.customer_list_balance_placeholder)
+    LazyColumn(modifier = modifier) {
+        // Column header
+        item {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = customer.city!!,
+                        text = stringResource(Res.string.customer_list_col_name),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(2.5f)
+                    )
+                    Text(
+                        text = stringResource(Res.string.customer_list_col_type),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1.5f)
+                    )
+                    Text(
+                        text = stringResource(Res.string.customer_list_col_city),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1.5f)
+                    )
+                    Text(
+                        text = stringResource(Res.string.customer_list_col_phone),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1.5f)
+                    )
+                    Text(
+                        text = stringResource(Res.string.customer_list_col_outstanding),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.End
+                    )
+                }
+            }
+        }
+
+        if (isRefreshing) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                    Text(
+                        text = stringResource(Res.string.customer_list_refreshing),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
+        }
+
+        items(customers, key = { it.id }) { customer ->
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onCustomerClick(customer.id) }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(2.5f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CustomerAvatar(name = customer.name, imageUrl = customer.primaryThumbnailUrl, size = 32)
+                        Text(
+                            text = customer.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Text(
+                        text = "—",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1.5f)
+                    )
+                    Text(
+                        text = customer.city ?: "—",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1.5f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = customer.phone ?: "—",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1.5f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = balancePlaceholder,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.End
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            }
+        }
+    }
+}
+
+@Composable
+internal fun CustomerAvatar(
+    name: String,
+    imageUrl: String?,
+    size: Int,
+    modifier: Modifier = Modifier
+) {
+    val initials = remember(name) {
+        val parts = name.trim().split(" ")
+        when {
+            parts.size >= 2 -> "${parts[0].firstOrNull()?.uppercaseChar() ?: ""}${parts[1].firstOrNull()?.uppercaseChar() ?: ""}"
+            parts.isNotEmpty() -> parts[0].take(2).uppercase()
+            else -> "?"
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .size(size.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        if (!imageUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = ApiUrlBuilder.buildCompleteUrl(imageUrl),
+                contentDescription = stringResource(Res.string.customer_image_content_desc),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Text(
+                text = initials,
+                style = if (size >= 40) MaterialTheme.typography.titleSmall
+                        else MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }
@@ -277,24 +547,19 @@ private fun EmptyState(
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.outline
         )
-
         Spacer(modifier = Modifier.height(16.dp))
-
         Text(
             text = stringResource(Res.string.customer_list_empty),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-
         Text(
             text = stringResource(Res.string.customer_list_empty_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-
         Spacer(modifier = Modifier.height(24.dp))
-
-        Button(onClick = onCreateCustomer) {
+        androidx.compose.material3.Button(onClick = onCreateCustomer) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(Res.string.customer_list_add_btn))
@@ -318,16 +583,13 @@ private fun ErrorMessage(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error
         )
-
         Text(
             text = error,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-
         Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = onRetry) {
+        androidx.compose.material3.Button(onClick = onRetry) {
             Text(stringResource(Res.string.customer_retry))
         }
     }
