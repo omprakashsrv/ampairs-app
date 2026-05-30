@@ -16,7 +16,9 @@ actual fun getPlatformName(): String = "Desktop"
 fun MainView(
     appGraph: DesktopAppGraph,
     onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
-    onNavigationReady: (((String) -> Unit) -> Unit)? = null
+    onNavigationReady: (((String) -> Unit) -> Unit)? = null,
+    onWorkspaceEntered: ((String) -> Unit)? = null,
+    onWorkspaceLeft: (() -> Unit)? = null,
 ) {
     val updateChecker = appGraph.updateChecker
     val scope = rememberCoroutineScope()
@@ -54,5 +56,5 @@ fun MainView(
         )
     }
 
-    App(appGraph, onNavigationServiceReady, onNavigationReady)
+    App(appGraph, onNavigationServiceReady, onNavigationReady, onWorkspaceEntered, onWorkspaceLeft)
 }

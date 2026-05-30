@@ -19,8 +19,8 @@ data class StockGroup(
     var guid: String? = null,
 
     @XmlElement(true)
-    @XmlSerialName("NAME.LIST")
-    var nameList: List<Name>? = null,
+    @XmlSerialName("LANGUAGENAME.LIST")
+    var languageNameList: List<NameList>? = null,
 
     @XmlElement(true)
     @XmlSerialName("PARENT")

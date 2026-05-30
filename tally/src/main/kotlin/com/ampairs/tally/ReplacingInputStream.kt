@@ -22,7 +22,7 @@ class ReplacingInputStream(inputStream: InputStream?, search: String, replacemen
     }
 
     private val isMatchFound: Boolean
-        private get() {
+        get() {
             val iterator: Iterator<Int> = inQueue.iterator()
             for (b in search) {
                 if (!iterator.hasNext() || b.toInt() != iterator.next()) {

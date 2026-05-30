@@ -139,9 +139,15 @@ interface AppPreferencesDataStore {
      */
     suspend fun clearSubscriptionOnboardingData(workspaceId: String)
 
-    // Future app settings can be added here:
-    // fun getNotificationSettings(): Flow<NotificationSettings>
-    // suspend fun setNotificationSettings(settings: NotificationSettings)
+    // Tally ERP sync config (per-workspace, Desktop only)
+    fun getTallyHost(workspaceSlug: String): Flow<String>
+    suspend fun setTallyHost(workspaceSlug: String, host: String)
+    fun getTallyPort(workspaceSlug: String): Flow<Int>
+    suspend fun setTallyPort(workspaceSlug: String, port: Int)
+
+    // Incremental sync watermarks: last seen ALTERID per entity type per workspace
+    fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
+    suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
 }
 
 /**

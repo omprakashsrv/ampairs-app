@@ -180,6 +180,7 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.jmapviewer)
+                implementation(libs.kermit)
 
                 implementation(project(":tally"))
             }

@@ -34,7 +34,9 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun AppNavigationNav3(
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
-    onNavigationReady: (((String) -> Unit) -> Unit)? = null
+    onNavigationReady: (((String) -> Unit) -> Unit)? = null,
+    onWorkspaceEntered: ((String) -> Unit)? = null,
+    onWorkspaceLeft: (() -> Unit)? = null,
 ) {
     val viewModel: AppNavigationViewModel = metroViewModel()
     val autoResumeState by viewModel.autoResumeState.collectAsState()
@@ -69,6 +71,12 @@ fun AppNavigationNav3(
                     if (!routeName.contains("Modules") && !routeName.contains("Customer")) {
                         onNavigationServiceReady?.invoke(null)
                     }
+                }
+                val modulesRoute = currentRoute as? WorkspaceRoute.Modules
+                if (modulesRoute != null) {
+                    onWorkspaceEntered?.invoke(modulesRoute.workspaceId)
+                } else if (currentRoute is Route.Login) {
+                    onWorkspaceLeft?.invoke()
                 }
             }
     }

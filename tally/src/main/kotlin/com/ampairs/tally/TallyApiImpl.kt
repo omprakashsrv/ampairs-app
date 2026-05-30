@@ -1,12 +1,12 @@
 package com.ampairs.tally
 
+import co.touchlab.kermit.Logger
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -25,21 +25,21 @@ import nl.adaptivity.xmlutil.serialization.XML
 import nl.adaptivity.xmlutil.serialization.XmlConfig
 import java.nio.ByteBuffer
 
-const val TALLY_END_POINT = "http://192.168.1.17:9000"
+private val log = Logger.withTag("TallyApi")
 
-class TallyApiImpl(engine: HttpClientEngine) : TallyApi {
+class TallyApiImpl(engine: HttpClientEngine, private val baseUrl: String = "http://localhost:9008") : TallyApi {
 
     @OptIn(ExperimentalXmlUtilApi::class)
     private val client = HttpClient(engine) {
         expectSuccess = true
         install(ContentNegotiation) {
-            xml(contentType = ContentType.Text.Xml,
+            xml(
+                contentType = ContentType.Text.Xml,
                 format = XML {
                     repairNamespaces = true
                     xmlDeclMode = XmlDeclMode.None
                     indentString = ""
                     autoPolymorphic = true
-                    this.xmlDeclMode
                     policy = DefaultXmlSerializationPolicy(
                         pedantic = false,
                         autoPolymorphic = true,
@@ -49,40 +49,36 @@ class TallyApiImpl(engine: HttpClientEngine) : TallyApi {
             )
         }
         install(Logging) {
-            logger = object : Logger {
+            logger = object : io.ktor.client.plugins.logging.Logger {
                 override fun log(message: String) {
-                    println("message = ${message}")
+                    log.d { message }
                 }
             }
-
             level = LogLevel.INFO
         }
         install(HttpTimeout) {
-            val timeout = 30000L
+            val timeout = 30_000L
             connectTimeoutMillis = timeout
             requestTimeoutMillis = timeout
             socketTimeoutMillis = timeout
         }
     }
 
-
-    override suspend fun post(tallyXML: com.ampairs.tally.model.TallyXML): com.ampairs.tally.model.TallyXML {
+    init {
+        // Strip Tally's &#4; control characters once at init — not on every call
         client.responsePipeline.intercept(HttpResponsePipeline.Receive) { (type, content) ->
             if (content !is ByteReadChannel) return@intercept
-            val inputStream = content.toInputStream()
-//            val response = String(inputStream.readAllBytes())
-//            println("response = ${response}")
-            val replacingInputStream = ReplacingInputStream(inputStream, "&#4;", "")
-            val byteBuffer: ByteBuffer = ByteBuffer.wrap(replacingInputStream.readAllBytes())
-            val byteReadChannel = ByteReadChannel(byteBuffer)
-            proceedWith(HttpResponseContainer(type, byteReadChannel))
+            val replacing = ReplacingInputStream(content.toInputStream(), "&#4;", "")
+            val byteBuffer = ByteBuffer.wrap(replacing.readAllBytes())
+            proceedWith(HttpResponseContainer(type, ByteReadChannel(byteBuffer)))
         }
+    }
+
+    override suspend fun post(tallyXML: com.ampairs.tally.model.TallyXML): com.ampairs.tally.model.TallyXML {
         return client.post {
-            url(TALLY_END_POINT)
+            url(baseUrl)
             contentType(ContentType.Text.Xml)
-            setBody(
-                tallyXML
-            )
+            setBody(tallyXML)
         }.body()
     }
 }

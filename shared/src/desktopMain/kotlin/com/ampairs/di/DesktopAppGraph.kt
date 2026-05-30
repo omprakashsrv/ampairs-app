@@ -13,6 +13,7 @@ import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.di.AppScope
 import com.ampairs.customer.ui.components.contact.ContactPickerService
 import com.ampairs.customer.ui.components.location.LocationService
+import com.ampairs.tallysync.TallySyncScheduler
 import com.ampairs.update.service.UpdateChecker
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.DependencyGraph
@@ -26,6 +27,8 @@ import kotlinx.coroutines.Dispatchers
 @DependencyGraph(AppScope::class)
 interface DesktopAppGraph : AppGraph {
     val updateChecker: UpdateChecker
+    val tallySyncScheduler: TallySyncScheduler
+    val appPreferences: AppPreferencesDataStore
 
     @DependencyGraph.Factory
     fun interface Factory {
