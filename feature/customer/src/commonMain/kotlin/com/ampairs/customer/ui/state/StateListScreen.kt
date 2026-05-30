@@ -18,7 +18,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.customer.domain.State
-import com.ampairs.customer.domain.MasterState
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import ampairsapp.feature.customer.generated.resources.Res
 import ampairsapp.feature.customer.generated.resources.customer_cancel
@@ -40,7 +39,6 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun StateListScreen(
     onStateClick: (String) -> Unit,
-    onImportStates: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StateListViewModel = metroViewModel()
 ) {

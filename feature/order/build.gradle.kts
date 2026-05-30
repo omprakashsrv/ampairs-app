@@ -16,6 +16,7 @@ kotlin {
         namespace = "com.ampairs.order"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
     jvm("desktop")
     iosArm64()

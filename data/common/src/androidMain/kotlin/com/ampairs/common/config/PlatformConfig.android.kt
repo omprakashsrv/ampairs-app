@@ -20,7 +20,7 @@ actual object PlatformConfig {
 
     actual fun getAppConfig(): AppConfig {
         return configured ?: AppConfig(
-            apiBaseUrl = "http://10.50.51.4:8080",
+            apiBaseUrl = "http://192.168.1.17:8080",
             environment = Environment.DEV,
             isDebug = true
         )
