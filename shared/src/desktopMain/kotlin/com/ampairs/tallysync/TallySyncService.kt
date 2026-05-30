@@ -126,6 +126,9 @@ class TallySyncService(
         val stockItems = response.body?.data?.collection?.stockItems ?: return 0
 
         val newItems = stockItems.filter { it.alterId.toAlterLong() > lastAlterId }
+        stockItems.firstOrNull()?.let { sample ->
+            log.d { "StockItem price sample — name=${sample.name} standardPrice=${sample.standardPrice}" }
+        }
         val entities = newItems.mapNotNull { it.toProductEntity(groupIdByName, categoryIdByName) }
         if (entities.isNotEmpty()) productDao.insertAll(entities)
 

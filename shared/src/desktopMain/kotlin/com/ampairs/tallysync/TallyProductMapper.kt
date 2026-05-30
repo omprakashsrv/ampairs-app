@@ -86,8 +86,8 @@ internal object TallyProductMapper {
         }
     }
 
-    // Tally price strings can be "100.00 /Nos" — extract the numeric part
+    // Tally price strings can be " 100.00 /Nos" (leading space) — extract first numeric token
     private fun String.parsePrice(): Double {
-        return split(" ").firstOrNull()?.toDoubleOrNull() ?: 0.0
+        return trim().split(Regex("\\s+")).firstOrNull()?.toDoubleOrNull() ?: 0.0
     }
 }

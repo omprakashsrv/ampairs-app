@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -101,6 +103,31 @@ fun TallySettingsScreen(
                     }
                 ) {
                     Text(if (isSyncing) "Syncing…" else "Sync Now")
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                OutlinedButton(
+                    enabled = !isSyncing,
+                    onClick = {
+                        scope.launch {
+                            val entityTypes = listOf(
+                                TallyProductMapper.ENTITY_STOCK_GROUP,
+                                TallyProductMapper.ENTITY_STOCK_CATEGORY,
+                                TallyProductMapper.ENTITY_STOCK_ITEM,
+                                TallyProductMapper.ENTITY_UNIT,
+                            )
+                            entityTypes.forEach { entity ->
+                                dataStore.setTallyLastAlterId(workspaceSlug, entity, 0L)
+                            }
+                            statusText = "Sync reset — next sync will re-fetch all records"
+                        }
+                    },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reset Sync")
                 }
             }
 
