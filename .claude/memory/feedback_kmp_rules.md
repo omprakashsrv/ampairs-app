@@ -34,11 +34,16 @@ Never use JVM-specific APIs in `commonMain`. If the import starts with `java.*` 
 
 ## iOS-Specific Dispatcher Rule
 
-**Updated (coroutines 1.7+):** `Dispatchers.IO` is now available on all KMP targets including iOS. This project uses `kotlinx.coroutines 1.10.2`, so `Dispatchers.IO` is safe to use in `commonMain`.
+`Dispatchers.IO` is available as an `expect` declaration in `commonMain` (coroutines 1.7+), so it is **safe to use in `commonMain`**.
 
-The old advice (`Dispatchers.Default` or `DispatcherProvider.io` on iOS) was correct for coroutines < 1.7 only. Do not warn about `Dispatchers.IO` in this project.
+However, `Dispatchers.IO` is **internal** in the Kotlin/Native runtime — it cannot be accessed directly in `iosMain` source sets. Confirmed by compilation error: "Cannot access 'val IO: CoroutineDispatcher': it is internal in 'kotlinx.coroutines.Dispatchers'".
 
-**Why:** Kotlin/Native does not have a thread pool for IO dispatching. Using `Dispatchers.IO` on iOS causes a crash at runtime.
+`DispatcherProvider.ios.kt` must use `Dispatchers.Default` for the `io` dispatcher (this is what `Dispatchers.IO` maps to internally on iOS/Native).
+
+**Summary:**
+- `commonMain`: `Dispatchers.IO` ✅ (expect/actual, safe)
+- `iosMain` (actual): `Dispatchers.Default` ✅ (must use this, `Dispatchers.IO` is internal)
+- `androidMain`/`desktopMain`: `Dispatchers.IO` ✅
 
 ---
 

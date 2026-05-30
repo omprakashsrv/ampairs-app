@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import ampairsapp.data.common.generated.resources.Res
+import ampairsapp.data.common.generated.resources.cart_item_decrease_quantity
+import ampairsapp.data.common.generated.resources.cart_item_increase_quantity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
@@ -24,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CartItem(
@@ -43,7 +47,7 @@ fun CartItem(
         }) {
             Icon(
                 imageVector = Icons.Default.Remove,
-                contentDescription = "Decrease Quantity",
+                contentDescription = stringResource(Res.string.cart_item_decrease_quantity),
                 modifier = Modifier.width(16.dp).height(16.dp)
             )
         }
@@ -72,7 +76,7 @@ fun CartItem(
         }) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Increase Quantity",
+                contentDescription = stringResource(Res.string.cart_item_increase_quantity),
                 modifier = Modifier.width(16.dp).height(16.dp)
             )
         }
