@@ -1,0 +1,45 @@
+<resources>
+    <!-- Form config screen -->
+    <string name="form_title_configure">Configure %s Form</string>
+    <string name="form_back_cd">Back</string>
+    <string name="form_save_changes">Save Changes</string>
+    <string name="form_saving">Saving changes…</string>
+    <string name="form_dismiss">Dismiss</string>
+
+    <!-- Empty state -->
+    <string name="form_no_config_title">No Configuration Found</string>
+    <string name="form_no_config_desc">Please contact your administrator to seed the form configuration for %s</string>
+
+    <!-- Section headers -->
+    <string name="form_section_fields">Field Configurations</string>
+    <string name="form_section_attributes">Custom Attributes</string>
+
+    <!-- Attribute actions -->
+    <string name="form_add_attribute">Add Attribute</string>
+    <string name="form_no_attributes">No custom attributes defined. Click \'Add Attribute\' to create one.</string>
+    <string name="form_new_attribute">New Attribute</string>
+    <string name="form_delete_attribute_cd">Delete Attribute</string>
+
+    <!-- Field config labels -->
+    <string name="form_label_display_name">Display Name</string>
+    <string name="form_label_placeholder">Placeholder</string>
+    <string name="form_label_default_value">Default Value</string>
+    <string name="form_hint_default_value">Pre-filled value when creating new records</string>
+    <string name="form_label_help_text">Help Text</string>
+    <string name="form_hint_help_text">Additional information shown below the field</string>
+
+    <!-- Attribute definition labels -->
+    <string name="form_label_attribute_key">Attribute Key</string>
+    <string name="form_hint_attribute_key">e.g., industry, companySize</string>
+    <string name="form_hint_attribute_key_desc">Unique identifier - use camelCase</string>
+    <string name="form_hint_display_name">e.g., Industry, Company Size</string>
+    <string name="form_label_data_type">Data Type</string>
+    <string name="form_label_category">Category</string>
+    <string name="form_hint_category">e.g., Business, Financial</string>
+    <string name="form_label_display_order">Display Order</string>
+
+    <!-- Toggle labels -->
+    <string name="form_toggle_visible">Visible</string>
+    <string name="form_toggle_mandatory">Mandatory</string>
+    <string name="form_toggle_enabled">Enabled</string>
+</resources>
