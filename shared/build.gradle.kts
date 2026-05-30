@@ -181,7 +181,7 @@ kotlin {
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.jmapviewer)
 
-                implementation(project(":tallyModule"))
+                implementation(project(":tally"))
             }
         }
 

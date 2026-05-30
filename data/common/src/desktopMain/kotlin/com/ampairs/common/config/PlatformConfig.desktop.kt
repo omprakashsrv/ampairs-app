@@ -33,7 +33,7 @@ actual object PlatformConfig {
             Environment.PRODUCTION -> {
                 System.getProperty("ampairs.api.baseUrl")
                     ?: System.getenv("AMPAIRS_API_BASE_URL")
-                    ?: "https://api.ampairs.in"
+                    ?: "http://192.168.1.17:8080"
             }
         }
 

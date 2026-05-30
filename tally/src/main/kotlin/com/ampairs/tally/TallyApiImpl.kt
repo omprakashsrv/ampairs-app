@@ -25,7 +25,7 @@ import nl.adaptivity.xmlutil.serialization.XML
 import nl.adaptivity.xmlutil.serialization.XmlConfig
 import java.nio.ByteBuffer
 
-const val TALLY_END_POINT = "http://192.168.1.76:9000"
+const val TALLY_END_POINT = "http://192.168.1.17:9000"
 
 class TallyApiImpl(engine: HttpClientEngine) : TallyApi {
 
