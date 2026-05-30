@@ -2,7 +2,6 @@ package com.ampairs.customer.ui.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,7 +28,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,15 +41,12 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,20 +68,12 @@ import ampairsapp.feature.customer.generated.resources.customer_list_search_hint
 import ampairsapp.feature.customer.generated.resources.customer_retry
 import ampairsapp.feature.customer.generated.resources.customer_image_content_desc
 import ampairsapp.feature.customer.generated.resources.customer_list_title
-import ampairsapp.feature.customer.generated.resources.customer_list_filter_all
-import ampairsapp.feature.customer.generated.resources.customer_list_filter_with_dues
-import ampairsapp.feature.customer.generated.resources.customer_list_filter_paid_up
 import ampairsapp.feature.customer.generated.resources.customer_list_count
 import ampairsapp.feature.customer.generated.resources.customer_list_new_party
-import ampairsapp.feature.customer.generated.resources.customer_list_balance_placeholder
 import ampairsapp.feature.customer.generated.resources.customer_list_col_name
-import ampairsapp.feature.customer.generated.resources.customer_list_col_type
 import ampairsapp.feature.customer.generated.resources.customer_list_col_city
 import ampairsapp.feature.customer.generated.resources.customer_list_col_phone
-import ampairsapp.feature.customer.generated.resources.customer_list_col_outstanding
 import org.jetbrains.compose.resources.stringResource
-
-private enum class CustomerFilter { ALL, WITH_DUES, PAID_UP }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,7 +85,6 @@ fun CustomersListScreen(
     viewModel: CustomersListViewModel = metroViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var activeFilter by remember { mutableStateOf(CustomerFilter.ALL) }
 
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isExpanded = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
@@ -181,7 +166,7 @@ fun CustomersListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
-                            .padding(bottom = 8.dp),
+                            .padding(bottom = 12.dp),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -190,30 +175,6 @@ fun CustomersListScreen(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                         )
                     )
-
-                    // Filter chips
-                    Row(
-                        modifier = Modifier
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterChip(
-                            selected = activeFilter == CustomerFilter.ALL,
-                            onClick = { activeFilter = CustomerFilter.ALL },
-                            label = { Text(stringResource(Res.string.customer_list_filter_all)) }
-                        )
-                        FilterChip(
-                            selected = activeFilter == CustomerFilter.WITH_DUES,
-                            onClick = { activeFilter = CustomerFilter.WITH_DUES },
-                            label = { Text(stringResource(Res.string.customer_list_filter_with_dues)) }
-                        )
-                        FilterChip(
-                            selected = activeFilter == CustomerFilter.PAID_UP,
-                            onClick = { activeFilter = CustomerFilter.PAID_UP },
-                            label = { Text(stringResource(Res.string.customer_list_filter_paid_up)) }
-                        )
-                    }
                 }
             }
 
@@ -343,16 +304,6 @@ private fun CustomerCard(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = stringResource(Res.string.customer_list_balance_placeholder),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.End
-            )
         }
     }
 }
@@ -364,7 +315,6 @@ private fun CustomerTable(
     isRefreshing: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val balancePlaceholder = stringResource(Res.string.customer_list_balance_placeholder)
     LazyColumn(modifier = modifier) {
         // Column header
         item {
@@ -382,32 +332,19 @@ private fun CustomerTable(
                         text = stringResource(Res.string.customer_list_col_name),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(2.5f)
-                    )
-                    Text(
-                        text = stringResource(Res.string.customer_list_col_type),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1.5f)
+                        modifier = Modifier.weight(3f)
                     )
                     Text(
                         text = stringResource(Res.string.customer_list_col_city),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1.5f)
+                        modifier = Modifier.weight(2f)
                     )
                     Text(
                         text = stringResource(Res.string.customer_list_col_phone),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1.5f)
-                    )
-                    Text(
-                        text = stringResource(Res.string.customer_list_col_outstanding),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.End
+                        modifier = Modifier.weight(2f)
                     )
                 }
             }
@@ -440,7 +377,7 @@ private fun CustomerTable(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.weight(2.5f),
+                        modifier = Modifier.weight(3f),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -454,16 +391,10 @@ private fun CustomerTable(
                         )
                     }
                     Text(
-                        text = "—",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1.5f)
-                    )
-                    Text(
                         text = customer.city ?: "—",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1.5f),
+                        modifier = Modifier.weight(2f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -471,16 +402,9 @@ private fun CustomerTable(
                         text = customer.phone ?: "—",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1.5f),
+                        modifier = Modifier.weight(2f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = balancePlaceholder,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.End
                     )
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

@@ -28,17 +28,11 @@
     <string name="customer_list_add_btn">Add Customer</string>
     <string name="customer_image_content_desc">Customer image</string>
     <string name="customer_form_settings_cd">Form Settings</string>
-    <string name="customer_list_filter_all">All</string>
-    <string name="customer_list_filter_with_dues">With dues</string>
-    <string name="customer_list_filter_paid_up">Paid up</string>
     <string name="customer_list_count">%d customers</string>
     <string name="customer_list_new_party">New Party</string>
-    <string name="customer_list_balance_placeholder">—</string>
     <string name="customer_list_col_name">Name</string>
-    <string name="customer_list_col_type">Type</string>
     <string name="customer_list_col_city">City</string>
     <string name="customer_list_col_phone">Phone</string>
-    <string name="customer_list_col_outstanding">Outstanding</string>
 
     <!-- Customer form screen -->
     <string name="customer_form_title_new">New Customer</string>
@@ -119,15 +113,10 @@
     <string name="customer_status_active_label">Active</string>
     <string name="customer_status_inactive_label">Inactive</string>
     <string name="customer_action_bill">Bill</string>
-    <string name="customer_action_collect">Collect</string>
     <string name="customer_action_call">Call</string>
     <string name="customer_tab_overview">Overview</string>
-    <string name="customer_tab_statement">Statement</string>
-    <string name="customer_tab_settings_label">Settings</string>
-    <string name="customer_statement_coming_soon">Statement view coming soon</string>
     <string name="customer_details_credit_limit_stat">Credit Limit</string>
     <string name="customer_details_credit_days_stat">Credit Days</string>
-    <string name="customer_details_outstanding_stat">Outstanding</string>
     <string name="customer_details_no_limit">No limit</string>
     <string name="customer_details_na">N/A</string>
     <string name="customer_details_days_suffix">d</string>

@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -71,8 +70,6 @@ import ampairsapp.feature.customer.generated.resources.customer_delete
 import ampairsapp.feature.customer.generated.resources.customer_tab_details
 import ampairsapp.feature.customer.generated.resources.customer_tab_images
 import ampairsapp.feature.customer.generated.resources.customer_tab_overview
-import ampairsapp.feature.customer.generated.resources.customer_tab_statement
-import ampairsapp.feature.customer.generated.resources.customer_tab_settings_label
 import ampairsapp.feature.customer.generated.resources.customer_section_basic
 import ampairsapp.feature.customer.generated.resources.customer_section_financial
 import ampairsapp.feature.customer.generated.resources.customer_section_address
@@ -112,12 +109,9 @@ import ampairsapp.feature.customer.generated.resources.customer_delete_confirm
 import ampairsapp.feature.customer.generated.resources.customer_cancel
 import ampairsapp.feature.customer.generated.resources.customer_credit_days_value
 import ampairsapp.feature.customer.generated.resources.customer_action_bill
-import ampairsapp.feature.customer.generated.resources.customer_action_collect
 import ampairsapp.feature.customer.generated.resources.customer_action_call
-import ampairsapp.feature.customer.generated.resources.customer_statement_coming_soon
 import ampairsapp.feature.customer.generated.resources.customer_details_credit_limit_stat
 import ampairsapp.feature.customer.generated.resources.customer_details_credit_days_stat
-import ampairsapp.feature.customer.generated.resources.customer_details_outstanding_stat
 import ampairsapp.feature.customer.generated.resources.customer_details_no_limit
 import ampairsapp.feature.customer.generated.resources.customer_details_na
 import ampairsapp.feature.customer.generated.resources.customer_details_days_suffix
@@ -229,7 +223,6 @@ private fun CustomerDetailsMobile(
 ) {
     val tabs = buildList {
         add(stringResource(Res.string.customer_tab_overview))
-        add(stringResource(Res.string.customer_tab_statement))
         if (showImages) add(stringResource(Res.string.customer_tab_images))
     }
     var selectedTab by remember { mutableStateOf(0) }
@@ -237,20 +230,21 @@ private fun CustomerDetailsMobile(
     Column(modifier = modifier) {
         CustomerHeroSection(customer = customer)
 
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title) }
-                )
+        if (tabs.size > 1) {
+            PrimaryTabRow(selectedTabIndex = selectedTab) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title) }
+                    )
+                }
             }
         }
 
         when (selectedTab) {
             0 -> CustomerOverviewTab(customer = customer, modifier = Modifier.fillMaxSize())
-            1 -> StatementTab(modifier = Modifier.fillMaxSize())
-            2 -> if (showImages) {
+            1 -> if (showImages) {
                 CustomerImageManagementScreen(
                     customerId = customer.uid,
                     readOnly = imagesReadOnly,
@@ -274,7 +268,6 @@ private fun CustomerDetailsExpanded(
 ) {
     val tabs = buildList {
         add(stringResource(Res.string.customer_tab_overview))
-        add(stringResource(Res.string.customer_tab_statement))
         if (showImages) add(stringResource(Res.string.customer_tab_images))
     }
     var selectedTab by remember { mutableStateOf(0) }
@@ -324,7 +317,6 @@ private fun CustomerDetailsExpanded(
 
                 HorizontalDivider()
 
-                // Stats grid 2x2
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -341,22 +333,12 @@ private fun CustomerDetailsExpanded(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatCard(
-                        label = stringResource(Res.string.customer_details_outstanding_stat),
-                        value = "—",
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = if (customer.active) stringResource(Res.string.customer_status_active_label)
-                                else stringResource(Res.string.customer_status_inactive_label),
-                        value = if (customer.active) "✓" else "✗",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                StatCard(
+                    label = if (customer.active) stringResource(Res.string.customer_status_active_label)
+                            else stringResource(Res.string.customer_status_inactive_label),
+                    value = if (customer.active) "Active" else "Inactive",
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 HorizontalDivider()
 
@@ -371,19 +353,20 @@ private fun CustomerDetailsExpanded(
         // Right panel: tabs
         OutlinedCard(modifier = Modifier.weight(1f).fillMaxHeight()) {
             Column(modifier = Modifier.fillMaxSize()) {
-                PrimaryTabRow(selectedTabIndex = selectedTab) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text(title) }
-                        )
+                if (tabs.size > 1) {
+                    PrimaryTabRow(selectedTabIndex = selectedTab) {
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                text = { Text(title) }
+                            )
+                        }
                     }
                 }
                 when (selectedTab) {
                     0 -> CustomerOverviewTab(customer = customer, modifier = Modifier.fillMaxSize())
-                    1 -> StatementTab(modifier = Modifier.fillMaxSize())
-                    2 -> if (showImages) {
+                    1 -> if (showImages) {
                         CustomerImageManagementScreen(
                             customerId = customer.uid,
                             readOnly = imagesReadOnly,
@@ -452,26 +435,26 @@ private fun CustomerHeroSection(
             }
 
             // Stats row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                StatCard(
-                    label = stringResource(Res.string.customer_details_credit_limit_stat),
-                    value = customer.creditLimit?.let { "₹$it" } ?: stringResource(Res.string.customer_details_no_limit),
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    label = stringResource(Res.string.customer_details_credit_days_stat),
-                    value = customer.creditDays?.let { "${it}${stringResource(Res.string.customer_details_days_suffix)}" }
-                        ?: stringResource(Res.string.customer_details_na),
-                    modifier = Modifier.weight(1f)
-                )
-                StatCard(
-                    label = stringResource(Res.string.customer_details_outstanding_stat),
-                    value = "—",
-                    modifier = Modifier.weight(1f)
-                )
+            if (customer.creditLimit != null || customer.creditDays != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    customer.creditLimit?.let {
+                        StatCard(
+                            label = stringResource(Res.string.customer_details_credit_limit_stat),
+                            value = "₹$it",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    customer.creditDays?.let {
+                        StatCard(
+                            label = stringResource(Res.string.customer_details_credit_days_stat),
+                            value = "${it}${stringResource(Res.string.customer_details_days_suffix)}",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
 
             // Quick actions
@@ -487,15 +470,6 @@ private fun CustomerHeroSection(
                     Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
                     Text(stringResource(Res.string.customer_action_bill), style = MaterialTheme.typography.labelMedium)
-                }
-                FilledTonalButton(
-                    onClick = {},
-                    modifier = Modifier.weight(1f),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp)
-                ) {
-                    Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(Res.string.customer_action_collect), style = MaterialTheme.typography.labelMedium)
                 }
                 FilledTonalButton(
                     onClick = {},
@@ -659,17 +633,6 @@ private fun CustomerOverviewTab(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun StatementTab(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Text(
-            text = stringResource(Res.string.customer_statement_coming_soon),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
