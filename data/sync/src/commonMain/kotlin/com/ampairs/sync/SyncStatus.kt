@@ -35,7 +35,7 @@ sealed class SyncStatus {
             is Idle -> "IDLE"
             is PendingPush -> "PENDING_PUSH"
             is PendingPull -> "PENDING_PULL"
-            is Syncing -> "PENDING_PULL" // persist as PENDING so we retry after crash
+            is Syncing -> "IDLE" // should not be persisted directly — use persistStatusByName before syncing
             is Success -> "IDLE"
             is Failed -> "FAILED"
         }

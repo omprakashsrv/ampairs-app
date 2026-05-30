@@ -399,7 +399,7 @@ class CustomerRepository(
     /** Handle a backend WebSocket event for a specific customer. */
     suspend fun handleExternalEvent(customerId: String, eventType: String) {
         handleCustomerEvent(
-            eventType = com.ampairs.common.event.EventType.valueOf(eventType),
+            eventType = EventType.valueOf(eventType),
             customerId = customerId,
         )
     }

@@ -1,38 +1,38 @@
-package com.ampairs.customer.sync
+package com.ampairs.tax.sync
 
 import com.ampairs.common.di.AppScope
-import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
 import com.ampairs.sync.SyncResult
+import com.ampairs.tax.data.repository.TaxCodeRepository
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
 @Inject
 @ContributesIntoMap(AppScope::class)
-@SyncEntityKey(SyncEntity.CUSTOMER)
-class CustomerSyncDelegate(
-    private val customerRepository: CustomerRepository,
+@SyncEntityKey(SyncEntity.TAX)
+class TaxSyncDelegate(
+    private val taxCodeRepository: TaxCodeRepository,
 ) : SyncDelegate {
 
-    override val entity: SyncEntity = SyncEntity.CUSTOMER
+    override val entity: SyncEntity = SyncEntity.TAX
 
     override suspend fun pullFromServer(): SyncResult =
-        customerRepository.pullFromServer().fold(
+        taxCodeRepository.syncWorkspaceTaxCodes().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun pushPendingToServer(): SyncResult =
-        customerRepository.pushPendingToServer().fold(
+        taxCodeRepository.syncUnsyncedChanges().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult =
-        runCatching { customerRepository.handleExternalEvent(entityId, eventType) }.fold(
-            onSuccess = { SyncResult.Success(1) },
+        taxCodeRepository.syncWorkspaceTaxCodes().fold(
+            onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 }

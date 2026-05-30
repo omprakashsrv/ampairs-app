@@ -68,6 +68,9 @@ interface ProductDao {
     @Query("SELECT * FROM productEntity WHERE synced = 0")
     suspend fun unSyncedProducts(): List<ProductEntity>
 
+    @Query("SELECT COUNT(*) FROM productEntity WHERE synced = 0")
+    fun observeUnsyncedCount(): Flow<Int>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(product: ProductEntity)
 

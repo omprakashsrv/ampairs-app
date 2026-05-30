@@ -1,6 +1,7 @@
 package com.ampairs.sync
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * Contract that every offline-capable feature module must implement.
@@ -21,6 +22,9 @@ interface SyncDelegate {
      */
     suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult
 
-    /** Emits the current count of locally unsynced rows. Used to drive PendingPush status. */
-    fun observePendingCount(): Flow<Int>
+    /**
+     * Pending push count — driven externally via CentralSyncService.markPendingPush().
+     * Override only if reactive DAO observation is preferred for this entity.
+     */
+    fun observePendingCount(): Flow<Int> = flowOf(0)
 }

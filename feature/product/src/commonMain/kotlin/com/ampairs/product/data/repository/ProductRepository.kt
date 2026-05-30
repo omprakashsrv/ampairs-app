@@ -22,6 +22,7 @@ import com.ampairs.product.domain.ProductVariant
 import com.ampairs.product.domain.ServiceType
 import com.ampairs.product.domain.asDomainModel
 import com.ampairs.product.domain.asDatabaseModel
+import com.ampairs.product.domain.asProductApiModel
 import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toDomain
 import com.ampairs.product.domain.toDomainList
@@ -268,6 +269,34 @@ class ProductRepository(
 
     suspend fun getUnSyncedProducts(): List<Product> {
         return productDao.unSyncedProducts().map { it.toDomainProduct() }
+    }
+
+    suspend fun pullFromServer(): Result<Int> = syncProducts()
+
+    suspend fun pushPendingToServer(): Result<Int> {
+        return try {
+            val workspaceId = WorkspaceContextManager.getInstance().currentWorkspace.value?.id
+                ?: return Result.failure(Exception("No workspace selected"))
+            val unsynced = productDao.unSyncedProducts()
+            var count = 0
+            for (entity in unsynced) {
+                try {
+                    val apiModel = entity.asProductApiModel()
+                    productApi.createProduct(workspaceId, apiModel)
+                        .onSuccess { productDao.insert(entity.copy(synced = 1)) }
+                    count++
+                } catch (_: Exception) {
+                    // continue with remaining items
+                }
+            }
+            Result.success(count)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun handleExternalEvent(productId: String, eventType: String) {
+        refreshProductFromServer(productId)
     }
 
     // Extension functions for data conversion

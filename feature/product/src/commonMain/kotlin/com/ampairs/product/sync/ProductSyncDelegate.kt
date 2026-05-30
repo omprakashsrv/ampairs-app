@@ -1,7 +1,7 @@
-package com.ampairs.customer.sync
+package com.ampairs.product.sync
 
 import com.ampairs.common.di.AppScope
-import com.ampairs.customer.data.repository.CustomerRepository
+import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
@@ -11,27 +11,27 @@ import dev.zacsweers.metro.Inject
 
 @Inject
 @ContributesIntoMap(AppScope::class)
-@SyncEntityKey(SyncEntity.CUSTOMER)
-class CustomerSyncDelegate(
-    private val customerRepository: CustomerRepository,
+@SyncEntityKey(SyncEntity.PRODUCT)
+class ProductSyncDelegate(
+    private val productRepository: ProductRepository,
 ) : SyncDelegate {
 
-    override val entity: SyncEntity = SyncEntity.CUSTOMER
+    override val entity: SyncEntity = SyncEntity.PRODUCT
 
     override suspend fun pullFromServer(): SyncResult =
-        customerRepository.pullFromServer().fold(
+        productRepository.pullFromServer().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun pushPendingToServer(): SyncResult =
-        customerRepository.pushPendingToServer().fold(
+        productRepository.pushPendingToServer().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult =
-        runCatching { customerRepository.handleExternalEvent(entityId, eventType) }.fold(
+        runCatching { productRepository.handleExternalEvent(entityId, eventType) }.fold(
             onSuccess = { SyncResult.Success(1) },
             onFailure = { SyncResult.Failure(it) },
         )

@@ -8,9 +8,7 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -49,7 +47,6 @@ class CentralSyncService(
 
     private var scope: CoroutineScope? = null
     private var dao: SyncStateDao? = null
-    private var pendingCountJobs = mutableListOf<Job>()
 
     // region — Lifecycle
 
@@ -68,7 +65,6 @@ class CentralSyncService(
 
         newScope.launch {
             initializeStates()
-            observePendingCounts(newScope)
             processEvents()
         }
 
@@ -88,8 +84,6 @@ class CentralSyncService(
 
     /** Must be called on workspace exit / logout. */
     fun stop() {
-        pendingCountJobs.forEach { it.cancel() }
-        pendingCountJobs.clear()
         scope?.cancel()
         scope = null
         dao = null
@@ -177,27 +171,6 @@ class CentralSyncService(
 
     // endregion
 
-    // region — Pending count observation
-
-    private fun observePendingCounts(scope: CoroutineScope) {
-        delegates.forEach { (entity, delegate) ->
-            val job = scope.launch {
-                delegate.observePendingCount().collect { count ->
-                    if (count > 0) {
-                        updateAndPersistStatus(entity, SyncStatus.PendingPush(count))
-                    } else {
-                        val current = _syncStates.value[entity]?.status
-                        if (current is SyncStatus.PendingPush) {
-                            updateAndPersistStatus(entity, SyncStatus.Idle)
-                        }
-                    }
-                }
-            }
-            pendingCountJobs.add(job)
-        }
-    }
-
-    // endregion
 
     // region — Event processing loop
 
@@ -229,7 +202,9 @@ class CentralSyncService(
     private suspend fun executePull(entity: SyncEntity) {
         val delegate = delegates[entity] ?: return
         if (_syncStates.value[entity]?.status is SyncStatus.Syncing) return // already in-flight
-        updateAndPersistStatus(entity, SyncStatus.Syncing)
+        // Persist PENDING_PULL before starting so a process death retries as pull, not push
+        persistStatusByName(entity, "PENDING_PULL")
+        updateState(entity) { it.copy(status = SyncStatus.Syncing) }
 
         val result = runCatching { delegate.pullFromServer() }.fold(
             onSuccess = { it },
@@ -240,7 +215,10 @@ class CentralSyncService(
 
     private suspend fun executePush(entity: SyncEntity) {
         val delegate = delegates[entity] ?: return
-        updateAndPersistStatus(entity, SyncStatus.Syncing)
+        if (_syncStates.value[entity]?.status is SyncStatus.Syncing) return // already in-flight
+        // Persist PENDING_PUSH before starting so a process death retries as push
+        persistStatusByName(entity, "PENDING_PUSH")
+        updateState(entity) { it.copy(status = SyncStatus.Syncing) }
 
         val result = runCatching { delegate.pushPendingToServer() }.fold(
             onSuccess = { it },

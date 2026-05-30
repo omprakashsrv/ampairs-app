@@ -25,6 +25,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(projects.data.common)
+                implementation(projects.data.sync)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
