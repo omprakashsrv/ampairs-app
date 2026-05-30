@@ -34,18 +34,18 @@ Never use JVM-specific APIs in `commonMain`. If the import starts with `java.*` 
 
 ## iOS-Specific Dispatcher Rule
 
-`Dispatchers.IO` is available on **all** KMP targets — including Kotlin/Native (iOS) — since `kotlinx.coroutines 1.7+`. This project uses 1.10.2, so `Dispatchers.IO` is safe everywhere.
+`Dispatchers.IO` is available as an `expect` declaration in `commonMain` (coroutines 1.7+), so it is **safe to use in `commonMain`**.
+
+However, `Dispatchers.IO` is **internal** in the Kotlin/Native runtime — it cannot be accessed directly in `iosMain` source sets. Confirmed by compilation error: "Cannot access 'val IO: CoroutineDispatcher': it is internal in 'kotlinx.coroutines.Dispatchers'".
+
+`DispatcherProvider.ios.kt` must use `Dispatchers.Default` for the `io` dispatcher (this is what `Dispatchers.IO` maps to internally on iOS/Native).
 
 **Summary:**
-- `commonMain`: `Dispatchers.IO` ✅
-- `iosMain` (actual): `Dispatchers.IO` ✅ (safe since coroutines 1.7+)
+- `commonMain`: `Dispatchers.IO` ✅ (via expect/actual, safe)
+- `iosMain` (actual): `Dispatchers.Default` ✅ (must use this — `Dispatchers.IO` actual is internal on Native)
 - `androidMain`/`desktopMain`: `Dispatchers.IO` ✅
 
-**One nuance**: On Kotlin/Native, `Dispatchers.IO` is backed by the same thread pool as `Dispatchers.Default` — there is no separate IO-dedicated pool as on JVM. The API is consistent, but threading behavior differs from JVM.
-
-**Historical note**: Older coroutines versions had `Dispatchers.IO` as internal on Native, requiring `Dispatchers.Default` in `iosMain`. If you see old code or blog posts using `Dispatchers.Default` for IO on iOS, this is why — it no longer applies at coroutines 1.10.2.
-
-`DispatcherProvider.ios.kt` uses `Dispatchers.IO` for the `io` dispatcher.
+**Why the distinction:** The `expect val Dispatchers.IO` in commonMain compiles fine everywhere because it resolves via the expect mechanism. But when writing code in the `iosMain` source set itself (which compiles as Kotlin/Native), the actual backing value is marked internal and cannot be referenced directly. Confirmed against coroutines 1.10.2 / Kotlin 2.3.21.
 
 ---
 

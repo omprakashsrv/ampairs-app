@@ -5,6 +5,6 @@ import kotlinx.coroutines.Dispatchers
 
 actual object DispatcherProvider {
     actual val main: CoroutineDispatcher = Dispatchers.Main
-    actual val io: CoroutineDispatcher = Dispatchers.IO
+    actual val io: CoroutineDispatcher = Dispatchers.Default
     actual val default: CoroutineDispatcher = Dispatchers.Default
 }
