@@ -50,6 +50,8 @@ kotlin {
                 implementation(libs.coil.core)
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network)
+                // Adaptive layout
+                implementation(libs.material3.adaptive)
             }
         }
         androidMain {

@@ -1,6 +1,13 @@
 <resources>
     <!-- Product list screen -->
     <string name="prod_list_title">Products</string>
+    <string name="prod_list_count">%d products</string>
+    <string name="prod_list_new_product">New Product</string>
+    <string name="prod_list_col_name">Name</string>
+    <string name="prod_list_col_code">Code</string>
+    <string name="prod_list_col_category">Category</string>
+    <string name="prod_list_col_price">Price</string>
+    <string name="prod_list_col_stock">Stock</string>
     <string name="prod_list_cd_form_settings">Form Settings</string>
     <string name="prod_list_cd_refresh">Refresh</string>
     <string name="prod_list_cd_add">Add Product</string>
