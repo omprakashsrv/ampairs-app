@@ -14,6 +14,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_cancel
+import ampairsapp.feature.customer.generated.resources.customer_image_desc_label
+import ampairsapp.feature.customer.generated.resources.customer_image_desc_placeholder
+import ampairsapp.feature.customer.generated.resources.customer_image_file_info_title
+import ampairsapp.feature.customer.generated.resources.customer_image_file_name_label
+import ampairsapp.feature.customer.generated.resources.customer_image_file_size_label
+import ampairsapp.feature.customer.generated.resources.customer_image_file_type_label
+import ampairsapp.feature.customer.generated.resources.customer_image_options_title
+import ampairsapp.feature.customer.generated.resources.customer_image_primary_desc
+import ampairsapp.feature.customer.generated.resources.customer_image_set_primary_label
+import ampairsapp.feature.customer.generated.resources.customer_image_upload_btn
+import ampairsapp.feature.customer.generated.resources.customer_image_upload_title
+import ampairsapp.feature.customer.generated.resources.customer_image_uploading_btn
+import ampairsapp.feature.customer.generated.resources.customer_image_uploading_desc
+import ampairsapp.feature.customer.generated.resources.customer_image_uploading_title
+import org.jetbrains.compose.resources.stringResource
 
 data class ImageUploadData(
     val fileName: String,
@@ -82,18 +99,15 @@ fun CustomerImageUploadDialog(
                         .padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Header
                     Text(
-                        text = "Upload Customer Image",
+                        text = stringResource(Res.string.customer_image_upload_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    // File Information
                     FileInfoCard(uploadData = uploadData)
 
-                    // Image Options
                     ImageOptionsSection(
                         description = description,
                         onDescriptionChange = { description = it },
@@ -102,12 +116,10 @@ fun CustomerImageUploadDialog(
                         enabled = !isUploading
                     )
 
-                    // Upload Progress (if uploading)
                     if (isUploading) {
                         UploadProgressSection()
                     }
 
-                    // Action Buttons
                     ActionButtonsSection(
                         onCancel = onDismiss,
                         onUpload = {
@@ -131,6 +143,10 @@ private fun FileInfoCard(
     uploadData: ImageUploadData,
     modifier: Modifier = Modifier
 ) {
+    val labelName = stringResource(Res.string.customer_image_file_name_label)
+    val labelSize = stringResource(Res.string.customer_image_file_size_label)
+    val labelType = stringResource(Res.string.customer_image_file_type_label)
+
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -142,15 +158,15 @@ private fun FileInfoCard(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "File Information",
+                text = stringResource(Res.string.customer_image_file_info_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
 
-            FileInfoRow(label = "Name", value = uploadData.fileName)
-            FileInfoRow(label = "Size", value = formatFileSize(uploadData.fileSize))
-            FileInfoRow(label = "Type", value = uploadData.contentType)
+            FileInfoRow(label = labelName, value = uploadData.fileName)
+            FileInfoRow(label = labelSize, value = formatFileSize(uploadData.fileSize))
+            FileInfoRow(label = labelType, value = uploadData.contentType)
         }
     }
 }
@@ -192,30 +208,25 @@ private fun ImageOptionsSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Image Options",
+            text = stringResource(Res.string.customer_image_options_title),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Description Field
         OutlinedTextField(
             value = description,
             onValueChange = onDescriptionChange,
-            label = { Text("Description (Optional)") },
+            label = { Text(stringResource(Res.string.customer_image_desc_label)) },
             leadingIcon = {
-                Icon(
-                    Icons.Default.Description,
-                    contentDescription = null
-                )
+                Icon(Icons.Default.Description, contentDescription = null)
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             maxLines = 3,
-            placeholder = { Text("Add a description for this image...") }
+            placeholder = { Text(stringResource(Res.string.customer_image_desc_placeholder)) }
         )
 
-        // Primary Image Toggle
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -225,17 +236,17 @@ private fun ImageOptionsSection(
                 Icons.Default.Star,
                 contentDescription = null,
                 tint = if (isPrimary) MaterialTheme.colorScheme.primary
-                      else MaterialTheme.colorScheme.onSurfaceVariant
+                       else MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Set as Primary Image",
+                    text = stringResource(Res.string.customer_image_set_primary_label),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Primary image will be displayed in customer lists",
+                    text = stringResource(Res.string.customer_image_primary_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -274,13 +285,13 @@ private fun UploadProgressSection(
 
             Column {
                 Text(
-                    text = "Uploading image...",
+                    text = stringResource(Res.string.customer_image_uploading_title),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    text = "Please wait while we upload your image",
+                    text = stringResource(Res.string.customer_image_uploading_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -305,7 +316,7 @@ private fun ActionButtonsSection(
             modifier = Modifier.weight(1f),
             enabled = !isUploading
         ) {
-            Text("Cancel")
+            Text(stringResource(Res.string.customer_cancel))
         }
 
         Button(
@@ -327,7 +338,10 @@ private fun ActionButtonsSection(
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (isUploading) "Uploading..." else "Upload")
+            Text(
+                if (isUploading) stringResource(Res.string.customer_image_uploading_btn)
+                else stringResource(Res.string.customer_image_upload_btn)
+            )
         }
     }
 }

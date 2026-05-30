@@ -7,11 +7,12 @@ import com.ampairs.customer.data.repository.IosFileManager
 import com.ampairs.customer.data.repository.PlatformFileManager
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 
 @ContributesTo(AppScope::class)
 interface CustomerIosModule {
     companion object {
-        @Provides
+        @Provides @SingleIn(AppScope::class)
         fun provideCustomerDatabase(factory: WorkspaceAwareDatabaseFactory): CustomerDatabase =
             factory.createDatabase(klass = CustomerDatabase::class, moduleName = "customer")
 

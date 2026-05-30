@@ -33,7 +33,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.common.util.DateTimeFormatter
 import com.ampairs.customer.domain.Customer
@@ -50,6 +50,50 @@ import com.ampairs.customer.ui.components.images.CustomerImageViewModel
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_NOT_FOUND
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMER_DETAILS
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_edit
+import ampairsapp.feature.customer.generated.resources.customer_delete
+import ampairsapp.feature.customer.generated.resources.customer_tab_details
+import ampairsapp.feature.customer.generated.resources.customer_tab_images
+import ampairsapp.feature.customer.generated.resources.customer_section_basic
+import ampairsapp.feature.customer.generated.resources.customer_section_financial
+import ampairsapp.feature.customer.generated.resources.customer_section_address
+import ampairsapp.feature.customer.generated.resources.customer_section_billing
+import ampairsapp.feature.customer.generated.resources.customer_section_shipping
+import ampairsapp.feature.customer.generated.resources.customer_section_location
+import ampairsapp.feature.customer.generated.resources.customer_section_additional
+import ampairsapp.feature.customer.generated.resources.customer_section_system
+import ampairsapp.feature.customer.generated.resources.customer_label_name
+import ampairsapp.feature.customer.generated.resources.customer_label_ref_id
+import ampairsapp.feature.customer.generated.resources.customer_label_email
+import ampairsapp.feature.customer.generated.resources.customer_label_phone
+import ampairsapp.feature.customer.generated.resources.customer_label_landline
+import ampairsapp.feature.customer.generated.resources.customer_label_type
+import ampairsapp.feature.customer.generated.resources.customer_label_group
+import ampairsapp.feature.customer.generated.resources.customer_label_gstin
+import ampairsapp.feature.customer.generated.resources.customer_label_pan
+import ampairsapp.feature.customer.generated.resources.customer_label_credit_limit
+import ampairsapp.feature.customer.generated.resources.customer_label_credit_days
+import ampairsapp.feature.customer.generated.resources.customer_label_address
+import ampairsapp.feature.customer.generated.resources.customer_label_street
+import ampairsapp.feature.customer.generated.resources.customer_label_street2
+import ampairsapp.feature.customer.generated.resources.customer_label_city
+import ampairsapp.feature.customer.generated.resources.customer_label_state
+import ampairsapp.feature.customer.generated.resources.customer_label_pincode
+import ampairsapp.feature.customer.generated.resources.customer_label_country
+import ampairsapp.feature.customer.generated.resources.customer_label_coordinates
+import ampairsapp.feature.customer.generated.resources.customer_label_created
+import ampairsapp.feature.customer.generated.resources.customer_label_updated
+import ampairsapp.feature.customer.generated.resources.customer_status_active_label
+import ampairsapp.feature.customer.generated.resources.customer_status_inactive_label
+import ampairsapp.feature.customer.generated.resources.customer_section_status
+import ampairsapp.feature.customer.generated.resources.customer_details_load_error
+import ampairsapp.feature.customer.generated.resources.customer_retry
+import ampairsapp.feature.customer.generated.resources.customer_delete_title
+import ampairsapp.feature.customer.generated.resources.customer_delete_confirm
+import ampairsapp.feature.customer.generated.resources.customer_cancel
+import ampairsapp.feature.customer.generated.resources.customer_credit_days_value
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,8 +104,8 @@ fun CustomerDetailsScreen(
     modifier: Modifier = Modifier,
     viewModel: CustomerDetailsViewModel = assistedMetroViewModel<CustomerDetailsViewModel, CustomerDetailsViewModel.Factory> { create(customerId) },
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val imagesConfig by viewModel.imagesConfig.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val imagesConfig by viewModel.imagesConfig.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(customerId) {
@@ -74,10 +118,10 @@ fun CustomerDetailsScreen(
             actions = {
                 if (uiState.customer != null) {
                     IconButton(onClick = { onEditCustomer(customerId) }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(Res.string.customer_edit))
                     }
                     IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.customer_delete))
                     }
                 }
             }
@@ -174,8 +218,8 @@ private fun CustomerDetailsTabLayout(
     var selectedTabIndex by remember { mutableStateOf(0) }
 
     val tabs = buildList {
-        add("Details")
-        if (showCustomerImages) add("Images")
+        add(stringResource(Res.string.customer_tab_details))
+        if (showCustomerImages) add(stringResource(Res.string.customer_tab_images))
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -191,7 +235,7 @@ private fun CustomerDetailsTabLayout(
 
         when (selectedTabIndex) {
             0 -> CustomerDetailsTab(customer = customer, modifier = Modifier.fillMaxSize())
-            1 -> if (tabs.getOrNull(1) == "Images") {
+            1 -> if (tabs.size > 1) {
                 CustomerImagesTab(
                     customer = customer,
                     readOnly = customerImagesReadOnly,
@@ -215,7 +259,6 @@ private fun CustomerDetailsSideBySideLayout(
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Left side: Customer Details (60% width)
         OutlinedCard(
             modifier = Modifier
                 .weight(0.6f)
@@ -227,7 +270,6 @@ private fun CustomerDetailsSideBySideLayout(
             )
         }
 
-        // Right side: Customer Images (40% width) - if visible
         if (showCustomerImages) {
             OutlinedCard(
                 modifier = Modifier
@@ -272,126 +314,122 @@ private fun CustomerDetailsTab(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Basic Information
-        InfoSection(title = "Basic Information") {
-            InfoRow(label = "Name", value = customer.name)
+        InfoSection(title = stringResource(Res.string.customer_section_basic)) {
+            InfoRow(label = stringResource(Res.string.customer_label_name), value = customer.name)
             customer.refId?.let {
-                InfoRow(label = "Reference ID", value = it)
+                InfoRow(label = stringResource(Res.string.customer_label_ref_id), value = it)
             }
             customer.email?.let {
-                InfoRow(label = "Email", value = it)
+                InfoRow(label = stringResource(Res.string.customer_label_email), value = it)
             }
             customer.phone?.let {
-                InfoRow(label = "Phone", value = "+${customer.countryCode} $it")
+                InfoRow(label = stringResource(Res.string.customer_label_phone), value = "+${customer.countryCode} $it")
             }
             customer.landline?.let {
-                InfoRow(label = "Landline", value = it)
+                InfoRow(label = stringResource(Res.string.customer_label_landline), value = it)
             }
             customer.customerType?.let {
-                InfoRow(label = "Type", value = it)
+                InfoRow(label = stringResource(Res.string.customer_label_type), value = it)
             }
             customer.customerGroup?.let {
-                InfoRow(label = "Group", value = it)
+                InfoRow(label = stringResource(Res.string.customer_label_group), value = it)
             }
-            InfoRow(label = "Status", value = if (customer.active) "Active" else "Inactive")
+            InfoRow(
+                label = stringResource(Res.string.customer_section_status),
+                value = if (customer.active) stringResource(Res.string.customer_status_active_label)
+                        else stringResource(Res.string.customer_status_inactive_label)
+            )
             customer.status?.let {
-                InfoRow(label = "Status", value = it)
+                InfoRow(label = stringResource(Res.string.customer_section_status), value = it)
             }
         }
 
-        // Financial Information
         if (customer.gstNumber != null || customer.panNumber != null || customer.creditLimit != null || customer.creditDays != null) {
-            InfoSection(title = "Financial Information") {
+            InfoSection(title = stringResource(Res.string.customer_section_financial)) {
                 customer.gstNumber?.let {
-                    InfoRow(label = "GSTIN", value = it)
+                    InfoRow(label = stringResource(Res.string.customer_label_gstin), value = it)
                 }
                 customer.panNumber?.let {
-                    InfoRow(label = "PAN Number", value = it)
+                    InfoRow(label = stringResource(Res.string.customer_label_pan), value = it)
                 }
                 customer.creditLimit?.let {
-                    InfoRow(label = "Credit Limit", value = "₹${it}")
+                    InfoRow(label = stringResource(Res.string.customer_label_credit_limit), value = "₹$it")
                 }
                 customer.creditDays?.let {
-                    InfoRow(label = "Credit Days", value = "$it days")
+                    InfoRow(label = stringResource(Res.string.customer_label_credit_days), value = stringResource(Res.string.customer_credit_days_value, it))
                 }
             }
         }
 
-        // Address Information
         if (customer.address != null || customer.street != null || customer.city != null) {
-            InfoSection(title = "Address") {
+            InfoSection(title = stringResource(Res.string.customer_section_address)) {
                 customer.address?.let {
-                    InfoRow(label = "Address", value = it)
+                    InfoRow(label = stringResource(Res.string.customer_label_address), value = it)
                 }
                 customer.street?.let {
-                    InfoRow(label = "Street", value = it)
+                    InfoRow(label = stringResource(Res.string.customer_label_street), value = it)
                 }
                 customer.street2?.let {
-                    InfoRow(label = "Street 2", value = it)
+                    InfoRow(label = stringResource(Res.string.customer_label_street2), value = it)
                 }
                 customer.city?.let {
-                    InfoRow(label = "City", value = it)
+                    InfoRow(label = stringResource(Res.string.customer_label_city), value = it)
                 }
                 customer.state?.let {
-                    InfoRow(label = "State", value = it)
+                    InfoRow(label = stringResource(Res.string.customer_label_state), value = it)
                 }
                 customer.pincode?.let {
-                    InfoRow(label = "PIN Code", value = it)
+                    InfoRow(label = stringResource(Res.string.customer_label_pincode), value = it)
                 }
-                InfoRow(label = "Country", value = customer.country)
+                InfoRow(label = stringResource(Res.string.customer_label_country), value = customer.country)
             }
         }
 
-        // Billing Address
         customer.billingAddress?.let { billingAddress ->
-            InfoSection(title = "Billing Address") {
-                InfoRow(label = "Street", value = billingAddress.street)
-                InfoRow(label = "City", value = billingAddress.city)
-                InfoRow(label = "State", value = billingAddress.state)
-                InfoRow(label = "PIN Code", value = billingAddress.pincode)
-                InfoRow(label = "Country", value = billingAddress.country)
+            InfoSection(title = stringResource(Res.string.customer_section_billing)) {
+                InfoRow(label = stringResource(Res.string.customer_label_street), value = billingAddress.street)
+                InfoRow(label = stringResource(Res.string.customer_label_city), value = billingAddress.city)
+                InfoRow(label = stringResource(Res.string.customer_label_state), value = billingAddress.state)
+                InfoRow(label = stringResource(Res.string.customer_label_pincode), value = billingAddress.pincode)
+                InfoRow(label = stringResource(Res.string.customer_label_country), value = billingAddress.country)
             }
         }
 
-        // Shipping Address
         customer.shippingAddress?.let { shippingAddress ->
-            InfoSection(title = "Shipping Address") {
-                InfoRow(label = "Street", value = shippingAddress.street)
-                InfoRow(label = "City", value = shippingAddress.city)
-                InfoRow(label = "State", value = shippingAddress.state)
-                InfoRow(label = "PIN Code", value = shippingAddress.pincode)
-                InfoRow(label = "Country", value = shippingAddress.country)
+            InfoSection(title = stringResource(Res.string.customer_section_shipping)) {
+                InfoRow(label = stringResource(Res.string.customer_label_street), value = shippingAddress.street)
+                InfoRow(label = stringResource(Res.string.customer_label_city), value = shippingAddress.city)
+                InfoRow(label = stringResource(Res.string.customer_label_state), value = shippingAddress.state)
+                InfoRow(label = stringResource(Res.string.customer_label_pincode), value = shippingAddress.pincode)
+                InfoRow(label = stringResource(Res.string.customer_label_country), value = shippingAddress.country)
             }
         }
 
-        // Location Information
         if (customer.latitude != null || customer.longitude != null) {
-            InfoSection(title = "Location") {
+            InfoSection(title = stringResource(Res.string.customer_section_location)) {
                 customer.latitude?.let { lat ->
                     customer.longitude?.let { lng ->
-                        InfoRow(label = "Coordinates", value = "$lat, $lng")
+                        InfoRow(label = stringResource(Res.string.customer_label_coordinates), value = "$lat, $lng")
                     }
                 }
             }
         }
 
-        // Custom Attributes
         customer.attributes?.takeIf { it.isNotEmpty() }?.let { attrs ->
-            InfoSection(title = "Additional Information") {
+            InfoSection(title = stringResource(Res.string.customer_section_additional)) {
                 attrs.forEach { (key, value) ->
                     InfoRow(label = key, value = value)
                 }
             }
         }
 
-        // System Information
         if (customer.createdAt != null || customer.updatedAt != null) {
-            InfoSection(title = "System Information") {
+            InfoSection(title = stringResource(Res.string.customer_section_system)) {
                 customer.createdAt?.let {
-                    InfoRow(label = "Created", value = DateTimeFormatter.formatTimestamp(it))
+                    InfoRow(label = stringResource(Res.string.customer_label_created), value = DateTimeFormatter.formatTimestamp(it))
                 }
                 customer.updatedAt?.let {
-                    InfoRow(label = "Last Updated", value = DateTimeFormatter.formatTimestamp(it))
+                    InfoRow(label = stringResource(Res.string.customer_label_updated), value = DateTimeFormatter.formatTimestamp(it))
                 }
             }
         }
@@ -457,7 +495,7 @@ private fun ErrorMessage(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Failed to load customer",
+            text = stringResource(Res.string.customer_details_load_error),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error
         )
@@ -471,7 +509,7 @@ private fun ErrorMessage(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onRetry) {
-            Text("Retry")
+            Text(stringResource(Res.string.customer_retry))
         }
     }
 }
@@ -484,9 +522,9 @@ private fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Customer") },
+        title = { Text(stringResource(Res.string.customer_delete_title)) },
         text = {
-            Text("Are you sure you want to delete $customerName? This action cannot be undone.")
+            Text(stringResource(Res.string.customer_delete_confirm, customerName))
         },
         confirmButton = {
             TextButton(
@@ -495,12 +533,12 @@ private fun DeleteConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Delete")
+                Text(stringResource(Res.string.customer_delete))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.customer_cancel))
             }
         }
     )

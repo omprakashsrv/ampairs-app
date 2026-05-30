@@ -15,8 +15,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.customer.domain.CustomerType
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_active
+import ampairsapp.feature.customer.generated.resources.customer_inactive
+import ampairsapp.feature.customer.generated.resources.customer_delete
+import ampairsapp.feature.customer.generated.resources.customer_edit
+import ampairsapp.feature.customer.generated.resources.customer_error
+import ampairsapp.feature.customer.generated.resources.customer_no_data_found
+import ampairsapp.feature.customer.generated.resources.customer_unknown_error
+import ampairsapp.feature.customer.generated.resources.customer_search_cd
+import ampairsapp.feature.customer.generated.resources.customer_code_display
+import ampairsapp.feature.customer.generated.resources.customer_type_list_title
+import ampairsapp.feature.customer.generated.resources.customer_type_add_cd
+import ampairsapp.feature.customer.generated.resources.customer_type_search_label
+import ampairsapp.feature.customer.generated.resources.customer_type_search_hint
+import ampairsapp.feature.customer.generated.resources.customer_type_no_data_desc
+import ampairsapp.feature.customer.generated.resources.customer_type_create
+import ampairsapp.feature.customer.generated.resources.customer_type_search_empty
+import ampairsapp.feature.customer.generated.resources.customer_type_list_empty
+import ampairsapp.feature.customer.generated.resources.customer_type_default_credit
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +47,7 @@ fun CustomerTypeListScreen(
     modifier: Modifier = Modifier,
     viewModel: CustomerTypeListViewModel = metroViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showSearchBar by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -34,26 +55,24 @@ fun CustomerTypeListScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Top App Bar
         TopAppBar(
-            title = { Text("Customer Types") },
+            title = { Text(stringResource(Res.string.customer_type_list_title)) },
             actions = {
                 IconButton(onClick = { showSearchBar = !showSearchBar }) {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
+                    Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.customer_search_cd))
                 }
                 IconButton(onClick = onAddCustomerType) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Customer Type")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_type_add_cd))
                 }
             }
         )
 
-        // Search Bar
         if (showSearchBar) {
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
-                label = { Text("Search customer types") },
-                placeholder = { Text("Enter name or type code...") },
+                label = { Text(stringResource(Res.string.customer_type_search_label)) },
+                placeholder = { Text(stringResource(Res.string.customer_type_search_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -61,7 +80,6 @@ fun CustomerTypeListScreen(
             )
         }
 
-        // Content
         Box(modifier = Modifier.weight(1f)) {
             when {
                 uiState.isLoading -> {
@@ -79,27 +97,27 @@ fun CustomerTypeListScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        // Show error info
                         ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
-                            ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true) "No Data Found" else "Error",
+                                    text = if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true)
+                                        stringResource(Res.string.customer_no_data_found)
+                                    else
+                                        stringResource(Res.string.customer_error),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     text = if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true)
-                                        "No customer types found. Create your first one below."
+                                        stringResource(Res.string.customer_type_no_data_desc)
                                     else
-                                        uiState.error ?: "Unknown error",
+                                        uiState.error ?: stringResource(Res.string.customer_unknown_error),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     modifier = Modifier.padding(top = 8.dp)
@@ -107,18 +125,15 @@ fun CustomerTypeListScreen(
                             }
                         }
 
-                        // Show create button if it's a "not found" error (essentially empty state)
                         if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true && uiState.searchQuery.isBlank()) {
                             Spacer(modifier = Modifier.height(24.dp))
-
-                            // Primary Add Button
                             Button(
                                 onClick = onAddCustomerType,
                                 modifier = Modifier.fillMaxWidth(0.8f)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Create Customer Type")
+                                Text(stringResource(Res.string.customer_type_create))
                             }
                         }
                     }
@@ -131,26 +146,25 @@ fun CustomerTypeListScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = if (uiState.searchQuery.isNotBlank()) "No customer types found" else "No customer types yet",
+                            text = if (uiState.searchQuery.isNotBlank())
+                                stringResource(Res.string.customer_type_search_empty)
+                            else
+                                stringResource(Res.string.customer_type_list_empty),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         if (uiState.searchQuery.isBlank()) {
                             Spacer(modifier = Modifier.height(16.dp))
-
-                            // Primary Add Button
                             Button(
                                 onClick = onAddCustomerType,
                                 modifier = Modifier.fillMaxWidth(0.8f)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Create Customer Type")
+                                Text(stringResource(Res.string.customer_type_create))
                             }
-
                             Spacer(modifier = Modifier.height(12.dp))
-
                         }
                     }
                 }
@@ -167,17 +181,12 @@ fun CustomerTypeListScreen(
                                 onDelete = { viewModel.deleteCustomerType(customerType.uid) }
                             )
                         }
-
-                        // Bottom padding for FAB
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp))
-                        }
+                        item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 }
             }
         }
 
-        // FAB for adding customer types
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.BottomEnd
@@ -187,17 +196,12 @@ fun CustomerTypeListScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(16.dp)
             ) {
-
-                // Add FAB
-                FloatingActionButton(
-                    onClick = onAddCustomerType
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Customer Type")
+                FloatingActionButton(onClick = onAddCustomerType) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_type_add_cd))
                 }
             }
         }
     }
-
 }
 
 @Composable
@@ -211,9 +215,7 @@ private fun CustomerTypeCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -228,7 +230,7 @@ private fun CustomerTypeCard(
 
                     customerType.typeCode?.let { code ->
                         Text(
-                            text = "Code: $code",
+                            text = stringResource(Res.string.customer_code_display, code),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 2.dp)
@@ -247,27 +249,18 @@ private fun CustomerTypeCard(
                     }
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    IconButton(
-                        onClick = onClick,
-                        modifier = Modifier.size(32.dp)
-                    ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(onClick = onClick, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "Edit",
+                            contentDescription = stringResource(Res.string.customer_edit),
                             modifier = Modifier.size(16.dp)
                         )
                     }
-
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(32.dp)
-                    ) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(Res.string.customer_delete),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp)
                         )
@@ -275,61 +268,45 @@ private fun CustomerTypeCard(
                 }
             }
 
-            // Additional info row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Credit terms
                 if (customerType.defaultCreditLimit != null || customerType.defaultCreditDays != null) {
                     Column {
                         Text(
-                            text = "Default Credit",
+                            text = stringResource(Res.string.customer_type_default_credit),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val creditInfo = buildString {
-                            customerType.defaultCreditLimit?.let { limit ->
-                                append("₹$limit")
-                            }
-                            if (customerType.defaultCreditLimit != null && customerType.defaultCreditDays != null) {
-                                append(" / ")
-                            }
-                            customerType.defaultCreditDays?.let { days ->
-                                append("${days}d")
-                            }
+                            customerType.defaultCreditLimit?.let { limit -> append("₹$limit") }
+                            if (customerType.defaultCreditLimit != null && customerType.defaultCreditDays != null) append(" / ")
+                            customerType.defaultCreditDays?.let { days -> append("${days}d") }
                         }
-                        Text(
-                            text = creditInfo,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Text(text = creditInfo, style = MaterialTheme.typography.bodySmall)
                     }
                 }
 
-                // Status
                 AssistChip(
                     onClick = { },
                     label = {
                         Text(
-                            text = if (customerType.active) "Active" else "Inactive",
+                            text = if (customerType.active) stringResource(Res.string.customer_active)
+                                   else stringResource(Res.string.customer_inactive),
                             style = MaterialTheme.typography.labelSmall
                         )
                     },
                     colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (customerType.active)
-                            MaterialTheme.colorScheme.primaryContainer
-                        else
-                            MaterialTheme.colorScheme.errorContainer,
-                        labelColor = if (customerType.active)
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        else
-                            MaterialTheme.colorScheme.onErrorContainer
+                        containerColor = if (customerType.active) MaterialTheme.colorScheme.primaryContainer
+                                         else MaterialTheme.colorScheme.errorContainer,
+                        labelColor = if (customerType.active) MaterialTheme.colorScheme.onPrimaryContainer
+                                     else MaterialTheme.colorScheme.onErrorContainer
                     )
                 )
             }
         }
     }
 }
-

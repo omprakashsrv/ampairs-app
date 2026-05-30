@@ -13,7 +13,35 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_active
+import ampairsapp.feature.customer.generated.resources.customer_save
+import ampairsapp.feature.customer.generated.resources.customer_saving
+import ampairsapp.feature.customer.generated.resources.customer_section_basic
+import ampairsapp.feature.customer.generated.resources.customer_section_additional
+import ampairsapp.feature.customer.generated.resources.customer_label_description
+import ampairsapp.feature.customer.generated.resources.customer_label_metadata
+import ampairsapp.feature.customer.generated.resources.customer_type_metadata_hint
+import ampairsapp.feature.customer.generated.resources.customer_group_form_title_new
+import ampairsapp.feature.customer.generated.resources.customer_group_form_title_edit
+import ampairsapp.feature.customer.generated.resources.customer_group_name_label
+import ampairsapp.feature.customer.generated.resources.customer_group_name_hint
+import ampairsapp.feature.customer.generated.resources.customer_group_desc_hint
+import ampairsapp.feature.customer.generated.resources.customer_group_code_label
+import ampairsapp.feature.customer.generated.resources.customer_group_code_hint
+import ampairsapp.feature.customer.generated.resources.customer_group_section_display
+import ampairsapp.feature.customer.generated.resources.customer_group_display_order
+import ampairsapp.feature.customer.generated.resources.customer_group_order_hint
+import ampairsapp.feature.customer.generated.resources.customer_group_priority_label
+import ampairsapp.feature.customer.generated.resources.customer_group_priority_hint
+import ampairsapp.feature.customer.generated.resources.customer_group_section_discount
+import ampairsapp.feature.customer.generated.resources.customer_group_discount_label
+import ampairsapp.feature.customer.generated.resources.customer_group_discount_hint
+import ampairsapp.feature.customer.generated.resources.customer_group_discount_desc
+import ampairsapp.feature.customer.generated.resources.customer_group_save
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,32 +51,28 @@ fun CustomerGroupFormScreen(
     modifier: Modifier = Modifier,
     viewModel: CustomerGroupFormViewModel = assistedMetroViewModel<CustomerGroupFormViewModel, CustomerGroupFormViewModel.Factory> { create(customerGroupId) }
 ) {
-    val formState by viewModel.formState.collectAsState()
+    val formState by viewModel.formState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
 
     val isEditing = customerGroupId != null
 
-    LaunchedEffect(Unit) {
-
-    }
-
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(if (isEditing) "Edit Customer Group" else "New Customer Group") },
+            title = {
+                Text(
+                    if (isEditing) stringResource(Res.string.customer_group_form_title_edit)
+                    else stringResource(Res.string.customer_group_form_title_new)
+                )
+            },
             actions = {
                 TextButton(
-                    onClick = {
-                        viewModel.saveCustomerGroup(onSaveSuccess)
-                    },
+                    onClick = { viewModel.saveCustomerGroup(onSaveSuccess) },
                     enabled = !formState.isLoading && formState.name.isNotBlank()
                 ) {
                     if (formState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Save")
+                        Text(stringResource(Res.string.customer_save))
                     }
                 }
             }
@@ -61,7 +85,6 @@ fun CustomerGroupFormScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Show error if present
             formState.error?.let { error ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -75,209 +98,159 @@ fun CustomerGroupFormScreen(
                 }
             }
 
-            // Basic Information Section
-            OutlinedCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Basic Information",
+                        text = stringResource(Res.string.customer_section_basic),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    // Name Field (Required)
                     OutlinedTextField(
                         value = formState.name,
                         onValueChange = viewModel::updateName,
-                        label = { Text("Customer Group Name *") },
-                        placeholder = { Text("e.g., VIP Customers, Regular Customers") },
+                        label = { Text(stringResource(Res.string.customer_group_name_label)) },
+                        placeholder = { Text(stringResource(Res.string.customer_group_name_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         isError = formState.error != null && formState.name.isBlank()
                     )
 
-                    // Description Field
                     OutlinedTextField(
                         value = formState.description,
                         onValueChange = viewModel::updateDescription,
-                        label = { Text("Description") },
-                        placeholder = { Text("Optional description for this customer group") },
+                        label = { Text(stringResource(Res.string.customer_label_description)) },
+                        placeholder = { Text(stringResource(Res.string.customer_group_desc_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 3,
-                        keyboardOptions = KeyboardOptions(
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        )
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                     )
 
-                    // Group Code Field
                     OutlinedTextField(
                         value = formState.groupCode,
                         onValueChange = viewModel::updateGroupCode,
-                        label = { Text("Group Code") },
-                        placeholder = { Text("e.g., VIP, REG, PREM") },
+                        label = { Text(stringResource(Res.string.customer_group_code_label)) },
+                        placeholder = { Text(stringResource(Res.string.customer_group_code_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        )
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                     )
                 }
             }
 
-            // Display & Priority Section
-            OutlinedCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Display & Priority",
+                        text = stringResource(Res.string.customer_group_section_display),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    // Display Order Field
                     OutlinedTextField(
                         value = formState.displayOrder,
                         onValueChange = viewModel::updateDisplayOrder,
-                        label = { Text("Display Order") },
-                        placeholder = { Text("1, 2, 3...") },
+                        label = { Text(stringResource(Res.string.customer_group_display_order)) },
+                        placeholder = { Text(stringResource(Res.string.customer_group_order_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Next
                         ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        )
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                     )
 
-                    // Priority Level Field
                     OutlinedTextField(
                         value = formState.priorityLevel,
                         onValueChange = viewModel::updatePriorityLevel,
-                        label = { Text("Priority Level") },
-                        placeholder = { Text("1 (highest) to 10 (lowest)") },
+                        label = { Text(stringResource(Res.string.customer_group_priority_label)) },
+                        placeholder = { Text(stringResource(Res.string.customer_group_priority_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Next
                         ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        )
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
                     )
                 }
             }
 
-            // Discount Settings Section
-            OutlinedCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Discount Settings",
+                        text = stringResource(Res.string.customer_group_section_discount),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    // Default Discount Percentage Field
                     OutlinedTextField(
                         value = formState.defaultDiscountPercentage,
                         onValueChange = viewModel::updateDefaultDiscountPercentage,
-                        label = { Text("Default Discount Percentage") },
-                        placeholder = { Text("0 - 100") },
+                        label = { Text(stringResource(Res.string.customer_group_discount_label)) },
+                        placeholder = { Text(stringResource(Res.string.customer_group_discount_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Decimal,
                             imeAction = ImeAction.Next
                         ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        ),
-                        supportingText = {
-                            Text("Percentage discount to apply by default for this group")
-                        }
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                        supportingText = { Text(stringResource(Res.string.customer_group_discount_desc)) }
                     )
                 }
             }
 
-            // Additional Information Section
-            OutlinedCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Additional Information",
+                        text = stringResource(Res.string.customer_section_additional),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    // Metadata Field
                     OutlinedTextField(
                         value = formState.metadata,
                         onValueChange = viewModel::updateMetadata,
-                        label = { Text("Metadata") },
-                        placeholder = { Text("Additional information or notes") },
+                        label = { Text(stringResource(Res.string.customer_label_metadata)) },
+                        placeholder = { Text(stringResource(Res.string.customer_type_metadata_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 3,
-                        keyboardOptions = KeyboardOptions(
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { focusManager.clearFocus() }
-                        )
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                     )
 
-                    // Active Toggle
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Active",
+                            text = stringResource(Res.string.customer_active),
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        Switch(
-                            checked = formState.active,
-                            onCheckedChange = viewModel::updateActive
-                        )
+                        Switch(checked = formState.active, onCheckedChange = viewModel::updateActive)
                     }
                 }
             }
 
-            // Bottom Save Button
             Button(
-                onClick = {
-                    viewModel.saveCustomerGroup(onSaveSuccess)
-                },
+                onClick = { viewModel.saveCustomerGroup(onSaveSuccess) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -290,13 +263,12 @@ fun CustomerGroupFormScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Saving...")
+                    Text(stringResource(Res.string.customer_saving))
                 } else {
-                    Text("Save Customer Group")
+                    Text(stringResource(Res.string.customer_group_save))
                 }
             }
 
-            // Bottom padding for system navigation
             Spacer(modifier = Modifier.height(16.dp))
         }
     }

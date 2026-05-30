@@ -26,6 +26,7 @@ kotlin {
             dependencies {
                 api(projects.feature.customerApi)
                 implementation(projects.data.common)
+                implementation(libs.kermit)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)

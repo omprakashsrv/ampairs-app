@@ -19,11 +19,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.customer.domain.CustomerListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMERS
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_form_settings_cd
+import ampairsapp.feature.customer.generated.resources.customer_list_refresh_cd
+import ampairsapp.feature.customer.generated.resources.customer_list_add_cd
+import ampairsapp.feature.customer.generated.resources.customer_list_add_btn
+import ampairsapp.feature.customer.generated.resources.customer_list_refreshing
+import ampairsapp.feature.customer.generated.resources.customer_list_empty
+import ampairsapp.feature.customer.generated.resources.customer_list_empty_desc
+import ampairsapp.feature.customer.generated.resources.customer_list_error_title
+import ampairsapp.feature.customer.generated.resources.customer_list_search_hint
+import ampairsapp.feature.customer.generated.resources.customer_retry
+import ampairsapp.feature.customer.generated.resources.customer_image_content_desc
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,20 +48,18 @@ fun CustomersListScreen(
     modifier: Modifier = Modifier,
     viewModel: CustomersListViewModel = metroViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        // Only trigger sync - observeSearchQuery() in init already loads from DB
         viewModel.syncCustomers()
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Header with search and actions
         TopAppBar(
             title = { Text(TITLE_CUSTOMERS) },
             actions = {
                 IconButton(onClick = onFormConfig) {
-                    Icon(Icons.Default.Settings, contentDescription = "Form Settings")
+                    Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.customer_form_settings_cd))
                 }
                 IconButton(
                     onClick = viewModel::syncCustomers,
@@ -59,16 +71,15 @@ fun CustomersListScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.customer_list_refresh_cd))
                     }
                 }
                 IconButton(onClick = onCreateCustomer) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Customer")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_list_add_cd))
                 }
             }
         )
 
-        // Search bar
         SearchBar(
             query = uiState.searchQuery,
             onQueryChange = viewModel::updateSearchQuery,
@@ -77,7 +88,6 @@ fun CustomersListScreen(
                 .padding(16.dp)
         )
 
-        // Content
         when {
             uiState.isLoading && uiState.customers.isEmpty() -> {
                 Box(
@@ -125,9 +135,9 @@ private fun SearchBar(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        placeholder = { Text("Search customers...") },
+        placeholder = { Text(stringResource(Res.string.customer_list_search_hint)) },
         leadingIcon = {
-            Icon(Icons.Default.Search, contentDescription = "Search")
+            Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.customer_form_settings_cd))
         },
         modifier = modifier,
         singleLine = true
@@ -161,7 +171,7 @@ private fun CustomersList(
                             strokeWidth = 2.dp
                         )
                         Text(
-                            text = "Refreshing...",
+                            text = stringResource(Res.string.customer_list_refreshing),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -198,7 +208,6 @@ private fun CustomerCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Customer image or default icon
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -209,7 +218,7 @@ private fun CustomerCard(
                 if (!customer.primaryThumbnailUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = ApiUrlBuilder.buildCompleteUrl(customer.primaryThumbnailUrl!!),
-                        contentDescription = "Customer image",
+                        contentDescription = stringResource(Res.string.customer_image_content_desc),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -272,13 +281,13 @@ private fun EmptyState(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "No customers yet",
+            text = stringResource(Res.string.customer_list_empty),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Text(
-            text = "Create your first customer to get started",
+            text = stringResource(Res.string.customer_list_empty_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -288,7 +297,7 @@ private fun EmptyState(
         Button(onClick = onCreateCustomer) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add Customer")
+            Text(stringResource(Res.string.customer_list_add_btn))
         }
     }
 }
@@ -305,7 +314,7 @@ private fun ErrorMessage(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Something went wrong",
+            text = stringResource(Res.string.customer_list_error_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error
         )
@@ -319,7 +328,7 @@ private fun ErrorMessage(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onRetry) {
-            Text("Retry")
+            Text(stringResource(Res.string.customer_retry))
         }
     }
 }

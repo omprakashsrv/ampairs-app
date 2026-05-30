@@ -6,6 +6,7 @@ import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateStore
 import com.ampairs.customer.domain.MasterState
 import com.ampairs.common.di.AppScope
+import com.ampairs.workspace.context.WorkspaceContextManager
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -36,7 +37,8 @@ data class StateListUiState(
 @ViewModelKey
 @Inject
 class StateListViewModel(
-    private val stateStore: StateStore
+    private val stateStore: StateStore,
+    private val workspaceContextManager: WorkspaceContextManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StateListUiState())
@@ -106,7 +108,8 @@ class StateListViewModel(
         }
     }
 
-    fun loadAvailableStatesForImport(workspaceId: String) {
+    fun loadAvailableStatesForImport() {
+        val workspaceId = workspaceContextManager.currentWorkspace.value?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingImportStates = true, error = null) }
             val result = stateStore.getAvailableStatesForImport(workspaceId)

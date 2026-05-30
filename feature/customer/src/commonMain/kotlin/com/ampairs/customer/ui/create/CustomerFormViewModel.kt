@@ -29,6 +29,7 @@ import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
 import com.ampairs.customer.util.CustomerConstants.ERROR_VALIDATION_FIX
 import com.ampairs.customer.util.CustomerConstants.ERROR_INVALID_EMAIL
 import com.ampairs.customer.util.CustomerConstants.ERROR_INVALID_LANDLINE
+import com.ampairs.customer.util.CustomerLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -441,7 +442,7 @@ class CustomerFormViewModel(
                 configRepository.syncFormConfigs()
             } catch (e: Exception) {
                 // Silently fail - form will work without config using default behavior
-                println("Failed to sync form configs: ${e.message}")
+                CustomerLogger.w("CustomerFormViewModel", "Failed to sync form configs: ${e.message}")
             }
         }
     }

@@ -15,8 +15,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.customer.domain.CustomerGroup
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_active
+import ampairsapp.feature.customer.generated.resources.customer_inactive
+import ampairsapp.feature.customer.generated.resources.customer_delete
+import ampairsapp.feature.customer.generated.resources.customer_edit
+import ampairsapp.feature.customer.generated.resources.customer_error
+import ampairsapp.feature.customer.generated.resources.customer_no_data_found
+import ampairsapp.feature.customer.generated.resources.customer_unknown_error
+import ampairsapp.feature.customer.generated.resources.customer_search_cd
+import ampairsapp.feature.customer.generated.resources.customer_code_display
+import ampairsapp.feature.customer.generated.resources.customer_group_list_title
+import ampairsapp.feature.customer.generated.resources.customer_group_add_cd
+import ampairsapp.feature.customer.generated.resources.customer_group_search_label
+import ampairsapp.feature.customer.generated.resources.customer_group_search_hint
+import ampairsapp.feature.customer.generated.resources.customer_group_no_data_desc
+import ampairsapp.feature.customer.generated.resources.customer_group_create
+import ampairsapp.feature.customer.generated.resources.customer_group_search_empty
+import ampairsapp.feature.customer.generated.resources.customer_group_list_empty
+import ampairsapp.feature.customer.generated.resources.customer_group_benefits
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +47,7 @@ fun CustomerGroupListScreen(
     modifier: Modifier = Modifier,
     viewModel: CustomerGroupListViewModel = metroViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showSearchBar by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -34,26 +55,24 @@ fun CustomerGroupListScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Top App Bar
         TopAppBar(
-            title = { Text("Customer Groups") },
+            title = { Text(stringResource(Res.string.customer_group_list_title)) },
             actions = {
                 IconButton(onClick = { showSearchBar = !showSearchBar }) {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
+                    Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.customer_search_cd))
                 }
                 IconButton(onClick = onAddCustomerGroup) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Customer Group")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_group_add_cd))
                 }
             }
         )
 
-        // Search Bar
         if (showSearchBar) {
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
-                label = { Text("Search customer groups") },
-                placeholder = { Text("Enter name or group code...") },
+                label = { Text(stringResource(Res.string.customer_group_search_label)) },
+                placeholder = { Text(stringResource(Res.string.customer_group_search_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -61,7 +80,6 @@ fun CustomerGroupListScreen(
             )
         }
 
-        // Content
         Box(modifier = Modifier.weight(1f)) {
             when {
                 uiState.isLoading -> {
@@ -79,27 +97,27 @@ fun CustomerGroupListScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        // Show error info
                         ElevatedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
-                            ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true) "No Data Found" else "Error",
+                                    text = if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true)
+                                        stringResource(Res.string.customer_no_data_found)
+                                    else
+                                        stringResource(Res.string.customer_error),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     text = if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true)
-                                        "No customer groups found. Create your first one below."
+                                        stringResource(Res.string.customer_group_no_data_desc)
                                     else
-                                        uiState.error ?: "Unknown error",
+                                        uiState.error ?: stringResource(Res.string.customer_unknown_error),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     modifier = Modifier.padding(top = 8.dp)
@@ -107,20 +125,16 @@ fun CustomerGroupListScreen(
                             }
                         }
 
-                        // Show create buttons if it's a "not found" error (essentially empty state)
                         if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true && uiState.searchQuery.isBlank()) {
                             Spacer(modifier = Modifier.height(24.dp))
-
-                            // Primary Add Button
                             Button(
                                 onClick = onAddCustomerGroup,
                                 modifier = Modifier.fillMaxWidth(0.8f)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Create Customer Group")
+                                Text(stringResource(Res.string.customer_group_create))
                             }
-
                         }
                     }
                 }
@@ -132,24 +146,24 @@ fun CustomerGroupListScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = if (uiState.searchQuery.isNotBlank()) "No customer groups found" else "No customer groups yet",
+                            text = if (uiState.searchQuery.isNotBlank())
+                                stringResource(Res.string.customer_group_search_empty)
+                            else
+                                stringResource(Res.string.customer_group_list_empty),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         if (uiState.searchQuery.isBlank()) {
                             Spacer(modifier = Modifier.height(16.dp))
-
-                            // Primary Add Button
                             Button(
                                 onClick = onAddCustomerGroup,
                                 modifier = Modifier.fillMaxWidth(0.8f)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Create Customer Group")
+                                Text(stringResource(Res.string.customer_group_create))
                             }
-
                         }
                     }
                 }
@@ -166,17 +180,12 @@ fun CustomerGroupListScreen(
                                 onDelete = { viewModel.deleteCustomerGroup(customerGroup.uid) }
                             )
                         }
-
-                        // Bottom padding for FAB
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp))
-                        }
+                        item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 }
             }
         }
 
-        // FAB for adding customer groups
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.BottomEnd
@@ -186,17 +195,12 @@ fun CustomerGroupListScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(16.dp)
             ) {
-
-                // Add FAB
-                FloatingActionButton(
-                    onClick = onAddCustomerGroup
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Customer Group")
+                FloatingActionButton(onClick = onAddCustomerGroup) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_group_add_cd))
                 }
             }
         }
     }
-
 }
 
 @Composable
@@ -210,9 +214,7 @@ private fun CustomerGroupCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -227,7 +229,7 @@ private fun CustomerGroupCard(
 
                     customerGroup.groupCode?.let { code ->
                         Text(
-                            text = "Code: $code",
+                            text = stringResource(Res.string.customer_code_display, code),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 2.dp)
@@ -246,27 +248,18 @@ private fun CustomerGroupCard(
                     }
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    IconButton(
-                        onClick = onClick,
-                        modifier = Modifier.size(32.dp)
-                    ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(onClick = onClick, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "Edit",
+                            contentDescription = stringResource(Res.string.customer_edit),
                             modifier = Modifier.size(16.dp)
                         )
                     }
-
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(32.dp)
-                    ) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(Res.string.customer_delete),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp)
                         )
@@ -274,61 +267,45 @@ private fun CustomerGroupCard(
                 }
             }
 
-            // Additional info row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Discount and Priority info
                 if (customerGroup.defaultDiscountPercentage != null || customerGroup.priorityLevel != null) {
                     Column {
                         Text(
-                            text = "Group Benefits",
+                            text = stringResource(Res.string.customer_group_benefits),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val benefitInfo = buildString {
-                            customerGroup.defaultDiscountPercentage?.let { discount ->
-                                append("${discount}% discount")
-                            }
-                            if (customerGroup.defaultDiscountPercentage != null && customerGroup.priorityLevel != null) {
-                                append(" • ")
-                            }
-                            customerGroup.priorityLevel?.let { priority ->
-                                append("Priority $priority")
-                            }
+                            customerGroup.defaultDiscountPercentage?.let { discount -> append("${discount}% discount") }
+                            if (customerGroup.defaultDiscountPercentage != null && customerGroup.priorityLevel != null) append(" • ")
+                            customerGroup.priorityLevel?.let { priority -> append("Priority $priority") }
                         }
-                        Text(
-                            text = benefitInfo,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Text(text = benefitInfo, style = MaterialTheme.typography.bodySmall)
                     }
                 }
 
-                // Status
                 AssistChip(
                     onClick = { },
                     label = {
                         Text(
-                            text = if (customerGroup.active) "Active" else "Inactive",
+                            text = if (customerGroup.active) stringResource(Res.string.customer_active)
+                                   else stringResource(Res.string.customer_inactive),
                             style = MaterialTheme.typography.labelSmall
                         )
                     },
                     colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (customerGroup.active)
-                            MaterialTheme.colorScheme.primaryContainer
-                        else
-                            MaterialTheme.colorScheme.errorContainer,
-                        labelColor = if (customerGroup.active)
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        else
-                            MaterialTheme.colorScheme.onErrorContainer
+                        containerColor = if (customerGroup.active) MaterialTheme.colorScheme.primaryContainer
+                                         else MaterialTheme.colorScheme.errorContainer,
+                        labelColor = if (customerGroup.active) MaterialTheme.colorScheme.onPrimaryContainer
+                                     else MaterialTheme.colorScheme.onErrorContainer
                     )
                 )
             }
         }
     }
 }
-
