@@ -478,7 +478,7 @@ Files in `shared/src/`:
 
 ## iOS Platform Notes
 
-- **Dispatchers**: Use `Dispatchers.Default` for IO on iOS (no `Dispatchers.IO`)
+- **Dispatchers**: `Dispatchers.IO` is safe on iOS since coroutines 1.7+ (project uses 1.10.2); `DispatcherProvider.io` uses `Dispatchers.IO` on all platforms
 - **File Paths**: Always use Documents directory (`getIosDatabasePath()`)
 - **Koin Init**: Must be initialized in `MainViewController` before app launch
 - **Foundation APIs**: Require `@OptIn(ExperimentalForeignApi::class)`
@@ -503,7 +503,7 @@ Files in `shared/src/`:
 |---|---|
 | Stale data after workspace switch | Check entire DI chain uses `factory`, not `single` |
 | iOS database path wrong | Use `getIosDatabasePath()`, not hardcoded paths |
-| `Dispatchers.IO` crash on iOS | Use `Dispatchers.Default` or `DispatcherProvider.io` |
+| Old code uses `Dispatchers.Default` for iOS IO | `Dispatchers.IO` is now correct on iOS (coroutines 1.7+); update `DispatcherProvider.ios.kt` |
 | `java.*` compile error in commonMain | Use KMP equivalent (kotlinx.datetime, etc.) |
 | Store5 stale cache | Clear cache explicitly after successful sync |
 | Room migration error | Add migration script, check schema version increment |
