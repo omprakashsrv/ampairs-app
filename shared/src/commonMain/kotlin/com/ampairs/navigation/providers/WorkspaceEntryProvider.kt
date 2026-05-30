@@ -1,7 +1,6 @@
 package com.ampairs.navigation.providers
 
-import Route
-import SubscriptionRoute
+import HomeScreen
 import WorkspaceRoute
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
-import com.ampairs.workspace.navigation.ModuleCodes
 import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.ModuleStoreScreen
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
@@ -21,10 +19,6 @@ import com.ampairs.workspace.ui.WorkspaceInvitationCreateScreen
 import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
 import com.ampairs.workspace.ui.WorkspaceMembersScreen
-import com.ampairs.workspace.ui.WorkspaceModulesScreen
-import com.ampairs.subscription.ui.screens.SubscriptionOnboardingScreen
-import com.ampairs.subscription.viewmodel.SubscriptionViewModel
-import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Entry provider for Workspace module routes in Navigation 3.
@@ -125,41 +119,10 @@ fun workspaceEntryProvider(
     }
 
     is WorkspaceRoute.Modules -> NavEntry(key) {
-        WorkspaceModulesScreen(
+        HomeScreen(
             workspaceId = key.workspaceId,
-            onModuleSelected = { moduleCode ->
-                // Handle module selection based on code
-                when (moduleCode) {
-                    ModuleCodes.CUSTOMER_MANAGEMENT -> backStack.add(Route.Customer)
-                    ModuleCodes.PRODUCT_MANAGEMENT -> backStack.add(Route.Product)
-                    ModuleCodes.ORDER_MANAGEMENT -> backStack.add(Route.Order)
-                    ModuleCodes.INVOICE_BILLING -> backStack.add(Route.Invoice)
-                    ModuleCodes.INVENTORY_MANAGEMENT -> backStack.add(Route.Inventory)
-                    ModuleCodes.TAX_CODE_MANAGEMENT -> backStack.add(Route.Tax)
-                    ModuleCodes.BUSINESS_PROFILE -> backStack.add(Route.Business)
-                    "subscription" -> backStack.add(Route.Subscription)
-                    else -> println("Unknown module: $moduleCode")
-                }
-            },
-            onNavigateToModuleStore = {
-                backStack.add(WorkspaceRoute.ModuleStore(key.workspaceId))
-            },
-            onNavigateToSubscription = {
-                backStack.add(SubscriptionRoute.Plans)
-            },
-            onNavigationServiceReady = onNavigationServiceReady,
-            paddingValues = PaddingValues(),
-            subscriptionOnboardingSlot = { onboardingManager, onNavigateToPlanSelection, onContinueWithFree, onDismiss ->
-                val subscriptionViewModel: SubscriptionViewModel = metroViewModel()
-                SubscriptionOnboardingScreen(
-                    workspaceId = key.workspaceId,
-                    onNavigateToPlanSelection = onNavigateToPlanSelection,
-                    onContinueWithFree = onContinueWithFree,
-                    onDismiss = onDismiss,
-                    viewModel = subscriptionViewModel,
-                    onboardingManager = onboardingManager
-                )
-            }
+            backStack = backStack,
+            onNavigationServiceReady = onNavigationServiceReady
         )
     }
 

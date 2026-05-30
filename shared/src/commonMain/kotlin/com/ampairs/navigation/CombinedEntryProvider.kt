@@ -4,6 +4,7 @@ import AuthRoute
 import BusinessRoute
 import InventoryRoute
 import InvoiceRoute
+import MoreScreen
 import OrderRoute
 import ProductRoute
 import Route
@@ -11,6 +12,9 @@ import SubscriptionRoute
 import WorkspaceRoute
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -169,6 +173,22 @@ private fun mainRouteEntryProvider(
             backStack.removeLastOrNull()
             backStack.add(InventoryRoute.Inventory)
         }
+    }
+
+    // Route.More shows the More tab screen
+    is Route.More -> NavEntry(key) {
+        val globalNavManager = remember { com.ampairs.workspace.navigation.GlobalNavigationManager.getInstance() }
+        val headerStateManager = remember { com.ampairs.common.state.AppHeaderStateManager.instance }
+        val headerState by headerStateManager.headerState.collectAsState()
+        MoreScreen(
+            backStack = backStack,
+            onSwitchWorkspace = {
+                // Navigate back to workspace selection
+                backStack.clear()
+                backStack.add(WorkspaceRoute.Root)
+            },
+            onEditProfile = { backStack.add(AuthRoute.UserUpdate) }
+        )
     }
 
     else -> null
