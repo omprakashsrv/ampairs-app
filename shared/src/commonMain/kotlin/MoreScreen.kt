@@ -27,9 +27,11 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -57,7 +59,11 @@ import ampairsapp.shared.generated.resources.nav_more_account
 import ampairsapp.shared.generated.resources.nav_more_all_modules
 import ampairsapp.shared.generated.resources.nav_more_business
 import ampairsapp.shared.generated.resources.nav_more_edit_profile
+import ampairsapp.shared.generated.resources.nav_more_invitations
+import ampairsapp.shared.generated.resources.nav_more_members
+import ampairsapp.shared.generated.resources.nav_more_modules
 import ampairsapp.shared.generated.resources.nav_more_screen_title
+import ampairsapp.shared.generated.resources.nav_more_section_workspace
 import ampairsapp.shared.generated.resources.nav_more_subscription
 import ampairsapp.shared.generated.resources.nav_more_switch_workspace
 import ampairsapp.shared.generated.resources.nav_more_tax_gst
@@ -284,6 +290,66 @@ fun MoreScreen(
             }
         }
 
+        // Workspace section
+        item {
+            Text(
+                text = stringResource(Res.string.nav_more_section_workspace),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 6.dp)
+            )
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                val items = listOf(
+                    Triple(
+                        stringResource(Res.string.nav_more_members),
+                        Icons.Default.Group
+                    ) {
+                        if (workspaceId.isNotEmpty()) backStack.add(WorkspaceRoute.Members(workspaceId))
+                    },
+                    Triple(
+                        stringResource(Res.string.nav_more_invitations),
+                        Icons.Default.Mail
+                    ) {
+                        if (workspaceId.isNotEmpty()) backStack.add(WorkspaceRoute.Invitations(workspaceId))
+                    },
+                    Triple(
+                        stringResource(Res.string.nav_more_modules),
+                        Icons.Default.Store
+                    ) {
+                        if (workspaceId.isNotEmpty()) backStack.add(WorkspaceRoute.ModuleStore(workspaceId))
+                    },
+                )
+                items.forEachIndexed { index, (label, icon, action) ->
+                    if (index > 0) HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+                    ListItem(
+                        headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                        leadingContent = {
+                            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                        },
+                        trailingContent = {
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        modifier = Modifier.clickable { action() }
+                    )
+                }
+            }
+        }
+
         // Account section
         item {
             Text(
@@ -314,7 +380,7 @@ fun MoreScreen(
                         Icons.Default.Settings
                     ) {
                         if (workspaceId.isNotEmpty()) {
-                            backStack.add(WorkspaceRoute.Detail(workspaceId))
+                            backStack.add(WorkspaceRoute.Edit(workspaceId))
                         }
                     },
                     Triple(

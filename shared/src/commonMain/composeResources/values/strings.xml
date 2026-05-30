@@ -37,6 +37,10 @@
     <string name="nav_more_tax_gst">Tax &amp; GST</string>
     <string name="nav_more_business">Business</string>
     <string name="nav_more_switch_workspace">Switch workspace</string>
+    <string name="nav_more_section_workspace">Workspace</string>
+    <string name="nav_more_members">Team members</string>
+    <string name="nav_more_invitations">Invitations</string>
+    <string name="nav_more_modules">Modules</string>
 
     <!-- Home Screen -->
     <string name="home_greeting">Welcome back</string>
