@@ -1,5 +1,6 @@
 package com.ampairs.event
 
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.event.ConnectionState
 import com.ampairs.common.event.EventLogger
 import com.ampairs.common.event.EventType
@@ -65,7 +66,6 @@ import kotlin.time.Duration.Companion.seconds
  * @param httpClient Ktor HTTP client for WebSocket transport
  * @param tokenProvider Function to get current JWT access token
  * @param tokenRefresher Function to refresh expired tokens (returns true on success)
- * @param baseUrl API base URL (will be converted to WebSocket URL)
  */
 class EventManager(
     private val workspaceId: String,
@@ -73,8 +73,7 @@ class EventManager(
     private val deviceId: String,
     private val httpClient: HttpClient,
     private val tokenProvider: suspend () -> String,
-    private val tokenRefresher: suspend () -> Boolean,
-    private val baseUrl: String
+    private val tokenRefresher: suspend () -> Boolean
 ) : IEventManager {
     // Connection state exposed as StateFlow
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
@@ -140,10 +139,7 @@ class EventManager(
         EventLogger.i("EventManager", "Connecting to workspace: $workspaceId (attempt ${reconnectionAttempts + 1})")
 
         try {
-            // Build WebSocket URL (replace http with ws/wss)
-            val wsUrl = baseUrl
-                .replace("http://", "ws://")
-                .replace("https://", "wss://") + "/ws"
+            val wsUrl = ApiUrlBuilder.wsUrl("ws")
 
             // Get JWT token
             var token = tokenProvider()

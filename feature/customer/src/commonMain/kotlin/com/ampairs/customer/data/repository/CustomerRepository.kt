@@ -56,7 +56,7 @@ class CustomerRepository(
                     handleCustomerEvent(event.eventType, event.entityId)
                 }
         }
-        CustomerLogger.info("Real-time event listener initialized for customer module")
+        CustomerLogger.i("CustomerRepository", "Real-time event listener initialized for customer module")
     }
 
     /**
@@ -65,7 +65,7 @@ class CustomerRepository(
     fun stopEventListener() {
         eventListenerJob?.cancel()
         eventListenerJob = null
-        CustomerLogger.info("Real-time event listener stopped")
+        CustomerLogger.i("CustomerRepository", "Real-time event listener stopped")
     }
 
     /**
@@ -73,7 +73,7 @@ class CustomerRepository(
      * Updates local database to reflect changes made on other devices.
      */
     private suspend fun handleCustomerEvent(eventType: EventType, customerId: String) {
-        CustomerLogger.info("📨 Received event: $eventType for customer: $customerId")
+        CustomerLogger.i("CustomerRepository", "📨 Received event: $eventType for customer: $customerId")
 
         when (eventType) {
             EventType.CUSTOMER_CREATED,
@@ -85,7 +85,7 @@ class CustomerRepository(
             EventType.CUSTOMER_DELETED -> {
                 // Delete from local database
                 customerDao.deleteCustomer(customerId)
-                CustomerLogger.info("🗑️ Deleted customer: $customerId")
+                CustomerLogger.i("CustomerRepository", "🗑️ Deleted customer: $customerId")
             }
 
             else -> {
@@ -107,12 +107,12 @@ class CustomerRepository(
                 // Update Room database - this automatically triggers Flow updates!
                 customerDao.insertCustomer(freshCustomer.toEntity())
 
-                CustomerLogger.info("✅ Refreshed customer from server: $customerId")
+                CustomerLogger.i("CustomerRepository", "✅ Refreshed customer from server: $customerId")
             } else {
-                CustomerLogger.warn("Customer not found on server: $customerId")
+                CustomerLogger.w("CustomerRepository", "Customer not found on server: $customerId")
             }
         } catch (e: Exception) {
-            CustomerLogger.warn("Failed to refresh customer $customerId: ${e.message}")
+            CustomerLogger.w("CustomerRepository", "Failed to refresh customer $customerId: ${e.message}")
             // Graceful degradation - UI continues showing cached data
         }
     }
@@ -183,7 +183,7 @@ class CustomerRepository(
             // Validate server response has same UID to prevent duplicates
             if (serverCustomer.uid != customer.uid) {
                 // Log warning but keep local UID to avoid duplicates
-                CustomerLogger.warn("Server returned different UID: ${serverCustomer.uid} vs local: ${customer.uid}")
+                CustomerLogger.w("CustomerRepository", "Server returned different UID: ${serverCustomer.uid} vs local: ${customer.uid}")
                 val correctedServerCustomer = serverCustomer.copy(uid = customer.uid)
                 val syncedEntity = correctedServerCustomer.toEntity().copy(synced = true)
                 customerDao.insertCustomer(syncedEntity)
@@ -231,9 +231,9 @@ class CustomerRepository(
         if (customer != null) {
             val deletedEntity = customer.copy(active = false, synced = false)
             customerDao.insertCustomer(deletedEntity) // Use insert with REPLACE strategy
-            CustomerLogger.info("✅ Customer marked as deleted locally: $customerId (synced=false)")
+            CustomerLogger.i("CustomerRepository", "✅ Customer marked as deleted locally: $customerId (synced=false)")
         } else {
-            CustomerLogger.warn("⚠️ Customer not found in local database: $customerId")
+            CustomerLogger.w("CustomerRepository", "⚠️ Customer not found in local database: $customerId")
         }
 
         // Try to delete on server in background (non-blocking for UI)
@@ -241,11 +241,11 @@ class CustomerRepository(
             customerApi.deleteCustomer(customerId)
             // If server delete succeeds, remove from local database completely
             customerDao.deleteCustomer(customerId)
-            CustomerLogger.info("✅ Customer deleted from server and removed locally: $customerId")
+            CustomerLogger.i("CustomerRepository", "✅ Customer deleted from server and removed locally: $customerId")
         } catch (e: Exception) {
             // If server delete fails (405, network error, etc.), customer remains marked as deleted locally
             // It will be synced later via syncCustomers()
-            CustomerLogger.warn("⚠️ Server delete failed for $customerId: ${e.message}. Will retry during sync.")
+            CustomerLogger.w("CustomerRepository", "⚠️ Server delete failed for $customerId: ${e.message}. Will retry during sync.")
             ErrorTracking.captureException(e, "CustomerRepository.deleteCustomer")
         }
 
@@ -268,19 +268,19 @@ class CustomerRepository(
                             customerApi.deleteCustomer(customer.uid)
                             // Remove from local database completely after successful server delete
                             customerDao.deleteCustomer(customer.uid)
-                            CustomerLogger.info("✅ Synced deletion for customer: ${customer.uid}")
+                            CustomerLogger.i("CustomerRepository", "✅ Synced deletion for customer: ${customer.uid}")
                             syncedCount++
                         } catch (deleteError: Exception) {
                             // If delete fails with 404/405, customer doesn't exist on server or delete not supported
                             // Safe to remove locally since the goal is to delete
                             val errorMessage = deleteError.message ?: ""
                             if (errorMessage.contains("404") || errorMessage.contains("405") || errorMessage.contains("Not Found")) {
-                                CustomerLogger.info("⚠️ Customer ${customer.uid} not found on server or delete not supported - removing locally")
+                                CustomerLogger.i("CustomerRepository", "⚠️ Customer ${customer.uid} not found on server or delete not supported - removing locally")
                                 customerDao.deleteCustomer(customer.uid)
                                 syncedCount++
                             } else {
                                 // Other errors - keep for retry
-                                CustomerLogger.warn("⚠️ Delete sync failed for ${customer.uid}: ${deleteError.message}")
+                                CustomerLogger.w("CustomerRepository", "⚠️ Delete sync failed for ${customer.uid}: ${deleteError.message}")
                                 throw deleteError
                             }
                         }
@@ -372,7 +372,7 @@ class CustomerRepository(
                         val existingCustomer = customerDao.getCustomerById(serverCustomer.uid)
                         if (existingCustomer != null && !existingCustomer.synced) {
                             // Skip server customer if we have unsynced local version with same UID
-                            CustomerLogger.warn("Skipping server customer ${serverCustomer.uid} - conflicts with unsynced local version")
+                            CustomerLogger.w("CustomerRepository", "Skipping server customer ${serverCustomer.uid} - conflicts with unsynced local version")
                             null
                         } else {
                             serverCustomer.toEntity().copy(synced = true)
@@ -387,7 +387,7 @@ class CustomerRepository(
                     }
 
                     totalSynced += entities.size
-                    CustomerLogger.info("Synced batch ${currentPage + 1}: ${entities.size} customers (page ${currentPage + 1}/${pageResponse.totalPages})")
+                    CustomerLogger.i("CustomerRepository", "Synced batch ${currentPage + 1}: ${entities.size} customers (page ${currentPage + 1}/${pageResponse.totalPages})")
                 }
 
                 currentPage++
@@ -398,10 +398,10 @@ class CustomerRepository(
                 appPreferences.setCustomerLastSyncTime(maxServerTime)
             }
 
-            CustomerLogger.info("Batch sync completed: $totalSynced customers synced in $currentPage batches")
+            CustomerLogger.i("CustomerRepository", "Batch sync completed: $totalSynced customers synced in $currentPage batches")
             Result.success(totalSynced)
         } catch (e: Exception) {
-            CustomerLogger.error("Batch sync failed: ${e.message}")
+            CustomerLogger.e("CustomerRepository", "Batch sync failed: ${e.message}")
             Result.failure(e)
         }
     }

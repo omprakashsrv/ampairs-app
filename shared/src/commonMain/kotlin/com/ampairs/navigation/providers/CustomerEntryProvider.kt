@@ -66,7 +66,6 @@ fun customerEntryProvider(
     is StateListRoute -> NavEntry(key) {
         StateListScreen(
             onStateClick = { },
-            onImportStates = { },
             modifier = Modifier
         )
     }

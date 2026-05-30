@@ -15,10 +15,12 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-/**
- * Variant Form Screen - Create or edit a product variant
- */
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.product.generated.resources.Res
+import ampairsapp.feature.product.generated.resources.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VariantFormScreen(
@@ -28,12 +30,11 @@ fun VariantFormScreen(
     modifier: Modifier = Modifier,
     viewModel: VariantFormViewModel = assistedMetroViewModel<VariantFormViewModel, VariantFormViewModel.Factory> { create(productId, variantId) }
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val formState by viewModel.formState.collectAsState()
-    val attributeOptions by viewModel.attributeOptions.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val formState by viewModel.formState.collectAsStateWithLifecycle()
+    val attributeOptions by viewModel.attributeOptions.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
 
-    // Handle success
     uiState.successMessage?.let { message ->
         LaunchedEffect(message) {
             viewModel.clearSuccessMessage()
@@ -41,15 +42,14 @@ fun VariantFormScreen(
         }
     }
 
-    // Show error message
     uiState.errorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { viewModel.clearErrorMessage() },
-            title = { Text("Error") },
+            title = { Text(stringResource(Res.string.prod_dialog_error)) },
             text = { Text(message) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearErrorMessage() }) {
-                    Text("OK")
+                    Text(stringResource(Res.string.prod_ok))
                 }
             }
         )
@@ -58,7 +58,12 @@ fun VariantFormScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (uiState.isEditMode) "Edit Variant" else "New Variant") }
+                title = {
+                    Text(
+                        if (uiState.isEditMode) stringResource(Res.string.prod_variant_form_edit_title)
+                        else stringResource(Res.string.prod_variant_form_new_title)
+                    )
+                }
             )
         },
         bottomBar = {
@@ -77,7 +82,7 @@ fun VariantFormScreen(
                         modifier = Modifier.weight(1f),
                         enabled = !uiState.isSaving
                     ) {
-                        Text("Cancel")
+                        Text(stringResource(Res.string.prod_cancel))
                     }
                     Button(
                         onClick = { viewModel.saveVariant(onSaveSuccess) },
@@ -91,7 +96,7 @@ fun VariantFormScreen(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         } else {
-                            Text("Save")
+                            Text(stringResource(Res.string.prod_save))
                         }
                     }
                 }
@@ -116,12 +121,11 @@ fun VariantFormScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Basic Information Section
-                FormSection(title = "Basic Information") {
+                FormSection(title = stringResource(Res.string.prod_section_basic)) {
                     OutlinedTextField(
                         value = formState.sku,
                         onValueChange = { viewModel.updateForm(formState.copy(sku = it)) },
-                        label = { Text("SKU *") },
+                        label = { Text(stringResource(Res.string.prod_variant_form_sku_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         isError = formState.skuError != null,
                         supportingText = formState.skuError?.let { { Text(it) } },
@@ -135,7 +139,7 @@ fun VariantFormScreen(
                     OutlinedTextField(
                         value = formState.variantName,
                         onValueChange = { viewModel.updateForm(formState.copy(variantName = it)) },
-                        label = { Text("Variant Name *") },
+                        label = { Text(stringResource(Res.string.prod_variant_form_name_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         isError = formState.nameError != null,
                         supportingText = formState.nameError?.let { { Text(it) } },
@@ -147,8 +151,7 @@ fun VariantFormScreen(
                     )
                 }
 
-                // Attributes Section
-                FormSection(title = "Attributes") {
+                FormSection(title = stringResource(Res.string.prod_section_attributes)) {
                     if (formState.attributeError != null) {
                         Text(
                             text = formState.attributeError!!,
@@ -157,7 +160,6 @@ fun VariantFormScreen(
                         )
                     }
 
-                    // Attribute 1
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -182,7 +184,6 @@ fun VariantFormScreen(
                         )
                     }
 
-                    // Attribute 2
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -207,7 +208,6 @@ fun VariantFormScreen(
                         )
                     }
 
-                    // Attribute 3
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -233,10 +233,9 @@ fun VariantFormScreen(
                     }
                 }
 
-                // Pricing Section
                 FormSection(
-                    title = "Pricing (Optional Overrides)",
-                    subtitle = "Leave blank to use base product pricing"
+                    title = stringResource(Res.string.prod_variant_form_pricing_title),
+                    subtitle = stringResource(Res.string.prod_variant_form_pricing_subtitle)
                 ) {
                     if (formState.priceError != null) {
                         Text(
@@ -251,7 +250,7 @@ fun VariantFormScreen(
                         onValueChange = {
                             viewModel.updateForm(formState.copy(mrp = it.toDoubleOrNull()))
                         },
-                        label = { Text("MRP") },
+                        label = { Text(stringResource(Res.string.prod_label_mrp)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -268,7 +267,7 @@ fun VariantFormScreen(
                         onValueChange = {
                             viewModel.updateForm(formState.copy(dealerPrice = it.toDoubleOrNull()))
                         },
-                        label = { Text("Dealer Price") },
+                        label = { Text(stringResource(Res.string.prod_label_dealer_price)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -285,7 +284,7 @@ fun VariantFormScreen(
                         onValueChange = {
                             viewModel.updateForm(formState.copy(sellingPrice = it.toDoubleOrNull()))
                         },
-                        label = { Text("Selling Price") },
+                        label = { Text(stringResource(Res.string.prod_label_selling_price)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -298,14 +297,13 @@ fun VariantFormScreen(
                     )
                 }
 
-                // Stock Management Section
-                FormSection(title = "Stock Management") {
+                FormSection(title = stringResource(Res.string.prod_section_stock_mgmt)) {
                     OutlinedTextField(
                         value = formState.stockQuantity.toString(),
                         onValueChange = {
                             viewModel.updateForm(formState.copy(stockQuantity = it.toDoubleOrNull() ?: 0.0))
                         },
-                        label = { Text("Stock Quantity *") },
+                        label = { Text(stringResource(Res.string.prod_variant_form_stock_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -322,7 +320,7 @@ fun VariantFormScreen(
                         onValueChange = {
                             viewModel.updateForm(formState.copy(lowStockAlert = it.toDoubleOrNull()))
                         },
-                        label = { Text("Low Stock Alert") },
+                        label = { Text(stringResource(Res.string.prod_label_low_stock_alert)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -335,18 +333,19 @@ fun VariantFormScreen(
                     )
                 }
 
-                // Status Section
-                FormSection(title = "Status") {
+                FormSection(title = stringResource(Res.string.prod_label_status)) {
                     var expanded by remember { mutableStateOf(false) }
+                    val activeLabel = stringResource(Res.string.prod_active)
+                    val inactiveLabel = stringResource(Res.string.prod_inactive)
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = it }
                     ) {
                         OutlinedTextField(
-                            value = if (formState.active) "Active" else "Inactive",
+                            value = if (formState.active) activeLabel else inactiveLabel,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Status") },
+                            label = { Text(stringResource(Res.string.prod_label_status)) },
                             trailingIcon = {
                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                             },
@@ -360,14 +359,14 @@ fun VariantFormScreen(
                             onDismissRequest = { expanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Active") },
+                                text = { Text(activeLabel) },
                                 onClick = {
                                     viewModel.updateForm(formState.copy(active = true))
                                     expanded = false
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Inactive") },
+                                text = { Text(inactiveLabel) },
                                 onClick = {
                                     viewModel.updateForm(formState.copy(active = false))
                                     expanded = false
@@ -377,7 +376,6 @@ fun VariantFormScreen(
                     }
                 }
 
-                // Bottom spacing for keyboard
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
@@ -404,7 +402,7 @@ private fun AttributeNameField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text("Name") },
+            label = { Text(stringResource(Res.string.prod_variant_form_attr_name)) },
             trailingIcon = {
                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
             },
@@ -450,7 +448,6 @@ private fun AttributeValueField(
     var expanded by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
-    // Load values when attribute name is selected
     LaunchedEffect(attributeName) {
         attributeName?.let { onAttributeNameSelected(it) }
     }
@@ -463,7 +460,7 @@ private fun AttributeValueField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text("Value") },
+            label = { Text(stringResource(Res.string.prod_variant_form_attr_value)) },
             trailingIcon = {
                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
             },

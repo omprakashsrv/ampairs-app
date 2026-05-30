@@ -1,0 +1,261 @@
+<resources>
+    <!-- Common actions -->
+    <string name="customer_save">Save</string>
+    <string name="customer_cancel">Cancel</string>
+    <string name="customer_delete">Delete</string>
+    <string name="customer_edit">Edit</string>
+    <string name="customer_retry">Retry</string>
+    <string name="customer_saving">Saving…</string>
+    <string name="customer_dismiss">Dismiss</string>
+    <string name="customer_search_cd">Search</string>
+    <string name="customer_active">Active</string>
+    <string name="customer_inactive">Inactive</string>
+    <string name="customer_same_as_main_address">Same as main address</string>
+    <string name="customer_no_data_found">No Data Found</string>
+    <string name="customer_unknown_error">Unknown error</string>
+    <string name="customer_error">Error</string>
+    <string name="customer_code_display">Code: %s</string>
+
+    <!-- Customer list screen -->
+    <string name="customer_list_search_hint">Search customers…</string>
+    <string name="customer_list_refresh_cd">Refresh</string>
+    <string name="customer_list_add_cd">Add Customer</string>
+    <string name="customer_list_refreshing">Refreshing…</string>
+    <string name="customer_list_empty">No customers yet</string>
+    <string name="customer_list_empty_desc">Create your first customer to get started</string>
+    <string name="customer_list_error_title">Something went wrong</string>
+    <string name="customer_list_add_btn">Add Customer</string>
+    <string name="customer_image_content_desc">Customer image</string>
+    <string name="customer_form_settings_cd">Form Settings</string>
+
+    <!-- Customer form screen -->
+    <string name="customer_form_title_new">New Customer</string>
+    <string name="customer_form_title_edit">Edit Customer</string>
+    <string name="customer_import_contact">Import from Contact</string>
+    <string name="customer_importing">Importing…</string>
+    <string name="customer_save_action">Save Customer</string>
+    <string name="customer_select_type">Select Customer Type</string>
+    <string name="customer_select_group">Select Customer Group</string>
+    <string name="customer_no_types">No customer types available</string>
+    <string name="customer_no_groups">No customer groups available</string>
+    <string name="customer_tab_details">Details</string>
+    <string name="customer_tab_images">Images</string>
+
+    <!-- Form sections -->
+    <string name="customer_section_basic">Basic Information</string>
+    <string name="customer_section_business">Business Information</string>
+    <string name="customer_section_credit">Credit Management</string>
+    <string name="customer_section_address">Address</string>
+    <string name="customer_section_location">Location</string>
+    <string name="customer_section_billing">Billing Address</string>
+    <string name="customer_section_shipping">Shipping Address</string>
+    <string name="customer_section_attributes">Custom Attributes</string>
+    <string name="customer_section_status">Status</string>
+    <string name="customer_section_financial">Financial Information</string>
+    <string name="customer_section_additional">Additional Information</string>
+    <string name="customer_section_system">System Information</string>
+
+    <!-- Field labels -->
+    <string name="customer_label_name">Name</string>
+    <string name="customer_label_email">Email</string>
+    <string name="customer_label_landline">Landline</string>
+    <string name="customer_label_credit_limit">Credit Limit</string>
+    <string name="customer_label_credit_days">Credit Days</string>
+    <string name="customer_label_address">Address</string>
+    <string name="customer_label_street">Street</string>
+    <string name="customer_label_street2">Street 2</string>
+    <string name="customer_label_city">City</string>
+    <string name="customer_label_pincode">PIN Code</string>
+    <string name="customer_label_state">State</string>
+    <string name="customer_label_country">Country</string>
+    <string name="customer_label_gst">GST Number</string>
+    <string name="customer_label_pan">PAN Number</string>
+    <string name="customer_label_ref_id">Reference ID</string>
+    <string name="customer_label_phone">Phone</string>
+    <string name="customer_label_type">Type</string>
+    <string name="customer_label_group">Group</string>
+    <string name="customer_label_coordinates">Coordinates</string>
+    <string name="customer_label_created">Created</string>
+    <string name="customer_label_updated">Last Updated</string>
+    <string name="customer_label_gstin">GSTIN</string>
+    <string name="customer_label_description">Description</string>
+    <string name="customer_label_metadata">Metadata</string>
+    <string name="customer_label_billing_street">Billing Street</string>
+    <string name="customer_label_billing_city">Billing City</string>
+    <string name="customer_label_billing_pin">Billing PIN</string>
+    <string name="customer_label_billing_state">Billing State</string>
+    <string name="customer_label_billing_country">Billing Country</string>
+    <string name="customer_label_shipping_street">Shipping Street</string>
+    <string name="customer_label_shipping_city">Shipping City</string>
+    <string name="customer_label_shipping_pin">Shipping PIN</string>
+    <string name="customer_label_shipping_state">Shipping State</string>
+    <string name="customer_label_shipping_country">Shipping Country</string>
+
+    <!-- Location -->
+    <string name="customer_location_current">Current Location</string>
+    <string name="customer_location_change">Change Location</string>
+    <string name="customer_location_set">Set Location</string>
+    <string name="customer_location_hint">You can set location coordinates only, or choose to also auto-populate address fields</string>
+    <string name="customer_location_lat_format">Latitude: %s</string>
+    <string name="customer_location_lon_format">Longitude: %s</string>
+
+    <!-- Customer details screen -->
+    <string name="customer_details_load_error">Failed to load customer</string>
+    <string name="customer_delete_title">Delete Customer</string>
+    <string name="customer_delete_confirm">Are you sure you want to delete %s? This action cannot be undone.</string>
+    <string name="customer_credit_days_value">%d days</string>
+    <string name="customer_status_active_label">Active</string>
+    <string name="customer_status_inactive_label">Inactive</string>
+
+    <!-- Customer type list/form -->
+    <string name="customer_type_list_title">Customer Types</string>
+    <string name="customer_type_search_label">Search customer types</string>
+    <string name="customer_type_search_hint">Enter name or type code…</string>
+    <string name="customer_type_add_cd">Add Customer Type</string>
+    <string name="customer_type_no_data_desc">No customer types found. Create your first one below.</string>
+    <string name="customer_type_create">Create Customer Type</string>
+    <string name="customer_type_search_empty">No customer types found</string>
+    <string name="customer_type_list_empty">No customer types yet</string>
+    <string name="customer_type_default_credit">Default Credit</string>
+    <string name="customer_type_form_title_new">New Customer Type</string>
+    <string name="customer_type_form_title_edit">Edit Customer Type</string>
+    <string name="customer_type_name_label">Customer Type Name *</string>
+    <string name="customer_type_name_hint">e.g., Retail, Wholesale, Distributor</string>
+    <string name="customer_type_desc_hint">Optional description for this customer type</string>
+    <string name="customer_type_code_label">Type Code</string>
+    <string name="customer_type_code_hint">e.g., RET, WHO, DIS</string>
+    <string name="customer_type_section_display">Display &amp; Ordering</string>
+    <string name="customer_type_display_order">Display Order</string>
+    <string name="customer_type_order_hint">1, 2, 3…</string>
+    <string name="customer_type_section_credit">Default Credit Terms</string>
+    <string name="customer_type_credit_limit_label">Default Credit Limit</string>
+    <string name="customer_type_credit_limit_hint">0.00</string>
+    <string name="customer_type_credit_days_label">Default Credit Days</string>
+    <string name="customer_type_credit_days_hint">30</string>
+    <string name="customer_type_metadata_hint">Additional information or notes</string>
+    <string name="customer_type_save">Save Customer Type</string>
+
+    <!-- Customer group list/form -->
+    <string name="customer_group_list_title">Customer Groups</string>
+    <string name="customer_group_search_label">Search customer groups</string>
+    <string name="customer_group_search_hint">Enter name or group code…</string>
+    <string name="customer_group_add_cd">Add Customer Group</string>
+    <string name="customer_group_no_data_desc">No customer groups found. Create your first one below.</string>
+    <string name="customer_group_create">Create Customer Group</string>
+    <string name="customer_group_search_empty">No customer groups found</string>
+    <string name="customer_group_list_empty">No customer groups yet</string>
+    <string name="customer_group_benefits">Group Benefits</string>
+    <string name="customer_group_form_title_new">New Customer Group</string>
+    <string name="customer_group_form_title_edit">Edit Customer Group</string>
+    <string name="customer_group_name_label">Customer Group Name *</string>
+    <string name="customer_group_name_hint">e.g., VIP Customers, Regular Customers</string>
+    <string name="customer_group_desc_hint">Optional description for this customer group</string>
+    <string name="customer_group_code_label">Group Code</string>
+    <string name="customer_group_code_hint">e.g., VIP, REG, PREM</string>
+    <string name="customer_group_section_display">Display &amp; Priority</string>
+    <string name="customer_group_display_order">Display Order</string>
+    <string name="customer_group_order_hint">1, 2, 3…</string>
+    <string name="customer_group_priority_label">Priority Level</string>
+    <string name="customer_group_priority_hint">1 (highest) to 10 (lowest)</string>
+    <string name="customer_group_section_discount">Discount Settings</string>
+    <string name="customer_group_discount_label">Default Discount Percentage</string>
+    <string name="customer_group_discount_hint">0 - 100</string>
+    <string name="customer_group_discount_desc">Percentage discount to apply by default for this group</string>
+    <string name="customer_group_save">Save Customer Group</string>
+
+    <!-- State list screen -->
+    <string name="customer_state_list_title">States</string>
+    <string name="customer_state_import_cd">Import States</string>
+    <string name="customer_state_search_label">Search states</string>
+    <string name="customer_state_search_empty">No states found</string>
+    <string name="customer_state_list_empty">No states available</string>
+    <string name="customer_state_import_btn">Import States</string>
+    <string name="customer_state_delete_title">Delete State</string>
+    <string name="customer_state_delete_confirm">Are you sure you want to delete &#8220;%s&#8221;? This action cannot be undone.</string>
+    <string name="customer_state_import_dialog_title">Import States</string>
+    <string name="customer_state_import_empty">No states available for import</string>
+    <string name="customer_state_import_selected">Import Selected (%d)</string>
+
+    <!-- Location picker dialog -->
+    <string name="customer_location_dialog_title">Select Location</string>
+    <string name="customer_location_hint_desc">Select customer location to auto-populate address details</string>
+    <string name="customer_location_use_current">Use Current Location</string>
+    <string name="customer_location_select_map">Select from Map</string>
+    <string name="customer_location_getting">Getting your location…</string>
+    <string name="customer_location_resolving_address">Resolving address…</string>
+    <string name="customer_location_selected_title">Location Selected</string>
+    <string name="customer_location_use_only">Use Location Only</string>
+    <string name="customer_location_get_address">Get Address</string>
+    <string name="customer_location_select_different">Select Different Location</string>
+    <string name="customer_location_address_found">Address Found</string>
+    <string name="customer_location_only">Location Only</string>
+    <string name="customer_location_and_address">Location &amp; Address</string>
+    <string name="customer_location_error_title">Location Error</string>
+    <string name="customer_location_try_again">Try Again</string>
+
+    <!-- Image viewer -->
+    <string name="customer_image_primary_label">Primary Image</string>
+    <string name="customer_image_close_cd">Close</string>
+    <string name="customer_image_is_primary_cd">Primary image</string>
+    <string name="customer_image_set_primary_cd">Set as primary</string>
+    <string name="customer_image_delete_cd">Delete image</string>
+    <string name="customer_image_delete_title">Delete Image</string>
+    <string name="customer_image_delete_confirm">Are you sure you want to delete this image? This action cannot be undone.</string>
+    <string name="customer_image_not_available">Image not available</string>
+    <string name="customer_image_details_title">Image Details</string>
+    <string name="customer_image_details_collapse">Collapse details</string>
+    <string name="customer_image_details_expand">Expand details</string>
+    <string name="customer_image_detail_filename">File Name</string>
+    <string name="customer_image_detail_filesize">File Size</string>
+    <string name="customer_image_detail_content_type">Content Type</string>
+    <string name="customer_image_detail_description">Description</string>
+    <string name="customer_image_detail_status">Upload Status</string>
+    <string name="customer_image_detail_server_url">Server URL</string>
+    <string name="customer_image_detail_thumbnail">Thumbnail</string>
+    <string name="customer_image_detail_local_copy">Local Copy</string>
+    <string name="customer_image_detail_created">Created</string>
+    <string name="customer_image_detail_updated">Updated</string>
+    <string name="customer_image_status_pending">Pending Upload</string>
+    <string name="customer_image_status_uploading">Uploading…</string>
+    <string name="customer_image_status_completed">Uploaded Successfully</string>
+    <string name="customer_image_status_failed">Upload Failed</string>
+    <string name="customer_image_status_unknown">Unknown</string>
+    <string name="customer_image_viewer_cd">Customer image: %s</string>
+    <string name="customer_image_available">Available</string>
+
+    <!-- Image upload dialog -->
+    <string name="customer_image_upload_title">Upload Customer Image</string>
+    <string name="customer_image_file_info_title">File Information</string>
+    <string name="customer_image_file_name_label">Name</string>
+    <string name="customer_image_file_size_label">Size</string>
+    <string name="customer_image_file_type_label">Type</string>
+    <string name="customer_image_options_title">Image Options</string>
+    <string name="customer_image_desc_label">Description (Optional)</string>
+    <string name="customer_image_desc_placeholder">Add a description for this image…</string>
+    <string name="customer_image_set_primary_label">Set as Primary Image</string>
+    <string name="customer_image_primary_desc">Primary image will be displayed in customer lists</string>
+    <string name="customer_image_uploading_title">Uploading image…</string>
+    <string name="customer_image_uploading_desc">Please wait while we upload your image</string>
+    <string name="customer_image_upload_btn">Upload</string>
+    <string name="customer_image_uploading_btn">Uploading…</string>
+
+    <!-- Customer image screen -->
+    <string name="customer_images_title">Customer Images</string>
+    <string name="customer_images_count">%d images uploaded</string>
+    <string name="customer_images_retry_sync_cd">Retry sync</string>
+    <string name="customer_images_error">Error</string>
+    <string name="customer_images_dismiss">Dismiss</string>
+    <string name="customer_images_retry">Retry</string>
+    <string name="customer_images_loading">Loading images…</string>
+    <string name="customer_images_empty_readonly">No images</string>
+    <string name="customer_images_empty">No images yet</string>
+    <string name="customer_images_readonly_desc">Customer images are configured as read-only</string>
+    <string name="customer_images_empty_desc">Upload customer images to help identify and personalize their profile</string>
+    <string name="customer_images_upload_first">Upload First Image</string>
+    <string name="customer_images_guidelines_title">Upload Guidelines</string>
+    <string name="customer_images_guideline_max_count">Maximum 10 images per customer</string>
+    <string name="customer_images_guideline_formats">Supported formats: JPEG, PNG, WebP</string>
+    <string name="customer_images_guideline_size">Maximum file size: 10MB per image</string>
+    <string name="customer_images_guideline_resolution">Recommended resolution: 800x800 pixels</string>
+    <string name="customer_images_guideline_primary">Set one image as primary for customer lists</string>
+</resources>

@@ -1,8 +1,5 @@
 package com.ampairs.auth.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
@@ -26,16 +23,49 @@ import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.getString
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.auth_progress_verifying_recaptcha
+import ampairsapp.feature.auth.generated.resources.auth_progress_resend_otp
+import ampairsapp.feature.auth.generated.resources.auth_progress_sending_code
+import ampairsapp.feature.auth.generated.resources.auth_progress_verifying_code
+import ampairsapp.feature.auth.generated.resources.auth_progress_resending_code
+import ampairsapp.feature.auth.generated.resources.auth_progress_completing
+import ampairsapp.feature.auth.generated.resources.auth_error_authentication_failed
+import ampairsapp.feature.auth.generated.resources.auth_error_resend_otp_failed
+
+data class LoginUiState(
+    val phoneNumber: String = "",
+    val otp: String = "",
+    val sessionId: String = "",
+    val validPhoneNumber: Boolean = true,
+    val loading: Boolean = false,
+    val recaptchaLoading: Boolean = false,
+    val progressMessage: String = "",
+    val firebaseVerificationId: String = "",
+    val authMethod: AuthMethod = AuthMethod.BACKEND_API,
+    val existingUser: UserEntity? = null,
+)
 
 sealed interface LoginNavEvent {
-    object LoginSuccess : LoginNavEvent
-    object NavigateToWorkspace : LoginNavEvent
-    object NavigateToUserUpdate : LoginNavEvent
-    object NavigateToAccountRestore : LoginNavEvent
+    data object LoginSuccess : LoginNavEvent
+    data object NavigateToWorkspace : LoginNavEvent
+    data object NavigateToUserUpdate : LoginNavEvent
+    data object NavigateToAccountRestore : LoginNavEvent
+    data object NavigateToAuthRoute : LoginNavEvent
+    data object NotLoggedIn : LoginNavEvent
+    data class NavigateToOtp(val sessionId: String, val verificationId: String) : LoginNavEvent
+    data object AuthComplete : LoginNavEvent
+    data object OtpResent : LoginNavEvent
+    data object FirebaseOtpResent : LoginNavEvent
 }
 
 @ContributesIntoMap(AppScope::class)
@@ -49,43 +79,48 @@ class LoginViewModel(
     private val analytics: FirebaseAnalytics,
 ) : ViewModel() {
 
-    private val _navEvent = MutableSharedFlow<LoginNavEvent>()
-    val navEvent: SharedFlow<LoginNavEvent> = _navEvent.asSharedFlow()
-    var phoneNumber by mutableStateOf("")
-    var otp by mutableStateOf("")
-    var sessionId by mutableStateOf("")
-    var validPhoneNumber by mutableStateOf(true)
-    var displayMessage by mutableStateOf("")
-    var loading by mutableStateOf(false)
-    var recaptchaLoading by mutableStateOf(false)
-    var progressMessage by mutableStateOf("")
-    var loginStatus by mutableStateOf(LoginStatus.INIT)
-
-    var firebaseVerificationId by mutableStateOf("")
-
-    var authMethod by mutableStateOf(
-        if (firebaseAuthRepository.isSupported()) AuthMethod.FIREBASE else AuthMethod.BACKEND_API
+    private val _state = MutableStateFlow(
+        LoginUiState(
+            authMethod = if (firebaseAuthRepository.isSupported()) AuthMethod.FIREBASE else AuthMethod.BACKEND_API
+        )
     )
+    val state: StateFlow<LoginUiState> = _state.asStateFlow()
+
+    private val _navEvent = MutableSharedFlow<LoginNavEvent>(extraBufferCapacity = 1)
+    val navEvent: SharedFlow<LoginNavEvent> = _navEvent.asSharedFlow()
+
+    private val _snackbarMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
 
     val firebaseVerificationState = firebaseAuthRepository.verificationState
 
-    var existingUser by mutableStateOf<UserEntity?>(null)
+    fun updatePhoneNumber(phone: String) {
+        _state.update { it.copy(phoneNumber = phone) }
+    }
 
-    fun checkUserLogin(onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit) {
+    fun updateOtp(otp: String) {
+        _state.update { it.copy(otp = otp) }
+    }
+
+    fun updateValidPhoneNumber(valid: Boolean) {
+        _state.update { it.copy(validPhoneNumber = valid) }
+    }
+
+    fun initOtpScreen(sessionId: String, verificationId: String, phoneNumber: String) {
+        _state.update {
+            it.copy(
+                sessionId = sessionId,
+                firebaseVerificationId = verificationId,
+                phoneNumber = if (phoneNumber.isNotEmpty()) phoneNumber else it.phoneNumber,
+            )
+        }
+    }
+
+    fun checkUserLogin() {
         viewModelScope.launch(DispatcherProvider.io) {
             val token = userRepository.getToken()
-            if (token == null) {
-                withContext(Dispatchers.Main) {
-                    loginStatus = LoginStatus.NOT_LOGGED_IN
-                    onLoginStatus(loginStatus, null)
-                }
-                return@launch
-            }
-            if (token.refreshToken.isEmpty() || token.accessToken.isEmpty()) {
-                withContext(Dispatchers.Main) {
-                    loginStatus = LoginStatus.NOT_LOGGED_IN
-                    onLoginStatus(loginStatus, null)
-                }
+            if (token == null || token.refreshToken.isEmpty() || token.accessToken.isEmpty()) {
+                _navEvent.emit(LoginNavEvent.NotLoggedIn)
                 return@launch
             }
             val userEntity = userRepository.getUser()
@@ -98,76 +133,70 @@ class LoginViewModel(
                     tokenRepository.setCurrentUser(userData.id)
                     val savedUserEntity = userRepository.getUserById(userData.id)
                     delay(1000)
-                    withContext(Dispatchers.Main) {
-                        loginStatus = LoginStatus.LOGGED_IN
-                        onLoginStatus(loginStatus, savedUserEntity)
-                    }
+                    handlePostLoginNavigation(savedUserEntity)
                 } else {
-                    withContext(Dispatchers.Main) {
-                        loginStatus = LoginStatus.LOGIN_FAILED
-                        onLoginStatus(loginStatus, null)
-                    }
+                    _navEvent.emit(LoginNavEvent.NavigateToAuthRoute)
                 }
             } else {
                 tokenRepository.setCurrentUser(userEntity.id)
-                withContext(Dispatchers.Main) {
-                    loginStatus = LoginStatus.LOGGED_IN
-                    onLoginStatus(loginStatus, userEntity)
-                }
+                handlePostLoginNavigation(userEntity)
             }
         }
     }
 
-    fun checkExistingUser(onExistingUserFound: (UserEntity) -> Unit, onNoExistingUser: () -> Unit) {
+    fun checkExistingUser(onNoExistingUser: () -> Unit) {
         viewModelScope.launch(DispatcherProvider.io) {
-            val user = userRepository.findExistingUser(countryCode = 91, phone = phoneNumber)
+            val user = userRepository.findExistingUser(countryCode = 91, phone = _state.value.phoneNumber)
             withContext(Dispatchers.Main) {
                 if (user != null) {
-                    existingUser = user
-                    onExistingUserFound(user)
+                    _state.update { it.copy(existingUser = user) }
                 } else {
-                    existingUser = null
+                    _state.update { it.copy(existingUser = null) }
                     onNoExistingUser()
                 }
             }
         }
     }
 
-    fun selectExistingUser(userId: String, onUserSelected: () -> Unit) {
+    fun clearExistingUser() {
+        _state.update { it.copy(existingUser = null) }
+    }
+
+    fun selectExistingUser(userId: String) {
         viewModelScope.launch(DispatcherProvider.io) {
             tokenRepository.setCurrentUser(userId)
-            withContext(Dispatchers.Main) { onUserSelected() }
+            withContext(Dispatchers.Main) {
+                handleExistingUserWorkspaceCheck()
+            }
         }
     }
 
-    fun authenticate(onAuthSuccess: (String) -> Unit) {
-        if (loading) return
-        loading = true
-        recaptchaLoading = true
-        progressMessage = "Verifying reCAPTCHA..."
-
+    fun authenticate() {
+        if (_state.value.loading) return
         viewModelScope.launch(DispatcherProvider.io) {
+            val progressMsg = getString(Res.string.auth_progress_verifying_recaptcha)
+            withContext(Dispatchers.Main) {
+                _state.update { it.copy(loading = true, recaptchaLoading = true, progressMessage = progressMsg) }
+            }
             tokenRepository.createDummyUserSession()
-            val result = userRepository.initAuth(phoneNumber)
+            val result = userRepository.initAuth(_state.value.phoneNumber)
             if (result.data != null && result.error == null) {
                 val data = result.data!!
                 withContext(Dispatchers.Main) {
-                    loading = false
-                    recaptchaLoading = false
-                    progressMessage = ""
+                    _state.update { it.copy(loading = false, recaptchaLoading = false, progressMessage = "") }
                     if (data.success && data.sessionId != null) {
-                        this@LoginViewModel.sessionId = data.sessionId
-                        onAuthSuccess(data.sessionId)
+                        _state.update { it.copy(sessionId = data.sessionId) }
+                        _navEvent.emit(LoginNavEvent.NavigateToOtp(data.sessionId, ""))
                     } else {
-                        displayMessage = data.error?.message ?: "Authentication failed"
+                        val errMsg = data.error?.message ?: getString(Res.string.auth_error_authentication_failed)
+                        _snackbarMessage.emit(errMsg)
                     }
                 }
             } else {
                 withContext(Dispatchers.Main) {
-                    displayMessage = result.error?.message ?: ""
-                    loading = false
-                    recaptchaLoading = false
-                    progressMessage = ""
+                    _state.update { it.copy(loading = false, recaptchaLoading = false, progressMessage = "") }
+                    val errMsg = result.error?.message ?: ""
+                    if (errMsg.isNotEmpty()) _snackbarMessage.emit(errMsg)
                 }
             }
         }
@@ -178,7 +207,7 @@ class LoginViewModel(
             if (userEntity?.first_name.isNullOrBlank()) {
                 _navEvent.emit(LoginNavEvent.NavigateToUserUpdate)
             } else {
-                val userId = userEntity.id
+                val userId = userEntity!!.id
                 val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(userId).isNotBlank()
                 _navEvent.emit(if (hasWorkspace) LoginNavEvent.LoginSuccess else LoginNavEvent.NavigateToWorkspace)
             }
@@ -209,25 +238,19 @@ class LoginViewModel(
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        loading = false
-    }
-
-    fun completeAuthentication(onAuthComplete: () -> Unit) {
-        if (loading) return
-        loading = true
-        recaptchaLoading = true
-        progressMessage = "Verifying reCAPTCHA..."
-
+    fun completeAuthentication() {
+        if (_state.value.loading) return
         viewModelScope.launch(DispatcherProvider.io) {
-            val authResult = userRepository.completeAuth(sessionId, otp)
+            val progressMsg = getString(Res.string.auth_progress_verifying_recaptcha)
+            withContext(Dispatchers.Main) {
+                _state.update { it.copy(loading = true, recaptchaLoading = true, progressMessage = progressMsg) }
+            }
+            val authResult = userRepository.completeAuth(_state.value.sessionId, _state.value.otp)
             if (authResult.data == null || authResult.error != null) {
                 withContext(Dispatchers.Main) {
-                    displayMessage = authResult.error?.message ?: ""
-                    loading = false
-                    recaptchaLoading = false
-                    progressMessage = ""
+                    val errMsg = authResult.error?.message ?: ""
+                    _state.update { it.copy(loading = false, recaptchaLoading = false, progressMessage = "") }
+                    if (errMsg.isNotEmpty()) _snackbarMessage.emit(errMsg)
                 }
                 return@launch
             }
@@ -248,44 +271,39 @@ class LoginViewModel(
                     mapOf(AnalyticsParams.METHOD to "backend_api")
                 )
             }
-            // Even if user fetch fails, complete auth — user fetched later in checkUserLogin()
             withContext(Dispatchers.Main) {
                 delay(1000)
-                onAuthComplete()
-                loading = false
-                recaptchaLoading = false
-                progressMessage = ""
+                _state.update { it.copy(loading = false, recaptchaLoading = false, progressMessage = "") }
+                _navEvent.emit(LoginNavEvent.AuthComplete)
             }
         }
     }
 
-    fun resendOtp(onResendSuccess: (String) -> Unit) {
-        if (loading) return
-        loading = true
-        recaptchaLoading = true
-        progressMessage = "Preparing to resend OTP..."
-
+    fun resendOtp() {
+        if (_state.value.loading) return
         viewModelScope.launch(DispatcherProvider.io) {
-            val result = userRepository.resendOtp(phoneNumber)
+            val progressMsg = getString(Res.string.auth_progress_resend_otp)
+            withContext(Dispatchers.Main) {
+                _state.update { it.copy(loading = true, recaptchaLoading = true, progressMessage = progressMsg) }
+            }
+            val result = userRepository.resendOtp(_state.value.phoneNumber)
             if (result.data != null && result.error == null) {
                 val data = result.data!!
                 withContext(Dispatchers.Main) {
-                    loading = false
-                    recaptchaLoading = false
-                    progressMessage = ""
+                    _state.update { it.copy(loading = false, recaptchaLoading = false, progressMessage = "") }
                     if (data.success && data.sessionId != null) {
-                        this@LoginViewModel.sessionId = data.sessionId
-                        onResendSuccess(data.sessionId)
+                        _state.update { it.copy(sessionId = data.sessionId) }
+                        _navEvent.emit(LoginNavEvent.OtpResent)
                     } else {
-                        displayMessage = data.error?.message ?: "Failed to resend OTP"
+                        val errMsg = data.error?.message ?: getString(Res.string.auth_error_resend_otp_failed)
+                        _snackbarMessage.emit(errMsg)
                     }
                 }
             } else {
                 withContext(Dispatchers.Main) {
-                    displayMessage = result.error?.message ?: ""
-                    loading = false
-                    recaptchaLoading = false
-                    progressMessage = ""
+                    _state.update { it.copy(loading = false, recaptchaLoading = false, progressMessage = "") }
+                    val errMsg = result.error?.message ?: ""
+                    if (errMsg.isNotEmpty()) _snackbarMessage.emit(errMsg)
                 }
             }
         }
@@ -293,27 +311,25 @@ class LoginViewModel(
 
     // ========== Firebase Authentication Methods ==========
 
-    fun authenticateWithFirebase(onAuthSuccess: (String) -> Unit) {
-        if (loading) return
-        loading = true
-        progressMessage = "Sending verification code..."
-
+    fun authenticateWithFirebase() {
+        if (_state.value.loading) return
         viewModelScope.launch(DispatcherProvider.io) {
+            val progressMsg = getString(Res.string.auth_progress_sending_code)
+            withContext(Dispatchers.Main) {
+                _state.update { it.copy(loading = true, progressMessage = progressMsg) }
+            }
             val countryCode = "91"
-            when (val result = firebaseAuthRepository.sendOtp(countryCode, phoneNumber)) {
+            when (val result = firebaseAuthRepository.sendOtp(countryCode, _state.value.phoneNumber)) {
                 is FirebaseAuthResult.Success -> {
                     withContext(Dispatchers.Main) {
-                        firebaseVerificationId = result.data
-                        loading = false
-                        progressMessage = ""
-                        onAuthSuccess(result.data)
+                        _state.update { it.copy(firebaseVerificationId = result.data, loading = false, progressMessage = "") }
+                        _navEvent.emit(LoginNavEvent.NavigateToOtp("", result.data))
                     }
                 }
                 is FirebaseAuthResult.Error -> {
                     withContext(Dispatchers.Main) {
-                        loading = false
-                        progressMessage = ""
-                        displayMessage = result.message
+                        _state.update { it.copy(loading = false, progressMessage = "") }
+                        _snackbarMessage.emit(result.message)
                     }
                 }
                 FirebaseAuthResult.Loading -> Unit
@@ -321,29 +337,28 @@ class LoginViewModel(
         }
     }
 
-    fun completeFirebaseAuthentication(onAuthComplete: () -> Unit) {
-        if (loading) return
-        loading = true
-        progressMessage = "Verifying code..."
-
+    fun completeFirebaseAuthentication() {
+        if (_state.value.loading) return
         viewModelScope.launch(DispatcherProvider.io) {
+            val progressMsg = getString(Res.string.auth_progress_verifying_code)
+            withContext(Dispatchers.Main) {
+                _state.update { it.copy(loading = true, progressMessage = progressMsg) }
+            }
             tokenRepository.createDummyUserSession()
-            when (val result = firebaseAuthRepository.verifyOtp(firebaseVerificationId, otp)) {
+            when (val result = firebaseAuthRepository.verifyOtp(_state.value.firebaseVerificationId, _state.value.otp)) {
                 is FirebaseAuthResult.Success -> {
                     val firebaseIdToken = result.data
-                    val verifiedPhoneNumber = phoneNumber
-                    val backendResult = userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber)
+                    val backendResult = userRepository.verifyFirebaseAuth(firebaseIdToken, _state.value.phoneNumber)
                     if (backendResult.data == null || backendResult.error != null) {
                         withContext(Dispatchers.Main) {
-                            displayMessage = backendResult.error?.message ?: ""
-                            loading = false
-                            progressMessage = ""
+                            _state.update { it.copy(loading = false, progressMessage = "") }
+                            val errMsg = backendResult.error?.message ?: ""
+                            if (errMsg.isNotEmpty()) _snackbarMessage.emit(errMsg)
                         }
                         return@launch
                     }
                     val authData = backendResult.data!!
                     tokenRepository.updateToken(authData.accessToken, authData.refreshToken)
-
                     val userResult = userRepository.getUserApi()
                     if (userResult.data != null && userResult.error == null) {
                         val userData = userResult.data!!
@@ -360,16 +375,14 @@ class LoginViewModel(
                     }
                     withContext(Dispatchers.Main) {
                         delay(1000)
-                        onAuthComplete()
-                        loading = false
-                        progressMessage = ""
+                        _state.update { it.copy(loading = false, progressMessage = "") }
+                        _navEvent.emit(LoginNavEvent.AuthComplete)
                     }
                 }
                 is FirebaseAuthResult.Error -> {
                     withContext(Dispatchers.Main) {
-                        loading = false
-                        progressMessage = ""
-                        displayMessage = result.message
+                        _state.update { it.copy(loading = false, progressMessage = "") }
+                        _snackbarMessage.emit(result.message)
                     }
                 }
                 FirebaseAuthResult.Loading -> Unit
@@ -377,27 +390,27 @@ class LoginViewModel(
         }
     }
 
-    fun resendFirebaseOtp(onResendSuccess: (String) -> Unit) {
-        if (loading) return
-        loading = true
-        progressMessage = "Resending verification code..."
-
+    fun resendFirebaseOtp() {
+        if (_state.value.loading) return
         viewModelScope.launch(DispatcherProvider.io) {
+            val progressMsg = getString(Res.string.auth_progress_resending_code)
+            withContext(Dispatchers.Main) {
+                _state.update { it.copy(loading = true, progressMessage = progressMsg) }
+            }
             val countryCode = "91"
-            when (val result = firebaseAuthRepository.resendOtp(countryCode, phoneNumber)) {
+            when (val result = firebaseAuthRepository.resendOtp(countryCode, _state.value.phoneNumber)) {
                 is FirebaseAuthResult.Success -> {
                     withContext(Dispatchers.Main) {
-                        firebaseVerificationId = result.data
-                        loading = false
-                        progressMessage = ""
-                        onResendSuccess(result.data)
+                        _state.update {
+                            it.copy(firebaseVerificationId = result.data, loading = false, progressMessage = "")
+                        }
+                        _navEvent.emit(LoginNavEvent.FirebaseOtpResent)
                     }
                 }
                 is FirebaseAuthResult.Error -> {
                     withContext(Dispatchers.Main) {
-                        loading = false
-                        progressMessage = ""
-                        displayMessage = result.message
+                        _state.update { it.copy(loading = false, progressMessage = "") }
+                        _snackbarMessage.emit(result.message)
                     }
                 }
                 FirebaseAuthResult.Loading -> Unit
@@ -405,26 +418,25 @@ class LoginViewModel(
         }
     }
 
-    fun completeFirebaseAuthenticationWithToken(firebaseIdToken: String, onAuthComplete: () -> Unit) {
-        if (loading) return
-        loading = true
-        progressMessage = "Completing authentication..."
-
+    fun completeFirebaseAuthenticationWithToken(firebaseIdToken: String) {
+        if (_state.value.loading) return
         viewModelScope.launch(DispatcherProvider.io) {
+            val progressMsg = getString(Res.string.auth_progress_completing)
+            withContext(Dispatchers.Main) {
+                _state.update { it.copy(loading = true, progressMessage = progressMsg) }
+            }
             tokenRepository.createDummyUserSession()
-            val verifiedPhoneNumber = phoneNumber
-            val backendResult = userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber)
+            val backendResult = userRepository.verifyFirebaseAuth(firebaseIdToken, _state.value.phoneNumber)
             if (backendResult.data == null || backendResult.error != null) {
                 withContext(Dispatchers.Main) {
-                    displayMessage = backendResult.error?.message ?: ""
-                    loading = false
-                    progressMessage = ""
+                    _state.update { it.copy(loading = false, progressMessage = "") }
+                    val errMsg = backendResult.error?.message ?: ""
+                    if (errMsg.isNotEmpty()) _snackbarMessage.emit(errMsg)
                 }
                 return@launch
             }
             val authData = backendResult.data!!
             tokenRepository.updateToken(authData.accessToken, authData.refreshToken)
-
             val userResult = userRepository.getUserApi()
             if (userResult.data != null && userResult.error == null) {
                 val userData = userResult.data!!
@@ -441,9 +453,8 @@ class LoginViewModel(
             }
             withContext(Dispatchers.Main) {
                 delay(1000)
-                onAuthComplete()
-                loading = false
-                progressMessage = ""
+                _state.update { it.copy(loading = false, progressMessage = "") }
+                _navEvent.emit(LoginNavEvent.AuthComplete)
             }
         }
     }
@@ -456,10 +467,11 @@ class LoginViewModel(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        loading = true
-        progressMessage = "Completing authentication..."
-
         viewModelScope.launch(DispatcherProvider.io) {
+            val progressMsg = getString(Res.string.auth_progress_completing)
+            withContext(Dispatchers.Main) {
+                _state.update { it.copy(loading = true, progressMessage = progressMsg) }
+            }
             try {
                 tokenRepository.createDummyUserSession()
                 tokenRepository.updateToken(accessToken, refreshToken)
@@ -475,25 +487,27 @@ class LoginViewModel(
                         mapOf(AnalyticsParams.METHOD to "desktop_browser")
                     )
                     withContext(Dispatchers.Main) {
-                        loading = false
-                        progressMessage = ""
+                        _state.update { it.copy(loading = false, progressMessage = "") }
                         delay(500)
                         onSuccess()
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        loading = false
-                        progressMessage = ""
+                        _state.update { it.copy(loading = false, progressMessage = "") }
                         onError("Failed to fetch user information: ${userResult.error?.message}")
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading = false
-                    progressMessage = ""
+                    _state.update { it.copy(loading = false, progressMessage = "") }
                     onError("Authentication error: ${e.message}")
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _state.update { it.copy(loading = false) }
     }
 }

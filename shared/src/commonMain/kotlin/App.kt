@@ -21,7 +21,9 @@ import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 fun App(
     appGraph: AppGraph,
     onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
-    onNavigationReady: (((String) -> Unit) -> Unit)? = null
+    onNavigationReady: (((String) -> Unit) -> Unit)? = null,
+    onWorkspaceEntered: ((String) -> Unit)? = null,
+    onWorkspaceLeft: (() -> Unit)? = null,
 ) {
     CompositionLocalProvider(
         LocalAppGraph provides appGraph,
@@ -39,7 +41,7 @@ fun App(
                         .fillMaxSize()
                         .windowInsetsPadding(WindowInsets.systemBars)
                 ) {
-                    AppNavigationNav3(onNavigationServiceReady, onNavigationReady)
+                    AppNavigationNav3(onNavigationServiceReady, onNavigationReady, onWorkspaceEntered, onWorkspaceLeft)
                 }
             }
         }

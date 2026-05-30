@@ -1,0 +1,131 @@
+<resources>
+    <!-- Product list screen -->
+    <string name="prod_list_title">Products</string>
+    <string name="prod_list_cd_form_settings">Form Settings</string>
+    <string name="prod_list_cd_refresh">Refresh</string>
+    <string name="prod_list_cd_add">Add Product</string>
+    <string name="prod_list_search_placeholder">Search products…</string>
+    <string name="prod_list_cd_search">Search</string>
+    <string name="prod_list_cd_product_image">Product image</string>
+    <string name="prod_list_refreshing">Refreshing…</string>
+    <string name="prod_list_empty_title">No products yet</string>
+    <string name="prod_list_empty_desc">Create your first product to get started</string>
+    <string name="prod_list_code_format">Code: %s</string>
+    <string name="prod_list_brand_format">Brand: %s</string>
+    <string name="prod_list_in_stock_format">In Stock (%s)</string>
+
+    <!-- Shared labels and states -->
+    <string name="prod_out_of_stock">Out of Stock</string>
+    <string name="prod_inactive">Inactive</string>
+    <string name="prod_active">Active</string>
+    <string name="prod_error_title">Something went wrong</string>
+    <string name="prod_load_error_title">Failed to load product</string>
+    <string name="prod_dialog_error">Error</string>
+    <string name="prod_retry">Retry</string>
+    <string name="prod_cancel">Cancel</string>
+    <string name="prod_save">Save</string>
+    <string name="prod_ok">OK</string>
+    <string name="prod_manage_variants">Manage Variants</string>
+
+    <!-- Field labels (shared across screens) -->
+    <string name="prod_label_status">Status</string>
+    <string name="prod_label_mrp">MRP</string>
+    <string name="prod_label_dealer_price">Dealer Price</string>
+    <string name="prod_label_selling_price">Selling Price</string>
+    <string name="prod_label_discount">Discount</string>
+    <string name="prod_label_name">Name</string>
+    <string name="prod_label_code">Code</string>
+    <string name="prod_label_description">Description</string>
+    <string name="prod_label_tax_code">Tax Code</string>
+    <string name="prod_label_current_stock">Current Stock</string>
+    <string name="prod_label_low_stock_alert">Low Stock Alert</string>
+    <string name="prod_label_category">Category</string>
+    <string name="prod_label_brand">Brand</string>
+    <string name="prod_label_group_id">Group ID</string>
+    <string name="prod_label_sub_category_id">Sub Category ID</string>
+    <string name="prod_label_base_unit_id">Base Unit ID</string>
+    <string name="prod_label_product_type">Product Type</string>
+    <string name="prod_label_service_type">Service Type</string>
+    <string name="prod_sku_format">SKU: %s</string>
+    <string name="prod_stock_format">Stock: %s</string>
+
+    <!-- Section headers (shared) -->
+    <string name="prod_section_basic">Basic Information</string>
+    <string name="prod_section_pricing">Pricing</string>
+    <string name="prod_section_classification">Classification</string>
+    <string name="prod_section_stock_info">Stock Information</string>
+    <string name="prod_section_category_brand">Category &amp; Brand</string>
+    <string name="prod_section_unit">Unit Information</string>
+    <string name="prod_section_stock_mgmt">Stock Management</string>
+    <string name="prod_section_attributes">Attributes</string>
+    <string name="prod_section_images">Product Images</string>
+    <string name="prod_section_variants">Product Variants</string>
+
+    <!-- Product details screen -->
+    <string name="prod_details_title">Product Details</string>
+    <string name="prod_details_cd_edit">Edit</string>
+    <string name="prod_details_cd_delete">Delete</string>
+    <string name="prod_details_not_found">Product not found</string>
+    <string name="prod_details_delete_title">Delete Product</string>
+    <string name="prod_details_delete_confirm">Are you sure you want to delete %s? This action cannot be undone.</string>
+    <string name="prod_details_delete_btn">Delete</string>
+    <string name="prod_details_total_stock_label">Total Stock</string>
+    <string name="prod_details_variants_count_label">Variants</string>
+    <string name="prod_details_inactive_alert">This product is currently inactive</string>
+    <string name="prod_details_low_stock_alert">Low stock alert: Only %s units remaining</string>
+    <string name="prod_details_variants_low_stock">Some variants are low on stock</string>
+    <string name="prod_details_and_more">And %s more…</string>
+    <string name="prod_details_no_variants">No variants added yet</string>
+
+    <!-- Variant management screen -->
+    <string name="prod_variant_list_title">Variants - %s</string>
+    <string name="prod_variant_add">Add Variant</string>
+    <string name="prod_variant_empty_title">No Variants</string>
+    <string name="prod_variant_empty_desc">Add variants to manage different product options</string>
+    <string name="prod_variant_delete_title">Delete Variant</string>
+    <string name="prod_variant_delete_confirm">Are you sure you want to delete \'%s\'? This action cannot be undone.</string>
+    <string name="prod_variant_low_stock">Low Stock</string>
+    <string name="prod_variant_selling">Selling</string>
+
+    <!-- Variant form screen -->
+    <string name="prod_variant_form_edit_title">Edit Variant</string>
+    <string name="prod_variant_form_new_title">New Variant</string>
+    <string name="prod_variant_form_sku_label">SKU *</string>
+    <string name="prod_variant_form_name_label">Variant Name *</string>
+    <string name="prod_variant_form_attr_name">Name</string>
+    <string name="prod_variant_form_attr_value">Value</string>
+    <string name="prod_variant_form_pricing_title">Pricing (Optional Overrides)</string>
+    <string name="prod_variant_form_pricing_subtitle">Leave blank to use base product pricing</string>
+    <string name="prod_variant_form_stock_label">Stock Quantity *</string>
+
+    <!-- Product form screen -->
+    <string name="prod_form_new_title">New Product</string>
+    <string name="prod_form_edit_title">Edit Product</string>
+    <string name="prod_form_saving">Saving…</string>
+    <string name="prod_form_save_product">Save Product</string>
+    <string name="prod_form_name_label">Product Name *</string>
+    <string name="prod_form_code_label">Product Code *</string>
+    <string name="prod_form_clear_tax_code">Clear tax code</string>
+    <string name="prod_form_cd_search">Search</string>
+    <string name="prod_form_tax_search_placeholder">Search tax codes…</string>
+    <string name="prod_form_select_type">Select Type</string>
+    <string name="prod_form_clear_selection">Clear Selection</string>
+    <string name="prod_form_category_id_label">Category ID</string>
+    <string name="prod_form_brand_id_label">Brand ID</string>
+    <string name="prod_form_images_count">Images (%s)</string>
+    <string name="prod_form_add_image">Add Image</string>
+    <string name="prod_form_no_images">No images added</string>
+    <string name="prod_form_cd_product_image">Product Image</string>
+    <string name="prod_form_cd_remove_image">Remove Image</string>
+    <string name="prod_form_has_variants_label">This product has variants</string>
+    <string name="prod_form_has_variants_desc">Enable if product comes in different sizes, colors, or configurations</string>
+    <string name="prod_form_save_first_title">Save product first to add variants</string>
+    <string name="prod_form_save_first_desc">After saving this product, you\'ll be able to add and manage variants like sizes, colors, and other options.</string>
+    <string name="prod_form_manage_variants_title">Manage Product Variants</string>
+    <string name="prod_form_manage_variants_desc">Add and manage sizes, colors, and other variant options. At least one variant is required.</string>
+    <string name="prod_form_optional_placeholder">Optional</string>
+
+    <!-- Cart item component -->
+    <string name="prod_cart_decrease_qty">Decrease Quantity</string>
+    <string name="prod_cart_increase_qty">Increase Quantity</string>
+</resources>

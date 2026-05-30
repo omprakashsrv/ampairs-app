@@ -2,7 +2,6 @@ package com.ampairs.di
 
 import com.ampairs.auth.api.AuthApi
 import com.ampairs.auth.api.TokenRepository
-import com.ampairs.common.config.ConfigurationManager
 import com.ampairs.common.di.AppScope
 import com.ampairs.event.EventManagerFactory
 import com.ampairs.workspace.EventManagerProvider
@@ -30,8 +29,7 @@ interface EventManagerModule {
                     deviceId = deviceId,
                     httpClient = httpClient,
                     tokenProvider = { tokenRepository.getAccessToken() ?: "" },
-                    tokenRefresher = { authApi.refreshToken().data != null },
-                    baseUrl = ConfigurationManager.apiBaseUrl
+                    tokenRefresher = { authApi.refreshToken().data != null }
                 )
             }
         }

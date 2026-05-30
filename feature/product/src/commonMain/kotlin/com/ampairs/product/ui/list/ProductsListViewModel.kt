@@ -2,21 +2,24 @@ package com.ampairs.product.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.domain.ProductListItem
-import com.ampairs.product.domain.ProductListKey
-import com.ampairs.product.domain.ProductStore
-import com.ampairs.common.viewmodel.handleCancellation
-import com.ampairs.common.viewmodel.shouldShowAsError
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class ProductsListUiState(
     val products: List<ProductListItem> = emptyList(),
@@ -30,163 +33,50 @@ data class ProductsListUiState(
 @ViewModelKey
 @Inject
 class ProductsListViewModel(
-    private val productStore: ProductStore,
-    private val workspaceContextManager: WorkspaceContextManager
+    private val productRepository: ProductRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductsListUiState())
     val uiState: StateFlow<ProductsListUiState> = _uiState.asStateFlow()
 
-    private var searchJob: Job? = null
+    private val _searchQuery = MutableStateFlow("")
 
     init {
-        observeSearchQuery()
-    }
-
-    fun loadProducts(forceRefresh: Boolean = false) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            handleCancellation(
-                onError = { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error) }
-                }
-            ) {
-                val key = ProductListKey(searchQuery = _uiState.value.searchQuery)
-                val request = if (forceRefresh) {
-                    StoreReadRequest.fresh(key)
-                } else {
-                    StoreReadRequest.cached(key, refresh = false)
-                }
-
-                productStore.productListStore
-                    .stream(request)
-                    .catch { throwable ->
-                        if (throwable.shouldShowAsError()) {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = throwable.message ?: "Unknown error"
-                                )
-                            }
-                        }
-                    }
-                    .collect { response ->
-                        when (response) {
-                            is StoreReadResponse.Data -> {
-                                _uiState.update {
-                                    it.copy(
-                                        products = response.value,
-                                        isLoading = false,
-                                        error = null
-                                    )
-                                }
-                            }
-                            is StoreReadResponse.Loading -> {
-                                _uiState.update { it.copy(isLoading = true) }
-                            }
-                            is StoreReadResponse.Error.Exception -> {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoading = false,
-                                        error = response.error.message ?: "Unknown error"
-                                    )
-                                }
-                            }
-                            is StoreReadResponse.Error.Message -> {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoading = false,
-                                        error = response.message
-                                    )
-                                }
-                            }
-                            else -> {
-                                // Handle other response types if needed
-                            }
-                        }
-                    }
-            }
-        }
+        observeProducts()
+        syncProducts()
     }
 
     fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
         _uiState.update { it.copy(searchQuery = query) }
     }
 
     fun syncProducts() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
-
             try {
-                // Force refresh from database
-                loadProducts(forceRefresh = true)
-                _uiState.update { it.copy(isRefreshing = false) }
+                productRepository.syncProducts()
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isRefreshing = false,
-                        error = e.message ?: "Sync failed"
-                    )
-                }
+                _uiState.update { it.copy(error = e.message ?: "Sync failed") }
+            } finally {
+                _uiState.update { it.copy(isRefreshing = false) }
             }
         }
     }
 
-    @OptIn(kotlinx.coroutines.FlowPreview::class)
-    private fun observeSearchQuery() {
-        uiState
-            .map { it.searchQuery }
+    @OptIn(FlowPreview::class)
+    private fun observeProducts() {
+        _uiState.update { it.copy(isLoading = true) }
+        _searchQuery
+            .debounce(300)
             .distinctUntilChanged()
-            .debounce(300) // Debounce search queries
-            .onEach { query ->
-                searchJob?.cancel()
-                searchJob = viewModelScope.launch {
-                    performSearch(query)
-                }
+            .flatMapLatest { query -> productRepository.searchProducts(query) }
+            .onEach { products ->
+                _uiState.update { it.copy(products = products, isLoading = false, error = null) }
+            }
+            .catch { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
             .launchIn(viewModelScope)
-    }
-
-    private suspend fun performSearch(query: String) {
-        try {
-            val key = ProductListKey(searchQuery = query)
-            productStore.productListStore
-                .stream(StoreReadRequest.cached(key, refresh = false))
-                .catch { throwable ->
-                    _uiState.update {
-                        it.copy(error = throwable.message ?: "Search failed")
-                    }
-                }
-                .collect { response ->
-                    when (response) {
-                        is StoreReadResponse.Data -> {
-                            _uiState.update {
-                                it.copy(
-                                    products = response.value,
-                                    error = null
-                                )
-                            }
-                        }
-                        is StoreReadResponse.Error.Exception -> {
-                            _uiState.update {
-                                it.copy(error = response.error.message ?: "Search failed")
-                            }
-                        }
-                        is StoreReadResponse.Error.Message -> {
-                            _uiState.update {
-                                it.copy(error = response.message)
-                            }
-                        }
-                        else -> {
-                            // Handle other response types if needed
-                        }
-                    }
-                }
-        } catch (e: Exception) {
-            _uiState.update {
-                it.copy(error = e.message ?: "Search failed")
-            }
-        }
     }
 }

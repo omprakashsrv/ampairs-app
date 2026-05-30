@@ -18,12 +18,22 @@ import androidx.compose.ui.unit.sp
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.subscription.util.SubscriptionOnboardingLookup
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.workspace.navigation.DynamicModuleNavigation
 import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.workspace.generated.resources.Res
+import ampairsapp.feature.workspace.generated.resources.workspace_install_modules
+import ampairsapp.feature.workspace.generated.resources.workspace_no_active_modules_desc
+import ampairsapp.feature.workspace.generated.resources.workspace_no_active_modules_title
+import ampairsapp.feature.workspace.generated.resources.workspace_update_app
+import ampairsapp.feature.workspace.generated.resources.workspace_update_later
+import ampairsapp.feature.workspace.generated.resources.workspace_update_required_hint
+import ampairsapp.feature.workspace.generated.resources.workspace_update_required_title
 
 /**
  * Workspace modules screen showing active modules
@@ -45,9 +55,9 @@ fun WorkspaceModulesScreen(
     var missingModuleName by remember { mutableStateOf("") }
     var showSubscriptionOnboarding by remember { mutableStateOf(false) }
 
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val activeModules by viewModel.activeModules.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val activeModules by viewModel.activeModules.collectAsStateWithLifecycle()
 
     // Show subscription onboarding for new workspaces
     LaunchedEffect(workspaceId) {
@@ -68,7 +78,7 @@ fun WorkspaceModulesScreen(
 
     // Use global navigation manager for desktop menu bar integration
     val globalNavigationManager = GlobalNavigationManager.getInstance()
-    val globalNavigationService by globalNavigationManager.navigationService.collectAsState()
+    val globalNavigationService by globalNavigationManager.navigationService.collectAsStateWithLifecycle()
 
     LaunchedEffect(globalNavigationService) {
         onNavigationServiceReady?.invoke(globalNavigationService)
@@ -111,11 +121,9 @@ fun WorkspaceModulesScreen(
             // Empty state: No modules and not loading
             !isLoading && activeModules.isEmpty() -> {
                 EmptyStateCard(
-                    title = "No Active Modules",
-                    description = "Install modules from the store to get started with your workspace",
-                    onInstallClick = {
-                        onNavigateToModuleStore?.invoke()
-                    }
+                    title = stringResource(Res.string.workspace_no_active_modules_title),
+                    description = stringResource(Res.string.workspace_no_active_modules_desc),
+                    onInstallClick = { onNavigateToModuleStore?.invoke() }
                 )
             }
 
@@ -216,7 +224,7 @@ private fun EmptyStateCard(
                 Button(onClick = onClick) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Install Modules")
+                    Text(stringResource(Res.string.workspace_install_modules))
                 }
             }
         }
@@ -294,16 +302,16 @@ private fun UpdateAppDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Update Required") },
+        title = { Text(stringResource(Res.string.workspace_update_required_title)) },
         text = {
             Column {
                 Text(
-                    text = "The $moduleName module requires a newer version of the app to function properly.",
+                    text = moduleName,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Please update the app to access this module.",
+                    text = stringResource(Res.string.workspace_update_required_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -311,12 +319,12 @@ private fun UpdateAppDialog(
         },
         confirmButton = {
             Button(onClick = onUpdate) {
-                Text("Update App")
+                Text(stringResource(Res.string.workspace_update_app))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Later")
+                Text(stringResource(Res.string.workspace_update_later))
             }
         }
     )

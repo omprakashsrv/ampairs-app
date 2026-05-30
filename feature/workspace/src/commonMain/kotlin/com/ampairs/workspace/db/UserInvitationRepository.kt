@@ -5,44 +5,51 @@ import com.ampairs.workspace.api.UserInvitationApi
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.model.InvitationActionResponse
+import com.ampairs.workspace.db.dao.UserInvitationDao
+import com.ampairs.workspace.db.entity.UserInvitationEntity
 import com.ampairs.workspace.domain.UserInvitation
-import com.ampairs.workspace.store.UserInvitationKey
-import com.ampairs.workspace.store.UserInvitationStore
 import kotlinx.coroutines.flow.Flow
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
+import kotlinx.coroutines.flow.map
 
-/**
- * Repository for user invitation management with offline-first support using Store5
- */
 @Inject
 @SingleIn(AppScope::class)
 class UserInvitationRepository(
-    private val invitationStore: UserInvitationStore,
+    private val invitationDao: UserInvitationDao,
     private val invitationApi: UserInvitationApi,
 ) {
 
-    /**
-     * Get user invitations as a Flow with offline-first support
-     */
-    fun getUserInvitationsFlow(userId: String): Flow<StoreReadResponse<List<UserInvitation>>> {
-        val key = UserInvitationKey(userId = userId)
-        return invitationStore.stream(StoreReadRequest.cached(key, refresh = true))
-    }
+    fun observeUserInvitations(userId: String): Flow<List<UserInvitation>> =
+        invitationDao.getUserInvitations(userId).map { entities -> entities.map { it.toDomain() } }
 
-    /**
-     * Refresh user invitations from network
-     */
-    suspend fun refreshUserInvitations(userId: String) {
-        val key = UserInvitationKey(userId = userId, refresh = true)
-        invitationStore.stream(StoreReadRequest.fresh(key)).collect {
-            // Collect to trigger the refresh - the flow in ViewModel will pick up the changes
+    suspend fun syncUserInvitations(userId: String) {
+        try {
+            val response = invitationApi.getPendingInvitations()
+            if (response.data != null && response.error == null) {
+                invitationDao.deleteAllUserInvitations(userId)
+                val entities = response.data!!.map { apiModel ->
+                    UserInvitationEntity(
+                        id = apiModel.id,
+                        user_id = userId,
+                        workspace_id = apiModel.workspaceId,
+                        workspace_name = apiModel.workspaceName ?: "",
+                        workspace_description = apiModel.workspaceDescription,
+                        workspace_type = apiModel.workspaceType,
+                        role = apiModel.role,
+                        message = apiModel.message,
+                        invited_by = apiModel.invitedBy,
+                        inviter_name = apiModel.inviterName,
+                        expires_at = apiModel.expiresAt,
+                        created_at = apiModel.createdAt,
+                        sync_state = "SYNCED"
+                    )
+                }
+                invitationDao.insertUserInvitations(entities)
+            }
+        } catch (_: Exception) {
+            // Graceful failure — UI shows cached data
         }
     }
 
-    /**
-     * Accept a workspace invitation
-     */
     suspend fun acceptInvitation(invitationId: String): Result<InvitationActionResponse> {
         return try {
             val response = invitationApi.acceptInvitation(invitationId)
@@ -56,9 +63,6 @@ class UserInvitationRepository(
         }
     }
 
-    /**
-     * Reject a workspace invitation
-     */
     suspend fun rejectInvitation(invitationId: String): Result<InvitationActionResponse> {
         return try {
             val response = invitationApi.rejectInvitation(invitationId)
@@ -71,4 +75,19 @@ class UserInvitationRepository(
             Result.failure(e)
         }
     }
+
+    private fun UserInvitationEntity.toDomain() = UserInvitation(
+        id = id,
+        workspaceId = workspace_id,
+        workspaceName = workspace_name,
+        workspaceDescription = workspace_description,
+        workspaceType = workspace_type,
+        role = role,
+        message = message,
+        invitedBy = invited_by,
+        inviterName = inviter_name,
+        expiresAt = expires_at,
+        createdAt = created_at,
+        daysUntilExpiry = days_until_expiry
+    )
 }

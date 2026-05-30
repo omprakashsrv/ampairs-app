@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @.claude/memory/project_versions.md
 @.claude/memory/feedback_critical_patterns.md
 @.claude/memory/feedback_kmp_rules.md
+@.claude/skills/cmp-practices/SKILL.md
 
 ## Project Overview
 
@@ -477,7 +478,7 @@ Files in `shared/src/`:
 
 ## iOS Platform Notes
 
-- **Dispatchers**: Use `Dispatchers.Default` for IO on iOS (no `Dispatchers.IO`)
+- **Dispatchers**: Use `Dispatchers.Default` for IO in `iosMain` — `Dispatchers.IO` actual is internal on Kotlin/Native even at coroutines 1.10.2; `Dispatchers.IO` is safe only in `commonMain` (via expect)
 - **File Paths**: Always use Documents directory (`getIosDatabasePath()`)
 - **Koin Init**: Must be initialized in `MainViewController` before app launch
 - **Foundation APIs**: Require `@OptIn(ExperimentalForeignApi::class)`
@@ -502,7 +503,7 @@ Files in `shared/src/`:
 |---|---|
 | Stale data after workspace switch | Check entire DI chain uses `factory`, not `single` |
 | iOS database path wrong | Use `getIosDatabasePath()`, not hardcoded paths |
-| `Dispatchers.IO` crash on iOS | Use `Dispatchers.Default` or `DispatcherProvider.io` |
+| `Dispatchers.IO` crash in `iosMain` | Use `Dispatchers.Default` — the Native actual is internal; `Dispatchers.IO` only works in `commonMain` |
 | `java.*` compile error in commonMain | Use KMP equivalent (kotlinx.datetime, etc.) |
 | Store5 stale cache | Clear cache explicitly after successful sync |
 | Room migration error | Add migration script, check schema version increment |

@@ -34,11 +34,18 @@ Never use JVM-specific APIs in `commonMain`. If the import starts with `java.*` 
 
 ## iOS-Specific Dispatcher Rule
 
-On iOS, `Dispatchers.IO` does not exist. Use:
-- `Dispatchers.Default` for CPU/IO operations
-- `DispatcherProvider.io` (the project's expect/actual wrapper)
+`Dispatchers.IO` is available as an `expect` declaration in `commonMain` (coroutines 1.7+), so it is **safe to use in `commonMain`**.
 
-**Why:** Kotlin/Native does not have a thread pool for IO dispatching. Using `Dispatchers.IO` on iOS causes a crash at runtime.
+However, `Dispatchers.IO` is **internal** in the Kotlin/Native runtime — it cannot be accessed directly in `iosMain` source sets. Confirmed by compilation error: "Cannot access 'val IO: CoroutineDispatcher': it is internal in 'kotlinx.coroutines.Dispatchers'".
+
+`DispatcherProvider.ios.kt` must use `Dispatchers.Default` for the `io` dispatcher (this is what `Dispatchers.IO` maps to internally on iOS/Native).
+
+**Summary:**
+- `commonMain`: `Dispatchers.IO` ✅ (via expect/actual, safe)
+- `iosMain` (actual): `Dispatchers.Default` ✅ (must use this — `Dispatchers.IO` actual is internal on Native)
+- `androidMain`/`desktopMain`: `Dispatchers.IO` ✅
+
+**Why the distinction:** The `expect val Dispatchers.IO` in commonMain compiles fine everywhere because it resolves via the expect mechanism. But when writing code in the `iosMain` source set itself (which compiles as Kotlin/Native), the actual backing value is marked internal and cannot be referenced directly. Confirmed against coroutines 1.10.2 / Kotlin 2.3.21.
 
 ---
 

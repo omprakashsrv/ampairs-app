@@ -1,8 +1,5 @@
 package com.ampairs.auth.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.AuthApi
@@ -13,8 +10,6 @@ import com.ampairs.auth.api.model.UserUpdateRequest
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.model.UiState
-import com.ampairs.common.model.onError
-import com.ampairs.common.model.onSuccess
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
@@ -26,11 +21,39 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import com.ampairs.auth.db.UserRepository
+import org.jetbrains.compose.resources.getString
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.auth_error_unsupported_file_type
+import ampairsapp.feature.auth.generated.resources.auth_error_image_too_large
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_select_image
+import ampairsapp.feature.auth.generated.resources.auth_error_no_image_selected
+import ampairsapp.feature.auth.generated.resources.auth_success_profile_picture_updated
+import ampairsapp.feature.auth.generated.resources.auth_error_first_name_required
+import ampairsapp.feature.auth.generated.resources.auth_success_profile_updated
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_load_user
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_update_user
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_upload_picture
+
+data class UserUpdateUiState(
+    val firstName: String = "",
+    val lastName: String = "",
+    val profilePictureUrl: String? = null,
+    val selectedImageData: ByteArray? = null,
+    val selectedImageFileName: String? = null,
+    val selectedImageContentType: String? = null,
+    val userState: UiState<UserApiModel> = UiState.Empty,
+    val updateUserState: UiState<UserApiModel> = UiState.Empty,
+    val uploadPictureState: UiState<UserApiModel> = UiState.Empty,
+)
 
 sealed interface UserUpdateNavEvent {
     data class LoginSuccess(val userInfo: UserInfo?) : UserUpdateNavEvent
@@ -47,70 +70,50 @@ class UserUpdateViewModel(
     private val userWorkspaceRepository: UserWorkspaceRepository,
 ) : ViewModel() {
 
-    private val _navEvent = MutableSharedFlow<UserUpdateNavEvent>()
+    private val _state = MutableStateFlow(UserUpdateUiState())
+    val state: StateFlow<UserUpdateUiState> = _state.asStateFlow()
+
+    private val _navEvent = MutableSharedFlow<UserUpdateNavEvent>(extraBufferCapacity = 1)
     val navEvent: SharedFlow<UserUpdateNavEvent> = _navEvent.asSharedFlow()
+
+    private val _snackbarMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
 
     companion object {
         private val SUPPORTED_IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "webp")
-        private const val MAX_FILE_SIZE = 5 * 1024 * 1024L // 5MB for profile pictures
+        private const val MAX_FILE_SIZE = 5 * 1024 * 1024L
     }
-
-    var firstName by mutableStateOf("")
-        private set
-
-    var lastName by mutableStateOf("")
-        private set
-
-    var profilePictureUrl by mutableStateOf<String?>(null)
-        private set
-
-    var selectedImageData by mutableStateOf<ByteArray?>(null)
-        private set
-
-    var selectedImageFileName by mutableStateOf<String?>(null)
-        private set
-
-    var selectedImageContentType by mutableStateOf<String?>(null)
-        private set
-
-    var userState by mutableStateOf<UiState<UserApiModel>>(UiState.Empty)
-        private set
-
-    var updateUserState by mutableStateOf<UiState<UserApiModel>>(UiState.Empty)
-        private set
-
-    var uploadPictureState by mutableStateOf<UiState<UserApiModel>>(UiState.Empty)
-        private set
-
-    var displayMessage by mutableStateOf("")
 
     init {
         loadUserDetails()
     }
 
     fun updateFirstName(newFirstName: String) {
-        firstName = newFirstName
+        _state.update { it.copy(firstName = newFirstName) }
     }
 
     fun updateLastName(newLastName: String) {
-        lastName = newLastName
+        _state.update { it.copy(lastName = newLastName) }
     }
 
     private fun loadUserDetails() {
         viewModelScope.launch {
-            userState = UiState.Loading(null)
-            authApi.getUser().onSuccess {
-                this@UserUpdateViewModel.firstName = this.firstName
-                this@UserUpdateViewModel.lastName = this.lastName
-                // Use API endpoint URL for profile picture, not the raw storage path
-                this@UserUpdateViewModel.profilePictureUrl = if (!this.profilePictureUrl.isNullOrBlank()) {
-                    ApiUrlBuilder.currentUserPictureUrl()
-                } else {
-                    null
+            _state.update { it.copy(userState = UiState.Loading(null)) }
+            val response = authApi.getUser()
+            if (response.data != null && response.error == null) {
+                val user = response.data!!
+                val picUrl = if (!user.profilePictureUrl.isNullOrBlank()) ApiUrlBuilder.currentUserPictureUrl() else null
+                _state.update {
+                    it.copy(
+                        firstName = user.firstName,
+                        lastName = user.lastName,
+                        profilePictureUrl = picUrl,
+                        userState = UiState.Success(user),
+                    )
                 }
-                userState = UiState.Success(this)
-            }.onError {
-                userState = UiState.Error(this.message.ifEmpty { "Failed to load user details" })
+            } else {
+                val errMsg = response.error?.message.orEmpty().ifEmpty { getString(Res.string.auth_error_failed_load_user) }
+                _state.update { it.copy(userState = UiState.Error(errMsg)) }
             }
         }
     }
@@ -118,119 +121,100 @@ class UserUpdateViewModel(
     fun pickProfilePicture() {
         viewModelScope.launch {
             try {
-                val file = FileKit.openFilePicker(
-                    type = FileKitType.Image
-                )
-
-                if (file == null) {
-                    return@launch
-                }
-
+                val file = FileKit.openFilePicker(type = FileKitType.Image) ?: return@launch
                 val fileName = file.name
                 val fileSize = file.size()
-
-                // Validate file extension
                 val extension = fileName.substringAfterLast(".", "").lowercase()
                 if (extension !in SUPPORTED_IMAGE_EXTENSIONS) {
-                    displayMessage = "Unsupported file type. Please select JPG, PNG, or WebP."
+                    _snackbarMessage.emit(getString(Res.string.auth_error_unsupported_file_type))
                     return@launch
                 }
-
-                // Validate file size
                 if (fileSize > MAX_FILE_SIZE) {
-                    displayMessage = "Image too large. Maximum size is 5MB."
+                    _snackbarMessage.emit(getString(Res.string.auth_error_image_too_large))
                     return@launch
                 }
-
-                // Determine content type
                 val contentType = when (extension) {
                     "jpg", "jpeg" -> "image/jpeg"
                     "png" -> "image/png"
                     "webp" -> "image/webp"
                     else -> "image/*"
                 }
-
-                // Read file data
                 val imageData = file.readBytes()
-
-                selectedImageData = imageData
-                selectedImageFileName = fileName
-                selectedImageContentType = contentType
-
-            } catch (e: Exception) {
-                displayMessage = "Failed to select image"
+                _state.update {
+                    it.copy(
+                        selectedImageData = imageData,
+                        selectedImageFileName = fileName,
+                        selectedImageContentType = contentType,
+                    )
+                }
+            } catch (_: Exception) {
+                _snackbarMessage.emit(getString(Res.string.auth_error_failed_select_image))
             }
         }
     }
 
     fun clearSelectedImage() {
-        selectedImageData = null
-        selectedImageFileName = null
-        selectedImageContentType = null
+        _state.update { it.copy(selectedImageData = null, selectedImageFileName = null, selectedImageContentType = null) }
     }
 
     fun uploadProfilePicture(onSuccess: () -> Unit = {}) {
-        val imageData = selectedImageData
-        val fileName = selectedImageFileName
-        val contentType = selectedImageContentType
-
-        if (imageData == null || fileName == null || contentType == null) {
-            displayMessage = "No image selected"
+        val current = _state.value
+        if (current.selectedImageData == null || current.selectedImageFileName == null || current.selectedImageContentType == null) {
+            viewModelScope.launch { _snackbarMessage.emit(getString(Res.string.auth_error_no_image_selected)) }
             return
         }
-
         viewModelScope.launch {
-            uploadPictureState = UiState.Loading(null)
-            val response = authApi.uploadProfilePicture(imageData, fileName, contentType)
-
+            _state.update { it.copy(uploadPictureState = UiState.Loading(null)) }
+            val response = authApi.uploadProfilePicture(
+                current.selectedImageData, current.selectedImageFileName, current.selectedImageContentType
+            )
             if (response.data != null) {
                 val updatedUser = response.data!!
-                // Save updated user (with new profile picture) to local database
                 userRepository.saveUser(updatedUser)
-                uploadPictureState = UiState.Success(updatedUser)
-                // Use API endpoint URL for profile picture, not the raw storage path
-                this@UserUpdateViewModel.profilePictureUrl = if (!updatedUser.profilePictureUrl.isNullOrBlank()) {
-                    // Add random param to bust cache after upload
+                val newPicUrl = if (!updatedUser.profilePictureUrl.isNullOrBlank()) {
                     "${ApiUrlBuilder.currentUserPictureUrl()}?t=${Random.nextLong()}"
-                } else {
-                    null
+                } else null
+                _state.update {
+                    it.copy(
+                        uploadPictureState = UiState.Success(updatedUser),
+                        profilePictureUrl = newPicUrl,
+                        selectedImageData = null,
+                        selectedImageFileName = null,
+                        selectedImageContentType = null,
+                    )
                 }
-                clearSelectedImage()
-                displayMessage = "Profile picture updated successfully"
+                _snackbarMessage.emit(getString(Res.string.auth_success_profile_picture_updated))
                 onSuccess()
             } else {
-                val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to upload profile picture" }
-                uploadPictureState = UiState.Error(errorMessage)
-                displayMessage = errorMessage
+                val errMsg = response.error?.message.orEmpty().ifEmpty { getString(Res.string.auth_error_failed_upload_picture) }
+                _state.update { it.copy(uploadPictureState = UiState.Error(errMsg)) }
+                _snackbarMessage.emit(errMsg)
             }
         }
     }
 
-    fun updateUser(onSuccess: () -> Unit) {
-        if (firstName.isBlank()) {
-            displayMessage = "First name is required"
-            return
-        }
-
+    fun updateUser() {
         viewModelScope.launch {
-            updateUserState = UiState.Loading(null)
+            if (_state.value.firstName.isBlank()) {
+                _snackbarMessage.emit(getString(Res.string.auth_error_first_name_required))
+                return@launch
+            }
+            _state.update { it.copy(updateUserState = UiState.Loading(null)) }
             val request = UserUpdateRequest(
-                firstName = firstName.trim(),
-                lastName = lastName.trim()
+                firstName = _state.value.firstName.trim(),
+                lastName = _state.value.lastName.trim()
             )
             val response = authApi.updateUser(request)
-
             if (response.data != null) {
                 val updatedUser = response.data!!
-                // Save updated user to local database
                 userRepository.saveUser(updatedUser)
-                updateUserState = UiState.Success(updatedUser)
-                displayMessage = "Profile updated successfully"
-                onSuccess()
+                _state.update { it.copy(updateUserState = UiState.Success(updatedUser)) }
+                _snackbarMessage.emit(getString(Res.string.auth_success_profile_updated))
+                handleUpdateSuccess()
             } else {
-                val errorMessage = response.error?.message.orEmpty().ifEmpty { "Failed to update user details" }
-                updateUserState = UiState.Error(errorMessage)
-                displayMessage = errorMessage
+                val errMsg = response.error?.message.orEmpty().ifEmpty { getString(Res.string.auth_error_failed_update_user) }
+                _state.update { it.copy(updateUserState = UiState.Error(errMsg)) }
+                _snackbarMessage.emit(errMsg)
             }
         }
     }
@@ -246,7 +230,6 @@ class UserUpdateViewModel(
                     accessToken = accessToken,
                     refreshToken = refreshToken
                 )
-
                 var userInfo: UserInfo? = null
                 userRepository.getUserById(currentUserId)?.let { userEntity ->
                     val profilePictureUrl = userEntity.profile_picture_url?.let { url ->
@@ -272,7 +255,6 @@ class UserUpdateViewModel(
                         hasSelectedWorkspace = true
                     )
                 }
-
                 val hasWorkspace = userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
                 if (hasWorkspace) {
                     _navEvent.emit(UserUpdateNavEvent.LoginSuccess(userInfo))
@@ -283,16 +265,4 @@ class UserUpdateViewModel(
         }
     }
 
-    fun clearMessage() {
-        displayMessage = ""
-    }
-
-    val isLoading: Boolean
-        get() = userState is UiState.Loading || updateUserState is UiState.Loading || uploadPictureState is UiState.Loading
-
-    val isFormValid: Boolean
-        get() = firstName.isNotBlank()
-
-    val hasSelectedImage: Boolean
-        get() = selectedImageData != null
 }

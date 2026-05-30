@@ -168,8 +168,6 @@ kotlin {
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
 
-                implementation(libs.store5)
-
                 implementation(libs.bundles.krossbow)
 
                 implementation(libs.datastore)
@@ -182,8 +180,9 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.jmapviewer)
+                implementation(libs.kermit)
 
-                implementation(project(":tallyModule"))
+                implementation(project(":tally"))
             }
         }
 

@@ -28,18 +28,49 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.size.Size
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.UserInvitation
+import com.ampairs.workspace.viewmodel.WorkspaceListEvent
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
-import com.ampairs.workspace.integration.WorkspaceContextIntegration
-import com.ampairs.workspace.navigation.GlobalNavigationManager
-import com.ampairs.common.config.DataStoreManager
-import com.ampairs.common.database.DatabaseScopeManager
-import com.ampairs.workspace.context.WorkspaceContextManager
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.workspace.generated.resources.Res
+import ampairsapp.feature.workspace.generated.resources.cd_back
+import ampairsapp.feature.workspace.generated.resources.cd_create_workspace
+import ampairsapp.feature.workspace.generated.resources.cd_edit_workspace
+import ampairsapp.feature.workspace.generated.resources.cd_no_workspaces
+import ampairsapp.feature.workspace.generated.resources.cd_offline
+import ampairsapp.feature.workspace.generated.resources.cd_retry
+import ampairsapp.feature.workspace.generated.resources.cd_search
+import ampairsapp.feature.workspace.generated.resources.cd_workspace_avatar
+import ampairsapp.feature.workspace.generated.resources.workspace_create
+import ampairsapp.feature.workspace.generated.resources.workspace_dismiss
+import ampairsapp.feature.workspace.generated.resources.workspace_empty_desc
+import ampairsapp.feature.workspace.generated.resources.workspace_empty_title
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_accept
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_decline
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_expires_in
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_expires_soon
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_invited_by
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_role_prefix
+import ampairsapp.feature.workspace.generated.resources.workspace_invitations_loading
+import ampairsapp.feature.workspace.generated.resources.workspace_invitations_title
+import ampairsapp.feature.workspace.generated.resources.workspace_loading_workspaces
+import ampairsapp.feature.workspace.generated.resources.workspace_members_count
+import ampairsapp.feature.workspace.generated.resources.workspace_no_results_hint
+import ampairsapp.feature.workspace.generated.resources.workspace_no_results_title
+import ampairsapp.feature.workspace.generated.resources.workspace_offline_label
+import ampairsapp.feature.workspace.generated.resources.workspace_refreshing
+import ampairsapp.feature.workspace.generated.resources.workspace_search_hint
+import ampairsapp.feature.workspace.generated.resources.workspace_showing_cached_data
+import ampairsapp.feature.workspace.generated.resources.cd_refresh
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,17 +81,19 @@ fun WorkspaceListScreen(
     onWorkspaceEdit: (String) -> Unit = {},
     viewModel: WorkspaceListViewModel = metroViewModel(),
 ) {
-    val state by viewModel.state.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        // Load workspaces only once when screen loads
         viewModel.loadWorkspaces()
+        viewModel.events.collect { event ->
+            when (event) {
+                is WorkspaceListEvent.NavigateToModules -> onWorkspaceSelected(event.workspaceId)
+            }
+        }
     }
 
     LaunchedEffect(searchQuery) {
-        // Search when query changes (including empty to show all workspaces)
         viewModel.searchWorkspaces(searchQuery)
     }
 
@@ -98,9 +131,9 @@ fun WorkspaceListScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text("Search workspaces...") },
+                    label = { Text(stringResource(Res.string.workspace_search_hint)) },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                        Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.cd_search))
                     },
                     modifier = Modifier.weight(1f),
                     singleLine = true
@@ -164,7 +197,7 @@ fun WorkspaceListScreen(
 
                         Text(
                             text = if (state.isOfflineMode && state.workspaces.isNotEmpty())
-                                "Showing cached data • $error"
+                                stringResource(Res.string.workspace_showing_cached_data, error)
                             else
                                 error,
                             color = if (state.isOfflineMode && state.workspaces.isNotEmpty())
@@ -183,7 +216,7 @@ fun WorkspaceListScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.Refresh,
-                                        contentDescription = "Retry",
+                                        contentDescription = stringResource(Res.string.cd_retry),
                                         tint = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                             MaterialTheme.colorScheme.onSecondaryContainer
                                         else
@@ -195,7 +228,7 @@ fun WorkspaceListScreen(
                             TextButton(
                                 onClick = { viewModel.clearError() }
                             ) {
-                                Text("Dismiss")
+                                Text(stringResource(Res.string.workspace_dismiss))
                             }
                         }
                     }
@@ -214,7 +247,7 @@ fun WorkspaceListScreen(
                         ) {
                             CircularProgressIndicator()
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Loading workspaces...")
+                            Text(stringResource(Res.string.workspace_loading_workspaces))
                         }
                     }
                 }
@@ -230,19 +263,19 @@ fun WorkspaceListScreen(
                         ) {
                             Icon(
                                 Icons.Default.Business,
-                                contentDescription = "No workspaces",
+                                contentDescription = stringResource(Res.string.cd_no_workspaces),
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.outline
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                "No Workspaces Yet",
+                                stringResource(Res.string.workspace_empty_title),
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                "Create your first workspace to get started",
+                                stringResource(Res.string.workspace_empty_desc),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline
                             )
@@ -252,7 +285,7 @@ fun WorkspaceListScreen(
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Create Workspace")
+                                Text(stringResource(Res.string.workspace_create))
                             }
                         }
                     }
@@ -268,11 +301,11 @@ fun WorkspaceListScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                "No workspaces found",
+                                stringResource(Res.string.workspace_no_results_title),
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
-                                "Try a different search term",
+                                stringResource(Res.string.workspace_no_results_hint),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline
                             )
@@ -302,7 +335,7 @@ fun WorkspaceListScreen(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            "Refreshing...",
+                                            stringResource(Res.string.workspace_refreshing),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.outline
                                         )
@@ -311,27 +344,12 @@ fun WorkspaceListScreen(
                             }
                         }
 
-                        items(state.workspaces) { workspace ->
+                        items(state.workspaces, key = { it.id }) { workspace ->
                             WorkspaceCard(
                                 workspace = workspace,
                                 isOfflineMode = state.isOfflineMode,
-                                onClick = {
-                                    coroutineScope.launch {
-                                        val previousSlug = WorkspaceContextManager.getInstance().currentWorkspace.value?.slug
-                                        if (previousSlug != null && previousSlug != workspace.slug) {
-                                            DatabaseScopeManager.getInstance().clearWorkspaceDatabases(previousSlug)
-                                            DataStoreManager.clearDataStoresForWorkspace(previousSlug)
-                                        }
-
-                                        viewModel.selectWorkSpace(workspace.id)
-                                        WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
-                                        GlobalNavigationManager.getInstance().onWorkspaceSelected()
-                                        onWorkspaceSelected(workspace.id)
-                                    }
-                                },
-                                onEdit = {
-                                    onWorkspaceEdit(workspace.id)
-                                }
+                                onClick = { viewModel.selectWorkSpace(workspace.id) },
+                                onEdit = { onWorkspaceEdit(workspace.id) }
                             )
                         }
 
@@ -351,7 +369,7 @@ fun WorkspaceListScreen(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Create Workspace")
+            Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.cd_create_workspace))
         }
     }
 }
@@ -393,8 +411,11 @@ private fun WorkspaceCard(
                     // Load avatar image from server
                     val avatarUrl = ApiUrlBuilder.workspaceAvatarThumbnailUrl(workspace.id)
                     AsyncImage(
-                        model = avatarUrl,
-                        contentDescription = "Workspace avatar",
+                        model = ImageRequest.Builder(LocalPlatformContext.current)
+                            .data(avatarUrl)
+                            .size(Size(96, 96))
+                            .build(),
+                        contentDescription = stringResource(Res.string.cd_workspace_avatar),
                         modifier = Modifier
                             .size(48.dp)
                             .clip(CircleShape),
@@ -457,7 +478,7 @@ private fun WorkspaceCard(
                     workspace.memberCount?.let { count ->
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "$count members",
+                            text = pluralStringResource(Res.plurals.workspace_members_count, count, count),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -477,13 +498,13 @@ private fun WorkspaceCard(
                             ) {
                                 Icon(
                                     Icons.Default.CloudOff,
-                                    contentDescription = "Offline",
+                                    contentDescription = stringResource(Res.string.cd_offline),
                                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(
-                                    text = "Cached",
+                                    text = stringResource(Res.string.workspace_offline_label),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer
                                 )
@@ -500,7 +521,7 @@ private fun WorkspaceCard(
             ) {
                 Icon(
                     Icons.Default.Edit,
-                    contentDescription = "Edit workspace",
+                    contentDescription = stringResource(Res.string.cd_edit_workspace),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
@@ -535,12 +556,12 @@ private fun InvitationsSection(
             ) {
                 Icon(
                     Icons.Default.Mail,
-                    contentDescription = "Invitations",
+                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Workspace Invitations",
+                    text = stringResource(Res.string.workspace_invitations_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
@@ -554,7 +575,7 @@ private fun InvitationsSection(
                     ) {
                         Icon(
                             Icons.Default.Refresh,
-                            contentDescription = "Refresh invitations",
+                            contentDescription = stringResource(Res.string.cd_refresh),
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -574,7 +595,7 @@ private fun InvitationsSection(
                         modifier = Modifier.weight(1f)
                     )
                     TextButton(onClick = onClearError) {
-                        Text("Dismiss", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(Res.string.workspace_dismiss), style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
@@ -592,7 +613,7 @@ private fun InvitationsSection(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Loading invitations...",
+                        text = stringResource(Res.string.workspace_invitations_loading),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -661,14 +682,14 @@ private fun InvitationCard(
                     )
 
                     Text(
-                        text = "Role: ${invitation.role}",
+                        text = stringResource(Res.string.workspace_invitation_role_prefix, invitation.role),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
 
                     invitation.inviterName?.let { inviter ->
                         Text(
-                            text = "Invited by $inviter",
+                            text = stringResource(Res.string.workspace_invitation_invited_by, inviter),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -676,7 +697,10 @@ private fun InvitationCard(
 
                     invitation.daysUntilExpiry?.let { days ->
                         Text(
-                            text = if (days > 0) "Expires in $days days" else "Expires soon",
+                            text = if (days > 0)
+                                stringResource(Res.string.workspace_invitation_expires_in, days)
+                            else
+                                stringResource(Res.string.workspace_invitation_expires_soon),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (days <= 3) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
                         )
@@ -719,7 +743,7 @@ private fun InvitationCard(
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Decline", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(Res.string.workspace_invitation_decline), style = MaterialTheme.typography.labelSmall)
                     }
                 }
 
@@ -743,7 +767,7 @@ private fun InvitationCard(
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Accept", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(Res.string.workspace_invitation_accept), style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }

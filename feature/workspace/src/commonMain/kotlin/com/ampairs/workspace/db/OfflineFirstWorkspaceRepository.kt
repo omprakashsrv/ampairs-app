@@ -2,9 +2,6 @@ package com.ampairs.workspace.db
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.di.AppScope
-import dev.zacsweers.metro.Inject
-import dev.zacsweers.metro.SingleIn
-import com.ampairs.common.model.PageResult
 import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
@@ -13,12 +10,10 @@ import com.ampairs.workspace.db.dao.WorkspaceDao
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.asDatabaseModel
 import com.ampairs.workspace.domain.asDomainModel
-import com.ampairs.workspace.store.WorkspaceKey
-import com.ampairs.workspace.store.WorkspaceStore
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 /**
  * Offline-first workspace repository using Store5 pattern
@@ -29,8 +24,7 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
 class OfflineFirstWorkspaceRepository(
     private val workspaceApi: WorkspaceApi,
     private val workspaceDao: WorkspaceDao,
-    private val tokenRepository: TokenRepository,
-    private val workspaceStore: WorkspaceStore
+    private val tokenRepository: TokenRepository
 ) {
 
     private suspend fun getCurrentUserId(): String? {
@@ -83,63 +77,43 @@ class OfflineFirstWorkspaceRepository(
         }
     }
 
-    /**
-     * Get user workspaces using Store5 pattern
-     * Provides offline-first access with automatic caching and sync
-     */
-    suspend fun getUserWorkspaces(
-        page: Int = 0,
-        size: Int = 10,
-        sortBy: String = "createdAt",
-        sortDir: String = "desc",
-        forceRefresh: Boolean = false
-    ): Flow<StoreReadResponse<PageResult<Workspace>>> {
-        val currentUserId = tokenRepository.getCurrentUserId() 
-            ?: throw IllegalStateException("User not authenticated")
-        
-        val key = WorkspaceKey(
-            userId = currentUserId,
-            page = page,
-            size = size,
-            sortBy = sortBy,
-            sortDir = sortDir
-        )
-        
-        val request = if (forceRefresh) {
-            StoreReadRequest.fresh(key)
-        } else {
-            StoreReadRequest.cached(key, refresh = true)
+    fun observeWorkspaces(): Flow<List<Workspace>> =
+        workspaceDao.getAllWorkspaces().map { entities -> entities.map { it.asDomainModel() } }
+
+    suspend fun syncWorkspaces() {
+        val currentUserId = getCurrentUserId() ?: return
+        try {
+            val response = workspaceApi.getUserWorkspaces(page = 0, size = 100)
+            if (response.data != null && response.error == null) {
+                val currentTime = currentTimeMillis()
+                for (apiModel in response.data!!.content) {
+                    val entity = com.ampairs.workspace.db.entity.WorkspaceEntity(
+                        id = apiModel.id,
+                        name = apiModel.name,
+                        slug = apiModel.slug,
+                        description = apiModel.description ?: "",
+                        workspaceType = apiModel.workspaceType,
+                        avatarUrl = apiModel.avatarUrl ?: "",
+                        isActive = true,
+                        subscriptionPlan = apiModel.subscriptionPlan,
+                        memberCount = apiModel.memberCount,
+                        lastActivityAt = apiModel.lastActivityAt ?: "",
+                        createdAt = apiModel.createdAt,
+                        createdBy = currentUserId,
+                        updatedAt = apiModel.lastActivityAt ?: apiModel.createdAt,
+                        user_id = currentUserId,
+                        sync_state = "SYNCED",
+                        last_synced_at = currentTime,
+                        server_updated_at = currentTime
+                    )
+                    workspaceDao.insertWorkspace(entity)
+                }
+            }
+        } catch (_: Exception) {
+            // Graceful failure — UI continues with cached data
         }
-        
-        return workspaceStore.stream(request)
     }
-    
-    /**
-     * Get cached workspaces only (for offline mode)
-     */
-    suspend fun getCachedWorkspaces(
-        page: Int = 0,
-        size: Int = 10,
-        sortBy: String = "createdAt",
-        sortDir: String = "desc"
-    ): Flow<StoreReadResponse<PageResult<Workspace>>> {
-        val currentUserId = tokenRepository.getCurrentUserId() 
-            ?: throw IllegalStateException("User not authenticated")
-        
-        val key = WorkspaceKey(
-            userId = currentUserId,
-            page = page,
-            size = size,
-            sortBy = sortBy,
-            sortDir = sortDir
-        )
-        
-        return workspaceStore.stream(StoreReadRequest.cached(key, refresh = false))
-    }
-    
-    /**
-     * Search workspaces locally for current user
-     */
+
     suspend fun searchWorkspaces(
         query: String,
         page: Int = 0,

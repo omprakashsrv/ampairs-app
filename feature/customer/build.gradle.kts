@@ -16,6 +16,7 @@ kotlin {
         namespace = "com.ampairs.customer"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
     jvm("desktop")
     iosArm64()
@@ -26,6 +27,7 @@ kotlin {
             dependencies {
                 api(projects.feature.customerApi)
                 implementation(projects.data.common)
+                implementation(libs.kermit)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
@@ -41,7 +43,6 @@ kotlin {
                 implementation(projects.feature.formApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 // FileKit for cross-platform file picking
                 implementation(libs.filekit.core)
                 implementation(libs.filekit.dialogs)

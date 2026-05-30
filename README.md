@@ -41,7 +41,6 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 | Material 3 + Material Kolor | 1.9.0 / 3.0.1 | Design system + dynamic colors |
 | Metro | 1.1.1 | Dependency injection (compile-time) |
 | Room KMP | 2.8.4 | Local database |
-| Store5 | 5.1.0-alpha08 | Offline-first cache layer |
 | Ktor | 3.5.0 | HTTP client + WebSockets |
 | Navigation3 | 1.1.1 | Back-stack navigation with NavKey |
 | kotlinx.coroutines | 1.11.0 | Async & concurrency |
@@ -125,7 +124,7 @@ feature/{name}/src/
 │   ├── data/api/           # Ktor API interface + implementation
 │   ├── data/db/            # Room database, DAOs, entities
 │   ├── data/repository/    # Repository implementations
-│   ├── domain/             # Store5 store definitions
+│   ├── domain/             # Domain models and business logic
 │   └── ui/                 # Compose screens + ViewModels (@Inject / @AssistedInject)
 ├── androidMain/            # Android DB factory (@ContributesTo platform module)
 ├── iosMain/                # iOS DB factory (@ContributesTo platform module)
@@ -136,12 +135,10 @@ feature/{name}/src/
 
 ## Architecture
 
-### Offline-First with Store5
+### Offline-First
 
 ```
 Compose UI  →  ViewModel (MVI/StateFlow)
-                    ↓
-              Store5 (cache layer)
                     ↓
               Repository (business logic)
                ↙          ↘
@@ -149,7 +146,7 @@ Compose UI  →  ViewModel (MVI/StateFlow)
        (local first)   (background sync)
 ```
 
-All writes go to Room first with `synced = false`. Server sync happens asynchronously. If sync fails, data is preserved locally and retried on next sync cycle.
+ViewModels observe Room DAOs via reactive `Flow` for UI updates, and call explicit `syncXxx()` methods to pull from the server. All writes go to Room first with `synced = false`. If sync fails, data is preserved locally and retried on next sync cycle.
 
 ### Workspace-Scoped Databases
 

@@ -10,12 +10,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.db.WorkspaceModuleRepository
-import com.ampairs.workspace.store.InstalledModuleKey
 import com.ampairs.common.concurrency.Volatile
 import com.ampairs.common.concurrency.synchronized
 import kotlinx.coroutines.launch
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 /**
  * Global navigation manager that observes workspace context changes

@@ -16,6 +16,7 @@ kotlin {
         namespace = "com.ampairs.product"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
     jvm("desktop")
     iosArm64()
@@ -41,7 +42,6 @@ kotlin {
                 implementation(projects.feature.taxApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 implementation(libs.paging.common)
                 implementation(libs.room.paging)
                 implementation(libs.kotlinx.dateTime)

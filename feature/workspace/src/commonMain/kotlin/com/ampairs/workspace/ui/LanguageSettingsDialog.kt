@@ -26,7 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -48,7 +48,7 @@ fun LanguageSettingsDialog(
     localeManager: LocaleManager,
     onDismiss: () -> Unit
 ) {
-    val currentLanguage by localeManager.currentLanguage.collectAsState(Language.ENGLISH)
+    val currentLanguage by localeManager.currentLanguage.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     Dialog(onDismissRequest = onDismiss) {

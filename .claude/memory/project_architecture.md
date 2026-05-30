@@ -38,7 +38,7 @@ feature/{name}/src/commonMain/kotlin/com/ampairs/{name}/
 ├── data/api/          # API interface + Ktor implementation
 ├── data/db/           # Room database class, DAOs, entities
 ├── data/repository/   # Repository implementations
-├── domain/            # Store5 store factories
+├── domain/            # Domain models and business logic
 ├── di/                # Koin module (common + platform variants)
 └── ui/                # Compose screens and ViewModels
 ```

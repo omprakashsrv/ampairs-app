@@ -35,10 +35,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_cancel
+import ampairsapp.feature.customer.generated.resources.customer_location_dialog_title
+import ampairsapp.feature.customer.generated.resources.customer_location_hint_desc
+import ampairsapp.feature.customer.generated.resources.customer_location_use_current
+import ampairsapp.feature.customer.generated.resources.customer_location_select_map
+import ampairsapp.feature.customer.generated.resources.customer_location_getting
+import ampairsapp.feature.customer.generated.resources.customer_location_resolving_address
+import ampairsapp.feature.customer.generated.resources.customer_location_selected_title
+import ampairsapp.feature.customer.generated.resources.customer_location_use_only
+import ampairsapp.feature.customer.generated.resources.customer_location_get_address
+import ampairsapp.feature.customer.generated.resources.customer_location_select_different
+import ampairsapp.feature.customer.generated.resources.customer_location_address_found
+import ampairsapp.feature.customer.generated.resources.customer_location_only
+import ampairsapp.feature.customer.generated.resources.customer_location_and_address
+import ampairsapp.feature.customer.generated.resources.customer_location_error_title
+import ampairsapp.feature.customer.generated.resources.customer_location_try_again
+import org.jetbrains.compose.resources.stringResource
 
-/**
- * Location picker state using LocationService architecture
- */
 sealed class LocationDialogState {
     object Idle : LocationDialogState()
     object LoadingLocation : LocationDialogState()
@@ -48,9 +63,6 @@ sealed class LocationDialogState {
     data class Error(val message: String) : LocationDialogState()
 }
 
-/**
- * Platform-specific location picker dialog
- */
 @Composable
 expect fun PlatformLocationPickerDialog(
     showDialog: Boolean,
@@ -61,9 +73,6 @@ expect fun PlatformLocationPickerDialog(
     locationService: LocationService
 )
 
-/**
- * Main location picker dialog - delegates to platform-specific implementation
- */
 @Composable
 fun LocationPickerDialog(
     showDialog: Boolean,
@@ -83,9 +92,6 @@ fun LocationPickerDialog(
     )
 }
 
-/**
- * Common location picker dialog implementation using LocationService architecture
- */
 @Composable
 fun CommonLocationPickerDialog(
     showDialog: Boolean,
@@ -110,9 +116,7 @@ fun CommonLocationPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text("Select Location")
-        },
+        title = { Text(stringResource(Res.string.customer_location_dialog_title)) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -151,20 +155,18 @@ fun CommonLocationPickerDialog(
                     }
 
                     is LocationDialogState.LoadingLocation -> {
-                        LoadingContent("Getting your location...")
+                        LoadingContent(stringResource(Res.string.customer_location_getting))
                     }
 
                     is LocationDialogState.LoadingAddress -> {
-                        LoadingContent("Resolving address...")
+                        LoadingContent(stringResource(Res.string.customer_location_resolving_address))
                     }
 
                     is LocationDialogState.LocationSelected -> {
                         val selectedState = dialogState as LocationDialogState.LocationSelected
                         LocationSelectedContent(
                             location = selectedState.location,
-                            onLocationOnly = {
-                                onLocationSelected(selectedState.location, null)
-                            },
+                            onLocationOnly = { onLocationSelected(selectedState.location, null) },
                             onGetAddress = {
                                 dialogState = LocationDialogState.LoadingAddress
                                 scope.launch {
@@ -180,14 +182,11 @@ fun CommonLocationPickerDialog(
                                             address
                                         )
                                     } else {
-                                        // Even if geocoding fails, we can still use the location
                                         onLocationSelected(selectedState.location, null)
                                     }
                                 }
                             },
-                            onSelectDifferent = {
-                                dialogState = LocationDialogState.Idle
-                            }
+                            onSelectDifferent = { dialogState = LocationDialogState.Idle }
                         )
                     }
 
@@ -196,15 +195,9 @@ fun CommonLocationPickerDialog(
                         AddressResolvedContent(
                             location = resolvedState.location,
                             address = resolvedState.address,
-                            onLocationOnly = {
-                                onLocationSelected(resolvedState.location, null)
-                            },
-                            onLocationAndAddress = {
-                                onLocationSelected(resolvedState.location, resolvedState.address)
-                            },
-                            onSelectDifferent = {
-                                dialogState = LocationDialogState.Idle
-                            }
+                            onLocationOnly = { onLocationSelected(resolvedState.location, null) },
+                            onLocationAndAddress = { onLocationSelected(resolvedState.location, resolvedState.address) },
+                            onSelectDifferent = { dialogState = LocationDialogState.Idle }
                         )
                     }
 
@@ -212,20 +205,16 @@ fun CommonLocationPickerDialog(
                         val errorState = dialogState as LocationDialogState.Error
                         ErrorContent(
                             message = errorState.message,
-                            onRetry = {
-                                dialogState = LocationDialogState.Idle
-                            }
+                            onRetry = { dialogState = LocationDialogState.Idle }
                         )
                     }
                 }
             }
         },
-        confirmButton = {
-            // Confirm button is handled within each state's content
-        },
+        confirmButton = { },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.customer_cancel))
             }
         }
     )
@@ -249,28 +238,22 @@ private fun LocationIdleContent(
         )
 
         Text(
-            text = "Select customer location to auto-populate address details",
+            text = stringResource(Res.string.customer_location_hint_desc),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Button(
-            onClick = onGetCurrentLocation,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Button(onClick = onGetCurrentLocation, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.MyLocation, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Use Current Location")
+            Text(stringResource(Res.string.customer_location_use_current))
         }
 
-        OutlinedButton(
-            onClick = onSelectFromMap,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        OutlinedButton(onClick = onSelectFromMap, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.LocationOn, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Select from Map")
+            Text(stringResource(Res.string.customer_location_select_map))
         }
     }
 }
@@ -303,16 +286,14 @@ private fun LocationSelectedContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         ElevatedCard(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Location Selected",
+                    text = stringResource(Res.string.customer_location_selected_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -339,26 +320,16 @@ private fun LocationSelectedContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
-                    onClick = onLocationOnly,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Use Location Only", style = MaterialTheme.typography.labelMedium)
+                OutlinedButton(onClick = onLocationOnly, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(Res.string.customer_location_use_only), style = MaterialTheme.typography.labelMedium)
                 }
-
-                Button(
-                    onClick = onGetAddress,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Get Address", style = MaterialTheme.typography.labelMedium)
+                Button(onClick = onGetAddress, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(Res.string.customer_location_get_address), style = MaterialTheme.typography.labelMedium)
                 }
             }
 
-            OutlinedButton(
-                onClick = onSelectDifferent,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Select Different Location", style = MaterialTheme.typography.labelMedium)
+            OutlinedButton(onClick = onSelectDifferent, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(Res.string.customer_location_select_different), style = MaterialTheme.typography.labelMedium)
             }
         }
     }
@@ -377,16 +348,14 @@ private fun AddressResolvedContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         ElevatedCard(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Address Found",
+                    text = stringResource(Res.string.customer_location_address_found),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -424,26 +393,16 @@ private fun AddressResolvedContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
-                    onClick = onLocationOnly,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Location Only", style = MaterialTheme.typography.labelMedium)
+                OutlinedButton(onClick = onLocationOnly, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(Res.string.customer_location_only), style = MaterialTheme.typography.labelMedium)
                 }
-
-                Button(
-                    onClick = onLocationAndAddress,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Location & Address", style = MaterialTheme.typography.labelMedium)
+                Button(onClick = onLocationAndAddress, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(Res.string.customer_location_and_address), style = MaterialTheme.typography.labelMedium)
                 }
             }
 
-            OutlinedButton(
-                onClick = onSelectDifferent,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Select Different Location", style = MaterialTheme.typography.labelMedium)
+            OutlinedButton(onClick = onSelectDifferent, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(Res.string.customer_location_select_different), style = MaterialTheme.typography.labelMedium)
             }
         }
     }
@@ -460,16 +419,14 @@ private fun ErrorContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         ElevatedCard(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Location Error",
+                    text = stringResource(Res.string.customer_location_error_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -481,11 +438,8 @@ private fun ErrorContent(
             }
         }
 
-        Button(
-            onClick = onRetry,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Try Again")
+        Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(Res.string.customer_location_try_again))
         }
     }
 }

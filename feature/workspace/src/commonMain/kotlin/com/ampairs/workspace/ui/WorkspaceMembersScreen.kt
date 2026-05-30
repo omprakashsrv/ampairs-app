@@ -1,5 +1,9 @@
 package com.ampairs.workspace.ui
 
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.workspace.generated.resources.Res
+import ampairsapp.feature.workspace.generated.resources.cd_back
+import ampairsapp.feature.workspace.generated.resources.workspace_team_members_title
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 /**
@@ -28,7 +33,7 @@ fun WorkspaceMembersScreen(
     onInviteClick: () -> Unit,
     viewModel: WorkspaceMembersViewModel = assistedMetroViewModel<WorkspaceMembersViewModel, WorkspaceMembersViewModel.Factory> { create(workspaceId) },
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     var showFilters by remember { mutableStateOf(false) }
     var selectedRole by remember { mutableStateOf("ALL") }
@@ -51,10 +56,10 @@ fun WorkspaceMembersScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
                 }
                 Text(
-                    text = "Team Members",
+                    text = stringResource(Res.string.workspace_team_members_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(start = 8.dp)

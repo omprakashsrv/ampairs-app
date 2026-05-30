@@ -1,5 +1,19 @@
 package com.ampairs.auth.ui
 
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.otp_auto_verification_desc
+import ampairsapp.feature.auth.generated.resources.otp_cd_timer
+import ampairsapp.feature.auth.generated.resources.otp_cd_verification
+import ampairsapp.feature.auth.generated.resources.otp_code_sent_no_phone
+import ampairsapp.feature.auth.generated.resources.otp_code_sent_with_phone
+import ampairsapp.feature.auth.generated.resources.otp_enter_manually
+import ampairsapp.feature.auth.generated.resources.otp_enter_verification_code
+import ampairsapp.feature.auth.generated.resources.otp_help_text
+import ampairsapp.feature.auth.generated.resources.otp_resend
+import ampairsapp.feature.auth.generated.resources.otp_resend_timer
+import ampairsapp.feature.auth.generated.resources.otp_resend_with_timer
+import ampairsapp.feature.auth.generated.resources.otp_verify
+import ampairsapp.feature.auth.generated.resources.otp_waiting_for_auto_verification
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,12 +23,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -27,32 +43,26 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import com.ampairs.auth.domain.AuthMethod
-import com.ampairs.auth.viewmodel.LoginViewModel
-import com.ampairs.common.components.Otp
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ampairs.auth.domain.AuthMethod
 import com.ampairs.auth.domain.PhoneVerificationState
-import ampairsapp.feature.auth.generated.resources.Res
-import ampairsapp.feature.auth.generated.resources.*
-import androidx.compose.material.icons.automirrored.filled.Message
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.ampairs.auth.viewmodel.LoginNavEvent
+import com.ampairs.auth.viewmodel.LoginViewModel
+import com.ampairs.common.components.Otp
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -63,26 +73,23 @@ fun OtpScreen(
     phoneNumber: String = "",
     onAuthSuccess: () -> Unit,
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(sessionId, verificationId, phoneNumber) {
-        viewModel.sessionId = sessionId
-        viewModel.firebaseVerificationId = verificationId
-        if (phoneNumber.isNotEmpty()) viewModel.phoneNumber = phoneNumber
-    }
-
-    val phoneNumber = viewModel.phoneNumber
-
-    // State to track if we're waiting for auto-verification (Firebase only)
     var waitingForAutoVerification by remember {
-        mutableStateOf(viewModel.authMethod == AuthMethod.FIREBASE && verificationId.isNotBlank())
+        mutableStateOf(state.authMethod == AuthMethod.FIREBASE && verificationId.isNotBlank())
     }
-
-    // Resend timer state (60 seconds)
+    var timerVersion by remember { mutableStateOf(0) }
     var resendTimer by remember { mutableStateOf(60) }
     var canResend by remember { mutableStateOf(false) }
 
-    // Resend timer countdown
-    LaunchedEffect(Unit) {
+    LaunchedEffect(sessionId, verificationId, phoneNumber) {
+        viewModel.initOtpScreen(sessionId, verificationId, phoneNumber)
+    }
+
+    LaunchedEffect(timerVersion) {
+        resendTimer = 60
+        canResend = false
         while (resendTimer > 0) {
             delay(1000)
             resendTimer--
@@ -90,67 +97,61 @@ fun OtpScreen(
         canResend = true
     }
 
-    // Auto-verification timeout (8 seconds)
-    // Restarts whenever waitingForAutoVerification becomes true
     LaunchedEffect(waitingForAutoVerification) {
         if (waitingForAutoVerification) {
             delay(8000)
-            if (waitingForAutoVerification) {
-                waitingForAutoVerification = false
-            }
+            if (waitingForAutoVerification) waitingForAutoVerification = false
         }
     }
 
-    // Observe Firebase auto-verification state for automatic navigation
-    val verificationState by viewModel.firebaseVerificationState.collectAsState()
-    LaunchedEffect(verificationState) {
-        when (verificationState) {
-            is PhoneVerificationState.VerificationCompleted -> {
-                if (viewModel.authMethod == AuthMethod.FIREBASE) {
-                    val completedState = verificationState as PhoneVerificationState.VerificationCompleted
-                    waitingForAutoVerification = false
-                    viewModel.completeFirebaseAuthenticationWithToken(completedState.userId) { onAuthSuccess() }
+    LaunchedEffect(Unit) {
+        viewModel.firebaseVerificationState.collect { verificationState ->
+            when (verificationState) {
+                is PhoneVerificationState.VerificationCompleted -> {
+                    if (state.authMethod == AuthMethod.FIREBASE) {
+                        waitingForAutoVerification = false
+                        viewModel.completeFirebaseAuthenticationWithToken(verificationState.userId)
+                    }
                 }
+                is PhoneVerificationState.VerificationFailed -> waitingForAutoVerification = false
+                is PhoneVerificationState.CodeSent -> Unit
+                PhoneVerificationState.Idle -> Unit
             }
-            is PhoneVerificationState.VerificationFailed -> {
-                waitingForAutoVerification = false
-            }
-            is PhoneVerificationState.CodeSent -> Unit
-            PhoneVerificationState.Idle -> Unit
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        viewModel.navEvent.collect { event ->
+            when (event) {
+                LoginNavEvent.AuthComplete -> onAuthSuccess()
+                LoginNavEvent.OtpResent -> timerVersion++
+                LoginNavEvent.FirebaseOtpResent -> {
+                    waitingForAutoVerification = true
+                    timerVersion++
+                }
+                else -> {}
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.snackbarMessage.collect { message ->
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
+        }
+    }
+
     Scaffold(
         modifier = Modifier.imePadding(),
         snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) {
-        if (viewModel.displayMessage.isNotEmpty()) {
-            coroutineScope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = viewModel.displayMessage,
-                    duration = SnackbarDuration.Short
-                )
-                when (result) {
-                    SnackbarResult.Dismissed -> {
-                        viewModel.displayMessage = ""
-                    }
-
-                    SnackbarResult.ActionPerformed -> {
-                        viewModel.displayMessage = ""
-                    }
-                }
-            }
-        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .padding(24.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top section - Header and instructions
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -158,7 +159,6 @@ fun OtpScreen(
             ) {
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Message icon
                 Box(
                     modifier = Modifier
                         .size(80.dp)
@@ -170,29 +170,28 @@ fun OtpScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Message,
-                        contentDescription = "Verification",
+                        contentDescription = stringResource(Res.string.otp_cd_verification),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(40.dp)
                     )
                 }
 
-                // Title and description
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Enter Verification Code",
+                        text = stringResource(Res.string.otp_enter_verification_code),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = if (phoneNumber.isNotEmpty()) {
-                            "We've sent a 6-digit code to\n+91 $phoneNumber"
+                        text = if (state.phoneNumber.isNotEmpty()) {
+                            stringResource(Res.string.otp_code_sent_with_phone, state.phoneNumber)
                         } else {
-                            "We've sent a 6-digit code to your phone"
+                            stringResource(Res.string.otp_code_sent_no_phone)
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -201,7 +200,6 @@ fun OtpScreen(
                 }
             }
 
-            // Middle section - OTP input or auto-verification
             Column(
                 modifier = Modifier
                     .widthIn(min = 280.dp, max = 400.dp)
@@ -210,7 +208,6 @@ fun OtpScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (waitingForAutoVerification) {
-                    // Show waiting for auto-verification UI
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -232,41 +229,36 @@ fun OtpScreen(
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(
-                            onClick = { waitingForAutoVerification = false }
-                        ) {
+                        OutlinedButton(onClick = { waitingForAutoVerification = false }) {
                             Text(stringResource(Res.string.otp_enter_manually))
                         }
                     }
                 } else {
-                    // Show manual OTP input
                     Column(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Otp(onValueChange = { viewModel.otp = it })
+                        Otp(onValueChange = viewModel::updateOtp)
 
-                        // Show reCAPTCHA status message
-                        if (viewModel.progressMessage.isNotEmpty()) {
+                        if (state.progressMessage.isNotEmpty()) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (viewModel.recaptchaLoading) {
+                                if (state.recaptchaLoading) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
                                         strokeWidth = 2.dp
                                     )
                                 }
                                 Text(
-                                    text = viewModel.progressMessage,
+                                    text = state.progressMessage,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
 
-                        // Timer card
                         if (resendTimer > 0) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -283,13 +275,13 @@ fun OtpScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Timer,
-                                        contentDescription = "Timer",
+                                        contentDescription = stringResource(Res.string.otp_cd_timer),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.size(8.dp))
                                     Text(
-                                        text = "Resend code in ${resendTimer}s",
+                                        text = stringResource(Res.string.otp_resend_timer, resendTimer),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -300,7 +292,6 @@ fun OtpScreen(
                 }
             }
 
-            // Bottom section - Action buttons
             if (!waitingForAutoVerification) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -308,20 +299,15 @@ fun OtpScreen(
                 ) {
                     Button(
                         onClick = {
-                            when (viewModel.authMethod) {
-                                AuthMethod.BACKEND_API -> viewModel.completeAuthentication {
-                                    onAuthSuccess()
-                                }
-
-                                AuthMethod.FIREBASE -> viewModel.completeFirebaseAuthentication {
-                                    onAuthSuccess()
-                                }
+                            when (state.authMethod) {
+                                AuthMethod.BACKEND_API -> viewModel.completeAuthentication()
+                                AuthMethod.FIREBASE -> viewModel.completeFirebaseAuthentication()
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = viewModel.validPhoneNumber && !viewModel.loading
+                        enabled = state.validPhoneNumber && !state.loading
                     ) {
-                        if (viewModel.loading) {
+                        if (state.loading) {
                             CircularProgressIndicator(
                                 modifier = Modifier
                                     .progressSemantics()
@@ -334,42 +320,25 @@ fun OtpScreen(
 
                     OutlinedButton(
                         onClick = {
-                            when (viewModel.authMethod) {
-                                AuthMethod.BACKEND_API -> {
-                                    viewModel.resendOtp { sessionId ->
-                                        viewModel.sessionId = sessionId
-                                        // Reset timer
-                                        resendTimer = 60
-                                        canResend = false
-                                    }
-                                }
-
-                                AuthMethod.FIREBASE -> {
-                                    viewModel.resendFirebaseOtp { verificationId ->
-                                        viewModel.firebaseVerificationId = verificationId
-                                        // Reset waiting state and timer when resending
-                                        waitingForAutoVerification = true
-                                        resendTimer = 60
-                                        canResend = false
-                                    }
-                                }
+                            when (state.authMethod) {
+                                AuthMethod.BACKEND_API -> viewModel.resendOtp()
+                                AuthMethod.FIREBASE -> viewModel.resendFirebaseOtp()
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !viewModel.loading && resendTimer == 0
+                        enabled = !state.loading && canResend
                     ) {
                         Text(
                             if (resendTimer > 0) {
-                                "Resend code (${resendTimer}s)"
+                                stringResource(Res.string.otp_resend_with_timer, resendTimer)
                             } else {
                                 stringResource(Res.string.otp_resend)
                             }
                         )
                     }
 
-                    // Help text
                     Text(
-                        text = "Didn't receive the code? Check your messages or request a new one",
+                        text = stringResource(Res.string.otp_help_text),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,

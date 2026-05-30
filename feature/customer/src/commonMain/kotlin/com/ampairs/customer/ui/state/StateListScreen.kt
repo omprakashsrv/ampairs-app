@@ -16,27 +16,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.customer.domain.State
-import com.ampairs.customer.domain.MasterState
-import com.ampairs.workspace.context.WorkspaceContextManager
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_cancel
+import ampairsapp.feature.customer.generated.resources.customer_delete
+import ampairsapp.feature.customer.generated.resources.customer_state_list_title
+import ampairsapp.feature.customer.generated.resources.customer_state_import_cd
+import ampairsapp.feature.customer.generated.resources.customer_state_search_label
+import ampairsapp.feature.customer.generated.resources.customer_state_search_empty
+import ampairsapp.feature.customer.generated.resources.customer_state_list_empty
+import ampairsapp.feature.customer.generated.resources.customer_state_import_btn
+import ampairsapp.feature.customer.generated.resources.customer_state_delete_title
+import ampairsapp.feature.customer.generated.resources.customer_state_delete_confirm
+import ampairsapp.feature.customer.generated.resources.customer_state_import_dialog_title
+import ampairsapp.feature.customer.generated.resources.customer_state_import_empty
+import ampairsapp.feature.customer.generated.resources.customer_state_import_selected
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StateListScreen(
     onStateClick: (String) -> Unit,
-    onImportStates: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StateListViewModel = metroViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
 
     var showImportDialog by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Header with search and add button
         OutlinedCard(
             modifier = Modifier
                 .fillMaxWidth()
@@ -52,7 +64,7 @@ fun StateListScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "States",
+                        text = stringResource(Res.string.customer_state_list_title),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -63,16 +75,15 @@ fun StateListScreen(
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Import States"
+                            contentDescription = stringResource(Res.string.customer_state_import_cd)
                         )
                     }
                 }
 
-                // Search field
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = viewModel::updateSearchQuery,
-                    label = { Text("Search states") },
+                    label = { Text(stringResource(Res.string.customer_state_search_label)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -84,7 +95,6 @@ fun StateListScreen(
             }
         }
 
-        // Error message
         uiState.error?.let { error ->
             OutlinedCard(
                 modifier = Modifier
@@ -103,7 +113,6 @@ fun StateListScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Content
         when {
             uiState.isLoading && uiState.states.isEmpty() -> {
                 Box(
@@ -124,13 +133,14 @@ fun StateListScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = if (searchQuery.isNotBlank()) "No states found" else "No states available",
+                            text = if (searchQuery.isNotBlank()) stringResource(Res.string.customer_state_search_empty)
+                                   else stringResource(Res.string.customer_state_list_empty),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (searchQuery.isBlank()) {
                             Button(onClick = { showImportDialog = true }) {
-                                Text("Import States")
+                                Text(stringResource(Res.string.customer_state_import_btn))
                             }
                         }
                     }
@@ -173,7 +183,6 @@ fun StateListScreen(
         }
     }
 
-    // Import States Dialog
     if (showImportDialog) {
         StateImportDialog(
             uiState = uiState,
@@ -186,9 +195,7 @@ fun StateListScreen(
                 viewModel.bulkImportStates(stateCodes)
                 showImportDialog = false
             },
-            onLoadAvailableStates = { workspaceId ->
-                viewModel.loadAvailableStatesForImport(workspaceId)
-            }
+            onLoadAvailableStates = viewModel::loadAvailableStatesForImport
         )
     }
 }
@@ -231,7 +238,7 @@ private fun StateListItem(
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete State",
+                        contentDescription = stringResource(Res.string.customer_state_delete_title),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -239,12 +246,11 @@ private fun StateListItem(
         }
     }
 
-    // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete State") },
-            text = { Text("Are you sure you want to delete \"${state.name}\"? This action cannot be undone.") },
+            title = { Text(stringResource(Res.string.customer_state_delete_title)) },
+            text = { Text(stringResource(Res.string.customer_state_delete_confirm, state.name)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -252,12 +258,12 @@ private fun StateListItem(
                         showDeleteDialog = false
                     }
                 ) {
-                    Text("Delete")
+                    Text(stringResource(Res.string.customer_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.customer_cancel))
                 }
             }
         )
@@ -271,22 +277,17 @@ private fun StateImportDialog(
     onDismiss: () -> Unit,
     onImportState: (String) -> Unit,
     onBulkImport: (List<String>) -> Unit,
-    onLoadAvailableStates: (String) -> Unit
+    onLoadAvailableStates: () -> Unit
 ) {
     var selectedStates by remember { mutableStateOf(setOf<String>()) }
-    val workspaceContextManager = remember { WorkspaceContextManager.getInstance() }
-    val currentWorkspace by workspaceContextManager.currentWorkspace.collectAsState()
 
-    // Load available states when dialog opens
-    LaunchedEffect(currentWorkspace) {
-        currentWorkspace?.id?.let { workspaceId ->
-            onLoadAvailableStates(workspaceId)
-        }
+    LaunchedEffect(Unit) {
+        onLoadAvailableStates()
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Import States") },
+        title = { Text(stringResource(Res.string.customer_state_import_dialog_title)) },
         text = {
             when {
                 uiState.isLoadingImportStates -> {
@@ -308,7 +309,7 @@ private fun StateImportDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No states available for import",
+                            text = stringResource(Res.string.customer_state_import_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -358,13 +359,13 @@ private fun StateImportDialog(
                     },
                     enabled = selectedStates.isNotEmpty() && !uiState.isLoadingImportStates
                 ) {
-                    Text("Import Selected (${selectedStates.size})")
+                    Text(stringResource(Res.string.customer_state_import_selected, selectedStates.size))
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.customer_cancel))
             }
         }
     )

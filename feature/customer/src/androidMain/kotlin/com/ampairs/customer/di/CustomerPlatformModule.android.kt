@@ -9,12 +9,13 @@ import com.ampairs.customer.data.repository.AndroidFileManager
 import com.ampairs.customer.data.repository.PlatformFileManager
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.Dispatchers
 
 @ContributesTo(AppScope::class)
 interface CustomerAndroidModule {
     companion object {
-        @Provides
+        @Provides @SingleIn(AppScope::class)
         fun provideCustomerDatabase(factory: WorkspaceAwareDatabaseFactory, context: Context): CustomerDatabase =
             factory.createAndroidDatabase(context = context, queryDispatcher = Dispatchers.IO, moduleName = "customer")
 

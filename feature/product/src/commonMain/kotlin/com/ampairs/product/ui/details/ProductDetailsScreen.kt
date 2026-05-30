@@ -23,9 +23,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ampairs.product.domain.Product
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.product.generated.resources.Res
+import ampairsapp.feature.product.generated.resources.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailsScreen(
@@ -36,24 +41,24 @@ fun ProductDetailsScreen(
     modifier: Modifier = Modifier,
     viewModel: ProductDetailsViewModel = assistedMetroViewModel<ProductDetailsViewModel, ProductDetailsViewModel.Factory> { create(productId) }
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val productDetailsTitle = stringResource(Res.string.prod_details_title)
 
-    // Refresh product data when returning from edit or variant management
     LaunchedEffect(productId) {
-        viewModel.refreshProduct()
+        // Product is observed reactively — no explicit reload needed
     }
 
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(uiState.product?.name ?: "Product Details") },
+            title = { Text(uiState.product?.name ?: productDetailsTitle) },
             actions = {
                 if (uiState.product != null) {
                     IconButton(onClick = { onEditProduct(productId) }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(Res.string.prod_details_cd_edit))
                     }
                     IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.prod_details_cd_delete))
                     }
                 }
             }
@@ -73,7 +78,7 @@ fun ProductDetailsScreen(
                 val errorMessage = uiState.error ?: return@Column
                 ErrorMessage(
                     error = errorMessage,
-                    onRetry = viewModel::loadProduct,
+                    onRetry = {},
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -92,7 +97,7 @@ fun ProductDetailsScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Product not found")
+                    Text(stringResource(Res.string.prod_details_not_found))
                 }
             }
         }
@@ -124,54 +129,51 @@ private fun ProductDetailsContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Product Images Section
         if (!product.images.isNullOrEmpty()) {
             ProductImagesSection(product = product)
         }
 
-        // Status Alerts
         if (!product.active || product.isLowStock) {
             StatusAlertsSection(product = product)
         }
 
-        // Basic Information
-        InfoSection(title = "Basic Information") {
-            InfoRow(label = "Name", value = product.name)
-            InfoRow(label = "Code", value = product.code)
-            InfoRow(label = "Status", value = if (product.active) "Active" else "Inactive")
+        InfoSection(title = stringResource(Res.string.prod_section_basic)) {
+            InfoRow(label = stringResource(Res.string.prod_label_name), value = product.name)
+            InfoRow(label = stringResource(Res.string.prod_label_code), value = product.code)
+            InfoRow(
+                label = stringResource(Res.string.prod_label_status),
+                value = if (product.active) stringResource(Res.string.prod_active) else stringResource(Res.string.prod_inactive)
+            )
             if (product.description.isNotEmpty()) {
-                InfoRow(label = "Description", value = product.description)
+                InfoRow(label = stringResource(Res.string.prod_label_description), value = product.description)
             }
             if (product.taxCode.isNotEmpty()) {
-                InfoRow(label = "Tax Code", value = product.taxCode)
+                InfoRow(label = stringResource(Res.string.prod_label_tax_code), value = product.taxCode)
             }
         }
 
-        // Pricing Information
-        InfoSection(title = "Pricing") {
-            InfoRow(label = "MRP", value = "₹${product.mrp}")
-            InfoRow(label = "Dealer Price", value = "₹${product.dp}")
-            InfoRow(label = "Selling Price", value = "₹${product.sellingPrice}")
+        InfoSection(title = stringResource(Res.string.prod_section_pricing)) {
+            InfoRow(label = stringResource(Res.string.prod_label_mrp), value = "₹${product.mrp}")
+            InfoRow(label = stringResource(Res.string.prod_label_dealer_price), value = "₹${product.dp}")
+            InfoRow(label = stringResource(Res.string.prod_label_selling_price), value = "₹${product.sellingPrice}")
 
             if (product.mrp > product.sellingPrice) {
                 val discount = ((product.mrp - product.sellingPrice) / product.mrp) * 100
-                InfoRow(label = "Discount", value = "${discount.toInt()}%")
+                InfoRow(label = stringResource(Res.string.prod_label_discount), value = "${discount.toInt()}%")
             }
         }
 
-        // Classification
         if (product.productType != null || product.serviceType != null) {
-            InfoSection(title = "Classification") {
+            InfoSection(title = stringResource(Res.string.prod_section_classification)) {
                 product.productType?.let { type ->
-                    InfoRow(label = "Product Type", value = type.displayName)
+                    InfoRow(label = stringResource(Res.string.prod_label_product_type), value = type.displayName)
                 }
                 product.serviceType?.let { type ->
-                    InfoRow(label = "Service Type", value = type.displayName)
+                    InfoRow(label = stringResource(Res.string.prod_label_service_type), value = type.displayName)
                 }
             }
         }
 
-        // Variants Section
         if (product.hasVariants) {
             VariantsSection(
                 product = product,
@@ -179,39 +181,36 @@ private fun ProductDetailsContent(
             )
         }
 
-        // Stock Information
         if (product.stockQuantity != null) {
-            InfoSection(title = "Stock Information") {
-                InfoRow(label = "Current Stock", value = "${product.stockQuantity!!.toInt()} units")
+            InfoSection(title = stringResource(Res.string.prod_section_stock_info)) {
+                InfoRow(label = stringResource(Res.string.prod_label_current_stock), value = "${product.stockQuantity!!.toInt()} units")
                 if (product.lowStockAlert != null) {
-                    InfoRow(label = "Low Stock Alert", value = "${product.lowStockAlert!!.toInt()} units")
+                    InfoRow(label = stringResource(Res.string.prod_label_low_stock_alert), value = "${product.lowStockAlert!!.toInt()} units")
                 }
             }
         }
 
-        // Category Information
         if (!product.categoryName.isNullOrBlank() || !product.brandName.isNullOrBlank() ||
             product.categoryId.isNotEmpty() || product.brandId.isNotEmpty()) {
-            InfoSection(title = "Category & Brand") {
+            InfoSection(title = stringResource(Res.string.prod_section_category_brand)) {
                 product.categoryName?.let { categoryName ->
-                    InfoRow(label = "Category", value = categoryName)
+                    InfoRow(label = stringResource(Res.string.prod_label_category), value = categoryName)
                 }
                 product.brandName?.let { brandName ->
-                    InfoRow(label = "Brand", value = brandName)
+                    InfoRow(label = stringResource(Res.string.prod_label_brand), value = brandName)
                 }
                 if (product.groupId.isNotEmpty()) {
-                    InfoRow(label = "Group ID", value = product.groupId)
+                    InfoRow(label = stringResource(Res.string.prod_label_group_id), value = product.groupId)
                 }
                 if (product.subCategoryId.isNotEmpty()) {
-                    InfoRow(label = "Sub Category ID", value = product.subCategoryId)
+                    InfoRow(label = stringResource(Res.string.prod_label_sub_category_id), value = product.subCategoryId)
                 }
             }
         }
 
-        // Additional Information
         product.baseUnitId?.let { baseUnitId ->
-            InfoSection(title = "Unit Information") {
-                InfoRow(label = "Base Unit ID", value = baseUnitId)
+            InfoSection(title = stringResource(Res.string.prod_section_unit)) {
+                InfoRow(label = stringResource(Res.string.prod_label_base_unit_id), value = baseUnitId)
             }
         }
     }
@@ -230,7 +229,7 @@ private fun ProductImagesSection(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Product Images",
+                text = stringResource(Res.string.prod_section_images),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
@@ -265,7 +264,7 @@ private fun ProductImageItem(
         if (!imageUrl.isNullOrBlank()) {
             AsyncImage(
                 model = imageUrl,
-                contentDescription = "Product image",
+                contentDescription = stringResource(Res.string.prod_list_cd_product_image),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -308,7 +307,7 @@ private fun StatusAlertsSection(
                         tint = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Text(
-                        text = "This product is currently inactive",
+                        text = stringResource(Res.string.prod_details_inactive_alert),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -335,7 +334,7 @@ private fun StatusAlertsSection(
                         tint = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                     Text(
-                        text = "Low stock alert: Only ${product.stockQuantity?.toInt()} units remaining",
+                        text = stringResource(Res.string.prod_details_low_stock_alert, product.stockQuantity?.toInt() ?: 0),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
@@ -404,7 +403,7 @@ private fun ErrorMessage(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Failed to load product",
+            text = stringResource(Res.string.prod_load_error_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error
         )
@@ -418,7 +417,7 @@ private fun ErrorMessage(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onRetry) {
-            Text("Retry")
+            Text(stringResource(Res.string.prod_retry))
         }
     }
 }
@@ -442,7 +441,7 @@ private fun VariantsSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Product Variants",
+                    text = stringResource(Res.string.prod_section_variants),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -454,14 +453,13 @@ private fun VariantsSection(
                 )
             }
 
-            // Summary
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
                     Text(
-                        text = "Total Stock",
+                        text = stringResource(Res.string.prod_details_total_stock_label),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -474,7 +472,7 @@ private fun VariantsSection(
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "Variants",
+                        text = stringResource(Res.string.prod_details_variants_count_label),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -487,7 +485,6 @@ private fun VariantsSection(
                 }
             }
 
-            // Low stock alert
             if (product.hasLowStockVariants) {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -508,7 +505,7 @@ private fun VariantsSection(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "Some variants are low on stock",
+                            text = stringResource(Res.string.prod_details_variants_low_stock),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onTertiaryContainer
                         )
@@ -516,7 +513,6 @@ private fun VariantsSection(
                 }
             }
 
-            // First 3 variants preview
             val variantsToShow = product.variants?.take(3) ?: emptyList()
             if (variantsToShow.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -527,7 +523,7 @@ private fun VariantsSection(
 
                 if ((product.variants?.size ?: 0) > 3) {
                     Text(
-                        text = "And ${(product.variants?.size ?: 0) - 3} more...",
+                        text = stringResource(Res.string.prod_details_and_more, (product.variants?.size ?: 0) - 3),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 4.dp)
@@ -535,19 +531,18 @@ private fun VariantsSection(
                 }
             } else {
                 Text(
-                    text = "No variants added yet",
+                    text = stringResource(Res.string.prod_details_no_variants),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Manage button
             if (onManageVariants != null) {
                 Button(
                     onClick = { onManageVariants(product.id, product.name) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Manage Variants")
+                    Text(stringResource(Res.string.prod_manage_variants))
                 }
             }
         }
@@ -582,7 +577,7 @@ private fun VariantListItem(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Stock: ${variant.stockQuantity}",
+                    text = stringResource(Res.string.prod_stock_format, variant.stockQuantity),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (variant.isLowStock) {
                         MaterialTheme.colorScheme.error
@@ -592,7 +587,7 @@ private fun VariantListItem(
                 )
             }
             Text(
-                text = "SKU: ${variant.sku}",
+                text = stringResource(Res.string.prod_sku_format, variant.sku),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -608,10 +603,8 @@ private fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Product") },
-        text = {
-            Text("Are you sure you want to delete $productName? This action cannot be undone.")
-        },
+        title = { Text(stringResource(Res.string.prod_details_delete_title)) },
+        text = { Text(stringResource(Res.string.prod_details_delete_confirm, productName)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
@@ -619,12 +612,12 @@ private fun DeleteConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Delete")
+                Text(stringResource(Res.string.prod_details_delete_btn))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.prod_cancel))
             }
         }
     )

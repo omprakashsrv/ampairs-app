@@ -12,7 +12,6 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
-// import com.ampairs.tally.TallyApp
 import com.ampairs.auth.deeplink.DeepLinkHandler
 import com.ampairs.common.desktop.DataDirectoryManager
 import com.ampairs.common.desktop.DataDirectoryPickerDialog
@@ -21,6 +20,7 @@ import com.ampairs.workspace.navigation.DynamicModulesMenu
 import coil3.compose.setSingletonImageLoaderFactory
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.DesktopAppGraph
+import com.ampairs.tallysync.TallySettingsScreen
 import dev.zacsweers.metro.createGraphFactory
 
 fun main() = application {
@@ -63,12 +63,17 @@ fun main() = application {
     val applicationState = remember { ApplicationState() }
     applicationState.windows
     setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
+    var activeWorkspaceSlug by remember { mutableStateOf("") }
     for (window in applicationState.windows) {
         key(window) {
             if (window.title == "Main") {
-                MainWindow(window, appGraph)
+                MainWindow(
+                    state = window,
+                    appGraph = appGraph,
+                    onWorkspaceSlugChanged = { activeWorkspaceSlug = it }
+                )
             } else if (window.title == "Tally") {
-                TallyWindow(window)
+                TallyWindow(window, appGraph, activeWorkspaceSlug)
             }
         }
     }
@@ -78,16 +83,26 @@ fun main() = application {
 @Composable
 private fun ApplicationScope.TallyWindow(
     state: AppWindowState,
+    appGraph: DesktopAppGraph,
+    workspaceSlug: String,
 ) = Window(
     onCloseRequest = state::close, title = state.title,
-    onKeyEvent = {
-        false
-    }) {
-    // TallyApp()
+    onKeyEvent = { false }
+) {
+    TallySettingsScreen(
+        workspaceSlug = workspaceSlug,
+        scheduler = appGraph.tallySyncScheduler,
+        dataStore = appGraph.appPreferences,
+    )
 }
 
 @Composable
-private fun ApplicationScope.MainWindow(state: AppWindowState, appGraph: DesktopAppGraph) =
+private fun ApplicationScope.MainWindow(
+    state: AppWindowState,
+    appGraph: DesktopAppGraph,
+    onWorkspaceSlugChanged: (String) -> Unit = {},
+    onOpenTallyWindow: () -> Unit = state.openNewWindow,
+) =
     Window(
         onCloseRequest = ::exitApplication,
         state = WindowState(placement = WindowPlacement.Maximized),
@@ -115,10 +130,21 @@ private fun ApplicationScope.MainWindow(state: AppWindowState, appGraph: Desktop
             onNavigationReady = { callback ->
                 println("MainWindow: Navigation callback ready")
                 navigationCallback = callback
+            },
+            onWorkspaceEntered = { workspaceSlug ->
+                onWorkspaceSlugChanged(workspaceSlug)
+                appGraph.tallySyncScheduler.start(workspaceSlug)
+            },
+            onWorkspaceLeft = {
+                onWorkspaceSlugChanged("")
+                appGraph.tallySyncScheduler.stop()
             }
         )
 
         MenuBar {
+            Menu("Tools") {
+                Item("Tally Settings", onClick = onOpenTallyWindow)
+            }
             // Dynamic Workspace Module Menus - only show if navigationService is available
             navigationService?.let { navService ->
                 println("MenuBar: About to render DynamicModulesMenu")

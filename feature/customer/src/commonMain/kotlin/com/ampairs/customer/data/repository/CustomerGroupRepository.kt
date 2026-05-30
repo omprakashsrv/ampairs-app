@@ -1,6 +1,5 @@
 package com.ampairs.customer.data.repository
 
-import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.api.CustomerGroupApi
@@ -8,62 +7,27 @@ import com.ampairs.customer.data.db.CustomerGroupDao
 import com.ampairs.customer.data.db.toCustomerGroup
 import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.CustomerGroup
-import com.ampairs.customer.domain.CustomerGroupKey
-import com.ampairs.customer.domain.CustomerGroupStore
 import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.customer.util.CustomerLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 @Inject
 class CustomerGroupRepository(
     private val customerGroupApi: CustomerGroupApi,
-    private val customerGroupDao: CustomerGroupDao,
-    private val customerGroupStore: CustomerGroupStore
+    private val customerGroupDao: CustomerGroupDao
 ) {
 
-    /**
-     * Get customer groups with Store5 integration for offline-first
-     */
-    fun getCustomerGroupsFlow(
-        page: Int = 0,
-        size: Int = 100,
-        forceRefresh: Boolean = false
-    ): Flow<StoreReadResponse<List<CustomerGroup>>> {
-        val key = CustomerGroupKey(page = page, size = size)
-        return customerGroupStore.customerGroupStore.stream(
-            StoreReadRequest.cached(key, refresh = forceRefresh)
-        )
-    }
+    fun observeCustomerGroups(): Flow<List<CustomerGroup>> =
+        customerGroupDao.getAllCustomerGroups().map { entities -> entities.map { it.toCustomerGroup() } }
 
-    /**
-     * Search customer groups
-     */
-    fun searchCustomerGroups(
-        query: String,
-        page: Int = 0,
-        size: Int = 100
-    ): Flow<List<CustomerGroup>> {
-        return if (query.isBlank()) {
-            customerGroupDao.getAllCustomerGroups().map { entities ->
-                entities.map { it.toCustomerGroup() }
-            }
+    fun searchCustomerGroups(query: String): Flow<List<CustomerGroup>> =
+        if (query.isBlank()) {
+            customerGroupDao.getAllCustomerGroups().map { entities -> entities.map { it.toCustomerGroup() } }
         } else {
-            customerGroupDao.searchCustomerGroups(query).map { entities ->
-                entities.map { it.toCustomerGroup() }
-            }
+            customerGroupDao.searchCustomerGroups(query).map { entities -> entities.map { it.toCustomerGroup() } }
         }
-    }
-
-    /**
-     * Get all customer groups for dropdown/autocomplete
-     */
-    fun getAllCustomerGroupsFlow(): Flow<List<CustomerGroup>> {
-        return customerGroupStore.getCustomerGroupsFlow()
-    }
 
     /**
      * Create a new customer group
@@ -187,19 +151,11 @@ class CustomerGroupRepository(
         }
     }
 
-    /**
-     * Get customer group by ID
-     */
-    suspend fun getCustomerGroupById(id: String): CustomerGroup? {
-        return customerGroupStore.getCustomerGroupById(id)
-    }
+    suspend fun getCustomerGroupById(id: String): CustomerGroup? =
+        customerGroupDao.getCustomerGroupById(id)?.toCustomerGroup()
 
-    /**
-     * Get customer group by name
-     */
-    suspend fun getCustomerGroupByName(name: String): CustomerGroup? {
-        return customerGroupStore.getCustomerGroupByName(name)
-    }
+    suspend fun getCustomerGroupByName(name: String): CustomerGroup? =
+        customerGroupDao.getCustomerGroupByName(name)?.toCustomerGroup()
 
     /**
      * Get available customer groups for import

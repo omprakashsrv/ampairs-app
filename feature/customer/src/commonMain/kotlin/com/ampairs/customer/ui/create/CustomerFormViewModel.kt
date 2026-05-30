@@ -11,14 +11,11 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerAddress
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.State
-import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
 import com.ampairs.customer.domain.CustomerType
-import com.ampairs.customer.domain.CustomerTypeStore
-import com.ampairs.customer.domain.CustomerTypeKey
+import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.customer.domain.CustomerGroup
-import com.ampairs.customer.domain.CustomerGroupStore
-import com.ampairs.customer.domain.CustomerGroupKey
+import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.customer.ui.components.contact.ContactData
@@ -32,6 +29,7 @@ import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
 import com.ampairs.customer.util.CustomerConstants.ERROR_VALIDATION_FIX
 import com.ampairs.customer.util.CustomerConstants.ERROR_INVALID_EMAIL
 import com.ampairs.customer.util.CustomerConstants.ERROR_INVALID_LANDLINE
+import com.ampairs.customer.util.CustomerLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,8 +47,6 @@ import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 data class CustomerFormState(
     val uid: String = "",
@@ -201,8 +197,8 @@ class CustomerFormViewModel(
     @Assisted private val customerId: String?,
     private val customerStore: CustomerStore,
     private val stateStore: StateStore,
-    private val customerTypeStore: CustomerTypeStore,
-    private val customerGroupStore: CustomerGroupStore,
+    private val customerTypeRepository: CustomerTypeRepository,
+    private val customerGroupRepository: CustomerGroupRepository,
     private val configRepository: ConfigLookup,
     val contactPickerService: ContactPickerService,
     val locationService: LocationService
@@ -377,75 +373,12 @@ class CustomerFormViewModel(
     }
 
     private fun loadStates() {
+        stateStore.observeStates()
+            .onEach { states -> _uiState.update { it.copy(states = states, isLoadingStates = false) } }
+            .launchIn(viewModelScope)
+        _uiState.update { it.copy(isLoadingStates = true) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingStates = true) }
-
-            try {
-                // First, try to get states from local DB
-                stateStore.searchStatesFlow("")
-                    .collect { localStates ->
-                        if (localStates.isEmpty()) {
-                            // If local DB is empty, fetch from backend API
-                            val key = StateKey()
-                            stateStore.stateStore
-                                .stream(StoreReadRequest.cached(key, refresh = true))
-                                .collect { response ->
-                                    when (response) {
-                                        is StoreReadResponse.Data -> {
-                                            _uiState.update {
-                                                it.copy(
-                                                    states = response.value,
-                                                    isLoadingStates = false
-                                                )
-                                            }
-                                        }
-
-                                        is StoreReadResponse.Loading -> {
-                                            _uiState.update { it.copy(isLoadingStates = true) }
-                                        }
-
-                                        is StoreReadResponse.Error.Exception -> {
-                                            _uiState.update {
-                                                it.copy(
-                                                    isLoadingStates = false,
-                                                    error = response.error.message
-                                                        ?: "Failed to load states"
-                                                )
-                                            }
-                                        }
-
-                                        is StoreReadResponse.Error.Message -> {
-                                            _uiState.update {
-                                                it.copy(
-                                                    isLoadingStates = false,
-                                                    error = response.message
-                                                )
-                                            }
-                                        }
-
-                                        else -> {
-                                            // Handle other response types if needed
-                                        }
-                                    }
-                                }
-                        } else {
-                            // Use local states if available
-                            _uiState.update {
-                                it.copy(
-                                    states = localStates,
-                                    isLoadingStates = false
-                                )
-                            }
-                        }
-                    }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoadingStates = false,
-                        error = e.message ?: "Failed to load states"
-                    )
-                }
-            }
+            try { stateStore.syncStates() } catch (_: Exception) {}
         }
     }
 
@@ -476,88 +409,22 @@ class CustomerFormViewModel(
     }
 
     private fun loadCustomerTypes() {
+        customerTypeRepository.observeCustomerTypes()
+            .onEach { types -> _uiState.update { it.copy(customerTypes = types, isLoadingCustomerTypes = false) } }
+            .launchIn(viewModelScope)
+        _uiState.update { it.copy(isLoadingCustomerTypes = true) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingCustomerTypes = true) }
-
-            try {
-                val key = CustomerTypeKey(searchQuery = "")
-                customerTypeStore.customerTypeStore
-                    .stream(StoreReadRequest.cached(key, refresh = true))
-                    .collect { response ->
-                        when (response) {
-                            is StoreReadResponse.Data -> {
-                                _uiState.update {
-                                    it.copy(
-                                        customerTypes = response.value,
-                                        isLoadingCustomerTypes = false,
-                                        error = null
-                                    )
-                                }
-                            }
-                            is StoreReadResponse.Error.Exception -> {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoadingCustomerTypes = false,
-                                        error = response.error.message ?: "Failed to load customer types"
-                                    )
-                                }
-                            }
-                            else -> {
-                                // Loading state is already handled
-                            }
-                        }
-                    }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoadingCustomerTypes = false,
-                        error = e.message ?: "Failed to load customer types"
-                    )
-                }
-            }
+            try { customerTypeRepository.syncCustomerTypes() } catch (_: Exception) {}
         }
     }
 
     private fun loadCustomerGroups() {
+        customerGroupRepository.observeCustomerGroups()
+            .onEach { groups -> _uiState.update { it.copy(customerGroups = groups, isLoadingCustomerGroups = false) } }
+            .launchIn(viewModelScope)
+        _uiState.update { it.copy(isLoadingCustomerGroups = true) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingCustomerGroups = true) }
-
-            try {
-                val key = CustomerGroupKey(searchQuery = "")
-                customerGroupStore.customerGroupStore
-                    .stream(StoreReadRequest.cached(key, refresh = true))
-                    .collect { response ->
-                        when (response) {
-                            is StoreReadResponse.Data -> {
-                                _uiState.update {
-                                    it.copy(
-                                        customerGroups = response.value,
-                                        isLoadingCustomerGroups = false,
-                                        error = null
-                                    )
-                                }
-                            }
-                            is StoreReadResponse.Error.Exception -> {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoadingCustomerGroups = false,
-                                        error = response.error.message ?: "Failed to load customer groups"
-                                    )
-                                }
-                            }
-                            else -> {
-                                // Loading state is already handled
-                            }
-                        }
-                    }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoadingCustomerGroups = false,
-                        error = e.message ?: "Failed to load customer groups"
-                    )
-                }
-            }
+            try { customerGroupRepository.syncCustomerGroups() } catch (_: Exception) {}
         }
     }
 
@@ -575,7 +442,7 @@ class CustomerFormViewModel(
                 configRepository.syncFormConfigs()
             } catch (e: Exception) {
                 // Silently fail - form will work without config using default behavior
-                println("Failed to sync form configs: ${e.message}")
+                CustomerLogger.w("CustomerFormViewModel", "Failed to sync form configs: ${e.message}")
             }
         }
     }

@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.DeviceSession
-import com.ampairs.common.model.onError
-import com.ampairs.common.model.onSuccess
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -16,6 +14,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_load_sessions
+import ampairsapp.feature.auth.generated.resources.auth_success_logged_out_device
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_logout_device
+import ampairsapp.feature.auth.generated.resources.auth_success_logged_out_all
+import ampairsapp.feature.auth.generated.resources.auth_error_failed_logout_all
 
 data class DeviceManagementUiState(
     val isLoading: Boolean = false,
@@ -29,75 +34,56 @@ data class DeviceManagementUiState(
 class DeviceManagementViewModel(
     private val userRepository: UserRepository
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow(DeviceManagementUiState())
     val uiState: StateFlow<DeviceManagementUiState> = _uiState.asStateFlow()
-    
-    private val _errorMessage = MutableSharedFlow<String?>()
+
+    private val _errorMessage = MutableSharedFlow<String?>(extraBufferCapacity = 1)
     val errorMessage = _errorMessage.asSharedFlow()
-    
+
     fun loadDeviceSessions() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            
-            userRepository.getDeviceSessions().onSuccess {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    deviceSessions = this
-                )
-            }.onError {
+            val result = userRepository.getDeviceSessions()
+            if (result.data != null && result.error == null) {
+                _uiState.value = _uiState.value.copy(isLoading = false, deviceSessions = result.data!!)
+            } else {
                 _uiState.value = _uiState.value.copy(isLoading = false)
-                viewModelScope.launch {
-                    _errorMessage.emit("Failed to load device sessions: ${this@onError.message}")
-                }
+                _errorMessage.emit(getString(Res.string.auth_error_failed_load_sessions, result.error?.message.orEmpty()))
             }
         }
     }
-    
+
     fun logoutDevice(deviceId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoggingOut = true)
-            
-            userRepository.logoutDevice(deviceId).onSuccess {
+            val result = userRepository.logoutDevice(deviceId)
+            if (result.data != null && result.error == null) {
                 _uiState.value = _uiState.value.copy(isLoggingOut = false)
-                viewModelScope.launch {
-                    _errorMessage.emit("Successfully logged out from device")
-                }
-                // Refresh the device list
+                _errorMessage.emit(getString(Res.string.auth_success_logged_out_device))
                 loadDeviceSessions()
-            }.onError {
+            } else {
                 _uiState.value = _uiState.value.copy(isLoggingOut = false)
-                viewModelScope.launch {
-                    _errorMessage.emit("Failed to logout device: ${this@onError.message}")
-                }
+                _errorMessage.emit(getString(Res.string.auth_error_failed_logout_device, result.error?.message.orEmpty()))
             }
         }
     }
-    
+
     fun logoutAllDevices() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoggingOut = true)
-            
-            userRepository.logoutAllDevices().onSuccess {
+            val result = userRepository.logoutAllDevices()
+            if (result.data != null && result.error == null) {
+                _uiState.value = _uiState.value.copy(isLoggingOut = false, deviceSessions = emptyList())
+                _errorMessage.emit(getString(Res.string.auth_success_logged_out_all))
+            } else {
                 _uiState.value = _uiState.value.copy(isLoggingOut = false)
-                viewModelScope.launch {
-                    _errorMessage.emit("Successfully logged out from all devices")
-                }
-                // This should trigger a logout from the current session as well
-                // Clear the device sessions since we're logged out
-                _uiState.value = _uiState.value.copy(deviceSessions = emptyList())
-            }.onError {
-                _uiState.value = _uiState.value.copy(isLoggingOut = false)
-                viewModelScope.launch {
-                    _errorMessage.emit("Failed to logout from all devices: ${this@onError.message}")
-                }
+                _errorMessage.emit(getString(Res.string.auth_error_failed_logout_all, result.error?.message.orEmpty()))
             }
         }
     }
-    
+
     fun clearErrorMessage() {
-        viewModelScope.launch {
-            _errorMessage.emit(null)
-        }
+        viewModelScope.launch { _errorMessage.emit(null) }
     }
 }

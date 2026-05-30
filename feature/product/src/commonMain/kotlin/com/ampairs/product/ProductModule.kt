@@ -4,6 +4,8 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.db.ProductRoomDatabase
+import com.ampairs.product.db.dao.CategoryDao
+import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.VariantAttributeDao
@@ -21,6 +23,12 @@ interface ProductDaoModule {
 
         @Provides
         fun provideVariantAttributeDao(db: ProductRoomDatabase): VariantAttributeDao = db.variantAttributeDao()
+
+        @Provides
+        fun provideGroupDao(db: ProductRoomDatabase): GroupDao = db.groupDao()
+
+        @Provides
+        fun provideCategoryDao(db: ProductRoomDatabase): CategoryDao = db.categoryDao()
 
         @Provides
         fun provideProductDataService(repo: ProductRepository): ProductDataService = repo

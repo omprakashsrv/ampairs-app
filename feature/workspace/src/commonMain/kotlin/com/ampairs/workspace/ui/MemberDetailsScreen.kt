@@ -16,7 +16,40 @@ import com.ampairs.workspace.api.model.UserRoleResponse
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.MemberDetailsViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.workspace.generated.resources.Res
+import ampairsapp.feature.workspace.generated.resources.cancel
+import ampairsapp.feature.workspace.generated.resources.save
+import ampairsapp.feature.workspace.generated.resources.edit
+import ampairsapp.feature.workspace.generated.resources.try_again
+import ampairsapp.feature.workspace.generated.resources.workspace_member_details_title
+import ampairsapp.feature.workspace.generated.resources.workspace_member_profile
+import ampairsapp.feature.workspace.generated.resources.workspace_member_role_status
+import ampairsapp.feature.workspace.generated.resources.workspace_member_role_label
+import ampairsapp.feature.workspace.generated.resources.workspace_member_status_label
+import ampairsapp.feature.workspace.generated.resources.workspace_member_permissions
+import ampairsapp.feature.workspace.generated.resources.workspace_member_activity
+import ampairsapp.feature.workspace.generated.resources.workspace_member_joined
+import ampairsapp.feature.workspace.generated.resources.workspace_member_last_activity
+import ampairsapp.feature.workspace.generated.resources.workspace_member_danger_zone
+import ampairsapp.feature.workspace.generated.resources.workspace_member_remove
+import ampairsapp.feature.workspace.generated.resources.workspace_member_remove_confirm
+import ampairsapp.feature.workspace.generated.resources.workspace_member_remove_action
+import ampairsapp.feature.workspace.generated.resources.cd_member_avatar
+import ampairsapp.feature.workspace.generated.resources.workspace_member_loading_permissions
+import ampairsapp.feature.workspace.generated.resources.workspace_member_no_permissions
+import ampairsapp.feature.workspace.generated.resources.workspace_member_error_title
+import ampairsapp.feature.workspace.generated.resources.workspace_member_offline_mode
+import ampairsapp.feature.workspace.generated.resources.workspace_member_offline_desc
+import ampairsapp.feature.workspace.generated.resources.workspace_member_refresh
+import ampairsapp.feature.workspace.generated.resources.workspace_member_deactivate_title
+import ampairsapp.feature.workspace.generated.resources.workspace_member_reactivate_title
+import ampairsapp.feature.workspace.generated.resources.workspace_member_deactivate
+import ampairsapp.feature.workspace.generated.resources.workspace_member_reactivate
+import ampairsapp.feature.workspace.generated.resources.workspace_member_deactivate_confirm
+import ampairsapp.feature.workspace.generated.resources.workspace_member_reactivate_confirm
 
 /**
  * Comprehensive member details screen with view and edit capabilities
@@ -30,7 +63,7 @@ fun MemberDetailsScreen(
     modifier: Modifier = Modifier,
     viewModel: MemberDetailsViewModel = assistedMetroViewModel<MemberDetailsViewModel, MemberDetailsViewModel.Factory> { create(workspaceId, memberId) },
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     var isEditing by remember { mutableStateOf(false) }
     var showStatusConfirmation by remember { mutableStateOf(false) }
@@ -127,18 +160,15 @@ fun MemberDetailsScreen(
         // Status change confirmation dialog
         if (showStatusConfirmation) {
             val currentMember = state.member!!
-            val statusAction = if (pendingStatusChange == "INACTIVE") "deactivate" else "reactivate"
-            val statusResult =
-                if (pendingStatusChange == "INACTIVE") "deactivated" else "reactivated"
 
             AlertDialog(
                 onDismissRequest = {
                     showStatusConfirmation = false
                     pendingStatusChange = null
                 },
-                title = { Text("${statusAction.replaceFirstChar { it.uppercaseChar() }} Member") },
+                title = { Text(if (pendingStatusChange == "INACTIVE") stringResource(Res.string.workspace_member_deactivate_title) else stringResource(Res.string.workspace_member_reactivate_title)) },
                 text = {
-                    Text("Are you sure you want to $statusAction ${currentMember.name}? This member will be $statusResult and ${if (pendingStatusChange == "INACTIVE") "lose access to" else "regain access to"} the workspace.")
+                    Text(if (pendingStatusChange == "INACTIVE") stringResource(Res.string.workspace_member_deactivate_confirm, currentMember.name) else stringResource(Res.string.workspace_member_reactivate_confirm, currentMember.name))
                 },
                 confirmButton = {
                     Button(
@@ -155,7 +185,7 @@ fun MemberDetailsScreen(
                             )
                         } else ButtonDefaults.buttonColors()
                     ) {
-                        Text(statusAction.replaceFirstChar { it.uppercaseChar() })
+                        Text(if (pendingStatusChange == "INACTIVE") stringResource(Res.string.workspace_member_deactivate) else stringResource(Res.string.workspace_member_reactivate))
                     }
                 },
                 dismissButton = {
@@ -165,7 +195,7 @@ fun MemberDetailsScreen(
                             pendingStatusChange = null
                         }
                     ) {
-                        Text("Cancel")
+                        Text(stringResource(Res.string.cancel))
                     }
                 }
             )
@@ -187,7 +217,7 @@ private fun MemberDetailsHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Member Details",
+            text = stringResource(Res.string.workspace_member_details_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -197,7 +227,7 @@ private fun MemberDetailsHeader(
                 if (isEditing) {
                     // Save and Cancel buttons when editing
                     TextButton(onClick = onCancel) {
-                        Text("Cancel")
+                        Text(stringResource(Res.string.cancel))
                     }
                     Button(
                         onClick = onSave,
@@ -205,14 +235,14 @@ private fun MemberDetailsHeader(
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Save")
+                        Text(stringResource(Res.string.save))
                     }
                 } else {
                     // Edit button when viewing
                     Button(onClick = onToggleEdit) {
                         Icon(Icons.Default.Edit, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Edit")
+                        Text(stringResource(Res.string.edit))
                     }
                 }
             }
@@ -292,7 +322,7 @@ private fun MemberProfileCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Profile",
+                text = stringResource(Res.string.workspace_member_profile),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -311,7 +341,7 @@ private fun MemberProfileCard(
                 ) {
                     Icon(
                         Icons.Default.Person,
-                        contentDescription = "Member Avatar",
+                        contentDescription = stringResource(Res.string.cd_member_avatar),
                         modifier = Modifier.size(48.dp)
                     )
                 }
@@ -365,7 +395,7 @@ private fun MemberRoleStatusCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Role & Status",
+                text = stringResource(Res.string.workspace_member_role_status),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -379,7 +409,7 @@ private fun MemberRoleStatusCard(
                 // Role Section
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Role",
+                        text = stringResource(Res.string.workspace_member_role_label),
                         style = MaterialTheme.typography.labelMedium
                     )
 
@@ -397,7 +427,7 @@ private fun MemberRoleStatusCard(
                 // Status Section
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Status",
+                        text = stringResource(Res.string.workspace_member_status_label),
                         style = MaterialTheme.typography.labelMedium
                     )
 
@@ -430,7 +460,7 @@ private fun MemberPermissionsCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Permissions",
+                text = stringResource(Res.string.workspace_member_permissions),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -461,7 +491,7 @@ private fun MemberActivityCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Activity",
+                text = stringResource(Res.string.workspace_member_activity),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -472,13 +502,13 @@ private fun MemberActivityCard(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 ActivityItem(
-                    label = "Joined",
+                    label = stringResource(Res.string.workspace_member_joined),
                     value = member.joinedAt
                 )
 
                 member.lastActivity?.let { lastActivity ->
                     ActivityItem(
-                        label = "Last Activity",
+                        label = stringResource(Res.string.workspace_member_last_activity),
                         value = lastActivity
                     )
                 }
@@ -504,7 +534,7 @@ private fun MemberDangerZoneCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Danger Zone",
+                text = stringResource(Res.string.workspace_member_danger_zone),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onErrorContainer
@@ -520,7 +550,7 @@ private fun MemberDangerZoneCard(
             ) {
                 Icon(Icons.Default.PersonRemove, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Remove Member")
+                Text(stringResource(Res.string.workspace_member_remove))
             }
         }
     }
@@ -529,9 +559,9 @@ private fun MemberDangerZoneCard(
     if (showRemoveDialog) {
         AlertDialog(
             onDismissRequest = { showRemoveDialog = false },
-            title = { Text("Remove Member") },
+            title = { Text(stringResource(Res.string.workspace_member_remove)) },
             text = {
-                Text("Are you sure you want to remove ${member.name} from this workspace? This action cannot be undone.")
+                Text(stringResource(Res.string.workspace_member_remove_confirm, member.name))
             },
             confirmButton = {
                 Button(
@@ -543,12 +573,12 @@ private fun MemberDangerZoneCard(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Remove")
+                    Text(stringResource(Res.string.workspace_member_remove_action))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRemoveDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
             }
         )
@@ -710,7 +740,7 @@ private fun PermissionEditor(
 
     if (availablePermissions.isEmpty()) {
         Text(
-            text = "Loading permissions...",
+            text = stringResource(Res.string.workspace_member_loading_permissions),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -781,7 +811,7 @@ private fun PermissionViewer(
 ) {
     if (permissions.isEmpty()) {
         Text(
-            text = "No specific permissions assigned",
+            text = stringResource(Res.string.workspace_member_no_permissions),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -868,7 +898,7 @@ private fun ErrorState(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Failed to load member details",
+            text = stringResource(Res.string.workspace_member_error_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.error
         )
@@ -886,7 +916,7 @@ private fun ErrorState(
         Button(onClick = onRetry) {
             Icon(Icons.Default.Refresh, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Try Again")
+            Text(stringResource(Res.string.try_again))
         }
     }
 }
@@ -922,12 +952,12 @@ private fun MemberDetailsOfflineIndicator(
 
                 Column {
                     Text(
-                        text = "Offline Mode",
+                        text = stringResource(Res.string.workspace_member_offline_mode),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Showing cached member details",
+                        text = stringResource(Res.string.workspace_member_offline_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -941,7 +971,7 @@ private fun MemberDetailsOfflineIndicator(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Refresh")
+                Text(stringResource(Res.string.workspace_member_refresh))
             }
         }
     }

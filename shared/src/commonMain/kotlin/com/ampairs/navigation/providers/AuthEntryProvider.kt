@@ -129,7 +129,7 @@ fun authEntryProvider(
                     AuthRoute.Otp(
                         sessionId = sessionId,
                         verificationId = verificationId,
-                        phoneNumber = viewModel.phoneNumber
+                        phoneNumber = viewModel.state.value.phoneNumber
                     )
                 )
             }

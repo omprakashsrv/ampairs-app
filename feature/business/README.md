@@ -15,8 +15,7 @@ Business profile management. Covers the company's identity, operational settings
 | Class | Purpose |
 |---|---|
 | `BusinessApi` / `BusinessApiImpl` | REST endpoints for business data |
-| `BusinessRepository` | Offline-first data access with Store5 |
-| `BusinessStore` | Store5 Fetcher + Room SourceOfTruth |
+| `BusinessRepository` | Offline-first data access (reactive DAO Flow + API sync) |
 | `BusinessOverviewViewModel` | Dashboard summary |
 | `BusinessProfileViewModel` | Profile form state |
 | `BusinessOperationsViewModel` | Operations settings |

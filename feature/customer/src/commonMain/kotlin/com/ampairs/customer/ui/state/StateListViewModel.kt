@@ -3,22 +3,30 @@ package com.ampairs.customer.ui.state
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.domain.State
-import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
 import com.ampairs.customer.domain.MasterState
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.ampairs.common.di.AppScope
+import com.ampairs.workspace.context.WorkspaceContextManager
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class StateListUiState(
     val states: List<State> = emptyList(),
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val searchQuery: String = "",
     val availableStatesForImport: List<MasterState> = emptyList(),
@@ -29,7 +37,8 @@ data class StateListUiState(
 @ViewModelKey
 @Inject
 class StateListViewModel(
-    private val stateStore: StateStore
+    private val stateStore: StateStore,
+    private val workspaceContextManager: WorkspaceContextManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StateListUiState())
@@ -39,8 +48,8 @@ class StateListViewModel(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     init {
-        refreshStates()
-        observeSearchQuery()
+        observeStates()
+        syncStates()
     }
 
     fun updateSearchQuery(query: String) {
@@ -51,95 +60,24 @@ class StateListViewModel(
     fun deleteState(stateId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
-
             val result = stateStore.deleteState(stateId)
             if (result.isFailure) {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to delete state")
                 }
-            } else {
-                // Refresh the list after successful deletion
-                refreshStates()
             }
         }
     }
 
-    @OptIn(FlowPreview::class)
-    private fun observeSearchQuery() {
-        searchQuery
-            .debounce(300) // Debounce search queries
-            .distinctUntilChanged()
-            .onEach { query ->
-                searchStates(query)
-            }
-            .launchIn(viewModelScope)
-    }
-
-    private fun searchStates(query: String) {
+    fun syncStates() {
         viewModelScope.launch {
-            stateStore.searchStatesFlow(query)
-                .collect { filteredStates ->
-                    _uiState.update {
-                        it.copy(states = filteredStates)
-                    }
-                }
-        }
-    }
-
-    fun refreshStates() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
+            _uiState.update { it.copy(isRefreshing = true, error = null) }
             try {
-                val key = StateKey()
-                stateStore.stateStore
-                    .stream(StoreReadRequest.cached(key, refresh = true))
-                    .collect { response ->
-                        when (response) {
-                            is StoreReadResponse.Data -> {
-                                _uiState.update {
-                                    it.copy(
-                                        states = response.value,
-                                        isLoading = false,
-                                        error = null
-                                    )
-                                }
-                            }
-
-                            is StoreReadResponse.Loading -> {
-                                _uiState.update { it.copy(isLoading = true) }
-                            }
-
-                            is StoreReadResponse.Error.Exception -> {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoading = false,
-                                        error = response.error.message ?: "Failed to refresh states"
-                                    )
-                                }
-                            }
-
-                            is StoreReadResponse.Error.Message -> {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoading = false,
-                                        error = response.message
-                                    )
-                                }
-                            }
-
-                            else -> {
-                                // Handle other response types if needed
-                            }
-                        }
-                    }
+                stateStore.syncStates()
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Failed to refresh states"
-                    )
-                }
+                _uiState.update { it.copy(error = e.message ?: "Sync failed") }
+            } finally {
+                _uiState.update { it.copy(isRefreshing = false) }
             }
         }
     }
@@ -147,19 +85,12 @@ class StateListViewModel(
     fun importState(stateCode: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-
             val result = stateStore.importState(stateCode)
-            if (result.isSuccess) {
-                _uiState.update { it.copy(isLoading = false, error = null) }
-                // Refresh the list from backend after successful import
-                refreshStates()
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to import state"
-                    )
-                }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    error = if (result.isFailure) result.exceptionOrNull()?.message ?: "Failed to import state" else null
+                )
             }
         }
     }
@@ -167,52 +98,44 @@ class StateListViewModel(
     fun bulkImportStates(stateCodes: List<String>) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-
             val result = stateStore.bulkImportStates(stateCodes)
-            if (result.isSuccess) {
-                val response = result.getOrNull()
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = null
-                    )
-                }
-                // Refresh the list from backend after successful import
-                refreshStates()
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to import states"
-                    )
-                }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    error = if (result.isFailure) result.exceptionOrNull()?.message ?: "Failed to import states" else null
+                )
             }
         }
     }
 
-    fun loadAvailableStatesForImport(workspaceId: String) {
+    fun loadAvailableStatesForImport() {
+        val workspaceId = workspaceContextManager.currentWorkspace.value?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingImportStates = true, error = null) }
-
             val result = stateStore.getAvailableStatesForImport(workspaceId)
-            if (result.isSuccess) {
-                val masterStates = result.getOrNull() ?: emptyList()
-                _uiState.update {
-                    it.copy(
-                        availableStatesForImport = masterStates,
-                        isLoadingImportStates = false,
-                        error = null
-                    )
-                }
-            } else {
-                _uiState.update {
-                    it.copy(
-                        isLoadingImportStates = false,
-                        error = result.exceptionOrNull()?.message
-                            ?: "Failed to load available states"
-                    )
-                }
+            _uiState.update {
+                it.copy(
+                    isLoadingImportStates = false,
+                    availableStatesForImport = result.getOrElse { emptyList() },
+                    error = if (result.isFailure) result.exceptionOrNull()?.message ?: "Failed to load available states" else null
+                )
             }
         }
+    }
+
+    @OptIn(FlowPreview::class)
+    private fun observeStates() {
+        _uiState.update { it.copy(isLoading = true) }
+        _searchQuery
+            .debounce(300)
+            .distinctUntilChanged()
+            .flatMapLatest { query -> stateStore.searchStatesFlow(query) }
+            .onEach { states ->
+                _uiState.update { it.copy(states = states, isLoading = false, error = null) }
+            }
+            .catch { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+            .launchIn(viewModelScope)
     }
 }

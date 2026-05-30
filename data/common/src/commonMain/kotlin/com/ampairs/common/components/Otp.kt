@@ -45,7 +45,6 @@ fun Otp(
     BasicTextField(
         value = otp,
         onValueChange = { newValue ->
-            // Only accept digits and limit to otpLength
             val filtered = newValue.filter { it.isDigit() }.take(otpLength)
             if (filtered != otp) {
                 otp = filtered
@@ -115,7 +114,6 @@ private fun OtpDigitBox(
                 color = MaterialTheme.colorScheme.onSurface
             )
         } else if (isFocused) {
-            // Cursor indicator
             Box(
                 modifier = Modifier
                     .size(width = 2.dp, height = 24.dp)

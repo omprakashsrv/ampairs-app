@@ -14,12 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.product.domain.ProductVariant
 import com.ampairs.tax.util.formatDecimal
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-/**
- * Variant Management Screen - Shows list of variants for a product
- */
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.product.generated.resources.Res
+import ampairsapp.feature.product.generated.resources.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VariantManagementScreen(
@@ -29,9 +31,8 @@ fun VariantManagementScreen(
     modifier: Modifier = Modifier,
     viewModel: VariantManagementViewModel = assistedMetroViewModel<VariantManagementViewModel, VariantManagementViewModel.Factory> { create(productId) }
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Show delete confirmation dialog
     if (uiState.variantToDelete != null) {
         DeleteConfirmationDialog(
             variantName = uiState.variantToDelete!!.variantName,
@@ -41,7 +42,6 @@ fun VariantManagementScreen(
         )
     }
 
-    // Show success message
     uiState.successMessage?.let { message ->
         LaunchedEffect(message) {
             kotlinx.coroutines.delay(2000)
@@ -54,15 +54,14 @@ fun VariantManagementScreen(
         }
     }
 
-    // Show error message
     uiState.errorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = { viewModel.clearErrorMessage() },
-            title = { Text("Error") },
+            title = { Text(stringResource(Res.string.prod_dialog_error)) },
             text = { Text(message) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearErrorMessage() }) {
-                    Text("OK")
+                    Text(stringResource(Res.string.prod_ok))
                 }
             }
         )
@@ -71,14 +70,14 @@ fun VariantManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Variants - $productName") }
+                title = { Text(stringResource(Res.string.prod_variant_list_title, productName)) }
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onNavigateToForm(null) }
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Variant")
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.prod_variant_add))
             }
         }
     ) { paddingValues ->
@@ -106,7 +105,6 @@ fun VariantManagementScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Summary Card
                 item {
                     SummaryCard(
                         totalStock = uiState.totalStock,
@@ -114,7 +112,6 @@ fun VariantManagementScreen(
                     )
                 }
 
-                // Variant Cards
                 items(
                     items = uiState.variants,
                     key = { it.id }
@@ -150,7 +147,7 @@ private fun SummaryCard(
         ) {
             Column {
                 Text(
-                    text = "Total Stock",
+                    text = stringResource(Res.string.prod_details_total_stock_label),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -163,7 +160,7 @@ private fun SummaryCard(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "Variants",
+                    text = stringResource(Res.string.prod_details_variants_count_label),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -195,7 +192,6 @@ private fun VariantCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header with SKU and Actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -208,7 +204,7 @@ private fun VariantCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "SKU: ${variant.sku}",
+                        text = stringResource(Res.string.prod_sku_format, variant.sku),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -217,21 +213,20 @@ private fun VariantCard(
                     IconButton(onClick = onEdit) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "Edit",
+                            contentDescription = stringResource(Res.string.prod_details_cd_edit),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     IconButton(onClick = onDelete) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(Res.string.prod_details_cd_delete),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
             }
 
-            // Attributes
             val attributes = buildList {
                 variant.attribute1Name?.let { name ->
                     variant.attribute1Value?.let { value ->
@@ -258,27 +253,25 @@ private fun VariantCard(
                 )
             }
 
-            // Pricing
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 variant.mrp?.let { mrp ->
-                    PriceChip(label = "MRP", value = mrp)
+                    PriceChip(label = stringResource(Res.string.prod_label_mrp), value = mrp)
                 }
                 variant.sellingPrice?.let { price ->
-                    PriceChip(label = "Selling", value = price)
+                    PriceChip(label = stringResource(Res.string.prod_variant_selling), value = price)
                 }
             }
 
-            // Stock Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Stock: ${variant.stockQuantity}",
+                    text = stringResource(Res.string.prod_stock_format, variant.stockQuantity),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -287,7 +280,7 @@ private fun VariantCard(
                     variant.isOutOfStock -> {
                         AssistChip(
                             onClick = {},
-                            label = { Text("Out of Stock") },
+                            label = { Text(stringResource(Res.string.prod_out_of_stock)) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.Warning,
@@ -304,7 +297,7 @@ private fun VariantCard(
                     variant.isLowStock -> {
                         AssistChip(
                             onClick = {},
-                            label = { Text("Low Stock") },
+                            label = { Text(stringResource(Res.string.prod_variant_low_stock)) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.Warning,
@@ -321,11 +314,10 @@ private fun VariantCard(
                 }
             }
 
-            // Inactive badge
             if (!variant.active) {
                 AssistChip(
                     onClick = {},
-                    label = { Text("Inactive") },
+                    label = { Text(stringResource(Res.string.prod_inactive)) },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
@@ -379,19 +371,19 @@ private fun EmptyVariantsState(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "No Variants",
+                text = stringResource(Res.string.prod_variant_empty_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Add variants to manage different product options",
+                text = stringResource(Res.string.prod_variant_empty_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Button(onClick = onAddVariant) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Variant")
+                Text(stringResource(Res.string.prod_variant_add))
             }
         }
     }
@@ -406,8 +398,8 @@ private fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Variant") },
-        text = { Text("Are you sure you want to delete '$variantName'? This action cannot be undone.") },
+        title = { Text(stringResource(Res.string.prod_variant_delete_title)) },
+        text = { Text(stringResource(Res.string.prod_variant_delete_confirm, variantName)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
@@ -419,7 +411,7 @@ private fun DeleteConfirmationDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(Res.string.prod_details_delete_btn), color = MaterialTheme.colorScheme.error)
                 }
             }
         },
@@ -428,7 +420,7 @@ private fun DeleteConfirmationDialog(
                 onClick = onDismiss,
                 enabled = !isDeleting
             ) {
-                Text("Cancel")
+                Text(stringResource(Res.string.prod_cancel))
             }
         }
     )

@@ -16,6 +16,7 @@ kotlin {
         namespace = "com.ampairs.business"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
     jvm("desktop")
     iosArm64()
@@ -40,7 +41,6 @@ kotlin {
                 implementation(projects.feature.formApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 // Coil for image loading
                 implementation(libs.coil.core)
                 implementation(libs.coil.compose)

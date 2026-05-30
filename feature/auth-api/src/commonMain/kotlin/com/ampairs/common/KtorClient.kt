@@ -69,6 +69,7 @@ fun httpClient(
                 ignoreUnknownKeys = true
                 isLenient = true
                 encodeDefaults = false
+                explicitNulls = false
             }
         )
     }

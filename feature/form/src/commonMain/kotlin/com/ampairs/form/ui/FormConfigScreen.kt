@@ -14,9 +14,42 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.form.domain.EntityFieldConfig
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import ampairsapp.feature.form.generated.resources.Res
+import ampairsapp.feature.form.generated.resources.form_add_attribute
+import ampairsapp.feature.form.generated.resources.form_back_cd
+import ampairsapp.feature.form.generated.resources.form_delete_attribute_cd
+import ampairsapp.feature.form.generated.resources.form_dismiss
+import ampairsapp.feature.form.generated.resources.form_hint_attribute_key
+import ampairsapp.feature.form.generated.resources.form_hint_attribute_key_desc
+import ampairsapp.feature.form.generated.resources.form_hint_category
+import ampairsapp.feature.form.generated.resources.form_hint_default_value
+import ampairsapp.feature.form.generated.resources.form_hint_display_name
+import ampairsapp.feature.form.generated.resources.form_hint_help_text
+import ampairsapp.feature.form.generated.resources.form_label_attribute_key
+import ampairsapp.feature.form.generated.resources.form_label_category
+import ampairsapp.feature.form.generated.resources.form_label_data_type
+import ampairsapp.feature.form.generated.resources.form_label_default_value
+import ampairsapp.feature.form.generated.resources.form_label_display_name
+import ampairsapp.feature.form.generated.resources.form_label_display_order
+import ampairsapp.feature.form.generated.resources.form_label_help_text
+import ampairsapp.feature.form.generated.resources.form_label_placeholder
+import ampairsapp.feature.form.generated.resources.form_new_attribute
+import ampairsapp.feature.form.generated.resources.form_no_attributes
+import ampairsapp.feature.form.generated.resources.form_no_config_desc
+import ampairsapp.feature.form.generated.resources.form_no_config_title
+import ampairsapp.feature.form.generated.resources.form_save_changes
+import ampairsapp.feature.form.generated.resources.form_saving
+import ampairsapp.feature.form.generated.resources.form_section_attributes
+import ampairsapp.feature.form.generated.resources.form_section_fields
+import ampairsapp.feature.form.generated.resources.form_title_configure
+import ampairsapp.feature.form.generated.resources.form_toggle_enabled
+import ampairsapp.feature.form.generated.resources.form_toggle_mandatory
+import ampairsapp.feature.form.generated.resources.form_toggle_visible
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,11 +58,10 @@ fun FormConfigScreen(
     onNavigateBack: () -> Unit,
     viewModel: FormConfigViewModel = assistedMetroViewModel<FormConfigViewModel, FormConfigViewModel.Factory>(key = entityType) { create(entityType) }
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.successMessage) {
         if (uiState.successMessage != null) {
-            // Auto-dismiss success message after 2 seconds
             kotlinx.coroutines.delay(2000)
             viewModel.clearMessages()
         }
@@ -38,12 +70,12 @@ fun FormConfigScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Configure ${uiState.entityType} Form") },
+                title = { Text(stringResource(Res.string.form_title_configure, uiState.entityType)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(Res.string.form_back_cd)
                         )
                     }
                 }
@@ -54,7 +86,7 @@ fun FormConfigScreen(
                 ExtendedFloatingActionButton(
                     onClick = { viewModel.saveChanges() },
                     icon = { Icon(Icons.Default.Save, contentDescription = null) },
-                    text = { Text("Save Changes") }
+                    text = { Text(stringResource(Res.string.form_save_changes)) }
                 )
             }
         }
@@ -71,7 +103,6 @@ fun FormConfigScreen(
                     )
                 }
                 uiState.fieldConfigs.isEmpty() && uiState.attributeDefinitions.isEmpty() -> {
-                    // Empty state - backend should seed configuration
                     Column(
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -80,11 +111,11 @@ fun FormConfigScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
-                            text = "No Configuration Found",
+                            text = stringResource(Res.string.form_no_config_title),
                             style = MaterialTheme.typography.headlineSmall
                         )
                         Text(
-                            text = "Please contact your administrator to seed the form configuration for ${uiState.entityType}",
+                            text = stringResource(Res.string.form_no_config_desc, uiState.entityType),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -96,11 +127,10 @@ fun FormConfigScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Field Configurations Section
                         if (uiState.fieldConfigs.isNotEmpty()) {
                             item {
                                 Text(
-                                    text = "Field Configurations",
+                                    text = stringResource(Res.string.form_section_fields),
                                     style = MaterialTheme.typography.titleLarge,
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
@@ -114,7 +144,6 @@ fun FormConfigScreen(
                             }
                         }
 
-                        // Attribute Definitions Section
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -122,16 +151,14 @@ fun FormConfigScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Custom Attributes",
+                                    text = stringResource(Res.string.form_section_attributes),
                                     style = MaterialTheme.typography.titleLarge,
                                     modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                                 )
-                                OutlinedButton(
-                                    onClick = { viewModel.addNewAttribute() }
-                                ) {
+                                OutlinedButton(onClick = { viewModel.addNewAttribute() }) {
                                     Icon(Icons.Default.Add, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Add Attribute")
+                                    Text(stringResource(Res.string.form_add_attribute))
                                 }
                             }
                         }
@@ -139,7 +166,7 @@ fun FormConfigScreen(
                         if (uiState.attributeDefinitions.isEmpty()) {
                             item {
                                 Text(
-                                    text = "No custom attributes defined. Click 'Add Attribute' to create one.",
+                                    text = stringResource(Res.string.form_no_attributes),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(16.dp)
@@ -155,15 +182,11 @@ fun FormConfigScreen(
                             )
                         }
 
-                        // Bottom padding for FAB
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp))
-                        }
+                        item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 }
             }
 
-            // Error Snackbar
             if (uiState.error != null) {
                 Snackbar(
                     modifier = Modifier
@@ -171,7 +194,7 @@ fun FormConfigScreen(
                         .padding(16.dp),
                     action = {
                         TextButton(onClick = { viewModel.clearMessages() }) {
-                            Text("Dismiss")
+                            Text(stringResource(Res.string.form_dismiss))
                         }
                     }
                 ) {
@@ -179,7 +202,6 @@ fun FormConfigScreen(
                 }
             }
 
-            // Success Snackbar
             if (uiState.successMessage != null) {
                 Snackbar(
                     modifier = Modifier
@@ -192,7 +214,6 @@ fun FormConfigScreen(
                 }
             }
 
-            // Saving Overlay
             if (uiState.isSaving) {
                 Box(
                     modifier = Modifier
@@ -207,7 +228,7 @@ fun FormConfigScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             CircularProgressIndicator()
-                            Text("Saving changes...")
+                            Text(stringResource(Res.string.form_saving))
                         }
                     }
                 }
@@ -221,9 +242,7 @@ private fun FieldConfigCard(
     fieldConfig: EntityFieldConfig,
     onUpdate: (EntityFieldConfig) -> Unit
 ) {
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -238,30 +257,30 @@ private fun FieldConfigCard(
             OutlinedTextField(
                 value = fieldConfig.displayName,
                 onValueChange = { onUpdate(fieldConfig.copy(displayName = it)) },
-                label = { Text("Display Name") },
+                label = { Text(stringResource(Res.string.form_label_display_name)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = fieldConfig.placeholder ?: "",
                 onValueChange = { onUpdate(fieldConfig.copy(placeholder = it.takeIf { it.isNotBlank() })) },
-                label = { Text("Placeholder") },
+                label = { Text(stringResource(Res.string.form_label_placeholder)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = fieldConfig.defaultValue ?: "",
                 onValueChange = { onUpdate(fieldConfig.copy(defaultValue = it.takeIf { it.isNotBlank() })) },
-                label = { Text("Default Value") },
-                supportingText = { Text("Pre-filled value when creating new records") },
+                label = { Text(stringResource(Res.string.form_label_default_value)) },
+                supportingText = { Text(stringResource(Res.string.form_hint_default_value)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = fieldConfig.helpText ?: "",
                 onValueChange = { onUpdate(fieldConfig.copy(helpText = it.takeIf { it.isNotBlank() })) },
-                label = { Text("Help Text") },
-                supportingText = { Text("Additional information shown below the field") },
+                label = { Text(stringResource(Res.string.form_label_help_text)) },
+                supportingText = { Text(stringResource(Res.string.form_hint_help_text)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
@@ -278,7 +297,7 @@ private fun FieldConfigCard(
                         checked = fieldConfig.visible,
                         onCheckedChange = { onUpdate(fieldConfig.copy(visible = it)) }
                     )
-                    Text("Visible", modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(Res.string.form_toggle_visible), modifier = Modifier.padding(start = 8.dp))
                 }
 
                 Row(
@@ -289,7 +308,7 @@ private fun FieldConfigCard(
                         checked = fieldConfig.mandatory,
                         onCheckedChange = { onUpdate(fieldConfig.copy(mandatory = it)) }
                     )
-                    Text("Mandatory", modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(Res.string.form_toggle_mandatory), modifier = Modifier.padding(start = 8.dp))
                 }
             }
 
@@ -301,7 +320,7 @@ private fun FieldConfigCard(
                     checked = fieldConfig.enabled,
                     onCheckedChange = { onUpdate(fieldConfig.copy(enabled = it)) }
                 )
-                Text("Enabled", modifier = Modifier.padding(start = 8.dp))
+                Text(stringResource(Res.string.form_toggle_enabled), modifier = Modifier.padding(start = 8.dp))
             }
         }
     }
@@ -314,56 +333,53 @@ private fun AttributeDefinitionCard(
     onUpdate: (EntityAttributeDefinition) -> Unit,
     onDelete: (EntityAttributeDefinition) -> Unit
 ) {
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header with delete button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (attributeDefinition.attributeKey.isBlank()) "New Attribute" else attributeDefinition.attributeKey,
+                    text = if (attributeDefinition.attributeKey.isBlank())
+                        stringResource(Res.string.form_new_attribute)
+                    else
+                        attributeDefinition.attributeKey,
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = { onDelete(attributeDefinition) }) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete Attribute",
+                        contentDescription = stringResource(Res.string.form_delete_attribute_cd),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
             }
 
-            // Attribute Key (editable for new attributes)
             OutlinedTextField(
                 value = attributeDefinition.attributeKey,
                 onValueChange = { onUpdate(attributeDefinition.copy(attributeKey = it)) },
-                label = { Text("Attribute Key") },
-                placeholder = { Text("e.g., industry, companySize") },
-                supportingText = { Text("Unique identifier - use camelCase") },
+                label = { Text(stringResource(Res.string.form_label_attribute_key)) },
+                placeholder = { Text(stringResource(Res.string.form_hint_attribute_key)) },
+                supportingText = { Text(stringResource(Res.string.form_hint_attribute_key_desc)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            // Display Name
             OutlinedTextField(
                 value = attributeDefinition.displayName,
                 onValueChange = { onUpdate(attributeDefinition.copy(displayName = it)) },
-                label = { Text("Display Name") },
-                placeholder = { Text("e.g., Industry, Company Size") },
+                label = { Text(stringResource(Res.string.form_label_display_name)) },
+                placeholder = { Text(stringResource(Res.string.form_hint_display_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            // Data Type Dropdown
             var dataTypeExpanded by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(
                 expanded = dataTypeExpanded,
@@ -374,7 +390,7 @@ private fun AttributeDefinitionCard(
                     value = attributeDefinition.dataType,
                     onValueChange = { },
                     readOnly = true,
-                    label = { Text("Data Type") },
+                    label = { Text(stringResource(Res.string.form_label_data_type)) },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = dataTypeExpanded)
                     },
@@ -399,47 +415,42 @@ private fun AttributeDefinitionCard(
                 }
             }
 
-            // Category
             OutlinedTextField(
                 value = attributeDefinition.category ?: "",
                 onValueChange = { onUpdate(attributeDefinition.copy(category = it.takeIf { it.isNotBlank() })) },
-                label = { Text("Category") },
-                placeholder = { Text("e.g., Business, Financial") },
+                label = { Text(stringResource(Res.string.form_label_category)) },
+                placeholder = { Text(stringResource(Res.string.form_hint_category)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            // Placeholder
             OutlinedTextField(
                 value = attributeDefinition.placeholder ?: "",
                 onValueChange = { onUpdate(attributeDefinition.copy(placeholder = it.takeIf { it.isNotBlank() })) },
-                label = { Text("Placeholder") },
+                label = { Text(stringResource(Res.string.form_label_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            // Help Text
             OutlinedTextField(
                 value = attributeDefinition.helpText ?: "",
                 onValueChange = { onUpdate(attributeDefinition.copy(helpText = it.takeIf { it.isNotBlank() })) },
-                label = { Text("Help Text") },
+                label = { Text(stringResource(Res.string.form_label_help_text)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            // Display Order
             OutlinedTextField(
                 value = attributeDefinition.displayOrder.toString(),
                 onValueChange = { value ->
                     val order = value.toIntOrNull() ?: 0
                     onUpdate(attributeDefinition.copy(displayOrder = order))
                 },
-                label = { Text("Display Order") },
+                label = { Text(stringResource(Res.string.form_label_display_order)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            // Checkboxes
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -452,7 +463,7 @@ private fun AttributeDefinitionCard(
                         checked = attributeDefinition.visible,
                         onCheckedChange = { onUpdate(attributeDefinition.copy(visible = it)) }
                     )
-                    Text("Visible", modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(Res.string.form_toggle_visible), modifier = Modifier.padding(start = 8.dp))
                 }
 
                 Row(
@@ -463,7 +474,7 @@ private fun AttributeDefinitionCard(
                         checked = attributeDefinition.mandatory,
                         onCheckedChange = { onUpdate(attributeDefinition.copy(mandatory = it)) }
                     )
-                    Text("Mandatory", modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(Res.string.form_toggle_mandatory), modifier = Modifier.padding(start = 8.dp))
                 }
             }
 
@@ -475,7 +486,7 @@ private fun AttributeDefinitionCard(
                     checked = attributeDefinition.enabled,
                     onCheckedChange = { onUpdate(attributeDefinition.copy(enabled = it)) }
                 )
-                Text("Enabled", modifier = Modifier.padding(start = 8.dp))
+                Text(stringResource(Res.string.form_toggle_enabled), modifier = Modifier.padding(start = 8.dp))
             }
         }
     }

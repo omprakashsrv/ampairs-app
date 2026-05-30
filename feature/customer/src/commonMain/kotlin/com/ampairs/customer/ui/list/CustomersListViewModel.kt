@@ -2,7 +2,6 @@ package com.ampairs.customer.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.common.viewmodel.handleCancellation

@@ -1,6 +1,5 @@
 package com.ampairs.customer.ui.components.images
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
@@ -34,6 +33,38 @@ import com.ampairs.common.util.DateTimeFormatter
 import com.ampairs.customer.domain.CustomerImage
 import com.ampairs.customer.domain.CustomerImageStatus
 import com.ampairs.customer.util.CustomerLogger
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_cancel
+import ampairsapp.feature.customer.generated.resources.customer_delete
+import ampairsapp.feature.customer.generated.resources.customer_image_available
+import ampairsapp.feature.customer.generated.resources.customer_image_close_cd
+import ampairsapp.feature.customer.generated.resources.customer_image_delete_cd
+import ampairsapp.feature.customer.generated.resources.customer_image_delete_confirm
+import ampairsapp.feature.customer.generated.resources.customer_image_delete_title
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_content_type
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_created
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_description
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_filename
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_filesize
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_local_copy
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_server_url
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_status
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_thumbnail
+import ampairsapp.feature.customer.generated.resources.customer_image_detail_updated
+import ampairsapp.feature.customer.generated.resources.customer_image_details_collapse
+import ampairsapp.feature.customer.generated.resources.customer_image_details_expand
+import ampairsapp.feature.customer.generated.resources.customer_image_details_title
+import ampairsapp.feature.customer.generated.resources.customer_image_is_primary_cd
+import ampairsapp.feature.customer.generated.resources.customer_image_not_available
+import ampairsapp.feature.customer.generated.resources.customer_image_primary_label
+import ampairsapp.feature.customer.generated.resources.customer_image_set_primary_cd
+import ampairsapp.feature.customer.generated.resources.customer_image_status_completed
+import ampairsapp.feature.customer.generated.resources.customer_image_status_failed
+import ampairsapp.feature.customer.generated.resources.customer_image_status_pending
+import ampairsapp.feature.customer.generated.resources.customer_image_status_unknown
+import ampairsapp.feature.customer.generated.resources.customer_image_status_uploading
+import ampairsapp.feature.customer.generated.resources.customer_image_viewer_cd
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CustomerImageViewer(
@@ -64,7 +95,6 @@ fun CustomerImageViewer(
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Header
                     ImageViewerHeader(
                         image = image,
                         onClose = onDismiss,
@@ -72,7 +102,6 @@ fun CustomerImageViewer(
                         onSetPrimary = { onSetPrimary(image) }
                     )
 
-                    // Image Content - takes all available space
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -83,7 +112,6 @@ fun CustomerImageViewer(
                         ImageContent(image = image)
                     }
 
-                    // Expandable Image Details
                     ImageDetailsExpandable(
                         image = image,
                         isExpanded = isDetailsExpanded,
@@ -116,7 +144,7 @@ private fun ImageViewerHeader(
                 )
                 if (image.isPrimary) {
                     Text(
-                        text = "Primary Image",
+                        text = stringResource(Res.string.customer_image_primary_label),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -127,28 +155,29 @@ private fun ImageViewerHeader(
             IconButton(onClick = onClose) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Close"
+                    contentDescription = stringResource(Res.string.customer_image_close_cd)
                 )
             }
         },
         actions = {
-            // Set Primary
             IconButton(
                 onClick = onSetPrimary,
                 enabled = !image.isPrimary
             ) {
                 Icon(
                     if (image.isPrimary) Icons.Default.Star else Icons.Default.StarBorder,
-                    contentDescription = if (image.isPrimary) "Primary image" else "Set as primary",
+                    contentDescription = if (image.isPrimary)
+                        stringResource(Res.string.customer_image_is_primary_cd)
+                    else
+                        stringResource(Res.string.customer_image_set_primary_cd),
                     tint = if (image.isPrimary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Delete
             IconButton(onClick = { showDeleteDialog = true }) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete image",
+                    contentDescription = stringResource(Res.string.customer_image_delete_cd),
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -156,14 +185,11 @@ private fun ImageViewerHeader(
         modifier = modifier
     )
 
-    // Delete Confirmation Dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Image") },
-            text = {
-                Text("Are you sure you want to delete this image? This action cannot be undone.")
-            },
+            title = { Text(stringResource(Res.string.customer_image_delete_title)) },
+            text = { Text(stringResource(Res.string.customer_image_delete_confirm)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -174,12 +200,12 @@ private fun ImageViewerHeader(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(Res.string.customer_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.customer_cancel))
                 }
             }
         )
@@ -191,15 +217,11 @@ private fun ImageContent(
     image: CustomerImage,
     modifier: Modifier = Modifier
 ) {
-    // Zoom state
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    // Transformable state for pinch-to-zoom and pan
     val state = rememberTransformableState { zoomChange, offsetChange, _ ->
         scale = (scale * zoomChange).coerceIn(1f, 5f)
-
-        // Only allow panning when zoomed in
         if (scale > 1f) {
             offset += offsetChange
         } else {
@@ -207,30 +229,22 @@ private fun ImageContent(
         }
     }
 
-    // Use the same URL building logic as CustomerImageGrid for consistency - respect sync status
     val imageModel = when {
-        // Prefer local file if available (for uploaded images)
         !image.localPath.isNullOrBlank() -> {
             val filePath = "file://${image.localPath}"
             CustomerLogger.d("CustomerImageViewer", "Using local file: $filePath")
             filePath
         }
-        // For unsynced images, only load from local files - don't try server URLs
-        // Note: CustomerImageViewer uses CustomerImage (full object), so we need to check if it has synced status
-        // Since CustomerImage doesn't have synced field, we'll assume if it has server URLs it's synced
-        // Use server image URL - Coil will download, cache, and handle offline automatically
         !image.imageUrl.isNullOrBlank() -> {
             val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.imageUrl)
             CustomerLogger.d("CustomerImageViewer", "Loading image URL: ${image.imageUrl} -> $completeUrl")
             completeUrl
         }
-        // Fallback to thumbnail URL if main image URL is not available
         !image.thumbnailUrl.isNullOrBlank() -> {
             val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.thumbnailUrl)
             CustomerLogger.d("CustomerImageViewer", "Loading thumbnail URL: ${image.thumbnailUrl} -> $completeUrl")
             completeUrl
         }
-        // No image available
         else -> {
             CustomerLogger.d("CustomerImageViewer", "No image available for ${image.uid}")
             null
@@ -244,35 +258,24 @@ private fun ImageContent(
         ) {
             AsyncImage(
                 model = imageModel,
-                contentDescription = "Customer image: ${image.fileName}",
+                contentDescription = stringResource(Res.string.customer_image_viewer_cd, image.fileName),
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(Unit) {
-                        // Handle both tap gestures and scroll events
                         awaitPointerEventScope {
                             while (true) {
                                 val event = awaitPointerEvent()
-
-                                // Handle mouse scroll for desktop zoom
                                 if (event.type == PointerEventType.Scroll) {
                                     val scrollDelta = event.changes.first().scrollDelta.y
-
-                                    // Zoom with mouse wheel (scroll up = zoom in, scroll down = zoom out)
                                     val zoomChange = if (scrollDelta > 0) 0.9f else 1.1f
                                     scale = (scale * zoomChange).coerceIn(1f, 5f)
-
-                                    // Reset offset when zooming out to 1x
-                                    if (scale == 1f) {
-                                        offset = Offset.Zero
-                                    }
-
+                                    if (scale == 1f) offset = Offset.Zero
                                     event.changes.forEach { it.consume() }
                                 }
                             }
                         }
                     }
                     .pointerInput(Unit) {
-                        // Double-tap to reset zoom (separate pointerInput for tap gestures)
                         detectTapGestures(
                             onDoubleTap = {
                                 scale = 1f
@@ -291,13 +294,12 @@ private fun ImageContent(
                 onError = { error ->
                     CustomerLogger.w("CustomerImageViewer", "Failed to load image: $imageModel", error.result.throwable)
                 },
-                onSuccess = { success ->
+                onSuccess = {
                     CustomerLogger.d("CustomerImageViewer", "Successfully loaded image: $imageModel")
                 }
             )
         }
     } else {
-        // Placeholder for no image
         ElevatedCard(
             modifier = modifier.size(200.dp),
             colors = CardDefaults.cardColors(
@@ -319,7 +321,7 @@ private fun ImageContent(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Image not available",
+                        text = stringResource(Res.string.customer_image_not_available),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -343,7 +345,6 @@ private fun ImageDetailsExpandable(
         )
     ) {
         Column {
-            // Toggle Button - entire row is clickable
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -353,7 +354,7 @@ private fun ImageDetailsExpandable(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Image Details",
+                    text = stringResource(Res.string.customer_image_details_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -361,12 +362,14 @@ private fun ImageDetailsExpandable(
 
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (isExpanded) "Collapse details" else "Expand details",
+                    contentDescription = if (isExpanded)
+                        stringResource(Res.string.customer_image_details_collapse)
+                    else
+                        stringResource(Res.string.customer_image_details_expand),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // Details Content - shown only when expanded
             if (isExpanded) {
                 ImageDetails(
                     image = image,
@@ -382,48 +385,61 @@ private fun ImageDetails(
     image: CustomerImage,
     modifier: Modifier = Modifier
 ) {
+    val labelFileName = stringResource(Res.string.customer_image_detail_filename)
+    val labelFileSize = stringResource(Res.string.customer_image_detail_filesize)
+    val labelContentType = stringResource(Res.string.customer_image_detail_content_type)
+    val labelDescription = stringResource(Res.string.customer_image_detail_description)
+    val labelStatus = stringResource(Res.string.customer_image_detail_status)
+    val labelServerUrl = stringResource(Res.string.customer_image_detail_server_url)
+    val labelThumbnail = stringResource(Res.string.customer_image_detail_thumbnail)
+    val labelLocalCopy = stringResource(Res.string.customer_image_detail_local_copy)
+    val labelCreated = stringResource(Res.string.customer_image_detail_created)
+    val labelUpdated = stringResource(Res.string.customer_image_detail_updated)
+    val statusPending = stringResource(Res.string.customer_image_status_pending)
+    val statusUploading = stringResource(Res.string.customer_image_status_uploading)
+    val statusCompleted = stringResource(Res.string.customer_image_status_completed)
+    val statusFailed = stringResource(Res.string.customer_image_status_failed)
+    val statusUnknown = stringResource(Res.string.customer_image_status_unknown)
+    val valueAvailable = stringResource(Res.string.customer_image_available)
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // File Information
-        DetailRow(label = "File Name", value = image.fileName)
-        DetailRow(label = "File Size", value = formatFileSize(image.fileSize))
-        DetailRow(label = "Content Type", value = image.contentType)
+        DetailRow(label = labelFileName, value = image.fileName)
+        DetailRow(label = labelFileSize, value = formatFileSize(image.fileSize))
+        DetailRow(label = labelContentType, value = image.contentType)
 
         if (!image.description.isNullOrBlank()) {
-            DetailRow(label = "Description", value = image.description)
+            DetailRow(label = labelDescription, value = image.description)
         }
 
-        // Status Information
         DetailRow(
-            label = "Upload Status",
+            label = labelStatus,
             value = when (image.uploadStatus) {
-                CustomerImageStatus.PENDING -> "Pending Upload"
-                CustomerImageStatus.UPLOADING -> "Uploading..."
-                CustomerImageStatus.COMPLETED -> "Uploaded Successfully"
-                CustomerImageStatus.FAILED -> "Upload Failed"
-                else -> "Unknown"
+                CustomerImageStatus.PENDING -> statusPending
+                CustomerImageStatus.UPLOADING -> statusUploading
+                CustomerImageStatus.COMPLETED -> statusCompleted
+                CustomerImageStatus.FAILED -> statusFailed
+                else -> statusUnknown
             }
         )
 
-        // URLs (if available)
         if (!image.imageUrl.isNullOrBlank()) {
-            DetailRow(label = "Server URL", value = "Available", isUrl = true)
+            DetailRow(label = labelServerUrl, value = valueAvailable, isUrl = true)
         }
         if (!image.thumbnailUrl.isNullOrBlank()) {
-            DetailRow(label = "Thumbnail", value = "Available", isUrl = true)
+            DetailRow(label = labelThumbnail, value = valueAvailable, isUrl = true)
         }
         if (!image.localPath.isNullOrBlank()) {
-            DetailRow(label = "Local Copy", value = "Available", isUrl = true)
+            DetailRow(label = labelLocalCopy, value = valueAvailable, isUrl = true)
         }
 
-        // Timestamps
         image.createdAt?.let { createdAt ->
-            DetailRow(label = "Created", value = DateTimeFormatter.formatTimestamp(createdAt))
+            DetailRow(label = labelCreated, value = DateTimeFormatter.formatTimestamp(createdAt))
         }
         image.updatedAt?.let { updatedAt ->
-            DetailRow(label = "Updated", value = DateTimeFormatter.formatTimestamp(updatedAt))
+            DetailRow(label = labelUpdated, value = DateTimeFormatter.formatTimestamp(updatedAt))
         }
     }
 }

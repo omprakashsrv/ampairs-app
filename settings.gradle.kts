@@ -27,7 +27,7 @@ include(":shared")
 include(":androidApp")
 include(":desktopApp")
 include(":data:common")
-include(":tallyModule")
+include(":tally")
 include(
     ":feature:auth-api",
     ":feature:auth",

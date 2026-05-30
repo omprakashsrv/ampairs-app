@@ -145,7 +145,7 @@ SomeLogger.w("Tag", "message", exception)   // w/e/i/d — NOT warn/error/info/d
 - Conflict resolution: local unsynced changes always win over server data during pull sync
 - Batch sync: default 100 records/batch, max 10,000/cycle, always check `hasNext`
 - Sync timestamp authority: use server's `updatedAt` string (ISO 8601) — never client clock for sync tracking
-- Store5: keep sync logic in Repository, not in the Store5 fetcher or sourceOfTruth writer
+- Offline-first pattern: reactive DAO `Flow` for UI observation + explicit `syncXxx()` for API calls; ViewModels call both in `init {}`
 
 ---
 

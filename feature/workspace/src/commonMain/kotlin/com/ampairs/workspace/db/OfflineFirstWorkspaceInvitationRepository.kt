@@ -8,136 +8,106 @@ import com.ampairs.common.model.PageResult
 import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceInvitationApi
 import com.ampairs.workspace.api.model.CreateInvitationRequest
+import com.ampairs.workspace.api.model.InvitationListResponse
 import com.ampairs.workspace.api.model.ResendInvitationRequest
 import com.ampairs.workspace.db.dao.WorkspaceInvitationDao
+import com.ampairs.workspace.db.entity.WorkspaceInvitationEntity
 import com.ampairs.workspace.domain.InvitationAcceptanceResult
 import com.ampairs.workspace.domain.WorkspaceInvitation
-import com.ampairs.workspace.store.WorkspaceInvitationKey
-import com.ampairs.workspace.store.WorkspaceInvitationStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import org.mobilenativefoundation.store.core5.ExperimentalStoreApi
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
 
-/**
- * Offline-first workspace invitation repository using Store5 pattern
- * 
- * Provides comprehensive invitation management with proper offline-first functionality,
- * automatic sync, conflict resolution, and optimistic updates.
- */
 @Inject
 @SingleIn(AppScope::class)
-@OptIn(ExperimentalStoreApi::class)
 class OfflineFirstWorkspaceInvitationRepository(
     private val invitationApi: WorkspaceInvitationApi,
     private val invitationDao: WorkspaceInvitationDao,
-    private val invitationStore: WorkspaceInvitationStore,
     private val tokenRepository: TokenRepository
 ) {
 
-    private suspend fun getCurrentUserId(): String {
-        return tokenRepository.getCurrentUserId() ?: throw IllegalStateException("User not authenticated")
-    }
+    private suspend fun getCurrentUserId(): String =
+        tokenRepository.getCurrentUserId() ?: throw IllegalStateException("User not authenticated")
 
-    /**
-     * Get workspace invitations with offline-first approach using Store5
-     */
-    suspend fun getWorkspaceInvitations(
+    fun getWorkspaceInvitations(
         workspaceId: String,
         page: Int = 0,
         size: Int = 20,
         sortBy: String = "createdAt",
         sortDir: String = "desc",
         refresh: Boolean = false
-    ): Flow<PageResult<WorkspaceInvitation>> {
-        val currentUserId = getCurrentUserId()
-        val key = WorkspaceInvitationKey.forPage(
-            userId = currentUserId,
-            workspaceId = workspaceId,
-            page = page,
-            size = size
-        ).copy(sortBy = sortBy, sortDir = sortDir)
-        
-        val request = if (refresh) {
-            StoreReadRequest.fresh(key)
-        } else {
-            StoreReadRequest.cached(key, refresh = false)
+    ): Flow<PageResult<WorkspaceInvitation>> = flow {
+        val userId = getCurrentUserId()
+
+        if (!refresh) {
+            val cached = invitationDao.getInvitationsForWorkspacePaged(userId, workspaceId, size, page * size).first()
+            if (cached.isNotEmpty()) emit(buildPageResultFromEntities(cached, page, size))
         }
-        
-        return invitationStore.stream(request).map { response ->
-            when (response) {
-                is StoreReadResponse.Data -> response.value
-                is StoreReadResponse.Error.Exception -> throw response.error
-                is StoreReadResponse.Error.Message -> throw Exception(response.message)
-                is StoreReadResponse.Loading -> PageResult(
-                    content = emptyList(),
-                    totalElements = 0,
-                    totalPages = 0,
-                    currentPage = page,
-                    pageSize = size,
-                    isFirst = true,
-                    isLast = true,
-                    isEmpty = true
-                )
-                is StoreReadResponse.NoNewData -> throw Exception("No cached data available in NoNewData response")
-                else -> throw Exception("Unknown Store response type: ${response::class.simpleName}")
-            }
+
+        val response = invitationApi.getWorkspaceInvitations(workspaceId, page, size, sortBy, sortDir)
+        if (response.data != null && response.error == null) {
+            val paged = response.data!!
+            val currentTime = currentTimeMillis()
+            val entities = paged.content.map { it.toEntity(userId, workspaceId, currentTime) }
+            if (page == 0) invitationDao.deleteAllInvitationsForWorkspace(workspaceId, userId)
+            invitationDao.insertInvitations(entities)
+
+            emit(PageResult(
+                content = entities.map { it.toDomainModel() },
+                totalElements = paged.totalElements,
+                totalPages = paged.totalPages,
+                currentPage = paged.page,
+                pageSize = paged.size,
+                isFirst = paged.isFirst,
+                isLast = paged.isLast,
+                isEmpty = entities.isEmpty()
+            ))
+        } else if (response.error != null) {
+            throw Exception(response.error!!.message)
         }
     }
 
-    /**
-     * Get filtered workspace invitations
-     */
-    suspend fun getFilteredInvitations(
+    fun getFilteredInvitations(
         workspaceId: String,
         status: String? = null,
         role: String? = null,
         page: Int = 0,
         size: Int = 20,
-        refresh: Boolean = false
-    ): Flow<PageResult<WorkspaceInvitation>> {
-        val currentUserId = getCurrentUserId()
-        return invitationStore.stream(
-            StoreReadRequest.cached(
-                key = WorkspaceInvitationKey.forPageWithFilters(
-                    userId = currentUserId,
-                    workspaceId = workspaceId,
-                    page = page,
-                    size = size,
-                    status = status,
-                    role = role
-                ),
-                refresh = refresh
-            )
-        ).map { response ->
-            when (response) {
-                is StoreReadResponse.Data -> response.value
-                is StoreReadResponse.Error.Exception -> throw response.error
-                is StoreReadResponse.Error.Message -> throw Exception(response.message)
-                else -> PageResult(
-                    content = emptyList(),
-                    totalElements = 0,
-                    totalPages = 0,
-                    currentPage = page,
-                    pageSize = size,
-                    isFirst = true,
-                    isLast = true,
-                    isEmpty = true
-                )
+        @Suppress("UNUSED_PARAMETER") refresh: Boolean = false
+    ): Flow<PageResult<WorkspaceInvitation>> = flow {
+        val userId = getCurrentUserId()
+
+        val cached: List<WorkspaceInvitationEntity> = when {
+            status != null && role != null ->
+                invitationDao.getInvitationsByStatusAndRole(userId, workspaceId, status, role).first()
+            status != null ->
+                invitationDao.getInvitationsByStatus(userId, workspaceId, status).first()
+            role != null ->
+                invitationDao.getInvitationsByRole(userId, workspaceId, role).first()
+            else ->
+                invitationDao.getInvitationsForWorkspace(userId, workspaceId).first()
+        }
+
+        if (cached.isNotEmpty()) emit(buildPageResultFromEntities(cached, page, size))
+
+        val response = invitationApi.getWorkspaceInvitations(workspaceId, page, size)
+        if (response.data != null && response.error == null) {
+            val paged = response.data!!
+            val currentTime = currentTimeMillis()
+            val entities = paged.content.map { it.toEntity(userId, workspaceId, currentTime) }
+            if (page == 0) invitationDao.deleteAllInvitationsForWorkspace(workspaceId, userId)
+            invitationDao.insertInvitations(entities)
+
+            val filtered = entities.filter { entity ->
+                (status == null || entity.status == status) &&
+                        (role == null || entity.invited_role == role)
             }
+            emit(buildPageResultFromEntities(filtered, page, size))
         }
     }
 
-    /**
-     * Create and send workspace invitation with optimistic updates
-     */
-    suspend fun createInvitation(
-        workspaceId: String,
-        request: CreateInvitationRequest,
-    ): WorkspaceInvitation {
-        // Make API call first
+    suspend fun createInvitation(workspaceId: String, request: CreateInvitationRequest): WorkspaceInvitation {
         val response = invitationApi.createInvitation(workspaceId, request)
 
         if (response.error == null && response.data != null) {
@@ -154,32 +124,32 @@ class OfflineFirstWorkspaceInvitationRepository(
                 expiresAt = invitationData.expiresAt,
                 sentByName = invitationData.inviterName ?: "Unknown",
                 sentByEmail = invitationData.invitedBy ?: "Unknown",
-                emailSent = true, // Backend doesn't provide detailed delivery status
+                emailSent = true,
                 emailDelivered = true,
                 emailOpened = false,
                 linkClicked = false,
                 resendCount = invitationData.sendCount,
                 invitationMessage = invitationData.message
             )
-
-            // Update Store5 cache by clearing it so next read will fetch fresh data
-            invitationStore.clear()
-
+            val userId = getCurrentUserId()
+            val currentTime = currentTimeMillis()
+            val entity = invitation.toEntityModel(userId).copy(
+                sync_state = "SYNCED",
+                last_synced_at = currentTime,
+                server_updated_at = currentTime,
+                local_updated_at = currentTime
+            )
+            invitationDao.insertInvitation(entity)
             return invitation
         } else {
             throw Exception(response.error?.message ?: "Failed to create invitation")
         }
     }
 
-    /**
-     * Accept workspace invitation via token
-     */
     suspend fun acceptInvitation(token: String): InvitationAcceptanceResult {
         val response = invitationApi.acceptInvitation(token)
-
         return if (response.error == null && response.data != null) {
             val acceptanceData = response.data!!
-
             InvitationAcceptanceResult(
                 invitationId = acceptanceData.id,
                 status = acceptanceData.status,
@@ -211,22 +181,15 @@ class OfflineFirstWorkspaceInvitationRepository(
         }
     }
 
-    /**
-     * Resend invitation email with optimistic updates
-     */
     suspend fun resendInvitation(
         workspaceId: String,
         invitationId: String,
         request: ResendInvitationRequest = ResendInvitationRequest(),
     ): WorkspaceInvitation {
         val currentUserId = getCurrentUserId()
-        
-        // Optimistic update - increment resend count locally first
         invitationDao.incrementResendCount(invitationId, currentUserId)
-        
         try {
             val response = invitationApi.resendInvitation(workspaceId, invitationId, request)
-
             if (response.error == null && response.data != null) {
                 val invitationData = response.data!!
                 val invitation = WorkspaceInvitation(
@@ -241,15 +204,13 @@ class OfflineFirstWorkspaceInvitationRepository(
                     expiresAt = invitationData.expiresAt,
                     sentByName = invitationData.inviterName ?: "Unknown",
                     sentByEmail = invitationData.invitedBy ?: "Unknown",
-                    emailSent = true, // Backend doesn't provide detailed delivery status
+                    emailSent = true,
                     emailDelivered = true,
                     emailOpened = false,
                     linkClicked = false,
                     resendCount = invitationData.sendCount,
                     invitationMessage = invitationData.message
                 )
-
-                // Update local database with server data
                 val currentTime = currentTimeMillis()
                 val entity = invitation.toEntityModel(currentUserId).copy(
                     sync_state = "SYNCED",
@@ -258,138 +219,135 @@ class OfflineFirstWorkspaceInvitationRepository(
                     local_updated_at = currentTime
                 )
                 invitationDao.insertInvitation(entity)
-
                 return invitation
             } else {
-                // Rollback optimistic update on failure
-                // TODO: Implement proper rollback mechanism
                 throw Exception(response.error?.message ?: "Failed to resend invitation")
             }
         } catch (e: Exception) {
-            // TODO: Implement proper rollback mechanism
             throw e
         }
     }
 
-    /**
-     * Cancel workspace invitation with optimistic updates
-     */
     suspend fun cancelInvitation(workspaceId: String, invitationId: String): String {
         val currentUserId = getCurrentUserId()
-        
-        // Optimistic update - change status locally first
         invitationDao.updateInvitationStatus(invitationId, currentUserId, "CANCELLED")
-        
         try {
             val response = invitationApi.cancelInvitation(workspaceId, invitationId)
-
             if (response.error == null && response.data != null) {
-                // Update sync state to confirm successful cancellation
                 val currentTime = currentTimeMillis()
                 invitationDao.updateSyncState(invitationId, currentUserId, "SYNCED", currentTime)
-                
                 return response.data!!
             } else {
-                // Rollback optimistic update on failure
-                // TODO: Implement proper rollback mechanism
                 throw Exception(response.error?.message ?: "Failed to cancel invitation")
             }
         } catch (e: Exception) {
-            // TODO: Implement proper rollback mechanism
             throw e
         }
     }
 
-    /**
-     * Search invitations locally
-     */
-    suspend fun searchInvitations(
-        workspaceId: String,
-        query: String
-    ): Flow<List<WorkspaceInvitation>> {
-        val currentUserId = getCurrentUserId()
-        return invitationDao.searchInvitations(currentUserId, workspaceId, query)
+    fun searchInvitations(workspaceId: String, query: String): Flow<List<WorkspaceInvitation>> = flow {
+        val userId = getCurrentUserId()
+        invitationDao.searchInvitations(userId, workspaceId, query)
             .map { entities -> entities.map { it.toDomainModel() } }
+            .collect { emit(it) }
     }
 
-    /**
-     * Clear all cached invitations for a workspace
-     */
     suspend fun clearCache(workspaceId: String) {
         val currentUserId = getCurrentUserId()
         invitationDao.deleteAllInvitationsForWorkspace(workspaceId, currentUserId)
-        
-        // Clear Store5 cache
-        invitationStore.clear()
     }
 
-    /**
-     * Force refresh invitations from server
-     */
-    suspend fun refresh(workspaceId: String, page: Int = 0, size: Int = 20): PageResult<WorkspaceInvitation> {
-        val currentUserId = getCurrentUserId()
-        val key = WorkspaceInvitationKey.forPage(currentUserId, workspaceId, page, size)
-        
-        return invitationStore.stream(
-            StoreReadRequest.fresh(key)
-        ).first().let { response ->
-            when (response) {
-                is StoreReadResponse.Data -> response.value
-                is StoreReadResponse.Error.Exception -> throw response.error
-                is StoreReadResponse.Error.Message -> throw Exception(response.message)
-                else -> throw Exception("Failed to refresh invitations")
-            }
-        }
+    private fun buildPageResultFromEntities(
+        entities: List<WorkspaceInvitationEntity>,
+        page: Int,
+        size: Int
+    ): PageResult<WorkspaceInvitation> {
+        val startIndex = page * size
+        val endIndex = minOf(startIndex + size, entities.size)
+        val pageContent = if (startIndex < entities.size) entities.subList(startIndex, endIndex) else emptyList()
+        return PageResult(
+            content = pageContent.map { it.toDomainModel() },
+            totalElements = entities.size,
+            totalPages = (entities.size + size - 1) / size,
+            currentPage = page,
+            pageSize = size,
+            isFirst = page == 0,
+            isLast = endIndex >= entities.size,
+            isEmpty = pageContent.isEmpty()
+        )
     }
 }
 
+private fun InvitationListResponse.toEntity(
+    userId: String,
+    workspaceId: String,
+    currentTime: Long
+): WorkspaceInvitationEntity = WorkspaceInvitationEntity(
+    id = id,
+    user_id = userId,
+    workspace_id = workspaceId,
+    country_code = countryCode ?: 0,
+    phone = phone ?: "",
+    recipient_name = email,
+    invited_role = role,
+    status = status,
+    created_at = createdAt,
+    expires_at = expiresAt,
+    sent_by_name = inviterName ?: "",
+    sent_by_email = invitedBy ?: "",
+    email_sent = false,
+    email_delivered = false,
+    email_opened = false,
+    link_clicked = false,
+    resend_count = sendCount,
+    invitation_message = message,
+    sync_state = "SYNCED",
+    last_synced_at = currentTime,
+    server_updated_at = currentTime,
+    local_updated_at = currentTime
+)
 
-// Extension functions for entity conversions
-private fun WorkspaceInvitation.toEntityModel(userId: String): com.ampairs.workspace.db.entity.WorkspaceInvitationEntity {
-    return com.ampairs.workspace.db.entity.WorkspaceInvitationEntity(
-        id = this.id,
-        user_id = userId,
-        workspace_id = this.workspaceId,
-        country_code = this.countryCode,
-        phone = this.phone,
-        recipient_name = this.recipientName,
-        invited_role = this.invitedRole,
-        status = this.status,
-        created_at = this.createdAt,
-        expires_at = this.expiresAt,
-        sent_by_name = this.sentByName,
-        sent_by_email = this.sentByEmail,
-        email_sent = this.emailSent,
-        email_delivered = this.emailDelivered,
-        email_opened = this.emailOpened,
-        link_clicked = this.linkClicked,
-        resend_count = this.resendCount,
-        invitation_message = this.invitationMessage,
-        sync_state = "SYNCED",
-        last_synced_at = currentTimeMillis(),
-        local_updated_at = currentTimeMillis(),
-        server_updated_at = currentTimeMillis()
-    )
-}
+private fun WorkspaceInvitationEntity.toDomainModel(): WorkspaceInvitation = WorkspaceInvitation(
+    id = id,
+    workspaceId = workspace_id,
+    countryCode = country_code,
+    phone = phone,
+    recipientName = recipient_name,
+    invitedRole = invited_role,
+    status = status,
+    createdAt = created_at,
+    expiresAt = expires_at,
+    sentByName = sent_by_name,
+    sentByEmail = sent_by_email,
+    emailSent = email_sent,
+    emailDelivered = email_delivered,
+    emailOpened = email_opened,
+    linkClicked = link_clicked,
+    resendCount = resend_count,
+    invitationMessage = invitation_message
+)
 
-private fun com.ampairs.workspace.db.entity.WorkspaceInvitationEntity.toDomainModel(): WorkspaceInvitation {
-    return WorkspaceInvitation(
-        id = this.id,
-        workspaceId = this.workspace_id,
-        countryCode = this.country_code,
-        phone = this.phone,
-        recipientName = this.recipient_name,
-        invitedRole = this.invited_role,
-        status = this.status,
-        createdAt = this.created_at,
-        expiresAt = this.expires_at,
-        sentByName = this.sent_by_name,
-        sentByEmail = this.sent_by_email,
-        emailSent = this.email_sent,
-        emailDelivered = this.email_delivered,
-        emailOpened = this.email_opened,
-        linkClicked = this.link_clicked,
-        resendCount = this.resend_count,
-        invitationMessage = this.invitation_message
-    )
-}
+private fun WorkspaceInvitation.toEntityModel(userId: String): WorkspaceInvitationEntity = WorkspaceInvitationEntity(
+    id = id,
+    user_id = userId,
+    workspace_id = workspaceId,
+    country_code = countryCode,
+    phone = phone,
+    recipient_name = recipientName,
+    invited_role = invitedRole,
+    status = status,
+    created_at = createdAt,
+    expires_at = expiresAt,
+    sent_by_name = sentByName,
+    sent_by_email = sentByEmail,
+    email_sent = emailSent,
+    email_delivered = emailDelivered,
+    email_opened = emailOpened,
+    link_clicked = linkClicked,
+    resend_count = resendCount,
+    invitation_message = invitationMessage,
+    sync_state = "SYNCED",
+    last_synced_at = currentTimeMillis(),
+    local_updated_at = currentTimeMillis(),
+    server_updated_at = currentTimeMillis()
+)

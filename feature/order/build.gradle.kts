@@ -16,6 +16,7 @@ kotlin {
         namespace = "com.ampairs.order"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
     jvm("desktop")
     iosArm64()
@@ -42,7 +43,6 @@ kotlin {
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
-                implementation(libs.store5)
                 implementation(libs.paging.common)
                 implementation(libs.paging.componse.common)
                 // Material3 Adaptive

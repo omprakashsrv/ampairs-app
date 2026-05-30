@@ -1,5 +1,31 @@
 package com.ampairs.auth.ui
 
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.auth_action_required
+import ampairsapp.feature.auth.generated.resources.auth_before_you_proceed
+import ampairsapp.feature.auth.generated.resources.auth_blocking_workspace_entry
+import ampairsapp.feature.auth.generated.resources.auth_cancel_deletion
+import ampairsapp.feature.auth.generated.resources.auth_cannot_delete_title
+import ampairsapp.feature.auth.generated.resources.auth_cd_warning
+import ampairsapp.feature.auth.generated.resources.auth_confirm_deletion_checkbox
+import ampairsapp.feature.auth.generated.resources.auth_days_remaining_format
+import ampairsapp.feature.auth.generated.resources.auth_delete_account_title
+import ampairsapp.feature.auth.generated.resources.auth_delete_my_account
+import ampairsapp.feature.auth.generated.resources.auth_delete_or_transfer
+import ampairsapp.feature.auth.generated.resources.auth_deletion_effects_list
+import ampairsapp.feature.auth.generated.resources.auth_deletion_effects_title
+import ampairsapp.feature.auth.generated.resources.auth_deletion_pending_title
+import ampairsapp.feature.auth.generated.resources.auth_deletion_scheduled
+import ampairsapp.feature.auth.generated.resources.auth_deletion_scheduled_desc
+import ampairsapp.feature.auth.generated.resources.auth_grace_period_desc
+import ampairsapp.feature.auth.generated.resources.auth_grace_period_title
+import ampairsapp.feature.auth.generated.resources.auth_reason_label
+import ampairsapp.feature.auth.generated.resources.auth_member_count_format
+import ampairsapp.feature.auth.generated.resources.auth_sole_owner_blocking
+import ampairsapp.feature.auth.generated.resources.auth_sole_owner_warning
+import ampairsapp.feature.auth.generated.resources.auth_warning_cannot_undo
+import ampairsapp.feature.auth.generated.resources.cancel
+import ampairsapp.feature.auth.generated.resources.ok
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,20 +56,24 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ampairs.auth.api.model.AccountDeletionStatus
 import com.ampairs.auth.api.model.BlockingWorkspace
+import com.ampairs.auth.viewmodel.AccountDeletionNavEvent
 import com.ampairs.auth.viewmodel.AccountDeletionViewModel
 import com.ampairs.common.model.UiState
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AccountDeletionScreen(
@@ -51,26 +81,34 @@ fun AccountDeletionScreen(
     onDeletionSuccess: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Show error/success messages
-    LaunchedEffect(viewModel.displayMessage) {
-        if (viewModel.displayMessage.isNotEmpty()) {
-            val result = snackbarHostState.showSnackbar(
-                message = viewModel.displayMessage,
-                duration = SnackbarDuration.Long
-            )
-            when (result) {
-                SnackbarResult.Dismissed -> viewModel.clearMessage()
-                SnackbarResult.ActionPerformed -> viewModel.clearMessage()
+    val isLoading = state.deletionState is UiState.Loading || state.statusState is UiState.Loading
+    @Suppress("UNCHECKED_CAST")
+    val successStatus = state.statusState as? UiState.Success<AccountDeletionStatus>
+    val isDeletionPending = successStatus?.data?.isDeleted == true
+    val daysRemaining = successStatus?.data?.daysRemaining
+
+    LaunchedEffect(Unit) {
+        viewModel.navEvent.collect { event ->
+            when (event) {
+                AccountDeletionNavEvent.DeletionSuccess -> onDeletionSuccess()
+                AccountDeletionNavEvent.CancellationSuccess -> onNavigateBack()
+                else -> {}
             }
         }
     }
 
-    // Blocking workspaces dialog
-    if (viewModel.showBlockingWorkspacesDialog) {
+    LaunchedEffect(Unit) {
+        viewModel.snackbarMessage.collect { message ->
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
+        }
+    }
+
+    if (state.showBlockingWorkspacesDialog) {
         BlockingWorkspacesDialog(
-            blockingWorkspaces = viewModel.blockingWorkspaces,
+            blockingWorkspaces = state.blockingWorkspaces,
             onDismiss = viewModel::dismissBlockingWorkspacesDialog
         )
     }
@@ -90,16 +128,24 @@ fun AccountDeletionScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Check if account is already pending deletion
-            if (viewModel.isDeletionPending) {
+            if (isDeletionPending) {
                 AccountDeletionPendingContent(
-                    viewModel = viewModel,
-                    onCancelSuccess = onNavigateBack
+                    daysRemaining = daysRemaining,
+                    isLoading = isLoading,
+                    deletionState = state.deletionState,
+                    onCancelDeletion = viewModel::cancelAccountDeletion
                 )
             } else {
                 AccountDeletionRequestContent(
-                    viewModel = viewModel,
-                    onDeletionSuccess = onDeletionSuccess
+                    reason = state.reason,
+                    confirmed = state.confirmed,
+                    ownedWorkspaces = state.ownedWorkspaces,
+                    deletionState = state.deletionState,
+                    isLoading = isLoading,
+                    isFormValid = state.confirmed,
+                    onUpdateReason = viewModel::updateReason,
+                    onToggleConfirmation = viewModel::toggleConfirmation,
+                    onRequestDeletion = viewModel::requestAccountDeletion
                 )
             }
 
@@ -110,8 +156,15 @@ fun AccountDeletionScreen(
 
 @Composable
 private fun AccountDeletionRequestContent(
-    viewModel: AccountDeletionViewModel,
-    onDeletionSuccess: () -> Unit
+    reason: String,
+    confirmed: Boolean,
+    ownedWorkspaces: List<BlockingWorkspace>,
+    deletionState: UiState<*>,
+    isLoading: Boolean,
+    isFormValid: Boolean,
+    onUpdateReason: (String) -> Unit,
+    onToggleConfirmation: () -> Unit,
+    onRequestDeletion: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -119,10 +172,9 @@ private fun AccountDeletionRequestContent(
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Warning header
         Icon(
             imageVector = Icons.Default.Warning,
-            contentDescription = "Warning",
+            contentDescription = stringResource(Res.string.auth_cd_warning),
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(64.dp)
         )
@@ -130,7 +182,7 @@ private fun AccountDeletionRequestContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Delete Account",
+            text = stringResource(Res.string.auth_delete_account_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.error
@@ -138,29 +190,22 @@ private fun AccountDeletionRequestContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Owned workspaces warning (if any)
-        if (viewModel.ownedWorkspaces.isNotEmpty()) {
+        if (ownedWorkspaces.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Warning",
+                            contentDescription = stringResource(Res.string.auth_cd_warning),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.padding(4.dp))
                         Text(
-                            text = "Action Required",
+                            text = stringResource(Res.string.auth_action_required),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onErrorContainer
@@ -168,13 +213,12 @@ private fun AccountDeletionRequestContent(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "You are the sole owner of ${viewModel.ownedWorkspaces.size} workspace(s). " +
-                                "You must delete or transfer ownership of these workspaces before you can delete your account:",
+                        text = stringResource(Res.string.auth_sole_owner_warning, ownedWorkspaces.size),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    viewModel.ownedWorkspaces.forEach { workspace ->
+                    ownedWorkspaces.forEach { workspace ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -183,9 +227,7 @@ private fun AccountDeletionRequestContent(
                                 containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
                             )
                         ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp)
-                            ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
                                     text = workspace.workspaceName,
                                     style = MaterialTheme.typography.bodyLarge,
@@ -193,7 +235,7 @@ private fun AccountDeletionRequestContent(
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                                 Text(
-                                    text = "${workspace.memberCount} member${if (workspace.memberCount != 1) "s" else ""}",
+                                    text = stringResource(Res.string.auth_member_count_format, workspace.memberCount),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
                                 )
@@ -205,49 +247,40 @@ private fun AccountDeletionRequestContent(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Warning card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Warning: This action cannot be undone!",
+                    text = stringResource(Res.string.auth_warning_cannot_undo),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Before you proceed:",
+                    text = stringResource(Res.string.auth_before_you_proceed),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "• Delete or transfer ownership of all workspaces where you are the sole owner",
+                    text = stringResource(Res.string.auth_delete_or_transfer),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Deleting your account will:",
+                    text = stringResource(Res.string.auth_deletion_effects_title),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "• Remove all your personal information\n" +
-                            "• Log you out from all devices\n" +
-                            "• Deactivate all workspace memberships\n" +
-                            "• Begin a 30-day grace period\n" +
-                            "• Permanently delete your data after 30 days",
+                    text = stringResource(Res.string.auth_deletion_effects_list),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -256,26 +289,20 @@ private fun AccountDeletionRequestContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Grace period info
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "30-Day Grace Period",
+                    text = stringResource(Res.string.auth_grace_period_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "You can restore your account within 30 days by logging in again. " +
-                            "After 30 days, your data will be permanently deleted and cannot be recovered.",
+                    text = stringResource(Res.string.auth_grace_period_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
@@ -284,31 +311,29 @@ private fun AccountDeletionRequestContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Optional reason field
         OutlinedTextField(
-            value = viewModel.reason,
-            onValueChange = viewModel::updateReason,
-            label = { Text("Reason for deletion (optional)") },
+            value = reason,
+            onValueChange = onUpdateReason,
+            label = { Text(stringResource(Res.string.auth_reason_label)) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3,
             maxLines = 5,
-            enabled = !viewModel.isLoading
+            enabled = !isLoading
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Confirmation checkbox
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
-                checked = viewModel.confirmed,
-                onCheckedChange = { viewModel.toggleConfirmation() },
-                enabled = !viewModel.isLoading
+                checked = confirmed,
+                onCheckedChange = { onToggleConfirmation() },
+                enabled = !isLoading
             )
             Text(
-                text = "I understand that this action cannot be undone and my data will be permanently deleted after 30 days.",
+                text = stringResource(Res.string.auth_confirm_deletion_checkbox),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(start = 8.dp)
             )
@@ -316,26 +341,23 @@ private fun AccountDeletionRequestContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Delete button
         Button(
-            onClick = { viewModel.requestAccountDeletion(onDeletionSuccess) },
+            onClick = onRequestDeletion,
             modifier = Modifier.fillMaxWidth(),
-            enabled = viewModel.isFormValid && !viewModel.isLoading,
+            enabled = isFormValid && !isLoading,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError
             )
         ) {
-            if (viewModel.deletionState is UiState.Loading) {
+            if (deletionState is UiState.Loading) {
                 CircularProgressIndicator(
-                    modifier = Modifier
-                        .progressSemantics()
-                        .size(20.dp),
+                    modifier = Modifier.progressSemantics().size(20.dp),
                     color = MaterialTheme.colorScheme.onError,
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Delete My Account")
+                Text(stringResource(Res.string.auth_delete_my_account))
             }
         }
     }
@@ -343,8 +365,10 @@ private fun AccountDeletionRequestContent(
 
 @Composable
 private fun AccountDeletionPendingContent(
-    viewModel: AccountDeletionViewModel,
-    onCancelSuccess: () -> Unit
+    daysRemaining: Int?,
+    isLoading: Boolean,
+    deletionState: UiState<*>,
+    onCancelDeletion: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -354,7 +378,7 @@ private fun AccountDeletionPendingContent(
     ) {
         Icon(
             imageVector = Icons.Default.Warning,
-            contentDescription = "Warning",
+            contentDescription = stringResource(Res.string.auth_cd_warning),
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(64.dp)
         )
@@ -362,7 +386,7 @@ private fun AccountDeletionPendingContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Account Deletion Pending",
+            text = stringResource(Res.string.auth_deletion_pending_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.error
@@ -370,38 +394,29 @@ private fun AccountDeletionPendingContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Status card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Your account is scheduled for deletion",
+                    text = stringResource(Res.string.auth_deletion_scheduled),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-
-                viewModel.daysRemaining?.let { days ->
+                daysRemaining?.let { days ->
                     Text(
-                        text = "Days remaining: $days",
+                        text = stringResource(Res.string.auth_days_remaining_format, days),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
-                    text = "Your account will be permanently deleted after the grace period expires. " +
-                            "If you change your mind, you can cancel the deletion request.",
+                    text = stringResource(Res.string.auth_deletion_scheduled_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -410,26 +425,23 @@ private fun AccountDeletionPendingContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Cancel deletion button
         Button(
-            onClick = { viewModel.cancelAccountDeletion(onCancelSuccess) },
+            onClick = onCancelDeletion,
             modifier = Modifier.fillMaxWidth(),
-            enabled = !viewModel.isLoading,
+            enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
-            if (viewModel.deletionState is UiState.Loading) {
+            if (deletionState is UiState.Loading) {
                 CircularProgressIndicator(
-                    modifier = Modifier
-                        .progressSemantics()
-                        .size(20.dp),
+                    modifier = Modifier.progressSemantics().size(20.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Cancel Deletion & Restore Account")
+                Text(stringResource(Res.string.auth_cancel_deletion))
             }
         }
     }
@@ -445,24 +457,25 @@ private fun BlockingWorkspacesDialog(
         icon = {
             Icon(
                 imageVector = Icons.Default.Warning,
-                contentDescription = "Warning",
+                contentDescription = stringResource(Res.string.auth_cd_warning),
                 tint = MaterialTheme.colorScheme.error
             )
         },
-        title = {
-            Text("Cannot Delete Account")
-        },
+        title = { Text(stringResource(Res.string.auth_cannot_delete_title)) },
         text = {
             Column {
                 Text(
-                    text = "You are the sole owner of ${blockingWorkspaces.size} workspace(s). " +
-                            "Please transfer ownership or delete these workspaces before deleting your account:",
+                    text = stringResource(Res.string.auth_sole_owner_blocking, blockingWorkspaces.size),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 blockingWorkspaces.forEach { workspace ->
                     Text(
-                        text = "• ${workspace.workspaceName} (${workspace.memberCount} members)",
+                        text = stringResource(
+                            Res.string.auth_blocking_workspace_entry,
+                            workspace.workspaceName,
+                            workspace.memberCount
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
@@ -470,9 +483,7 @@ private fun BlockingWorkspacesDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK")
-            }
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.ok)) }
         }
     )
 }

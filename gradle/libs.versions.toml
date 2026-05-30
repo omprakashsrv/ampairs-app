@@ -41,7 +41,6 @@ firebase-perf = "21.0.5"
 firebase-messaging = "24.1.2"
 datastore = "1.2.1"
 androidx-work-runtime = "2.11.2"
-store5 = "5.1.0-alpha08"
 jmapviewer = "2.24"
 filekit = "0.14.1"
 play-services-location = "21.3.0"
@@ -59,6 +58,7 @@ google-services = "4.4.4"
 firebase-crashlytics-gradle = "3.0.7"
 firebase-perf-gradle = "2.0.2"
 sentry-kmp = "0.26.0"
+junit5 = "5.11.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -115,6 +115,7 @@ material3-adaptive-navigation = { group = "org.jetbrains.compose.material3.adapt
 navigation3-ui = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3-ui" }
 lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle-viewmodel" }
 lifecycle-viewmodel-navigation3 = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycle-viewmodel-navigation3" }
+lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle-viewmodel" }
 savedstate = { group = "org.jetbrains.androidx.savedstate", name = "savedstate", version.ref = "savedstate" }
 savedstate-compose = { group = "org.jetbrains.androidx.savedstate", name = "savedstate-compose", version.ref = "savedstate" }
 datastore = { group = "androidx.datastore", name = "datastore", version.ref = "datastore" }
@@ -139,7 +140,6 @@ haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work-runtime" }
 
-store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
 sentry-kmp = { module = "io.sentry:sentry-kotlin-multiplatform", version.ref = "sentry-kmp" }
 jmapviewer = { module = "org.openstreetmap.jmapviewer:jmapviewer", version.ref = "jmapviewer" }
 
@@ -159,6 +159,7 @@ accompanist-permissions = { module = "com.google.accompanist:accompanist-permiss
 # Native Firebase for Android
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebase-auth" }
+
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

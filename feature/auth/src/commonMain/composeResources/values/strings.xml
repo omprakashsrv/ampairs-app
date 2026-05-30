@@ -199,4 +199,133 @@
 
     <!-- General -->
     <string name="translated_description_image">Translated description of what the image contains</string>
+
+    <!-- Phone Screen -->
+    <string name="phone_welcome_title">Welcome to Ampairs</string>
+    <string name="phone_tagline">Empowering Retail, One byte at a time</string>
+    <string name="phone_enter_number_label">Enter your phone number</string>
+    <string name="phone_feature_secure_title">Secure &amp; Private</string>
+    <string name="phone_feature_secure_desc">Your data is encrypted end-to-end</string>
+    <string name="phone_feature_fast_title">Fast &amp; Reliable</string>
+    <string name="phone_feature_fast_desc">Lightning fast performance</string>
+    <string name="phone_by_continuing">By continuing, you agree to our </string>
+    <string name="phone_terms_of_service">Terms of Service</string>
+    <string name="phone_and"> and </string>
+    <string name="phone_privacy_policy_text">Privacy Policy</string>
+    <string name="phone_cd_app_icon">Ampairs</string>
+
+    <!-- OTP Screen -->
+    <string name="otp_enter_verification_code">Enter Verification Code</string>
+    <string name="otp_code_sent_with_phone">We\'ve sent a 6-digit code to\n+91 %1$s</string>
+    <string name="otp_code_sent_no_phone">We\'ve sent a 6-digit code to your phone</string>
+    <string name="otp_resend_timer">Resend code in %1$ds</string>
+    <string name="otp_resend_with_timer">Resend code (%1$ds)</string>
+    <string name="otp_cd_verification">Verification</string>
+    <string name="otp_cd_timer">Timer</string>
+    <string name="otp_help_text">Didn\'t receive the code? Check your messages or request a new one</string>
+
+    <!-- User Selection Screen -->
+    <string name="user_selection_loading">Loading users…</string>
+    <string name="user_selection_redirecting">Redirecting to login…</string>
+    <string name="user_selection_welcome">Welcome back</string>
+    <string name="user_selection_choose_account">Choose an account to continue</string>
+    <string name="user_selection_add_account">Add another account</string>
+    <string name="user_selection_cd_profile_picture">Profile picture</string>
+    <string name="user_selection_cd_profile">Profile</string>
+    <string name="user_selection_cd_add_user">Add user</string>
+    <string name="user_selection_default_name">User</string>
+    <string name="user_selection_just_now">Just now</string>
+    <string name="user_selection_minutes_ago">%1$dm ago</string>
+    <string name="user_selection_hours_ago">%1$dh ago</string>
+    <string name="user_selection_days_ago">%1$dd ago</string>
+    <string name="user_selection_long_ago">Long ago</string>
+
+    <!-- Device Management Screen -->
+    <string name="device_cd_refresh">Refresh</string>
+    <string name="device_no_active_sessions">No active device sessions found</string>
+    <string name="device_current_device">Current Device</string>
+    <string name="device_last_activity">Last activity:</string>
+    <string name="device_login_time">Login time:</string>
+    <string name="device_ip_address">IP Address:</string>
+    <string name="device_operating_system">Operating System:</string>
+    <string name="device_location">Location:</string>
+    <string name="device_cd_logout">Logout device</string>
+
+    <!-- Account Deletion Screen -->
+    <string name="auth_cd_warning">Warning</string>
+    <string name="auth_delete_account_title">Delete Account</string>
+    <string name="auth_action_required">Action Required</string>
+    <string name="auth_sole_owner_warning">You are the sole owner of %1$d workspace(s). You must delete or transfer ownership of these workspaces before you can delete your account:</string>
+    <string name="auth_warning_cannot_undo">Warning: This action cannot be undone!</string>
+    <string name="auth_before_you_proceed">Before you proceed:</string>
+    <string name="auth_delete_or_transfer">• Delete or transfer ownership of all workspaces where you are the sole owner</string>
+    <string name="auth_deletion_effects_title">Deleting your account will:</string>
+    <string name="auth_deletion_effects_list">• Remove all your personal information\n• Log you out from all devices\n• Deactivate all workspace memberships\n• Begin a 30-day grace period\n• Permanently delete your data after 30 days</string>
+    <string name="auth_grace_period_title">30-Day Grace Period</string>
+    <string name="auth_grace_period_desc">You can restore your account within 30 days by logging in again. After 30 days, your data will be permanently deleted and cannot be recovered.</string>
+    <string name="auth_reason_label">Reason for deletion (optional)</string>
+    <string name="auth_confirm_deletion_checkbox">I understand that this action cannot be undone and my data will be permanently deleted after 30 days.</string>
+    <string name="auth_delete_my_account">Delete My Account</string>
+    <string name="auth_deletion_pending_title">Account Deletion Pending</string>
+    <string name="auth_deletion_scheduled">Your account is scheduled for deletion</string>
+    <string name="auth_days_remaining_format">Days remaining: %1$d</string>
+    <string name="auth_deletion_scheduled_desc">Your account will be permanently deleted after the grace period expires. If you change your mind, you can cancel the deletion request.</string>
+    <string name="auth_cancel_deletion">Cancel Deletion &amp; Restore Account</string>
+    <string name="auth_cannot_delete_title">Cannot Delete Account</string>
+    <string name="auth_sole_owner_blocking">You are the sole owner of %1$d workspace(s). Please transfer ownership or delete these workspaces before deleting your account:</string>
+    <string name="auth_blocking_workspace_entry">• %1$s (%2$d members)</string>
+    <string name="auth_member_count_format">%1$d members</string>
+
+    <!-- Account Restore Screen -->
+    <string name="auth_account_pending_deletion">Account Pending Deletion</string>
+    <string name="auth_account_scheduled_permanent">Your account is scheduled for permanent deletion</string>
+    <string name="auth_what_happens_next">What happens next?</string>
+    <string name="auth_deletion_consequences">• Your account will be permanently deleted after the grace period\n• All your data will be irreversibly removed\n• You won\'t be able to recover your account</string>
+    <string name="auth_days_label">days\nremaining</string>
+    <string name="auth_restoring_account">Restoring Account…</string>
+    <string name="auth_cd_restore">Restore</string>
+    <string name="auth_restore_my_account">Restore My Account</string>
+    <string name="auth_logout">Logout</string>
+
+    <!-- User Update Screen -->
+    <string name="auth_cd_selected_profile_pic">Selected profile picture</string>
+    <string name="auth_cd_profile_picture">Profile picture</string>
+    <string name="auth_cd_default_avatar">Default avatar</string>
+    <string name="auth_cd_change_photo">Change photo</string>
+    <string name="auth_cd_clear_selection">Clear selection</string>
+    <string name="auth_uploading">Uploading…</string>
+    <string name="auth_upload_photo">Upload Photo</string>
+    <string name="auth_tap_to_change_photo">Tap to change photo</string>
+
+    <!-- Login Screen -->
+    <string name="auth_cd_selected">Selected</string>
+
+    <!-- ViewModel progress/error messages -->
+    <string name="auth_progress_verifying_recaptcha">Verifying reCAPTCHA…</string>
+    <string name="auth_progress_resend_otp">Preparing to resend OTP…</string>
+    <string name="auth_progress_sending_code">Sending verification code…</string>
+    <string name="auth_progress_verifying_code">Verifying code…</string>
+    <string name="auth_progress_resending_code">Resending verification code…</string>
+    <string name="auth_progress_completing">Completing authentication…</string>
+    <string name="auth_error_authentication_failed">Authentication failed</string>
+    <string name="auth_error_resend_otp_failed">Failed to resend OTP</string>
+    <string name="auth_error_unsupported_file_type">Unsupported file type. Please select JPG, PNG, or WebP.</string>
+    <string name="auth_error_image_too_large">Image too large. Maximum size is 5MB.</string>
+    <string name="auth_error_failed_select_image">Failed to select image</string>
+    <string name="auth_error_no_image_selected">No image selected</string>
+    <string name="auth_success_profile_picture_updated">Profile picture updated successfully</string>
+    <string name="auth_error_first_name_required">First name is required</string>
+    <string name="auth_success_profile_updated">Profile updated successfully</string>
+    <string name="auth_error_failed_load_user">Failed to load user details</string>
+    <string name="auth_error_failed_update_user">Failed to update user details</string>
+    <string name="auth_error_failed_upload_picture">Failed to upload profile picture</string>
+    <string name="auth_error_confirm_deletion">Please confirm that you want to delete your account</string>
+    <string name="auth_error_network">Unable to connect to server. Please check your network connection.</string>
+    <string name="auth_error_failed_delete_account">Failed to delete account</string>
+    <string name="auth_error_failed_cancel_deletion">Failed to cancel deletion</string>
+    <string name="auth_error_failed_load_sessions">Failed to load device sessions: %1$s</string>
+    <string name="auth_success_logged_out_device">Successfully logged out from device</string>
+    <string name="auth_error_failed_logout_device">Failed to logout device: %1$s</string>
+    <string name="auth_success_logged_out_all">Successfully logged out from all devices</string>
+    <string name="auth_error_failed_logout_all">Failed to logout from all devices: %1$s</string>
 </resources>

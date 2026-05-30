@@ -1,6 +1,20 @@
 package com.ampairs.auth.ui
 
-import androidx.compose.foundation.Image
+import ampairsapp.feature.auth.generated.resources.Res
+import ampairsapp.feature.auth.generated.resources.auth_cd_change_photo
+import ampairsapp.feature.auth.generated.resources.auth_cd_clear_selection
+import ampairsapp.feature.auth.generated.resources.auth_cd_default_avatar
+import ampairsapp.feature.auth.generated.resources.auth_cd_profile_picture
+import ampairsapp.feature.auth.generated.resources.auth_cd_selected_profile_pic
+import ampairsapp.feature.auth.generated.resources.auth_tap_to_change_photo
+import ampairsapp.feature.auth.generated.resources.auth_upload_photo
+import ampairsapp.feature.auth.generated.resources.auth_uploading
+import ampairsapp.feature.auth.generated.resources.error_colon
+import ampairsapp.feature.auth.generated.resources.first_name
+import ampairsapp.feature.auth.generated.resources.last_name
+import ampairsapp.feature.auth.generated.resources.loading_user_details
+import ampairsapp.feature.auth.generated.resources.update_profile
+import ampairsapp.feature.auth.generated.resources.update_your_profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,7 +39,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -32,53 +46,55 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import com.ampairs.auth.domain.UserInfo
+import com.ampairs.auth.viewmodel.UserUpdateNavEvent
 import com.ampairs.auth.viewmodel.UserUpdateViewModel
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.model.UiState
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
-import ampairsapp.feature.auth.generated.resources.Res
-import ampairsapp.feature.auth.generated.resources.loading_user_details
-import ampairsapp.feature.auth.generated.resources.update_your_profile
-import ampairsapp.feature.auth.generated.resources.first_name
-import ampairsapp.feature.auth.generated.resources.last_name
-import ampairsapp.feature.auth.generated.resources.update_profile
-import ampairsapp.feature.auth.generated.resources.error_colon
-import androidx.compose.foundation.layout.imePadding
-import coil3.compose.AsyncImage
-import com.ampairs.common.ApiUrlBuilder
 
 @Composable
 fun UserUpdateScreen(
     onProfilePictureUpdated: ((newThumbnailUrl: String) -> Unit)? = null,
+    onLoginSuccess: (UserInfo?) -> Unit = {},
+    onNavigateToWorkspace: (UserInfo?) -> Unit = {},
     viewModel: UserUpdateViewModel = metroViewModel(),
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Show error/success messages
-    LaunchedEffect(viewModel.displayMessage) {
-        if (viewModel.displayMessage.isNotEmpty()) {
-            val result = snackbarHostState.showSnackbar(
-                message = viewModel.displayMessage,
-                duration = SnackbarDuration.Short
-            )
-            when (result) {
-                SnackbarResult.Dismissed -> viewModel.clearMessage()
-                SnackbarResult.ActionPerformed -> viewModel.clearMessage()
+    LaunchedEffect(Unit) {
+        viewModel.navEvent.collect { event ->
+            when (event) {
+                is UserUpdateNavEvent.LoginSuccess -> onLoginSuccess(event.userInfo)
+                is UserUpdateNavEvent.NavigateToWorkspace -> onNavigateToWorkspace(event.userInfo)
             }
         }
     }
+
+    LaunchedEffect(Unit) {
+        viewModel.snackbarMessage.collect { message ->
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
+        }
+    }
+
+    val isLoading = state.userState is UiState.Loading ||
+            state.updateUserState is UiState.Loading ||
+            state.uploadPictureState is UiState.Loading
 
     Scaffold(
         modifier = Modifier.imePadding(),
@@ -92,15 +108,13 @@ fun UserUpdateScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            when (val userState = viewModel.userState) {
+            when (val userState = state.userState) {
                 is UiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp)
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(48.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(stringResource(Res.string.loading_user_details))
                 }
-                
+
                 is UiState.Error -> {
                     Text(
                         text = stringResource(Res.string.error_colon) + userState.msg,
@@ -108,14 +122,12 @@ fun UserUpdateScreen(
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
-                
+
                 is UiState.Success -> {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Content area
                         Column(
                             modifier = Modifier
                                 .weight(1f)
@@ -131,16 +143,14 @@ fun UserUpdateScreen(
                                 modifier = Modifier.padding(bottom = 24.dp)
                             )
 
-                            // Profile Picture Section
                             ProfilePictureSection(
-                                profilePictureUrl = viewModel.profilePictureUrl,
-                                selectedImageData = viewModel.selectedImageData,
-                                isLoading = viewModel.uploadPictureState is UiState.Loading,
+                                profilePictureUrl = state.profilePictureUrl,
+                                selectedImageData = state.selectedImageData,
+                                isLoading = state.uploadPictureState is UiState.Loading,
                                 onPickImage = { viewModel.pickProfilePicture() },
                                 onClearSelection = { viewModel.clearSelectedImage() },
                                 onUpload = {
                                     viewModel.uploadProfilePicture {
-                                        // Notify caller about profile picture update
                                         onProfilePictureUpdated?.invoke(ApiUrlBuilder.currentUserPictureThumbnailUrl())
                                     }
                                 }
@@ -149,36 +159,35 @@ fun UserUpdateScreen(
                             Spacer(modifier = Modifier.height(24.dp))
 
                             OutlinedTextField(
-                                value = viewModel.firstName,
+                                value = state.firstName,
                                 onValueChange = viewModel::updateFirstName,
                                 label = { Text(stringResource(Res.string.first_name)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                enabled = !viewModel.isLoading
+                                enabled = !isLoading
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
 
                             OutlinedTextField(
-                                value = viewModel.lastName,
+                                value = state.lastName,
                                 onValueChange = viewModel::updateLastName,
                                 label = { Text(stringResource(Res.string.last_name)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                enabled = !viewModel.isLoading
+                                enabled = !isLoading
                             )
                         }
 
-                        // Bottom-aligned button
                         Button(
-                            onClick = { viewModel.updateUser { viewModel.handleUpdateSuccess() } },
+                            onClick = { viewModel.updateUser() },
                             modifier = Modifier
                                 .widthIn(max = 400.dp)
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
-                            enabled = viewModel.isFormValid && !viewModel.isLoading
+                            enabled = state.firstName.isNotBlank() && !isLoading
                         ) {
-                            if (viewModel.updateUserState is UiState.Loading) {
+                            if (state.updateUserState is UiState.Loading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier
                                         .progressSemantics()
@@ -193,9 +202,7 @@ fun UserUpdateScreen(
                     }
                 }
 
-                is UiState.Empty -> {
-                    // This shouldn't happen as we load user details in init
-                }
+                is UiState.Empty -> {}
             }
         }
     }
@@ -214,11 +221,7 @@ private fun ProfilePictureSection(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Profile Picture with camera overlay
-        Box(
-            contentAlignment = Alignment.Center
-        ) {
-            // Main profile picture
+        Box(contentAlignment = Alignment.Center) {
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -240,28 +243,25 @@ private fun ProfilePictureSection(
                         )
                     }
                     selectedImageData != null -> {
-                        // Show selected image preview using Coil's memory cache
                         AsyncImage(
                             model = selectedImageData,
-                            contentDescription = "Selected profile picture",
+                            contentDescription = stringResource(Res.string.auth_cd_selected_profile_pic),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     }
                     !profilePictureUrl.isNullOrBlank() -> {
-                        // Show current profile picture from URL
                         AsyncImage(
                             model = profilePictureUrl,
-                            contentDescription = "Profile picture",
+                            contentDescription = stringResource(Res.string.auth_cd_profile_picture),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     }
                     else -> {
-                        // Default avatar icon
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Default avatar",
+                            contentDescription = stringResource(Res.string.auth_cd_default_avatar),
                             modifier = Modifier.size(80.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -269,7 +269,6 @@ private fun ProfilePictureSection(
                 }
             }
 
-            // Camera button overlay
             if (!isLoading) {
                 Box(
                     modifier = Modifier
@@ -283,14 +282,13 @@ private fun ProfilePictureSection(
                 ) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
-                        contentDescription = "Change photo",
+                        contentDescription = stringResource(Res.string.auth_cd_change_photo),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
 
-            // Clear selection button (only when image is selected)
             if (selectedImageData != null && !isLoading) {
                 Box(
                     modifier = Modifier
@@ -304,7 +302,7 @@ private fun ProfilePictureSection(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Clear selection",
+                        contentDescription = stringResource(Res.string.auth_cd_clear_selection),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onError
                     )
@@ -312,26 +310,19 @@ private fun ProfilePictureSection(
             }
         }
 
-        // Upload button (only when new image is selected)
         if (selectedImageData != null) {
-            OutlinedButton(
-                onClick = onUpload,
-                enabled = !isLoading
-            ) {
+            OutlinedButton(onClick = onUpload, enabled = !isLoading) {
                 if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text("Uploading...")
+                    Text(stringResource(Res.string.auth_uploading))
                 } else {
-                    Text("Upload Photo")
+                    Text(stringResource(Res.string.auth_upload_photo))
                 }
             }
         } else {
             Text(
-                text = "Tap to change photo",
+                text = stringResource(Res.string.auth_tap_to_change_photo),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

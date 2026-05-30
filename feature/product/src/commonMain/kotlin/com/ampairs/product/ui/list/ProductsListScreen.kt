@@ -20,9 +20,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ampairs.product.domain.ProductListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.product.generated.resources.Res
+import ampairsapp.feature.product.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,20 +37,18 @@ fun ProductsListScreen(
     modifier: Modifier = Modifier,
     viewModel: ProductsListViewModel = metroViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Load products when screen is first shown
     LaunchedEffect(Unit) {
-        viewModel.loadProducts(forceRefresh = true)
+        viewModel.syncProducts()
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Header with search and actions
         TopAppBar(
-            title = { Text("Products") },
+            title = { Text(stringResource(Res.string.prod_list_title)) },
             actions = {
                 IconButton(onClick = onFormConfig) {
-                    Icon(Icons.Default.Settings, contentDescription = "Form Settings")
+                    Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.prod_list_cd_form_settings))
                 }
                 IconButton(
                     onClick = viewModel::syncProducts,
@@ -58,16 +60,15 @@ fun ProductsListScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.prod_list_cd_refresh))
                     }
                 }
                 IconButton(onClick = onCreateProduct) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Product")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.prod_list_cd_add))
                 }
             }
         )
 
-        // Search bar
         SearchBar(
             query = uiState.searchQuery,
             onQueryChange = viewModel::updateSearchQuery,
@@ -76,7 +77,6 @@ fun ProductsListScreen(
                 .padding(16.dp)
         )
 
-        // Content
         when {
             uiState.isLoading && uiState.products.isEmpty() -> {
                 Box(
@@ -91,7 +91,7 @@ fun ProductsListScreen(
                 val errorMessage = uiState.error ?: return@Column
                 ErrorMessage(
                     error = errorMessage,
-                    onRetry = viewModel::loadProducts,
+                    onRetry = viewModel::syncProducts,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -124,9 +124,9 @@ private fun SearchBar(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        placeholder = { Text("Search products...") },
+        placeholder = { Text(stringResource(Res.string.prod_list_search_placeholder)) },
         leadingIcon = {
-            Icon(Icons.Default.Search, contentDescription = "Search")
+            Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.prod_list_cd_search))
         },
         modifier = modifier,
         singleLine = true
@@ -160,7 +160,7 @@ private fun ProductsList(
                             strokeWidth = 2.dp
                         )
                         Text(
-                            text = "Refreshing...",
+                            text = stringResource(Res.string.prod_list_refreshing),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -196,7 +196,6 @@ private fun ProductCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Product Image or Placeholder
             Box(
                 modifier = Modifier
                     .size(60.dp)
@@ -207,7 +206,7 @@ private fun ProductCard(
                 if (!product.imageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = product.imageUrl,
-                        contentDescription = "Product image",
+                        contentDescription = stringResource(Res.string.prod_list_cd_product_image),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -234,7 +233,7 @@ private fun ProductCard(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = "Code: ${product.code}",
+                    text = stringResource(Res.string.prod_list_code_format, product.code),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -249,7 +248,7 @@ private fun ProductCard(
 
                 if (!product.brandName.isNullOrBlank()) {
                     Text(
-                        text = "Brand: ${product.brandName}",
+                        text = stringResource(Res.string.prod_list_brand_format, product.brandName),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -281,7 +280,8 @@ private fun ProductCard(
                                else MaterialTheme.colorScheme.errorContainer
                     ) {
                         Text(
-                            text = if (stock > 0) "In Stock (${stock.toInt()})" else "Out of Stock",
+                            text = if (stock > 0) stringResource(Res.string.prod_list_in_stock_format, stock.toInt())
+                                   else stringResource(Res.string.prod_out_of_stock),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (stock > 0) MaterialTheme.colorScheme.onPrimaryContainer
                                    else MaterialTheme.colorScheme.onErrorContainer,
@@ -297,7 +297,7 @@ private fun ProductCard(
                         color = MaterialTheme.colorScheme.errorContainer
                     ) {
                         Text(
-                            text = "Inactive",
+                            text = stringResource(Res.string.prod_inactive),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -329,13 +329,13 @@ private fun EmptyState(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "No products yet",
+            text = stringResource(Res.string.prod_list_empty_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Text(
-            text = "Create your first product to get started",
+            text = stringResource(Res.string.prod_list_empty_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -345,7 +345,7 @@ private fun EmptyState(
         Button(onClick = onCreateProduct) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add Product")
+            Text(stringResource(Res.string.prod_list_cd_add))
         }
     }
 }
@@ -362,7 +362,7 @@ private fun ErrorMessage(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Something went wrong",
+            text = stringResource(Res.string.prod_error_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error
         )
@@ -376,7 +376,7 @@ private fun ErrorMessage(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = onRetry) {
-            Text("Retry")
+            Text(stringResource(Res.string.prod_retry))
         }
     }
 }

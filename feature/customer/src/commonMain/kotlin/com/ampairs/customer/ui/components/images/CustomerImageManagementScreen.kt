@@ -13,6 +13,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_images_title
+import ampairsapp.feature.customer.generated.resources.customer_images_count
+import ampairsapp.feature.customer.generated.resources.customer_images_retry_sync_cd
+import ampairsapp.feature.customer.generated.resources.customer_images_error
+import ampairsapp.feature.customer.generated.resources.customer_images_dismiss
+import ampairsapp.feature.customer.generated.resources.customer_images_retry
+import ampairsapp.feature.customer.generated.resources.customer_images_loading
+import ampairsapp.feature.customer.generated.resources.customer_images_empty_readonly
+import ampairsapp.feature.customer.generated.resources.customer_images_empty
+import ampairsapp.feature.customer.generated.resources.customer_images_readonly_desc
+import ampairsapp.feature.customer.generated.resources.customer_images_empty_desc
+import ampairsapp.feature.customer.generated.resources.customer_images_upload_first
+import ampairsapp.feature.customer.generated.resources.customer_images_guidelines_title
+import ampairsapp.feature.customer.generated.resources.customer_images_guideline_max_count
+import ampairsapp.feature.customer.generated.resources.customer_images_guideline_formats
+import ampairsapp.feature.customer.generated.resources.customer_images_guideline_size
+import ampairsapp.feature.customer.generated.resources.customer_images_guideline_resolution
+import ampairsapp.feature.customer.generated.resources.customer_images_guideline_primary
+import org.jetbrains.compose.resources.stringResource
+
 @Composable
 fun CustomerImageManagementScreen(
     customerId: String,
@@ -20,13 +42,12 @@ fun CustomerImageManagementScreen(
     readOnly: Boolean = false,
     viewModel: CustomerImageViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header Section
         CustomerImageHeader(
             imageCount = uiState.images.size,
             onSync = viewModel::syncImages,
@@ -34,7 +55,6 @@ fun CustomerImageManagementScreen(
             showSyncButton = uiState.syncError
         )
 
-        // Error Display
         uiState.error?.let { errorMessage ->
             ErrorCard(
                 error = errorMessage,
@@ -43,7 +63,6 @@ fun CustomerImageManagementScreen(
             )
         }
 
-        // Main Content
         when {
             uiState.isLoading && uiState.images.isEmpty() -> {
                 LoadingContent()
@@ -59,27 +78,19 @@ fun CustomerImageManagementScreen(
                 CustomerImageGrid(
                     images = uiState.images,
                     onAddImage = if (readOnly) null else viewModel::pickSingleImage,
-                    onImageClick = { image ->
-                        viewModel.showImageViewer(image.uid)
-                    },
-                    onDeleteImage = if (readOnly) null else { image ->
-                        viewModel.deleteImage(image.uid)
-                    },
-                    onSetPrimary = if (readOnly) null else { image ->
-                        viewModel.setPrimaryImage(image.uid)
-                    },
+                    onImageClick = { image -> viewModel.showImageViewer(image.uid) },
+                    onDeleteImage = if (readOnly) null else { image -> viewModel.deleteImage(image.uid) },
+                    onSetPrimary = if (readOnly) null else { image -> viewModel.setPrimaryImage(image.uid) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         }
 
-        // Upload Instructions (only show if not read-only)
         if (uiState.images.size < 10 && !readOnly) {
             UploadInstructionsCard()
         }
     }
 
-    // Image Viewer Dialog
     if (uiState.showImageViewer && uiState.selectedImage != null) {
         CustomerImageViewer(
             image = uiState.selectedImage,
@@ -88,13 +99,10 @@ fun CustomerImageManagementScreen(
                 viewModel.deleteImage(image.uid)
                 viewModel.hideImageViewer()
             },
-            onSetPrimary = { image ->
-                viewModel.setPrimaryImage(image.uid)
-            }
+            onSetPrimary = { image -> viewModel.setPrimaryImage(image.uid) }
         )
     }
 
-    // Upload Dialog
     if (uiState.showUploadDialog && uiState.uploadData != null) {
         CustomerImageUploadDialog(
             uploadData = uiState.uploadData,
@@ -128,24 +136,20 @@ private fun CustomerImageHeader(
         ) {
             Column {
                 Text(
-                    text = "Customer Images",
+                    text = stringResource(Res.string.customer_images_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    text = "$imageCount images uploaded",
+                    text = stringResource(Res.string.customer_images_count, imageCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
 
-            // Only show sync button on error
             if (showSyncButton) {
-                IconButton(
-                    onClick = onSync,
-                    enabled = !isLoading
-                ) {
+                IconButton(onClick = onSync, enabled = !isLoading) {
                     if (isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
@@ -154,7 +158,7 @@ private fun CustomerImageHeader(
                     } else {
                         Icon(
                             Icons.Default.Refresh,
-                            contentDescription = "Retry sync",
+                            contentDescription = stringResource(Res.string.customer_images_retry_sync_cd),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -185,13 +189,9 @@ private fun ErrorCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    Icons.Default.Error,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer
-                )
+                Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
                 Text(
-                    text = "Error",
+                    text = stringResource(Res.string.customer_images_error),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onErrorContainer
@@ -204,25 +204,18 @@ private fun ErrorCard(
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(
                     onClick = onDismiss,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onErrorContainer)
                 ) {
-                    Text("Dismiss")
+                    Text(stringResource(Res.string.customer_images_dismiss))
                 }
-
                 TextButton(
                     onClick = onRetry,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onErrorContainer)
                 ) {
-                    Text("Retry")
+                    Text(stringResource(Res.string.customer_images_retry))
                 }
             }
         }
@@ -230,9 +223,7 @@ private fun ErrorCard(
 }
 
 @Composable
-private fun LoadingContent(
-    modifier: Modifier = Modifier
-) {
+private fun LoadingContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -245,7 +236,7 @@ private fun LoadingContent(
         ) {
             CircularProgressIndicator()
             Text(
-                text = "Loading images...",
+                text = stringResource(Res.string.customer_images_loading),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -260,9 +251,7 @@ private fun EmptyStateContent(
 ) {
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Column(
             modifier = Modifier
@@ -279,33 +268,25 @@ private fun EmptyStateContent(
             )
 
             Text(
-                text = if (onAddImage == null) "No images" else "No images yet",
+                text = if (onAddImage == null) stringResource(Res.string.customer_images_empty_readonly)
+                       else stringResource(Res.string.customer_images_empty),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Text(
-                text = if (onAddImage == null)
-                    "Customer images are configured as read-only"
-                else
-                    "Upload customer images to help identify and personalize their profile",
+                text = if (onAddImage == null) stringResource(Res.string.customer_images_readonly_desc)
+                       else stringResource(Res.string.customer_images_empty_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             if (onAddImage != null) {
-                Button(
-                    onClick = onAddImage,
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.CloudUpload,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
+                Button(onClick = onAddImage, modifier = Modifier.padding(top = 8.dp)) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Upload First Image")
+                    Text(stringResource(Res.string.customer_images_upload_first))
                 }
             }
         }
@@ -313,35 +294,29 @@ private fun EmptyStateContent(
 }
 
 @Composable
-private fun UploadInstructionsCard(
-    modifier: Modifier = Modifier
-) {
+private fun UploadInstructionsCard(modifier: Modifier = Modifier) {
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Upload Guidelines",
+                text = stringResource(Res.string.customer_images_guidelines_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
 
-            val guidelines = listOf(
-                "Maximum 10 images per customer",
-                "Supported formats: JPEG, PNG, WebP",
-                "Maximum file size: 10MB per image",
-                "Recommended resolution: 800x800 pixels",
-                "Set one image as primary for customer lists"
-            )
-
-            guidelines.forEach { guideline ->
+            listOf(
+                stringResource(Res.string.customer_images_guideline_max_count),
+                stringResource(Res.string.customer_images_guideline_formats),
+                stringResource(Res.string.customer_images_guideline_size),
+                stringResource(Res.string.customer_images_guideline_resolution),
+                stringResource(Res.string.customer_images_guideline_primary)
+            ).forEach { guideline ->
                 Text(
                     text = "• $guideline",
                     style = MaterialTheme.typography.bodySmall,

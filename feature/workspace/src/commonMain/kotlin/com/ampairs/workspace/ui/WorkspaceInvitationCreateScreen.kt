@@ -20,9 +20,33 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.common.validation.ValidationResult
 import com.ampairs.common.validation.phone.PhoneNumberValidator
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.workspace.generated.resources.Res
+import ampairsapp.feature.workspace.generated.resources.cd_back
+import ampairsapp.feature.workspace.generated.resources.cancel
+import ampairsapp.feature.workspace.generated.resources.done
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_create_title
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_recipient_info
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_country_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_phone_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_name_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_name_placeholder
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_dept_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_dept_placeholder
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_role_assignment
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_settings_card
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_expires_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_expires_hint
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_message_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_message_placeholder
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_send_button
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_sent_title
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_sent_message
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_select_role
 
 /**
  * Create workspace invitation screen with comprehensive form
@@ -35,7 +59,7 @@ fun WorkspaceInvitationCreateScreen(
     modifier: Modifier = Modifier,
     viewModel: WorkspaceInvitationsViewModel = assistedMetroViewModel<WorkspaceInvitationsViewModel, WorkspaceInvitationsViewModel.Factory> { create(workspaceId) },
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     // Form state - Phone only for now
     var recipientMobile by remember { mutableStateOf("") }
@@ -77,12 +101,12 @@ fun WorkspaceInvitationCreateScreen(
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
+                        contentDescription = stringResource(Res.string.cd_back)
                     )
                 }
                 
                 Text(
-                    text = "Create Invitation",
+                    text = stringResource(Res.string.workspace_invitation_create_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -107,7 +131,7 @@ fun WorkspaceInvitationCreateScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Recipient Information",
+                        text = stringResource(Res.string.workspace_invitation_recipient_info),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -120,7 +144,7 @@ fun WorkspaceInvitationCreateScreen(
                         OutlinedTextField(
                             value = countryCode,
                             onValueChange = { /* Read only - no changes allowed */ },
-                            label = { Text("Country") },
+                            label = { Text(stringResource(Res.string.workspace_invitation_country_label)) },
                             readOnly = true,
                             enabled = false,
                             colors = OutlinedTextFieldDefaults.colors(
@@ -152,7 +176,7 @@ fun WorkspaceInvitationCreateScreen(
                                     }
                                 }
                             },
-                            label = { Text("Mobile Number *") },
+                            label = { Text(stringResource(Res.string.workspace_invitation_phone_label)) },
                             placeholder = { Text("9876543210") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                             isError = mobileError.isNotEmpty(),
@@ -170,8 +194,8 @@ fun WorkspaceInvitationCreateScreen(
                     OutlinedTextField(
                         value = recipientName,
                         onValueChange = { recipientName = it },
-                        label = { Text("Full Name (Optional)") },
-                        placeholder = { Text("John Smith") },
+                        label = { Text(stringResource(Res.string.workspace_invitation_name_label)) },
+                        placeholder = { Text(stringResource(Res.string.workspace_invitation_name_placeholder)) },
                         leadingIcon = {
                             Icon(Icons.Default.Person, contentDescription = null)
                         },
@@ -182,8 +206,8 @@ fun WorkspaceInvitationCreateScreen(
                     OutlinedTextField(
                         value = department,
                         onValueChange = { department = it },
-                        label = { Text("Department (Optional)") },
-                        placeholder = { Text("Engineering, Sales, Marketing...") },
+                        label = { Text(stringResource(Res.string.workspace_invitation_dept_label)) },
+                        placeholder = { Text(stringResource(Res.string.workspace_invitation_dept_placeholder)) },
                         leadingIcon = {
                             Icon(Icons.Default.Business, contentDescription = null)
                         },
@@ -201,7 +225,7 @@ fun WorkspaceInvitationCreateScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Role Assignment",
+                        text = stringResource(Res.string.workspace_invitation_role_assignment),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -228,7 +252,7 @@ fun WorkspaceInvitationCreateScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Invitation Settings",
+                        text = stringResource(Res.string.workspace_invitation_settings_card),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -242,14 +266,14 @@ fun WorkspaceInvitationCreateScreen(
                                 daysError = ""
                             }
                         },
-                        label = { Text("Expires in (days) *") },
+                        label = { Text(stringResource(Res.string.workspace_invitation_expires_label)) },
                         placeholder = { Text("7") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         isError = daysError.isNotEmpty(),
                         supportingText = if (daysError.isNotEmpty()) {
                             { Text(daysError, color = MaterialTheme.colorScheme.error) }
                         } else {
-                            { Text("Valid range: 1-30 days") }
+                            { Text(stringResource(Res.string.workspace_invitation_expires_hint)) }
                         },
                         leadingIcon = {
                             Icon(Icons.Default.Schedule, contentDescription = null)
@@ -261,8 +285,8 @@ fun WorkspaceInvitationCreateScreen(
                     OutlinedTextField(
                         value = customMessage,
                         onValueChange = { customMessage = it },
-                        label = { Text("Custom Message (Optional)") },
-                        placeholder = { Text("Welcome to our team! Looking forward to working with you.") },
+                        label = { Text(stringResource(Res.string.workspace_invitation_message_label)) },
+                        placeholder = { Text(stringResource(Res.string.workspace_invitation_message_placeholder)) },
                         maxLines = 3,
                         leadingIcon = {
                             Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null)
@@ -285,7 +309,7 @@ fun WorkspaceInvitationCreateScreen(
                     modifier = Modifier.weight(1f),
                     enabled = !isCreating
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
 
                 Button(
@@ -325,7 +349,7 @@ fun WorkspaceInvitationCreateScreen(
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Text("Send Invitation")
+                    Text(stringResource(Res.string.workspace_invitation_send_button))
                 }
             }
         }
@@ -335,10 +359,10 @@ fun WorkspaceInvitationCreateScreen(
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { showSuccessDialog = false },
-            title = { Text("Invitation Sent!") },
+            title = { Text(stringResource(Res.string.workspace_invitation_sent_title)) },
             text = { 
                 val recipientInfo = "$countryCode${recipientMobile.replace("\\D".toRegex(), "")}"
-                Text("The invitation has been sent to $recipientInfo. They will receive an SMS with instructions to join the workspace.")
+                Text(stringResource(Res.string.workspace_invitation_sent_message, recipientInfo))
             },
             confirmButton = {
                 Button(
@@ -347,7 +371,7 @@ fun WorkspaceInvitationCreateScreen(
                         onNavigateBack()
                     }
                 ) {
-                    Text("Done")
+                    Text(stringResource(Res.string.done))
                 }
             }
         )
@@ -363,7 +387,7 @@ private fun RoleSelectionSection(
 ) {
     Column {
         Text(
-            text = "Select Role *",
+            text = stringResource(Res.string.workspace_invitation_select_role),
             style = MaterialTheme.typography.labelMedium,
             color = if (error.isNotEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
         )

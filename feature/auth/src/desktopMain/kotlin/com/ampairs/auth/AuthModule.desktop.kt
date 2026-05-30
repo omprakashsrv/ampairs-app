@@ -19,7 +19,6 @@ import com.ampairs.network.security.DesktopAppUpdateEnforcer
 import com.ampairs.network.security.DesktopCertificatePinningService
 import com.ampairs.network.security.DesktopCertificateStorage
 import com.ampairs.network.security.DesktopSecureEngineFactory
-import com.ampairs.network.security.SecureKtorClientFactory
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -84,10 +83,10 @@ interface AuthDesktopModule {
         ): DesktopSecureEngineFactory =
             DesktopSecureEngineFactory(pinningService as DesktopCertificatePinningService)
 
-        @Provides @SingleIn(AppScope::class)
-        fun provideSecureKtorClientFactory(
-            pinningService: CertificatePinningService,
-            enforcer: AppUpdateEnforcer
-        ): SecureKtorClientFactory = SecureKtorClientFactory(pinningService, enforcer)
+//        @Provides @SingleIn(AppScope::class)
+//        fun provideSecureKtorClientFactory(
+//            pinningService: CertificatePinningService,
+//            enforcer: AppUpdateEnforcer
+//        ): SecureKtorClientFactory = SecureKtorClientFactory(pinningService, enforcer)
     }
 }

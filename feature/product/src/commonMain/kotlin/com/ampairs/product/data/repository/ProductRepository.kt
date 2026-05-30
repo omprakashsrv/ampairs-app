@@ -21,6 +21,7 @@ import com.ampairs.product.domain.ProductType
 import com.ampairs.product.domain.ProductVariant
 import com.ampairs.product.domain.ServiceType
 import com.ampairs.product.domain.asDomainModel
+import com.ampairs.product.domain.asDatabaseModel
 import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toDomain
 import com.ampairs.product.domain.toDomainList
@@ -33,7 +34,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
@@ -158,25 +158,18 @@ class ProductRepository(
         }
     }
 
-    /**
-     * Get all products as Flow
-     */
-    fun observeProducts(): Flow<List<ProductListItem>> {
-        return flow {
-            val products = productDao.getProducts()
-            emit(products.map { it.toProductListItem() })
-        }
-    }
+    fun observeProducts(): Flow<List<ProductListItem>> =
+        productDao.observeAllProducts().map { entities -> entities.map { it.toProductListItem() } }
 
-    /**
-     * Search products by name or code
-     */
-    fun searchProducts(query: String): Flow<List<ProductListItem>> {
-        return flow {
-            val products = productDao.getProductsByName(query)
-            emit(products.map { it.toProductListItem() })
+    fun searchProducts(query: String): Flow<List<ProductListItem>> =
+        if (query.isBlank()) {
+            productDao.observeAllProducts().map { entities -> entities.map { it.toProductListItem() } }
+        } else {
+            productDao.observeProductsByName(query).map { entities -> entities.map { it.toProductListItem() } }
         }
-    }
+
+    fun observeProduct(productId: String): Flow<Product?> =
+        productDao.observeProductById(productId).map { entity -> entity?.toDomainProduct() }
 
     /**
      * Get products by category
@@ -202,9 +195,21 @@ class ProductRepository(
 
     override suspend fun clearCache() { productDao.deleteAll() }
 
-    /**
-     * Create a new product
-     */
+    suspend fun syncProducts(): Result<Int> {
+        return try {
+            val workspaceId = WorkspaceContextManager.getInstance().currentWorkspace.value?.id
+                ?: return Result.failure(Exception("No workspace selected"))
+            val result = productApi.getProducts(workspaceId)
+            result.onSuccess { apiProducts ->
+                productDao.insertAll(apiProducts.asDatabaseModel())
+            }
+            Result.success(result.getOrNull()?.size ?: 0)
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "ProductRepository.syncProducts")
+            Result.failure(e)
+        }
+    }
+
     suspend fun createProduct(product: Product): Result<Product> {
         return try {
             val productWithId = if (product.id.isBlank()) {

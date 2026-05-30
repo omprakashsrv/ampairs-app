@@ -167,10 +167,6 @@ fun workspaceEntryProvider(
         ModuleStoreScreen(
             workspaceId = key.workspaceId,
             paddingValues = PaddingValues(),
-            onModuleNavigate = { route ->
-                backStack.removeLastOrNull()
-                backStack.add(route as NavKey)
-            }
         )
     }
 

@@ -30,6 +30,16 @@ suspend inline fun <reified T> post(client: HttpClient, url: String, body: Any?)
     }
 }
 
+suspend inline fun <reified E, reified T> postList(client: HttpClient, url: String, body: List<E>): T {
+    return try {
+        handleResponse(client.post(url) { setBody<List<E>>(body) })
+    } catch (e: NetworkException) {
+        createNetworkErrorResponse(e)
+    } catch (e: Exception) {
+        createNetworkErrorResponse(e)
+    }
+}
+
 suspend inline fun <reified T> put(client: HttpClient, url: String, body: Any?): T {
     return try {
         handleResponse(client.put(url) { if (body != null) setBody(body) })

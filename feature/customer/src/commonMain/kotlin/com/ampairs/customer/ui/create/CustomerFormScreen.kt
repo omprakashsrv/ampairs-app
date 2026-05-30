@@ -47,11 +47,66 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_form_title_new
+import ampairsapp.feature.customer.generated.resources.customer_form_title_edit
+import ampairsapp.feature.customer.generated.resources.customer_save
+import ampairsapp.feature.customer.generated.resources.customer_saving
+import ampairsapp.feature.customer.generated.resources.customer_import_contact
+import ampairsapp.feature.customer.generated.resources.customer_importing
+import ampairsapp.feature.customer.generated.resources.customer_save_action
+import ampairsapp.feature.customer.generated.resources.customer_select_type
+import ampairsapp.feature.customer.generated.resources.customer_select_group
+import ampairsapp.feature.customer.generated.resources.customer_no_types
+import ampairsapp.feature.customer.generated.resources.customer_no_groups
+import ampairsapp.feature.customer.generated.resources.customer_tab_details
+import ampairsapp.feature.customer.generated.resources.customer_tab_images
+import ampairsapp.feature.customer.generated.resources.customer_section_basic
+import ampairsapp.feature.customer.generated.resources.customer_section_business
+import ampairsapp.feature.customer.generated.resources.customer_section_credit
+import ampairsapp.feature.customer.generated.resources.customer_section_address
+import ampairsapp.feature.customer.generated.resources.customer_section_location
+import ampairsapp.feature.customer.generated.resources.customer_section_billing
+import ampairsapp.feature.customer.generated.resources.customer_section_shipping
+import ampairsapp.feature.customer.generated.resources.customer_section_attributes
+import ampairsapp.feature.customer.generated.resources.customer_section_status
+import ampairsapp.feature.customer.generated.resources.customer_label_name
+import ampairsapp.feature.customer.generated.resources.customer_label_email
+import ampairsapp.feature.customer.generated.resources.customer_label_landline
+import ampairsapp.feature.customer.generated.resources.customer_label_credit_limit
+import ampairsapp.feature.customer.generated.resources.customer_label_credit_days
+import ampairsapp.feature.customer.generated.resources.customer_label_address
+import ampairsapp.feature.customer.generated.resources.customer_label_street
+import ampairsapp.feature.customer.generated.resources.customer_label_street2
+import ampairsapp.feature.customer.generated.resources.customer_label_city
+import ampairsapp.feature.customer.generated.resources.customer_label_pincode
+import ampairsapp.feature.customer.generated.resources.customer_label_state
+import ampairsapp.feature.customer.generated.resources.customer_label_country
+import ampairsapp.feature.customer.generated.resources.customer_label_gst
+import ampairsapp.feature.customer.generated.resources.customer_label_pan
+import ampairsapp.feature.customer.generated.resources.customer_label_billing_street
+import ampairsapp.feature.customer.generated.resources.customer_label_billing_city
+import ampairsapp.feature.customer.generated.resources.customer_label_billing_pin
+import ampairsapp.feature.customer.generated.resources.customer_label_billing_state
+import ampairsapp.feature.customer.generated.resources.customer_label_billing_country
+import ampairsapp.feature.customer.generated.resources.customer_label_shipping_street
+import ampairsapp.feature.customer.generated.resources.customer_label_shipping_city
+import ampairsapp.feature.customer.generated.resources.customer_label_shipping_pin
+import ampairsapp.feature.customer.generated.resources.customer_label_shipping_state
+import ampairsapp.feature.customer.generated.resources.customer_label_shipping_country
+import ampairsapp.feature.customer.generated.resources.customer_location_current
+import ampairsapp.feature.customer.generated.resources.customer_location_change
+import ampairsapp.feature.customer.generated.resources.customer_location_set
+import ampairsapp.feature.customer.generated.resources.customer_location_hint
+import ampairsapp.feature.customer.generated.resources.customer_same_as_main_address
+import ampairsapp.feature.customer.generated.resources.customer_location_lat_format
+import ampairsapp.feature.customer.generated.resources.customer_location_lon_format
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -88,7 +143,7 @@ fun CustomerFormScreen(
     modifier: Modifier = Modifier,
     viewModel: CustomerFormViewModel = assistedMetroViewModel<CustomerFormViewModel, CustomerFormViewModel.Factory> { create(customerId) },
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(customerId) {
         if (customerId != null) {
@@ -98,7 +153,7 @@ fun CustomerFormScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(if (customerId == null) "New Customer" else "Edit Customer") },
+            title = { Text(if (customerId == null) stringResource(Res.string.customer_form_title_new) else stringResource(Res.string.customer_form_title_edit)) },
             actions = {
                 TextButton(
                     onClick = {
@@ -112,7 +167,7 @@ fun CustomerFormScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Save")
+                        Text(stringResource(Res.string.customer_save))
                     }
                 }
             }
@@ -301,10 +356,12 @@ private fun CustomerFormTabLayout(
 ) {
     var selectedTabIndex by remember { mutableStateOf(0) }
 
+    val tabDetails = stringResource(Res.string.customer_tab_details)
+    val tabImages = stringResource(Res.string.customer_tab_images)
     val tabs = buildList {
-        add("Details")
+        add(tabDetails)
         if (showCustomerImages && customerId.isNotBlank()) {
-            add("Images")
+            add(tabImages)
         }
     }
 
@@ -343,7 +400,7 @@ private fun CustomerFormTabLayout(
                 locationService = locationService,
                 modifier = Modifier.fillMaxSize()
             )
-            1 -> if (tabs.getOrNull(1) == "Images") {
+            1 -> if (tabs.size > 1) {
                 CustomerImageManagementScreen(
                     customerId = customerId,
                     readOnly = customerImagesReadOnly,
@@ -466,7 +523,21 @@ private fun CustomerFormFields(
 ) {
     val focusManager = LocalFocusManager.current
 
-    // Helper functions for field config
+    val resLabelName = stringResource(Res.string.customer_label_name)
+    val resLabelEmail = stringResource(Res.string.customer_label_email)
+    val resLabelLandline = stringResource(Res.string.customer_label_landline)
+    val resLabelGst = stringResource(Res.string.customer_label_gst)
+    val resLabelPan = stringResource(Res.string.customer_label_pan)
+    val resLabelCreditLimit = stringResource(Res.string.customer_label_credit_limit)
+    val resLabelCreditDays = stringResource(Res.string.customer_label_credit_days)
+    val resLabelAddress = stringResource(Res.string.customer_label_address)
+    val resLabelStreet = stringResource(Res.string.customer_label_street)
+    val resLabelStreet2 = stringResource(Res.string.customer_label_street2)
+    val resLabelCity = stringResource(Res.string.customer_label_city)
+    val resLabelPincode = stringResource(Res.string.customer_label_pincode)
+    val resLabelState = stringResource(Res.string.customer_label_state)
+    val resLabelCountry = stringResource(Res.string.customer_label_country)
+
     fun isFieldVisible(fieldName: String): Boolean {
         return entityConfig?.isFieldVisible(fieldName) ?: true
     }
@@ -522,7 +593,7 @@ private fun CustomerFormFields(
         }
 
         // Basic Information
-        FormSection(title = "Basic Information") {
+        FormSection(title = stringResource(Res.string.customer_section_basic)) {
             // Import from Contact Button (only on Android/iOS, only for new customers)
             if (isContactPickerAvailable && formState.uid.isBlank()) {
                 OutlinedButton(
@@ -536,11 +607,11 @@ private fun CustomerFormFields(
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Importing...")
+                        Text(stringResource(Res.string.customer_importing))
                     } else {
                         Icon(Icons.Default.ContactPhone, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Import from Contact")
+                        Text(stringResource(Res.string.customer_import_contact))
                     }
                 }
 
@@ -552,7 +623,7 @@ private fun CustomerFormFields(
                 OutlinedTextField(
                     value = formState.name,
                     onValueChange = { onFormChange(formState.copy(name = it)) },
-                    label = { Text(getFieldLabel("name", "Name")) },
+                    label = { Text(getFieldLabel("name", resLabelName)) },
                     placeholder = getFieldPlaceholder("name")?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -570,7 +641,7 @@ private fun CustomerFormFields(
                 OutlinedTextField(
                     value = formState.email,
                     onValueChange = { onFormChange(formState.copy(email = it)) },
-                    label = { Text(getFieldLabel("email", "Email")) },
+                    label = { Text(getFieldLabel("email", resLabelEmail)) },
                     placeholder = getFieldPlaceholder("email")?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
@@ -594,7 +665,7 @@ private fun CustomerFormFields(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
-                    value = formState.customerTypeName.ifBlank { "Select Customer Type" },
+                    value = formState.customerTypeName.ifBlank { stringResource(Res.string.customer_select_type) },
                     onValueChange = { },
                     readOnly = true,
                     label = { Text(LABEL_CUSTOMER_TYPE) },
@@ -621,7 +692,7 @@ private fun CustomerFormFields(
                     }
                     if (customerTypes.isEmpty()) {
                         DropdownMenuItem(
-                            text = { Text("No customer types available") },
+                            text = { Text(stringResource(Res.string.customer_no_types)) },
                             onClick = { }
                         )
                     }
@@ -636,7 +707,7 @@ private fun CustomerFormFields(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
-                    value = formState.customerGroupName.ifBlank { "Select Customer Group" },
+                    value = formState.customerGroupName.ifBlank { stringResource(Res.string.customer_select_group) },
                     onValueChange = { },
                     readOnly = true,
                     label = { Text(LABEL_CUSTOMER_GROUP) },
@@ -663,7 +734,7 @@ private fun CustomerFormFields(
                     }
                     if (customerGroups.isEmpty()) {
                         DropdownMenuItem(
-                            text = { Text("No customer groups available") },
+                            text = { Text(stringResource(Res.string.customer_no_groups)) },
                             onClick = { }
                         )
                     }
@@ -698,7 +769,7 @@ private fun CustomerFormFields(
                 OutlinedTextField(
                     value = formState.landline,
                     onValueChange = { onFormChange(formState.copy(landline = it)) },
-                    label = { Text(getFieldLabel("landline", "Landline")) },
+                    label = { Text(getFieldLabel("landline", resLabelLandline)) },
                     placeholder = getFieldPlaceholder("landline")?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
@@ -725,12 +796,12 @@ private fun CustomerFormFields(
         }
 
         // Business Information
-        FormSection(title = "Business Information") {
+        FormSection(title = stringResource(Res.string.customer_section_business)) {
             if (isFieldVisible("gstNumber")) {
                 OutlinedTextField(
                     value = formState.gstNumber,
                     onValueChange = { onFormChange(formState.copy(gstNumber = it)) },
-                    label = { Text(getFieldLabel("gstNumber", "GST Number")) },
+                    label = { Text(getFieldLabel("gstNumber", resLabelGst)) },
                     placeholder = getFieldPlaceholder("gstNumber")?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -745,7 +816,7 @@ private fun CustomerFormFields(
                 OutlinedTextField(
                     value = formState.panNumber,
                     onValueChange = { onFormChange(formState.copy(panNumber = it)) },
-                    label = { Text(getFieldLabel("panNumber", "PAN Number")) },
+                    label = { Text(getFieldLabel("panNumber", resLabelPan)) },
                     placeholder = getFieldPlaceholder("panNumber")?.let { { Text(it) } },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -758,7 +829,7 @@ private fun CustomerFormFields(
         }
 
         // Credit Management
-        FormSection(title = "Credit Management") {
+        FormSection(title = stringResource(Res.string.customer_section_credit)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -769,7 +840,7 @@ private fun CustomerFormFields(
                         val creditLimit = value.toDoubleOrNull() ?: 0.0
                         onFormChange(formState.copy(creditLimit = creditLimit))
                     },
-                    label = { Text("Credit Limit") },
+                    label = { Text(resLabelCreditLimit) },
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
@@ -787,7 +858,7 @@ private fun CustomerFormFields(
                         val creditDays = value.toIntOrNull() ?: 0
                         onFormChange(formState.copy(creditDays = creditDays))
                     },
-                    label = { Text("Credit Days") },
+                    label = { Text(resLabelCreditDays) },
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
@@ -802,11 +873,11 @@ private fun CustomerFormFields(
         }
 
         // Address Information
-        FormSection(title = "Address") {
+        FormSection(title = stringResource(Res.string.customer_section_address)) {
             OutlinedTextField(
                 value = formState.address,
                 onValueChange = { onFormChange(formState.copy(address = it)) },
-                label = { Text("Address") },
+                label = { Text(resLabelAddress) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -818,7 +889,7 @@ private fun CustomerFormFields(
             OutlinedTextField(
                 value = formState.street,
                 onValueChange = { onFormChange(formState.copy(street = it)) },
-                label = { Text("Street") },
+                label = { Text(resLabelStreet) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -830,7 +901,7 @@ private fun CustomerFormFields(
             OutlinedTextField(
                 value = formState.street2,
                 onValueChange = { onFormChange(formState.copy(street2 = it)) },
-                label = { Text("Street 2") },
+                label = { Text(resLabelStreet2) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -847,7 +918,7 @@ private fun CustomerFormFields(
                     value = formState.city,
                     onValueChange = { onFormChange(formState.copy(city = it)) },
                     suggestions = cities,
-                    label = "City",
+                    label = resLabelCity,
                     modifier = Modifier.weight(1f),
                     imeAction = ImeAction.Next
                 )
@@ -856,7 +927,7 @@ private fun CustomerFormFields(
                     value = formState.pincode,
                     onValueChange = { onFormChange(formState.copy(pincode = it)) },
                     suggestions = pincodes,
-                    label = "PIN Code",
+                    label = resLabelPincode,
                     modifier = Modifier.weight(1f),
                     imeAction = ImeAction.Next
                 )
@@ -872,14 +943,14 @@ private fun CustomerFormFields(
                     onStateSelected = onStateSelected,
                     states = states,
                     modifier = Modifier.weight(1f),
-                    label = "State",
+                    label = resLabelState,
                     imeAction = ImeAction.Next
                 )
 
                 OutlinedTextField(
                     value = formState.country,
                     onValueChange = { onFormChange(formState.copy(country = it)) },
-                    label = { Text("Country") },
+                    label = { Text(resLabelCountry) },
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(
@@ -891,7 +962,7 @@ private fun CustomerFormFields(
         }
 
         // Location Section
-        FormSection(title = "Location") {
+        FormSection(title = stringResource(Res.string.customer_section_location)) {
             LocationSection(
                 latitude = formState.latitude,
                 longitude = formState.longitude,
@@ -922,7 +993,7 @@ private fun CustomerFormFields(
         }
 
         // Billing Address Section
-        FormSection(title = "Billing Address") {
+        FormSection(title = stringResource(Res.string.customer_section_billing)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -933,7 +1004,7 @@ private fun CustomerFormFields(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Same as main address",
+                    text = stringResource(Res.string.customer_same_as_main_address),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -942,7 +1013,7 @@ private fun CustomerFormFields(
                 OutlinedTextField(
                     value = formState.billingStreet,
                     onValueChange = { onFormChange(formState.copy(billingStreet = it)) },
-                    label = { Text("Billing Street") },
+                    label = { Text(stringResource(Res.string.customer_label_billing_street)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(
@@ -959,7 +1030,7 @@ private fun CustomerFormFields(
                         value = formState.billingCity,
                         onValueChange = { onFormChange(formState.copy(billingCity = it)) },
                         suggestions = cities,
-                        label = "Billing City",
+                        label = stringResource(Res.string.customer_label_billing_city),
                         modifier = Modifier.weight(1f),
                         imeAction = ImeAction.Next
                     )
@@ -967,7 +1038,7 @@ private fun CustomerFormFields(
                         value = formState.billingPincode,
                         onValueChange = { onFormChange(formState.copy(billingPincode = it)) },
                         suggestions = pincodes,
-                        label = "Billing PIN",
+                        label = stringResource(Res.string.customer_label_billing_pin),
                         modifier = Modifier.weight(1f),
                         imeAction = ImeAction.Next
                     )
@@ -985,13 +1056,13 @@ private fun CustomerFormFields(
                         },
                         states = states,
                         modifier = Modifier.weight(1f),
-                        label = "Billing State",
+                        label = stringResource(Res.string.customer_label_billing_state),
                         imeAction = ImeAction.Next
                     )
                     OutlinedTextField(
                         value = formState.billingCountry,
                         onValueChange = { onFormChange(formState.copy(billingCountry = it)) },
-                        label = { Text("Billing Country") },
+                        label = { Text(stringResource(Res.string.customer_label_billing_country)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         keyboardActions = KeyboardActions(
@@ -1004,7 +1075,7 @@ private fun CustomerFormFields(
         }
 
         // Shipping Address Section
-        FormSection(title = "Shipping Address") {
+        FormSection(title = stringResource(Res.string.customer_section_shipping)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -1015,7 +1086,7 @@ private fun CustomerFormFields(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Same as main address",
+                    text = stringResource(Res.string.customer_same_as_main_address),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -1024,7 +1095,7 @@ private fun CustomerFormFields(
                 OutlinedTextField(
                     value = formState.shippingStreet,
                     onValueChange = { onFormChange(formState.copy(shippingStreet = it)) },
-                    label = { Text("Shipping Street") },
+                    label = { Text(stringResource(Res.string.customer_label_shipping_street)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(
@@ -1041,7 +1112,7 @@ private fun CustomerFormFields(
                         value = formState.shippingCity,
                         onValueChange = { onFormChange(formState.copy(shippingCity = it)) },
                         suggestions = cities,
-                        label = "Shipping City",
+                        label = stringResource(Res.string.customer_label_shipping_city),
                         modifier = Modifier.weight(1f),
                         imeAction = ImeAction.Next
                     )
@@ -1049,7 +1120,7 @@ private fun CustomerFormFields(
                         value = formState.shippingPincode,
                         onValueChange = { onFormChange(formState.copy(shippingPincode = it)) },
                         suggestions = pincodes,
-                        label = "Shipping PIN",
+                        label = stringResource(Res.string.customer_label_shipping_pin),
                         modifier = Modifier.weight(1f),
                         imeAction = ImeAction.Next
                     )
@@ -1067,13 +1138,13 @@ private fun CustomerFormFields(
                         },
                         states = states,
                         modifier = Modifier.weight(1f),
-                        label = "Shipping State",
+                        label = stringResource(Res.string.customer_label_shipping_state),
                         imeAction = ImeAction.Done
                     )
                     OutlinedTextField(
                         value = formState.shippingCountry,
                         onValueChange = { onFormChange(formState.copy(shippingCountry = it)) },
-                        label = { Text("Shipping Country") },
+                        label = { Text(stringResource(Res.string.customer_label_shipping_country)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(
@@ -1088,7 +1159,7 @@ private fun CustomerFormFields(
         // Custom Attributes - Only show configured attributes
         val attributeDefinitions = entityConfig?.attributeDefinitions?.filter { it.visible } ?: emptyList()
         if (attributeDefinitions.isNotEmpty()) {
-            FormSection(title = "Custom Attributes") {
+            FormSection(title = stringResource(Res.string.customer_section_attributes)) {
                 AttributesEditor(
                     attributes = formState.attributes,
                     attributeDefinitions = attributeDefinitions,
@@ -1100,7 +1171,7 @@ private fun CustomerFormFields(
         }
 
         // Status Information
-        FormSection(title = "Status") {
+        FormSection(title = stringResource(Res.string.customer_section_status)) {
             var statusExpanded by remember { mutableStateOf(false) }
             ExposedDropdownMenuBox(
                 expanded = statusExpanded,
@@ -1154,9 +1225,9 @@ private fun CustomerFormFields(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Saving...")
+                    Text(stringResource(Res.string.customer_saving))
                 } else {
-                    Text("Save Customer")
+                    Text(stringResource(Res.string.customer_save_action))
                 }
             }
         }
@@ -1282,17 +1353,17 @@ private fun LocationSection(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "Current Location",
+                        text = stringResource(Res.string.customer_location_current),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "Latitude: ${latitude.toString().take(10)}",
+                        text = stringResource(Res.string.customer_location_lat_format, latitude.toString().take(10)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "Longitude: ${longitude.toString().take(10)}",
+                        text = stringResource(Res.string.customer_location_lon_format, longitude.toString().take(10)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -1311,7 +1382,7 @@ private fun LocationSection(
                 ) {
                     Icon(Icons.Default.LocationOn, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Change Location")
+                    Text(stringResource(Res.string.customer_location_change))
                 }
             } else {
                 Button(
@@ -1320,14 +1391,14 @@ private fun LocationSection(
                 ) {
                     Icon(Icons.Default.LocationOn, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Set Location")
+                    Text(stringResource(Res.string.customer_location_set))
                 }
             }
         }
 
         if (latitude == null && longitude == null) {
             Text(
-                text = "You can set location coordinates only, or choose to also auto-populate address fields",
+                text = stringResource(Res.string.customer_location_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

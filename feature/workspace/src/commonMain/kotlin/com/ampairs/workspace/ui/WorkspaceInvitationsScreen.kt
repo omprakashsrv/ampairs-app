@@ -14,7 +14,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.domain.WorkspaceInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.workspace.generated.resources.Res
+import ampairsapp.feature.workspace.generated.resources.workspace_invitations_header
+import ampairsapp.feature.workspace.generated.resources.cd_toggle_filters
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_send_invite
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_filters
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_status_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_role_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_total_sent
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_pending_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_accepted_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_expired_label
+import ampairsapp.feature.workspace.generated.resources.cd_invitation_actions
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_resend
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_cancel_action
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_sent_by
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_created_at
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_expires_at_label
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_resent_count
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_delivery_sent
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_delivery_delivered
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_delivery_opened
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_delivery_clicked
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_empty_title
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_empty_desc
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_send_first
+import ampairsapp.feature.workspace.generated.resources.workspace_invitation_error_title
+import ampairsapp.feature.workspace.generated.resources.try_again
 
 /**
  * Comprehensive invitation management screen for workspace administration
@@ -26,7 +55,7 @@ fun WorkspaceInvitationsScreen(
     onInviteClick: () -> Unit,
     viewModel: WorkspaceInvitationsViewModel = assistedMetroViewModel<WorkspaceInvitationsViewModel, WorkspaceInvitationsViewModel.Factory> { create(workspaceId) },
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     var showFilters by remember { mutableStateOf(false) }
     var selectedStatus by remember { mutableStateOf("ALL") }
@@ -49,7 +78,7 @@ fun WorkspaceInvitationsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Invitations",
+                text = stringResource(Res.string.workspace_invitations_header),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -58,7 +87,7 @@ fun WorkspaceInvitationsScreen(
                 IconButton(onClick = { showFilters = !showFilters }) {
                     Icon(
                         if (showFilters) Icons.Default.FilterListOff else Icons.Default.FilterList,
-                        contentDescription = "Toggle Filters"
+                        contentDescription = stringResource(Res.string.cd_toggle_filters)
                     )
                 }
 
@@ -72,7 +101,7 @@ fun WorkspaceInvitationsScreen(
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Send Invite",
+                        text = stringResource(Res.string.workspace_invitation_send_invite),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -171,7 +200,7 @@ private fun InvitationFiltersSection(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Filters",
+                text = stringResource(Res.string.workspace_invitation_filters),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -185,7 +214,7 @@ private fun InvitationFiltersSection(
                 // Status filter
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Status",
+                        text = stringResource(Res.string.workspace_invitation_status_label),
                         style = MaterialTheme.typography.labelMedium
                     )
 
@@ -229,7 +258,7 @@ private fun InvitationFiltersSection(
                 // Role filter
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Role",
+                        text = stringResource(Res.string.workspace_invitation_role_label),
                         style = MaterialTheme.typography.labelMedium
                     )
 
@@ -293,27 +322,27 @@ private fun InvitationsSummaryCard(
             SummaryItem(
                 icon = Icons.AutoMirrored.Filled.Send,
                 value = totalInvitations.toString(),
-                label = "Total Sent"
+                label = stringResource(Res.string.workspace_invitation_total_sent)
             )
 
             SummaryItem(
                 icon = Icons.Default.Schedule,
                 value = pendingInvitations.toString(),
-                label = "Pending",
+                label = stringResource(Res.string.workspace_invitation_pending_label),
                 iconTint = MaterialTheme.colorScheme.tertiary
             )
 
             SummaryItem(
                 icon = Icons.Default.CheckCircle,
                 value = acceptedInvitations.toString(),
-                label = "Accepted",
+                label = stringResource(Res.string.workspace_invitation_accepted_label),
                 iconTint = MaterialTheme.colorScheme.primary
             )
 
             SummaryItem(
                 icon = Icons.Default.Error,
                 value = expiredInvitations.toString(),
-                label = "Expired",
+                label = stringResource(Res.string.workspace_invitation_expired_label),
                 iconTint = MaterialTheme.colorScheme.error
             )
         }
@@ -402,7 +431,7 @@ private fun InvitationCard(
 
                     Box {
                         IconButton(onClick = { showMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Invitation Actions")
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.cd_invitation_actions))
                         }
 
                         DropdownMenu(
@@ -411,7 +440,7 @@ private fun InvitationCard(
                         ) {
                             if (invitation.status == "PENDING") {
                                 DropdownMenuItem(
-                                    text = { Text("Resend Invitation") },
+                                    text = { Text(stringResource(Res.string.workspace_invitation_resend)) },
                                     onClick = {
                                         onResend()
                                         showMenu = false
@@ -422,7 +451,7 @@ private fun InvitationCard(
                                 )
 
                                 DropdownMenuItem(
-                                    text = { Text("Cancel Invitation") },
+                                    text = { Text(stringResource(Res.string.workspace_invitation_cancel_action)) },
                                     onClick = {
                                         onCancel()
                                         showMenu = false
@@ -446,13 +475,13 @@ private fun InvitationCard(
             ) {
                 Column {
                     Text(
-                        text = "Sent by ${invitation.sentByName}",
+                        text = stringResource(Res.string.workspace_invitation_sent_by, invitation.sentByName),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Text(
-                        text = "Created: ${invitation.createdAt}",
+                        text = stringResource(Res.string.workspace_invitation_created_at, invitation.createdAt),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -462,14 +491,14 @@ private fun InvitationCard(
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
-                        text = "Expires: ${invitation.expiresAt}",
+                        text = stringResource(Res.string.workspace_invitation_expires_at_label, invitation.expiresAt),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     if (invitation.resendCount > 0) {
                         Text(
-                            text = "Resent ${invitation.resendCount} time(s)",
+                            text = stringResource(Res.string.workspace_invitation_resent_count, invitation.resendCount),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -485,25 +514,25 @@ private fun InvitationCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     DeliveryStatusIndicator(
-                        label = "Sent",
+                        label = stringResource(Res.string.workspace_invitation_delivery_sent),
                         isCompleted = invitation.emailSent,
                         icon = Icons.AutoMirrored.Default.Send
                     )
 
                     DeliveryStatusIndicator(
-                        label = "Delivered",
+                        label = stringResource(Res.string.workspace_invitation_delivery_delivered),
                         isCompleted = invitation.emailDelivered,
                         icon = Icons.Default.Email
                     )
 
                     DeliveryStatusIndicator(
-                        label = "Opened",
+                        label = stringResource(Res.string.workspace_invitation_delivery_opened),
                         isCompleted = invitation.emailOpened,
                         icon = Icons.Default.Visibility
                     )
 
                     DeliveryStatusIndicator(
-                        label = "Clicked",
+                        label = stringResource(Res.string.workspace_invitation_delivery_clicked),
                         isCompleted = invitation.linkClicked,
                         icon = Icons.Default.TouchApp
                     )
@@ -611,7 +640,7 @@ private fun EmptyInvitationsState(onInviteClick: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "No invitations sent yet",
+            text = stringResource(Res.string.workspace_invitation_empty_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -619,7 +648,7 @@ private fun EmptyInvitationsState(onInviteClick: () -> Unit) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Send your first invitation to grow your team",
+            text = stringResource(Res.string.workspace_invitation_empty_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -635,7 +664,7 @@ private fun EmptyInvitationsState(onInviteClick: () -> Unit) {
             Icon(Icons.AutoMirrored.Default.Send, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Send Your First Invitation",
+                text = stringResource(Res.string.workspace_invitation_send_first),
                 style = MaterialTheme.typography.labelLarge
             )
         }
@@ -662,7 +691,7 @@ private fun ErrorState(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Failed to load invitations",
+            text = stringResource(Res.string.workspace_invitation_error_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.error
         )
@@ -680,7 +709,7 @@ private fun ErrorState(
         Button(onClick = onRetry) {
             Icon(Icons.Default.Refresh, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Try Again")
+            Text(stringResource(Res.string.try_again))
         }
     }
 }

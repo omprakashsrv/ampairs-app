@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.ampairs.common.theme.ThemePreference
@@ -48,8 +49,11 @@ class DataStoreAppPreferences(
         private fun getShouldShowUpgradeKey(workspaceId: String) =
             booleanPreferencesKey("should_show_upgrade_$workspaceId")
 
-        // Future preference keys can be added here:
-        // private val NOTIFICATION_SETTINGS_KEY = stringPreferencesKey("notification_settings")
+        // Tally ERP sync config
+        private fun getTallyHostKey(ws: String) = stringPreferencesKey("tally_host_$ws")
+        private fun getTallyPortKey(ws: String) = intPreferencesKey("tally_port_$ws")
+        private fun getTallyAlterIdKey(ws: String, entity: String) =
+            longPreferencesKey("tally_alter_id_${entity}_$ws")
     }
 
     override fun getThemePreference(): Flow<ThemePreference> {
@@ -253,6 +257,42 @@ class DataStoreAppPreferences(
             preferences.remove(getSubscriptionPlanKey(workspaceId))
             preferences.remove(getShouldShowUpgradeKey(workspaceId))
             println("🧹 Cleared subscription onboarding data for workspace: $workspaceId")
+        }
+    }
+
+    override fun getTallyHost(workspaceSlug: String): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyHostKey(workspaceSlug)] ?: ""
+        }
+    }
+
+    override suspend fun setTallyHost(workspaceSlug: String, host: String) {
+        dataStore.edit { preferences ->
+            preferences[getTallyHostKey(workspaceSlug)] = host
+        }
+    }
+
+    override fun getTallyPort(workspaceSlug: String): Flow<Int> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPortKey(workspaceSlug)] ?: 9008
+        }
+    }
+
+    override suspend fun setTallyPort(workspaceSlug: String, port: Int) {
+        dataStore.edit { preferences ->
+            preferences[getTallyPortKey(workspaceSlug)] = port
+        }
+    }
+
+    override fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyAlterIdKey(workspaceSlug, entityType)] ?: 0L
+        }
+    }
+
+    override suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long) {
+        dataStore.edit { preferences ->
+            preferences[getTallyAlterIdKey(workspaceSlug, entityType)] = alterId
         }
     }
 }
