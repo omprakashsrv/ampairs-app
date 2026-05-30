@@ -32,8 +32,7 @@ class WorkspaceModuleRepository(
             val result = moduleApi.getInstalledModules(workspaceId)
             result.onSuccess { modules ->
                 val entities = modules.map { it.toInstalledModuleEntity(workspaceId) }
-                moduleDao.deleteAllInstalledModules(workspaceId)
-                moduleDao.insertInstalledModules(entities)
+                moduleDao.replaceInstalledModules(workspaceId, entities)
             }
         } catch (_: Exception) {
             // Graceful failure — UI continues with cached data

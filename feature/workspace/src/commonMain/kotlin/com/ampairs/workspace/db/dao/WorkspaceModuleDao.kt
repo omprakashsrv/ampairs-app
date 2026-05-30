@@ -45,6 +45,12 @@ interface WorkspaceModuleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertInstalledModules(modules: List<InstalledModuleEntity>)
 
+    @Transaction
+    suspend fun replaceInstalledModules(workspaceId: String, modules: List<InstalledModuleEntity>) {
+        deleteAllInstalledModules(workspaceId)
+        insertInstalledModules(modules)
+    }
+
     @Update
     suspend fun updateInstalledModule(module: InstalledModuleEntity)
 

@@ -47,6 +47,31 @@ fun ModuleStoreScreen(
 
     val activeCount = installedModules.count { it.status == "ACTIVE" && it.enabled }
 
+    // Merge installed + available-but-not-installed into a single list so installed
+    // modules appear in the grid with their switch ON.
+    val allModules = remember(availableModules, installedModules) {
+        val installedCodes = installedModules.map { it.moduleCode }.toSet()
+        val installedAsAvailable = installedModules.map { installed ->
+            availableModules.find { it.moduleCode == installed.moduleCode }
+                ?: AvailableModule(
+                    moduleCode = installed.moduleCode,
+                    name = installed.name,
+                    description = installed.description,
+                    category = installed.category,
+                    version = installed.version,
+                    rating = 0.0,
+                    installCount = 0,
+                    complexity = "",
+                    icon = installed.icon,
+                    primaryColor = installed.primaryColor,
+                    featured = false,
+                    requiredTier = "FREE",
+                    sizeMb = 0,
+                )
+        }
+        installedAsAvailable + availableModules.filter { it.moduleCode !in installedCodes }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -59,9 +84,9 @@ fun ModuleStoreScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
-            if (availableModules.isNotEmpty()) {
+            if (allModules.isNotEmpty()) {
                 Text(
-                    text = stringResource(Res.string.workspace_modules_subtitle, activeCount, availableModules.size),
+                    text = stringResource(Res.string.workspace_modules_subtitle, activeCount, allModules.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -95,7 +120,7 @@ fun ModuleStoreScreen(
 
         // Content
         when {
-            isLoading && availableModules.isEmpty() -> {
+            isLoading && allModules.isEmpty() -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularProgressIndicator()
@@ -108,7 +133,7 @@ fun ModuleStoreScreen(
                 }
             }
 
-            availableModules.isEmpty() -> {
+            allModules.isEmpty() -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         text = stringResource(Res.string.workspace_no_modules),
@@ -126,7 +151,7 @@ fun ModuleStoreScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    items(availableModules, key = { it.moduleCode }) { module ->
+                    items(allModules, key = { it.moduleCode }) { module ->
                         val installed = installedModules.find { it.moduleCode == module.moduleCode }
                         val isEnabled = installed != null
                         val isToggling = module.moduleCode in togglingModules
