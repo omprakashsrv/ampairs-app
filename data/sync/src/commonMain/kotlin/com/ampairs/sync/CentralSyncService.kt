@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 private val log = Logger.withTag("CentralSyncService")
 
@@ -39,7 +39,7 @@ private val log = Logger.withTag("CentralSyncService")
 @Inject
 @SingleIn(AppScope::class)
 class CentralSyncService(
-    private val delegates: Map<SyncEntity, @JvmSuppressWildcards SyncDelegate>,
+    private val delegates: Map<SyncEntity, SyncDelegate>,
     private val dbFactory: SyncDatabaseFactory,
 ) {
     private val _syncStates = MutableStateFlow<Map<SyncEntity, EntitySyncState>>(emptyMap())
