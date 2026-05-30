@@ -129,6 +129,31 @@
     
     <!-- Inventory Screen Texts -->
     <string name="search_inventory">Search Inventory</string>
+
+    <!-- Inventory list screen -->
+    <string name="inv_list_title">Inventory</string>
+    <string name="inv_list_count">%d items</string>
+    <string name="inv_list_search_placeholder">Search inventory…</string>
+    <string name="inv_list_cd_search_clear">Clear search</string>
+    <string name="inv_list_add_inventory">Add Inventory</string>
+    <string name="inv_list_empty_title">No inventory items yet</string>
+    <string name="inv_list_empty_desc">Add your first inventory item to get started</string>
+    <string name="inv_list_col_name">Name</string>
+    <string name="inv_list_col_stock">Stock</string>
+    <string name="inv_list_col_mrp">MRP</string>
+    <string name="inv_list_col_selling_price">Selling Price</string>
+
+    <!-- Inventory form screen -->
+    <string name="inv_form_new_title">New Inventory</string>
+    <string name="inv_form_edit_title">Edit Inventory</string>
+    <string name="inv_form_label_name">Name</string>
+    <string name="inv_form_label_mrp">MRP</string>
+    <string name="inv_form_label_dp">Dealer Price</string>
+    <string name="inv_form_label_selling_price">Selling Price</string>
+    <string name="inv_form_label_buying_price">Buying Price</string>
+    <string name="inv_form_label_stock">Stock</string>
+    <string name="inv_form_save_new">Create New</string>
+    <string name="inv_form_save_update">Update</string>
     
     <!-- Order Screen Texts -->
     <string name="discount_percent">Discount % :</string>

@@ -42,6 +42,8 @@ kotlin {
                 implementation(projects.feature.authApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
+                // Adaptive layout
+                implementation(libs.material3.adaptive)
             }
         }
         androidMain {
