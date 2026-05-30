@@ -39,7 +39,6 @@ object EventManagerFactory {
      * @param httpClient Ktor HTTP client for WebSocket transport
      * @param tokenProvider Function to get current JWT access token
      * @param tokenRefresher Function to refresh expired tokens
-     * @param baseUrl API base URL
      * @return EventManager instance for the workspace
      */
     fun getOrCreate(
@@ -48,8 +47,7 @@ object EventManagerFactory {
         deviceId: String,
         httpClient: HttpClient,
         tokenProvider: suspend () -> String,
-        tokenRefresher: suspend () -> Boolean,
-        baseUrl: String
+        tokenRefresher: suspend () -> Boolean
     ): EventManager {
         return managers.getOrPut(workspaceId) {
             EventLogger.i("EventManagerFactory", "Creating EventManager for workspace: $workspaceId")
@@ -59,8 +57,7 @@ object EventManagerFactory {
                 deviceId = deviceId,
                 httpClient = httpClient,
                 tokenProvider = tokenProvider,
-                tokenRefresher = tokenRefresher,
-                baseUrl = baseUrl
+                tokenRefresher = tokenRefresher
             )
         }
     }
