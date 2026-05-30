@@ -27,11 +27,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.ProductImage
 import com.ampairs.product.domain.ProductType
 import com.ampairs.product.domain.ServiceType
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.product.generated.resources.Res
+import ampairsapp.feature.product.generated.resources.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductFormScreen(
@@ -41,7 +46,7 @@ fun ProductFormScreen(
     modifier: Modifier = Modifier,
     viewModel: ProductFormViewModel = assistedMetroViewModel<ProductFormViewModel, ProductFormViewModel.Factory> { create(productId) }
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(productId) {
         if (productId != null) {
@@ -49,9 +54,12 @@ fun ProductFormScreen(
         }
     }
 
+    val newProductTitle = stringResource(Res.string.prod_form_new_title)
+    val editProductTitle = stringResource(Res.string.prod_form_edit_title)
+
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(if (productId == null) "New Product" else "Edit Product") },
+            title = { Text(if (productId == null) newProductTitle else editProductTitle) },
             actions = {
                 TextButton(
                     onClick = {
@@ -65,7 +73,7 @@ fun ProductFormScreen(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Save")
+                        Text(stringResource(Res.string.prod_save))
                     }
                 }
             }
@@ -117,6 +125,10 @@ private fun ProductForm(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
+    val activeLabel = stringResource(Res.string.prod_active)
+    val inactiveLabel = stringResource(Res.string.prod_inactive)
+    val selectTypeLabel = stringResource(Res.string.prod_form_select_type)
+    val clearSelectionLabel = stringResource(Res.string.prod_form_clear_selection)
 
     Column(
         modifier = modifier
@@ -138,12 +150,11 @@ private fun ProductForm(
             }
         }
 
-        // Basic Information
-        FormSection(title = "Basic Information") {
+        FormSection(title = stringResource(Res.string.prod_section_basic)) {
             OutlinedTextField(
                 value = formState.name,
                 onValueChange = { onFormChange(formState.copy(name = it)) },
-                label = { Text("Product Name *") },
+                label = { Text(stringResource(Res.string.prod_form_name_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -157,7 +168,7 @@ private fun ProductForm(
             OutlinedTextField(
                 value = formState.code,
                 onValueChange = { onFormChange(formState.copy(code = it)) },
-                label = { Text("Product Code *") },
+                label = { Text(stringResource(Res.string.prod_form_code_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -171,7 +182,7 @@ private fun ProductForm(
             OutlinedTextField(
                 value = formState.description,
                 onValueChange = { onFormChange(formState.copy(description = it)) },
-                label = { Text("Description") },
+                label = { Text(stringResource(Res.string.prod_label_description)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -180,7 +191,6 @@ private fun ProductForm(
                 singleLine = true
             )
 
-            // Tax Code with Autocomplete
             TaxCodeAutocomplete(
                 selectedTaxCode = formState.taxCode,
                 taxCodeDescription = formState.taxCodeDescription,
@@ -201,10 +211,10 @@ private fun ProductForm(
                     modifier = Modifier.weight(1f)
                 ) {
                     OutlinedTextField(
-                        value = if (formState.active) "Active" else "Inactive",
+                        value = if (formState.active) activeLabel else inactiveLabel,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Status") },
+                        label = { Text(stringResource(Res.string.prod_label_status)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedActive) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
@@ -214,14 +224,14 @@ private fun ProductForm(
                         onDismissRequest = { expandedActive = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Active") },
+                            text = { Text(activeLabel) },
                             onClick = {
                                 onFormChange(formState.copy(active = true))
                                 expandedActive = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Inactive") },
+                            text = { Text(inactiveLabel) },
                             onClick = {
                                 onFormChange(formState.copy(active = false))
                                 expandedActive = false
@@ -232,9 +242,7 @@ private fun ProductForm(
             }
         }
 
-        // Classification
-        FormSection(title = "Classification") {
-            // Product Type Dropdown
+        FormSection(title = stringResource(Res.string.prod_section_classification)) {
             var expandedProductType by remember { mutableStateOf(false) }
             @OptIn(ExperimentalMaterial3Api::class)
             ExposedDropdownMenuBox(
@@ -242,10 +250,10 @@ private fun ProductForm(
                 onExpandedChange = { expandedProductType = it }
             ) {
                 OutlinedTextField(
-                    value = formState.productType?.displayName ?: "Select Type",
+                    value = formState.productType?.displayName ?: selectTypeLabel,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Product Type") },
+                    label = { Text(stringResource(Res.string.prod_label_product_type)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedProductType) },
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     modifier = Modifier
@@ -266,7 +274,7 @@ private fun ProductForm(
                         )
                     }
                     DropdownMenuItem(
-                        text = { Text("Clear Selection") },
+                        text = { Text(clearSelectionLabel) },
                         onClick = {
                             onFormChange(formState.copy(productType = null))
                             expandedProductType = false
@@ -275,7 +283,6 @@ private fun ProductForm(
                 }
             }
 
-            // Service Type Dropdown
             var expandedServiceType by remember { mutableStateOf(false) }
             @OptIn(ExperimentalMaterial3Api::class)
             ExposedDropdownMenuBox(
@@ -283,10 +290,10 @@ private fun ProductForm(
                 onExpandedChange = { expandedServiceType = it }
             ) {
                 OutlinedTextField(
-                    value = formState.serviceType?.displayName ?: "Select Type",
+                    value = formState.serviceType?.displayName ?: selectTypeLabel,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Service Type") },
+                    label = { Text(stringResource(Res.string.prod_label_service_type)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedServiceType) },
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     modifier = Modifier
@@ -307,7 +314,7 @@ private fun ProductForm(
                         )
                     }
                     DropdownMenuItem(
-                        text = { Text("Clear Selection") },
+                        text = { Text(clearSelectionLabel) },
                         onClick = {
                             onFormChange(formState.copy(serviceType = null))
                             expandedServiceType = false
@@ -317,12 +324,11 @@ private fun ProductForm(
             }
         }
 
-        // Category Information
-        FormSection(title = "Category & Brand") {
+        FormSection(title = stringResource(Res.string.prod_section_category_brand)) {
             OutlinedTextField(
                 value = formState.categoryId,
                 onValueChange = { onFormChange(formState.copy(categoryId = it)) },
-                label = { Text("Category ID") },
+                label = { Text(stringResource(Res.string.prod_form_category_id_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -334,7 +340,7 @@ private fun ProductForm(
             OutlinedTextField(
                 value = formState.brandId,
                 onValueChange = { onFormChange(formState.copy(brandId = it)) },
-                label = { Text("Brand ID") },
+                label = { Text(stringResource(Res.string.prod_form_brand_id_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -346,7 +352,7 @@ private fun ProductForm(
             OutlinedTextField(
                 value = formState.groupId,
                 onValueChange = { onFormChange(formState.copy(groupId = it)) },
-                label = { Text("Group ID") },
+                label = { Text(stringResource(Res.string.prod_label_group_id)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -358,7 +364,7 @@ private fun ProductForm(
             OutlinedTextField(
                 value = formState.subCategoryId,
                 onValueChange = { onFormChange(formState.copy(subCategoryId = it)) },
-                label = { Text("Sub Category ID") },
+                label = { Text(stringResource(Res.string.prod_label_sub_category_id)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -368,8 +374,7 @@ private fun ProductForm(
             )
         }
 
-        // Product Images
-        FormSection(title = "Product Images") {
+        FormSection(title = stringResource(Res.string.prod_section_images)) {
             ProductImageSection(
                 images = formState.images,
                 onAddImage = onAddImage,
@@ -377,12 +382,11 @@ private fun ProductForm(
             )
         }
 
-        // Unit Information
-        FormSection(title = "Unit Information") {
+        FormSection(title = stringResource(Res.string.prod_section_unit)) {
             OutlinedTextField(
                 value = formState.baseUnitId,
                 onValueChange = { onFormChange(formState.copy(baseUnitId = it)) },
-                label = { Text("Base Unit ID") },
+                label = { Text(stringResource(Res.string.prod_label_base_unit_id)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -392,16 +396,13 @@ private fun ProductForm(
             )
         }
 
-        // Variants Section
-        FormSection(title = "Product Variants") {
-            // Has Variants Checkbox
+        FormSection(title = stringResource(Res.string.prod_section_variants)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
                         val newValue = !formState.hasVariants
                         onFormChange(formState.copy(hasVariants = newValue))
-                        // If enabling variants and product is saved, navigate to variant management
                         if (newValue && productId != null && onManageVariants != null) {
                             onManageVariants(productId, formState.name)
                         }
@@ -412,22 +413,21 @@ private fun ProductForm(
             ) {
                 Checkbox(
                     checked = formState.hasVariants,
-                    onCheckedChange = null // Handled by Row click
+                    onCheckedChange = null
                 )
                 Column {
                     Text(
-                        text = "This product has variants",
+                        text = stringResource(Res.string.prod_form_has_variants_label),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = "Enable if product comes in different sizes, colors, or configurations",
+                        text = stringResource(Res.string.prod_form_has_variants_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // Show variant management card when hasVariants is enabled
             if (formState.hasVariants) {
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -446,7 +446,6 @@ private fun ProductForm(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (productId == null) {
-                            // Product not yet created - show instruction
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = null,
@@ -454,25 +453,24 @@ private fun ProductForm(
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
-                                text = "Save product first to add variants",
+                                text = stringResource(Res.string.prod_form_save_first_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                             Text(
-                                text = "After saving this product, you'll be able to add and manage variants like sizes, colors, and other options.",
+                                text = stringResource(Res.string.prod_form_save_first_desc),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                         } else {
-                            // Product exists - show manage button
                             Text(
-                                text = "Manage Product Variants",
+                                text = stringResource(Res.string.prod_form_manage_variants_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Add and manage sizes, colors, and other variant options. At least one variant is required.",
+                                text = stringResource(Res.string.prod_form_manage_variants_desc),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
@@ -490,7 +488,7 @@ private fun ProductForm(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Manage Variants")
+                                    Text(stringResource(Res.string.prod_manage_variants))
                                 }
                             }
                         }
@@ -499,22 +497,60 @@ private fun ProductForm(
             }
         }
 
-        // Pricing Information (hidden when product has variants)
         if (!formState.hasVariants) {
-            FormSection(title = "Pricing") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            FormSection(title = stringResource(Res.string.prod_section_pricing)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = formState.mrp.toString(),
+                        onValueChange = {
+                            it.toDoubleOrNull()?.let { price ->
+                                onFormChange(formState.copy(mrp = price))
+                            }
+                        },
+                        label = { Text(stringResource(Res.string.prod_label_mrp)) },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                        ),
+                        singleLine = true
+                    )
+
+                    OutlinedTextField(
+                        value = formState.dp.toString(),
+                        onValueChange = {
+                            it.toDoubleOrNull()?.let { price ->
+                                onFormChange(formState.copy(dp = price))
+                            }
+                        },
+                        label = { Text(stringResource(Res.string.prod_label_dealer_price)) },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                        ),
+                        singleLine = true
+                    )
+                }
+
                 OutlinedTextField(
-                    value = formState.mrp.toString(),
+                    value = formState.sellingPrice.toString(),
                     onValueChange = {
                         it.toDoubleOrNull()?.let { price ->
-                            onFormChange(formState.copy(mrp = price))
+                            onFormChange(formState.copy(sellingPrice = price))
                         }
                     },
-                    label = { Text("MRP") },
-                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(Res.string.prod_label_selling_price)) },
+                    modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
                         imeAction = ImeAction.Next
@@ -522,107 +558,66 @@ private fun ProductForm(
                     keyboardActions = KeyboardActions(
                         onNext = { focusManager.moveFocus(FocusDirection.Next) }
                     ),
-                    singleLine = true
-                )
-
-                OutlinedTextField(
-                    value = formState.dp.toString(),
-                    onValueChange = {
-                        it.toDoubleOrNull()?.let { price ->
-                            onFormChange(formState.copy(dp = price))
-                        }
-                    },
-                    label = { Text("Dealer Price") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
+                    isError = formState.priceError != null,
+                    supportingText = formState.priceError?.let { { Text(it) } },
                     singleLine = true
                 )
             }
 
-            OutlinedTextField(
-                value = formState.sellingPrice.toString(),
-                onValueChange = {
-                    it.toDoubleOrNull()?.let { price ->
-                        onFormChange(formState.copy(sellingPrice = price))
-                    }
-                },
-                label = { Text("Selling Price") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                ),
-                isError = formState.priceError != null,
-                supportingText = formState.priceError?.let { { Text(it) } },
-                singleLine = true
-            )
-            }
+            FormSection(title = stringResource(Res.string.prod_section_stock_mgmt)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = formState.stockQuantity?.toString() ?: "",
+                        onValueChange = {
+                            val quantity = if (it.isBlank()) null else it.toDoubleOrNull()
+                            onFormChange(formState.copy(stockQuantity = quantity))
+                        },
+                        label = { Text(stringResource(Res.string.prod_label_current_stock)) },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                        ),
+                        placeholder = { Text(stringResource(Res.string.prod_form_optional_placeholder)) },
+                        singleLine = true
+                    )
 
-            // Stock Management
-            FormSection(title = "Stock Management") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = formState.stockQuantity?.toString() ?: "",
-                    onValueChange = {
-                        val quantity = if (it.isBlank()) null else it.toDoubleOrNull()
-                        onFormChange(formState.copy(stockQuantity = quantity))
-                    },
-                    label = { Text("Current Stock") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    placeholder = { Text("Optional") },
-                    singleLine = true
-                )
+                    OutlinedTextField(
+                        value = formState.lowStockAlert?.toString() ?: "",
+                        onValueChange = {
+                            val alert = if (it.isBlank()) null else it.toDoubleOrNull()
+                            onFormChange(formState.copy(lowStockAlert = alert))
+                        },
+                        label = { Text(stringResource(Res.string.prod_label_low_stock_alert)) },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                        ),
+                        placeholder = { Text(stringResource(Res.string.prod_form_optional_placeholder)) },
+                        singleLine = true
+                    )
+                }
 
-                OutlinedTextField(
-                    value = formState.lowStockAlert?.toString() ?: "",
-                    onValueChange = {
-                        val alert = if (it.isBlank()) null else it.toDoubleOrNull()
-                        onFormChange(formState.copy(lowStockAlert = alert))
-                    },
-                    label = { Text("Low Stock Alert") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    placeholder = { Text("Optional") },
-                    singleLine = true
-                )
-            }
-
-            if (formState.stockError != null) {
-                Text(
-                    text = formState.stockError,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+                if (formState.stockError != null) {
+                    Text(
+                        text = formState.stockError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
 
-        // Save Button Section
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
@@ -638,9 +633,9 @@ private fun ProductForm(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Saving...")
+                    Text(stringResource(Res.string.prod_form_saving))
                 } else {
-                    Text("Save Product")
+                    Text(stringResource(Res.string.prod_form_save_product))
                 }
             }
         }
@@ -664,7 +659,7 @@ private fun ProductImageSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Images (${images.size})",
+                text = stringResource(Res.string.prod_form_images_count, images.size),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -675,11 +670,11 @@ private fun ProductImageSection(
             ) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = "Add Image",
+                    contentDescription = stringResource(Res.string.prod_form_add_image),
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Add Image", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(Res.string.prod_form_add_image), style = MaterialTheme.typography.bodySmall)
             }
         }
 
@@ -719,7 +714,7 @@ private fun ProductImageSection(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "No images added",
+                            text = stringResource(Res.string.prod_form_no_images),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -743,24 +738,20 @@ private fun ProductImageCard(
             .clip(RoundedCornerShape(8.dp))
     ) {
         Box {
-            // Display placeholder for product image
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                // For now, we show a placeholder icon
-                // In the future, we can add actual image loading with rememberImagePainter
                 Icon(
                     Icons.Default.Image,
-                    contentDescription = "Product Image",
+                    contentDescription = stringResource(Res.string.prod_form_cd_product_image),
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // Remove button
             IconButton(
                 onClick = onRemove,
                 modifier = Modifier
@@ -769,7 +760,7 @@ private fun ProductImageCard(
             ) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Remove Image",
+                    contentDescription = stringResource(Res.string.prod_form_cd_remove_image),
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.error
                 )
@@ -888,8 +879,8 @@ private fun TaxCodeAutocomplete(
     viewModel: ProductFormViewModel,
     modifier: Modifier = Modifier
 ) {
-    val searchQuery by viewModel.taxCodeSearchQuery.collectAsState()
-    val suggestions by viewModel.taxCodeSuggestions.collectAsState()
+    val searchQuery by viewModel.taxCodeSearchQuery.collectAsStateWithLifecycle()
+    val suggestions by viewModel.taxCodeSuggestions.collectAsStateWithLifecycle()
     var expanded by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
@@ -906,7 +897,7 @@ private fun TaxCodeAutocomplete(
                     expanded = suggestions.isNotEmpty()
                 }
             },
-            label = { Text("Tax Code") },
+            label = { Text(stringResource(Res.string.prod_label_tax_code)) },
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
                 if (selectedTaxCode.isNotEmpty()) {
@@ -914,13 +905,13 @@ private fun TaxCodeAutocomplete(
                         viewModel.clearTaxCode()
                         expanded = false
                     }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear tax code")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.prod_form_clear_tax_code))
                     }
                 } else if (searchQuery.isNotEmpty()) {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
+                    Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.prod_form_cd_search))
                 }
             },
-            placeholder = { Text("Search tax codes...") },
+            placeholder = { Text(stringResource(Res.string.prod_form_tax_search_placeholder)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(
@@ -929,7 +920,6 @@ private fun TaxCodeAutocomplete(
             colors = OutlinedTextFieldDefaults.colors()
         )
 
-        // Dropdown suggestions
         if (expanded && suggestions.isNotEmpty()) {
             Card(
                 modifier = Modifier

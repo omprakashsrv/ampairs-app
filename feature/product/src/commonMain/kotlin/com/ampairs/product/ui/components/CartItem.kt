@@ -24,6 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.product.generated.resources.Res
+import ampairsapp.feature.product.generated.resources.prod_cart_decrease_qty
+import ampairsapp.feature.product.generated.resources.prod_cart_increase_qty
 
 @Composable
 fun CartItem(
@@ -43,7 +47,7 @@ fun CartItem(
         }) {
             Icon(
                 imageVector = Icons.Default.Remove,
-                contentDescription = "Decrease Quantity",
+                contentDescription = stringResource(Res.string.prod_cart_decrease_qty),
                 modifier = Modifier.width(16.dp).height(16.dp)
             )
         }
@@ -72,7 +76,7 @@ fun CartItem(
         }) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Increase Quantity",
+                contentDescription = stringResource(Res.string.prod_cart_increase_qty),
                 modifier = Modifier.width(16.dp).height(16.dp)
             )
         }

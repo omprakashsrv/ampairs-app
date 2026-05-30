@@ -9,12 +9,14 @@ import com.ampairs.product.db.migrations.MIGRATION_1_2
 import com.ampairs.product.db.migrations.MIGRATION_2_3
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.Dispatchers
 
 @ContributesTo(AppScope::class)
 interface ProductAndroidModule {
     companion object {
         @Provides
+        @SingleIn(AppScope::class)
         fun provideProductDatabase(factory: WorkspaceAwareDatabaseFactory, context: Context): ProductRoomDatabase =
             factory.createAndroidDatabase(
                 context = context,
