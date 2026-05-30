@@ -346,6 +346,64 @@ class CustomerRepository(
      * Sync customers from server in batches to handle large datasets (10K+ customers).
      * Returns the total number of customers synced.
      */
+    // --- SyncDelegate support ---
+
+    /** Reactive count of locally unsynced rows — drives PendingPush status in CentralSyncService. */
+    fun observeUnsyncedCount(): Flow<Int> = customerDao.observeUnsyncedCount()
+
+    /** Push-only: sync all locally unsynced records to the server. */
+    suspend fun pushPendingToServer(): Result<Int> {
+        return try {
+            val unsyncedCustomers = customerDao.getUnsyncedCustomers()
+            var syncedCount = 0
+            for (entity in unsyncedCustomers) {
+                val customer = entity.toDomain()
+                try {
+                    if (!entity.active) {
+                        try {
+                            customerApi.deleteCustomer(customer.uid)
+                            customerDao.deleteCustomer(customer.uid)
+                            syncedCount++
+                        } catch (deleteError: Exception) {
+                            val errorMessage = deleteError.message ?: ""
+                            if (errorMessage.contains("404") || errorMessage.contains("405") || errorMessage.contains("Not Found")) {
+                                customerDao.deleteCustomer(customer.uid)
+                                syncedCount++
+                            } else {
+                                CustomerLogger.w("CustomerRepository", "Delete sync failed for ${customer.uid}: ${deleteError.message}")
+                            }
+                        }
+                    } else {
+                        val serverCustomer = try {
+                            customerApi.updateCustomer(customer)
+                        } catch (e: Exception) {
+                            customerApi.createCustomer(customer)
+                        }
+                        customerDao.insertCustomer(serverCustomer.toEntity().copy(synced = true))
+                        syncedCount++
+                    }
+                } catch (e: Exception) {
+                    ErrorTracking.captureException(e, "CustomerRepository.pushPendingToServer")
+                    continue
+                }
+            }
+            Result.success(syncedCount)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Pull-only: fetch latest data from server and merge into Room. */
+    suspend fun pullFromServer(): Result<Int> = syncCustomersFromServerInBatches()
+
+    /** Handle a backend WebSocket event for a specific customer. */
+    suspend fun handleExternalEvent(customerId: String, eventType: String) {
+        handleCustomerEvent(
+            eventType = com.ampairs.common.event.EventType.valueOf(eventType),
+            customerId = customerId,
+        )
+    }
+
     private suspend fun syncCustomersFromServerInBatches(batchSize: Int = 100): Result<Int> {
         return try {
             val lastSync = getLastSyncTime()

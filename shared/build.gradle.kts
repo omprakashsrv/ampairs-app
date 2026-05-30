@@ -117,7 +117,7 @@ kotlin {
                 api(projects.feature.form)
                 api(projects.feature.unit)
                 api(projects.feature.update)
-                api(projects.feature.event)
+                api(projects.data.event)
                 api(projects.feature.tax)
                 api(projects.feature.subscription)
                 api(projects.feature.business)

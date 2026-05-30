@@ -49,6 +49,9 @@ interface CustomerDao {
     @Query("SELECT * FROM customers WHERE synced = 0")
     suspend fun getUnsyncedCustomers(): List<CustomerEntity>
 
+    @Query("SELECT COUNT(*) FROM customers WHERE synced = 0")
+    fun observeUnsyncedCount(): Flow<Int>
+
 
     @Query("DELETE FROM customers")
     suspend fun clearWorkspaceCustomers()
