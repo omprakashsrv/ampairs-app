@@ -55,17 +55,17 @@ class WorkspaceModulesViewModel(
                     }
                 }
         }
-        ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        ?.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
         ?: MutableStateFlow(emptyList())
 
     val activeModules: StateFlow<List<InstalledModule>> = allModules
         .map { modules -> modules.filter { it.isInstalled && it.enabled && it.status == "ACTIVE" }.map { it.toApiModel() } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Legacy: kept for WorkspaceModulesScreen which uses InstalledModule
     val installedModules: StateFlow<List<InstalledModule>> = allModules
         .map { modules -> modules.filter { it.isInstalled }.map { it.toApiModel() } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun loadInstalledModules() {
         val wsId = workspaceId ?: run {

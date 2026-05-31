@@ -90,11 +90,17 @@ class WorkspaceModuleRepository(
     }
 
     suspend fun uninstallModuleOfflineFirst(workspaceId: String, moduleId: String, moduleCode: String): Result<Unit> {
-        moduleDao.deleteInstalledModuleById(moduleId, workspaceId)
         return try {
-            moduleApi.uninstallModule(workspaceId, moduleCode)
-            Result.success(Unit)
+            val result = moduleApi.uninstallModule(workspaceId, moduleCode)
+            if (result.isSuccess) {
+                moduleDao.deleteInstalledModuleById(moduleId, workspaceId)
+                Result.success(Unit)
+            } else {
+                Result.failure(result.exceptionOrNull() ?: Exception("Failed to uninstall module"))
+            }
         } catch (_: Exception) {
+            // Network error: delete locally and let sync reconcile later
+            moduleDao.deleteInstalledModuleById(moduleId, workspaceId)
             Result.success(Unit)
         }
     }
