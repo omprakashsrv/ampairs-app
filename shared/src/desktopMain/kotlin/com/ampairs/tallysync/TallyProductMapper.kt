@@ -16,22 +16,22 @@ internal object TallyProductMapper {
     const val ENTITY_STOCK_ITEM = "stock_item"
     const val ENTITY_UNIT = "unit"
 
-    fun StockGroup.toGroupEntity(id: String, refId: String): GroupEntity? {
+    fun StockGroup.toGroupEntity(id: String): GroupEntity? {
         return GroupEntity(
             id = id,
             name = name ?: return null,
-            ref_id = refId,
+            ref_id = guid?.takeIf { it.isNotBlank() },
             active = 1,
             soft_deleted = 0,
             synced = 0
         )
     }
 
-    fun StockCategory.toCategoryEntity(id: String, refId: String): CategoryEntity? {
+    fun StockCategory.toCategoryEntity(id: String): CategoryEntity? {
         return CategoryEntity(
             id = id,
             name = name ?: return null,
-            ref_id = refId,
+            ref_id = guid?.takeIf { it.isNotBlank() },
             active = 1,
             soft_deleted = 0,
             synced = 0
@@ -40,7 +40,6 @@ internal object TallyProductMapper {
 
     fun StockItem.toProductEntity(
         id: String,
-        refId: String,
         groupIdByName: Map<String, String>,
         categoryIdByName: Map<String, String>,
     ): ProductEntity? {
@@ -60,14 +59,14 @@ internal object TallyProductMapper {
             mrp = mrp,
             dp = if (buyingPrice > 0.0) buyingPrice else mrp,
             selling_price = mrp,
-            ref_id = refId,
+            ref_id = guid?.takeIf { it.isNotBlank() },
             active = 1,
             soft_deleted = 0,
             synced = 0
         )
     }
 
-    fun TallyUnit.toUnitEntity(id: String, refId: String): UnitEntity? {
+    fun TallyUnit.toUnitEntity(id: String): UnitEntity? {
         val unitName = name ?: return null
         val decimals = decimalPlaces?.toIntOrNull() ?: 0
         return UnitEntity(
@@ -77,7 +76,7 @@ internal object TallyProductMapper {
             decimalPlaces = decimals,
             active = true,
             synced = false,
-            refId = refId
+            refId = guid?.takeIf { it.isNotBlank() }
         )
     }
 

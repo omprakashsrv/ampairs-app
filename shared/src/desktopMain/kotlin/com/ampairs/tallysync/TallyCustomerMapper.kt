@@ -40,7 +40,7 @@ internal object TallyCustomerMapper {
         return if (GSTIN_REGEX.matches(upper)) upper else null
     }
 
-    fun Group.toCustomerGroupEntity(id: String, tallyRefId: String): CustomerGroupEntity? {
+    fun Group.toCustomerGroupEntity(id: String): CustomerGroupEntity? {
         val groupName = name ?: return null
         val derivedCode = groupName
             .filter { it.isLetterOrDigit() || it == ' ' }
@@ -59,13 +59,12 @@ internal object TallyCustomerMapper {
             synced = false,
             createdAt = null,
             updatedAt = null,
-            ref_id = tallyRefId,
+            ref_id = guid?.takeIf { it.isNotBlank() },
         )
     }
 
     fun Ledger.toCustomerEntity(
         id: String,
-        tallyRefId: String,
         groupIdByName: Map<String, String>,
     ): CustomerEntity? {
         val customerName = name?.trim()?.takeIf { it.length >= 2 } ?: return null
@@ -126,7 +125,7 @@ internal object TallyCustomerMapper {
             updated_at = null,
             synced = false,
             last_sync = 0,
-            ref_id = tallyRefId,
+            ref_id = guid?.takeIf { it.isNotBlank() },
         )
     }
 }
