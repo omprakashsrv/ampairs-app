@@ -33,6 +33,11 @@ import androidx.navigation3.runtime.NavKey
 import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_more
+import ampairsapp.shared.generated.resources.nav_more_business
+import ampairsapp.shared.generated.resources.nav_more_tax_gst
+import ampairsapp.shared.generated.resources.nav_parties
+import ampairsapp.shared.generated.resources.nav_sales
+import ampairsapp.shared.generated.resources.nav_stock
 import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.customer.ui.CustomerDetailsRoute
 import com.ampairs.customer.ui.CustomerGroupCreateRoute
@@ -98,6 +103,16 @@ fun navigateToModule(backStack: MutableList<NavKey>, moduleCode: String) {
     moduleCodeToRoute(moduleCode)?.let { backStack.add(it) }
 }
 
+@Composable
+fun moduleCodeToDisplayName(code: String): String = when (code) {
+    ModuleCodes.INVOICE_BILLING -> stringResource(Res.string.nav_sales)
+    ModuleCodes.CUSTOMER_MANAGEMENT -> stringResource(Res.string.nav_parties)
+    ModuleCodes.PRODUCT_MANAGEMENT -> stringResource(Res.string.nav_stock)
+    ModuleCodes.TAX_CODE_MANAGEMENT -> stringResource(Res.string.nav_more_tax_gst)
+    ModuleCodes.BUSINESS_PROFILE -> stringResource(Res.string.nav_more_business)
+    else -> code
+}
+
 fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.CUSTOMER_MANAGEMENT -> Icons.Default.Group
     ModuleCodes.PRODUCT_MANAGEMENT -> Icons.Default.Inventory
@@ -139,7 +154,7 @@ fun AppBottomNavigation(
                 selected = activeModuleCode == module.moduleCode,
                 onClick = { navigateToModule(backStack, module.moduleCode) },
                 icon = { Icon(moduleCodeToIcon(module.moduleCode), contentDescription = null) },
-                label = { Text(module.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                label = { Text(moduleCodeToDisplayName(module.moduleCode), maxLines = 1, overflow = TextOverflow.Ellipsis) }
             )
         }
         NavigationBarItem(

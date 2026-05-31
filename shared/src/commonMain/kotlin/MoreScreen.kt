@@ -79,6 +79,7 @@ private data class ModuleItem(
 fun MoreScreen(
     backStack: MutableList<NavKey>,
     onSwitchWorkspace: () -> Unit,
+    onSwitchUser: () -> Unit,
     onEditProfile: () -> Unit
 ) {
     val headerStateManager = remember { AppHeaderStateManager.instance }
@@ -119,7 +120,7 @@ fun MoreScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clickable { onEditProfile() },
+                    .clickable { onSwitchUser() },
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                 ),

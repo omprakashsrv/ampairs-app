@@ -7,11 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -115,7 +111,6 @@ fun GlobalAppLayoutNav3(
 
     val hasActiveWorkspace = !currentWorkspaceId.isNullOrBlank()
     val navigationPattern = remember { PlatformNavigationDetector.getNavigationPattern() }
-    val showAgentFab = hasActiveWorkspace && currentRoute !is Route.Agent
 
     // Keep global navigation manager updated for the desktop system MenuBar.
     val globalNavManager = remember { GlobalNavigationManager.getInstance() }
@@ -132,17 +127,6 @@ fun GlobalAppLayoutNav3(
                         currentRoute = currentRoute
                     )
                 },
-                floatingActionButton = {
-                    if (showAgentFab) {
-                        FloatingActionButton(
-                            onClick = { backStack.add(Route.Agent) },
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ) {
-                            Icon(Icons.Default.Chat, contentDescription = "Chat Assistant")
-                        }
-                    }
-                }
             ) { paddingValues ->
                 content(paddingValues)
             }
@@ -174,17 +158,6 @@ fun GlobalAppLayoutNav3(
                             onDeleteAccount = onDeleteAccount
                         )
                     },
-                    floatingActionButton = {
-                        if (showAgentFab) {
-                            FloatingActionButton(
-                                onClick = { backStack.add(Route.Agent) },
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ) {
-                                Icon(Icons.Default.Chat, contentDescription = "Chat Assistant")
-                            }
-                        }
-                    }
                 ) { paddingValues ->
                     content(paddingValues)
                 }
@@ -212,17 +185,6 @@ fun GlobalAppLayoutNav3(
                         onDeleteAccount = onDeleteAccount
                     )
                 },
-                floatingActionButton = {
-                    if (showAgentFab) {
-                        FloatingActionButton(
-                            onClick = { backStack.add(Route.Agent) },
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ) {
-                            Icon(Icons.Default.Chat, contentDescription = "Chat Assistant")
-                        }
-                    }
-                }
             ) { paddingValues ->
                 content(paddingValues)
             }

@@ -2,9 +2,7 @@ package com.ampairs.common.ui
 
 import Route
 import WorkspaceRoute
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -22,6 +20,7 @@ import androidx.navigation3.runtime.NavKey
 import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_more
+import com.ampairs.common.ui.moduleCodeToDisplayName
 import com.ampairs.workspace.navigation.DynamicModuleRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +34,7 @@ fun AppNavigationRail(
     val globalNavManager = remember { GlobalNavigationManager.getInstance() }
     val navigationService by globalNavManager.navigationService.collectAsState()
     val navigationRoutes by remember(navigationService) {
-        navigationService?.navigationRoutes ?: MutableStateFlow(emptyList<DynamicModuleRoute>())
+        navigationService?.allActiveRoutes ?: MutableStateFlow(emptyList<DynamicModuleRoute>())
     }.collectAsState()
 
     val activeModuleCode = resolveActiveModuleCode(currentRoute)
@@ -51,17 +50,20 @@ fun AppNavigationRail(
             icon = { Icon(Icons.Default.Home, contentDescription = null) },
             label = { Text(stringResource(Res.string.nav_home)) }
         )
-        // All installed modules in scrollable section
-        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            navigationRoutes.forEach { module ->
-                NavigationRailItem(
-                    selected = activeModuleCode == module.moduleCode,
-                    onClick = { navigateToModule(backStack, module.moduleCode) },
-                    icon = { Icon(moduleCodeToIcon(module.moduleCode), contentDescription = null) },
-                    label = { Text(module.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                )
-            }
+
+        // All installed modules
+        navigationRoutes.forEach { module ->
+            NavigationRailItem(
+                selected = activeModuleCode == module.moduleCode,
+                onClick = { navigateToModule(backStack, module.moduleCode) },
+                icon = { Icon(moduleCodeToIcon(module.moduleCode), contentDescription = null) },
+                label = { Text(moduleCodeToDisplayName(module.moduleCode), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            )
         }
+
+        // Push More to bottom
+        Spacer(Modifier.weight(1f))
+
         // More — always last
         NavigationRailItem(
             selected = activeModuleCode == "more",

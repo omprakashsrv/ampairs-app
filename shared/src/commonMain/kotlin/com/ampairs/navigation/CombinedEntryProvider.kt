@@ -183,10 +183,10 @@ private fun mainRouteEntryProvider(
         MoreScreen(
             backStack = backStack,
             onSwitchWorkspace = {
-                // Navigate back to workspace selection
                 backStack.clear()
                 backStack.add(WorkspaceRoute.Root)
             },
+            onSwitchUser = { backStack.add(AuthRoute.UserSelection) },
             onEditProfile = { backStack.add(AuthRoute.UserUpdate) }
         )
     }
