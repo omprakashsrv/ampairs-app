@@ -64,6 +64,17 @@ data class AvailableModule(
 )
 
 @Serializable
+data class ModuleReorderItem(
+    @SerialName("moduleCode") val moduleCode: String,
+    @SerialName("displayOrder") val displayOrder: Int,
+)
+
+@Serializable
+data class ModuleReorderRequest(
+    @SerialName("orders") val orders: List<ModuleReorderItem>,
+)
+
+@Serializable
 data class ModuleInstallationResponse(
     @SerialName("success") val success: Boolean,
     @SerialName("module_id") val moduleId: String,

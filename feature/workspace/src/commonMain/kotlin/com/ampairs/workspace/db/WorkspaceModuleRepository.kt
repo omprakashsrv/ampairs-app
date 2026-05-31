@@ -7,6 +7,7 @@ import dev.zacsweers.metro.SingleIn
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
+import com.ampairs.workspace.api.model.ModuleReorderItem
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.api.model.ModuleDetailResponse
 import com.ampairs.workspace.db.dao.WorkspaceModuleDao
@@ -180,6 +181,19 @@ class WorkspaceModuleRepository(
             moduleApi.getModuleDetails(workspaceId, moduleId)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    suspend fun reorderModules(workspaceId: String, orderedModuleCodes: List<String>): Result<Unit> {
+        // Optimistically update local DB first
+        orderedModuleCodes.forEachIndexed { index, moduleCode ->
+            moduleDao.updateNavigationIndex(workspaceId, moduleCode, index)
+        }
+        val orders = orderedModuleCodes.mapIndexed { index, code -> ModuleReorderItem(code, index) }
+        return try {
+            moduleApi.reorderModules(workspaceId, orders)
+        } catch (_: Exception) {
+            Result.success(Unit) // Local order already updated; server will reconcile on next sync
         }
     }
 

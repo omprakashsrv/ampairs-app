@@ -27,6 +27,13 @@
     <string name="nav_sales">Sales</string>
     <string name="nav_parties">Parties</string>
     <string name="nav_stock">Stock</string>
+    <string name="nav_orders">Orders</string>
+    <string name="nav_inventory">Inventory</string>
+    <string name="nav_tax">Tax</string>
+    <string name="nav_reports">Reports</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_users">Users</string>
     <string name="nav_more">More</string>
     <string name="nav_more_screen_title">More</string>
     <string name="nav_more_all_modules">All modules</string>

@@ -6,6 +6,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -118,6 +121,9 @@ fun ModuleStoreScreen(
             }
 
             else -> {
+                val installedSorted = remember(allModules) {
+                    allModules.filter { it.isInstalled }.sortedBy { it.navigationIndex }
+                }
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 160.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -128,11 +134,14 @@ fun ModuleStoreScreen(
                     items(allModules, key = { it.moduleCode }) { module ->
                         val isEnabled = module.isInstalled
                         val isToggling = module.moduleCode in togglingModules
+                        val installedIdx = installedSorted.indexOfFirst { it.moduleCode == module.moduleCode }
 
                         ModuleToggleCard(
                             module = module,
                             isEnabled = isEnabled,
                             isToggling = isToggling,
+                            canMoveUp = installedIdx > 0,
+                            canMoveDown = installedIdx in 0 until installedSorted.lastIndex,
                             onToggle = {
                                 if (!isToggling) {
                                     togglingModules = togglingModules + module.moduleCode
@@ -141,6 +150,8 @@ fun ModuleStoreScreen(
                                     }
                                 }
                             },
+                            onMoveUp = { viewModel.moveModuleUp(module.moduleCode) },
+                            onMoveDown = { viewModel.moveModuleDown(module.moduleCode) },
                         )
                     }
                 }
@@ -154,7 +165,11 @@ private fun ModuleToggleCard(
     module: WorkspaceModule,
     isEnabled: Boolean,
     isToggling: Boolean,
+    canMoveUp: Boolean = false,
+    canMoveDown: Boolean = false,
     onToggle: () -> Unit,
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {},
 ) {
     val borderColor = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
     val borderWidth = if (isEnabled) 2.dp else 1.dp
@@ -244,6 +259,46 @@ private fun ModuleToggleCard(
                     maxLines = 2,
                     modifier = Modifier.padding(top = 2.dp),
                 )
+            }
+
+            if (isEnabled) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    IconButton(
+                        onClick = onMoveUp,
+                        enabled = canMoveUp,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowUp,
+                            contentDescription = "Move up",
+                            modifier = Modifier.size(18.dp),
+                            tint = if (canMoveUp)
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
+                        )
+                    }
+                    IconButton(
+                        onClick = onMoveDown,
+                        enabled = canMoveDown,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Move down",
+                            modifier = Modifier.size(18.dp),
+                            tint = if (canMoveDown)
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
+                        )
+                    }
+                }
             }
         }
     }

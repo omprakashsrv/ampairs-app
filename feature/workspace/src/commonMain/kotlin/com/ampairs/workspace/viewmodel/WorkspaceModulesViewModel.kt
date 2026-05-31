@@ -158,6 +158,36 @@ class WorkspaceModulesViewModel(
         }
     }
 
+    fun moveModuleUp(moduleCode: String) {
+        val wsId = workspaceId ?: return
+        val installed = allModules.value
+            .filter { it.isInstalled }
+            .sortedBy { it.navigationIndex }
+        val idx = installed.indexOfFirst { it.moduleCode == moduleCode }
+        if (idx <= 0) return
+        val reordered = installed.toMutableList().also { list ->
+            val tmp = list[idx]; list[idx] = list[idx - 1]; list[idx - 1] = tmp
+        }
+        viewModelScope.launch {
+            moduleRepository.reorderModules(wsId, reordered.map { it.moduleCode })
+        }
+    }
+
+    fun moveModuleDown(moduleCode: String) {
+        val wsId = workspaceId ?: return
+        val installed = allModules.value
+            .filter { it.isInstalled }
+            .sortedBy { it.navigationIndex }
+        val idx = installed.indexOfFirst { it.moduleCode == moduleCode }
+        if (idx < 0 || idx >= installed.lastIndex) return
+        val reordered = installed.toMutableList().also { list ->
+            val tmp = list[idx]; list[idx] = list[idx + 1]; list[idx + 1] = tmp
+        }
+        viewModelScope.launch {
+            moduleRepository.reorderModules(wsId, reordered.map { it.moduleCode })
+        }
+    }
+
     fun refresh() {
         loadInstalledModules()
         loadAvailableModules(refresh = true)

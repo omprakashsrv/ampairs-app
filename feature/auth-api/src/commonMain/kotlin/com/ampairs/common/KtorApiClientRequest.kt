@@ -11,6 +11,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -43,6 +44,16 @@ suspend inline fun <reified E, reified T> postList(client: HttpClient, url: Stri
 suspend inline fun <reified T> put(client: HttpClient, url: String, body: Any?): T {
     return try {
         handleResponse(client.put(url) { if (body != null) setBody(body) })
+    } catch (e: NetworkException) {
+        createNetworkErrorResponse(e)
+    } catch (e: Exception) {
+        createNetworkErrorResponse(e)
+    }
+}
+
+suspend inline fun <reified T> patch(client: HttpClient, url: String, body: Any?): T {
+    return try {
+        handleResponse(client.patch(url) { if (body != null) setBody(body) })
     } catch (e: NetworkException) {
         createNetworkErrorResponse(e)
     } catch (e: Exception) {

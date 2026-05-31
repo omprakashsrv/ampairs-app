@@ -9,13 +9,17 @@ import ProductRoute
 import Route
 import WorkspaceRoute
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Warehouse
@@ -31,13 +35,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation3.runtime.NavKey
 import ampairsapp.shared.generated.resources.Res
+import ampairsapp.shared.generated.resources.nav_alerts
+import ampairsapp.shared.generated.resources.nav_dashboard
 import ampairsapp.shared.generated.resources.nav_home
+import ampairsapp.shared.generated.resources.nav_inventory
 import ampairsapp.shared.generated.resources.nav_more
 import ampairsapp.shared.generated.resources.nav_more_business
 import ampairsapp.shared.generated.resources.nav_more_tax_gst
+import ampairsapp.shared.generated.resources.nav_orders
 import ampairsapp.shared.generated.resources.nav_parties
+import ampairsapp.shared.generated.resources.nav_reports
 import ampairsapp.shared.generated.resources.nav_sales
 import ampairsapp.shared.generated.resources.nav_stock
+import ampairsapp.shared.generated.resources.nav_tax
+import ampairsapp.shared.generated.resources.nav_users
 import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.customer.ui.CustomerDetailsRoute
 import com.ampairs.customer.ui.CustomerGroupCreateRoute
@@ -105,11 +116,17 @@ fun navigateToModule(backStack: MutableList<NavKey>, moduleCode: String) {
 
 @Composable
 fun moduleCodeToDisplayName(code: String): String = when (code) {
-    ModuleCodes.INVOICE_BILLING -> stringResource(Res.string.nav_sales)
     ModuleCodes.CUSTOMER_MANAGEMENT -> stringResource(Res.string.nav_parties)
     ModuleCodes.PRODUCT_MANAGEMENT -> stringResource(Res.string.nav_stock)
-    ModuleCodes.TAX_CODE_MANAGEMENT -> stringResource(Res.string.nav_more_tax_gst)
+    ModuleCodes.ORDER_MANAGEMENT -> stringResource(Res.string.nav_orders)
+    ModuleCodes.INVOICE_BILLING -> stringResource(Res.string.nav_sales)
+    ModuleCodes.INVENTORY_MANAGEMENT -> stringResource(Res.string.nav_inventory)
+    ModuleCodes.TAX_CODE_MANAGEMENT -> stringResource(Res.string.nav_tax)
     ModuleCodes.BUSINESS_PROFILE -> stringResource(Res.string.nav_more_business)
+    "business-reporting" -> stringResource(Res.string.nav_reports)
+    "business-dashboard" -> stringResource(Res.string.nav_dashboard)
+    "notification-system" -> stringResource(Res.string.nav_alerts)
+    "user-management" -> stringResource(Res.string.nav_users)
     else -> code
 }
 
@@ -121,6 +138,10 @@ fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.INVENTORY_MANAGEMENT -> Icons.Default.Warehouse
     ModuleCodes.TAX_CODE_MANAGEMENT -> Icons.Default.Calculate
     ModuleCodes.BUSINESS_PROFILE -> Icons.Default.Business
+    "business-reporting" -> Icons.Default.Analytics
+    "business-dashboard" -> Icons.Default.Dashboard
+    "notification-system" -> Icons.Default.Notifications
+    "user-management" -> Icons.Default.ManageAccounts
     else -> Icons.Default.Extension
 }
 

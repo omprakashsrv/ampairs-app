@@ -80,6 +80,9 @@ interface WorkspaceModuleDao {
     @Query("UPDATE installed_module SET enabled = :enabled, sync_state = :syncState, updated_at = :updatedAt WHERE id = :moduleId")
     suspend fun updateModuleEnabled(moduleId: String, enabled: Boolean, syncState: String, updatedAt: Long)
 
+    @Query("UPDATE installed_module SET navigationIndex = :navigationIndex WHERE workspaceId = :workspaceId AND moduleCode = :moduleCode")
+    suspend fun updateNavigationIndex(workspaceId: String, moduleCode: String, navigationIndex: Int)
+
     @Query("SELECT * FROM installed_module WHERE workspaceId = :workspaceId AND sync_state = 'PENDING' ORDER BY updated_at ASC")
     suspend fun getPendingSyncModules(workspaceId: String): List<InstalledModuleEntity>
 

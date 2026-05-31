@@ -40,6 +40,15 @@ fun customerEntryProvider(
             onFormConfig = {
                 backStack.add(Route.FormConfig("customer"))
             },
+            onNavigateToGroups = {
+                backStack.add(CustomerGroupListRoute)
+            },
+            onNavigateToTypes = {
+                backStack.add(CustomerTypeListRoute)
+            },
+            onNavigateToStates = {
+                backStack.add(StateListRoute)
+            },
             modifier = Modifier
         )
     }

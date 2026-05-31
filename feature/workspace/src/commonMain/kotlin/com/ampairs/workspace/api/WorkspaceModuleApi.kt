@@ -53,4 +53,6 @@ interface WorkspaceModuleApi {
      */
     suspend fun getModuleDetails(workspaceId: String, moduleId: String): Result<ModuleDetailResponse>
 
+    suspend fun reorderModules(workspaceId: String, orders: List<com.ampairs.workspace.api.model.ModuleReorderItem>): Result<Unit>
+
 }

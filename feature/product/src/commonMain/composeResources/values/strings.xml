@@ -135,4 +135,15 @@
     <!-- Cart item component -->
     <string name="prod_cart_decrease_qty">Decrease Quantity</string>
     <string name="prod_cart_increase_qty">Increase Quantity</string>
+
+    <!-- Catalog master data -->
+    <string name="prod_catalog_brands">Brands</string>
+    <string name="prod_catalog_categories">Categories</string>
+    <string name="prod_catalog_sub_categories">Sub-categories</string>
+    <string name="prod_catalog_groups">Groups</string>
+    <string name="prod_master_data">Catalog</string>
+    <string name="prod_catalog_search_hint">Search…</string>
+    <string name="prod_catalog_empty">No items found</string>
+    <string name="prod_catalog_active">Active</string>
+    <string name="prod_catalog_inactive">Inactive</string>
 </resources>

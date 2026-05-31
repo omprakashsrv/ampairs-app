@@ -2,6 +2,7 @@ package com.ampairs.customer.ui.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,6 +27,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -73,6 +77,10 @@ import ampairsapp.feature.customer.generated.resources.customer_list_new_party
 import ampairsapp.feature.customer.generated.resources.customer_list_col_name
 import ampairsapp.feature.customer.generated.resources.customer_list_col_city
 import ampairsapp.feature.customer.generated.resources.customer_list_col_phone
+import ampairsapp.feature.customer.generated.resources.customer_master_data
+import ampairsapp.feature.customer.generated.resources.customer_shortcut_groups
+import ampairsapp.feature.customer.generated.resources.customer_shortcut_types
+import ampairsapp.feature.customer.generated.resources.customer_shortcut_states
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,6 +89,9 @@ fun CustomersListScreen(
     onCustomerClick: (String) -> Unit,
     onCreateCustomer: () -> Unit,
     onFormConfig: () -> Unit = {},
+    onNavigateToGroups: () -> Unit = {},
+    onNavigateToTypes: () -> Unit = {},
+    onNavigateToStates: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CustomersListViewModel = metroViewModel()
 ) {
@@ -166,7 +177,7 @@ fun CustomersListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
-                            .padding(bottom = 12.dp),
+                            .padding(bottom = 8.dp),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -175,6 +186,38 @@ fun CustomersListScreen(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                         )
                     )
+
+                    // Master data shortcuts
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.customer_master_data),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        AssistChip(
+                            onClick = onNavigateToGroups,
+                            label = { Text(stringResource(Res.string.customer_shortcut_groups), style = MaterialTheme.typography.labelSmall) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        )
+                        AssistChip(
+                            onClick = onNavigateToTypes,
+                            label = { Text(stringResource(Res.string.customer_shortcut_types), style = MaterialTheme.typography.labelSmall) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        )
+                        AssistChip(
+                            onClick = onNavigateToStates,
+                            label = { Text(stringResource(Res.string.customer_shortcut_states), style = MaterialTheme.typography.labelSmall) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        )
+                    }
                 }
             }
 

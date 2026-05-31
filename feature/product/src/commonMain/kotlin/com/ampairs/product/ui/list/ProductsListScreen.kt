@@ -2,6 +2,7 @@ package com.ampairs.product.ui.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -23,6 +25,8 @@ import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -78,6 +82,11 @@ import ampairsapp.feature.product.generated.resources.prod_error_title
 import ampairsapp.feature.product.generated.resources.prod_out_of_stock
 import ampairsapp.feature.product.generated.resources.prod_inactive
 import ampairsapp.feature.product.generated.resources.prod_retry
+import ampairsapp.feature.product.generated.resources.prod_catalog_brands
+import ampairsapp.feature.product.generated.resources.prod_catalog_categories
+import ampairsapp.feature.product.generated.resources.prod_catalog_sub_categories
+import ampairsapp.feature.product.generated.resources.prod_catalog_groups
+import ampairsapp.feature.product.generated.resources.prod_master_data
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,6 +94,10 @@ fun ProductsListScreen(
     onProductClick: (String) -> Unit,
     onCreateProduct: () -> Unit,
     onFormConfig: () -> Unit = {},
+    onNavigateToBrands: () -> Unit = {},
+    onNavigateToCategories: () -> Unit = {},
+    onNavigateToSubCategories: () -> Unit = {},
+    onNavigateToGroups: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProductsListViewModel = metroViewModel()
 ) {
@@ -165,7 +178,7 @@ fun ProductsListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
-                            .padding(bottom = 12.dp),
+                            .padding(bottom = 8.dp),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -174,6 +187,43 @@ fun ProductsListScreen(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                         )
                     )
+
+                    // Catalog master data shortcuts
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.prod_master_data),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        AssistChip(
+                            onClick = onNavigateToBrands,
+                            label = { Text(stringResource(Res.string.prod_catalog_brands), style = MaterialTheme.typography.labelSmall) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        )
+                        AssistChip(
+                            onClick = onNavigateToCategories,
+                            label = { Text(stringResource(Res.string.prod_catalog_categories), style = MaterialTheme.typography.labelSmall) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        )
+                        AssistChip(
+                            onClick = onNavigateToSubCategories,
+                            label = { Text(stringResource(Res.string.prod_catalog_sub_categories), style = MaterialTheme.typography.labelSmall) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        )
+                        AssistChip(
+                            onClick = onNavigateToGroups,
+                            label = { Text(stringResource(Res.string.prod_catalog_groups), style = MaterialTheme.typography.labelSmall) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        )
+                    }
                 }
             }
 

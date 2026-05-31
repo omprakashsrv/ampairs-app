@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.product.catalog.ProductCatalogListScreen
+import com.ampairs.product.catalog.ProductCatalogType
 import com.ampairs.product.ui.create.ProductFormScreen
 import com.ampairs.product.ui.details.ProductDetailsScreen
 import com.ampairs.product.ui.list.ProductsListScreen
@@ -28,18 +30,16 @@ fun productEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>
 ): NavEntry<NavKey>? = when (key) {
-    // Product Group management (for organizing products into groups)
+    // Product Group management
     is ProductRoute.Group -> NavEntry(key) {
-        // TODO: Implement ProductGroupScreen when available
-        PlaceholderScreen(
+        ProductCatalogListScreen(
+            catalogType = ProductCatalogType.GROUPS,
             title = "Product Groups",
-            message = "Product group management coming soon"
         )
     }
 
     // Products within a specific group
     is ProductRoute.Product -> NavEntry(key) {
-        // Redirect to products list filtered by group
         ProductsListScreen(
             onProductClick = { productId ->
                 backStack.add(ProductRoute.ProductDetails(productId = productId))
@@ -50,6 +50,10 @@ fun productEntryProvider(
             onFormConfig = {
                 backStack.add(Route.FormConfig("product"))
             },
+            onNavigateToBrands = { backStack.add(ProductRoute.Brands) },
+            onNavigateToCategories = { backStack.add(ProductRoute.Categories) },
+            onNavigateToSubCategories = { backStack.add(ProductRoute.SubCategories) },
+            onNavigateToGroups = { backStack.add(ProductRoute.Group()) },
             modifier = Modifier
         )
     }
@@ -84,7 +88,32 @@ fun productEntryProvider(
             onFormConfig = {
                 backStack.add(Route.FormConfig("product"))
             },
+            onNavigateToBrands = { backStack.add(ProductRoute.Brands) },
+            onNavigateToCategories = { backStack.add(ProductRoute.Categories) },
+            onNavigateToSubCategories = { backStack.add(ProductRoute.SubCategories) },
+            onNavigateToGroups = { backStack.add(ProductRoute.Group()) },
             modifier = Modifier
+        )
+    }
+
+    is ProductRoute.Brands -> NavEntry(key) {
+        ProductCatalogListScreen(
+            catalogType = ProductCatalogType.BRANDS,
+            title = "Brands",
+        )
+    }
+
+    is ProductRoute.Categories -> NavEntry(key) {
+        ProductCatalogListScreen(
+            catalogType = ProductCatalogType.CATEGORIES,
+            title = "Categories",
+        )
+    }
+
+    is ProductRoute.SubCategories -> NavEntry(key) {
+        ProductCatalogListScreen(
+            catalogType = ProductCatalogType.SUB_CATEGORIES,
+            title = "Sub-categories",
         )
     }
 

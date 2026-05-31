@@ -185,6 +185,15 @@ sealed interface ProductRoute : NavKey {
 
     @Serializable
     data object TaxCode : ProductRoute
+
+    @Serializable
+    data object Brands : ProductRoute
+
+    @Serializable
+    data object Categories : ProductRoute
+
+    @Serializable
+    data object SubCategories : ProductRoute
 }
 
 // Customer routes

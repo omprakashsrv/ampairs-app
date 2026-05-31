@@ -272,4 +272,10 @@
     <string name="customer_images_guideline_size">Maximum file size: 10MB per image</string>
     <string name="customer_images_guideline_resolution">Recommended resolution: 800x800 pixels</string>
     <string name="customer_images_guideline_primary">Set one image as primary for customer lists</string>
+
+    <!-- Master data section shortcuts -->
+    <string name="customer_master_data">Master Data</string>
+    <string name="customer_shortcut_groups">Groups</string>
+    <string name="customer_shortcut_types">Types</string>
+    <string name="customer_shortcut_states">States</string>
 </resources>
