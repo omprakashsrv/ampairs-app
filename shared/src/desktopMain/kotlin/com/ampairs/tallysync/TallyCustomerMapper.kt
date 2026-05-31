@@ -2,8 +2,11 @@ package com.ampairs.tallysync
 
 import com.ampairs.customer.data.db.CustomerEntity
 import com.ampairs.customer.data.db.CustomerGroupEntity
+import com.ampairs.customer.domain.CustomerAddress
 import com.ampairs.tally.model.master.Group
 import com.ampairs.tally.model.master.Ledger
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 internal object TallyCustomerMapper {
 
@@ -85,6 +88,15 @@ internal object TallyCustomerMapper {
         val gstin = (gstRegDetailList?.firstOrNull()?.gstin?.trim()?.takeIf { it.isNotBlank() }
             ?: partyGstin?.trim()?.takeIf { it.isNotBlank() })?.validGstin()
 
+        val addressObj = CustomerAddress(
+            street = street ?: "",
+            city = city?.takeIf { it != street } ?: "",
+            state = state ?: "",
+            pincode = pincode ?: "",
+            country = country,
+        )
+        val addressJson = Json.encodeToString(addressObj)
+
         return CustomerEntity(
             id = id,
             name = customerName,
@@ -103,8 +115,8 @@ internal object TallyCustomerMapper {
             country = country,
             latitude = null,
             longitude = null,
-            billing_address_json = null,
-            shipping_address_json = null,
+            billing_address_json = addressJson,
+            shipping_address_json = addressJson,
             active = true,
             created_at = null,
             updated_at = null,
