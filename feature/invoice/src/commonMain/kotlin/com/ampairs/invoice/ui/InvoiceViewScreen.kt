@@ -2,6 +2,7 @@ package com.ampairs.invoice.ui
 
 import ampairsapp.feature.invoice.generated.resources.Res
 import ampairsapp.feature.invoice.generated.resources.inv_view_cd_back
+import ampairsapp.feature.invoice.generated.resources.inv_view_title
 import ampairsapp.feature.invoice.generated.resources.inv_view_cd_edit
 import ampairsapp.feature.invoice.generated.resources.inv_view_col_particulars
 import ampairsapp.feature.invoice.generated.resources.inv_view_col_qty
@@ -65,8 +66,9 @@ fun InvoiceViewScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val title = stringResource(Res.string.inv_view_title)
                     Text(
-                        text = if (!invoice.invoiceNumber.isNullOrEmpty()) "Invoice ${invoice.invoiceNumber}" else "Invoice",
+                        text = if (!invoice.invoiceNumber.isNullOrEmpty()) "$title ${invoice.invoiceNumber}" else title,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -233,7 +235,7 @@ fun InvoiceViewScreen(
                     }
                     if (invoiceItem.discountPercent > 0.0) {
                         Text(
-                            text = "Discount: ${invoiceItem.discountPercent.toDecimal()}% · ${invoiceItem.discount.sumOf { it.value }.toDecimal()}",
+                            text = "${stringResource(Res.string.inv_view_discount)}: ${invoiceItem.discountPercent.toDecimal()}% · ${invoiceItem.discount.sumOf { it.value }.toDecimal()}",
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = Color(9, 121, 105)

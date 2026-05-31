@@ -12,6 +12,7 @@
     <string name="ord_list_col_total">Total</string>
 
     <!-- Order view screen -->
+    <string name="ord_view_title">Order</string>
     <string name="ord_view_cd_back">Go back</string>
     <string name="ord_view_cd_edit">Edit order</string>
     <string name="ord_view_from">From</string>

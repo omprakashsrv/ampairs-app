@@ -406,6 +406,7 @@ data class WorkspaceInvitationsState(
     val activeFilters: Map<String, String> = emptyMap(),
     val acceptanceResult: InvitationAcceptanceResult? = null,
     val availableRoles: List<com.ampairs.workspace.api.model.WorkspaceRole> = emptyList(),
+    val canManageInvitations: Boolean = true,
 )
 
 /**

@@ -2,6 +2,7 @@ package com.ampairs.order.ui
 
 import ampairsapp.feature.order.generated.resources.Res
 import ampairsapp.feature.order.generated.resources.ord_view_cd_back
+import ampairsapp.feature.order.generated.resources.ord_view_title
 import ampairsapp.feature.order.generated.resources.ord_view_cd_edit
 import ampairsapp.feature.order.generated.resources.ord_view_col_particulars
 import ampairsapp.feature.order.generated.resources.ord_view_col_qty
@@ -69,8 +70,9 @@ fun OrderViewScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val title = stringResource(Res.string.ord_view_title)
                     Text(
-                        text = if (!order.orderNumber.isNullOrEmpty()) "Order ${order.orderNumber}" else "Order",
+                        text = if (!order.orderNumber.isNullOrEmpty()) "$title ${order.orderNumber}" else title,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -256,7 +258,7 @@ fun OrderViewScreen(
                             )
                             if (orderItem.discountPercent > 0.0) {
                                 Text(
-                                    text = "Discount: ${orderItem.discountPercent.toDecimal()}% · ${orderItem.discount.sumOf { it.value }.toDecimal()}",
+                                    text = "${stringResource(Res.string.ord_view_discount)}: ${orderItem.discountPercent.toDecimal()}% · ${orderItem.discount.sumOf { it.value }.toDecimal()}",
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(9, 121, 105)

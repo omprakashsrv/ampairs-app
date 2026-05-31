@@ -12,6 +12,7 @@
     <string name="inv_list_col_total">Total</string>
 
     <!-- Invoice view screen -->
+    <string name="inv_view_title">Invoice</string>
     <string name="inv_view_cd_back">Go back</string>
     <string name="inv_view_cd_edit">Edit invoice</string>
     <string name="inv_view_from">From</string>

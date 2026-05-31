@@ -176,7 +176,7 @@ fun WorkspaceInvitationsScreen(
                             invitation = invitation,
                             onResend = { viewModel.resendInvitation(invitation.id) },
                             onCancel = { viewModel.cancelInvitation(invitation.id) },
-                            canManageInvitations = true // TODO: Get from user permissions
+                            canManageInvitations = state.canManageInvitations
                         )
                     }
                 }
