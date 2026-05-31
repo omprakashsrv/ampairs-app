@@ -195,13 +195,12 @@ class CustomerTypeRepository(
                         customerTypeDao.deleteCustomerType(customerType.uid)
                         syncedCount++
                     } else {
-                        // Handle created/updated customer types
-                        val response = if (entity.synced) {
+                        // Try update first; fall back to create if not found on server
+                        val response = try {
                             customerTypeApi.updateCustomerType(customerType.uid, customerType)
-                        } else {
+                        } catch (_: Exception) {
                             customerTypeApi.createCustomerType(customerType)
                         }
-
                         if (response.data != null && response.error == null) {
                             customerTypeDao.insertCustomerType(response.data!!.toEntity().copy(synced = true))
                             syncedCount++

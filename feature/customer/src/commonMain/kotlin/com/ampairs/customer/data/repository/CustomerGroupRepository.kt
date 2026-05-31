@@ -195,13 +195,12 @@ class CustomerGroupRepository(
                         customerGroupDao.deleteCustomerGroup(customerGroup.uid)
                         syncedCount++
                     } else {
-                        // Handle created/updated customer groups
-                        val response = if (entity.synced) {
+                        // Try update first; fall back to create if not found on server
+                        val response = try {
                             customerGroupApi.updateCustomerGroup(customerGroup.uid, customerGroup)
-                        } else {
+                        } catch (_: Exception) {
                             customerGroupApi.createCustomerGroup(customerGroup)
                         }
-
                         if (response.data != null && response.error == null) {
                             customerGroupDao.insertCustomerGroup(response.data!!.toEntity().copy(synced = true))
                             syncedCount++

@@ -2,6 +2,8 @@ package com.ampairs.sync
 
 enum class SyncEntity(val entityType: String) {
     CUSTOMER("customer"),
+    CUSTOMER_GROUP("customer_group"),
+    CUSTOMER_TYPE("customer_type"),
     PRODUCT("product"),
     ORDER("order"),
     INVOICE("invoice"),
