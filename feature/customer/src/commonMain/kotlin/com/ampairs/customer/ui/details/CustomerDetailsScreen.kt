@@ -589,21 +589,21 @@ private fun CustomerOverviewTab(
 
         customer.billingAddress?.let { billing ->
             InfoSection(title = stringResource(Res.string.customer_section_billing)) {
-                InfoRow(label = stringResource(Res.string.customer_label_street), value = billing.street)
-                InfoRow(label = stringResource(Res.string.customer_label_city), value = billing.city)
-                InfoRow(label = stringResource(Res.string.customer_label_state), value = billing.state)
-                InfoRow(label = stringResource(Res.string.customer_label_pincode), value = billing.pincode)
-                InfoRow(label = stringResource(Res.string.customer_label_country), value = billing.country)
+                InfoRow(label = stringResource(Res.string.customer_label_street), value = billing.street ?: "")
+                InfoRow(label = stringResource(Res.string.customer_label_city), value = billing.city ?: "")
+                InfoRow(label = stringResource(Res.string.customer_label_state), value = billing.state ?: "")
+                InfoRow(label = stringResource(Res.string.customer_label_pincode), value = billing.pincode ?: "")
+                InfoRow(label = stringResource(Res.string.customer_label_country), value = billing.country ?: "")
             }
         }
 
         customer.shippingAddress?.let { shipping ->
             InfoSection(title = stringResource(Res.string.customer_section_shipping)) {
-                InfoRow(label = stringResource(Res.string.customer_label_street), value = shipping.street)
-                InfoRow(label = stringResource(Res.string.customer_label_city), value = shipping.city)
-                InfoRow(label = stringResource(Res.string.customer_label_state), value = shipping.state)
-                InfoRow(label = stringResource(Res.string.customer_label_pincode), value = shipping.pincode)
-                InfoRow(label = stringResource(Res.string.customer_label_country), value = shipping.country)
+                InfoRow(label = stringResource(Res.string.customer_label_street), value = shipping.street ?: "")
+                InfoRow(label = stringResource(Res.string.customer_label_city), value = shipping.city ?: "")
+                InfoRow(label = stringResource(Res.string.customer_label_state), value = shipping.state ?: "")
+                InfoRow(label = stringResource(Res.string.customer_label_pincode), value = shipping.pincode ?: "")
+                InfoRow(label = stringResource(Res.string.customer_label_country), value = shipping.country ?: "")
             }
         }
 

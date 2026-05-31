@@ -587,18 +587,22 @@ private fun Customer.toFormState(): CustomerFormState {
         status = status ?: STATUS_ACTIVE,
         attributes = attributes ?: emptyMap(),
         // Billing Address
-        useBillingAsMainAddress = billingAddress == null ||
-                (billingAddress?.street == street && billingAddress?.city == city &&
-                        billingAddress?.state == state && billingAddress?.pincode == pincode),
+        useBillingAsMainAddress = run {
+            val ba = billingAddress
+            ba == null || ((ba.street ?: "") == (street ?: "") && (ba.city ?: "") == (city ?: "") &&
+                    (ba.state ?: "") == (state ?: "") && (ba.pincode ?: "") == (pincode ?: ""))
+        },
         billingStreet = billingAddress?.street ?: "",
         billingCity = billingAddress?.city ?: "",
         billingState = billingAddress?.state ?: "",
         billingPincode = billingAddress?.pincode ?: "",
         billingCountry = billingAddress?.country ?: "India",
         // Shipping Address
-        useShippingAsMainAddress = shippingAddress == null ||
-                (shippingAddress?.street == street && shippingAddress?.city == city &&
-                        shippingAddress?.state == state && shippingAddress?.pincode == pincode),
+        useShippingAsMainAddress = run {
+            val sa = shippingAddress
+            sa == null || ((sa.street ?: "") == (street ?: "") && (sa.city ?: "") == (city ?: "") &&
+                    (sa.state ?: "") == (state ?: "") && (sa.pincode ?: "") == (pincode ?: ""))
+        },
         shippingStreet = shippingAddress?.street ?: "",
         shippingCity = shippingAddress?.city ?: "",
         shippingState = shippingAddress?.state ?: "",

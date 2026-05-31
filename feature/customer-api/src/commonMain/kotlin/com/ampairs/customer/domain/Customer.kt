@@ -52,11 +52,13 @@ data class Customer(
 
 @Serializable
 data class CustomerAddress(
-    val street: String = "",
-    val city: String = "",
-    val state: String = "",
-    val pincode: String = "",
-    val country: String = "India"
+    val street: String? = null,
+    @SerialName("street2")
+    val street2: String? = null,
+    val city: String? = null,
+    val state: String? = null,
+    val pincode: String? = null,
+    val country: String? = null
 )
 
 data class CustomerListItem(
