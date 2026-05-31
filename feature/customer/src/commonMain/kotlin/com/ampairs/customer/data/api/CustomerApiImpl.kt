@@ -78,6 +78,15 @@ class CustomerApiImpl(
         return response.data ?: throw Exception("Failed to update customer")
     }
 
+    override suspend fun bulkUpdateCustomers(customers: List<Customer>): List<Customer> {
+        val response: Response<List<Customer>> = post(
+            client,
+            ApiUrlBuilder.customerUrl("v1/customers"),
+            customers
+        )
+        return response.data ?: throw Exception("Failed to bulk update customers")
+    }
+
     override suspend fun deleteCustomer(customerId: String) {
         val response = delete<Response<Unit>>(
             client,

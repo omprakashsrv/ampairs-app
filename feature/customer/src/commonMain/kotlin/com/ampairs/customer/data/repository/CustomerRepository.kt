@@ -259,43 +259,58 @@ class CustomerRepository(
             // FIRST: Sync unsynced local customers to server (prevents data loss)
             val unsyncedCustomers = customerDao.getUnsyncedCustomers()
             var syncedCount = 0
-            for (entity in unsyncedCustomers) {
+
+            // 1a. Handle deletions individually (no bulk delete API)
+            for (entity in unsyncedCustomers.filter { !it.active }) {
                 val customer = entity.toDomain()
                 try {
-                    if (!entity.active) {
-                        // Handle deleted customers
-                        try {
-                            customerApi.deleteCustomer(customer.uid)
-                            // Remove from local database completely after successful server delete
-                            customerDao.deleteCustomer(customer.uid)
-                            CustomerLogger.i("CustomerRepository", "✅ Synced deletion for customer: ${customer.uid}")
-                            syncedCount++
-                        } catch (deleteError: Exception) {
-                            // If delete fails with 404/405, customer doesn't exist on server or delete not supported
-                            // Safe to remove locally since the goal is to delete
-                            val errorMessage = deleteError.message ?: ""
-                            if (errorMessage.contains("404") || errorMessage.contains("405") || errorMessage.contains("Not Found")) {
-                                CustomerLogger.i("CustomerRepository", "⚠️ Customer ${customer.uid} not found on server or delete not supported - removing locally")
-                                customerDao.deleteCustomer(customer.uid)
-                                syncedCount++
-                            } else {
-                                // Other errors - keep for retry
-                                CustomerLogger.w("CustomerRepository", "⚠️ Delete sync failed for ${customer.uid}: ${deleteError.message}")
-                                throw deleteError
-                            }
-                        }
-                    } else {
-                        val serverCustomer = pushCustomerToServer(customer)
-                        val resultEntity = serverCustomer?.toEntity()?.copy(synced = true)
-                            ?: entity.copy(synced = true)  // unsyncable record — mark done locally
-                        customerDao.insertCustomer(resultEntity)
+                    customerApi.deleteCustomer(customer.uid)
+                    customerDao.deleteCustomer(customer.uid)
+                    syncedCount++
+                } catch (deleteError: Exception) {
+                    val msg = deleteError.message ?: ""
+                    if (msg.contains("404") || msg.contains("405") || msg.contains("Not Found")) {
+                        customerDao.deleteCustomer(customer.uid)
                         syncedCount++
+                    } else {
+                        CustomerLogger.w("CustomerRepository", "⚠️ Delete sync failed for ${customer.uid}: $msg")
                     }
+                }
+            }
+
+            // 1b. Push active upserts in batches of 10 via bulk API
+            val activeUnsynced = unsyncedCustomers.filter { it.active }
+            for (batch in activeUnsynced.chunked(10)) {
+                try {
+                    val sanitized = batch.mapNotNull { it.toDomain().sanitizeForServer() }
+                    if (sanitized.isEmpty()) {
+                        // All records in this batch are unsyncable — mark them done locally
+                        batch.forEach { customerDao.insertCustomer(it.copy(synced = true)) }
+                        syncedCount += batch.size
+                        continue
+                    }
+                    val serverCustomers = customerApi.bulkUpdateCustomers(sanitized)
+                    val serverById = serverCustomers.associateBy { it.uid }
+                    for (entity in batch) {
+                        val serverCustomer = serverById[entity.id]
+                        val resultEntity = serverCustomer?.toEntity()?.copy(synced = true)
+                            ?: entity.copy(synced = true)
+                        customerDao.insertCustomer(resultEntity)
+                    }
+                    syncedCount += batch.size
                 } catch (syncError: Exception) {
-                    // Continue with other customers if one fails
-                    // Failed customer remains unsynced for next attempt
-                    ErrorTracking.captureException(syncError, "CustomerRepository.syncCustomers")
-                    continue
+                    ErrorTracking.captureException(syncError, "CustomerRepository.syncCustomers.bulk")
+                    // Batch failed — individual fallback
+                    for (entity in batch) {
+                        try {
+                            val customer = entity.toDomain()
+                            val serverCustomer = pushCustomerToServer(customer)
+                            val resultEntity = serverCustomer?.toEntity()?.copy(synced = true)
+                                ?: entity.copy(synced = true)
+                            customerDao.insertCustomer(resultEntity)
+                            syncedCount++
+                        } catch (_: Exception) { }
+                    }
                 }
             }
 
