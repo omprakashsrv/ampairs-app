@@ -5,7 +5,6 @@ import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
-import com.ampairs.common.postList
 import com.ampairs.common.delete
 import com.ampairs.common.model.Response
 import com.ampairs.common.model.PageResponse
@@ -62,21 +61,21 @@ class CustomerApiImpl(
     }
 
     override suspend fun createCustomer(customer: Customer): Customer {
-        val response: Response<List<Customer>> = post(
+        val response: Response<Customer> = post(
             client,
             ApiUrlBuilder.customerUrl("v1"),
             customer
         )
-        return response.data?.firstOrNull() ?: throw Exception("Failed to create customer")
+        return response.data ?: throw Exception("Failed to create customer")
     }
 
     override suspend fun updateCustomer(customer: Customer): Customer {
-        val response: Response<List<Customer>> = post(
+        val response: Response<Customer> = post(
             client,
             ApiUrlBuilder.customerUrl("v1"),
             customer
         )
-        return response.data?.firstOrNull() ?: throw Exception("Failed to update customer")
+        return response.data ?: throw Exception("Failed to update customer")
     }
 
     override suspend fun deleteCustomer(customerId: String) {
