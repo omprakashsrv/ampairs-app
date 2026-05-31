@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -34,7 +36,8 @@ class ProductFormViewModel(
     @Assisted private val productId: String?,
     private val productRepository: ProductRepository,
     private val workspaceContextManager: WorkspaceContextManager,
-    private val taxCodeRepository: TaxCodeLookup
+    private val taxCodeRepository: TaxCodeLookup,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -141,6 +144,7 @@ class ProductFormViewModel(
                 }
 
                 if (result.isSuccess) {
+                    syncService.markPendingPush(SyncEntity.PRODUCT)
                     _uiState.value = _uiState.value.copy(isSaving = false)
                     onSuccess()
                 } else {
