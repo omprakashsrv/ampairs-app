@@ -126,3 +126,8 @@ data class ModulePermissionsResponse(
     @SerialName("can_uninstall") val canUninstall: Boolean,
     @SerialName("can_view_analytics") val canViewAnalytics: Boolean,
 )
+
+@Serializable
+data class ModuleUpdateRequest(
+    @SerialName("enabled") val enabled: Boolean
+)

@@ -11,11 +11,13 @@ import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
+import com.ampairs.common.put
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.api.model.ModuleDetailResponse
+import com.ampairs.workspace.api.model.ModuleUpdateRequest
 import io.ktor.client.engine.HttpClientEngine
 
 /**
@@ -112,6 +114,24 @@ class WorkspaceModuleApiImpl(
             val response: Response<ModuleDetailResponse> = get(
                 client,
                 ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleId")
+            )
+            response.data?.let { Result.success(it) }
+                ?: Result.failure(Exception(response.error?.message ?: "Unknown error"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateModuleEnabled(
+        workspaceId: String,
+        moduleId: String,
+        enabled: Boolean
+    ): Result<InstalledModule> {
+        return try {
+            val response: Response<InstalledModule> = put(
+                client,
+                ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleId"),
+                ModuleUpdateRequest(enabled = enabled)
             )
             response.data?.let { Result.success(it) }
                 ?: Result.failure(Exception(response.error?.message ?: "Unknown error"))

@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.ampairs.workspace.api.model.AvailableModule
+import com.ampairs.workspace.domain.WorkspaceModule
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
@@ -34,8 +34,7 @@ fun ModuleStoreScreen(
 ) {
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
-    val availableModules by viewModel.availableModules.collectAsStateWithLifecycle()
-    val installedModules by viewModel.installedModules.collectAsStateWithLifecycle()
+    val allModules by viewModel.allModules.collectAsStateWithLifecycle()
     var togglingModules by remember { mutableStateOf(setOf<String>()) }
 
     LaunchedEffect(workspaceId) {
@@ -45,32 +44,7 @@ fun ModuleStoreScreen(
         }
     }
 
-    val activeCount = installedModules.count { it.status == "ACTIVE" && it.enabled }
-
-    // Merge installed + available-but-not-installed into a single list so installed
-    // modules appear in the grid with their switch ON.
-    val allModules = remember(availableModules, installedModules) {
-        val installedCodes = installedModules.map { it.moduleCode }.toSet()
-        val installedAsAvailable = installedModules.map { installed ->
-            availableModules.find { it.moduleCode == installed.moduleCode }
-                ?: AvailableModule(
-                    moduleCode = installed.moduleCode,
-                    name = installed.name,
-                    description = installed.description,
-                    category = installed.category,
-                    version = installed.version,
-                    rating = 0.0,
-                    installCount = 0,
-                    complexity = "",
-                    icon = installed.icon,
-                    primaryColor = installed.primaryColor,
-                    featured = false,
-                    requiredTier = "FREE",
-                    sizeMb = 0,
-                )
-        }
-        installedAsAvailable + availableModules.filter { it.moduleCode !in installedCodes }
-    }
+    val activeCount = allModules.count { it.isInstalled && it.enabled }
 
     Column(
         modifier = Modifier
@@ -152,8 +126,7 @@ fun ModuleStoreScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(allModules, key = { it.moduleCode }) { module ->
-                        val installed = installedModules.find { it.moduleCode == module.moduleCode }
-                        val isEnabled = installed != null
+                        val isEnabled = module.isInstalled && module.enabled
                         val isToggling = module.moduleCode in togglingModules
 
                         ModuleToggleCard(
@@ -162,13 +135,15 @@ fun ModuleStoreScreen(
                             isToggling = isToggling,
                             onToggle = {
                                 if (!isToggling) {
-                                    togglingModules = togglingModules + module.moduleCode
-                                    if (installed != null) {
-                                        viewModel.uninstallModule(installed.id) { _ ->
-                                            togglingModules = togglingModules - module.moduleCode
-                                        }
+                                    if (module.isInstalled) {
+                                        // Offline-first: toggle enabled state locally + sync to server
+                                        togglingModules = togglingModules + module.moduleCode
+                                        viewModel.toggleModule(module.moduleCode)
+                                        togglingModules = togglingModules - module.moduleCode
                                     } else {
-                                        viewModel.installModule(module.moduleCode) { _ ->
+                                        // Install new module (optimistic local + API)
+                                        togglingModules = togglingModules + module.moduleCode
+                                        viewModel.installModule(module.moduleCode) {
                                             togglingModules = togglingModules - module.moduleCode
                                         }
                                     }
@@ -184,7 +159,7 @@ fun ModuleStoreScreen(
 
 @Composable
 private fun ModuleToggleCard(
-    module: AvailableModule,
+    module: WorkspaceModule,
     isEnabled: Boolean,
     isToggling: Boolean,
     onToggle: () -> Unit,
@@ -205,7 +180,6 @@ private fun ModuleToggleCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                // Module initial icon
                 Surface(
                     shape = CircleShape,
                     color = if (isEnabled)
@@ -227,8 +201,7 @@ private fun ModuleToggleCard(
                     }
                 }
 
-                // Switch or per-card spinner
-                if (isToggling) {
+                if (isToggling || module.hasPendingSync) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
@@ -245,7 +218,6 @@ private fun ModuleToggleCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Name + optional "core" badge
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),

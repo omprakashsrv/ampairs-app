@@ -10,21 +10,14 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import com.ampairs.common.di.AppScope
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.InstalledModule
-import com.ampairs.workspace.api.model.AvailableModule
-import com.ampairs.workspace.api.model.ModuleInstallationResponse
-import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.api.model.ModuleDetailResponse
 import com.ampairs.workspace.db.WorkspaceModuleRepository
+import com.ampairs.workspace.domain.WorkspaceModule
 import com.ampairs.subscription.util.SubscriptionOnboardingLookup
-import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel for Workspace Modules matching web implementation
- * Follows web: workspace-modules.component.ts with signals pattern
- */
 @AssistedInject
 class WorkspaceModulesViewModel(
     private val moduleRepository: WorkspaceModuleRepository,
@@ -39,89 +32,55 @@ class WorkspaceModulesViewModel(
         fun create(workspaceId: String?): WorkspaceModulesViewModel
     }
 
-    // Use global navigation manager instead of local service
     private val globalNavigationManager = GlobalNavigationManager.getInstance()
 
-    // Start with loading state for offline-first pattern
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    // Installed modules - using UI state pattern like StateListViewModel
-    private val _installedModules = MutableStateFlow<List<InstalledModule>>(emptyList())
-    val installedModules: StateFlow<List<InstalledModule>> = _installedModules.asStateFlow()
+    val allModules: StateFlow<List<WorkspaceModule>> = workspaceId
+        ?.let { wsId ->
+            moduleRepository.observeAllModules(wsId)
+                .onEach {
+                    _isLoading.value = false
+                    val installedModules = it.filter { m -> m.isInstalled }.map { m -> m.toApiModel() }
+                    globalNavigationManager.updateInstalledModules(installedModules)
+                }
+                .catch { e ->
+                    _isLoading.value = false
+                    if (_errorMessage.value == null) {
+                        _errorMessage.value = e.message ?: "Failed to load modules"
+                    }
+                }
+        }
+        ?.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        ?: MutableStateFlow(emptyList())
 
-    // Track if we've received any data (for offline-first UX)
-    private var hasReceivedData = false
-
-    // Active modules - matches web: get activeModules()
-    val activeModules: StateFlow<List<InstalledModule>> = installedModules
-        .map { modules -> modules.filter { it.status == "ACTIVE" && it.enabled } }
+    val activeModules: StateFlow<List<InstalledModule>> = allModules
+        .map { modules -> modules.filter { it.isInstalled && it.enabled && it.status == "ACTIVE" }.map { it.toApiModel() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Available modules for store - matches web: availableModules
-    private val _availableModules = MutableStateFlow<List<AvailableModule>>(emptyList())
-    val availableModules: StateFlow<List<AvailableModule>> = _availableModules.asStateFlow()
-
-    // Featured modules - matches web: get featuredModules()
-    val featuredModules: StateFlow<List<AvailableModule>> = availableModules
-        .map { modules -> modules.filter { it.featured } }
+    // Legacy: kept for WorkspaceModulesScreen which uses InstalledModule
+    val installedModules: StateFlow<List<InstalledModule>> = allModules
+        .map { modules -> modules.filter { it.isInstalled }.map { it.toApiModel() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Note: Data loading is handled by the UI screen with explicit refresh=true
-    // This ensures fresh data is fetched from the backend via Store5
-
-    init {
-        // Sync to global navigation manager is now enabled in loadInstalledModules()
-        // Auto-loading is disabled to prevent infinite loops - only load when explicitly called
-    }
-
-    /**
-     * Load installed modules - offline-first pattern with Store5
-     * Shows cached data immediately, then refreshes from network in background
-     */
     fun loadInstalledModules() {
         val wsId = workspaceId ?: run {
             _isLoading.value = false
             return
         }
-        if (!hasReceivedData) {
-            _isLoading.value = true
-            globalNavigationManager.setModuleLoading(true)
-        }
+        globalNavigationManager.setModuleLoading(true)
         _errorMessage.value = null
 
-        moduleRepository.getInstalledModulesFlow(wsId)
-            .onEach { modules ->
-                _installedModules.value = modules
-                hasReceivedData = true
-                _isLoading.value = false
-                globalNavigationManager.setModuleLoading(false)
-                _errorMessage.value = null
-                globalNavigationManager.updateInstalledModules(modules)
-            }
-            .catch { e ->
-                _isLoading.value = false
-                globalNavigationManager.setModuleLoading(false)
-                if (_installedModules.value.isEmpty()) {
-                    _errorMessage.value = e.message ?: "Failed to load modules"
-                    globalNavigationManager.setNavigationError(_errorMessage.value)
-                }
-            }
-            .launchIn(viewModelScope)
-
-        // Sync from network in background
         viewModelScope.launch {
             moduleRepository.syncInstalledModules(wsId)
+            globalNavigationManager.setModuleLoading(false)
         }
     }
 
-    /**
-     * Load available modules - matches web: async getAvailableModules()
-     * Uses offline-first approach with fallback to cached data or mock data
-     */
     fun loadAvailableModules(
         category: String? = null,
         featured: Boolean = false,
@@ -131,243 +90,104 @@ class WorkspaceModulesViewModel(
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
-                val modules = moduleRepository.getAvailableModules(category, featured, refresh)
-                _availableModules.value = modules
+                moduleRepository.getAvailableModules(category, featured, refresh)
             } catch (_: Exception) {
-                if (_availableModules.value.isEmpty()) {
-                    _availableModules.value = createMockAvailableModules()
-                    _errorMessage.value = "Using sample data - connection unavailable"
-                } else {
-                    _errorMessage.value = "Using offline data - connection unavailable"
-                }
+                // Available modules are shown from DB via observeAllModules flow
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    /**
-     * Mock data for testing - remove when backend is ready
-     */
-    private fun createMockAvailableModules(): List<AvailableModule> {
-        return listOf(
-            AvailableModule(
-                moduleCode = "CUSTOMER_MGMT",
-                name = "Customer Management",
-                description = "Comprehensive customer relationship management with advanced analytics",
-                category = "Business",
-                version = "2.1.0",
-                rating = 4.8,
-                installCount = 15420,
-                complexity = "Medium",
-                icon = "customers",
-                primaryColor = "#2196F3",
-                featured = true,
-                requiredTier = "FREE",
-                sizeMb = 45
-            ),
-            AvailableModule(
-                moduleCode = "INVENTORY_MGMT",
-                name = "Inventory Management",
-                description = "Real-time inventory tracking with automated alerts",
-                category = "Operations",
-                version = "1.8.2",
-                rating = 4.6,
-                installCount = 12300,
-                complexity = "Simple",
-                icon = "inventory",
-                primaryColor = "#4CAF50",
-                featured = true,
-                requiredTier = "FREE",
-                sizeMb = 32
-            ),
-            AvailableModule(
-                moduleCode = "ANALYTICS_PRO",
-                name = "Analytics Dashboard",
-                description = "Advanced business intelligence and reporting tools",
-                category = "Analytics",
-                version = "3.0.1",
-                rating = 4.9,
-                installCount = 8750,
-                complexity = "Advanced",
-                icon = "analytics",
-                primaryColor = "#FF9800",
-                featured = true,
-                requiredTier = "PRO",
-                sizeMb = 78
-            ),
-            AvailableModule(
-                moduleCode = "ORDER_MGMT",
-                name = "Order Management",
-                description = "Streamlined order processing and fulfillment",
-                category = "Business",
-                version = "2.3.0",
-                rating = 4.5,
-                installCount = 9850,
-                complexity = "Simple",
-                icon = "orders",
-                primaryColor = "#9C27B0",
-                featured = false,
-                requiredTier = "FREE",
-                sizeMb = 28
-            ),
-            AvailableModule(
-                moduleCode = "FINANCIAL_MGMT",
-                name = "Financial Management",
-                description = "Complete accounting and financial tracking solution",
-                category = "Finance",
-                version = "2.0.5",
-                rating = 4.7,
-                installCount = 6420,
-                complexity = "Advanced",
-                icon = "finance",
-                primaryColor = "#E91E63",
-                featured = false,
-                requiredTier = "PRO",
-                sizeMb = 95
-            ),
-            AvailableModule(
-                moduleCode = "HR_MGMT",
-                name = "Human Resources",
-                description = "Employee management and HR workflows",
-                category = "HR",
-                version = "1.5.8",
-                rating = 4.3,
-                installCount = 4200,
-                complexity = "Medium",
-                icon = "hr",
-                primaryColor = "#607D8B",
-                featured = false,
-                requiredTier = "BUSINESS",
-                sizeMb = 52
-            )
-        )
-    }
-
-    /**
-     * Install module - matches web: async installModule(moduleCode: string)
-     */
-    fun installModule(moduleCode: String, onResult: (ModuleInstallationResponse?) -> Unit) {
-        val wsId = workspaceId ?: run {
-            onResult(null)
-            return
-        }
+    fun toggleModule(moduleCode: String) {
+        val wsId = workspaceId ?: return
+        val module = allModules.value.find { it.moduleCode == moduleCode } ?: return
 
         viewModelScope.launch {
-            try {
-                _errorMessage.value = null
-
-                // Call actual API through repository
-                val result = moduleRepository.installModule(wsId, moduleCode)
-                if (result.isSuccess) {
-                    onResult(result.getOrThrow())
-                    loadInstalledModules()
-                } else {
-                    val error = result.exceptionOrNull()?.message ?: "Failed to install module"
-                    _errorMessage.value = error
-                    onResult(null)
+            _errorMessage.value = null
+            if (module.isInstalled) {
+                moduleRepository.toggleModuleEnabled(wsId, module.installedId!!, !module.enabled)
+            } else {
+                val result = moduleRepository.installModuleOfflineFirst(wsId, moduleCode)
+                result.onFailure { e ->
+                    _errorMessage.value = e.message ?: "Failed to install module"
                 }
-            } catch (e: Exception) {
-                val error = e.message ?: "Failed to install module"
-                _errorMessage.value = error
-                onResult(null)
             }
         }
     }
 
-    /**
-     * Uninstall module - matches web: async uninstallModule(moduleId: string)
-     */
-    fun uninstallModule(moduleId: String, onResult: (ModuleUninstallationResponse?) -> Unit) {
-        val wsId = workspaceId ?: run {
-            onResult(null)
-            return
-        }
-
+    fun installModule(moduleCode: String, onResult: (Boolean) -> Unit = {}) {
+        val wsId = workspaceId ?: run { onResult(false); return }
         viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _errorMessage.value = null
-
-                val result = moduleRepository.uninstallModule(wsId, moduleId)
-                if (result.isSuccess) {
-                    onResult(result.getOrThrow())
-                    // Refresh installed modules after successful uninstallation
-                    loadInstalledModules()
-                } else {
-                    val error = result.exceptionOrNull()?.message ?: "Failed to uninstall module"
-                    _errorMessage.value = error
-                    onResult(null)
-                }
-            } catch (e: Exception) {
-                val error = e.message ?: "Failed to uninstall module"
-                _errorMessage.value = error
-                onResult(null)
-            } finally {
-                _isLoading.value = false
-            }
+            _errorMessage.value = null
+            val result = moduleRepository.installModuleOfflineFirst(wsId, moduleCode)
+            result.onFailure { e -> _errorMessage.value = e.message ?: "Failed to install module" }
+            onResult(result.isSuccess)
         }
     }
 
-    /**
-     * Check if module is installed - matches web: isModuleInstalled(moduleCode: string)
-     */
+    fun uninstallModule(moduleId: String, onResult: (Boolean) -> Unit = {}) {
+        val wsId = workspaceId ?: run { onResult(false); return }
+        viewModelScope.launch {
+            _errorMessage.value = null
+            val result = moduleRepository.uninstallModuleOfflineFirst(wsId, moduleId)
+            onResult(result.isSuccess)
+        }
+    }
+
     suspend fun isModuleInstalled(moduleCode: String): Boolean {
         val wsId = workspaceId ?: return false
         return moduleRepository.isModuleInstalled(wsId, moduleCode)
     }
 
-    /**
-     * Get module by code - helper method
-     */
     suspend fun getModuleByCode(moduleCode: String): InstalledModule? {
         val wsId = workspaceId ?: return null
         return moduleRepository.getModuleByCode(wsId, moduleCode)
     }
 
-    /**
-     * Get module details - matches backend: GET /workspace/v1/modules/{moduleId}
-     */
     fun getModuleDetails(moduleId: String, onResult: (ModuleDetailResponse?) -> Unit) {
-        val wsId = workspaceId ?: run {
-            onResult(null)
-            return
-        }
-
+        val wsId = workspaceId ?: run { onResult(null); return }
         viewModelScope.launch {
-            try {
-                _errorMessage.value = null
-
-                val result = moduleRepository.getModuleDetails(wsId, moduleId)
-                if (result.isSuccess) {
-                    onResult(result.getOrThrow())
-                } else {
-                    val error = result.exceptionOrNull()?.message ?: "Failed to load module details"
-                    _errorMessage.value = error
-                    onResult(null)
-                }
-            } catch (e: Exception) {
-                val error = e.message ?: "Failed to load module details"
-                _errorMessage.value = error
+            _errorMessage.value = null
+            val result = moduleRepository.getModuleDetails(wsId, moduleId)
+            result.onSuccess { onResult(it) }
+            result.onFailure { e ->
+                _errorMessage.value = e.message ?: "Failed to load module details"
                 onResult(null)
             }
         }
     }
 
-    /**
-     * Refresh all data
-     */
     fun refresh() {
         loadInstalledModules()
-        if (_availableModules.value.isNotEmpty()) {
-            loadAvailableModules(refresh = true)
-        }
+        loadAvailableModules(refresh = true)
     }
 
-    /**
-     * Clear error message
-     */
     fun clearError() {
         _errorMessage.value = null
     }
 }
+
+private fun WorkspaceModule.toApiModel(): InstalledModule = InstalledModule(
+    id = installedId ?: moduleCode,
+    workspaceId = "",
+    moduleCode = moduleCode,
+    name = name,
+    category = category,
+    version = version,
+    status = status,
+    enabled = enabled,
+    installedAt = "",
+    icon = icon,
+    primaryColor = primaryColor,
+    healthScore = null,
+    needsAttention = null,
+    description = description,
+    routeInfo = com.ampairs.workspace.api.model.ModuleRouteInfo(
+        basePath = moduleCode.lowercase(),
+        displayName = name,
+        iconName = "",
+        menuItems = emptyList()
+    ),
+    navigationIndex = navigationIndex
+)

@@ -13,8 +13,12 @@ import com.ampairs.workspace.db.dao.WorkspaceModuleDao
 import com.ampairs.workspace.db.entity.AvailableModuleEntity
 import com.ampairs.workspace.db.entity.InstalledModuleEntity
 import com.ampairs.workspace.db.entity.InstalledModuleWithMenuItems
+import com.ampairs.workspace.domain.WorkspaceModule
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Inject
 @SingleIn(AppScope::class)
@@ -27,15 +31,119 @@ class WorkspaceModuleRepository(
         moduleDao.getInstalledModulesWithMenuItemsFlow(workspaceId)
             .map { items -> items.map { it.toApiModel() } }
 
+    fun observeAllModules(workspaceId: String): Flow<List<WorkspaceModule>> = combine(
+        moduleDao.getInstalledModulesWithMenuItemsFlow(workspaceId),
+        moduleDao.getAvailableModulesFlow()
+    ) { installed, available ->
+        val installedByCode = installed.associateBy { it.module.moduleCode }
+        val installedModules = installed.map { it.toWorkspaceModule() }
+        val notInstalledModules = available
+            .filter { it.moduleCode !in installedByCode }
+            .map { it.toWorkspaceModule() }
+        installedModules + notInstalledModules
+    }
+
     suspend fun syncInstalledModules(workspaceId: String) {
         try {
             val result = moduleApi.getInstalledModules(workspaceId)
             result.onSuccess { modules ->
-                val entities = modules.map { it.toInstalledModuleEntity(workspaceId) }
+                val pendingByCode = moduleDao.getPendingSyncModules(workspaceId)
+                    .associateBy { it.moduleCode }
+                val entities = modules.map { remote ->
+                    val entity = remote.toInstalledModuleEntity(workspaceId)
+                    val localPending = pendingByCode[remote.moduleCode]
+                    if (localPending != null) {
+                        // Preserve local pending enabled change; merge other server fields
+                        entity.copy(enabled = localPending.enabled, sync_state = "PENDING")
+                    } else {
+                        entity.copy(sync_state = "SYNCED")
+                    }
+                }
                 moduleDao.replaceInstalledModules(workspaceId, entities)
+                retryPendingChanges(workspaceId)
             }
         } catch (_: Exception) {
             // Graceful failure — UI continues with cached data
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    suspend fun toggleModuleEnabled(workspaceId: String, moduleId: String, newEnabled: Boolean) {
+        moduleDao.updateModuleEnabled(
+            moduleId, newEnabled, "PENDING",
+            Clock.System.now().toEpochMilliseconds()
+        )
+        try {
+            moduleApi.updateModuleEnabled(workspaceId, moduleId, newEnabled)
+                .onSuccess { remote ->
+                    moduleDao.insertInstalledModule(
+                        remote.toInstalledModuleEntity(workspaceId).copy(sync_state = "SYNCED")
+                    )
+                }
+        } catch (_: Exception) {
+            // Keep PENDING — retried in retryPendingChanges
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    suspend fun installModuleOfflineFirst(workspaceId: String, moduleCode: String): Result<Unit> {
+        val available = moduleDao.getAvailableModule(moduleCode)
+        val placeholder = InstalledModuleEntity(
+            id = "LOCAL_$moduleCode",
+            workspaceId = workspaceId,
+            moduleCode = moduleCode,
+            name = available?.name ?: moduleCode,
+            category = available?.category ?: "",
+            version = available?.version ?: "",
+            status = "ACTIVE",
+            enabled = true,
+            installedAt = "",
+            icon = available?.icon ?: "",
+            primaryColor = available?.primaryColor ?: "#6200EE",
+            routeBasePath = moduleCode.lowercase(),
+            routeDisplayName = available?.name ?: moduleCode,
+            routeIconName = "",
+            navigationIndex = 99,
+            sync_state = "PENDING",
+        )
+        moduleDao.insertInstalledModule(placeholder)
+
+        return try {
+            val result = moduleApi.installModule(workspaceId, moduleCode)
+            if (result.isSuccess) {
+                syncInstalledModules(workspaceId)
+                Result.success(Unit)
+            } else {
+                Result.failure(result.exceptionOrNull() ?: Exception("Installation failed"))
+            }
+        } catch (_: Exception) {
+            Result.success(Unit)
+        }
+    }
+
+    suspend fun uninstallModuleOfflineFirst(workspaceId: String, moduleId: String): Result<Unit> {
+        moduleDao.deleteInstalledModuleById(moduleId, workspaceId)
+        return try {
+            moduleApi.uninstallModule(workspaceId, moduleId)
+            Result.success(Unit)
+        } catch (_: Exception) {
+            Result.success(Unit)
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private suspend fun retryPendingChanges(workspaceId: String) {
+        val pending = moduleDao.getPendingSyncModules(workspaceId)
+        for (module in pending) {
+            try {
+                moduleApi.updateModuleEnabled(workspaceId, module.id, module.enabled)
+                    .onSuccess {
+                        moduleDao.updateModuleEnabled(
+                            module.id, module.enabled, "SYNCED",
+                            Clock.System.now().toEpochMilliseconds()
+                        )
+                    }
+            } catch (_: Exception) {}
         }
     }
 
@@ -122,6 +230,44 @@ class WorkspaceModuleRepository(
         moduleDao.deleteAllAvailableModules()
     }
 }
+
+private fun InstalledModuleWithMenuItems.toWorkspaceModule(): WorkspaceModule = WorkspaceModule(
+    moduleCode = module.moduleCode,
+    name = module.name,
+    description = module.description,
+    category = module.category,
+    version = module.version,
+    icon = module.icon,
+    primaryColor = module.primaryColor,
+    featured = false,
+    requiredTier = "FREE",
+    rating = 0.0,
+    installedId = module.id,
+    isInstalled = true,
+    enabled = module.enabled,
+    status = module.status,
+    navigationIndex = module.navigationIndex,
+    hasPendingSync = module.sync_state == "PENDING",
+)
+
+private fun AvailableModuleEntity.toWorkspaceModule(): WorkspaceModule = WorkspaceModule(
+    moduleCode = moduleCode,
+    name = name,
+    description = description,
+    category = category,
+    version = version,
+    icon = icon,
+    primaryColor = primaryColor,
+    featured = featured,
+    requiredTier = requiredTier,
+    rating = rating,
+    installedId = null,
+    isInstalled = false,
+    enabled = false,
+    status = "NOT_INSTALLED",
+    navigationIndex = Int.MAX_VALUE,
+    hasPendingSync = false,
+)
 
 private fun InstalledModuleWithMenuItems.toApiModel(): InstalledModule = InstalledModule(
     id = module.id,

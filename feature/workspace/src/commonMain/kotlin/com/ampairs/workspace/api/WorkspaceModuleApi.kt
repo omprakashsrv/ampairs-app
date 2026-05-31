@@ -54,4 +54,10 @@ interface WorkspaceModuleApi {
      * Returns comprehensive module details including configuration, analytics, and permissions
      */
     suspend fun getModuleDetails(workspaceId: String, moduleId: String): Result<ModuleDetailResponse>
+
+    /**
+     * Enable or disable an installed module
+     * PUT /workspace/v1/modules/{moduleId}
+     */
+    suspend fun updateModuleEnabled(workspaceId: String, moduleId: String, enabled: Boolean): Result<InstalledModule>
 }
