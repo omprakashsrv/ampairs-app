@@ -76,7 +76,7 @@ import ampairsapp.feature.workspace.generated.resources.cd_refresh
 @Composable
 fun WorkspaceListScreen(
     onNavigateToCreateWorkspace: () -> Unit,
-    onWorkspaceSelected: (String) -> Unit,
+    onWorkspaceSelected: (workspaceId: String, workspaceSlug: String) -> Unit,
     modifier: Modifier = Modifier,
     onWorkspaceEdit: (String) -> Unit = {},
     viewModel: WorkspaceListViewModel = metroViewModel(),
@@ -88,7 +88,7 @@ fun WorkspaceListScreen(
         viewModel.loadWorkspaces()
         viewModel.events.collect { event ->
             when (event) {
-                is WorkspaceListEvent.NavigateToModules -> onWorkspaceSelected(event.workspaceId)
+                is WorkspaceListEvent.NavigateToModules -> onWorkspaceSelected(event.workspaceId, event.workspaceSlug)
             }
         }
     }

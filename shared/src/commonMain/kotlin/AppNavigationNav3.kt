@@ -47,9 +47,9 @@ fun AppNavigationNav3(
     }
 
     // Determine start destination based on auto-resume state
-    val (shouldAutoResume, lastWorkspaceId) = autoResumeState!!
-    val startDestination: NavKey = if (shouldAutoResume && lastWorkspaceId != null) {
-        WorkspaceRoute.Modules(lastWorkspaceId)
+    val (shouldAutoResume, lastWorkspaceId, lastWorkspaceSlug) = autoResumeState!!
+    val startDestination: NavKey = if (shouldAutoResume && lastWorkspaceId != null && lastWorkspaceSlug != null) {
+        WorkspaceRoute.Modules(lastWorkspaceId, lastWorkspaceSlug)
     } else {
         Route.Login
     }
@@ -73,8 +73,8 @@ fun AppNavigationNav3(
                     }
                 }
                 val modulesRoute = currentRoute as? WorkspaceRoute.Modules
-                if (modulesRoute != null) {
-                    onWorkspaceEntered?.invoke(modulesRoute.workspaceId)
+                if (modulesRoute != null && modulesRoute.workspaceSlug.isNotBlank()) {
+                    onWorkspaceEntered?.invoke(modulesRoute.workspaceSlug)
                 } else if (currentRoute is Route.Login) {
                     onWorkspaceLeft?.invoke()
                 }

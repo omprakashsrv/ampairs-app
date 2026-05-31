@@ -127,7 +127,8 @@ sealed interface WorkspaceRoute : NavKey {
 
     @Serializable
     data class Modules(
-        val workspaceId: String = ""
+        val workspaceId: String = "",
+        val workspaceSlug: String = "",
     ) : WorkspaceRoute
 
     @Serializable

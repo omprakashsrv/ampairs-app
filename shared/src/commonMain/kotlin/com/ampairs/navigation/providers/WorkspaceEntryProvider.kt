@@ -35,9 +35,9 @@ fun workspaceEntryProvider(
             onNavigateToCreateWorkspace = {
                 backStack.add(WorkspaceRoute.Create)
             },
-            onWorkspaceSelected = { workspaceId: String ->
+            onWorkspaceSelected = { workspaceId: String, workspaceSlug: String ->
                 backStack.clear()
-                backStack.add(WorkspaceRoute.Modules(workspaceId))
+                backStack.add(WorkspaceRoute.Modules(workspaceId, workspaceSlug))
             },
             onWorkspaceEdit = { workspaceId: String ->
                 backStack.add(WorkspaceRoute.Edit(workspaceId))
