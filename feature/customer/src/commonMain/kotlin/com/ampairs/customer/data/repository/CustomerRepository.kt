@@ -286,8 +286,9 @@ class CustomerRepository(
                         }
                     } else {
                         val serverCustomer = pushCustomerToServer(customer)
-                        val syncedEntity = serverCustomer.toEntity().copy(synced = true)
-                        customerDao.insertCustomer(syncedEntity)
+                        val resultEntity = serverCustomer?.toEntity()?.copy(synced = true)
+                            ?: entity.copy(synced = true)  // unsyncable record — mark done locally
+                        customerDao.insertCustomer(resultEntity)
                         syncedCount++
                     }
                 } catch (syncError: Exception) {
@@ -367,7 +368,9 @@ class CustomerRepository(
                         }
                     } else {
                         val serverCustomer = pushCustomerToServer(customer)
-                        customerDao.insertCustomer(serverCustomer.toEntity().copy(synced = true))
+                        val resultEntity = serverCustomer?.toEntity()?.copy(synced = true)
+                            ?: entity.copy(synced = true)
+                        customerDao.insertCustomer(resultEntity)
                         syncedCount++
                     }
                 } catch (e: Exception) {
@@ -452,12 +455,26 @@ class CustomerRepository(
         }
     }
 
+    // Sanitize fields that the server validates strictly. Returns null if the record can never
+    // be made valid (e.g. name shorter than 2 chars from Tally garbage data).
+    private fun Customer.sanitizeForServer(): Customer? {
+        val validName = name?.trim()?.takeIf { it.length >= 2 } ?: return null
+        val validPhone = phone?.takeIf { it.matches(Regex("[6-9][0-9]{9}")) }
+        val validPincode = pincode?.takeIf { it.matches(Regex("[0-9]{6}")) }
+        return copy(name = validName, phone = validPhone, pincode = validPincode)
+    }
+
     // Try update first; fall back to create if the customer doesn't exist on the server yet.
-    private suspend fun pushCustomerToServer(customer: Customer): Customer {
+    // Returns null when the record has unrecoverable data (caller should mark synced=true locally).
+    private suspend fun pushCustomerToServer(customer: Customer): Customer? {
+        val sanitized = customer.sanitizeForServer() ?: run {
+            CustomerLogger.w("CustomerRepository", "Skipping unsyncable customer ${customer.uid}: name '${customer.name}' is too short")
+            return null
+        }
         return try {
-            customerApi.updateCustomer(customer)
+            customerApi.updateCustomer(sanitized)
         } catch (_: Exception) {
-            customerApi.createCustomer(customer)
+            customerApi.createCustomer(sanitized)
         }
     }
 
