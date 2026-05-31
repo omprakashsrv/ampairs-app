@@ -452,33 +452,13 @@ class CustomerRepository(
         }
     }
 
-    // Try update first; fall back to create on 404. Strip gstNumber and retry if the server
-    // rejects due to a GST uniqueness conflict (duplicate in Tally source data).
+    // Try update first; fall back to create if the customer doesn't exist on the server yet.
     private suspend fun pushCustomerToServer(customer: Customer): Customer {
         return try {
             customerApi.updateCustomer(customer)
-        } catch (updateError: Exception) {
-            val msg = updateError.message ?: ""
-            when {
-                msg.containsGstError() ->
-                    pushCustomerToServer(customer.copy(gstNumber = null))
-                else -> {
-                    // Update failed for any other reason (likely 404) — try create
-                    try {
-                        customerApi.createCustomer(customer)
-                    } catch (createError: Exception) {
-                        if ((createError.message ?: "").containsGstError()) {
-                            customerApi.createCustomer(customer.copy(gstNumber = null))
-                        } else {
-                            throw createError
-                        }
-                    }
-                }
-            }
+        } catch (_: Exception) {
+            customerApi.createCustomer(customer)
         }
     }
-
-    private fun String.containsGstError() =
-        contains("GST number already exists") || contains("Invalid GST number")
 
 }
