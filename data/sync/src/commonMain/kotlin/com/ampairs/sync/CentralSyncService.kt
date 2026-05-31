@@ -286,7 +286,7 @@ class CentralSyncService(
             is SyncResult.Success -> {
                 updateState(entity) {
                     it.copy(
-                        status = SyncStatus.Success(now),
+                        status = SyncStatus.Success(now, if (wasPull) SyncStatus.Direction.PULL else SyncStatus.Direction.PUSH),
                         lastSyncedAt = now,
                         errorMessage = null,
                     )

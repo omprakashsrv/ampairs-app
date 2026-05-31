@@ -16,7 +16,9 @@ sealed class SyncStatus {
     data object Syncing : SyncStatus()
 
     /** Last sync completed successfully. */
-    data class Success(val syncedAt: Long) : SyncStatus()
+    data class Success(val syncedAt: Long, val direction: Direction) : SyncStatus()
+
+    enum class Direction { PUSH, PULL }
 
     /** Last sync failed — will retry on next trigger. */
     data class Failed(val reason: String) : SyncStatus()

@@ -320,7 +320,10 @@ private fun SyncStatus.displayLabel(): String = when (this) {
     is SyncStatus.PendingPush -> "Pending push"
     is SyncStatus.PendingPull -> "Pending pull"
     is SyncStatus.Syncing -> "Syncing…"
-    is SyncStatus.Success -> "Synced"
+    is SyncStatus.Success -> when (direction) {
+        SyncStatus.Direction.PUSH -> "Pushed"
+        SyncStatus.Direction.PULL -> "Pulled"
+    }
     is SyncStatus.Failed -> "Failed"
 }
 
