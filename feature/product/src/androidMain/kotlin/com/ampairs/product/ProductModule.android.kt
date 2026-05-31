@@ -7,6 +7,8 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.product.db.ProductRoomDatabase
 import com.ampairs.product.db.migrations.MIGRATION_1_2
 import com.ampairs.product.db.migrations.MIGRATION_2_3
+import com.ampairs.product.db.migrations.MIGRATION_3_4
+import com.ampairs.product.db.migrations.MIGRATION_4_5
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -22,7 +24,7 @@ interface ProductAndroidModule {
                 context = context,
                 queryDispatcher = Dispatchers.IO,
                 moduleName = "product",
-                migrations = listOf(MIGRATION_1_2, MIGRATION_2_3)
+                migrations = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             )
     }
 }

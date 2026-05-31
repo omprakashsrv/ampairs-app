@@ -2,6 +2,7 @@ package com.ampairs.tallysync
 
 import co.touchlab.kermit.Logger
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.db.CustomerDao
 import com.ampairs.customer.data.db.CustomerGroupDao
 import com.ampairs.product.db.dao.CategoryDao
@@ -70,7 +71,6 @@ class TallySyncService(
             val groupsSynced = syncGroups(repo, workspaceSlug)
             val categoriesSynced = syncCategories(repo, workspaceSlug)
             val unitsSynced = syncUnits(repo, workspaceSlug)
-            // Build lookup maps from freshly upserted groups/categories
             val groupIdByName = buildGroupNameIndex()
             val categoryIdByName = buildCategoryNameIndex()
             val productsSynced = syncProducts(repo, workspaceSlug, groupIdByName, categoryIdByName)
@@ -91,9 +91,19 @@ class TallySyncService(
     private suspend fun syncGroups(repo: TallyRepository, workspaceSlug: String): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_STOCK_GROUP).first()
         val stockGroups = repo.getStockGroups().body?.data?.collection?.stockGroups ?: return 0
-        val entities = stockGroups
-            .filter { it.alterId.toAlterLong() > lastAlterId }
-            .mapNotNull { it.toGroupEntity() }
+        val filtered = stockGroups.filter { it.alterId.toAlterLong() > lastAlterId }
+
+        val refs = filtered.mapNotNull { tallyRef(it.guid, it.name) }
+        val existingIdByRef = mutableMapOf<String, String>()
+        for (chunk in refs.chunked(BATCH_SIZE)) {
+            groupDao.getGroupsByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByRef[it] = e.id } }
+        }
+
+        val entities = filtered.mapNotNull { sg ->
+            val ref = tallyRef(sg.guid, sg.name) ?: return@mapNotNull null
+            val id = existingIdByRef[ref] ?: UidGenerator.generateUid("GRP")
+            sg.toGroupEntity(id, ref)
+        }
         entities.chunked(BATCH_SIZE).forEach { groupDao.insertAll(it) }
         val maxAlterId = stockGroups.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_GROUP, maxAlterId)
@@ -104,9 +114,19 @@ class TallySyncService(
     private suspend fun syncCategories(repo: TallyRepository, workspaceSlug: String): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_STOCK_CATEGORY).first()
         val stockCategories = repo.getStockCategories().body?.data?.collection?.stockCategories ?: return 0
-        val entities = stockCategories
-            .filter { it.alterId.toAlterLong() > lastAlterId }
-            .mapNotNull { it.toCategoryEntity() }
+        val filtered = stockCategories.filter { it.alterId.toAlterLong() > lastAlterId }
+
+        val refs = filtered.mapNotNull { tallyRef(it.guid, it.name) }
+        val existingIdByRef = mutableMapOf<String, String>()
+        for (chunk in refs.chunked(BATCH_SIZE)) {
+            categoryDao.getCategoriesByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByRef[it] = e.id } }
+        }
+
+        val entities = filtered.mapNotNull { sc ->
+            val ref = tallyRef(sc.guid, sc.name) ?: return@mapNotNull null
+            val id = existingIdByRef[ref] ?: UidGenerator.generateUid("CAT")
+            sc.toCategoryEntity(id, ref)
+        }
         entities.chunked(BATCH_SIZE).forEach { categoryDao.insertAll(it) }
         val maxAlterId = stockCategories.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_CATEGORY, maxAlterId)
@@ -117,9 +137,19 @@ class TallySyncService(
     private suspend fun syncUnits(repo: TallyRepository, workspaceSlug: String): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_UNIT).first()
         val units = repo.getUnits().body?.data?.collection?.units ?: return 0
-        val entities = units
-            .filter { it.alterId.toAlterLong() > lastAlterId }
-            .mapNotNull { it.toUnitEntity() }
+        val filtered = units.filter { it.alterId.toAlterLong() > lastAlterId }
+
+        val refs = filtered.mapNotNull { tallyRef(it.guid, it.name) }
+        val existingIdByRef = mutableMapOf<String, String>()
+        for (chunk in refs.chunked(BATCH_SIZE)) {
+            unitDao.getUnitsByTallyRefIds(chunk).forEach { e -> e.refId?.let { existingIdByRef[it] = e.id } }
+        }
+
+        val entities = filtered.mapNotNull { u ->
+            val ref = tallyRef(u.guid, u.name) ?: return@mapNotNull null
+            val id = existingIdByRef[ref] ?: UidGenerator.generateUid("UNT")
+            u.toUnitEntity(id, ref)
+        }
         entities.chunked(BATCH_SIZE).forEach { unitDao.insertUnits(it) }
         val maxAlterId = units.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_UNIT, maxAlterId)
@@ -135,10 +165,20 @@ class TallySyncService(
     ): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_STOCK_ITEM).first()
         val stockItems = repo.getStockItems().body?.data?.collection?.stockItems ?: return 0
-        val entities = stockItems
-            .filter { it.alterId.toAlterLong() > lastAlterId }
-            .mapNotNull { it.toProductEntity(groupIdByName, categoryIdByName) }
+        val filtered = stockItems.filter { it.alterId.toAlterLong() > lastAlterId }
+
+        val refs = filtered.mapNotNull { tallyRef(it.guid, it.name) }
+        val existingIdByRef = mutableMapOf<String, String>()
+        for (chunk in refs.chunked(BATCH_SIZE)) {
+            productDao.getProductsByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByRef[it] = e.id } }
+        }
+
         var batchNum = 0
+        val entities = filtered.mapNotNull { si ->
+            val ref = tallyRef(si.guid, si.name) ?: return@mapNotNull null
+            val id = existingIdByRef[ref] ?: UidGenerator.generateUid("PRD")
+            si.toProductEntity(id, ref, groupIdByName, categoryIdByName)
+        }
         entities.chunked(BATCH_SIZE).forEach { batch ->
             productDao.insertAll(batch)
             batchNum++
@@ -156,10 +196,8 @@ class TallySyncService(
         items.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { item ->
                 val qty = item.closingBalance?.parseClosingQty() ?: return@forEach
-                val id = if (!item.guid.isNullOrBlank()) item.guid!!
-                         else if (!item.name.isNullOrBlank()) "TALLY_${item.name!!.hashCode()}"
-                         else return@forEach
-                productDao.updateStockQuantity(id, qty)
+                val ref = tallyRef(item.guid, item.name) ?: return@forEach
+                productDao.updateStockQuantityByTallyRef(ref, qty)
                 updated++
             }
         }
@@ -171,9 +209,19 @@ class TallySyncService(
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_ACCOUNT_GROUP).first()
         val groups = repo.getGroups().body?.data?.collection?.groups ?: return 0
         log.d { "syncCustomerGroups: API returned ${groups.size} total, lastAlterId=$lastAlterId" }
-        val entities = groups
-            .filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
-            .mapNotNull { it.toCustomerGroupEntity() }
+        val filtered = groups.filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
+
+        val refs = filtered.mapNotNull { tallyRef(it.guid, it.name) }
+        val existingIdByRef = mutableMapOf<String, String>()
+        for (chunk in refs.chunked(BATCH_SIZE)) {
+            customerGroupDao.getCustomerGroupsByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByRef[it] = e.id } }
+        }
+
+        val entities = filtered.mapNotNull { g ->
+            val ref = tallyRef(g.guid, g.name) ?: return@mapNotNull null
+            val id = existingIdByRef[ref] ?: UidGenerator.generateUid("CGP")
+            g.toCustomerGroupEntity(id, ref)
+        }
         entities.chunked(BATCH_SIZE).forEach { customerGroupDao.insertCustomerGroups(it) }
         if (entities.isNotEmpty()) {
             val maxAlterId = groups.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
@@ -191,10 +239,21 @@ class TallySyncService(
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_LEDGER).first()
         val ledgers = repo.getLedgers().body?.data?.collection?.ledgers ?: return 0
         log.d { "syncCustomers: API returned ${ledgers.size} total, lastAlterId=$lastAlterId" }
-        val entities = ledgers
+        val filtered = ledgers
             .filter { it.isBillWiseOn != "No" }
             .filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
-            .mapNotNull { it.toCustomerEntity(customerGroupIdByName) }
+
+        val refs = filtered.mapNotNull { tallyRef(it.guid, it.name) }
+        val existingIdByRef = mutableMapOf<String, String>()
+        for (chunk in refs.chunked(BATCH_SIZE)) {
+            customerDao.getCustomersByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByRef[it] = e.id } }
+        }
+
+        val entities = filtered.mapNotNull { l ->
+            val ref = tallyRef(l.guid, l.name) ?: return@mapNotNull null
+            val id = existingIdByRef[ref] ?: UidGenerator.generateUid("CUS")
+            l.toCustomerEntity(id, ref, customerGroupIdByName)
+        }
         entities.chunked(BATCH_SIZE).forEach { customerDao.insertCustomers(it) }
         if (entities.isNotEmpty()) {
             val maxAlterId = ledgers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
@@ -212,6 +271,12 @@ class TallySyncService(
 
     private suspend fun buildCustomerGroupNameIndex(): Map<String, String> =
         customerGroupDao.getAllCustomerGroups().first().associate { it.name to it.id }
+
+    private fun tallyRef(guid: String?, name: String?): String? = when {
+        !guid.isNullOrBlank() -> guid
+        !name.isNullOrBlank() -> "TALLY_${name.hashCode()}"
+        else -> null
+    }
 
     private fun String?.toAlterLong(): Long = this?.trim()?.toLongOrNull() ?: 0L
 }

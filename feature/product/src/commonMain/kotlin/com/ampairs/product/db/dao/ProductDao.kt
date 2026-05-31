@@ -80,8 +80,14 @@ interface ProductDao {
     @Update
     suspend fun update(product: ProductEntity)
 
+    @Query("SELECT * FROM productEntity WHERE ref_id IN (:refs)")
+    suspend fun getProductsByTallyRefIds(refs: List<String>): List<ProductEntity>
+
     @Query("UPDATE productEntity SET stock_quantity = :quantity WHERE id = :id")
     suspend fun updateStockQuantity(id: String, quantity: Double)
+
+    @Query("UPDATE productEntity SET stock_quantity = :quantity WHERE ref_id = :tallyRefId")
+    suspend fun updateStockQuantityByTallyRef(tallyRefId: String, quantity: Double)
 
     @Query("DELETE FROM productEntity WHERE id = :id")
     suspend fun deleteById(id: String)

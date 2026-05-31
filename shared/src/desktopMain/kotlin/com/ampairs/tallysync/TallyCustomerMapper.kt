@@ -10,8 +10,7 @@ internal object TallyCustomerMapper {
     const val ENTITY_LEDGER = "ledger"
     const val ENTITY_ACCOUNT_GROUP = "account_group"
 
-    fun Group.toCustomerGroupEntity(): CustomerGroupEntity? {
-        val id = tallyId(guid, name) ?: return null
+    fun Group.toCustomerGroupEntity(id: String, tallyRefId: String): CustomerGroupEntity? {
         val groupName = name ?: return null
         return CustomerGroupEntity(
             id = id,
@@ -26,11 +25,15 @@ internal object TallyCustomerMapper {
             synced = false,
             createdAt = null,
             updatedAt = null,
+            ref_id = tallyRefId,
         )
     }
 
-    fun Ledger.toCustomerEntity(groupIdByName: Map<String, String>): CustomerEntity? {
-        val id = tallyId(guid, name) ?: return null
+    fun Ledger.toCustomerEntity(
+        id: String,
+        tallyRefId: String,
+        groupIdByName: Map<String, String>,
+    ): CustomerEntity? {
         val customerName = name ?: return null
 
         // LEDMAILINGDETAILS.LIST has the real address/state/pincode/country;
@@ -80,12 +83,7 @@ internal object TallyCustomerMapper {
             updated_at = null,
             synced = false,
             last_sync = 0,
+            ref_id = tallyRefId,
         )
-    }
-
-    private fun tallyId(guid: String?, name: String?): String? = when {
-        !guid.isNullOrBlank() -> guid
-        !name.isNullOrBlank() -> "TALLY_${name.hashCode()}"
-        else -> null
     }
 }

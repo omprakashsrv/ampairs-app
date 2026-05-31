@@ -31,6 +31,9 @@ interface CustomerDao {
     )
     fun searchCustomers(searchQuery: String): Flow<List<CustomerEntity>>
 
+    @Query("SELECT * FROM customers WHERE ref_id IN (:refs)")
+    suspend fun getCustomersByTallyRefIds(refs: List<String>): List<CustomerEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomer(customer: CustomerEntity)
 

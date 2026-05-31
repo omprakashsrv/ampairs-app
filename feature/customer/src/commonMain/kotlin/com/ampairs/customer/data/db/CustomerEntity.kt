@@ -13,7 +13,8 @@ import kotlin.time.ExperimentalTime
     tableName = "customers",
     indices = [
         Index(value = ["id"], unique = true),
-        Index(value = ["name"])
+        Index(value = ["name"]),
+        Index(value = ["ref_id"], name = "customer_ref_idx")
     ]
 )
 data class CustomerEntity(
@@ -40,7 +41,8 @@ data class CustomerEntity(
     val created_at: String?,
     val updated_at: String?,
     val synced: Boolean = false,
-    val last_sync: Long = 0
+    val last_sync: Long = 0,
+    val ref_id: String? = null
 )
 
 @OptIn(ExperimentalTime::class)

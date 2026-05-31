@@ -51,6 +51,9 @@ interface UnitDao {
     /**
      * Insert or replace a single unit
      */
+    @Query("SELECT * FROM units WHERE ref_id IN (:refs)")
+    suspend fun getUnitsByTallyRefIds(refs: List<String>): List<UnitEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUnit(unit: UnitEntity)
 

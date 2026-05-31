@@ -1,10 +1,14 @@
 package com.ampairs.customer.data.db
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.ampairs.customer.domain.CustomerGroup
 
-@Entity(tableName = "customer_groups")
+@Entity(
+    tableName = "customer_groups",
+    indices = [Index(value = ["ref_id"], name = "customer_group_ref_idx")]
+)
 data class CustomerGroupEntity(
     @PrimaryKey
     val id: String,
@@ -18,7 +22,8 @@ data class CustomerGroupEntity(
     val active: Boolean,
     val synced: Boolean = false,
     val createdAt: String?,
-    val updatedAt: String?
+    val updatedAt: String?,
+    val ref_id: String? = null
 )
 
 fun CustomerGroupEntity.toCustomerGroup(): CustomerGroup = CustomerGroup(

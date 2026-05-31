@@ -8,7 +8,8 @@ import androidx.room.PrimaryKey
     tableName = "productEntity",
     indices = [
         Index(value = ["id"], unique = true, name = "product_id_idx"),
-        Index(value = ["name"], name = "name_idx")
+        Index(value = ["name"], name = "name_idx"),
+        Index(value = ["ref_id"], name = "product_ref_idx")
     ]
 )
 data class ProductEntity(
@@ -35,6 +36,7 @@ data class ProductEntity(
     val product_type: String? = null,
     val service_type: String? = null,
     val has_variants: Int = 0,
+    val ref_id: String? = null,
     val active: Int = 1,
     val soft_deleted: Int = 0,
     val synced: Int = 0

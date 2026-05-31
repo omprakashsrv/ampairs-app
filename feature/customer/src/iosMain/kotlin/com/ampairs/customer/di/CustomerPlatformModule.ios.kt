@@ -3,6 +3,7 @@ package com.ampairs.customer.di
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.di.AppScope
 import com.ampairs.customer.data.db.CustomerDatabase
+import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_6_7
 import com.ampairs.customer.data.repository.IosFileManager
 import com.ampairs.customer.data.repository.PlatformFileManager
 import dev.zacsweers.metro.ContributesTo
@@ -14,7 +15,7 @@ interface CustomerIosModule {
     companion object {
         @Provides @SingleIn(AppScope::class)
         fun provideCustomerDatabase(factory: WorkspaceAwareDatabaseFactory): CustomerDatabase =
-            factory.createDatabase(klass = CustomerDatabase::class, moduleName = "customer")
+            factory.createDatabase(klass = CustomerDatabase::class, moduleName = "customer", migrations = listOf(CUSTOMER_MIGRATION_6_7))
 
         @Provides
         fun providePlatformFileManager(): PlatformFileManager = IosFileManager()
