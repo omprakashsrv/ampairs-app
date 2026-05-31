@@ -285,17 +285,9 @@ class CustomerRepository(
                             }
                         }
                     } else {
-                        // Handle created/updated customers
-                        val serverCustomer = try {
-                            customerApi.updateCustomer(customer)
-                        } catch (updateError: Exception) {
-                            // If update fails, assume customer doesn't exist on server - create it
-                            customerApi.createCustomer(customer)
-                        }
-
-                        // Update local record with server response and mark as synced
+                        val serverCustomer = pushCustomerToServer(customer)
                         val syncedEntity = serverCustomer.toEntity().copy(synced = true)
-                        customerDao.insertCustomer(syncedEntity) // Use insert with REPLACE strategy
+                        customerDao.insertCustomer(syncedEntity)
                         syncedCount++
                     }
                 } catch (syncError: Exception) {
@@ -374,11 +366,7 @@ class CustomerRepository(
                             }
                         }
                     } else {
-                        val serverCustomer = try {
-                            customerApi.updateCustomer(customer)
-                        } catch (e: Exception) {
-                            customerApi.createCustomer(customer)
-                        }
+                        val serverCustomer = pushCustomerToServer(customer)
                         customerDao.insertCustomer(serverCustomer.toEntity().copy(synced = true))
                         syncedCount++
                     }
@@ -463,5 +451,34 @@ class CustomerRepository(
             Result.failure(e)
         }
     }
+
+    // Try update first; fall back to create on 404. Strip gstNumber and retry if the server
+    // rejects due to a GST uniqueness conflict (duplicate in Tally source data).
+    private suspend fun pushCustomerToServer(customer: Customer): Customer {
+        return try {
+            customerApi.updateCustomer(customer)
+        } catch (updateError: Exception) {
+            val msg = updateError.message ?: ""
+            when {
+                msg.containsGstError() ->
+                    pushCustomerToServer(customer.copy(gstNumber = null))
+                else -> {
+                    // Update failed for any other reason (likely 404) — try create
+                    try {
+                        customerApi.createCustomer(customer)
+                    } catch (createError: Exception) {
+                        if ((createError.message ?: "").containsGstError()) {
+                            customerApi.createCustomer(customer.copy(gstNumber = null))
+                        } else {
+                            throw createError
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun String.containsGstError() =
+        contains("GST number already exists") || contains("Invalid GST number")
 
 }
