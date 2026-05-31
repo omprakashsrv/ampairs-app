@@ -80,6 +80,10 @@ class TallySyncService(
             val customerGroupIdByName = buildCustomerGroupNameIndex()
             val customersSynced = syncCustomers(repo, workspaceSlug, customerGroupIdByName)
 
+            // Clean up any previously stored invalid values (pre-sanitizer data)
+            customerDao.nullifyInvalidPhones()
+            customerDao.nullifyInvalidPincodes()
+
             log.i { "Tally sync complete — groups=$groupsSynced categories=$categoriesSynced units=$unitsSynced products=$productsSynced stockBalances=$stockBalancesUpdated customerGroups=$customerGroupsSynced customers=$customersSynced" }
             TallySyncResult(groupsSynced, categoriesSynced, productsSynced, unitsSynced, stockBalancesUpdated, customerGroupsSynced, customersSynced)
         } catch (e: Exception) {

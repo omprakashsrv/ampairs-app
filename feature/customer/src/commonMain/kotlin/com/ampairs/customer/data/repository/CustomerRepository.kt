@@ -455,14 +455,10 @@ class CustomerRepository(
         }
     }
 
-    // Sanitize fields that the server validates strictly. Returns null if the record can never
-    // be made valid (e.g. name shorter than 2 chars from Tally garbage data).
-    private fun Customer.sanitizeForServer(): Customer? {
-        val validName = name?.trim()?.takeIf { it.length >= 2 } ?: return null
-        val validPhone = phone?.takeIf { it.matches(Regex("[6-9][0-9]{9}")) }
-        val validPincode = pincode?.takeIf { it.matches(Regex("[0-9]{6}")) }
-        return copy(name = validName, phone = validPhone, pincode = validPincode)
-    }
+    // Returns null for records whose name can never be valid (< 2 chars from Tally garbage data).
+    // Phone/pincode are already cleaned by TallySyncService after each Tally sync.
+    private fun Customer.sanitizeForServer(): Customer? =
+        if ((name?.trim()?.length ?: 0) >= 2) this else null
 
     // Try update first; fall back to create if the customer doesn't exist on the server yet.
     // Returns null when the record has unrecoverable data (caller should mark synced=true locally).

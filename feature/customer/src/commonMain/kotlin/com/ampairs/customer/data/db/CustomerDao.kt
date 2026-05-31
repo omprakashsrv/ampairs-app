@@ -59,6 +59,12 @@ interface CustomerDao {
     @Query("DELETE FROM customers")
     suspend fun clearWorkspaceCustomers()
 
+    @Query("UPDATE customers SET phone = NULL WHERE phone IS NOT NULL AND length(phone) != 10")
+    suspend fun nullifyInvalidPhones()
+
+    @Query("UPDATE customers SET pincode = NULL WHERE pincode IS NOT NULL AND length(pincode) != 6")
+    suspend fun nullifyInvalidPincodes()
+
     @Query(
         """
         SELECT DISTINCT city FROM customers
