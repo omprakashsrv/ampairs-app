@@ -211,14 +211,15 @@ class TallySyncService(
         log.d { "syncCustomerGroups: API returned ${groups.size} total, lastAlterId=$lastAlterId" }
         val filtered = groups.filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
 
-        val guids = filtered.mapNotNull { it.guid?.takeIf { it.isNotBlank() } }
-        val existingIdByGuid = mutableMapOf<String, String>()
-        for (chunk in guids.chunked(BATCH_SIZE)) {
-            customerGroupDao.getCustomerGroupsByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByGuid[it] = e.id } }
+        val names = filtered.mapNotNull { it.name?.takeIf { it.isNotBlank() } }
+        val existingIdByName = mutableMapOf<String, String>()
+        for (chunk in names.chunked(BATCH_SIZE)) {
+            customerGroupDao.getCustomerGroupsByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByName[it] = e.id } }
         }
 
         val entities = filtered.mapNotNull { g ->
-            val id = g.guid?.takeIf { it.isNotBlank() }?.let { existingIdByGuid[it] } ?: UidGenerator.generateUid("CGP")
+            val name = g.name?.takeIf { it.isNotBlank() }
+            val id = name?.let { existingIdByName[it] } ?: UidGenerator.generateUid("CGP")
             g.toCustomerGroupEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { customerGroupDao.insertCustomerGroups(it) }

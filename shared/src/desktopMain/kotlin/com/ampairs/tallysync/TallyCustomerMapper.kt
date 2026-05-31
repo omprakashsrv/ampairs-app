@@ -59,7 +59,7 @@ internal object TallyCustomerMapper {
             synced = false,
             createdAt = null,
             updatedAt = null,
-            ref_id = guid?.takeIf { it.isNotBlank() },
+            ref_id = groupName,
         )
     }
 
