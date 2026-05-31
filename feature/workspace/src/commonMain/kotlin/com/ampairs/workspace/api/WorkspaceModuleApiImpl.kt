@@ -11,13 +11,11 @@ import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
-import com.ampairs.common.put
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.api.model.ModuleDetailResponse
-import com.ampairs.workspace.api.model.ModuleUpdateRequest
 import io.ktor.client.engine.HttpClientEngine
 
 /**
@@ -91,13 +89,13 @@ class WorkspaceModuleApiImpl(
 
     override suspend fun uninstallModule(
         workspaceId: String,
-        moduleId: String
+        moduleCode: String
     ): Result<ModuleUninstallationResponse> {
         return try {
             val response: Response<ModuleUninstallationResponse> = delete(
                 client,
-                ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleId"),
-                null // No body needed, workspace context sent via X-Workspace-ID header
+                ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleCode"),
+                null
             )
             response.data?.let { Result.success(it) }
                 ?: Result.failure(Exception(response.error?.message ?: "Unknown error"))
@@ -122,21 +120,4 @@ class WorkspaceModuleApiImpl(
         }
     }
 
-    override suspend fun updateModuleEnabled(
-        workspaceId: String,
-        moduleId: String,
-        enabled: Boolean
-    ): Result<InstalledModule> {
-        return try {
-            val response: Response<InstalledModule> = put(
-                client,
-                ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleId"),
-                ModuleUpdateRequest(enabled = enabled)
-            )
-            response.data?.let { Result.success(it) }
-                ?: Result.failure(Exception(response.error?.message ?: "Unknown error"))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 }

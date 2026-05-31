@@ -126,7 +126,7 @@ fun ModuleStoreScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(allModules, key = { it.moduleCode }) { module ->
-                        val isEnabled = module.isInstalled && module.enabled
+                        val isEnabled = module.isInstalled
                         val isToggling = module.moduleCode in togglingModules
 
                         ModuleToggleCard(
@@ -135,17 +135,9 @@ fun ModuleStoreScreen(
                             isToggling = isToggling,
                             onToggle = {
                                 if (!isToggling) {
-                                    if (module.isInstalled) {
-                                        // Offline-first: toggle enabled state locally + sync to server
-                                        togglingModules = togglingModules + module.moduleCode
-                                        viewModel.toggleModule(module.moduleCode)
+                                    togglingModules = togglingModules + module.moduleCode
+                                    viewModel.toggleModule(module.moduleCode) {
                                         togglingModules = togglingModules - module.moduleCode
-                                    } else {
-                                        // Install new module (optimistic local + API)
-                                        togglingModules = togglingModules + module.moduleCode
-                                        viewModel.installModule(module.moduleCode) {
-                                            togglingModules = togglingModules - module.moduleCode
-                                        }
                                     }
                                 }
                             },

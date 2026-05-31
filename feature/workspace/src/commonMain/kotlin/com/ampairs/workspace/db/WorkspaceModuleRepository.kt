@@ -17,8 +17,6 @@ import com.ampairs.workspace.domain.WorkspaceModule
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 @Inject
 @SingleIn(AppScope::class)
@@ -47,45 +45,14 @@ class WorkspaceModuleRepository(
         try {
             val result = moduleApi.getInstalledModules(workspaceId)
             result.onSuccess { modules ->
-                val pendingByCode = moduleDao.getPendingSyncModules(workspaceId)
-                    .associateBy { it.moduleCode }
-                val entities = modules.map { remote ->
-                    val entity = remote.toInstalledModuleEntity(workspaceId)
-                    val localPending = pendingByCode[remote.moduleCode]
-                    if (localPending != null) {
-                        // Preserve local pending enabled change; merge other server fields
-                        entity.copy(enabled = localPending.enabled, sync_state = "PENDING")
-                    } else {
-                        entity.copy(sync_state = "SYNCED")
-                    }
-                }
+                val entities = modules.map { it.toInstalledModuleEntity(workspaceId).copy(sync_state = "SYNCED") }
                 moduleDao.replaceInstalledModules(workspaceId, entities)
-                retryPendingChanges(workspaceId)
             }
         } catch (_: Exception) {
             // Graceful failure — UI continues with cached data
         }
     }
 
-    @OptIn(ExperimentalTime::class)
-    suspend fun toggleModuleEnabled(workspaceId: String, moduleId: String, newEnabled: Boolean) {
-        moduleDao.updateModuleEnabled(
-            moduleId, newEnabled, "PENDING",
-            Clock.System.now().toEpochMilliseconds()
-        )
-        try {
-            moduleApi.updateModuleEnabled(workspaceId, moduleId, newEnabled)
-                .onSuccess { remote ->
-                    moduleDao.insertInstalledModule(
-                        remote.toInstalledModuleEntity(workspaceId).copy(sync_state = "SYNCED")
-                    )
-                }
-        } catch (_: Exception) {
-            // Keep PENDING — retried in retryPendingChanges
-        }
-    }
-
-    @OptIn(ExperimentalTime::class)
     suspend fun installModuleOfflineFirst(workspaceId: String, moduleCode: String): Result<Unit> {
         val available = moduleDao.getAvailableModule(moduleCode)
         val placeholder = InstalledModuleEntity(
@@ -114,36 +81,21 @@ class WorkspaceModuleRepository(
                 syncInstalledModules(workspaceId)
                 Result.success(Unit)
             } else {
+                moduleDao.deleteInstalledModuleById(placeholder.id, workspaceId)
                 Result.failure(result.exceptionOrNull() ?: Exception("Installation failed"))
             }
         } catch (_: Exception) {
-            Result.success(Unit)
+            Result.success(Unit) // Keep placeholder; sync will confirm later
         }
     }
 
-    suspend fun uninstallModuleOfflineFirst(workspaceId: String, moduleId: String): Result<Unit> {
+    suspend fun uninstallModuleOfflineFirst(workspaceId: String, moduleId: String, moduleCode: String): Result<Unit> {
         moduleDao.deleteInstalledModuleById(moduleId, workspaceId)
         return try {
-            moduleApi.uninstallModule(workspaceId, moduleId)
+            moduleApi.uninstallModule(workspaceId, moduleCode)
             Result.success(Unit)
         } catch (_: Exception) {
             Result.success(Unit)
-        }
-    }
-
-    @OptIn(ExperimentalTime::class)
-    private suspend fun retryPendingChanges(workspaceId: String) {
-        val pending = moduleDao.getPendingSyncModules(workspaceId)
-        for (module in pending) {
-            try {
-                moduleApi.updateModuleEnabled(workspaceId, module.id, module.enabled)
-                    .onSuccess {
-                        moduleDao.updateModuleEnabled(
-                            module.id, module.enabled, "SYNCED",
-                            Clock.System.now().toEpochMilliseconds()
-                        )
-                    }
-            } catch (_: Exception) {}
         }
     }
 
@@ -187,9 +139,9 @@ class WorkspaceModuleRepository(
         }
     }
 
-    suspend fun uninstallModule(workspaceId: String, moduleId: String): Result<ModuleUninstallationResponse> {
+    suspend fun uninstallModule(workspaceId: String, moduleId: String, moduleCode: String): Result<ModuleUninstallationResponse> {
         return try {
-            val result = moduleApi.uninstallModule(workspaceId, moduleId)
+            val result = moduleApi.uninstallModule(workspaceId, moduleCode)
             if (result.isSuccess) {
                 moduleDao.deleteInstalledModuleById(moduleId, workspaceId)
             }

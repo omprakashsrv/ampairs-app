@@ -99,20 +99,20 @@ class WorkspaceModulesViewModel(
         }
     }
 
-    fun toggleModule(moduleCode: String) {
-        val wsId = workspaceId ?: return
-        val module = allModules.value.find { it.moduleCode == moduleCode } ?: return
+    fun toggleModule(moduleCode: String, onComplete: () -> Unit = {}) {
+        val wsId = workspaceId ?: run { onComplete(); return }
+        val module = allModules.value.find { it.moduleCode == moduleCode } ?: run { onComplete(); return }
 
         viewModelScope.launch {
             _errorMessage.value = null
             if (module.isInstalled) {
-                moduleRepository.toggleModuleEnabled(wsId, module.installedId!!, !module.enabled)
+                val result = moduleRepository.uninstallModuleOfflineFirst(wsId, module.installedId!!, module.moduleCode)
+                result.onFailure { e -> _errorMessage.value = e.message ?: "Failed to uninstall module" }
             } else {
                 val result = moduleRepository.installModuleOfflineFirst(wsId, moduleCode)
-                result.onFailure { e ->
-                    _errorMessage.value = e.message ?: "Failed to install module"
-                }
+                result.onFailure { e -> _errorMessage.value = e.message ?: "Failed to install module" }
             }
+            onComplete()
         }
     }
 
@@ -126,11 +126,11 @@ class WorkspaceModulesViewModel(
         }
     }
 
-    fun uninstallModule(moduleId: String, onResult: (Boolean) -> Unit = {}) {
+    fun uninstallModule(moduleId: String, moduleCode: String, onResult: (Boolean) -> Unit = {}) {
         val wsId = workspaceId ?: run { onResult(false); return }
         viewModelScope.launch {
             _errorMessage.value = null
-            val result = moduleRepository.uninstallModuleOfflineFirst(wsId, moduleId)
+            val result = moduleRepository.uninstallModuleOfflineFirst(wsId, moduleId, moduleCode)
             onResult(result.isSuccess)
         }
     }
