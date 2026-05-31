@@ -25,7 +25,7 @@ class ProductApiImpl(
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun getProducts(workspaceId: String): Result<List<ProductApiModel>> {
+    override suspend fun getProducts(): Result<List<ProductApiModel>> {
         return try {
             val response: Response<List<ProductApiModel>> = get(
                 client,
@@ -37,7 +37,7 @@ class ProductApiImpl(
         }
     }
 
-    override suspend fun getProduct(workspaceId: String, productId: String): Result<ProductApiModel> {
+    override suspend fun getProduct(productId: String): Result<ProductApiModel> {
         return try {
             val response: Response<ProductApiModel> = get(
                 client,
@@ -50,7 +50,7 @@ class ProductApiImpl(
         }
     }
 
-    override suspend fun createProduct(workspaceId: String, product: ProductApiModel): Result<ProductApiModel> {
+    override suspend fun createProduct(product: ProductApiModel): Result<ProductApiModel> {
         return try {
             val response: Response<ProductApiModel> = post(
                 client,
@@ -64,7 +64,7 @@ class ProductApiImpl(
         }
     }
 
-    override suspend fun updateProduct(workspaceId: String, productId: String, product: ProductApiModel): Result<ProductApiModel> {
+    override suspend fun updateProduct(productId: String, product: ProductApiModel): Result<ProductApiModel> {
         return try {
             try {
                 val response: Response<ProductApiModel> = put(
@@ -76,17 +76,13 @@ class ProductApiImpl(
                     ?: Result.failure(Exception("Failed to update product"))
             } catch (e: ClientRequestException) {
                 if (e.response.status == HttpStatusCode.NotFound) {
-                    try {
-                        val createResponse: Response<ProductApiModel> = post(
-                            client,
-                            ApiUrlBuilder.productUrl("v1/products"),
-                            product
-                        )
-                        createResponse.data?.let { Result.success(it) }
-                            ?: Result.failure(Exception("Failed to create product"))
-                    } catch (createException: Exception) {
-                        Result.failure(Exception("Update failed (404), then create failed: ${createException.message}"))
-                    }
+                    val createResponse: Response<ProductApiModel> = post(
+                        client,
+                        ApiUrlBuilder.productUrl("v1/products"),
+                        product
+                    )
+                    createResponse.data?.let { Result.success(it) }
+                        ?: Result.failure(Exception("Failed to create product after 404"))
                 } else {
                     Result.failure(e)
                 }
@@ -96,7 +92,7 @@ class ProductApiImpl(
         }
     }
 
-    override suspend fun deleteProduct(workspaceId: String, productId: String): Result<Unit> {
+    override suspend fun deleteProduct(productId: String): Result<Unit> {
         return try {
             delete<Response<Unit>>(
                 client,
@@ -108,13 +104,12 @@ class ProductApiImpl(
         }
     }
 
-    override suspend fun searchProducts(workspaceId: String, query: String): Result<List<ProductApiModel>> {
+    override suspend fun searchProducts(query: String): Result<List<ProductApiModel>> {
         return try {
-            val params = mapOf("q" to query)
             val response: Response<List<ProductApiModel>> = get(
                 client,
                 ApiUrlBuilder.productUrl("v1/products/search"),
-                params
+                mapOf("q" to query)
             )
             Result.success(response.data ?: emptyList())
         } catch (e: Exception) {

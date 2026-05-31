@@ -54,12 +54,12 @@ class ProductsListViewModel(
     fun syncProducts() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
-            try {
-                productRepository.syncProducts()
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Sync failed") }
-            } finally {
-                _uiState.update { it.copy(isRefreshing = false) }
+            val result = productRepository.fullSync()
+            _uiState.update {
+                it.copy(
+                    isRefreshing = false,
+                    error = result.exceptionOrNull()?.message
+                )
             }
         }
     }

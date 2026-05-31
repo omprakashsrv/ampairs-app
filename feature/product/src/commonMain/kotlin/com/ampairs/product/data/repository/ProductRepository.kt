@@ -27,7 +27,6 @@ import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toDomain
 import com.ampairs.product.domain.toDomainList
 import com.ampairs.product.domain.toSummary
-import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -118,15 +117,7 @@ class ProductRepository(
      */
     private suspend fun refreshProductFromServer(productId: String) {
         try {
-            // Get current workspace ID from context
-            val workspaceId = WorkspaceContextManager.getInstance().currentWorkspace.value?.id
-            if (workspaceId == null) {
-                EventLogger.w("ProductRepository", "No workspace context available")
-                return
-            }
-
-            // Fetch latest product data from server
-            val result = productApi.getProduct(workspaceId, productId)
+            val result = productApi.getProduct(productId)
 
             result.onSuccess { productApiModel ->
                 // Convert API model to domain, then to entity
@@ -198,9 +189,7 @@ class ProductRepository(
 
     suspend fun syncProducts(): Result<Int> {
         return try {
-            val workspaceId = WorkspaceContextManager.getInstance().currentWorkspace.value?.id
-                ?: return Result.failure(Exception("No workspace selected"))
-            val result = productApi.getProducts(workspaceId)
+            val result = productApi.getProducts()
             result.onSuccess { apiProducts ->
                 productDao.insertAll(apiProducts.asDatabaseModel())
             }
@@ -273,21 +262,25 @@ class ProductRepository(
 
     suspend fun pullFromServer(): Result<Int> = syncProducts()
 
+    // Push unsynced local changes first, then pull server updates — mirrors CustomerRepository.syncCustomers()
+    suspend fun fullSync(): Result<Int> {
+        val pushResult = pushPendingToServer()
+        val pullResult = syncProducts()
+        return if (pullResult.isFailure) pullResult
+        else Result.success((pushResult.getOrElse { 0 }) + (pullResult.getOrElse { 0 }))
+    }
+
     suspend fun pushPendingToServer(): Result<Int> {
         return try {
-            val workspaceId = WorkspaceContextManager.getInstance().currentWorkspace.value?.id
-                ?: return Result.failure(Exception("No workspace selected"))
             val unsynced = productDao.unSyncedProducts()
             var count = 0
             for (entity in unsynced) {
-                try {
-                    val apiModel = entity.asProductApiModel()
-                    productApi.createProduct(workspaceId, apiModel)
-                        .onSuccess { productDao.insert(entity.copy(synced = 1)) }
-                    count++
-                } catch (_: Exception) {
-                    // continue with remaining items
-                }
+                val apiModel = entity.asProductApiModel()
+                productApi.updateProduct(entity.id, apiModel)
+                    .onSuccess {
+                        productDao.insert(entity.copy(synced = 1))
+                        count++
+                    }
             }
             Result.success(count)
         } catch (e: Exception) {
