@@ -18,6 +18,8 @@ data class CustomerGroup(
     val priorityLevel: Int? = null,
     val metadata: String? = null,
     val active: Boolean = true,
+    @SerialName("ref_id")
+    val refId: String? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")

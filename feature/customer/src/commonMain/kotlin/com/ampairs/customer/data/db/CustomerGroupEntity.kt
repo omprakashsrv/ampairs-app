@@ -36,6 +36,7 @@ fun CustomerGroupEntity.toCustomerGroup(): CustomerGroup = CustomerGroup(
     priorityLevel = priorityLevel,
     metadata = metadata,
     active = active,
+    refId = ref_id,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
@@ -50,6 +51,7 @@ fun CustomerGroup.toEntity(): CustomerGroupEntity = CustomerGroupEntity(
     priorityLevel = priorityLevel,
     metadata = metadata,
     active = active,
+    ref_id = refId,
     createdAt = createdAt,
     updatedAt = updatedAt
 )

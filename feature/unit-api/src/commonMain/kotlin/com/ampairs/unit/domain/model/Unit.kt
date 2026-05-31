@@ -12,6 +12,7 @@ data class Unit(
     val description: String? = null,
     val category: String? = null,
     val active: Boolean = true,
+    @SerialName("ref_id") val refId: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
 )

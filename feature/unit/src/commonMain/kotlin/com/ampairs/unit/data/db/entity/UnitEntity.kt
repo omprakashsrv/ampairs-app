@@ -67,6 +67,7 @@ fun UnitEntity.toUnit(): Unit = Unit(
     description = description,
     category = category,
     active = active,
+    refId = refId,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
@@ -82,6 +83,7 @@ fun Unit.toEntity(): UnitEntity = UnitEntity(
     description = description,
     category = category,
     active = active,
+    refId = refId,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
