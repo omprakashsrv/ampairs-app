@@ -41,7 +41,13 @@ class CustomerGroupRepository(
                 customerGroup.uid
             }
 
-            val customerGroupWithUid = customerGroup.copy(uid = uid)
+            val customerGroupWithUid = customerGroup.copy(
+                uid = uid,
+                groupCode = customerGroup.groupCode?.takeIf { it.isNotBlank() }
+                    ?: customerGroup.name.filter { it.isLetterOrDigit() || it == ' ' }
+                        .trim().replace(' ', '_').uppercase().take(20)
+                        .ifBlank { uid.takeLast(8).uppercase() }
+            )
 
             // 1. Save locally first with unsynced status
             val unsyncedEntity = customerGroupWithUid.toEntity().copy(synced = false)
@@ -186,29 +192,42 @@ class CustomerGroupRepository(
             val unsyncedGroups = customerGroupDao.getUnsyncedCustomerGroups()
             var syncedCount = 0
 
-            for (entity in unsyncedGroups) {
-                val customerGroup = entity.toCustomerGroup()
+            // Handle deletions individually
+            for (entity in unsyncedGroups.filter { !it.active }) {
                 try {
-                    if (!entity.active) {
-                        // Handle deleted customer groups
-                        customerGroupApi.deleteCustomerGroup(customerGroup.uid)
-                        customerGroupDao.deleteCustomerGroup(customerGroup.uid)
-                        syncedCount++
-                    } else {
-                        // Try update first; fall back to create if not found on server
-                        val response = try {
-                            customerGroupApi.updateCustomerGroup(customerGroup.uid, customerGroup)
-                        } catch (_: Exception) {
-                            customerGroupApi.createCustomerGroup(customerGroup)
-                        }
-                        if (response.data != null && response.error == null) {
-                            customerGroupDao.insertCustomerGroup(response.data!!.toEntity().copy(synced = true))
-                            syncedCount++
-                        }
-                    }
+                    customerGroupApi.deleteCustomerGroup(entity.id)
+                    customerGroupDao.deleteCustomerGroup(entity.id)
+                    syncedCount++
                 } catch (e: Exception) {
-                    CustomerLogger.w("CustomerGroupRepository", "Failed to sync customer group ${customerGroup.uid}", e)
+                    CustomerLogger.w("CustomerGroupRepository", "Failed to delete customer group ${entity.id}", e)
                 }
+            }
+
+            // Bulk upsert active unsynced groups in batches of 10
+            val activeUnsynced = unsyncedGroups.filter { it.active }
+            for (batch in activeUnsynced.chunked(10)) {
+                val groups = batch.map { entity ->
+                    entity.toCustomerGroup().let { group ->
+                        if (group.groupCode.isNullOrBlank()) {
+                            // Backend requires groupCode — derive from name when not set
+                            val derived = group.name
+                                .filter { it.isLetterOrDigit() || it == ' ' }
+                                .trim().replace(' ', '_').uppercase().take(20)
+                                .ifBlank { group.uid.takeLast(8).uppercase() }
+                            group.copy(groupCode = derived)
+                        } else group
+                    }
+                }
+                customerGroupApi.bulkUpsertGroups(groups)
+                    .onSuccess {
+                        batch.forEach { entity ->
+                            customerGroupDao.insertCustomerGroup(entity.copy(synced = true))
+                        }
+                        syncedCount += batch.size
+                    }
+                    .onFailure { e ->
+                        CustomerLogger.w("CustomerGroupRepository", "Batch upsert failed", e)
+                    }
             }
 
             // SECOND: Sync from server in batches (incremental sync)

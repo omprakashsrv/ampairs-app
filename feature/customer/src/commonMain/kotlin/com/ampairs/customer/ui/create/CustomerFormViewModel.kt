@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -201,7 +203,8 @@ class CustomerFormViewModel(
     private val customerGroupRepository: CustomerGroupRepository,
     private val configRepository: ConfigLookup,
     val contactPickerService: ContactPickerService,
-    val locationService: LocationService
+    val locationService: LocationService,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     val isContactPickerAvailable: Boolean get() = contactPickerService.isAvailable()
@@ -352,6 +355,7 @@ class CustomerFormViewModel(
                 }
 
                 if (result.isSuccess) {
+                    syncService.markPendingPush(SyncEntity.CUSTOMER)
                     onSuccess()
                 } else {
                     _uiState.update {

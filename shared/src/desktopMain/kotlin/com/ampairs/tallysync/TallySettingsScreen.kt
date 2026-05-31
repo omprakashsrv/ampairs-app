@@ -94,7 +94,7 @@ fun TallySettingsScreen(
                             isSyncing = true
                             statusText = "Syncing…"
                             val result = runCatching {
-                                scheduler.syncService.sync(workspaceSlug)
+                                scheduler.runOnce(workspaceSlug)
                             }.onFailure { statusText = "Error: ${it.message}" }
                                 .getOrNull()
                             if (result != null) statusText = formatResult(result)

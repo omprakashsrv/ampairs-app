@@ -2,20 +2,19 @@ package com.ampairs.product.data.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
-import com.ampairs.common.post
-import com.ampairs.common.put
-import com.ampairs.common.delete
 import com.ampairs.common.model.Response
+import com.ampairs.common.post
+import com.ampairs.common.postList
+import com.ampairs.common.put
 import com.ampairs.product.api.model.ProductApiModel
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.http.HttpStatusCode
 
 @Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class ProductApiImpl(
@@ -31,7 +30,11 @@ class ProductApiImpl(
                 client,
                 ApiUrlBuilder.productUrl("v1/products")
             )
-            Result.success(response.data ?: emptyList())
+            if (response.data != null && response.error == null) {
+                Result.success(response.data!!)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Server returned no data"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -64,32 +67,14 @@ class ProductApiImpl(
         }
     }
 
-    override suspend fun updateProduct(productId: String, product: ProductApiModel): Result<ProductApiModel> {
-        return try {
-            try {
-                val response: Response<ProductApiModel> = put(
-                    client,
-                    ApiUrlBuilder.productUrl("v1/products/$productId"),
-                    product
-                )
-                response.data?.let { Result.success(it) }
-                    ?: Result.failure(Exception("Failed to update product"))
-            } catch (e: ClientRequestException) {
-                if (e.response.status == HttpStatusCode.NotFound) {
-                    val createResponse: Response<ProductApiModel> = post(
-                        client,
-                        ApiUrlBuilder.productUrl("v1/products"),
-                        product
-                    )
-                    createResponse.data?.let { Result.success(it) }
-                        ?: Result.failure(Exception("Failed to create product after 404"))
-                } else {
-                    Result.failure(e)
-                }
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun updateProduct(productId: String, product: ProductApiModel): Result<ProductApiModel> = runCatching {
+        val response: Response<ProductApiModel> = put(client, ApiUrlBuilder.productUrl("v1/products/$productId"), product)
+        response.data ?: error("Failed to update product $productId")
+    }
+
+    override suspend fun bulkUpdateProducts(products: List<ProductApiModel>): Result<List<ProductApiModel>> = runCatching {
+        val response: Response<List<ProductApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products"), products)
+        response.data ?: emptyList()
     }
 
     override suspend fun deleteProduct(productId: String): Result<Unit> {

@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.flowOf
 interface SyncDelegate {
     val entity: SyncEntity
 
+    /**
+     * Entities whose push must complete before this entity's push starts.
+     * CentralSyncService serializes them in order before acquiring this entity's mutex.
+     */
+    val pushDependencies: List<SyncEntity> get() = emptyList()
+
     /** Pull the latest data from the server into local Room DB. */
     suspend fun pullFromServer(): SyncResult
 

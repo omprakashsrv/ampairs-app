@@ -187,17 +187,10 @@ class ProductRepository(
 
     override suspend fun clearCache() { productDao.deleteAll() }
 
-    suspend fun syncProducts(): Result<Int> {
-        return try {
-            val result = productApi.getProducts()
-            result.onSuccess { apiProducts ->
-                productDao.insertAll(apiProducts.asDatabaseModel())
-            }
-            Result.success(result.getOrNull()?.size ?: 0)
-        } catch (e: Exception) {
-            ErrorTracking.captureException(e, "ProductRepository.syncProducts")
-            Result.failure(e)
-        }
+    suspend fun syncProducts(): Result<Int> = runCatching {
+        val products = productApi.getProducts().getOrThrow()
+        productDao.insertAll(products.asDatabaseModel())
+        products.size
     }
 
     suspend fun createProduct(product: Product): Result<Product> {
@@ -270,22 +263,20 @@ class ProductRepository(
         else Result.success((pushResult.getOrElse { 0 }) + (pullResult.getOrElse { 0 }))
     }
 
-    suspend fun pushPendingToServer(): Result<Int> {
-        return try {
-            val unsynced = productDao.unSyncedProducts()
-            var count = 0
-            for (entity in unsynced) {
-                val apiModel = entity.asProductApiModel()
-                productApi.updateProduct(entity.id, apiModel)
-                    .onSuccess {
-                        productDao.insert(entity.copy(synced = 1))
-                        count++
-                    }
-            }
-            Result.success(count)
-        } catch (e: Exception) {
-            Result.failure(e)
+    suspend fun pushPendingToServer(): Result<Int> = runCatching {
+        val unsynced = productDao.unSyncedProducts()
+        if (unsynced.isEmpty()) return@runCatching 0
+        var pushed = 0
+        for (batch in unsynced.chunked(10)) {
+            val apiModels = batch.map { it.asProductApiModel() }
+            productApi.bulkUpdateProducts(apiModels)
+                .onSuccess {
+                    batch.forEach { entity -> productDao.insert(entity.copy(synced = 1)) }
+                    pushed += batch.size
+                }
+                .onFailure { throw it }
         }
+        pushed
     }
 
     suspend fun handleExternalEvent(productId: String, eventType: String) {

@@ -134,6 +134,9 @@ sealed interface WorkspaceRoute : NavKey {
     data class ModuleStore(
         val workspaceId: String = ""
     ) : WorkspaceRoute
+
+    @Serializable
+    data object SyncStatus : WorkspaceRoute
 }
 
 // Product routes

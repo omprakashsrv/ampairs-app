@@ -41,4 +41,7 @@ interface CustomerTypeDao {
 
     @Query("SELECT COUNT(*) FROM customer_types WHERE active = 1")
     suspend fun getActiveCustomerTypesCount(): Int
+
+    @Query("SELECT COUNT(*) FROM customer_types WHERE synced = 0")
+    fun observeUnsyncedCount(): Flow<Int>
 }

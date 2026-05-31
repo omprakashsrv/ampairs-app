@@ -22,6 +22,8 @@ interface CustomerTypeApi {
 
     suspend fun updateCustomerType(id: String, customerType: CustomerType): Response<CustomerType>
 
+    suspend fun bulkUpsertTypes(types: List<CustomerType>): Result<List<CustomerType>>
+
     suspend fun deleteCustomerType(id: String): Response<Unit>
 
     suspend fun searchCustomerTypes(

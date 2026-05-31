@@ -128,6 +128,7 @@ kotlin {
                 api(projects.feature.order)
                 api(projects.feature.invoice)
                 api(projects.feature.workspace)
+                api(projects.feature.sync)
 
                 implementation(libs.compose.runtime)
                 implementation(libs.compose.ui)

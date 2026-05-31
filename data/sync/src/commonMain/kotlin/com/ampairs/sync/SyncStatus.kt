@@ -1,5 +1,7 @@
 package com.ampairs.sync
 
+import com.ampairs.sync.db.SyncPersistStatus
+
 sealed class SyncStatus {
     /** No pending work. */
     data object Idle : SyncStatus()
@@ -22,22 +24,21 @@ sealed class SyncStatus {
     fun isPending() = this is PendingPush || this is PendingPull
 
     companion object {
-        fun fromName(name: String, pendingCount: Int = 0): SyncStatus = when (name) {
-            "IDLE" -> Idle
-            "PENDING_PUSH" -> PendingPush(pendingCount)
-            "PENDING_PULL" -> PendingPull
-            "SYNCING" -> Syncing
-            "FAILED" -> Failed("Unknown — restored from disk")
-            else -> Idle
+        fun from(status: SyncPersistStatus, pendingCount: Int = 0): SyncStatus = when (status) {
+            SyncPersistStatus.IDLE -> Idle
+            SyncPersistStatus.PENDING_PUSH -> PendingPush(pendingCount)
+            SyncPersistStatus.PENDING_PULL -> PendingPull
+            SyncPersistStatus.SYNCING -> Syncing
+            SyncPersistStatus.FAILED -> Failed("Unknown — restored from disk")
         }
 
-        fun toPersistedName(status: SyncStatus): String = when (status) {
-            is Idle -> "IDLE"
-            is PendingPush -> "PENDING_PUSH"
-            is PendingPull -> "PENDING_PULL"
-            is Syncing -> "IDLE" // should not be persisted directly — use persistStatusByName before syncing
-            is Success -> "IDLE"
-            is Failed -> "FAILED"
+        fun toPersistStatus(status: SyncStatus): SyncPersistStatus = when (status) {
+            is Idle -> SyncPersistStatus.IDLE
+            is PendingPush -> SyncPersistStatus.PENDING_PUSH
+            is PendingPull -> SyncPersistStatus.PENDING_PULL
+            is Syncing -> SyncPersistStatus.IDLE // should not be persisted directly
+            is Success -> SyncPersistStatus.IDLE
+            is Failed -> SyncPersistStatus.FAILED
         }
     }
 }

@@ -7,6 +7,8 @@ import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.customer.domain.CustomerType
 import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -34,6 +36,7 @@ data class CustomerTypeFormState(
 @AssistedInject
 class CustomerTypeFormViewModel(
     private val customerTypeRepository: CustomerTypeRepository,
+    private val syncService: CentralSyncService,
     @Assisted private val customerTypeId: String?
 ) : ViewModel() {
 
@@ -150,6 +153,7 @@ class CustomerTypeFormViewModel(
                 }
 
                 if (result.isSuccess) {
+                    syncService.markPendingPush(SyncEntity.CUSTOMER_TYPE)
                     _formState.update { it.copy(isLoading = false) }
                     onSuccess()
                 } else {

@@ -8,6 +8,9 @@ import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
+import com.ampairs.common.postList
+import com.ampairs.common.put
+import com.ampairs.common.put
 import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -73,12 +76,17 @@ class CustomerGroupApiImpl(
     }
 
     override suspend fun updateCustomerGroup(id: String, customerGroup: CustomerGroup): Response<CustomerGroup> {
-        val response: Response<CustomerGroup> = post(
+        val response: Response<CustomerGroup> = put(
             client,
             ApiUrlBuilder.customerUrl("v1/groups/$id"),
             customerGroup
         )
         return response
+    }
+
+    override suspend fun bulkUpsertGroups(groups: List<CustomerGroup>): Result<List<CustomerGroup>> = runCatching {
+        val response: Response<List<CustomerGroup>> = postList(client, ApiUrlBuilder.customerUrl("v1/groups"), groups)
+        response.data ?: emptyList()
     }
 
     override suspend fun deleteCustomerGroup(id: String): Response<Unit> {

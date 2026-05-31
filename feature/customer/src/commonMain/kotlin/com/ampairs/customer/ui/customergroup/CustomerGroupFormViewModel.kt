@@ -7,6 +7,8 @@ import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -34,6 +36,7 @@ data class CustomerGroupFormState(
 @AssistedInject
 class CustomerGroupFormViewModel(
     private val customerGroupRepository: CustomerGroupRepository,
+    private val syncService: CentralSyncService,
     @Assisted private val customerGroupId: String?
 ) : ViewModel() {
 
@@ -145,6 +148,7 @@ class CustomerGroupFormViewModel(
                 }
 
                 if (result.isSuccess) {
+                    syncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)
                     _formState.update { it.copy(isLoading = false) }
                     onSuccess()
                 } else {

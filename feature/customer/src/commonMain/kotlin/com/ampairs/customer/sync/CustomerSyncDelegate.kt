@@ -8,6 +8,7 @@ import com.ampairs.sync.SyncEntityKey
 import com.ampairs.sync.SyncResult
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.flow.Flow
 
 @Inject
 @ContributesIntoMap(AppScope::class)

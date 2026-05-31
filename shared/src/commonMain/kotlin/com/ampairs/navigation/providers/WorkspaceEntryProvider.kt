@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.sync.ui.SyncStatusScreen
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.ModuleStoreScreen
@@ -140,6 +141,12 @@ fun workspaceEntryProvider(
         ) {
             Text("Accept Invitation Screen - Coming Soon")
         }
+    }
+
+    is WorkspaceRoute.SyncStatus -> NavEntry(key) {
+        SyncStatusScreen(
+            onNavigateBack = { backStack.removeLastOrNull() }
+        )
     }
 
     else -> null

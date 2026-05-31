@@ -2,6 +2,7 @@ package com.ampairs.sync
 
 import co.touchlab.kermit.Logger
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.sync.db.SyncStateEntity
 import dev.zacsweers.metro.Inject
@@ -18,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
 
 private val log = Logger.withTag("CentralSyncService")
@@ -43,7 +46,14 @@ class CentralSyncService(
     private val _syncStates = MutableStateFlow<Map<SyncEntity, EntitySyncState>>(emptyMap())
     val syncStates: StateFlow<Map<SyncEntity, EntitySyncState>> = _syncStates.asStateFlow()
 
+    private val _syncLogs = MutableStateFlow<List<SyncLogEntry>>(emptyList())
+    val syncLogs: StateFlow<List<SyncLogEntry>> = _syncLogs.asStateFlow()
+
     private val eventChannel = Channel<SyncEvent>(capacity = Channel.BUFFERED)
+
+    // Per-entity mutexes so concurrent pushes/pulls serialize instead of the second being dropped.
+    private val pushMutexes = SyncEntity.entries.associateWith { Mutex() }
+    private val pullMutexes = SyncEntity.entries.associateWith { Mutex() }
 
     private var scope: CoroutineScope? = null
     private var dao: SyncStateDao? = null
@@ -61,11 +71,40 @@ class CentralSyncService(
         scope = newScope
 
         val db = dbFactory.create(workspaceSlug)
-        dao = db.syncStateDao()
+        val syncDao = db.syncStateDao()
+        dao = syncDao
 
         newScope.launch {
             initializeStates()
             processEvents()
+        }
+
+        // Reactively observe SyncStateEntity — only fire triggers for entities that *newly* enter
+        // PENDING_PUSH or PENDING_PULL. Using a delta set keyed by (entityName, statusName) so that
+        // incidental updatedAt changes (e.g. re-writing the same PENDING state) don't re-trigger
+        // a sync that's already in progress.
+        newScope.launch {
+            var previousPendingSet = emptySet<Pair<SyncEntity, SyncPersistStatus>>()
+            syncDao.observeAll()
+                .map { rows ->
+                    rows.filter { it.statusName == SyncPersistStatus.PENDING_PUSH || it.statusName == SyncPersistStatus.PENDING_PULL }
+                        .map { it.entityName to it.statusName }
+                        .toSet()
+                }
+                .collect { currentPendingSet ->
+                    val newlyPending = currentPendingSet - previousPendingSet
+                    previousPendingSet = currentPendingSet
+                    if (newlyPending.isNotEmpty()) {
+                        log.d { "Observer fired (new pending): ${newlyPending.map { "${it.first.name}=${it.second}" }}" }
+                        newlyPending.forEach { (entity, status) ->
+                            when (status) {
+                                SyncPersistStatus.PENDING_PUSH -> emit(SyncEvent.TriggerPush(entity))
+                                SyncPersistStatus.PENDING_PULL -> emit(SyncEvent.TriggerPull(entity))
+                                else -> Unit
+                            }
+                        }
+                    }
+                }
         }
 
         log.i { "Started for workspace: $workspaceSlug" }
@@ -88,6 +127,7 @@ class CentralSyncService(
         scope = null
         dao = null
         _syncStates.value = emptyMap()
+        _syncLogs.value = emptyList()
         log.i { "Stopped" }
     }
 
@@ -138,11 +178,11 @@ class CentralSyncService(
         val persisted = currentDao.getAll().associateBy { it.entityName }
 
         val initialMap = delegates.keys.associateWith { entity ->
-            val row = persisted[entity.name]
+            val row = persisted[entity]
             EntitySyncState(
                 entity = entity,
                 status = if (row != null)
-                    SyncStatus.fromName(row.statusName, row.pendingCount)
+                    SyncStatus.from(row.statusName, row.pendingCount)
                 else
                     SyncStatus.Idle,
                 lastSyncedAt = row?.lastSyncedAt,
@@ -161,10 +201,11 @@ class CentralSyncService(
         val currentDao = dao ?: return
         val pending = currentDao.getPending()
         pending.forEach { row ->
-            val entity = SyncEntity.entries.firstOrNull { it.name == row.entityName } ?: return@forEach
             when (row.statusName) {
-                "PENDING_PUSH" -> emit(SyncEvent.TriggerPush(entity))
-                "PENDING_PULL", "FAILED" -> emit(SyncEvent.TriggerPull(entity))
+                SyncPersistStatus.PENDING_PUSH -> emit(SyncEvent.TriggerPush(row.entityName))
+                SyncPersistStatus.PENDING_PULL,
+                SyncPersistStatus.FAILED -> emit(SyncEvent.TriggerPull(row.entityName))
+                else -> Unit
             }
         }
     }
@@ -201,30 +242,32 @@ class CentralSyncService(
 
     private suspend fun executePull(entity: SyncEntity) {
         val delegate = delegates[entity] ?: return
-        if (_syncStates.value[entity]?.status is SyncStatus.Syncing) return // already in-flight
-        // Persist PENDING_PULL before starting so a process death retries as pull, not push
-        persistStatusByName(entity, "PENDING_PULL")
-        updateState(entity) { it.copy(status = SyncStatus.Syncing) }
-
-        val result = runCatching { delegate.pullFromServer() }.fold(
-            onSuccess = { it },
-            onFailure = { SyncResult.Failure(it) },
-        )
-        applyResult(entity, result, wasPull = true)
+        pullMutexes[entity]?.withLock {
+            updateState(entity) { it.copy(status = SyncStatus.Syncing) }
+            appendLog(SyncLogEntry(Clock.System.now().toEpochMilliseconds(), entity, SyncLogEntry.Direction.PULL, SyncLogEntry.Outcome.STARTED, "Pull started"))
+            val result = runCatching { delegate.pullFromServer() }.fold(
+                onSuccess = { it },
+                onFailure = { SyncResult.Failure(it) },
+            )
+            applyResult(entity, result, wasPull = true)
+        }
     }
 
     private suspend fun executePush(entity: SyncEntity) {
         val delegate = delegates[entity] ?: return
-        if (_syncStates.value[entity]?.status is SyncStatus.Syncing) return // already in-flight
-        // Persist PENDING_PUSH before starting so a process death retries as push
-        persistStatusByName(entity, "PENDING_PUSH")
-        updateState(entity) { it.copy(status = SyncStatus.Syncing) }
-
-        val result = runCatching { delegate.pushPendingToServer() }.fold(
-            onSuccess = { it },
-            onFailure = { SyncResult.Failure(it) },
-        )
-        applyResult(entity, result, wasPull = false)
+        // Run push dependencies sequentially before acquiring this entity's mutex.
+        // Each dependency uses its own mutex, so a concurrently running catalog push will
+        // simply be waited on rather than duplicated.
+        delegate.pushDependencies.forEach { dep -> executePush(dep) }
+        pushMutexes[entity]?.withLock {
+            updateState(entity) { it.copy(status = SyncStatus.Syncing) }
+            appendLog(SyncLogEntry(Clock.System.now().toEpochMilliseconds(), entity, SyncLogEntry.Direction.PUSH, SyncLogEntry.Outcome.STARTED, "Push started"))
+            val result = runCatching { delegate.pushPendingToServer() }.fold(
+                onSuccess = { it },
+                onFailure = { SyncResult.Failure(it) },
+            )
+            applyResult(entity, result, wasPull = false)
+        }
     }
 
     private suspend fun executeBackendEvent(entity: SyncEntity, entityId: String, eventType: String) {
@@ -236,8 +279,9 @@ class CentralSyncService(
         applyResult(entity, result, wasPull = true)
     }
 
-    private fun applyResult(entity: SyncEntity, result: SyncResult, wasPull: Boolean) {
+    private suspend fun applyResult(entity: SyncEntity, result: SyncResult, wasPull: Boolean) {
         val now = Clock.System.now().toEpochMilliseconds()
+        val direction = if (wasPull) SyncLogEntry.Direction.PULL else SyncLogEntry.Direction.PUSH
         when (result) {
             is SyncResult.Success -> {
                 updateState(entity) {
@@ -248,16 +292,35 @@ class CentralSyncService(
                     )
                 }
                 persistStatus(entity, SyncStatus.Idle, now)
+                appendLog(SyncLogEntry(now, entity, direction, SyncLogEntry.Outcome.SUCCESS, "Synced ${result.count} record(s)"))
                 log.i { "${entity.name} sync success (count=${result.count})" }
             }
             is SyncResult.Failure -> {
-                val errorMsg = result.error.message ?: "Unknown error"
+                val causeChain = generateSequence(result.error) { it.cause }
+                    .mapNotNull { it.message?.trim() }
+                    .distinct()
+                    .toList()
+                val errorMsg = causeChain.firstOrNull() ?: "Unknown error"
+                val detail = causeChain.drop(1).joinToString(" ← ").ifBlank { null }
                 updateState(entity) { it.copy(status = SyncStatus.Failed(errorMsg), errorMessage = errorMsg) }
                 // Persist as pending so it retries on next reconnect
-                val retryStatus = if (wasPull) "PENDING_PULL" else "PENDING_PUSH"
-                persistStatusByName(entity, retryStatus, errorMessage = errorMsg)
-                log.w { "${entity.name} sync failed: $errorMsg" }
+                val retryStatus = if (wasPull) SyncPersistStatus.PENDING_PULL else SyncPersistStatus.PENDING_PUSH
+                persistPersistStatus(entity, retryStatus, errorMessage = errorMsg)
+                appendLog(SyncLogEntry(now, entity, direction, SyncLogEntry.Outcome.FAILURE, errorMsg, detail = detail))
+                log.w { "${entity.name} sync failed: $errorMsg${if (detail != null) " ← $detail" else ""}" }
             }
+        }
+    }
+
+    // endregion
+
+    // region — Log helpers
+
+    private fun appendLog(entry: SyncLogEntry) {
+        _syncLogs.update { current ->
+            val nextId = (current.lastOrNull()?.id ?: 0L) + 1L
+            val next = current + entry.copy(id = nextId)
+            if (next.size > 1000) next.drop(next.size - 1000) else next
         }
     }
 
@@ -274,41 +337,37 @@ class CentralSyncService(
 
     private fun updateAndPersistStatus(entity: SyncEntity, status: SyncStatus) {
         updateState(entity) { it.copy(status = status) }
-        persistStatus(entity, status)
+        scope?.launch { persistStatus(entity, status) }
     }
 
-    private fun persistStatus(entity: SyncEntity, status: SyncStatus, lastSyncedAt: Long? = null) {
-        scope?.launch {
-            val currentDao = dao ?: return@launch
-            val current = _syncStates.value[entity]
-            currentDao.upsert(
-                SyncStateEntity(
-                    entityName = entity.name,
-                    statusName = SyncStatus.toPersistedName(status),
-                    lastSyncedAt = lastSyncedAt ?: current?.lastSyncedAt,
-                    pendingCount = (status as? SyncStatus.PendingPush)?.count ?: 0,
-                    errorMessage = null,
-                    updatedAt = Clock.System.now().toEpochMilliseconds(),
-                )
+    private suspend fun persistStatus(entity: SyncEntity, status: SyncStatus, lastSyncedAt: Long? = null) {
+        val currentDao = dao ?: return
+        val current = _syncStates.value[entity]
+        currentDao.upsert(
+            SyncStateEntity(
+                entityName = entity,
+                statusName = SyncStatus.toPersistStatus(status),
+                lastSyncedAt = lastSyncedAt ?: current?.lastSyncedAt,
+                pendingCount = (status as? SyncStatus.PendingPush)?.count ?: 0,
+                errorMessage = null,
+                updatedAt = Clock.System.now().toEpochMilliseconds(),
             )
-        }
+        )
     }
 
-    private fun persistStatusByName(entity: SyncEntity, statusName: String, errorMessage: String? = null) {
-        scope?.launch {
-            val currentDao = dao ?: return@launch
-            val current = _syncStates.value[entity]
-            currentDao.upsert(
-                SyncStateEntity(
-                    entityName = entity.name,
-                    statusName = statusName,
-                    lastSyncedAt = current?.lastSyncedAt,
-                    pendingCount = 0,
-                    errorMessage = errorMessage,
-                    updatedAt = Clock.System.now().toEpochMilliseconds(),
-                )
+    private suspend fun persistPersistStatus(entity: SyncEntity, status: SyncPersistStatus, errorMessage: String? = null) {
+        val currentDao = dao ?: return
+        val current = _syncStates.value[entity]
+        currentDao.upsert(
+            SyncStateEntity(
+                entityName = entity,
+                statusName = status,
+                lastSyncedAt = current?.lastSyncedAt,
+                pendingCount = 0,
+                errorMessage = errorMessage,
+                updatedAt = Clock.System.now().toEpochMilliseconds(),
             )
-        }
+        )
     }
 
     // endregion

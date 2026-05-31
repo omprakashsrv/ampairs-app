@@ -1,7 +1,7 @@
 package com.ampairs.product.sync
 
 import com.ampairs.common.di.AppScope
-import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.product.data.repository.ProductCatalogSyncRepository
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
@@ -11,32 +11,25 @@ import dev.zacsweers.metro.Inject
 
 @Inject
 @ContributesIntoMap(AppScope::class)
-@SyncEntityKey(SyncEntity.PRODUCT)
-class ProductSyncDelegate(
-    private val productRepository: ProductRepository,
+@SyncEntityKey(SyncEntity.PRODUCT_CATALOG)
+class ProductCatalogSyncDelegate(
+    private val repository: ProductCatalogSyncRepository,
 ) : SyncDelegate {
 
-    override val entity: SyncEntity = SyncEntity.PRODUCT
-
-    // PRODUCT_CATALOG (groups/brands/categories/sub-categories) must be on the server before
-    // products can be inserted due to FK constraints.
-    override val pushDependencies: List<SyncEntity> = listOf(SyncEntity.PRODUCT_CATALOG)
+    override val entity: SyncEntity = SyncEntity.PRODUCT_CATALOG
 
     override suspend fun pullFromServer(): SyncResult =
-        productRepository.pullFromServer().fold(
+        repository.pullFromServer().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun pushPendingToServer(): SyncResult =
-        productRepository.pushPendingToServer().fold(
+        repository.pushPendingToServer().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult =
-        runCatching { productRepository.handleExternalEvent(entityId, eventType) }.fold(
-            onSuccess = { SyncResult.Success(1) },
-            onFailure = { SyncResult.Failure(it) },
-        )
+        pullFromServer()
 }

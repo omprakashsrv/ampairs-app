@@ -186,29 +186,31 @@ class CustomerTypeRepository(
             val unsyncedTypes = customerTypeDao.getUnsyncedCustomerTypes()
             var syncedCount = 0
 
-            for (entity in unsyncedTypes) {
-                val customerType = entity.toCustomerType()
+            // Handle deletions individually
+            for (entity in unsyncedTypes.filter { !it.active }) {
                 try {
-                    if (!entity.active) {
-                        // Handle deleted customer types
-                        customerTypeApi.deleteCustomerType(customerType.uid)
-                        customerTypeDao.deleteCustomerType(customerType.uid)
-                        syncedCount++
-                    } else {
-                        // Try update first; fall back to create if not found on server
-                        val response = try {
-                            customerTypeApi.updateCustomerType(customerType.uid, customerType)
-                        } catch (_: Exception) {
-                            customerTypeApi.createCustomerType(customerType)
-                        }
-                        if (response.data != null && response.error == null) {
-                            customerTypeDao.insertCustomerType(response.data!!.toEntity().copy(synced = true))
-                            syncedCount++
-                        }
-                    }
+                    customerTypeApi.deleteCustomerType(entity.id)
+                    customerTypeDao.deleteCustomerType(entity.id)
+                    syncedCount++
                 } catch (e: Exception) {
-                    CustomerLogger.w("CustomerTypeRepository", "Failed to sync customer type ${customerType.uid}", e)
+                    CustomerLogger.w("CustomerTypeRepository", "Failed to delete customer type ${entity.id}", e)
                 }
+            }
+
+            // Bulk upsert active unsynced types in batches of 10
+            val activeUnsynced = unsyncedTypes.filter { it.active }
+            for (batch in activeUnsynced.chunked(10)) {
+                val types = batch.map { it.toCustomerType() }
+                customerTypeApi.bulkUpsertTypes(types)
+                    .onSuccess {
+                        batch.forEach { entity ->
+                            customerTypeDao.insertCustomerType(entity.copy(synced = true))
+                        }
+                        syncedCount += batch.size
+                    }
+                    .onFailure { e ->
+                        CustomerLogger.w("CustomerTypeRepository", "Batch upsert failed", e)
+                    }
             }
 
             // SECOND: Sync from server in batches (incremental sync)

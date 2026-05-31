@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -35,7 +39,8 @@ data class CustomerGroupListUiState(
 @ViewModelKey
 @Inject
 class CustomerGroupListViewModel(
-    private val customerGroupRepository: CustomerGroupRepository
+    private val customerGroupRepository: CustomerGroupRepository,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomerGroupListUiState())
@@ -45,7 +50,8 @@ class CustomerGroupListViewModel(
 
     init {
         observeCustomerGroups()
-        syncCustomerGroups()
+        observeSyncState()
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CUSTOMER_GROUP))
     }
 
     fun updateSearchQuery(query: String) {
@@ -57,7 +63,9 @@ class CustomerGroupListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
             val result = customerGroupRepository.deleteCustomerGroup(customerGroupId)
-            if (result.isFailure) {
+            if (result.isSuccess) {
+                syncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)
+            } else {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to delete customer group")
                 }
@@ -66,16 +74,7 @@ class CustomerGroupListViewModel(
     }
 
     fun syncCustomerGroups() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, error = null) }
-            try {
-                customerGroupRepository.syncCustomerGroups()
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Sync failed") }
-            } finally {
-                _uiState.update { it.copy(isRefreshing = false) }
-            }
-        }
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CUSTOMER_GROUP))
     }
 
     fun loadAvailableCustomerGroupsForImport() {
@@ -95,12 +94,13 @@ class CustomerGroupListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
             val result = customerGroupRepository.importCustomerGroup(customerGroup)
-            if (result.isFailure) {
+            if (result.isSuccess) {
+                syncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)
+                loadAvailableCustomerGroupsForImport()
+            } else {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer group")
                 }
-            } else {
-                loadAvailableCustomerGroupsForImport()
             }
         }
     }
@@ -109,14 +109,21 @@ class CustomerGroupListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
             val result = customerGroupRepository.bulkImportCustomerGroups(customerGroups)
-            if (result.isFailure) {
+            if (result.isSuccess) {
+                syncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)
+                loadAvailableCustomerGroupsForImport()
+            } else {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer groups")
                 }
-            } else {
-                loadAvailableCustomerGroupsForImport()
             }
         }
+    }
+
+    private fun observeSyncState() {
+        syncService.observeEntity(SyncEntity.CUSTOMER_GROUP)
+            .onEach { state -> _uiState.update { it.copy(isRefreshing = state?.status is SyncStatus.Syncing) } }
+            .launchIn(viewModelScope)
     }
 
     @OptIn(FlowPreview::class)
