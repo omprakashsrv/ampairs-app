@@ -80,6 +80,9 @@ interface ProductDao {
     @Update
     suspend fun update(product: ProductEntity)
 
+    @Query("UPDATE productEntity SET stock_quantity = :quantity WHERE id = :id")
+    suspend fun updateStockQuantity(id: String, quantity: Double)
+
     @Query("DELETE FROM productEntity WHERE id = :id")
     suspend fun deleteById(id: String)
 

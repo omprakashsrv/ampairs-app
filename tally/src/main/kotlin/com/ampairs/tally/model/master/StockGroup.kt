@@ -27,6 +27,14 @@ data class StockGroup(
     var parent: String? = null,
 
     @XmlElement(true)
+    @XmlSerialName("GSTDETAILS.LIST")
+    var gstDetailList: List<GSTDetail>? = null,
+
+    @XmlElement(true)
+    @XmlSerialName("HSNDETAILS.LIST")
+    var hsnDetailList: List<HsnDetail>? = null,
+
+    @XmlElement(true)
     @XmlSerialName("ALTERID")
     var alterId: String? = null,
 )

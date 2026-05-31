@@ -116,6 +116,8 @@ fun TallySettingsScreen(
                                 TallyProductMapper.ENTITY_STOCK_CATEGORY,
                                 TallyProductMapper.ENTITY_STOCK_ITEM,
                                 TallyProductMapper.ENTITY_UNIT,
+                                TallyCustomerMapper.ENTITY_ACCOUNT_GROUP,
+                                TallyCustomerMapper.ENTITY_LEDGER,
                             )
                             entityTypes.forEach { entity ->
                                 dataStore.setTallyLastAlterId(workspaceSlug, entity, 0L)

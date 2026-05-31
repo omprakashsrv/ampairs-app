@@ -45,7 +45,11 @@ internal object TallyProductMapper {
     ): ProductEntity? {
         val id = tallyId(guid, name) ?: return null
         val productName = name ?: return null
-        val sellingPrice = standardPrice?.rate?.parsePrice() ?: 0.0
+        // standardPrice = selling/retail price (MRP in India); standardCost = purchase/cost price (→ dp proxy)
+        val mrp = standardPrice?.rate?.parsePrice() ?: 0.0
+        val buyingPrice = standardCost?.rate?.parsePrice() ?: 0.0
+        // HSN code is the closest match for tax_code in Ampairs
+        val hsnCode = gstDetailList?.firstOrNull()?.hsnCode?.trim()?.takeIf { it.isNotBlank() } ?: ""
         return ProductEntity(
             id = id,
             name = productName,
@@ -53,10 +57,10 @@ internal object TallyProductMapper {
             group_id = parent?.let { groupIdByName[it] },
             category_id = category?.let { categoryIdByName[it] },
             base_unit = baseUnits,
-            tax_code = "",
-            mrp = sellingPrice,
-            dp = sellingPrice,
-            selling_price = sellingPrice,
+            tax_code = hsnCode,
+            mrp = mrp,
+            dp = if (buyingPrice > 0.0) buyingPrice else mrp,
+            selling_price = mrp,
             active = 1,
             soft_deleted = 0,
             synced = 0
@@ -86,8 +90,13 @@ internal object TallyProductMapper {
         }
     }
 
-    // Tally price strings can be " 100.00 /Nos" (leading space) — extract first numeric token
+    // Tally price strings: "15750.00/No", " 100.00 /Nos" — take everything before the "/"
     private fun String.parsePrice(): Double {
-        return trim().split(Regex("\\s+")).firstOrNull()?.toDoubleOrNull() ?: 0.0
+        return trim().substringBefore("/").trim().toDoubleOrNull() ?: 0.0
+    }
+
+    // Tally balance strings: "90 No", "-6 BOX", "3.000 KGS" — first token is the quantity
+    fun String.parseClosingQty(): Double? {
+        return trim().split(Regex("\\s+")).firstOrNull()?.toDoubleOrNull()
     }
 }

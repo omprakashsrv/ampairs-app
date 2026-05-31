@@ -28,6 +28,17 @@ class TallyRepository(val tallyApi: TallyApi) {
         return post(Type.STOCK_ITEM.toTallyXML())
     }
 
+    suspend fun getStockBalances(): TallyXML {
+        val xml = Type.STOCK_BALANCE.toTallyXML()
+        val collection = xml.body?.desc?.tdl?.tdlMessage?.collection!!
+        collection.nativeMethod = listOf("NAME", "GUID", "BASEUNITS")
+        collection.compute = listOf(
+            "CLOSINGBALANCE : \$CLOSINGBALANCE",
+            "CLOSINGVALUE : \$CLOSINGVALUE",
+        )
+        return post(xml)
+    }
+
     suspend fun getLedgers(): TallyXML {
         return post(Type.LEDGER.toTallyXML())
     }
