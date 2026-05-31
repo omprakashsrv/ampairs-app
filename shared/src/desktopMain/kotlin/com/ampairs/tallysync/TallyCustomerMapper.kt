@@ -42,11 +42,15 @@ internal object TallyCustomerMapper {
 
     fun Group.toCustomerGroupEntity(id: String, tallyRefId: String): CustomerGroupEntity? {
         val groupName = name ?: return null
+        val derivedCode = groupName
+            .filter { it.isLetterOrDigit() || it == ' ' }
+            .trim().replace(' ', '_').uppercase().take(20)
+            .ifBlank { id.takeLast(8).uppercase() }
         return CustomerGroupEntity(
             id = id,
             name = groupName,
             description = parent?.takeIf { it.isNotBlank() },
-            groupCode = null,
+            groupCode = derivedCode,
             displayOrder = null,
             defaultDiscountPercentage = null,
             priorityLevel = null,
