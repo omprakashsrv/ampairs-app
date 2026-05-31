@@ -19,13 +19,13 @@ class CustomerGroupSyncDelegate(
     override val entity: SyncEntity = SyncEntity.CUSTOMER_GROUP
 
     override suspend fun pullFromServer(): SyncResult =
-        customerGroupRepository.syncCustomerGroups().fold(
+        customerGroupRepository.pullFromServer().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun pushPendingToServer(): SyncResult =
-        customerGroupRepository.syncCustomerGroups().fold(
+        customerGroupRepository.pushPendingToServer().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )

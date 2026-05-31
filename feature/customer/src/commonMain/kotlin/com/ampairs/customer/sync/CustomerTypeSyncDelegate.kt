@@ -19,13 +19,13 @@ class CustomerTypeSyncDelegate(
     override val entity: SyncEntity = SyncEntity.CUSTOMER_TYPE
 
     override suspend fun pullFromServer(): SyncResult =
-        customerTypeRepository.syncCustomerTypes().fold(
+        customerTypeRepository.pullFromServer().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun pushPendingToServer(): SyncResult =
-        customerTypeRepository.syncCustomerTypes().fold(
+        customerTypeRepository.pushPendingToServer().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )

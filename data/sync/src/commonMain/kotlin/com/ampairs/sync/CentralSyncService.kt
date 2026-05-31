@@ -31,10 +31,8 @@ private val log = Logger.withTag("CentralSyncService")
  * Design principles:
  * - Sync state is persisted in Room so pending work survives process death.
  * - ViewModels never call APIs directly — they emit SyncEvents.
- * - Two sources of truth for "what needs syncing":
- *     1. Local write → marks entity PENDING_PUSH
- *     2. Backend WebSocket event → marks entity PENDING_PULL
- * - Sync is triggered on: app start, network reconnect, WebSocket reconnect.
+ * - Push-only on launch/reconnect: only entities with PENDING_PUSH are synced automatically.
+ * - Pulls are exclusively driven by backend WebSocket events via [onBackendEvent].
  * - No periodic polling — state drives sync.
  */
 @Inject
@@ -79,30 +77,23 @@ class CentralSyncService(
             processEvents()
         }
 
-        // Reactively observe SyncStateEntity — only fire triggers for entities that *newly* enter
-        // PENDING_PUSH or PENDING_PULL. Using a delta set keyed by (entityName, statusName) so that
-        // incidental updatedAt changes (e.g. re-writing the same PENDING state) don't re-trigger
-        // a sync that's already in progress.
+        // Reactively observe SyncStateEntity — only fire push triggers for entities that *newly*
+        // enter PENDING_PUSH. Pulls are driven exclusively by WebSocket events.
+        // Delta set keyed by entityName prevents re-triggering a push that's already in progress.
         newScope.launch {
-            var previousPendingSet = emptySet<Pair<SyncEntity, SyncPersistStatus>>()
+            var previousPushSet = emptySet<SyncEntity>()
             syncDao.observeAll()
                 .map { rows ->
-                    rows.filter { it.statusName == SyncPersistStatus.PENDING_PUSH || it.statusName == SyncPersistStatus.PENDING_PULL }
-                        .map { it.entityName to it.statusName }
+                    rows.filter { it.statusName == SyncPersistStatus.PENDING_PUSH }
+                        .map { it.entityName }
                         .toSet()
                 }
-                .collect { currentPendingSet ->
-                    val newlyPending = currentPendingSet - previousPendingSet
-                    previousPendingSet = currentPendingSet
+                .collect { currentPushSet ->
+                    val newlyPending = currentPushSet - previousPushSet
+                    previousPushSet = currentPushSet
                     if (newlyPending.isNotEmpty()) {
-                        log.d { "Observer fired (new pending): ${newlyPending.map { "${it.first.name}=${it.second}" }}" }
-                        newlyPending.forEach { (entity, status) ->
-                            when (status) {
-                                SyncPersistStatus.PENDING_PUSH -> emit(SyncEvent.TriggerPush(entity))
-                                SyncPersistStatus.PENDING_PULL -> emit(SyncEvent.TriggerPull(entity))
-                                else -> Unit
-                            }
-                        }
+                        log.d { "Observer fired (new pending push): ${newlyPending.map { it.name }}" }
+                        newlyPending.forEach { entity -> emit(SyncEvent.TriggerPush(entity)) }
                     }
                 }
         }
@@ -112,12 +103,13 @@ class CentralSyncService(
 
     /**
      * Called by EventConnectionManager when the WebSocket connection is (re)established.
-     * Re-processes any persisted PENDING_* states so they sync after network recovery.
+     * Flushes any pending pushes that accumulated while offline. Pulls are not triggered
+     * here — they come in via [onBackendEvent] once the server sends WebSocket events.
      */
     fun onConnectionRestored() {
         scope?.launch {
-            log.i { "WebSocket reconnected — processing pending states" }
-            processPendingStates()
+            log.i { "WebSocket reconnected — flushing pending pushes" }
+            processPendingPushes()
         }
     }
 
@@ -197,17 +189,11 @@ class CentralSyncService(
 
     // region — Pending state processing
 
-    private suspend fun processPendingStates() {
+    private suspend fun processPendingPushes() {
         val currentDao = dao ?: return
-        val pending = currentDao.getPending()
-        pending.forEach { row ->
-            when (row.statusName) {
-                SyncPersistStatus.PENDING_PUSH -> emit(SyncEvent.TriggerPush(row.entityName))
-                SyncPersistStatus.PENDING_PULL,
-                SyncPersistStatus.FAILED -> emit(SyncEvent.TriggerPull(row.entityName))
-                else -> Unit
-            }
-        }
+        currentDao.getPending()
+            .filter { it.statusName == SyncPersistStatus.PENDING_PUSH }
+            .forEach { row -> emit(SyncEvent.TriggerPush(row.entityName)) }
     }
 
     // endregion
@@ -320,7 +306,7 @@ class CentralSyncService(
         _syncLogs.update { current ->
             val nextId = (current.lastOrNull()?.id ?: 0L) + 1L
             val next = current + entry.copy(id = nextId)
-            if (next.size > 1000) next.drop(next.size - 1000) else next
+            if (next.size > 50) next.drop(next.size - 50) else next
         }
     }
 

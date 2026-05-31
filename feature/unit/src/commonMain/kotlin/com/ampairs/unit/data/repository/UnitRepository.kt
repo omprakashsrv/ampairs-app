@@ -129,19 +129,30 @@ class UnitRepository(
         return try {
             val unsyncedUnits = unitDao.getUnsyncedUnits()
             var syncedCount = 0
+            var failedCount = 0
             for (entity in unsyncedUnits) {
                 val unit = entity.toUnit()
                 try {
-                    val response = unitApi.createUnit(unit)
-                    if (response.data != null && response.error == null) {
-                        unitDao.insertUnit(response.data!!.toEntity().copy(synced = true))
+                    if (!entity.active) {
+                        unitApi.deleteUnit(unit.uid)
+                        unitDao.deleteUnit(unit.uid)
                         syncedCount++
+                    } else {
+                        val response = unitApi.createUnit(unit)
+                        if (response.data != null && response.error == null) {
+                            unitDao.insertUnit(response.data!!.toEntity().copy(synced = true))
+                            syncedCount++
+                        } else {
+                            failedCount++
+                        }
                     }
-                } catch (_: Exception) {
-                    // continue with remaining items
+                } catch (e: Exception) {
+                    UnitLogger.w("UnitRepository", "Failed to push unit ${unit.uid}", e)
+                    failedCount++
                 }
             }
-            Result.success(syncedCount)
+            if (failedCount > 0) Result.failure(Exception("$failedCount unit(s) failed to sync"))
+            else Result.success(syncedCount)
         } catch (e: Exception) {
             UnitLogger.e("UnitRepository", "Push failed", e)
             Result.failure(e)
@@ -169,6 +180,7 @@ class UnitRepository(
 
             do {
                 val pageResponse = unitApi.getUnits(currentPage, batchSize)
+                if (pageResponse.error != null) throw Exception(pageResponse.error?.message ?: "Network error")
                 val batchUnits = pageResponse.data?.content ?: emptyList()
 
                 val unitsToInsert = batchUnits.mapNotNull { serverUnit ->

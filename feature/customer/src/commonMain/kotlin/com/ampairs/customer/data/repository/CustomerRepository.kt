@@ -364,6 +364,7 @@ class CustomerRepository(
         return try {
             val unsyncedCustomers = customerDao.getUnsyncedCustomers()
             var syncedCount = 0
+            var failedCount = 0
             for (entity in unsyncedCustomers) {
                 val customer = entity.toDomain()
                 try {
@@ -379,21 +380,25 @@ class CustomerRepository(
                                 syncedCount++
                             } else {
                                 CustomerLogger.w("CustomerRepository", "Delete sync failed for ${customer.uid}: ${deleteError.message}")
+                                failedCount++
                             }
                         }
                     } else {
                         val serverCustomer = pushCustomerToServer(customer)
-                        val resultEntity = serverCustomer?.toEntity()?.copy(synced = true)
-                            ?: entity.copy(synced = true)
-                        customerDao.insertCustomer(resultEntity)
-                        syncedCount++
+                        if (serverCustomer != null) {
+                            customerDao.insertCustomer(serverCustomer.toEntity().copy(synced = true))
+                            syncedCount++
+                        } else {
+                            failedCount++
+                        }
                     }
                 } catch (e: Exception) {
                     ErrorTracking.captureException(e, "CustomerRepository.pushPendingToServer")
-                    continue
+                    failedCount++
                 }
             }
-            Result.success(syncedCount)
+            if (failedCount > 0) Result.failure(Exception("$failedCount customer(s) failed to sync"))
+            else Result.success(syncedCount)
         } catch (e: Exception) {
             Result.failure(e)
         }

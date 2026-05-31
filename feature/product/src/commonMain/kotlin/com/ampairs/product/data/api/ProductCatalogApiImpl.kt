@@ -24,6 +24,7 @@ class ProductCatalogApiImpl(
 
     override suspend fun getGroups(): Result<List<ProductGroupApiModel>> = runCatching {
         val response: Response<List<ProductGroupApiModel>> = get(client, ApiUrlBuilder.productUrl("v1/products/groups"))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
         response.data ?: emptyList()
     }
 
@@ -40,6 +41,7 @@ class ProductCatalogApiImpl(
     // No standalone GET /categories endpoint — fetch all via all-groups-category and extract
     override suspend fun getCategories(): Result<List<ProductGroupApiModel>> = runCatching {
         val response: Response<AllProductGroupApiModel> = get(client, ApiUrlBuilder.productUrl("v1/products/all-groups-category"))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
         response.data?.categories ?: emptyList()
     }
 
@@ -55,6 +57,7 @@ class ProductCatalogApiImpl(
 
     override suspend fun getBrands(): Result<List<ProductGroupApiModel>> = runCatching {
         val response: Response<List<ProductGroupApiModel>> = get(client, ApiUrlBuilder.productUrl("v1/products/brands"))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
         response.data ?: emptyList()
     }
 
@@ -70,6 +73,7 @@ class ProductCatalogApiImpl(
 
     override suspend fun getSubCategories(): Result<List<ProductGroupApiModel>> = runCatching {
         val response: Response<List<ProductGroupApiModel>> = get(client, ApiUrlBuilder.productUrl("v1/products/sub-categories"))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
         response.data ?: emptyList()
     }
 

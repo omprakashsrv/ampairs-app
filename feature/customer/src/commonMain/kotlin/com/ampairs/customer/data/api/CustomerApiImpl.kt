@@ -47,6 +47,7 @@ class CustomerApiImpl(
             ApiUrlBuilder.customerUrl("v1/customers"),
             params
         )
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
         return response.data ?: PageResponse(
             content = emptyList(),
             pageNumber = page,
