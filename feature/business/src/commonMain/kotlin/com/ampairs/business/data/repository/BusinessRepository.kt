@@ -168,30 +168,25 @@ class BusinessRepository(
     }
 
     // ==================== Specific Section Methods ====================
-    // Note: Backend uses unified endpoint - all sections are part of Business entity
-    // These methods provide convenience wrappers for UI screens
 
-    /**
-     * Get business overview from remote.
-     */
     suspend fun fetchBusinessOverview(): Result<BusinessOverview> {
+        val cached = getCachedBusiness()
+        if (cached != null) return Result.success(cached.toOverview())
         return businessApi.getBusinessOverview()
     }
 
-    /**
-     * Get business profile from remote.
-     * Maps unified Business response to BusinessProfile DTO for UI.
-     */
     suspend fun fetchBusinessProfile(): Result<BusinessProfile> {
-        return businessApi.getBusiness().map { it.toProfile() }
+        val cached = getCachedBusiness()
+        if (cached != null) return Result.success(cached.toProfile())
+        return fetchFromRemote().map { business -> business.toProfile() }
     }
 
-    /**
-     * Update business profile.
-     * Uses unified update endpoint with all business fields.
-     */
     suspend fun updateBusinessProfile(request: BusinessProfileUpdateRequest): Result<BusinessProfile> {
-        val payload = BusinessPayload(
+        val base = getCachedBusiness()
+            ?: fetchFromRemote().getOrNull()
+            ?: return Result.failure(Exception("No business data available offline"))
+
+        val updated = base.copy(
             name = request.name,
             businessType = BusinessType.valueOf(request.businessType),
             description = request.description,
@@ -213,59 +208,21 @@ class BusinessRepository(
             customAttributes = request.customAttributes
         )
 
-        return businessApi.updateBusiness(payload).map { it.toProfile() }
+        return upsertBusiness(updated).map { business -> business.toProfile() }
     }
 
-    /**
-     * Get business operations from remote.
-     * Maps unified Business response to BusinessOperations DTO for UI.
-     */
     suspend fun fetchBusinessOperations(): Result<BusinessOperations> {
-        return businessApi.getBusiness().map { business ->
-            BusinessOperations(
-                uid = business.id,
-                timezone = business.timezone,
-                currency = business.currency,
-                language = business.language,
-                dateFormat = business.dateFormat,
-                timeFormat = business.timeFormat,
-                openingHours = business.openingHours,
-                closingHours = business.closingHours,
-                operatingDays = business.operatingDays
-            )
-        }
+        val cached = getCachedBusiness()
+        if (cached != null) return Result.success(cached.toOperations())
+        return fetchFromRemote().map { business -> business.toOperations() }
     }
 
-    /**
-     * Update business operations.
-     * Uses unified update endpoint with all business fields.
-     */
     suspend fun updateBusinessOperations(request: BusinessOperationsUpdateRequest): Result<BusinessOperations> {
-        val currentResult = businessApi.getBusiness()
-        if (currentResult.isFailure) {
-            return Result.failure(currentResult.exceptionOrNull() ?: Exception("Failed to get current business"))
-        }
+        val base = getCachedBusiness()
+            ?: fetchFromRemote().getOrNull()
+            ?: return Result.failure(Exception("No business data available offline"))
 
-        val current = currentResult.getOrThrow()
-
-        val payload = BusinessPayload(
-            name = current.name,
-            businessType = current.businessType,
-            description = current.description,
-            ownerName = current.ownerName,
-            addressLine1 = current.addressLine1,
-            addressLine2 = current.addressLine2,
-            city = current.city,
-            state = current.state,
-            postalCode = current.postalCode,
-            country = current.country,
-            latitude = current.latitude,
-            longitude = current.longitude,
-            phone = current.phone,
-            email = current.email,
-            website = current.website,
-            taxId = current.taxId,
-            registrationNumber = current.registrationNumber,
+        val updated = base.copy(
             timezone = request.timezone,
             currency = request.currency,
             language = request.language,
@@ -273,94 +230,68 @@ class BusinessRepository(
             timeFormat = request.timeFormat,
             openingHours = request.openingHours,
             closingHours = request.closingHours,
-            operatingDays = request.operatingDays,
-            active = current.active,
-            customAttributes = current.customAttributes
+            operatingDays = request.operatingDays
         )
 
-        return businessApi.updateBusiness(payload).map { business ->
-            BusinessOperations(
-                uid = business.id,
-                timezone = business.timezone,
-                currency = business.currency,
-                language = business.language,
-                dateFormat = business.dateFormat,
-                timeFormat = business.timeFormat,
-                openingHours = business.openingHours,
-                closingHours = business.closingHours,
-                operatingDays = business.operatingDays
-            )
-        }
+        return upsertBusiness(updated).map { business -> business.toOperations() }
     }
 
-    /**
-     * Get tax configuration from remote.
-     * Maps unified Business response to TaxConfiguration DTO for UI.
-     */
     suspend fun fetchTaxConfiguration(): Result<TaxConfiguration> {
-        return businessApi.getBusiness().map { business ->
-            TaxConfiguration(
-                uid = business.id,
-                taxId = business.taxId,
-                registrationNumber = business.registrationNumber,
-                taxSettings = business.taxSettings ?: emptyMap()
-            )
-        }
+        val cached = getCachedBusiness()
+        if (cached != null) return Result.success(cached.toTaxConfiguration())
+        return fetchFromRemote().map { business -> business.toTaxConfiguration() }
     }
 
-    /**
-     * Update tax configuration.
-     * Uses unified update endpoint with all business fields.
-     */
     suspend fun updateTaxConfiguration(request: TaxConfigurationUpdateRequest): Result<TaxConfiguration> {
-        val currentResult = businessApi.getBusiness()
-        if (currentResult.isFailure) {
-            return Result.failure(currentResult.exceptionOrNull() ?: Exception("Failed to get current business"))
-        }
+        val base = getCachedBusiness()
+            ?: fetchFromRemote().getOrNull()
+            ?: return Result.failure(Exception("No business data available offline"))
 
-        val current = currentResult.getOrThrow()
-
-        val payload = BusinessPayload(
-            name = current.name,
-            businessType = current.businessType,
-            description = current.description,
-            ownerName = current.ownerName,
-            addressLine1 = current.addressLine1,
-            addressLine2 = current.addressLine2,
-            city = current.city,
-            state = current.state,
-            postalCode = current.postalCode,
-            country = current.country,
-            latitude = current.latitude,
-            longitude = current.longitude,
-            phone = current.phone,
-            email = current.email,
-            website = current.website,
+        val updated = base.copy(
             taxId = request.taxId,
             registrationNumber = request.registrationNumber,
-            taxSettings = request.taxSettings,
-            timezone = current.timezone,
-            currency = current.currency,
-            language = current.language,
-            dateFormat = current.dateFormat,
-            timeFormat = current.timeFormat,
-            openingHours = current.openingHours,
-            closingHours = current.closingHours,
-            operatingDays = current.operatingDays,
-            active = current.active,
-            customAttributes = current.customAttributes
+            taxSettings = request.taxSettings
         )
 
-        return businessApi.updateBusiness(payload).map { business ->
-            TaxConfiguration(
-                uid = business.id,
-                taxId = business.taxId,
-                registrationNumber = business.registrationNumber,
-                taxSettings = business.taxSettings ?: emptyMap()
-            )
-        }
+        return upsertBusiness(updated).map { business -> business.toTaxConfiguration() }
     }
+
+    suspend fun syncFromRemote(): Result<Business> = fetchFromRemote()
 }
+
+private fun Business.toOperations() = BusinessOperations(
+    uid = id,
+    timezone = timezone,
+    currency = currency,
+    language = language,
+    dateFormat = dateFormat,
+    timeFormat = timeFormat,
+    openingHours = openingHours,
+    closingHours = closingHours,
+    operatingDays = operatingDays
+)
+
+private fun Business.toTaxConfiguration() = TaxConfiguration(
+    uid = id,
+    taxId = taxId,
+    registrationNumber = registrationNumber,
+    taxSettings = taxSettings ?: emptyMap()
+)
+
+private fun Business.toOverview() = BusinessOverview(
+    uid = id,
+    seqId = seqId ?: "",
+    name = name,
+    businessType = businessType.name,
+    currency = currency,
+    timezone = timezone,
+    email = email,
+    phone = phone,
+    address = listOfNotNull(addressLine1, city, state).joinToString(", "),
+    active = active,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)
 
 private fun Business.toProfile() = BusinessProfile(
     uid = id,
