@@ -9,6 +9,7 @@ import com.ampairs.common.model.Response
 import com.ampairs.common.postMultiPart
 import com.ampairs.common.put
 import com.ampairs.common.di.AppScope
+import com.ampairs.product.api.model.ImageApiModel
 import com.ampairs.product.domain.ProductUploadImage
 import com.ampairs.product.domain.ProductUploadImageUploadResponse
 import com.ampairs.product.util.ProductLogger
@@ -48,82 +49,38 @@ class ProductImageApiImpl(
         return try {
             ProductLogger.d(TAG, "Starting multipart upload for product: $productId, file: $fileName, uid: $uid")
 
-            val parts = buildList {
-                add(
-                    PartData.FileItem(
-                        provider = { ByteReadChannel(imageData) },
-                        dispose = {},
-                        partHeaders = Headers.build {
-                            append(HttpHeaders.ContentType, contentType)
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$fileName\"")
-                        }
-                    )
-                )
-                add(
-                    PartData.FormItem(
-                        value = uid,
-                        dispose = {},
-                        partHeaders = Headers.build {
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"uid\"")
-                        }
-                    )
-                )
-                add(
-                    PartData.FormItem(
-                        value = productId,
-                        dispose = {},
-                        partHeaders = Headers.build {
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"productUid\"")
-                        }
-                    )
-                )
-                add(
-                    PartData.FormItem(
-                        value = isPrimary.toString(),
-                        dispose = {},
-                        partHeaders = Headers.build {
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"isPrimary\"")
-                        }
-                    )
-                )
-                description?.let {
-                    add(
-                        PartData.FormItem(
-                            value = it,
-                            dispose = {},
-                            partHeaders = Headers.build {
-                                append(HttpHeaders.ContentDisposition, "form-data; name=\"description\"")
-                            }
-                        )
-                    )
-                }
-                displayOrder?.let {
-                    add(
-                        PartData.FormItem(
-                            value = it.toString(),
-                            dispose = {},
-                            partHeaders = Headers.build {
-                                append(HttpHeaders.ContentDisposition, "form-data; name=\"displayOrder\"")
-                            }
-                        )
-                    )
-                }
-            }
+            val parts = listOf(
+                PartData.FileItem(
+                    provider = { ByteReadChannel(imageData) },
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentType, contentType)
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$fileName\"")
+                    }
+                ),
+                PartData.FormItem(
+                    value = productId,
+                    dispose = {},
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"path\"")
+                    }
+                ),
+            )
 
-            val response: Response<ProductUploadImage> = postMultiPart(
+            val response: Response<ImageApiModel> = postMultiPart(
                 client,
-                ApiUrlBuilder.productUrl("v1/images/upload"),
+                ApiUrlBuilder.productUrl("v1/images/upload-image"),
                 parts,
                 requestTimeoutMillis = 120_000L,
             )
 
             ProductLogger.d(TAG, "Multipart upload completed for: $fileName")
-            val productImage = response.data ?: throw Exception("Upload response is null")
+            val apiImage = response.data ?: throw Exception("Upload response is null")
 
             ProductUploadImageUploadResponse(
-                uid = productImage.uid,
-                imageUrl = productImage.imageUrl ?: "",
-                thumbnailUrl = productImage.thumbnailUrl ?: "",
+                uid = apiImage.id.ifBlank { uid },
+                imageUrl = apiImage.url.ifBlank { apiImage.objectKey },
+                thumbnailUrl = "",
             )
         } catch (e: Exception) {
             ProductLogger.e(TAG, "Error uploading product image via multipart", e)

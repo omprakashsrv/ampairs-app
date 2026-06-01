@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.ampairs.product.db.entity.SubCategoryEntity
 import com.ampairs.product.db.model.SubCategoryModel
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SubCategoryDao {
@@ -22,6 +23,10 @@ interface SubCategoryDao {
     @Transaction
     @Query("SELECT * FROM subCategoryEntity ORDER BY name ASC, active DESC")
     suspend fun getSubCategories(): List<SubCategoryModel>
+
+    @Transaction
+    @Query("SELECT * FROM subCategoryEntity ORDER BY name ASC, active DESC")
+    fun observeSubCategories(): Flow<List<SubCategoryModel>>
 
     @Query("SELECT * FROM subCategoryEntity WHERE synced = 0")
     suspend fun unSyncedSubCategories(): List<SubCategoryEntity>

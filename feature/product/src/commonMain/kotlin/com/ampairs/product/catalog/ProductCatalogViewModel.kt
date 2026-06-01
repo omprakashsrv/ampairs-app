@@ -10,9 +10,13 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.take
 
 enum class ProductCatalogType { BRANDS, CATEGORIES, SUB_CATEGORIES, GROUPS }
 
@@ -29,38 +33,28 @@ class ProductCatalogViewModel(
         fun create(catalogType: ProductCatalogType): ProductCatalogViewModel
     }
 
-    private val _items = MutableStateFlow<List<CatalogItem>>(emptyList())
-    val items: StateFlow<List<CatalogItem>> = _items.asStateFlow()
+    val searchQuery = MutableStateFlow("")
+
+    private val allItems: StateFlow<List<CatalogItem>> = repository.observeAllItems(catalogType)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val items: StateFlow<List<CatalogItem>> = combine(allItems, searchQuery) { items, query ->
+        if (query.isBlank()) items
+        else items.filter { it.name.contains(query, ignoreCase = true) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
-    private var allItems: List<CatalogItem> = emptyList()
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     init {
-        load()
-    }
-
-    fun load() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            allItems = repository.getAllItems(catalogType)
-            applyFilter()
-            _isLoading.value = false
-        }
+        // Mark not-loading after the first real DB emission
+        repository.observeAllItems(catalogType)
+            .take(1)
+            .onEach { _isLoading.value = false }
+            .launchIn(viewModelScope)
     }
 
     fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
-        applyFilter()
-    }
-
-    private fun applyFilter() {
-        val q = _searchQuery.value.trim()
-        _items.value = if (q.isEmpty()) allItems
-        else allItems.filter { it.name.contains(q, ignoreCase = true) }
+        searchQuery.value = query
     }
 }

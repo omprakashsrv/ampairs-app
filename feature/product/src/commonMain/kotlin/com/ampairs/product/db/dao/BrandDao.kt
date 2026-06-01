@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.model.BrandModel
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BrandDao {
@@ -22,6 +23,10 @@ interface BrandDao {
     @Transaction
     @Query("SELECT * FROM brandEntity ORDER BY name ASC, active DESC")
     suspend fun getBrands(): List<BrandModel>
+
+    @Transaction
+    @Query("SELECT * FROM brandEntity ORDER BY name ASC, active DESC")
+    fun observeBrands(): Flow<List<BrandModel>>
 
     @Query("SELECT * FROM brandEntity WHERE synced = 0")
     suspend fun unSyncedBrands(): List<BrandEntity>

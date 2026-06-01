@@ -13,6 +13,8 @@ import com.ampairs.product.db.entity.GroupEntity
 import com.ampairs.product.db.entity.ImageEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 @Inject
 class ProductCatalogRepository(
@@ -34,6 +36,21 @@ class ProductCatalogRepository(
 
     suspend fun getGroups(): List<CatalogItem> =
         groupDao.getActiveGroups().map { CatalogItem(it.id, it.name, it.active == 1) }
+
+    fun observeAllItems(type: ProductCatalogType): Flow<List<CatalogItem>> = when (type) {
+        ProductCatalogType.BRANDS -> brandDao.observeBrands().map { list ->
+            list.map { CatalogItem(it.brand.id, it.brand.name, it.brand.active == 1, it.image?.imageUrl()) }
+        }
+        ProductCatalogType.CATEGORIES -> categoryDao.observeCategories().map { list ->
+            list.map { CatalogItem(it.category.id, it.category.name, it.category.active == 1, it.image?.imageUrl()) }
+        }
+        ProductCatalogType.SUB_CATEGORIES -> subCategoryDao.observeSubCategories().map { list ->
+            list.map { CatalogItem(it.subCategory.id, it.subCategory.name, it.subCategory.active == 1, it.image?.imageUrl()) }
+        }
+        ProductCatalogType.GROUPS -> groupDao.observeGroupModels().map { list ->
+            list.map { CatalogItem(it.group.id, it.group.name, it.group.active == 1, it.image?.imageUrl()) }
+        }
+    }
 
     suspend fun getAllItems(type: ProductCatalogType): List<CatalogItem> = when (type) {
         ProductCatalogType.BRANDS -> brandDao.getBrands().map {
