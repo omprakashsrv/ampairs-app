@@ -62,7 +62,7 @@ class ProductImageRepository(
             fileManager.saveImageToCache(uid, imageData, fileName)
         } catch (e: Exception) {
             ProductLogger.e(TAG, "Failed to save image locally: $fileName", e)
-            null
+            return Result.failure(e)
         }
 
         val productImage = ProductUploadImage(
@@ -105,7 +105,7 @@ class ProductImageRepository(
                 val localPath = entity.localPath
                 if (localPath != null && fileManager.fileExists(localPath)) {
                     try {
-                        withTimeout(60_000L) {
+                        withTimeout(130_000L) {
                             val imageData = fileManager.readFile(localPath)
                             val uploadResponse = api.uploadProductImageMultipart(
                                 uid = entity.uid,
@@ -138,7 +138,11 @@ class ProductImageRepository(
 
             if (entitiesToUpdate.isNotEmpty()) dao.insertProductImages(entitiesToUpdate)
             ProductLogger.i(TAG, "Push complete. Pushed: $syncedCount images")
-            Result.success(syncedCount)
+            if (syncedCount == 0 && entitiesToUpdate.any { it.uploadStatus == ProductImageStatus.FAILED }) {
+                Result.failure(Exception("Failed to upload pending images — will retry on reconnect"))
+            } else {
+                Result.success(syncedCount)
+            }
         } catch (e: Exception) {
             ProductLogger.e(TAG, "Push failed", e)
             Result.failure(e)
@@ -253,7 +257,7 @@ class ProductImageRepository(
                 val localPath = entity.localPath
                 if (localPath != null && fileManager.fileExists(localPath)) {
                     try {
-                        withTimeout(60_000L) {
+                        withTimeout(130_000L) {
                             val imageData = fileManager.readFile(localPath)
                             val uploadResponse = api.uploadProductImageMultipart(
                                 uid = entity.uid,

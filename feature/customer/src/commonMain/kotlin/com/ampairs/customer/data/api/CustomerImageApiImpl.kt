@@ -191,7 +191,8 @@ class CustomerImageApiImpl(
             val response: Response<CustomerImage> = postMultiPart(
                 client,
                 ApiUrlBuilder.customerUrl("v1/images/upload"),
-                parts
+                parts,
+                requestTimeoutMillis = 120_000L,
             )
 
             CustomerLogger.d("CustomerImageApi", "Multipart upload completed for: $fileName")

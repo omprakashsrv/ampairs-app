@@ -7,6 +7,7 @@ import com.ampairs.common.model.Response
 import com.ampairs.network.model.toResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.delete
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
@@ -100,10 +101,15 @@ suspend inline fun <reified T> get(
 suspend inline fun <reified T> postMultiPart(
     client: HttpClient,
     url: String,
-    parts: List<PartData>
+    parts: List<PartData>,
+    requestTimeoutMillis: Long? = null,
 ): T {
     return try {
-        handleResponse(client.submitFormWithBinaryData(url = url, formData = parts))
+        handleResponse(client.submitFormWithBinaryData(url = url, formData = parts) {
+            if (requestTimeoutMillis != null) {
+                timeout { this.requestTimeoutMillis = requestTimeoutMillis }
+            }
+        })
     } catch (e: NetworkException) {
         createNetworkErrorResponse(e)
     } catch (e: Exception) {

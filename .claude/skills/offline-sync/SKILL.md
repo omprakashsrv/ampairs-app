@@ -150,6 +150,86 @@ The `pushPendingToServer()` method in repositories:
 
 ---
 
+## CRITICAL: Failure Propagation Rules
+
+These bugs have recurred across multiple entities. Apply every rule mechanically when writing or reviewing any repository push method.
+
+### Rule 1 — `saveLocally()` must fail fast if file/local write fails
+
+**Wrong** — silently continues with null localPath, inserts a PENDING DB row that can never upload:
+```kotlin
+val localPath = try {
+    fileManager.saveImageToCache(uid, data, fileName)
+} catch (e: Exception) {
+    null  // ❌ WRONG — DB record inserted below with null path, retried forever
+}
+dao.insert(entity.copy(localPath = localPath))
+return Result.success(entity)
+```
+
+**Correct** — fail fast before inserting the DB record:
+```kotlin
+val localPath = try {
+    fileManager.saveImageToCache(uid, data, fileName)
+} catch (e: Exception) {
+    return Result.failure(e)  // ✅ No DB record, ViewModel shows error to user
+}
+dao.insert(entity.copy(localPath = localPath))
+return Result.success(entity)
+```
+
+**Why:** A PENDING record with `localPath = null` will be retried on every push cycle and fail every time (no file to upload), burning network and polluting logs forever.
+
+---
+
+### Rule 2 — `pushPendingToServer()` must return `Result.failure()` when all items fail
+
+**Wrong** — returns success with count=0 even when every upload failed. CentralSyncService logs "sync success", ViewModel shows green, user has no idea uploads failed:
+```kotlin
+// After looping through unsynced images...
+Result.success(syncedCount)  // ❌ syncedCount = 0 but items are FAILED — caller sees false green
+```
+
+**Correct** — return failure when there were items to push but none succeeded:
+```kotlin
+if (syncedCount == 0 && entitiesToUpdate.any { it.uploadStatus == STATUS_FAILED }) {
+    Result.failure(Exception("Failed to upload pending items — will retry on reconnect"))
+} else {
+    Result.success(syncedCount)
+}
+```
+
+**Why:** `SyncResult.Success(0)` tells CentralSyncService everything is fine. The delegate's `.fold(onSuccess = SyncResult.Success, onFailure = SyncResult.Failure)` chain only propagates failure if the repository returns `Result.failure()`. Partial success (some uploaded, some failed) is OK to report as success — the FAILED rows will retry next push cycle.
+
+---
+
+### Rule 3 — Upload timeout: Ktor's blanket timeout fires before `withTimeout()`
+
+The shared `httpClient()` sets `requestTimeoutMillis = 30_000`. A `withTimeout(60_000L)` wrapper in the repository is irrelevant — Ktor cancels the request at 30s first.
+
+For large file uploads, pass a per-request override via `postMultiPart(..., requestTimeoutMillis = 120_000L)`. The `withTimeout()` in the repository should be set higher than the Ktor timeout (e.g. `130_000L`) to serve as a hard kill-switch only:
+
+```kotlin
+// API layer — override the 30s blanket timeout for this call only
+postMultiPart(client, url, parts, requestTimeoutMillis = 120_000L)
+
+// Repository layer — safety net above the API timeout
+withTimeout(130_000L) {
+    api.uploadMultipart(...)
+}
+```
+
+---
+
+### Checklist — add to every new push repository method
+
+- [ ] `saveLocally()` returns `Result.failure(e)` immediately if local file/cache write fails — no DB insert
+- [ ] `pushPendingToServer()` returns `Result.failure()` when `syncedCount == 0` AND any entity ended up FAILED
+- [ ] Upload API calls use `postMultiPart(..., requestTimeoutMillis = 120_000L)` and `withTimeout(130_000L)` in the repo
+- [ ] Items with no local file during push are marked FAILED (not skipped silently) — these indicate a bug in `saveLocally()`
+
+---
+
 ## Adding a New Syncable Entity — Checklist
 
 - [ ] Add entry to `SyncEntity` enum
