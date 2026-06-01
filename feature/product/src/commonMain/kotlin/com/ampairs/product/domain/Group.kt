@@ -211,15 +211,17 @@ fun List<ProductGroupApiModel>.asSubCategoryDatabaseEntity(): List<SubCategoryEn
 fun List<ProductGroupApiModel>.asImagesDatabaseEntity(): List<ImageEntity> {
     val images = mutableListOf<ImageEntity>()
     this.forEach {
-        it.image?.let { it1 ->
-            val imageEntity = ImageEntity(
-                seq_id = 0,
-                id = it1.id,
-                name = it.image.name,
-                bucket = it.image.bucket,
-                object_key = it.image.objectKey
+        it.image?.let { img ->
+            images.add(
+                ImageEntity(
+                    seq_id = 0,
+                    id = img.id,
+                    name = img.name,
+                    bucket = img.bucket,
+                    // prefer url (absolute) over objectKey (S3 path) so buildCompleteUrl passes it through
+                    object_key = img.url.ifBlank { img.objectKey },
+                )
             )
-            images.add(imageEntity)
         }
     }
     return images

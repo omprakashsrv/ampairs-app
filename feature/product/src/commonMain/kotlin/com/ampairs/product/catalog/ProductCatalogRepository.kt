@@ -120,7 +120,7 @@ class ProductCatalogRepository(
             id = apiImage.id,
             name = apiImage.name,
             bucket = apiImage.bucket,
-            object_key = apiImage.objectKey,
+            object_key = apiImage.url.ifBlank { apiImage.objectKey },
         )
         imageDao.insert(imageEntity)
 
