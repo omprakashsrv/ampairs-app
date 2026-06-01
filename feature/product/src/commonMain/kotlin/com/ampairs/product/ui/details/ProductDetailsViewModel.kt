@@ -3,7 +3,12 @@ package com.ampairs.product.ui.details
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.product.db.dao.BrandDao
+import com.ampairs.product.db.dao.CategoryDao
+import com.ampairs.product.db.dao.GroupDao
+import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.domain.Product
+import com.ampairs.unit.data.repository.UnitLookup
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -24,13 +29,23 @@ data class ProductDetailsUiState(
     val product: Product? = null,
     val isLoading: Boolean = false,
     val isDeleting: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val categoryName: String = "",
+    val brandName: String = "",
+    val groupName: String = "",
+    val subCategoryName: String = "",
+    val baseUnitName: String = "",
 )
 
 @AssistedInject
 class ProductDetailsViewModel(
     @Assisted private val productId: String,
-    private val productRepository: ProductRepository
+    private val productRepository: ProductRepository,
+    private val categoryDao: CategoryDao,
+    private val brandDao: BrandDao,
+    private val groupDao: GroupDao,
+    private val subCategoryDao: SubCategoryDao,
+    private val unitLookup: UnitLookup,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -52,11 +67,50 @@ class ProductDetailsViewModel(
         productRepository.observeProduct(productId)
             .onEach { product ->
                 _uiState.update { it.copy(product = product, isLoading = false, error = null) }
+                if (product != null) resolveNames(product)
             }
             .catch { e ->
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load product") }
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun resolveNames(product: Product) {
+        viewModelScope.launch {
+            try {
+                val categoryName = if (product.categoryId.isNotEmpty()) {
+                    product.categoryName?.takeIf { it.isNotBlank() }
+                        ?: categoryDao.getActiveCategories().firstOrNull { it.id == product.categoryId }?.name ?: ""
+                } else ""
+
+                val brandName = if (product.brandId.isNotEmpty()) {
+                    product.brandName?.takeIf { it.isNotBlank() }
+                        ?: brandDao.getActiveBrands().firstOrNull { it.id == product.brandId }?.name ?: ""
+                } else ""
+
+                val groupName = if (product.groupId.isNotEmpty()) {
+                    groupDao.getActiveGroups().firstOrNull { it.id == product.groupId }?.name ?: ""
+                } else ""
+
+                val subCategoryName = if (product.subCategoryId.isNotEmpty()) {
+                    subCategoryDao.getActiveSubCategories().firstOrNull { it.id == product.subCategoryId }?.name ?: ""
+                } else ""
+
+                val baseUnitName = product.baseUnitId
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { unitLookup.getUnitById(it)?.name } ?: ""
+
+                _uiState.update {
+                    it.copy(
+                        categoryName = categoryName,
+                        brandName = brandName,
+                        groupName = groupName,
+                        subCategoryName = subCategoryName,
+                        baseUnitName = baseUnitName,
+                    )
+                }
+            } catch (_: Exception) {}
+        }
     }
 
     fun deleteProduct(onSuccess: () -> Unit) {

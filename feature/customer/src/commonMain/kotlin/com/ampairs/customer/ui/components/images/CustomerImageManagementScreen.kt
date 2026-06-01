@@ -51,7 +51,7 @@ fun CustomerImageManagementScreen(
         CustomerImageHeader(
             imageCount = uiState.images.size,
             onSync = viewModel::syncImages,
-            isLoading = uiState.isLoading,
+            isLoading = uiState.isLoading || uiState.isRefreshing,
             showSyncButton = uiState.syncError
         )
 
@@ -59,7 +59,7 @@ fun CustomerImageManagementScreen(
             ErrorCard(
                 error = errorMessage,
                 onDismiss = viewModel::clearError,
-                onRetry = viewModel::retryLastOperation
+                onRetry = viewModel::syncImages
             )
         }
 

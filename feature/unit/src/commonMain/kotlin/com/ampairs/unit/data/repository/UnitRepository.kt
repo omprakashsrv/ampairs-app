@@ -2,22 +2,27 @@ package com.ampairs.unit.data.repository
 
 import com.ampairs.unit.data.api.UnitApi
 import com.ampairs.unit.data.db.dao.UnitDao
+import com.ampairs.unit.data.repository.UnitLookup
 import dev.zacsweers.metro.Inject
 import com.ampairs.unit.data.db.entity.toEntity
 import com.ampairs.unit.data.db.entity.toUnit
 import com.ampairs.unit.domain.model.Unit
 import com.ampairs.unit.util.UnitLogger
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 @Inject
 class UnitRepository(
     private val unitApi: UnitApi,
     private val unitDao: UnitDao
-) {
+) : UnitLookup {
 
     fun observeUnits(): Flow<List<Unit>> =
         unitDao.getAllUnits().map { entities -> entities.map { it.toUnit() } }
+
+    override suspend fun getActiveUnits(): List<Unit> =
+        unitDao.getAllUnits().first().map { it.toUnit() }
 
     fun searchUnits(query: String): Flow<List<Unit>> =
         if (query.isBlank()) {
@@ -26,7 +31,7 @@ class UnitRepository(
             unitDao.searchUnits(query).map { entities -> entities.map { it.toUnit() } }
         }
 
-    suspend fun getUnitById(id: String): Unit? = unitDao.getUnitById(id)?.toUnit()
+    override suspend fun getUnitById(id: String): Unit? = unitDao.getUnitById(id)?.toUnit()
 
     suspend fun getUnitByName(name: String): Unit? = unitDao.getUnitByName(name)?.toUnit()
 

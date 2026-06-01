@@ -6,6 +6,8 @@ enum class SyncEntity(val entityType: String) {
     CUSTOMER_TYPE("customer_type"),
     PRODUCT("product"),
     PRODUCT_CATALOG("product_catalog"),
+    PRODUCT_IMAGE("product_image"),
+    CUSTOMER_IMAGE("customer_image"),
     ORDER("order"),
     INVOICE("invoice"),
     BUSINESS("business"),

@@ -3,18 +3,25 @@ package com.ampairs.product.ui.create
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.product.domain.Group
 import com.ampairs.product.domain.Product
-import com.ampairs.product.domain.ProductImage
 import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.product.db.dao.BrandDao
+import com.ampairs.product.db.dao.CategoryDao
+import com.ampairs.product.db.dao.GroupDao
+import com.ampairs.product.db.dao.SubCategoryDao
+import com.ampairs.product.domain.asCategoryGroupDomainModel
+import com.ampairs.product.domain.asGroupDomainModel
 import com.ampairs.tax.data.repository.TaxCodeLookup
 import com.ampairs.tax.domain.model.TaxCode
+import com.ampairs.unit.data.repository.UnitLookup
+import com.ampairs.unit.domain.model.Unit as UnitDomain
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -27,9 +34,6 @@ import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
-
 @AssistedInject
 @OptIn(FlowPreview::class)
 class ProductFormViewModel(
@@ -38,6 +42,11 @@ class ProductFormViewModel(
     private val workspaceContextManager: WorkspaceContextManager,
     private val taxCodeRepository: TaxCodeLookup,
     private val syncService: CentralSyncService,
+    private val categoryDao: CategoryDao,
+    private val brandDao: BrandDao,
+    private val groupDao: GroupDao,
+    private val subCategoryDao: SubCategoryDao,
+    private val unitLookup: UnitLookup,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -57,13 +66,67 @@ class ProductFormViewModel(
     val taxCodeSuggestions: StateFlow<List<TaxCode>> = _taxCodeSuggestions.asStateFlow()
 
     init {
-        // Setup tax code search with debounce
         viewModelScope.launch {
             _taxCodeSearchQuery
-                .debounce(300) // Wait 300ms after user stops typing
-                .collect { query ->
-                    searchTaxCodes(query)
-                }
+                .debounce(300)
+                .collect { query -> searchTaxCodes(query) }
+        }
+        loadDropdownData()
+    }
+
+    private fun loadDropdownData() {
+        viewModelScope.launch {
+            try {
+                val categories = categoryDao.getActiveCategories().asCategoryGroupDomainModel()
+                val brands = brandDao.getActiveBrands().map { Group(id = it.id, name = it.name, active = it.active == 1) }
+                val groups = groupDao.getActiveGroups().asGroupDomainModel()
+                val subCategories = subCategoryDao.getActiveSubCategories()
+                    .map { Group(id = it.id, name = it.name, active = it.active == 1) }
+                val units = unitLookup.getActiveUnits()
+                _uiState.value = _uiState.value.copy(
+                    categories = categories,
+                    brands = brands,
+                    groups = groups,
+                    subCategories = subCategories,
+                    units = units,
+                )
+                resolveDropdownNamesIfNeeded()
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun resolveDropdownNamesIfNeeded() {
+        val state = _uiState.value
+        val form = state.formState
+        var updated = form
+
+        if (form.categoryName.isBlank() && form.categoryId.isNotBlank()) {
+            state.categories.firstOrNull { it.id == form.categoryId }?.let {
+                updated = updated.copy(categoryName = it.name)
+            }
+        }
+        if (form.brandName.isBlank() && form.brandId.isNotBlank()) {
+            state.brands.firstOrNull { it.id == form.brandId }?.let {
+                updated = updated.copy(brandName = it.name)
+            }
+        }
+        if (form.groupName.isBlank() && form.groupId.isNotBlank()) {
+            state.groups.firstOrNull { it.id == form.groupId }?.let {
+                updated = updated.copy(groupName = it.name)
+            }
+        }
+        if (form.subCategoryName.isBlank() && form.subCategoryId.isNotBlank()) {
+            state.subCategories.firstOrNull { it.id == form.subCategoryId }?.let {
+                updated = updated.copy(subCategoryName = it.name)
+            }
+        }
+        if (form.baseUnitName.isBlank() && form.baseUnitId.isNotBlank()) {
+            state.units.firstOrNull { it.uid == form.baseUnitId }?.let {
+                updated = updated.copy(baseUnitName = it.name)
+            }
+        }
+        if (updated != form) {
+            _uiState.value = _uiState.value.copy(formState = updated)
         }
     }
 
@@ -84,6 +147,7 @@ class ProductFormViewModel(
                         isLoading = false,
                         formState = formState.copy(taxCodeDescription = taxCodeDescription)
                     )
+                    resolveDropdownNamesIfNeeded()
                 } else {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = "Product not found")
                 }
@@ -103,28 +167,44 @@ class ProductFormViewModel(
         )
     }
 
-    @OptIn(ExperimentalTime::class)
-    fun addImage() {
-        val currentImages = _uiState.value.formState.images.toMutableList()
-        currentImages.add(
-            ProductImage(
-                productId = productId ?: "",
-                image = com.ampairs.product.domain.Image(
-                    id = "img_${Clock.System.now().toEpochMilliseconds()}",
-                    name = "Product Image ${currentImages.size + 1}",
-                    url = null
-                )
-            )
-        )
-        updateForm(_uiState.value.formState.copy(images = currentImages))
+    fun onCategorySelected(category: Group) {
+        updateForm(_uiState.value.formState.copy(categoryId = category.id, categoryName = category.name))
     }
 
-    fun removeImage(index: Int) {
-        val currentImages = _uiState.value.formState.images.toMutableList()
-        if (index in currentImages.indices) {
-            currentImages.removeAt(index)
-            updateForm(_uiState.value.formState.copy(images = currentImages))
-        }
+    fun onBrandSelected(brand: Group) {
+        updateForm(_uiState.value.formState.copy(brandId = brand.id, brandName = brand.name))
+    }
+
+    fun onGroupSelected(group: Group) {
+        updateForm(_uiState.value.formState.copy(groupId = group.id, groupName = group.name))
+    }
+
+    fun onSubCategorySelected(subCategory: Group) {
+        updateForm(_uiState.value.formState.copy(subCategoryId = subCategory.id, subCategoryName = subCategory.name))
+    }
+
+    fun onUnitSelected(unit: UnitDomain) {
+        updateForm(_uiState.value.formState.copy(baseUnitId = unit.uid, baseUnitName = unit.name))
+    }
+
+    fun clearCategory() {
+        updateForm(_uiState.value.formState.copy(categoryId = "", categoryName = ""))
+    }
+
+    fun clearBrand() {
+        updateForm(_uiState.value.formState.copy(brandId = "", brandName = ""))
+    }
+
+    fun clearGroup() {
+        updateForm(_uiState.value.formState.copy(groupId = "", groupName = ""))
+    }
+
+    fun clearSubCategory() {
+        updateForm(_uiState.value.formState.copy(subCategoryId = "", subCategoryName = ""))
+    }
+
+    fun clearUnit() {
+        updateForm(_uiState.value.formState.copy(baseUnitId = "", baseUnitName = ""))
     }
 
     fun saveProduct(onSuccess: () -> Unit) {
@@ -202,7 +282,6 @@ class ProductFormViewModel(
         )
     }
 
-    // Tax Code Search Methods
     fun onTaxCodeSearchQueryChange(query: String) {
         _taxCodeSearchQuery.value = query
     }
@@ -212,13 +291,10 @@ class ProductFormViewModel(
             _taxCodeSuggestions.value = emptyList()
             return
         }
-
         try {
             val results = taxCodeRepository.searchWorkspaceTaxCodes(query, limit = 10)
             _taxCodeSuggestions.value = results
-        } catch (e: Exception) {
-            // Graceful failure - keep existing suggestions
-        }
+        } catch (_: Exception) {}
     }
 
     fun selectTaxCode(taxCode: TaxCode) {
@@ -230,8 +306,6 @@ class ProductFormViewModel(
         )
         _taxCodeSearchQuery.value = ""
         _taxCodeSuggestions.value = emptyList()
-
-        // Increment usage count
         viewModelScope.launch {
             taxCodeRepository.incrementUsageCount(taxCode.id)
         }
@@ -252,5 +326,10 @@ data class ProductFormUiState(
     val isSaving: Boolean = false,
     val canSave: Boolean = false,
     val error: String? = null,
-    val formState: ProductFormState = ProductFormState()
+    val formState: ProductFormState = ProductFormState(),
+    val categories: List<Group> = emptyList(),
+    val brands: List<Group> = emptyList(),
+    val groups: List<Group> = emptyList(),
+    val subCategories: List<Group> = emptyList(),
+    val units: List<UnitDomain> = emptyList(),
 )

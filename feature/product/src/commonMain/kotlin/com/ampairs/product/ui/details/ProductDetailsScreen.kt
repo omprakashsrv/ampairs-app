@@ -101,9 +101,9 @@ import ampairsapp.feature.product.generated.resources.prod_label_current_stock
 import ampairsapp.feature.product.generated.resources.prod_label_low_stock_alert
 import ampairsapp.feature.product.generated.resources.prod_label_category
 import ampairsapp.feature.product.generated.resources.prod_label_brand
-import ampairsapp.feature.product.generated.resources.prod_label_group_id
-import ampairsapp.feature.product.generated.resources.prod_label_sub_category_id
-import ampairsapp.feature.product.generated.resources.prod_label_base_unit_id
+import ampairsapp.feature.product.generated.resources.prod_label_group
+import ampairsapp.feature.product.generated.resources.prod_label_sub_category
+import ampairsapp.feature.product.generated.resources.prod_label_base_unit
 import ampairsapp.feature.product.generated.resources.prod_active
 import ampairsapp.feature.product.generated.resources.prod_inactive
 import ampairsapp.feature.product.generated.resources.prod_out_of_stock
@@ -166,9 +166,9 @@ fun ProductDetailsScreen(
             uiState.product != null -> {
                 val product = uiState.product!!
                 if (isExpanded) {
-                    ProductDetailsExpanded(product = product, onManageVariants = onManageVariants, onEdit = { onEditProduct(productId) }, modifier = Modifier.fillMaxSize())
+                    ProductDetailsExpanded(product = product, uiState = uiState, onManageVariants = onManageVariants, onEdit = { onEditProduct(productId) }, modifier = Modifier.fillMaxSize())
                 } else {
-                    ProductDetailsMobile(product = product, onManageVariants = onManageVariants, modifier = Modifier.fillMaxSize())
+                    ProductDetailsMobile(product = product, uiState = uiState, onManageVariants = onManageVariants, modifier = Modifier.fillMaxSize())
                 }
             }
 
@@ -197,6 +197,7 @@ fun ProductDetailsScreen(
 @Composable
 private fun ProductDetailsMobile(
     product: Product,
+    uiState: ProductDetailsUiState,
     onManageVariants: ((String, String) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
@@ -206,7 +207,7 @@ private fun ProductDetailsMobile(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            ProductInfoContent(product = product, onManageVariants = onManageVariants)
+            ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants)
         }
     }
 }
@@ -216,6 +217,7 @@ private fun ProductDetailsMobile(
 @Composable
 private fun ProductDetailsExpanded(
     product: Product,
+    uiState: ProductDetailsUiState,
     onManageVariants: ((String, String) -> Unit)?,
     onEdit: () -> Unit,
     modifier: Modifier = Modifier
@@ -318,7 +320,7 @@ private fun ProductDetailsExpanded(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ProductInfoContent(product = product, onManageVariants = onManageVariants)
+                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants)
             }
         }
     }
@@ -416,6 +418,7 @@ private fun PriceStatCard(label: String, value: String, modifier: Modifier = Mod
 @Composable
 private fun ProductInfoContent(
     product: Product,
+    uiState: ProductDetailsUiState,
     onManageVariants: ((String, String) -> Unit)?
 ) {
     if (!product.images.isNullOrEmpty()) {
@@ -462,18 +465,20 @@ private fun ProductInfoContent(
         }
     }
 
-    if (!product.categoryName.isNullOrBlank() || !product.brandName.isNullOrBlank() || product.categoryId.isNotEmpty() || product.brandId.isNotEmpty()) {
+    val hasCategoryBrandSection = uiState.categoryName.isNotBlank() || uiState.brandName.isNotBlank()
+        || uiState.groupName.isNotBlank() || uiState.subCategoryName.isNotBlank()
+    if (hasCategoryBrandSection) {
         InfoSection(title = stringResource(Res.string.prod_section_category_brand)) {
-            product.categoryName?.let { InfoRow(label = stringResource(Res.string.prod_label_category), value = it) }
-            product.brandName?.let { InfoRow(label = stringResource(Res.string.prod_label_brand), value = it) }
-            if (product.groupId.isNotEmpty()) InfoRow(label = stringResource(Res.string.prod_label_group_id), value = product.groupId)
-            if (product.subCategoryId.isNotEmpty()) InfoRow(label = stringResource(Res.string.prod_label_sub_category_id), value = product.subCategoryId)
+            if (uiState.categoryName.isNotBlank()) InfoRow(label = stringResource(Res.string.prod_label_category), value = uiState.categoryName)
+            if (uiState.brandName.isNotBlank()) InfoRow(label = stringResource(Res.string.prod_label_brand), value = uiState.brandName)
+            if (uiState.groupName.isNotBlank()) InfoRow(label = stringResource(Res.string.prod_label_group), value = uiState.groupName)
+            if (uiState.subCategoryName.isNotBlank()) InfoRow(label = stringResource(Res.string.prod_label_sub_category), value = uiState.subCategoryName)
         }
     }
 
-    product.baseUnitId?.let {
+    if (uiState.baseUnitName.isNotBlank()) {
         InfoSection(title = stringResource(Res.string.prod_section_unit)) {
-            InfoRow(label = stringResource(Res.string.prod_label_base_unit_id), value = it)
+            InfoRow(label = stringResource(Res.string.prod_label_base_unit), value = uiState.baseUnitName)
         }
     }
 }

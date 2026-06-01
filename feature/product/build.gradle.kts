@@ -41,6 +41,7 @@ kotlin {
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
                 implementation(projects.feature.taxApi)
+                implementation(projects.feature.unitApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 implementation(libs.paging.common)
@@ -52,6 +53,11 @@ kotlin {
                 implementation(libs.coil.network)
                 // Adaptive layout
                 implementation(libs.material3.adaptive)
+                // Logging
+                implementation(libs.kermit)
+                // FileKit for cross-platform file picking
+                implementation(libs.filekit.core)
+                implementation(libs.filekit.dialogs)
             }
         }
         androidMain {
