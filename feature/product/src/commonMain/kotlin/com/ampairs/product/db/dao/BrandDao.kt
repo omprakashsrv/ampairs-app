@@ -16,6 +16,10 @@ interface BrandDao {
     suspend fun brandById(id: String): BrandEntity?
 
     @Transaction
+    @Query("SELECT * FROM brandEntity WHERE id = :id")
+    suspend fun brandModelById(id: String): BrandModel?
+
+    @Transaction
     @Query("SELECT * FROM brandEntity ORDER BY name ASC, active DESC")
     suspend fun getBrands(): List<BrandModel>
 
@@ -24,6 +28,9 @@ interface BrandDao {
 
     @Query("SELECT * FROM brandEntity WHERE active = 1 ORDER BY name ASC")
     suspend fun getActiveBrands(): List<BrandEntity>
+
+    @Query("SELECT * FROM brandEntity ORDER BY name ASC, active DESC")
+    suspend fun getAllBrands(): List<BrandEntity>
 
     @Query("SELECT * FROM brandEntity WHERE name LIKE '%' || :searchText || '%' ORDER BY name ASC")
     suspend fun getBrandsByName(searchText: String): List<BrandEntity>

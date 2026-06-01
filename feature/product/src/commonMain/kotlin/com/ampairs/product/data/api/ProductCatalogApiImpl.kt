@@ -6,9 +6,15 @@ import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.Response
 import com.ampairs.common.postList
+import com.ampairs.common.postMultiPart
 import com.ampairs.common.di.AppScope
 import com.ampairs.product.api.model.AllProductGroupApiModel
+import com.ampairs.product.api.model.ImageApiModel
 import com.ampairs.product.api.model.ProductGroupApiModel
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.content.PartData
+import io.ktor.utils.io.ByteReadChannel
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -21,6 +27,46 @@ class ProductCatalogApiImpl(
 ) : ProductCatalogApi {
 
     private val client = httpClient(engine, tokenRepository)
+
+    override suspend fun uploadCatalogItemImage(
+        uid: String,
+        refUid: String,
+        fileName: String,
+        contentType: String,
+        imageData: ByteArray,
+    ): Result<ImageApiModel> = runCatching {
+        val parts = listOf(
+            PartData.FileItem(
+                provider = { ByteReadChannel(imageData) },
+                dispose = {},
+                partHeaders = Headers.build {
+                    append(HttpHeaders.ContentType, contentType)
+                    append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$fileName\"")
+                }
+            ),
+            PartData.FormItem(
+                value = uid,
+                dispose = {},
+                partHeaders = Headers.build {
+                    append(HttpHeaders.ContentDisposition, "form-data; name=\"uid\"")
+                }
+            ),
+            PartData.FormItem(
+                value = refUid,
+                dispose = {},
+                partHeaders = Headers.build {
+                    append(HttpHeaders.ContentDisposition, "form-data; name=\"refUid\"")
+                }
+            ),
+        )
+        val response: Response<ImageApiModel> = postMultiPart(
+            client,
+            ApiUrlBuilder.productUrl("v1/images/upload"),
+            parts,
+            requestTimeoutMillis = 120_000L,
+        )
+        response.data ?: throw Exception("Image upload response is null")
+    }
 
     override suspend fun getGroups(): Result<List<ProductGroupApiModel>> = runCatching {
         val response: Response<List<ProductGroupApiModel>> = get(client, ApiUrlBuilder.productUrl("v1/products/groups"))

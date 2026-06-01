@@ -16,6 +16,10 @@ interface SubCategoryDao {
     suspend fun subCategoryById(id: String): SubCategoryEntity?
 
     @Transaction
+    @Query("SELECT * FROM subCategoryEntity WHERE id = :id")
+    suspend fun subCategoryModelById(id: String): SubCategoryModel?
+
+    @Transaction
     @Query("SELECT * FROM subCategoryEntity ORDER BY name ASC, active DESC")
     suspend fun getSubCategories(): List<SubCategoryModel>
 
@@ -24,6 +28,9 @@ interface SubCategoryDao {
 
     @Query("SELECT * FROM subCategoryEntity WHERE active = 1 ORDER BY name ASC")
     suspend fun getActiveSubCategories(): List<SubCategoryEntity>
+
+    @Query("SELECT * FROM subCategoryEntity ORDER BY name ASC, active DESC")
+    suspend fun getAllSubCategoryEntities(): List<SubCategoryEntity>
 
     @Query("SELECT * FROM subCategoryEntity WHERE name LIKE '%' || :searchText || '%' ORDER BY name ASC")
     suspend fun getSubCategoriesByName(searchText: String): List<SubCategoryEntity>

@@ -1,8 +1,18 @@
 package com.ampairs.product.data.api
 
+import com.ampairs.product.api.model.ImageApiModel
 import com.ampairs.product.api.model.ProductGroupApiModel
 
 interface ProductCatalogApi {
+
+    suspend fun uploadCatalogItemImage(
+        uid: String,
+        refUid: String,
+        fileName: String,
+        contentType: String,
+        imageData: ByteArray,
+    ): Result<ImageApiModel>
+
     suspend fun getGroups(): Result<List<ProductGroupApiModel>>
     suspend fun createGroup(model: ProductGroupApiModel): Result<ProductGroupApiModel>
     suspend fun updateGroup(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel>

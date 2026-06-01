@@ -7,6 +7,7 @@ import com.ampairs.product.db.ProductRoomDatabase
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
+import com.ampairs.product.db.dao.ImageDao
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductUploadImageDao
 import com.ampairs.product.db.dao.ProductVariantDao
@@ -38,6 +39,9 @@ interface ProductDaoModule {
 
         @Provides
         fun provideSubCategoryDao(db: ProductRoomDatabase): SubCategoryDao = db.subCategoryDao()
+
+        @Provides
+        fun provideImageDao(db: ProductRoomDatabase): ImageDao = db.imageDao()
 
         @Provides
         fun provideProductUploadImageDao(db: ProductRoomDatabase): ProductUploadImageDao = db.productUploadImageDao()

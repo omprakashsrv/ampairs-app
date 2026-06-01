@@ -47,12 +47,7 @@ class ProductCatalogViewModel(
     fun load() {
         viewModelScope.launch {
             _isLoading.value = true
-            allItems = when (catalogType) {
-                ProductCatalogType.BRANDS -> repository.getBrands()
-                ProductCatalogType.CATEGORIES -> repository.getCategories()
-                ProductCatalogType.SUB_CATEGORIES -> repository.getSubCategories()
-                ProductCatalogType.GROUPS -> repository.getGroups()
-            }
+            allItems = repository.getAllItems(catalogType)
             applyFilter()
             _isLoading.value = false
         }
