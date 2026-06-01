@@ -7,7 +7,11 @@ plugins {
     alias(libs.plugins.metro)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
+    `maven-publish`
 }
+
+group = "com.ampairs"
+version = "1.0.0"
 
 kotlin {
     jvmToolchain(21)
@@ -77,4 +81,17 @@ dependencies {
     add("kspDesktop", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/omprakashsrv/ampairs-app")
+            credentials {
+                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
 }
