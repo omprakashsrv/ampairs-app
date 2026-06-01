@@ -59,7 +59,7 @@ class ProductImageApiImpl(
                     }
                 ),
                 PartData.FormItem(
-                    value = productId,
+                    value = "/$productId",
                     dispose = {},
                     partHeaders = Headers.build {
                         append(HttpHeaders.ContentDisposition, "form-data; name=\"path\"")
@@ -69,7 +69,7 @@ class ProductImageApiImpl(
 
             val response: Response<ImageApiModel> = postMultiPart(
                 client,
-                ApiUrlBuilder.productUrl("v1/images/upload-image"),
+                ApiUrlBuilder.productUrl("v1/products/upload-image"),
                 parts,
                 requestTimeoutMillis = 120_000L,
             )
