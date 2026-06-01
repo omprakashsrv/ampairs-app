@@ -14,4 +14,6 @@ abstract class SyncStateDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object SyncStateDatabaseConstructor : RoomDatabaseConstructor<SyncStateDatabase>
+expect object SyncStateDatabaseConstructor : RoomDatabaseConstructor<SyncStateDatabase> {
+    override fun initialize(): SyncStateDatabase
+}

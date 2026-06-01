@@ -1,3 +1,11 @@
+// Load local.properties into project extra so all submodules can access them via findProperty()
+val localProps = java.util.Properties()
+val localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) {
+    localPropsFile.inputStream().use { localProps.load(it) }
+    localProps.forEach { key, value -> rootProject.ext[key.toString()] = value }
+}
+
 plugins {
     // this is necessary to avoid the plugins to be loaded multiple times
     // in each subproject's classloader
