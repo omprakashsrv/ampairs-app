@@ -21,6 +21,9 @@ interface CustomerGroupDao {
     @Query("SELECT * FROM customer_groups WHERE synced = 0")
     suspend fun getUnsyncedCustomerGroups(): List<CustomerGroupEntity>
 
+    @Query("SELECT * FROM customer_groups WHERE ref_id IN (:refs)")
+    suspend fun getCustomerGroupsByTallyRefIds(refs: List<String>): List<CustomerGroupEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomerGroup(customerGroup: CustomerGroupEntity)
 
@@ -41,4 +44,7 @@ interface CustomerGroupDao {
 
     @Query("SELECT COUNT(*) FROM customer_groups WHERE active = 1")
     suspend fun getActiveCustomerGroupsCount(): Int
+
+    @Query("SELECT COUNT(*) FROM customer_groups WHERE synced = 0")
+    fun observeUnsyncedCount(): Flow<Int>
 }

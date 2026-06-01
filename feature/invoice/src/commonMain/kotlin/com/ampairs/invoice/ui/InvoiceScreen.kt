@@ -1,5 +1,13 @@
 package com.ampairs.invoice.ui
 
+import ampairsapp.feature.invoice.generated.resources.Res
+import ampairsapp.feature.invoice.generated.resources.inv_edit_discount_label
+import ampairsapp.feature.invoice.generated.resources.inv_edit_next
+import ampairsapp.feature.invoice.generated.resources.inv_edit_ok
+import ampairsapp.feature.invoice.generated.resources.inv_edit_price_label
+import ampairsapp.feature.invoice.generated.resources.inv_edit_save
+import ampairsapp.feature.invoice.generated.resources.inv_view_discount
+import ampairsapp.feature.invoice.generated.resources.inv_view_items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -36,6 +44,8 @@ import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.viewmodel.InvoiceViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvoiceScreen(
@@ -46,7 +56,6 @@ fun InvoiceScreen(
     productPickerSlot: @Composable (onProductClick: (String) -> Unit) -> Unit = {},
     viewModel: InvoiceViewModel = assistedMetroViewModel<InvoiceViewModel, InvoiceViewModel.Factory> { create(fromCustomerId, toCustomerId, id) }
 ) {
-
     val invoiceViewModel = viewModel
 
     val scope = rememberCoroutineScope()
@@ -63,7 +72,7 @@ fun InvoiceScreen(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Text(
-                    invoiceViewModel.invoice.totalItems.toString() + " Items",
+                    stringResource(Res.string.inv_view_items, invoiceViewModel.invoice.totalItems),
                     modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -87,12 +96,17 @@ fun InvoiceScreen(
                                 .progressSemantics()
                                 .size(24.dp)
                         )
-                    else Text(if (scaffoldState.bottomSheetState.isVisible) "Save" else "Next")
+                    else Text(
+                        if (scaffoldState.bottomSheetState.isVisible)
+                            stringResource(Res.string.inv_edit_save)
+                        else
+                            stringResource(Res.string.inv_edit_next)
+                    )
                 }
             }
         }
-    }) {
-        Box(modifier = Modifier.padding(it)) {
+    }) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
             BottomSheetScaffold(
                 modifier = Modifier.pointerInput(Unit) {
                     detectTapGestures(onTap = {
@@ -117,7 +131,6 @@ fun InvoiceScreen(
                                         invoiceItem.description,
                                         style = MaterialTheme.typography.labelMedium
                                     )
-
                                 },
                                 leadingContent = {
                                     Text(
@@ -148,7 +161,7 @@ fun InvoiceScreen(
                                     }
                                     if (invoiceItem.discountPercent > 0) {
                                         Text(
-                                            "Discount : " + invoiceItem.discountPercent.toDecimal() + "%",
+                                            "${stringResource(Res.string.inv_view_discount)}: ${invoiceItem.discountPercent.toDecimal()}%",
                                             style = MaterialTheme.typography.labelMedium
                                         )
                                     }
@@ -176,12 +189,9 @@ fun InvoiceScreen(
                                 })
                         }
                     }
-                }) {
-                productPickerSlot { productId ->
-                    // Product selected for invoice item
-                }
+                }) { _ ->
+                productPickerSlot { _ -> }
             }
-
         }
 
         if (invoiceViewModel.selectedInvoiceItem != null) {
@@ -192,20 +202,17 @@ fun InvoiceScreen(
                 text = {
                     Column {
                         Row {
-                            Text(text = "Discount % : ")
+                            Text(text = stringResource(Res.string.inv_edit_discount_label))
                             Column(
                                 modifier = Modifier.weight(1f),
                                 horizontalAlignment = Alignment.End
                             ) {
                                 CartItem(
                                     id = invoiceViewModel.selectedInvoiceItem?.product?.id + invoiceViewModel.selectedInvoiceItem?.product?.quantity,
-                                    qty = invoiceViewModel.selectedInvoiceItem?.discountPercent
-                                        ?: 0.0
+                                    qty = invoiceViewModel.selectedInvoiceItem?.discountPercent ?: 0.0
                                 ) { discountPercent ->
-                                    invoiceViewModel.selectedInvoiceItem?.discountPercent =
-                                        discountPercent
-                                    val productPrice =
-                                        invoiceViewModel.selectedInvoiceItem?.productPrice ?: 0.0
+                                    invoiceViewModel.selectedInvoiceItem?.discountPercent = discountPercent
+                                    val productPrice = invoiceViewModel.selectedInvoiceItem?.productPrice ?: 0.0
                                     invoiceViewModel.selectedInvoiceItem?.price =
                                         productPrice * (if (discountPercent > 0) 1 - (discountPercent / 100) else 1.0)
                                     invoiceViewModel.selectedInvoiceItem?.discount?.clear()
@@ -213,8 +220,7 @@ fun InvoiceScreen(
                                         invoiceViewModel.selectedInvoiceItem?.discount?.add(
                                             Discount(
                                                 discountPercent,
-                                                productPrice - (invoiceViewModel.selectedInvoiceItem?.price
-                                                    ?: 0.0)
+                                                productPrice - (invoiceViewModel.selectedInvoiceItem?.price ?: 0.0)
                                             )
                                         )
                                     }
@@ -227,7 +233,7 @@ fun InvoiceScreen(
                         }
 
                         Row {
-                            Text(text = "Price : ")
+                            Text(text = stringResource(Res.string.inv_edit_price_label))
                             Column(
                                 modifier = Modifier.weight(1f),
                                 horizontalAlignment = Alignment.End
@@ -238,21 +244,16 @@ fun InvoiceScreen(
                                 ) { price ->
                                     invoiceViewModel.selectedInvoiceItem?.price = price
                                     invoiceViewModel.selectedInvoiceItem?.updateTotal()
-                                    val productPrice =
-                                        (invoiceViewModel.selectedInvoiceItem?.productPrice
-                                            ?: 0.0)
+                                    val productPrice = (invoiceViewModel.selectedInvoiceItem?.productPrice ?: 0.0)
                                     val discount = productPrice - price
-                                    val discountPercent = if (discount > 0.0)
-                                        ((discount * 100) / productPrice) else 0.0
-                                    invoiceViewModel.selectedInvoiceItem?.discountPercent =
-                                        discountPercent
+                                    val discountPercent = if (discount > 0.0) ((discount * 100) / productPrice) else 0.0
+                                    invoiceViewModel.selectedInvoiceItem?.discountPercent = discountPercent
                                     invoiceViewModel.selectedInvoiceItem?.discount?.clear()
                                     if (discountPercent > 0) {
                                         invoiceViewModel.selectedInvoiceItem?.discount?.add(
                                             Discount(
                                                 discountPercent,
-                                                productPrice - (invoiceViewModel.selectedInvoiceItem?.price
-                                                    ?: 0.0)
+                                                productPrice - (invoiceViewModel.selectedInvoiceItem?.price ?: 0.0)
                                             )
                                         )
                                     }
@@ -266,37 +267,26 @@ fun InvoiceScreen(
                         Row {
                             Text(
                                 modifier = Modifier.padding(4.dp),
-                                text = "Discount @ " + invoiceViewModel.selectedInvoiceItem?.discountPercent.toDecimal() + " % : "
+                                text = "${stringResource(Res.string.inv_view_discount)} @ ${invoiceViewModel.selectedInvoiceItem?.discountPercent.toDecimal()} %: "
                             )
                             LazyColumn {
-                                items(
-                                    invoiceViewModel.selectedInvoiceItem?.discount?.size ?: 0
-                                ) { discountIndex ->
+                                items(invoiceViewModel.selectedInvoiceItem?.discount?.size ?: 0) { discountIndex ->
                                     Text(
                                         modifier = Modifier.padding(4.dp),
-                                        text = invoiceViewModel.selectedInvoiceItem?.discount?.get(
-                                            discountIndex
-                                        )?.value.toDecimal()
+                                        text = invoiceViewModel.selectedInvoiceItem?.discount?.get(discountIndex)?.value.toDecimal()
                                     )
                                 }
                             }
                         }
                     }
                 },
-                onDismissRequest = {
-                    invoiceViewModel.selectedInvoiceItem = null
-                },
+                onDismissRequest = { invoiceViewModel.selectedInvoiceItem = null },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            invoiceViewModel.selectedInvoiceItem = null
-                        }
-                    ) {
-                        Text("OK")
+                    TextButton(onClick = { invoiceViewModel.selectedInvoiceItem = null }) {
+                        Text(stringResource(Res.string.inv_edit_ok))
                     }
                 }
             )
         }
     }
 }
-

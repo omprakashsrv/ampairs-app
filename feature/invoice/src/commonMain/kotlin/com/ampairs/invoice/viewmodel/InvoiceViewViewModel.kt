@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.invoice.db.InvoiceRepository
+import com.ampairs.invoice.domain.Invoice
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -18,8 +19,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @AssistedInject
-class InvoiceViewViewModel(@Assisted val invoiceId: String, val invoiceRepository: InvoiceRepository) :
-    ViewModel() {
+class InvoiceViewViewModel(
+    @Assisted val invoiceId: String,
+    val invoiceRepository: InvoiceRepository
+) : ViewModel() {
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
@@ -27,6 +30,18 @@ class InvoiceViewViewModel(@Assisted val invoiceId: String, val invoiceRepositor
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(invoiceId: String): InvoiceViewViewModel
     }
+
+    var invoice by mutableStateOf(Invoice())
+        private set
+    var savingInvoice by mutableStateOf(false)
+        private set
+
+    init {
+        viewModelScope.launch(DispatcherProvider.io) {
+            invoice = invoiceRepository.getInvoice(invoiceId)
+        }
+    }
+
     fun saveInvoice() {
         savingInvoice = true
         viewModelScope.launch(DispatcherProvider.io) {
@@ -37,8 +52,4 @@ class InvoiceViewViewModel(@Assisted val invoiceId: String, val invoiceRepositor
             }
         }
     }
-
-    var invoice by mutableStateOf(invoiceRepository.getInvoice(invoiceId))
-    var savingInvoice by mutableStateOf(false)
-
 }

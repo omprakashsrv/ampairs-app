@@ -11,28 +11,27 @@ import com.ampairs.tally.model.master.Unit as TallyUnit
 
 internal object TallyProductMapper {
 
-    // Entity type keys used as DataStore keys for alterId watermarks
     const val ENTITY_STOCK_GROUP = "stock_group"
     const val ENTITY_STOCK_CATEGORY = "stock_category"
     const val ENTITY_STOCK_ITEM = "stock_item"
     const val ENTITY_UNIT = "unit"
 
-    fun StockGroup.toGroupEntity(): GroupEntity? {
-        val id = tallyId(guid, name) ?: return null
+    fun StockGroup.toGroupEntity(id: String): GroupEntity? {
         return GroupEntity(
             id = id,
             name = name ?: return null,
+            ref_id = guid?.takeIf { it.isNotBlank() },
             active = 1,
             soft_deleted = 0,
             synced = 0
         )
     }
 
-    fun StockCategory.toCategoryEntity(): CategoryEntity? {
-        val id = tallyId(guid, name) ?: return null
+    fun StockCategory.toCategoryEntity(id: String): CategoryEntity? {
         return CategoryEntity(
             id = id,
             name = name ?: return null,
+            ref_id = guid?.takeIf { it.isNotBlank() },
             active = 1,
             soft_deleted = 0,
             synced = 0
@@ -40,12 +39,15 @@ internal object TallyProductMapper {
     }
 
     fun StockItem.toProductEntity(
+        id: String,
         groupIdByName: Map<String, String>,
         categoryIdByName: Map<String, String>,
     ): ProductEntity? {
-        val id = tallyId(guid, name) ?: return null
         val productName = name ?: return null
-        val sellingPrice = standardPrice?.rate?.parsePrice() ?: 0.0
+        // standardPrice = selling/retail price (MRP in India); standardCost = purchase/cost price (→ dp proxy)
+        val mrp = standardPrice?.rate?.parsePrice() ?: 0.0
+        val buyingPrice = standardCost?.rate?.parsePrice() ?: 0.0
+        val hsnCode = gstDetailList?.firstOrNull()?.hsnCode?.trim()?.takeIf { it.isNotBlank() } ?: ""
         return ProductEntity(
             id = id,
             name = productName,
@@ -53,18 +55,18 @@ internal object TallyProductMapper {
             group_id = parent?.let { groupIdByName[it] },
             category_id = category?.let { categoryIdByName[it] },
             base_unit = baseUnits,
-            tax_code = "",
-            mrp = sellingPrice,
-            dp = sellingPrice,
-            selling_price = sellingPrice,
+            tax_code = hsnCode,
+            mrp = mrp,
+            dp = if (buyingPrice > 0.0) buyingPrice else mrp,
+            selling_price = mrp,
+            ref_id = guid?.takeIf { it.isNotBlank() },
             active = 1,
             soft_deleted = 0,
             synced = 0
         )
     }
 
-    fun TallyUnit.toUnitEntity(): UnitEntity? {
-        val id = tallyId(guid, name) ?: return null
+    fun TallyUnit.toUnitEntity(id: String): UnitEntity? {
         val unitName = name ?: return null
         val decimals = decimalPlaces?.toIntOrNull() ?: 0
         return UnitEntity(
@@ -73,21 +75,18 @@ internal object TallyProductMapper {
             shortName = unitName,
             decimalPlaces = decimals,
             active = true,
-            synced = false
+            synced = false,
+            refId = guid?.takeIf { it.isNotBlank() }
         )
     }
 
-    // Deterministic Ampairs ID from Tally GUID or name
-    private fun tallyId(guid: String?, name: String?): String? {
-        return when {
-            !guid.isNullOrBlank() -> guid
-            !name.isNullOrBlank() -> "TALLY_${name.hashCode()}"
-            else -> null
-        }
+    // Tally price strings: "15750.00/No", " 100.00 /Nos" — take everything before the "/"
+    private fun String.parsePrice(): Double {
+        return trim().substringBefore("/").trim().toDoubleOrNull() ?: 0.0
     }
 
-    // Tally price strings can be "100.00 /Nos" — extract the numeric part
-    private fun String.parsePrice(): Double {
-        return split(" ").firstOrNull()?.toDoubleOrNull() ?: 0.0
+    // Tally balance strings: "90 No", "-6 BOX", "3.000 KGS" — first token is the quantity
+    fun String.parseClosingQty(): Double? {
+        return trim().split(Regex("\\s+")).firstOrNull()?.toDoubleOrNull()
     }
 }

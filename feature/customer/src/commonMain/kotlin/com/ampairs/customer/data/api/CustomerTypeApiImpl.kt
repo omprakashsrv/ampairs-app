@@ -2,11 +2,12 @@ package com.ampairs.customer.data.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
+import com.ampairs.common.postList
 import com.ampairs.common.put
-import com.ampairs.common.delete
 import com.ampairs.customer.domain.CustomerType
 import com.ampairs.common.model.Response
 import com.ampairs.common.model.PageResponse
@@ -74,12 +75,17 @@ class CustomerTypeApiImpl(
     }
 
     override suspend fun updateCustomerType(id: String, customerType: CustomerType): Response<CustomerType> {
-        val response: Response<CustomerType> = post(
+        val response: Response<CustomerType> = put(
             client,
             ApiUrlBuilder.customerUrl("v1/types/$id"),
             customerType
         )
         return response
+    }
+
+    override suspend fun bulkUpsertTypes(types: List<CustomerType>): Result<List<CustomerType>> = runCatching {
+        val response: Response<List<CustomerType>> = postList(client, ApiUrlBuilder.customerUrl("v1/types"), types)
+        response.data ?: emptyList()
     }
 
     override suspend fun deleteCustomerType(id: String): Response<Unit> {

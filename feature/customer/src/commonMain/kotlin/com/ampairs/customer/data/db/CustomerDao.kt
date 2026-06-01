@@ -31,6 +31,9 @@ interface CustomerDao {
     )
     fun searchCustomers(searchQuery: String): Flow<List<CustomerEntity>>
 
+    @Query("SELECT * FROM customers WHERE ref_id IN (:refs)")
+    suspend fun getCustomersByTallyRefIds(refs: List<String>): List<CustomerEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomer(customer: CustomerEntity)
 
@@ -49,9 +52,18 @@ interface CustomerDao {
     @Query("SELECT * FROM customers WHERE synced = 0")
     suspend fun getUnsyncedCustomers(): List<CustomerEntity>
 
+    @Query("SELECT COUNT(*) FROM customers WHERE synced = 0")
+    fun observeUnsyncedCount(): Flow<Int>
+
 
     @Query("DELETE FROM customers")
     suspend fun clearWorkspaceCustomers()
+
+    @Query("UPDATE customers SET phone = NULL WHERE phone IS NOT NULL AND length(phone) != 10")
+    suspend fun nullifyInvalidPhones()
+
+    @Query("UPDATE customers SET pincode = NULL WHERE pincode IS NOT NULL AND length(pincode) != 6")
+    suspend fun nullifyInvalidPincodes()
 
     @Query(
         """

@@ -30,6 +30,14 @@ class BusinessOperationsViewModel(
 
     init {
         loadOperations()
+        syncFromRemote()
+    }
+
+    private fun syncFromRemote() {
+        viewModelScope.launch {
+            repository.syncFromRemote()
+                .onSuccess { loadOperations() }
+        }
     }
 
     fun loadOperations() {

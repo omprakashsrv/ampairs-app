@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.domain.ProductListItem
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -19,7 +23,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 data class ProductsListUiState(
     val products: List<ProductListItem> = emptyList(),
@@ -33,7 +36,8 @@ data class ProductsListUiState(
 @ViewModelKey
 @Inject
 class ProductsListViewModel(
-    private val productRepository: ProductRepository
+    private val productRepository: ProductRepository,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductsListUiState())
@@ -43,7 +47,9 @@ class ProductsListViewModel(
 
     init {
         observeProducts()
-        syncProducts()
+        syncService.observeEntity(SyncEntity.PRODUCT)
+            .onEach { state -> _uiState.update { it.copy(isRefreshing = state?.status is SyncStatus.Syncing) } }
+            .launchIn(viewModelScope)
     }
 
     fun updateSearchQuery(query: String) {
@@ -52,16 +58,7 @@ class ProductsListViewModel(
     }
 
     fun syncProducts() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, error = null) }
-            try {
-                productRepository.syncProducts()
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Sync failed") }
-            } finally {
-                _uiState.update { it.copy(isRefreshing = false) }
-            }
-        }
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.PRODUCT))
     }
 
     @OptIn(FlowPreview::class)

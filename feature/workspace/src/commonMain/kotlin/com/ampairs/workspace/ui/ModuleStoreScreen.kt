@@ -6,6 +6,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.ampairs.workspace.api.model.AvailableModule
+import com.ampairs.workspace.domain.WorkspaceModule
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
@@ -34,8 +37,7 @@ fun ModuleStoreScreen(
 ) {
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
-    val availableModules by viewModel.availableModules.collectAsStateWithLifecycle()
-    val installedModules by viewModel.installedModules.collectAsStateWithLifecycle()
+    val allModules by viewModel.allModules.collectAsStateWithLifecycle()
     var togglingModules by remember { mutableStateOf(setOf<String>()) }
 
     LaunchedEffect(workspaceId) {
@@ -45,32 +47,7 @@ fun ModuleStoreScreen(
         }
     }
 
-    val activeCount = installedModules.count { it.status == "ACTIVE" && it.enabled }
-
-    // Merge installed + available-but-not-installed into a single list so installed
-    // modules appear in the grid with their switch ON.
-    val allModules = remember(availableModules, installedModules) {
-        val installedCodes = installedModules.map { it.moduleCode }.toSet()
-        val installedAsAvailable = installedModules.map { installed ->
-            availableModules.find { it.moduleCode == installed.moduleCode }
-                ?: AvailableModule(
-                    moduleCode = installed.moduleCode,
-                    name = installed.name,
-                    description = installed.description,
-                    category = installed.category,
-                    version = installed.version,
-                    rating = 0.0,
-                    installCount = 0,
-                    complexity = "",
-                    icon = installed.icon,
-                    primaryColor = installed.primaryColor,
-                    featured = false,
-                    requiredTier = "FREE",
-                    sizeMb = 0,
-                )
-        }
-        installedAsAvailable + availableModules.filter { it.moduleCode !in installedCodes }
-    }
+    val activeCount = allModules.count { it.isInstalled && it.enabled }
 
     Column(
         modifier = Modifier
@@ -144,6 +121,9 @@ fun ModuleStoreScreen(
             }
 
             else -> {
+                val installedSorted = remember(allModules) {
+                    allModules.filter { it.isInstalled }.sortedBy { it.navigationIndex }
+                }
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 160.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -152,28 +132,26 @@ fun ModuleStoreScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(allModules, key = { it.moduleCode }) { module ->
-                        val installed = installedModules.find { it.moduleCode == module.moduleCode }
-                        val isEnabled = installed != null
+                        val isEnabled = module.isInstalled
                         val isToggling = module.moduleCode in togglingModules
+                        val installedIdx = installedSorted.indexOfFirst { it.moduleCode == module.moduleCode }
 
                         ModuleToggleCard(
                             module = module,
                             isEnabled = isEnabled,
                             isToggling = isToggling,
+                            canMoveUp = installedIdx > 0,
+                            canMoveDown = installedIdx in 0 until installedSorted.lastIndex,
                             onToggle = {
                                 if (!isToggling) {
                                     togglingModules = togglingModules + module.moduleCode
-                                    if (installed != null) {
-                                        viewModel.uninstallModule(installed.id) { _ ->
-                                            togglingModules = togglingModules - module.moduleCode
-                                        }
-                                    } else {
-                                        viewModel.installModule(module.moduleCode) { _ ->
-                                            togglingModules = togglingModules - module.moduleCode
-                                        }
+                                    viewModel.toggleModule(module.moduleCode) {
+                                        togglingModules = togglingModules - module.moduleCode
                                     }
                                 }
                             },
+                            onMoveUp = { viewModel.moveModuleUp(module.moduleCode) },
+                            onMoveDown = { viewModel.moveModuleDown(module.moduleCode) },
                         )
                     }
                 }
@@ -184,10 +162,14 @@ fun ModuleStoreScreen(
 
 @Composable
 private fun ModuleToggleCard(
-    module: AvailableModule,
+    module: WorkspaceModule,
     isEnabled: Boolean,
     isToggling: Boolean,
+    canMoveUp: Boolean = false,
+    canMoveDown: Boolean = false,
     onToggle: () -> Unit,
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {},
 ) {
     val borderColor = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
     val borderWidth = if (isEnabled) 2.dp else 1.dp
@@ -205,7 +187,6 @@ private fun ModuleToggleCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                // Module initial icon
                 Surface(
                     shape = CircleShape,
                     color = if (isEnabled)
@@ -227,8 +208,7 @@ private fun ModuleToggleCard(
                     }
                 }
 
-                // Switch or per-card spinner
-                if (isToggling) {
+                if (isToggling || module.hasPendingSync) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
@@ -245,7 +225,6 @@ private fun ModuleToggleCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Name + optional "core" badge
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -280,6 +259,46 @@ private fun ModuleToggleCard(
                     maxLines = 2,
                     modifier = Modifier.padding(top = 2.dp),
                 )
+            }
+
+            if (isEnabled) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    IconButton(
+                        onClick = onMoveUp,
+                        enabled = canMoveUp,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowUp,
+                            contentDescription = "Move up",
+                            modifier = Modifier.size(18.dp),
+                            tint = if (canMoveUp)
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
+                        )
+                    }
+                    IconButton(
+                        onClick = onMoveDown,
+                        enabled = canMoveDown,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Move down",
+                            modifier = Modifier.size(18.dp),
+                            tint = if (canMoveDown)
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f),
+                        )
+                    }
+                }
             }
         }
     }

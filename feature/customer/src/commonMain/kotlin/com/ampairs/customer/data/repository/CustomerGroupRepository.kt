@@ -41,7 +41,13 @@ class CustomerGroupRepository(
                 customerGroup.uid
             }
 
-            val customerGroupWithUid = customerGroup.copy(uid = uid)
+            val customerGroupWithUid = customerGroup.copy(
+                uid = uid,
+                groupCode = customerGroup.groupCode?.takeIf { it.isNotBlank() }
+                    ?: customerGroup.name.filter { it.isLetterOrDigit() || it == ' ' }
+                        .trim().replace(' ', '_').uppercase().take(20)
+                        .ifBlank { uid.takeLast(8).uppercase() }
+            )
 
             // 1. Save locally first with unsynced status
             val unsyncedEntity = customerGroupWithUid.toEntity().copy(synced = false)
@@ -177,6 +183,59 @@ class CustomerGroupRepository(
         }
     }
 
+    suspend fun pushPendingToServer(): Result<Int> {
+        return try {
+            val unsyncedGroups = customerGroupDao.getUnsyncedCustomerGroups()
+            var syncedCount = 0
+            var failedCount = 0
+
+            for (entity in unsyncedGroups.filter { !it.active }) {
+                try {
+                    customerGroupApi.deleteCustomerGroup(entity.id)
+                    customerGroupDao.deleteCustomerGroup(entity.id)
+                    syncedCount++
+                } catch (e: Exception) {
+                    CustomerLogger.w("CustomerGroupRepository", "Failed to delete group ${entity.id}", e)
+                    failedCount++
+                }
+            }
+
+            val activeUnsynced = unsyncedGroups.filter { it.active }
+            for (batch in activeUnsynced.chunked(10)) {
+                val groups = batch.map { entity ->
+                    entity.toCustomerGroup().let { group ->
+                        if (group.groupCode.isNullOrBlank()) {
+                            val derived = group.name
+                                .filter { it.isLetterOrDigit() || it == ' ' }
+                                .trim().replace(' ', '_').uppercase().take(20)
+                                .ifBlank { group.uid.takeLast(8).uppercase() }
+                            group.copy(groupCode = derived)
+                        } else group
+                    }
+                }
+                customerGroupApi.bulkUpsertGroups(groups)
+                    .onSuccess {
+                        batch.forEach { entity ->
+                            customerGroupDao.insertCustomerGroup(entity.copy(synced = true))
+                        }
+                        syncedCount += batch.size
+                    }
+                    .onFailure { e ->
+                        CustomerLogger.w("CustomerGroupRepository", "Batch upsert failed", e)
+                        failedCount += batch.size
+                    }
+            }
+
+            if (failedCount > 0) Result.failure(Exception("$failedCount customer group(s) failed to sync"))
+            else Result.success(syncedCount)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerGroupRepository", "Push failed", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun pullFromServer(): Result<Int> = syncCustomerGroupsFromServerInBatches()
+
     /**
      * Sync customer groups with server using offline-first pattern
      */
@@ -186,30 +245,42 @@ class CustomerGroupRepository(
             val unsyncedGroups = customerGroupDao.getUnsyncedCustomerGroups()
             var syncedCount = 0
 
-            for (entity in unsyncedGroups) {
-                val customerGroup = entity.toCustomerGroup()
+            // Handle deletions individually
+            for (entity in unsyncedGroups.filter { !it.active }) {
                 try {
-                    if (!entity.active) {
-                        // Handle deleted customer groups
-                        customerGroupApi.deleteCustomerGroup(customerGroup.uid)
-                        customerGroupDao.deleteCustomerGroup(customerGroup.uid)
-                        syncedCount++
-                    } else {
-                        // Handle created/updated customer groups
-                        val response = if (entity.synced) {
-                            customerGroupApi.updateCustomerGroup(customerGroup.uid, customerGroup)
-                        } else {
-                            customerGroupApi.createCustomerGroup(customerGroup)
-                        }
-
-                        if (response.data != null && response.error == null) {
-                            customerGroupDao.insertCustomerGroup(response.data!!.toEntity().copy(synced = true))
-                            syncedCount++
-                        }
-                    }
+                    customerGroupApi.deleteCustomerGroup(entity.id)
+                    customerGroupDao.deleteCustomerGroup(entity.id)
+                    syncedCount++
                 } catch (e: Exception) {
-                    CustomerLogger.w("CustomerGroupRepository", "Failed to sync customer group ${customerGroup.uid}", e)
+                    CustomerLogger.w("CustomerGroupRepository", "Failed to delete customer group ${entity.id}", e)
                 }
+            }
+
+            // Bulk upsert active unsynced groups in batches of 10
+            val activeUnsynced = unsyncedGroups.filter { it.active }
+            for (batch in activeUnsynced.chunked(10)) {
+                val groups = batch.map { entity ->
+                    entity.toCustomerGroup().let { group ->
+                        if (group.groupCode.isNullOrBlank()) {
+                            // Backend requires groupCode — derive from name when not set
+                            val derived = group.name
+                                .filter { it.isLetterOrDigit() || it == ' ' }
+                                .trim().replace(' ', '_').uppercase().take(20)
+                                .ifBlank { group.uid.takeLast(8).uppercase() }
+                            group.copy(groupCode = derived)
+                        } else group
+                    }
+                }
+                customerGroupApi.bulkUpsertGroups(groups)
+                    .onSuccess {
+                        batch.forEach { entity ->
+                            customerGroupDao.insertCustomerGroup(entity.copy(synced = true))
+                        }
+                        syncedCount += batch.size
+                    }
+                    .onFailure { e ->
+                        CustomerLogger.w("CustomerGroupRepository", "Batch upsert failed", e)
+                    }
             }
 
             // SECOND: Sync from server in batches (incremental sync)
@@ -235,6 +306,7 @@ class CustomerGroupRepository(
             do {
                 // Fetch one page of customer groups
                 val pageResponse = customerGroupApi.getCustomerGroups(currentPage, batchSize)
+                if (pageResponse.error != null) throw Exception(pageResponse.error?.message ?: "Network error")
                 val batchGroups = pageResponse.data?.content ?: emptyList()
 
                 // Process batch with conflict resolution

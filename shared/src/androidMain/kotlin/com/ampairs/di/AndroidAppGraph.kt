@@ -10,6 +10,7 @@ import coil3.util.DebugLogger
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.DeviceService
 import com.ampairs.common.ImageCacheKeyer
+import com.ampairs.sync.CentralSyncService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreAppPreferences
 import com.ampairs.common.config.createAppDataStore
@@ -31,6 +32,8 @@ import okio.Path.Companion.toOkioPath
 
 @DependencyGraph(AppScope::class)
 interface AndroidAppGraph : AppGraph {
+    val centralSyncService: CentralSyncService
+
     @DependencyGraph.Factory
     fun interface Factory {
         fun create(@Provides context: Context): AndroidAppGraph

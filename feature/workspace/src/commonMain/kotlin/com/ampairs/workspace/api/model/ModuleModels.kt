@@ -64,6 +64,17 @@ data class AvailableModule(
 )
 
 @Serializable
+data class ModuleReorderItem(
+    @SerialName("moduleCode") val moduleCode: String,
+    @SerialName("displayOrder") val displayOrder: Int,
+)
+
+@Serializable
+data class ModuleReorderRequest(
+    @SerialName("orders") val orders: List<ModuleReorderItem>,
+)
+
+@Serializable
 data class ModuleInstallationResponse(
     @SerialName("success") val success: Boolean,
     @SerialName("module_id") val moduleId: String,
@@ -125,4 +136,9 @@ data class ModulePermissionsResponse(
     @SerialName("can_configure") val canConfigure: Boolean,
     @SerialName("can_uninstall") val canUninstall: Boolean,
     @SerialName("can_view_analytics") val canViewAnalytics: Boolean,
+)
+
+@Serializable
+data class ModuleUpdateRequest(
+    @SerialName("enabled") val enabled: Boolean
 )

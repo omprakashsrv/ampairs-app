@@ -17,6 +17,7 @@
     <string name="customer_code_display">Code: %s</string>
 
     <!-- Customer list screen -->
+    <string name="customer_list_title">Parties</string>
     <string name="customer_list_search_hint">Search customers…</string>
     <string name="customer_list_refresh_cd">Refresh</string>
     <string name="customer_list_add_cd">Add Customer</string>
@@ -27,6 +28,11 @@
     <string name="customer_list_add_btn">Add Customer</string>
     <string name="customer_image_content_desc">Customer image</string>
     <string name="customer_form_settings_cd">Form Settings</string>
+    <string name="customer_list_count">%d customers</string>
+    <string name="customer_list_new_party">New Party</string>
+    <string name="customer_list_col_name">Name</string>
+    <string name="customer_list_col_city">City</string>
+    <string name="customer_list_col_phone">Phone</string>
 
     <!-- Customer form screen -->
     <string name="customer_form_title_new">New Customer</string>
@@ -106,6 +112,14 @@
     <string name="customer_credit_days_value">%d days</string>
     <string name="customer_status_active_label">Active</string>
     <string name="customer_status_inactive_label">Inactive</string>
+    <string name="customer_action_bill">Bill</string>
+    <string name="customer_action_call">Call</string>
+    <string name="customer_tab_overview">Overview</string>
+    <string name="customer_details_credit_limit_stat">Credit Limit</string>
+    <string name="customer_details_credit_days_stat">Credit Days</string>
+    <string name="customer_details_no_limit">No limit</string>
+    <string name="customer_details_na">N/A</string>
+    <string name="customer_details_days_suffix">d</string>
 
     <!-- Customer type list/form -->
     <string name="customer_type_list_title">Customer Types</string>
@@ -258,4 +272,10 @@
     <string name="customer_images_guideline_size">Maximum file size: 10MB per image</string>
     <string name="customer_images_guideline_resolution">Recommended resolution: 800x800 pixels</string>
     <string name="customer_images_guideline_primary">Set one image as primary for customer lists</string>
+
+    <!-- Master data section shortcuts -->
+    <string name="customer_master_data">Master Data</string>
+    <string name="customer_shortcut_groups">Groups</string>
+    <string name="customer_shortcut_types">Types</string>
+    <string name="customer_shortcut_states">States</string>
 </resources>

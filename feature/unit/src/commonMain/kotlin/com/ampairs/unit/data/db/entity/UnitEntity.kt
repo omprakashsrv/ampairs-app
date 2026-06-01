@@ -16,7 +16,8 @@ import com.ampairs.unit.domain.model.Unit
     tableName = "units",
     indices = [
         Index(value = ["id"], unique = true, name = "unit_id_idx"),
-        Index(value = ["name"], name = "unit_name_idx")
+        Index(value = ["name"], name = "unit_name_idx"),
+        Index(value = ["ref_id"], name = "unit_ref_idx")
     ]
 )
 data class UnitEntity(
@@ -49,7 +50,10 @@ data class UnitEntity(
     val createdAt: String? = null,
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+
+    @ColumnInfo(name = "ref_id")
+    val refId: String? = null
 )
 
 /**
@@ -63,6 +67,7 @@ fun UnitEntity.toUnit(): Unit = Unit(
     description = description,
     category = category,
     active = active,
+    refId = refId,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
@@ -78,6 +83,7 @@ fun Unit.toEntity(): UnitEntity = UnitEntity(
     description = description,
     category = category,
     active = active,
+    refId = refId,
     createdAt = createdAt,
     updatedAt = updatedAt
 )

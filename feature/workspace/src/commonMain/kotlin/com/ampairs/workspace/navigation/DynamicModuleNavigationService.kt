@@ -43,6 +43,16 @@ class DynamicModuleNavigationService {
         }
         .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
 
+    // All active routes — no implementation filter, for desktop NavigationRail
+    val allActiveRoutes: StateFlow<List<DynamicModuleRoute>> = _installedModules
+        .map { modules ->
+            modules
+                .filter { it.status == "ACTIVE" && it.enabled }
+                .map { module -> mapToNavigationRoute(module) }
+                .sortedBy { it.navigationIndex }
+        }
+        .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
+
     // Unavailable modules (installed but not implemented locally)
     val unavailableModules: StateFlow<List<DynamicModuleRoute>> = _installedModules
         .map { modules ->
@@ -133,7 +143,7 @@ class DynamicModuleNavigationService {
     private fun mapToNavigationRoute(module: InstalledModule): DynamicModuleRoute {
         return DynamicModuleRoute(
             moduleCode = module.moduleCode,
-            displayName = module.routeInfo.displayName,
+            displayName = module.routeInfo.displayName.ifBlank { module.name },
             icon = module.routeInfo.iconName,
             primaryColor = module.primaryColor,
             basePath = module.routeInfo.basePath,

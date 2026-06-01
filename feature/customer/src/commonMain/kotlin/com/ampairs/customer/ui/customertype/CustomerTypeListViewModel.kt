@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.customer.domain.CustomerType
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -35,7 +39,8 @@ data class CustomerTypeListUiState(
 @ViewModelKey
 @Inject
 class CustomerTypeListViewModel(
-    private val customerTypeRepository: CustomerTypeRepository
+    private val customerTypeRepository: CustomerTypeRepository,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomerTypeListUiState())
@@ -45,7 +50,8 @@ class CustomerTypeListViewModel(
 
     init {
         observeCustomerTypes()
-        syncCustomerTypes()
+        observeSyncState()
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CUSTOMER_TYPE))
     }
 
     fun updateSearchQuery(query: String) {
@@ -57,7 +63,9 @@ class CustomerTypeListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
             val result = customerTypeRepository.deleteCustomerType(customerTypeId)
-            if (result.isFailure) {
+            if (result.isSuccess) {
+                syncService.markPendingPush(SyncEntity.CUSTOMER_TYPE)
+            } else {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to delete customer type")
                 }
@@ -66,16 +74,7 @@ class CustomerTypeListViewModel(
     }
 
     fun syncCustomerTypes() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, error = null) }
-            try {
-                customerTypeRepository.syncCustomerTypes()
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Sync failed") }
-            } finally {
-                _uiState.update { it.copy(isRefreshing = false) }
-            }
-        }
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CUSTOMER_TYPE))
     }
 
     fun loadAvailableCustomerTypesForImport() {
@@ -95,12 +94,13 @@ class CustomerTypeListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
             val result = customerTypeRepository.importCustomerType(customerType)
-            if (result.isFailure) {
+            if (result.isSuccess) {
+                syncService.markPendingPush(SyncEntity.CUSTOMER_TYPE)
+                loadAvailableCustomerTypesForImport()
+            } else {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer type")
                 }
-            } else {
-                loadAvailableCustomerTypesForImport()
             }
         }
     }
@@ -109,14 +109,21 @@ class CustomerTypeListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
             val result = customerTypeRepository.bulkImportCustomerTypes(customerTypes)
-            if (result.isFailure) {
+            if (result.isSuccess) {
+                syncService.markPendingPush(SyncEntity.CUSTOMER_TYPE)
+                loadAvailableCustomerTypesForImport()
+            } else {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer types")
                 }
-            } else {
-                loadAvailableCustomerTypesForImport()
             }
         }
+    }
+
+    private fun observeSyncState() {
+        syncService.observeEntity(SyncEntity.CUSTOMER_TYPE)
+            .onEach { state -> _uiState.update { it.copy(isRefreshing = state?.status is SyncStatus.Syncing) } }
+            .launchIn(viewModelScope)
     }
 
     @OptIn(FlowPreview::class)

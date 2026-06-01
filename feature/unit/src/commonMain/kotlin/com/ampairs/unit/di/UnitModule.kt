@@ -4,6 +4,8 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.unit.data.db.UnitDatabase
 import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
+import com.ampairs.unit.data.repository.UnitLookup
+import com.ampairs.unit.data.repository.UnitRepository
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
@@ -21,6 +23,9 @@ interface UnitDaoModule {
 
         @Provides
         fun provideUnitConversionDao(db: UnitDatabase): UnitConversionDao = db.unitConversionDao()
+
+        @Provides
+        fun provideUnitLookup(repo: UnitRepository): UnitLookup = repo
     }
 }
 

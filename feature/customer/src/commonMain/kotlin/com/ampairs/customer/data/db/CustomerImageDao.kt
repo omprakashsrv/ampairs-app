@@ -57,6 +57,9 @@ interface CustomerImageDao {
 
     // Sync-related queries
 
+    @Query("SELECT DISTINCT customer_id FROM customer_images")
+    suspend fun getDistinctCustomerIds(): List<String>
+
     @Query("SELECT * FROM customer_images WHERE synced = 0 ORDER BY local_created_at ASC")
     suspend fun getUnsyncedCustomerImages(): List<CustomerImageEntity>
 

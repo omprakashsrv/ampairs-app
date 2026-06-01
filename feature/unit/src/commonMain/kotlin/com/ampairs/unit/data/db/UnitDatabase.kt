@@ -23,7 +23,7 @@ import com.ampairs.unit.data.db.entity.UnitEntity
         UnitEntity::class,
         UnitConversionEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @ConstructedBy(UnitDatabaseConstructor::class)

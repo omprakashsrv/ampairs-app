@@ -27,6 +27,8 @@ include(":shared")
 include(":androidApp")
 include(":desktopApp")
 include(":data:common")
+include(":data:sync")
+include(":data:event")
 include(":tally")
 include(
     ":feature:auth-api",
@@ -41,7 +43,6 @@ include(
     ":feature:form",
     ":feature:unit",
     ":feature:update",
-    ":feature:event",
     ":feature:tax",
     ":feature:subscription",
     ":feature:business",

@@ -77,7 +77,19 @@ interface WorkspaceModuleDao {
     @Query("DELETE FROM module_menu_item WHERE moduleId IN (SELECT id FROM installed_module WHERE workspaceId = :workspaceId)")
     suspend fun deleteAllMenuItemsByWorkspace(workspaceId: String)
 
+    @Query("UPDATE installed_module SET enabled = :enabled, sync_state = :syncState, updated_at = :updatedAt WHERE id = :moduleId")
+    suspend fun updateModuleEnabled(moduleId: String, enabled: Boolean, syncState: String, updatedAt: Long)
+
+    @Query("UPDATE installed_module SET navigationIndex = :navigationIndex WHERE workspaceId = :workspaceId AND moduleCode = :moduleCode")
+    suspend fun updateNavigationIndex(workspaceId: String, moduleCode: String, navigationIndex: Int)
+
+    @Query("SELECT * FROM installed_module WHERE workspaceId = :workspaceId AND sync_state = 'PENDING' ORDER BY updated_at ASC")
+    suspend fun getPendingSyncModules(workspaceId: String): List<InstalledModuleEntity>
+
     // Available Modules Operations
+
+    @Query("SELECT * FROM available_module ORDER BY CASE WHEN featured = 1 THEN 0 ELSE 1 END, name ASC")
+    fun getAvailableModulesFlow(): Flow<List<AvailableModuleEntity>>
 
     @Query("SELECT * FROM available_module ORDER BY CASE WHEN featured = 1 THEN 0 ELSE 1 END, name ASC")
     suspend fun getAvailableModules(): List<AvailableModuleEntity>

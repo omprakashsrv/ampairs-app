@@ -79,6 +79,10 @@ data class StockItem(
     var gstDetailList: List<GSTDetail>? = null,
 
     @XmlElement(true)
+    @XmlSerialName("HSNDETAILS.LIST")
+    var hsnDetailList: List<HsnDetail>? = null,
+
+    @XmlElement(true)
     @XmlSerialName("BATCHALLOCATIONS.LIST")
     var batchLocations: List<BatchLocation>? = null,
 
@@ -89,6 +93,14 @@ data class StockItem(
     @XmlElement(true)
     @XmlSerialName("LANGUAGENAME.LIST")
     var languageNameList: List<NameList>? = null,
+
+    @XmlElement(true)
+    @XmlSerialName("CLOSINGBALANCE")
+    var closingBalance: String? = null,
+
+    @XmlElement(true)
+    @XmlSerialName("CLOSINGVALUE")
+    var closingValue: String? = null,
 
     @XmlElement(true)
     @XmlSerialName("ALTERID")

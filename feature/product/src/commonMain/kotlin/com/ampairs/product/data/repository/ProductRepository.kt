@@ -22,11 +22,11 @@ import com.ampairs.product.domain.ProductVariant
 import com.ampairs.product.domain.ServiceType
 import com.ampairs.product.domain.asDomainModel
 import com.ampairs.product.domain.asDatabaseModel
+import com.ampairs.product.domain.asProductApiModel
 import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toDomain
 import com.ampairs.product.domain.toDomainList
 import com.ampairs.product.domain.toSummary
-import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -117,15 +117,7 @@ class ProductRepository(
      */
     private suspend fun refreshProductFromServer(productId: String) {
         try {
-            // Get current workspace ID from context
-            val workspaceId = WorkspaceContextManager.getInstance().currentWorkspace.value?.id
-            if (workspaceId == null) {
-                EventLogger.w("ProductRepository", "No workspace context available")
-                return
-            }
-
-            // Fetch latest product data from server
-            val result = productApi.getProduct(workspaceId, productId)
+            val result = productApi.getProduct(productId)
 
             result.onSuccess { productApiModel ->
                 // Convert API model to domain, then to entity
@@ -195,19 +187,10 @@ class ProductRepository(
 
     override suspend fun clearCache() { productDao.deleteAll() }
 
-    suspend fun syncProducts(): Result<Int> {
-        return try {
-            val workspaceId = WorkspaceContextManager.getInstance().currentWorkspace.value?.id
-                ?: return Result.failure(Exception("No workspace selected"))
-            val result = productApi.getProducts(workspaceId)
-            result.onSuccess { apiProducts ->
-                productDao.insertAll(apiProducts.asDatabaseModel())
-            }
-            Result.success(result.getOrNull()?.size ?: 0)
-        } catch (e: Exception) {
-            ErrorTracking.captureException(e, "ProductRepository.syncProducts")
-            Result.failure(e)
-        }
+    suspend fun syncProducts(): Result<Int> = runCatching {
+        val products = productApi.getProducts().getOrThrow()
+        productDao.insertAll(products.asDatabaseModel())
+        products.size
     }
 
     suspend fun createProduct(product: Product): Result<Product> {
@@ -268,6 +251,36 @@ class ProductRepository(
 
     suspend fun getUnSyncedProducts(): List<Product> {
         return productDao.unSyncedProducts().map { it.toDomainProduct() }
+    }
+
+    suspend fun pullFromServer(): Result<Int> = syncProducts()
+
+    // Push unsynced local changes first, then pull server updates — mirrors CustomerRepository.syncCustomers()
+    suspend fun fullSync(): Result<Int> {
+        val pushResult = pushPendingToServer()
+        val pullResult = syncProducts()
+        return if (pullResult.isFailure) pullResult
+        else Result.success((pushResult.getOrElse { 0 }) + (pullResult.getOrElse { 0 }))
+    }
+
+    suspend fun pushPendingToServer(): Result<Int> = runCatching {
+        val unsynced = productDao.unSyncedProducts()
+        if (unsynced.isEmpty()) return@runCatching 0
+        var pushed = 0
+        for (batch in unsynced.chunked(10)) {
+            val apiModels = batch.map { it.asProductApiModel() }
+            productApi.bulkUpdateProducts(apiModels)
+                .onSuccess {
+                    batch.forEach { entity -> productDao.insert(entity.copy(synced = 1)) }
+                    pushed += batch.size
+                }
+                .onFailure { throw it }
+        }
+        pushed
+    }
+
+    suspend fun handleExternalEvent(productId: String, eventType: String) {
+        refreshProductFromServer(productId)
     }
 
     // Extension functions for data conversion

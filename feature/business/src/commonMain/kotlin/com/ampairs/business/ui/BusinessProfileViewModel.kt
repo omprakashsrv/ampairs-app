@@ -31,6 +31,14 @@ class BusinessProfileViewModel(
 
     init {
         loadProfile()
+        syncFromRemote()
+    }
+
+    private fun syncFromRemote() {
+        viewModelScope.launch {
+            repository.syncFromRemote()
+                .onSuccess { loadProfile() }
+        }
     }
 
     fun loadProfile() {

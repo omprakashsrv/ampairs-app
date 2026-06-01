@@ -253,4 +253,16 @@ data class Ledger(
     @XmlElement(true)
     @XmlSerialName("TCSCATEGORYDETAILS.LIST")
     private var tcsCategoryDetailList: MutableList<TCSCategoryDetail>? = null,
+
+    @XmlElement(true)
+    @XmlSerialName("LEDGSTREGDETAILS.LIST")
+    var gstRegDetailList: List<LedgerGstRegDetails>? = null,
+
+    @XmlElement(true)
+    @XmlSerialName("LEDMAILINGDETAILS.LIST")
+    var mailingDetailList: List<LedgerMailingDetails>? = null,
+
+    @XmlElement(true)
+    @XmlSerialName("ALTERID")
+    var alterId: String? = null,
 )

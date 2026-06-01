@@ -41,11 +41,9 @@ interface WorkspaceModuleApi {
 
     /**
      * Uninstall a module from the current workspace
-     * DELETE /workspace/v1/modules/{moduleId}
-     *
-     * Matches: async uninstallModule(moduleId: string): Promise<ModuleUninstallationResponse>
+     * DELETE /workspace/v1/modules/{moduleCode}
      */
-    suspend fun uninstallModule(workspaceId: String, moduleId: String): Result<ModuleUninstallationResponse>
+    suspend fun uninstallModule(workspaceId: String, moduleCode: String): Result<ModuleUninstallationResponse>
 
     /**
      * Get detailed information about a specific module
@@ -54,4 +52,7 @@ interface WorkspaceModuleApi {
      * Returns comprehensive module details including configuration, analytics, and permissions
      */
     suspend fun getModuleDetails(workspaceId: String, moduleId: String): Result<ModuleDetailResponse>
+
+    suspend fun reorderModules(workspaceId: String, orders: List<com.ampairs.workspace.api.model.ModuleReorderItem>): Result<Unit>
+
 }

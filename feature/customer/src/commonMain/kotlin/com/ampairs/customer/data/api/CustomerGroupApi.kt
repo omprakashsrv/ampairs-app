@@ -22,6 +22,8 @@ interface CustomerGroupApi {
 
     suspend fun updateCustomerGroup(id: String, customerGroup: CustomerGroup): Response<CustomerGroup>
 
+    suspend fun bulkUpsertGroups(groups: List<CustomerGroup>): Result<List<CustomerGroup>>
+
     suspend fun deleteCustomerGroup(id: String): Response<Unit>
 
     suspend fun searchCustomerGroups(

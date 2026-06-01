@@ -27,6 +27,7 @@ kotlin {
             dependencies {
                 api(projects.feature.productApi)
                 implementation(projects.data.common)
+                implementation(projects.data.sync)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
@@ -40,6 +41,7 @@ kotlin {
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
                 implementation(projects.feature.taxApi)
+                implementation(projects.feature.unitApi)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 implementation(libs.paging.common)
@@ -49,6 +51,13 @@ kotlin {
                 implementation(libs.coil.core)
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network)
+                // Adaptive layout
+                implementation(libs.material3.adaptive)
+                // Logging
+                implementation(libs.kermit)
+                // FileKit for cross-platform file picking
+                implementation(libs.filekit.core)
+                implementation(libs.filekit.dialogs)
             }
         }
         androidMain {

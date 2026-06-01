@@ -41,6 +41,10 @@ data class Collection(
     @XmlSerialName("NATIVEMETHOD")
     var nativeMethod: List<String> = listOf("*"),
 
+    @XmlElement(true)
+    @XmlSerialName("COMPUTE")
+    var compute: List<String>? = null,
+
 
     @XmlElement(true)
     @XmlSerialName("VOUCHER")

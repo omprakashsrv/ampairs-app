@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 sealed interface WorkspaceListEvent {
-    data class NavigateToModules(val workspaceId: String) : WorkspaceListEvent
+    data class NavigateToModules(val workspaceId: String, val workspaceSlug: String) : WorkspaceListEvent
 }
 
 @ContributesIntoMap(AppScope::class)
@@ -152,7 +152,7 @@ class WorkspaceListViewModel(
             )
 
             GlobalNavigationManager.getInstance().onWorkspaceSelected()
-            _events.send(WorkspaceListEvent.NavigateToModules(workspaceId))
+            _events.send(WorkspaceListEvent.NavigateToModules(workspaceId, workspace.slug))
         }
     }
 

@@ -28,6 +28,7 @@ fun MobileModuleSideNavigation(
     val navigationRoutes by navigationService.navigationRoutes.collectAsState()
     val isLoading by navigationService.isLoading.collectAsState()
     val error by navigationService.error.collectAsState()
+    var selectedRoute by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
         modifier = modifier
@@ -127,8 +128,9 @@ fun MobileModuleSideNavigation(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
-                        selected = false, // TODO: Add selection state management
+                        selected = selectedRoute == menuItem.routePath,
                         onClick = {
+                            selectedRoute = menuItem.routePath
                             onNavigate(menuItem.routePath)
                         },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 1.dp)

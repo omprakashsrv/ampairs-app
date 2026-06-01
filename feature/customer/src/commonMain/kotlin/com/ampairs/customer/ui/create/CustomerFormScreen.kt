@@ -246,35 +246,8 @@ private fun CustomerForm(
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isCompactOrMedium = !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
-    if (customerId != null && isCompactOrMedium) {
+    if (customerId != null) {
         CustomerFormTabLayout(
-            customerId = customerId,
-            formState = formState,
-            onFormChange = onFormChange,
-            error = error,
-            onSave = onSave,
-            canSave = canSave,
-            isSaving = isSaving,
-            states = states,
-            onStateSelected = onStateSelected,
-            cities = cities,
-            pincodes = pincodes,
-            customerTypes = customerTypes,
-            onCustomerTypeSelected = onCustomerTypeSelected,
-            customerGroups = customerGroups,
-            onCustomerGroupSelected = onCustomerGroupSelected,
-            entityConfig = entityConfig,
-            showCustomerImages = showCustomerImages,
-            customerImagesReadOnly = customerImagesReadOnly,
-            isContactPickerAvailable = isContactPickerAvailable,
-            isImportingContact = isImportingContact,
-            contactImportError = contactImportError,
-            onPickContact = onPickContact,
-            locationService = locationService,
-            modifier = modifier
-        )
-    } else if (customerId != null) {
-        CustomerFormSideBySideLayout(
             customerId = customerId,
             formState = formState,
             onFormChange = onFormChange,

@@ -45,6 +45,7 @@ class BusinessOverviewViewModel(
 
     init {
         loadOverview()
+        syncFromRemote()
     }
 
     @OptIn(ExperimentalTime::class)
@@ -59,17 +60,6 @@ class BusinessOverviewViewModel(
                         isLoading = false,
                         error = null
                     )
-
-                    // Fetch business details to get logo URL
-                    businessApi.getBusiness()
-                        .onSuccess { business ->
-                            val hasLogo = !business.logoUrl.isNullOrBlank()
-                            val cacheBuster = Clock.System.now().toEpochMilliseconds()
-                            _uiState.value = _uiState.value.copy(
-                                logoThumbnailUrl = if (hasLogo) ApiUrlBuilder.businessLogoThumbnailUrl() else null,
-                                logoCacheBuster = cacheBuster
-                            )
-                        }
                 }
                 .onFailure { error ->
                     _uiState.value = _uiState.value.copy(
@@ -77,6 +67,24 @@ class BusinessOverviewViewModel(
                         error = error.message ?: "Failed to load business overview"
                     )
                 }
+
+            // Fetch logo URL from remote (not cached locally)
+            businessApi.getBusiness()
+                .onSuccess { business ->
+                    val hasLogo = !business.logoUrl.isNullOrBlank()
+                    val cacheBuster = Clock.System.now().toEpochMilliseconds()
+                    _uiState.value = _uiState.value.copy(
+                        logoThumbnailUrl = if (hasLogo) ApiUrlBuilder.businessLogoThumbnailUrl() else null,
+                        logoCacheBuster = cacheBuster
+                    )
+                }
+        }
+    }
+
+    private fun syncFromRemote() {
+        viewModelScope.launch {
+            repository.syncFromRemote()
+                .onSuccess { loadOverview() }
         }
     }
 

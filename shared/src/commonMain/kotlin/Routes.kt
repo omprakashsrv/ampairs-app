@@ -43,6 +43,9 @@ sealed interface Route : NavKey {
 
     @Serializable
     data object Agent : Route
+
+    @Serializable
+    data object More : Route
 }
 
 // Auth routes
@@ -124,13 +127,17 @@ sealed interface WorkspaceRoute : NavKey {
 
     @Serializable
     data class Modules(
-        val workspaceId: String = ""
+        val workspaceId: String = "",
+        val workspaceSlug: String = "",
     ) : WorkspaceRoute
 
     @Serializable
     data class ModuleStore(
         val workspaceId: String = ""
     ) : WorkspaceRoute
+
+    @Serializable
+    data object SyncStatus : WorkspaceRoute
 }
 
 // Product routes
@@ -182,6 +189,15 @@ sealed interface ProductRoute : NavKey {
 
     @Serializable
     data object TaxCode : ProductRoute
+
+    @Serializable
+    data object Brands : ProductRoute
+
+    @Serializable
+    data object Categories : ProductRoute
+
+    @Serializable
+    data object SubCategories : ProductRoute
 }
 
 // Customer routes

@@ -26,6 +26,9 @@ interface GroupDao {
     @Query("SELECT * FROM groupEntity WHERE name LIKE '%' || :searchText || '%' ORDER BY name ASC")
     suspend fun getGroupsByName(searchText: String): List<GroupEntity>
 
+    @Query("SELECT * FROM groupEntity WHERE ref_id IN (:refs)")
+    suspend fun getGroupsByTallyRefIds(refs: List<String>): List<GroupEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(group: GroupEntity)
 

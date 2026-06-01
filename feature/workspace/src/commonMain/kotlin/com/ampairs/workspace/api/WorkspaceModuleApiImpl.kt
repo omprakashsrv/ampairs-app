@@ -10,7 +10,9 @@ import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.Response
+import com.ampairs.common.patch
 import com.ampairs.common.post
+import com.ampairs.workspace.api.model.ModuleReorderRequest
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
@@ -89,13 +91,13 @@ class WorkspaceModuleApiImpl(
 
     override suspend fun uninstallModule(
         workspaceId: String,
-        moduleId: String
+        moduleCode: String
     ): Result<ModuleUninstallationResponse> {
         return try {
             val response: Response<ModuleUninstallationResponse> = delete(
                 client,
-                ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleId"),
-                null // No body needed, workspace context sent via X-Workspace-ID header
+                ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleCode"),
+                null
             )
             response.data?.let { Result.success(it) }
                 ?: Result.failure(Exception(response.error?.message ?: "Unknown error"))
@@ -119,4 +121,23 @@ class WorkspaceModuleApiImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun reorderModules(
+        workspaceId: String,
+        orders: List<com.ampairs.workspace.api.model.ModuleReorderItem>
+    ): Result<Unit> {
+        return try {
+            val response: Response<Unit> = patch(
+                client,
+                ApiUrlBuilder.workspaceUrl("$BASE_URL/reorder"),
+                ModuleReorderRequest(orders)
+            )
+            val err = response.error
+            if (err == null) Result.success(Unit)
+            else Result.failure(Exception(err.message ?: "Unknown error"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
 }

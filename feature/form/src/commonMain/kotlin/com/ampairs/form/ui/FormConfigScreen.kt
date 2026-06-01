@@ -1,23 +1,63 @@
 package com.ampairs.form.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.form.domain.EntityFieldConfig
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.form.generated.resources.Res
 import ampairsapp.feature.form.generated.resources.form_add_attribute
 import ampairsapp.feature.form.generated.resources.form_back_cd
@@ -49,7 +89,6 @@ import ampairsapp.feature.form.generated.resources.form_title_configure
 import ampairsapp.feature.form.generated.resources.form_toggle_enabled
 import ampairsapp.feature.form.generated.resources.form_toggle_mandatory
 import ampairsapp.feature.form.generated.resources.form_toggle_visible
-import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +98,8 @@ fun FormConfigScreen(
     viewModel: FormConfigViewModel = assistedMetroViewModel<FormConfigViewModel, FormConfigViewModel.Factory>(key = entityType) { create(entityType) }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val isExpanded = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
     LaunchedEffect(uiState.successMessage) {
         if (uiState.successMessage != null) {
@@ -98,9 +139,7 @@ fun FormConfigScreen(
         ) {
             when {
                 uiState.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 uiState.fieldConfigs.isEmpty() && uiState.attributeDefinitions.isEmpty() -> {
                     Column(
@@ -121,69 +160,25 @@ fun FormConfigScreen(
                         )
                     }
                 }
+                isExpanded -> {
+                    FormConfigExpandedLayout(
+                        fieldConfigs = uiState.fieldConfigs,
+                        attributeDefinitions = uiState.attributeDefinitions,
+                        onUpdateFieldConfig = { viewModel.updateFieldConfig(it) },
+                        onUpdateAttributeDefinition = { viewModel.updateAttributeDefinition(it) },
+                        onDeleteAttributeDefinition = { viewModel.deleteAttributeDefinition(it) },
+                        onAddAttribute = { viewModel.addNewAttribute() }
+                    )
+                }
                 else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        if (uiState.fieldConfigs.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(Res.string.form_section_fields),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-
-                            items(uiState.fieldConfigs) { fieldConfig ->
-                                FieldConfigCard(
-                                    fieldConfig = fieldConfig,
-                                    onUpdate = { viewModel.updateFieldConfig(it) }
-                                )
-                            }
-                        }
-
-                        item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.form_section_attributes),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                                )
-                                OutlinedButton(onClick = { viewModel.addNewAttribute() }) {
-                                    Icon(Icons.Default.Add, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(Res.string.form_add_attribute))
-                                }
-                            }
-                        }
-
-                        if (uiState.attributeDefinitions.isEmpty()) {
-                            item {
-                                Text(
-                                    text = stringResource(Res.string.form_no_attributes),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(16.dp)
-                                )
-                            }
-                        }
-
-                        items(uiState.attributeDefinitions) { attributeDefinition ->
-                            AttributeDefinitionCard(
-                                attributeDefinition = attributeDefinition,
-                                onUpdate = { viewModel.updateAttributeDefinition(it) },
-                                onDelete = { viewModel.deleteAttributeDefinition(it) }
-                            )
-                        }
-
-                        item { Spacer(modifier = Modifier.height(80.dp)) }
-                    }
+                    FormConfigScrollableContent(
+                        fieldConfigs = uiState.fieldConfigs,
+                        attributeDefinitions = uiState.attributeDefinitions,
+                        onUpdateFieldConfig = { viewModel.updateFieldConfig(it) },
+                        onUpdateAttributeDefinition = { viewModel.updateAttributeDefinition(it) },
+                        onDeleteAttributeDefinition = { viewModel.deleteAttributeDefinition(it) },
+                        onAddAttribute = { viewModel.addNewAttribute() }
+                    )
                 }
             }
 
@@ -216,12 +211,10 @@ fun FormConfigScreen(
 
             if (uiState.isSaving) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Card {
+                    Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 4.dp) {
                         Column(
                             modifier = Modifier.padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -234,6 +227,157 @@ fun FormConfigScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FormConfigExpandedLayout(
+    fieldConfigs: List<EntityFieldConfig>,
+    attributeDefinitions: List<EntityAttributeDefinition>,
+    onUpdateFieldConfig: (EntityFieldConfig) -> Unit,
+    onUpdateAttributeDefinition: (EntityAttributeDefinition) -> Unit,
+    onDeleteAttributeDefinition: (EntityAttributeDefinition) -> Unit,
+    onAddAttribute: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Left panel — Field Configurations
+        if (fieldConfigs.isNotEmpty()) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(Res.string.form_section_fields),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 96.dp)
+                ) {
+                    items(fieldConfigs) { fieldConfig ->
+                        FieldConfigCard(fieldConfig = fieldConfig, onUpdate = onUpdateFieldConfig)
+                    }
+                }
+            }
+        }
+
+        // Right panel — Custom Attributes
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(Res.string.form_section_attributes),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                OutlinedButton(onClick = onAddAttribute) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(Res.string.form_add_attribute))
+                }
+            }
+            if (attributeDefinitions.isEmpty()) {
+                Text(
+                    text = stringResource(Res.string.form_no_attributes),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
+                )
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 96.dp)
+                ) {
+                    items(attributeDefinitions) { attrDef ->
+                        AttributeDefinitionCard(
+                            attributeDefinition = attrDef,
+                            onUpdate = onUpdateAttributeDefinition,
+                            onDelete = onDeleteAttributeDefinition
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FormConfigScrollableContent(
+    fieldConfigs: List<EntityFieldConfig>,
+    attributeDefinitions: List<EntityAttributeDefinition>,
+    onUpdateFieldConfig: (EntityFieldConfig) -> Unit,
+    onUpdateAttributeDefinition: (EntityAttributeDefinition) -> Unit,
+    onDeleteAttributeDefinition: (EntityAttributeDefinition) -> Unit,
+    onAddAttribute: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (fieldConfigs.isNotEmpty()) {
+            item {
+                Text(
+                    text = stringResource(Res.string.form_section_fields),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            items(fieldConfigs) { fieldConfig ->
+                FieldConfigCard(fieldConfig = fieldConfig, onUpdate = onUpdateFieldConfig)
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(Res.string.form_section_attributes),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                )
+                OutlinedButton(onClick = onAddAttribute) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(Res.string.form_add_attribute))
+                }
+            }
+        }
+
+        if (attributeDefinitions.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(Res.string.form_no_attributes),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+
+        items(attributeDefinitions) { attributeDefinition ->
+            AttributeDefinitionCard(
+                attributeDefinition = attributeDefinition,
+                onUpdate = onUpdateAttributeDefinition,
+                onDelete = onDeleteAttributeDefinition
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
 
@@ -251,21 +395,24 @@ private fun FieldConfigCard(
         ) {
             Text(
                 text = fieldConfig.fieldName,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
             )
 
             OutlinedTextField(
                 value = fieldConfig.displayName,
                 onValueChange = { onUpdate(fieldConfig.copy(displayName = it)) },
                 label = { Text(stringResource(Res.string.form_label_display_name)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
                 value = fieldConfig.placeholder ?: "",
                 onValueChange = { onUpdate(fieldConfig.copy(placeholder = it.takeIf { it.isNotBlank() })) },
                 label = { Text(stringResource(Res.string.form_label_placeholder)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
@@ -273,7 +420,8 @@ private fun FieldConfigCard(
                 onValueChange = { onUpdate(fieldConfig.copy(defaultValue = it.takeIf { it.isNotBlank() })) },
                 label = { Text(stringResource(Res.string.form_label_default_value)) },
                 supportingText = { Text(stringResource(Res.string.form_hint_default_value)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
@@ -282,44 +430,26 @@ private fun FieldConfigCard(
                 label = { Text(stringResource(Res.string.form_label_help_text)) },
                 supportingText = { Text(stringResource(Res.string.form_hint_help_text)) },
                 modifier = Modifier.fillMaxWidth(),
-                minLines = 2
+                minLines = 2,
+                shape = MaterialTheme.shapes.medium
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Checkbox(
-                        checked = fieldConfig.visible,
-                        onCheckedChange = { onUpdate(fieldConfig.copy(visible = it)) }
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Checkbox(checked = fieldConfig.visible, onCheckedChange = { onUpdate(fieldConfig.copy(visible = it)) })
                     Text(stringResource(Res.string.form_toggle_visible), modifier = Modifier.padding(start = 8.dp))
                 }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Checkbox(
-                        checked = fieldConfig.mandatory,
-                        onCheckedChange = { onUpdate(fieldConfig.copy(mandatory = it)) }
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Checkbox(checked = fieldConfig.mandatory, onCheckedChange = { onUpdate(fieldConfig.copy(mandatory = it)) })
                     Text(stringResource(Res.string.form_toggle_mandatory), modifier = Modifier.padding(start = 8.dp))
                 }
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Checkbox(
-                    checked = fieldConfig.enabled,
-                    onCheckedChange = { onUpdate(fieldConfig.copy(enabled = it)) }
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(checked = fieldConfig.enabled, onCheckedChange = { onUpdate(fieldConfig.copy(enabled = it)) })
                 Text(stringResource(Res.string.form_toggle_enabled), modifier = Modifier.padding(start = 8.dp))
             }
         }
@@ -348,9 +478,9 @@ private fun AttributeDefinitionCard(
                 Text(
                     text = if (attributeDefinition.attributeKey.isBlank())
                         stringResource(Res.string.form_new_attribute)
-                    else
-                        attributeDefinition.attributeKey,
-                    style = MaterialTheme.typography.titleMedium
+                    else attributeDefinition.attributeKey,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
                 IconButton(onClick = { onDelete(attributeDefinition) }) {
                     Icon(
@@ -368,7 +498,8 @@ private fun AttributeDefinitionCard(
                 placeholder = { Text(stringResource(Res.string.form_hint_attribute_key)) },
                 supportingText = { Text(stringResource(Res.string.form_hint_attribute_key_desc)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
@@ -377,7 +508,8 @@ private fun AttributeDefinitionCard(
                 label = { Text(stringResource(Res.string.form_label_display_name)) },
                 placeholder = { Text(stringResource(Res.string.form_hint_display_name)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             var dataTypeExpanded by remember { mutableStateOf(false) }
@@ -388,16 +520,15 @@ private fun AttributeDefinitionCard(
             ) {
                 OutlinedTextField(
                     value = attributeDefinition.dataType,
-                    onValueChange = { },
+                    onValueChange = {},
                     readOnly = true,
                     label = { Text(stringResource(Res.string.form_label_data_type)) },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = dataTypeExpanded)
-                    },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dataTypeExpanded) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                    singleLine = true
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
                 )
                 ExposedDropdownMenu(
                     expanded = dataTypeExpanded,
@@ -421,7 +552,8 @@ private fun AttributeDefinitionCard(
                 label = { Text(stringResource(Res.string.form_label_category)) },
                 placeholder = { Text(stringResource(Res.string.form_hint_category)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
@@ -429,7 +561,8 @@ private fun AttributeDefinitionCard(
                 onValueChange = { onUpdate(attributeDefinition.copy(placeholder = it.takeIf { it.isNotBlank() })) },
                 label = { Text(stringResource(Res.string.form_label_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
@@ -437,55 +570,37 @@ private fun AttributeDefinitionCard(
                 onValueChange = { onUpdate(attributeDefinition.copy(helpText = it.takeIf { it.isNotBlank() })) },
                 label = { Text(stringResource(Res.string.form_label_help_text)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
                 value = attributeDefinition.displayOrder.toString(),
                 onValueChange = { value ->
-                    val order = value.toIntOrNull() ?: 0
-                    onUpdate(attributeDefinition.copy(displayOrder = order))
+                    onUpdate(attributeDefinition.copy(displayOrder = value.toIntOrNull() ?: 0))
                 },
                 label = { Text(stringResource(Res.string.form_label_display_order)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Checkbox(
-                        checked = attributeDefinition.visible,
-                        onCheckedChange = { onUpdate(attributeDefinition.copy(visible = it)) }
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Checkbox(checked = attributeDefinition.visible, onCheckedChange = { onUpdate(attributeDefinition.copy(visible = it)) })
                     Text(stringResource(Res.string.form_toggle_visible), modifier = Modifier.padding(start = 8.dp))
                 }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Checkbox(
-                        checked = attributeDefinition.mandatory,
-                        onCheckedChange = { onUpdate(attributeDefinition.copy(mandatory = it)) }
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Checkbox(checked = attributeDefinition.mandatory, onCheckedChange = { onUpdate(attributeDefinition.copy(mandatory = it)) })
                     Text(stringResource(Res.string.form_toggle_mandatory), modifier = Modifier.padding(start = 8.dp))
                 }
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Checkbox(
-                    checked = attributeDefinition.enabled,
-                    onCheckedChange = { onUpdate(attributeDefinition.copy(enabled = it)) }
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(checked = attributeDefinition.enabled, onCheckedChange = { onUpdate(attributeDefinition.copy(enabled = it)) })
                 Text(stringResource(Res.string.form_toggle_enabled), modifier = Modifier.padding(start = 8.dp))
             }
         }

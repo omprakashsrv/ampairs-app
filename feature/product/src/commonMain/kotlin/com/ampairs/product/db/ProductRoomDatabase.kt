@@ -15,12 +15,14 @@ import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.dao.TaxCodeDao
 import com.ampairs.product.db.dao.TaxInfoDao
 import com.ampairs.product.db.dao.VariantAttributeDao
+import com.ampairs.product.db.dao.ProductUploadImageDao
 import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
 import com.ampairs.product.db.entity.ImageEntity
 import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.db.entity.ProductImageEntity
+import com.ampairs.product.db.entity.ProductUploadImageEntity
 import com.ampairs.product.db.entity.ProductVariantEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import com.ampairs.product.db.entity.TaxCodeEntity
@@ -38,10 +40,11 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
         BrandEntity::class,
         ImageEntity::class,
         ProductImageEntity::class,
+        ProductUploadImageEntity::class,
         ProductVariantEntity::class,
         VariantAttributeEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = true
 )
 @ConstructedBy(ProductRoomDatabaseConstructor::class)
@@ -55,6 +58,7 @@ abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun brandDao(): BrandDao
     abstract fun imageDao(): ImageDao
     abstract fun productImageDao(): ProductImageDao
+    abstract fun productUploadImageDao(): ProductUploadImageDao
     abstract fun productVariantDao(): ProductVariantDao
     abstract fun variantAttributeDao(): VariantAttributeDao
 }

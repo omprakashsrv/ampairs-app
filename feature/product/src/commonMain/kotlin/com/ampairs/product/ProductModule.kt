@@ -4,10 +4,13 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.db.ProductRoomDatabase
+import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.product.db.dao.ProductUploadImageDao
 import com.ampairs.product.db.dao.ProductVariantDao
+import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.dao.VariantAttributeDao
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -29,6 +32,15 @@ interface ProductDaoModule {
 
         @Provides
         fun provideCategoryDao(db: ProductRoomDatabase): CategoryDao = db.categoryDao()
+
+        @Provides
+        fun provideBrandDao(db: ProductRoomDatabase): BrandDao = db.brandDao()
+
+        @Provides
+        fun provideSubCategoryDao(db: ProductRoomDatabase): SubCategoryDao = db.subCategoryDao()
+
+        @Provides
+        fun provideProductUploadImageDao(db: ProductRoomDatabase): ProductUploadImageDao = db.productUploadImageDao()
 
         @Provides
         fun provideProductDataService(repo: ProductRepository): ProductDataService = repo

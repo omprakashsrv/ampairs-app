@@ -30,6 +30,14 @@ class BusinessTaxConfigViewModel(
 
     init {
         loadTaxConfig()
+        syncFromRemote()
+    }
+
+    private fun syncFromRemote() {
+        viewModelScope.launch {
+            repository.syncFromRemote()
+                .onSuccess { loadTaxConfig() }
+        }
     }
 
     fun loadTaxConfig() {

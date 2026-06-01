@@ -133,11 +133,13 @@ private fun ApplicationScope.MainWindow(
             },
             onWorkspaceEntered = { workspaceSlug ->
                 onWorkspaceSlugChanged(workspaceSlug)
+                appGraph.centralSyncService.start(workspaceSlug)
                 appGraph.tallySyncScheduler.start(workspaceSlug)
             },
             onWorkspaceLeft = {
                 onWorkspaceSlugChanged("")
                 appGraph.tallySyncScheduler.stop()
+                appGraph.centralSyncService.stop()
             }
         )
 

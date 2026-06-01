@@ -1,6 +1,13 @@
 <resources>
     <!-- Product list screen -->
     <string name="prod_list_title">Products</string>
+    <string name="prod_list_count">%d products</string>
+    <string name="prod_list_new_product">New Product</string>
+    <string name="prod_list_col_name">Name</string>
+    <string name="prod_list_col_code">Code</string>
+    <string name="prod_list_col_category">Category</string>
+    <string name="prod_list_col_price">Price</string>
+    <string name="prod_list_col_stock">Stock</string>
     <string name="prod_list_cd_form_settings">Form Settings</string>
     <string name="prod_list_cd_refresh">Refresh</string>
     <string name="prod_list_cd_add">Add Product</string>
@@ -41,6 +48,9 @@
     <string name="prod_label_low_stock_alert">Low Stock Alert</string>
     <string name="prod_label_category">Category</string>
     <string name="prod_label_brand">Brand</string>
+    <string name="prod_label_group">Group</string>
+    <string name="prod_label_sub_category">Sub Category</string>
+    <string name="prod_label_base_unit">Base Unit</string>
     <string name="prod_label_group_id">Group ID</string>
     <string name="prod_label_sub_category_id">Sub Category ID</string>
     <string name="prod_label_base_unit_id">Base Unit ID</string>
@@ -124,8 +134,60 @@
     <string name="prod_form_manage_variants_title">Manage Product Variants</string>
     <string name="prod_form_manage_variants_desc">Add and manage sizes, colors, and other variant options. At least one variant is required.</string>
     <string name="prod_form_optional_placeholder">Optional</string>
+    <string name="prod_form_tab_details">Details</string>
+    <string name="prod_form_tab_images">Images</string>
+    <string name="prod_form_select_none">None</string>
 
     <!-- Cart item component -->
     <string name="prod_cart_decrease_qty">Decrease Quantity</string>
     <string name="prod_cart_increase_qty">Increase Quantity</string>
+
+    <!-- Product Images -->
+    <string name="prod_images_title">Product Images</string>
+    <string name="prod_images_count">%d images</string>
+    <string name="prod_images_retry_sync_cd">Retry sync</string>
+    <string name="prod_images_error">Image error</string>
+    <string name="prod_images_dismiss">Dismiss</string>
+    <string name="prod_images_retry">Retry</string>
+    <string name="prod_images_loading">Loading images…</string>
+    <string name="prod_images_empty_readonly">No images</string>
+    <string name="prod_images_empty">No images yet</string>
+    <string name="prod_images_readonly_desc">No images have been added</string>
+    <string name="prod_images_empty_desc">Add product images to showcase your product</string>
+    <string name="prod_images_upload_first">Upload First Image</string>
+    <string name="prod_images_guidelines_title">Upload Guidelines</string>
+    <string name="prod_images_guideline_max_count">Maximum 10 images per product</string>
+    <string name="prod_images_guideline_formats">Supported formats: JPEG, PNG, WEBP</string>
+    <string name="prod_images_guideline_size">Maximum file size: 10MB</string>
+    <string name="prod_images_guideline_resolution">Recommended resolution: 800x800 or higher</string>
+    <string name="prod_images_guideline_primary">Set primary image to be shown in product list</string>
+    <string name="prod_images_upload_dialog_title">Upload Image</string>
+    <string name="prod_images_upload_dialog_desc">Review the selected image before uploading</string>
+    <string name="prod_images_file_info">File Information</string>
+    <string name="prod_images_description_label">Description (optional)</string>
+    <string name="prod_images_set_primary">Set as primary image</string>
+    <string name="prod_images_uploading">Uploading…</string>
+    <string name="prod_images_upload_btn">Upload</string>
+    <string name="prod_images_set_primary_btn">Set Primary</string>
+    <string name="prod_images_delete_btn">Delete</string>
+    <string name="prod_images_status_uploading">Uploading</string>
+    <string name="prod_images_status_failed">Failed - tap to retry</string>
+    <string name="prod_images_status_pending">Pending upload</string>
+    <string name="prod_images_primary_badge">Primary</string>
+    <string name="prod_images_cd_image">Product image</string>
+    <string name="prod_images_cd_add">Add image</string>
+    <string name="prod_images_cd_delete">Delete image</string>
+    <string name="prod_images_save_first_title">Save product first</string>
+    <string name="prod_images_save_first_desc">Save the product to start adding images</string>
+
+    <!-- Catalog master data -->
+    <string name="prod_catalog_brands">Brands</string>
+    <string name="prod_catalog_categories">Categories</string>
+    <string name="prod_catalog_sub_categories">Sub-categories</string>
+    <string name="prod_catalog_groups">Groups</string>
+    <string name="prod_master_data">Catalog</string>
+    <string name="prod_catalog_search_hint">Search…</string>
+    <string name="prod_catalog_empty">No items found</string>
+    <string name="prod_catalog_active">Active</string>
+    <string name="prod_catalog_inactive">Inactive</string>
 </resources>

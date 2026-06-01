@@ -7,6 +7,10 @@ import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.common.viewmodel.handleCancellation
 import com.ampairs.common.viewmodel.shouldShowAsError
 import com.ampairs.common.di.AppScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -27,6 +31,7 @@ data class CustomersListUiState(
 @Inject
 class CustomersListViewModel(
     private val customerStore: CustomerStore,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomersListUiState())
@@ -36,6 +41,9 @@ class CustomersListViewModel(
 
     init {
         observeSearchQuery()
+        syncService.observeEntity(SyncEntity.CUSTOMER)
+            .onEach { state -> _uiState.update { it.copy(isRefreshing = state?.status is SyncStatus.Syncing) } }
+            .launchIn(viewModelScope)
     }
 
     fun loadCustomers() {
@@ -81,40 +89,7 @@ class CustomersListViewModel(
     }
 
     fun syncCustomers() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, error = null) }
-
-            handleCancellation(
-                onError = { error ->
-                    _uiState.update { it.copy(isRefreshing = false, error = error) }
-                }
-            ) {
-                // 1. Sync customer details first
-                val result = customerStore.syncCustomers()
-
-                if (result.isFailure) {
-                    _uiState.update {
-                        it.copy(
-                            isRefreshing = false,
-                            error = result.exceptionOrNull()?.message ?: "Sync failed"
-                        )
-                    }
-                    return@handleCancellation
-                }
-
-                // 2. Sync customer images after customer details sync succeeds
-                val imageResult = customerStore.syncCustomerImages()
-
-                _uiState.update {
-                    it.copy(
-                        isRefreshing = false,
-                        error = if (imageResult.isFailure) {
-                            "Customer sync completed, but image sync failed: ${imageResult.exceptionOrNull()?.message}"
-                        } else null
-                    )
-                }
-            }
-        }
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CUSTOMER))
     }
 
     private fun observeSearchQuery() {

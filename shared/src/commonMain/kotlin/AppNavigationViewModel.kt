@@ -39,8 +39,9 @@ class AppNavigationViewModel(
     private val userWorkspaceRepository: UserWorkspaceRepository,
 ) : ViewModel() {
 
-    private val _autoResumeState = MutableStateFlow<Pair<Boolean, String?>?>(null)
-    val autoResumeState: StateFlow<Pair<Boolean, String?>?> = _autoResumeState.asStateFlow()
+    // Triple: (shouldResume, workspaceId, workspaceSlug)
+    private val _autoResumeState = MutableStateFlow<Triple<Boolean, String?, String?>?>(null)
+    val autoResumeState: StateFlow<Triple<Boolean, String?, String?>?> = _autoResumeState.asStateFlow()
 
     private val _logoutEvent = MutableSharedFlow<Unit>()
     val logoutEvent: SharedFlow<Unit> = _logoutEvent.asSharedFlow()
@@ -66,17 +67,17 @@ class AppNavigationViewModel(
                     if (workspace != null) {
                         WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
                         GlobalNavigationManager.getInstance().onWorkspaceSelected()
-                        _autoResumeState.value = Pair(true, lastWorkspaceId)
+                        _autoResumeState.value = Triple(true, lastWorkspaceId, workspace.slug)
                     } else {
                         appPreferences.clearLastWorkspaceId()
-                        _autoResumeState.value = Pair(false, null)
+                        _autoResumeState.value = Triple(false, null, null)
                     }
                 } else {
                     appPreferences.clearLastWorkspaceId()
-                    _autoResumeState.value = Pair(false, null)
+                    _autoResumeState.value = Triple(false, null, null)
                 }
             } else {
-                _autoResumeState.value = Pair(false, null)
+                _autoResumeState.value = Triple(false, null, null)
             }
         }
     }

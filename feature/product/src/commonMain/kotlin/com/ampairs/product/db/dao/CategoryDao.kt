@@ -31,6 +31,9 @@ interface CategoryDao {
     @Query("SELECT * FROM categoryEntity WHERE name LIKE '%' || :searchText || '%' ORDER BY name ASC")
     suspend fun getCategoriesByName(searchText: String): List<CategoryEntity>
 
+    @Query("SELECT * FROM categoryEntity WHERE ref_id IN (:refs)")
+    suspend fun getCategoriesByTallyRefIds(refs: List<String>): List<CategoryEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(category: CategoryEntity)
 
