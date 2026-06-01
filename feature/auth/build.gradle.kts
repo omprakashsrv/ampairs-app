@@ -8,6 +8,16 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.metro)
+    `maven-publish`
+}
+
+group = "com.ampairs"
+version = "1.0.0"
+
+// Pin resource accessor package so group="com.ampairs" for publishing
+// doesn't shift the auto-derived package away from existing source imports.
+compose.resources {
+    packageOfResClass = "ampairsapp.feature.auth.generated.resources"
 }
 
 kotlin {
@@ -118,4 +128,17 @@ tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
     dependsOn(tasks.matching { it.name.startsWith("generateResourceAccessorsFor") })
     dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
     dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/omprakashsrv/ampairs-app")
+            credentials {
+                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
 }

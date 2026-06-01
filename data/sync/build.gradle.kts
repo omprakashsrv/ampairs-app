@@ -7,7 +7,11 @@ plugins {
     alias(libs.plugins.metro)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
+    `maven-publish`
 }
+
+group = "com.ampairs"
+version = "1.0.3"
 
 kotlin {
     jvmToolchain(21)
@@ -72,9 +76,25 @@ room {
 }
 
 dependencies {
-    add("kspCommonMainMetadata", libs.room.compiler)
+    // kspCommonMainMetadata intentionally omitted: Room KSP generates an actual object for the
+    // Database constructor in the metadata context, which conflicts with the expect object declared
+    // in source when Kotlin 2.x compiles commonMainKotlinMetadata (expect/actual same-module error).
+    // Platform KSPs (kspAndroid, kspIos*, kspDesktop) generate the actuals in the correct targets.
     add("kspAndroid", libs.room.compiler)
     add("kspDesktop", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/omprakashsrv/ampairs-app")
+            credentials {
+                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
 }

@@ -378,6 +378,35 @@ context.getString(R.string.customer_list_title)
 Strings go in: `feature/{name}/src/commonMain/composeResources/values/strings.xml`
 Import: `import ampairsapp.{module.path}.generated.resources.*`
 
+### Publishing + Compose Resources — pin `packageOfResClass`
+
+When a module that has a `composeResources/` directory (i.e. source files import `ampairsapp.*`) is given `group = "..."` for Maven publishing, CMP shifts the auto-derived accessor package away from the project-path-based name. This breaks all existing resource imports at compile time.
+
+**Fix: always add `compose.resources { packageOfResClass }` whenever adding `maven-publish` to a module that uses Compose resources.**
+
+```kotlin
+// build.gradle.kts — required whenever group = "..." is set on a module with composeResources
+group = "com.ampairs"
+version = "1.0.0"
+
+compose.resources {
+    // Pins the accessor package so the publishing group can't shift it.
+    // Package pattern: ampairsapp.{module:path:with:dots}.generated.resources
+    // Examples:
+    //   :data:common       → "ampairsapp.data.common.generated.resources"
+    //   :feature:auth      → "ampairsapp.feature.auth.generated.resources"
+    //   :feature:customer  → "ampairsapp.feature.customer.generated.resources"
+    packageOfResClass = "ampairsapp.{module.path}.generated.resources"
+}
+```
+
+How to derive the package for any module: take the Gradle project path (e.g. `:feature:customer`), drop the leading colon, replace remaining colons with dots, append `.generated.resources` → `ampairsapp.feature.customer.generated.resources`.
+
+**Check before adding publishing to any module:**
+1. Does `src/commonMain/composeResources/` exist? → pin required
+2. Do any source files import `ampairsapp.*`? → pin required
+3. Neither → no pin needed
+
 ---
 
 ## 10. Theming
@@ -412,6 +441,7 @@ LocalAppGraph.current.themeManager   // NEVER — use CompositionLocal or inject
 - [ ] All `IconButton` / interactive elements have `contentDescription`
 - [ ] No hardcoded color values — use `MaterialTheme.colorScheme.*`
 - [ ] No `LocalAppGraph.current` inside any `@Composable`
+- [ ] If adding `maven-publish` to a module: check for `composeResources/` or `ampairsapp.*` imports — if present, add `compose.resources { packageOfResClass = "ampairsapp.{module.path}.generated.resources" }`
 - [ ] Compile all 3 targets after any commonMain change:
   ```bash
   ./gradlew androidApp:compileDebugKotlinAndroid
@@ -441,3 +471,4 @@ LocalAppGraph.current.themeManager   // NEVER — use CompositionLocal or inject
 | `LaunchedEffect(Unit)` for key-dependent work | `LaunchedEffect(theKey)` |
 | Padding before clickable | `clickable { }.padding(...)` |
 | New object allocation in composition | `remember { }` |
+| `maven-publish` added, resource imports broken | Add `compose.resources { packageOfResClass = "ampairsapp.{module.path}.generated.resources" }` |

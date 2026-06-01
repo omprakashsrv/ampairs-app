@@ -5,6 +5,19 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.metro)
+    `maven-publish`
+}
+
+group = "com.ampairs"
+version = "1.0.0"
+
+// Override artifact name so the published ID is "data-common" rather than just "common"
+base.archivesName.set("data-common")
+
+// Pin resource accessor package so setting group="com.ampairs" for publishing
+// doesn't shift the auto-derived package away from the existing source imports.
+compose.resources {
+    packageOfResClass = "ampairsapp.data.common.generated.resources"
 }
 
 kotlin {
@@ -97,6 +110,19 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.darwin)
 
+            }
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/omprakashsrv/ampairs-app")
+            credentials {
+                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
             }
         }
     }
