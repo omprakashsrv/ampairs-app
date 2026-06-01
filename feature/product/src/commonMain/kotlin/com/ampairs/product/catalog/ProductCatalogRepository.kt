@@ -1,9 +1,7 @@
 package com.ampairs.product.catalog
 
 import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.api.ProductCatalogApi
-import com.ampairs.product.db.Constants
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
@@ -111,10 +109,8 @@ class ProductCatalogRepository(
         contentType: String,
         imageData: ByteArray,
     ): Result<String> = runCatching {
-        val imageUid = UidGenerator.generateUid(Constants.PRODUCT_IMAGE_PREFIX)
         val apiImage = api.uploadCatalogItemImage(
-            uid = imageUid,
-            refUid = itemId,
+            type = type.toBackendType(),
             fileName = fileName,
             contentType = contentType,
             imageData = imageData,
@@ -174,6 +170,13 @@ class ProductCatalogRepository(
 
 private fun ImageEntity.imageUrl(): String =
     ApiUrlBuilder.buildCompleteUrl(object_key)
+
+private fun ProductCatalogType.toBackendType(): String = when (this) {
+    ProductCatalogType.BRANDS -> "BRAND"
+    ProductCatalogType.CATEGORIES -> "CATEGORY"
+    ProductCatalogType.SUB_CATEGORIES -> "SUB_CATEGORY"
+    ProductCatalogType.GROUPS -> "GROUP"
+}
 
 data class CatalogItem(
     val id: String,

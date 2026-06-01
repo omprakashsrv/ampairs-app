@@ -5,9 +5,9 @@ import com.ampairs.product.api.model.ProductGroupApiModel
 
 interface ProductCatalogApi {
 
+    // type = ProductClassificationType enum name: BRAND | GROUP | CATEGORY | SUB_CATEGORY
     suspend fun uploadCatalogItemImage(
-        uid: String,
-        refUid: String,
+        type: String,
         fileName: String,
         contentType: String,
         imageData: ByteArray,

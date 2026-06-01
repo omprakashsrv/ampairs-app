@@ -29,8 +29,7 @@ class ProductCatalogApiImpl(
     private val client = httpClient(engine, tokenRepository)
 
     override suspend fun uploadCatalogItemImage(
-        uid: String,
-        refUid: String,
+        type: String,
         fileName: String,
         contentType: String,
         imageData: ByteArray,
@@ -45,23 +44,16 @@ class ProductCatalogApiImpl(
                 }
             ),
             PartData.FormItem(
-                value = uid,
+                value = type,
                 dispose = {},
                 partHeaders = Headers.build {
-                    append(HttpHeaders.ContentDisposition, "form-data; name=\"uid\"")
-                }
-            ),
-            PartData.FormItem(
-                value = refUid,
-                dispose = {},
-                partHeaders = Headers.build {
-                    append(HttpHeaders.ContentDisposition, "form-data; name=\"refUid\"")
+                    append(HttpHeaders.ContentDisposition, "form-data; name=\"type\"")
                 }
             ),
         )
         val response: Response<ImageApiModel> = postMultiPart(
             client,
-            ApiUrlBuilder.productUrl("v1/images/upload"),
+            ApiUrlBuilder.productUrl("v1/products/groups/upload-image"),
             parts,
             requestTimeoutMillis = 120_000L,
         )
