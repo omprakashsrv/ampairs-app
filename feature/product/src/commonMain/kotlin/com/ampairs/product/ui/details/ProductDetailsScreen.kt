@@ -36,11 +36,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import com.ampairs.product.ui.images.ProductImageManagementScreen
+import com.ampairs.product.ui.images.ProductImageViewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -112,6 +116,8 @@ import ampairsapp.feature.product.generated.resources.prod_sku_format
 import ampairsapp.feature.product.generated.resources.prod_load_error_title
 import ampairsapp.feature.product.generated.resources.prod_retry
 import ampairsapp.feature.product.generated.resources.prod_cancel
+import ampairsapp.feature.product.generated.resources.prod_form_tab_details
+import ampairsapp.feature.product.generated.resources.prod_form_tab_images
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -199,13 +205,29 @@ private fun ProductDetailsMobile(
     onManageVariants: ((String, String) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
+    var selectedTab by remember { mutableStateOf(0) }
+
+    Column(modifier = modifier) {
         ProductHeroSection(product = product, primaryImageUrl = primaryImageUrl)
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants)
+
+        PrimaryTabRow(selectedTabIndex = selectedTab) {
+            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(Res.string.prod_form_tab_details)) })
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(Res.string.prod_form_tab_images)) })
+        }
+
+        when (selectedTab) {
+            0 -> Column(
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants, showInlineImages = false)
+            }
+            1 -> ProductImageManagementScreen(
+                productId = product.id,
+                readOnly = true,
+                viewModel = assistedMetroViewModel<ProductImageViewModel, ProductImageViewModel.Factory>(key = product.id) { create(product.id) },
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+            )
         }
     }
 }
@@ -309,8 +331,8 @@ private fun ProductDetailsExpanded(
             }
         }
 
-        // Right panel
-        OutlinedCard(modifier = Modifier.weight(1f).fillMaxHeight()) {
+        // Details panel
+        OutlinedCard(modifier = Modifier.weight(0.6f).fillMaxHeight()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -318,8 +340,18 @@ private fun ProductDetailsExpanded(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants)
+                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants, showInlineImages = false)
             }
+        }
+
+        // Images panel (no tabs on desktop)
+        OutlinedCard(modifier = Modifier.weight(0.4f).fillMaxHeight()) {
+            ProductImageManagementScreen(
+                productId = product.id,
+                readOnly = true,
+                viewModel = assistedMetroViewModel<ProductImageViewModel, ProductImageViewModel.Factory>(key = product.id) { create(product.id) },
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+            )
         }
     }
 }
@@ -416,9 +448,10 @@ private fun PriceStatCard(label: String, value: String, modifier: Modifier = Mod
 private fun ProductInfoContent(
     product: Product,
     uiState: ProductDetailsUiState,
-    onManageVariants: ((String, String) -> Unit)?
+    onManageVariants: ((String, String) -> Unit)?,
+    showInlineImages: Boolean = true,
 ) {
-    if (!uiState.primaryImageUrl.isNullOrBlank()) {
+    if (showInlineImages && !uiState.primaryImageUrl.isNullOrBlank()) {
         ProductImagesSection(primaryImageUrl = uiState.primaryImageUrl!!)
     }
 
