@@ -45,9 +45,9 @@ kotlin {
                 implementation(libs.coil.core)
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network)
-                // FileKit for cross-platform file picking
-                implementation(libs.filekit.core)
-                implementation(libs.filekit.dialogs)
+                // File module for centralized file picking and upload
+                api(projects.feature.fileApi)
+                implementation(projects.feature.file)
             }
         }
         androidMain {
