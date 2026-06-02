@@ -75,6 +75,10 @@ class ProductImageViewModel(
 
     init {
         loadImages()
+        viewModelScope.launch {
+            fileRepository.pullFromServer(FileEntityType.PRODUCT, productId)
+                .onFailure { ProductLogger.w(TAG, "Initial image pull failed", it) }
+        }
         syncService.observeEntity(SyncEntity.FILE)
             .onEach { state ->
                 _uiState.update {
@@ -222,7 +226,16 @@ class ProductImageViewModel(
     }
 
     fun syncImages() {
-        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.FILE))
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, syncError = false) }
+            fileRepository.pullFromServer(FileEntityType.PRODUCT, productId)
+                .onFailure {
+                    ProductLogger.e(TAG, "Image sync failed", it)
+                    _uiState.update { s -> s.copy(syncError = true) }
+                }
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+        syncService.emit(SyncEvent.TriggerPush(SyncEntity.FILE))
     }
 
     fun clearError() {
