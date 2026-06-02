@@ -8,10 +8,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,11 +21,8 @@ import com.ampairs.file.api.FileItem
 import com.ampairs.file.api.FileUploadStatus
 import ampairsapp.feature.product.generated.resources.Res
 import ampairsapp.feature.product.generated.resources.prod_images_cd_add
-import ampairsapp.feature.product.generated.resources.prod_images_cd_delete
 import ampairsapp.feature.product.generated.resources.prod_images_cd_image
 import ampairsapp.feature.product.generated.resources.prod_images_primary_badge
-import ampairsapp.feature.product.generated.resources.prod_images_set_primary_btn
-import ampairsapp.feature.product.generated.resources.prod_images_delete_btn
 import ampairsapp.feature.product.generated.resources.prod_images_status_uploading
 import ampairsapp.feature.product.generated.resources.prod_images_status_failed
 import ampairsapp.feature.product.generated.resources.prod_images_status_pending
@@ -38,8 +33,6 @@ fun ProductImageGrid(
     images: List<FileItem>,
     onAddImage: (() -> Unit)?,
     onImageClick: (FileItem) -> Unit,
-    onDeleteImage: ((FileItem) -> Unit)?,
-    onSetPrimary: ((FileItem) -> Unit)?,
     modifier: Modifier = Modifier,
     maxImages: Int = 10,
 ) {
@@ -63,8 +56,6 @@ fun ProductImageGrid(
                 ProductImageCard(
                     image = image,
                     onClick = { onImageClick(image) },
-                    onDelete = if (onDeleteImage != null) { { onDeleteImage(image) } } else null,
-                    onSetPrimary = if (onSetPrimary != null) { { onSetPrimary(image) } } else null,
                     modifier = Modifier.aspectRatio(1f),
                 )
             }
@@ -109,22 +100,10 @@ private fun AddImageCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
 private fun ProductImageCard(
     image: FileItem,
     onClick: () -> Unit,
-    onDelete: (() -> Unit)?,
-    onSetPrimary: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val hasActions = onDelete != null || onSetPrimary != null
-    var showActions by remember { mutableStateOf(false) }
-
     ElevatedCard(
-        onClick = {
-            if (hasActions && !showActions) {
-                showActions = true
-            } else {
-                showActions = false
-                onClick()
-            }
-        },
+        onClick = onClick,
         modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = if (image.isPrimary)
@@ -207,37 +186,6 @@ private fun ProductImageCard(
                         },
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                     )
-                }
-            }
-
-            if (showActions && hasActions) {
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(4.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                    ) {
-                        if (onSetPrimary != null) {
-                            IconButton(onClick = { onSetPrimary(); showActions = false }) {
-                                Icon(
-                                    if (image.isPrimary) Icons.Default.Star else Icons.Default.StarBorder,
-                                    contentDescription = stringResource(Res.string.prod_images_set_primary_btn),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
-                        if (onDelete != null) {
-                            IconButton(onClick = { onDelete(); showActions = false }) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = stringResource(Res.string.prod_images_cd_delete),
-                                    tint = MaterialTheme.colorScheme.error,
-                                )
-                            }
-                        }
-                    }
                 }
             }
         }

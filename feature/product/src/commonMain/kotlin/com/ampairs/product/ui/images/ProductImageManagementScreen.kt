@@ -77,8 +77,6 @@ fun ProductImageManagementScreen(
                     images = uiState.images,
                     onAddImage = if (readOnly) null else viewModel::pickSingleImage,
                     onImageClick = { image -> viewModel.showImageViewer(image.uid) },
-                    onDeleteImage = if (readOnly) null else { image -> viewModel.deleteImage(image.uid) },
-                    onSetPrimary = if (readOnly) null else { image -> viewModel.setPrimaryImage(image.uid) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -93,8 +91,8 @@ fun ProductImageManagementScreen(
         ProductImageViewer(
             image = uiState.selectedImage,
             onDismiss = viewModel::hideImageViewer,
-            onDelete = { image -> viewModel.deleteImage(image.uid); viewModel.hideImageViewer() },
-            onSetPrimary = { image -> viewModel.setPrimaryImage(image.uid) },
+            onDelete = if (readOnly) null else { image -> viewModel.deleteImage(image.uid); viewModel.hideImageViewer() },
+            onSetPrimary = if (readOnly) null else { image -> viewModel.setPrimaryImage(image.uid) },
         )
     }
 

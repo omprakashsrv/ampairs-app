@@ -38,8 +38,8 @@ import org.jetbrains.compose.resources.stringResource
 fun ProductImageViewer(
     image: FileItem?,
     onDismiss: () -> Unit,
-    onDelete: (FileItem) -> Unit,
-    onSetPrimary: (FileItem) -> Unit,
+    onDelete: ((FileItem) -> Unit)?,
+    onSetPrimary: ((FileItem) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     if (image != null) {
@@ -81,23 +81,27 @@ fun ProductImageViewer(
                             }
                         },
                         actions = {
-                            IconButton(
-                                onClick = { onSetPrimary(image) },
-                                enabled = !image.isPrimary,
-                            ) {
-                                Icon(
-                                    if (image.isPrimary) Icons.Default.Star else Icons.Default.StarBorder,
-                                    contentDescription = stringResource(Res.string.prod_images_set_primary_btn),
-                                    tint = if (image.isPrimary) MaterialTheme.colorScheme.primary
-                                           else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                            if (onSetPrimary != null) {
+                                IconButton(
+                                    onClick = { onSetPrimary(image) },
+                                    enabled = !image.isPrimary,
+                                ) {
+                                    Icon(
+                                        if (image.isPrimary) Icons.Default.Star else Icons.Default.StarBorder,
+                                        contentDescription = stringResource(Res.string.prod_images_set_primary_btn),
+                                        tint = if (image.isPrimary) MaterialTheme.colorScheme.primary
+                                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
-                            IconButton(onClick = { showDeleteDialog = true }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = stringResource(Res.string.prod_images_delete_btn),
-                                    tint = MaterialTheme.colorScheme.error,
-                                )
+                            if (onDelete != null) {
+                                IconButton(onClick = { showDeleteDialog = true }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = stringResource(Res.string.prod_images_delete_btn),
+                                        tint = MaterialTheme.colorScheme.error,
+                                    )
+                                }
                             }
                         }
                     )
@@ -133,7 +137,7 @@ fun ProductImageViewer(
             }
         }
 
-        if (showDeleteDialog) {
+        if (showDeleteDialog && onDelete != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
                 title = { Text(stringResource(Res.string.prod_images_delete_btn)) },
