@@ -7,22 +7,16 @@ import androidx.room.RoomDatabaseConstructor
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
-import com.ampairs.product.db.dao.ImageDao
 import com.ampairs.product.db.dao.ProductDao
-import com.ampairs.product.db.dao.ProductImageDao
 import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.dao.TaxCodeDao
 import com.ampairs.product.db.dao.TaxInfoDao
 import com.ampairs.product.db.dao.VariantAttributeDao
-import com.ampairs.product.db.dao.ProductUploadImageDao
 import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
-import com.ampairs.product.db.entity.ImageEntity
 import com.ampairs.product.db.entity.ProductEntity
-import com.ampairs.product.db.entity.ProductImageEntity
-import com.ampairs.product.db.entity.ProductUploadImageEntity
 import com.ampairs.product.db.entity.ProductVariantEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import com.ampairs.product.db.entity.TaxCodeEntity
@@ -38,13 +32,10 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
         CategoryEntity::class,
         SubCategoryEntity::class,
         BrandEntity::class,
-        ImageEntity::class,
-        ProductImageEntity::class,
-        ProductUploadImageEntity::class,
         ProductVariantEntity::class,
         VariantAttributeEntity::class
     ],
-    version = 6,
+    version = 8,
     exportSchema = true
 )
 @ConstructedBy(ProductRoomDatabaseConstructor::class)
@@ -56,12 +47,11 @@ abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun subCategoryDao(): SubCategoryDao
     abstract fun brandDao(): BrandDao
-    abstract fun imageDao(): ImageDao
-    abstract fun productImageDao(): ProductImageDao
-    abstract fun productUploadImageDao(): ProductUploadImageDao
     abstract fun productVariantDao(): ProductVariantDao
     abstract fun variantAttributeDao(): VariantAttributeDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object ProductRoomDatabaseConstructor : RoomDatabaseConstructor<ProductRoomDatabase>
+expect object ProductRoomDatabaseConstructor : RoomDatabaseConstructor<ProductRoomDatabase> {
+    override fun initialize(): ProductRoomDatabase
+}

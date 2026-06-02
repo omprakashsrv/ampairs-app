@@ -25,8 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
-import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.product.domain.ProductUploadImage
+import com.ampairs.file.api.FileItem
 import ampairsapp.feature.product.generated.resources.Res
 import ampairsapp.feature.product.generated.resources.prod_cancel
 import ampairsapp.feature.product.generated.resources.prod_images_cd_image
@@ -37,10 +36,10 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ProductImageViewer(
-    image: ProductUploadImage?,
+    image: FileItem?,
     onDismiss: () -> Unit,
-    onDelete: (ProductUploadImage) -> Unit,
-    onSetPrimary: (ProductUploadImage) -> Unit,
+    onDelete: (FileItem) -> Unit,
+    onSetPrimary: (FileItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (image != null) {
@@ -62,7 +61,6 @@ fun ProductImageViewer(
                 color = MaterialTheme.colorScheme.surface,
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Header
                     @OptIn(ExperimentalMaterial3Api::class)
                     TopAppBar(
                         title = {
@@ -104,7 +102,6 @@ fun ProductImageViewer(
                         }
                     )
 
-                    // Image
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -115,7 +112,6 @@ fun ProductImageViewer(
                         ImageContent(image = image)
                     }
 
-                    // File details
                     OutlinedCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -129,9 +125,6 @@ fun ProductImageViewer(
                             DetailRow(label = "File", value = image.fileName)
                             DetailRow(label = "Size", value = formatFileSize(image.fileSize))
                             DetailRow(label = "Type", value = image.contentType)
-                            if (!image.description.isNullOrBlank()) {
-                                DetailRow(label = "Description", value = image.description)
-                            }
                         }
                     }
 
@@ -167,7 +160,7 @@ fun ProductImageViewer(
 }
 
 @Composable
-private fun ImageContent(image: ProductUploadImage, modifier: Modifier = Modifier) {
+private fun ImageContent(image: FileItem, modifier: Modifier = Modifier) {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
@@ -182,8 +175,8 @@ private fun ImageContent(image: ProductUploadImage, modifier: Modifier = Modifie
 
     val imageModel = when {
         !image.localPath.isNullOrBlank() -> "file://${image.localPath}"
-        !image.imageUrl.isNullOrBlank() -> ApiUrlBuilder.buildCompleteUrl(image.imageUrl!!)
-        !image.thumbnailUrl.isNullOrBlank() -> ApiUrlBuilder.buildCompleteUrl(image.thumbnailUrl!!)
+        image.imageUrl.isNotBlank() -> image.imageUrl
+        image.thumbnailUrl.isNotBlank() -> image.thumbnailUrl
         else -> null
     }
 

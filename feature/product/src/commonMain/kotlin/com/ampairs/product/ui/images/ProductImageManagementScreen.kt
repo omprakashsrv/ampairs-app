@@ -93,10 +93,7 @@ fun ProductImageManagementScreen(
         ProductImageViewer(
             image = uiState.selectedImage,
             onDismiss = viewModel::hideImageViewer,
-            onDelete = { image ->
-                viewModel.deleteImage(image.uid)
-                viewModel.hideImageViewer()
-            },
+            onDelete = { image -> viewModel.deleteImage(image.uid); viewModel.hideImageViewer() },
             onSetPrimary = { image -> viewModel.setPrimaryImage(image.uid) },
         )
     }

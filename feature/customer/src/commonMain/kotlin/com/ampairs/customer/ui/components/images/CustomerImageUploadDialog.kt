@@ -32,46 +32,11 @@ import ampairsapp.feature.customer.generated.resources.customer_image_uploading_
 import ampairsapp.feature.customer.generated.resources.customer_image_uploading_title
 import org.jetbrains.compose.resources.stringResource
 
-data class ImageUploadData(
-    val fileName: String,
-    val fileSize: Long,
-    val contentType: String,
-    val imageData: ByteArray,
-    val description: String = "",
-    val isPrimary: Boolean = false
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as ImageUploadData
-
-        if (fileName != other.fileName) return false
-        if (fileSize != other.fileSize) return false
-        if (contentType != other.contentType) return false
-        if (!imageData.contentEquals(other.imageData)) return false
-        if (description != other.description) return false
-        if (isPrimary != other.isPrimary) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = fileName.hashCode()
-        result = 31 * result + fileSize.hashCode()
-        result = 31 * result + contentType.hashCode()
-        result = 31 * result + imageData.contentHashCode()
-        result = 31 * result + description.hashCode()
-        result = 31 * result + isPrimary.hashCode()
-        return result
-    }
-}
-
 @Composable
 fun CustomerImageUploadDialog(
-    uploadData: ImageUploadData?,
+    uploadData: CustomerImageUploadData?,
     onDismiss: () -> Unit,
-    onUpload: (ImageUploadData) -> Unit,
+    onUpload: (CustomerImageUploadData) -> Unit,
     isUploading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -140,7 +105,7 @@ fun CustomerImageUploadDialog(
 
 @Composable
 private fun FileInfoCard(
-    uploadData: ImageUploadData,
+    uploadData: CustomerImageUploadData,
     modifier: Modifier = Modifier
 ) {
     val labelName = stringResource(Res.string.customer_image_file_name_label)

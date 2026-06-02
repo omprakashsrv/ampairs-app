@@ -188,7 +188,7 @@ fun CatalogFormScreen(
 @Composable
 private fun CatalogImageSection(
     currentImageUrl: String?,
-    pendingImage: com.ampairs.product.data.repository.ProductImagePickerResult?,
+    pendingImage: com.ampairs.file.api.FilePickerResult?,
     onPickImage: () -> Unit,
     onRemoveImage: () -> Unit,
 ) {

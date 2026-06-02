@@ -812,7 +812,6 @@ fun ProductFormState.toProduct(): Product {
         groupId = this.groupId,
         subCategoryId = this.subCategoryId,
         baseUnitId = this.baseUnitId.takeIf { it.isNotBlank() },
-        images = null,
     )
 }
 

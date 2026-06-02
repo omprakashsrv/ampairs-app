@@ -2,14 +2,14 @@ package com.ampairs.product
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.di.AppScope
-import com.ampairs.product.data.repository.IosProductFileManager
-import com.ampairs.product.data.repository.ProductFileManager
 import com.ampairs.product.db.ProductRoomDatabase
 import com.ampairs.product.db.migrations.MIGRATION_1_2
 import com.ampairs.product.db.migrations.MIGRATION_2_3
 import com.ampairs.product.db.migrations.MIGRATION_3_4
 import com.ampairs.product.db.migrations.MIGRATION_4_5
 import com.ampairs.product.db.migrations.MIGRATION_5_6
+import com.ampairs.product.db.migrations.MIGRATION_6_7
+import com.ampairs.product.db.migrations.MIGRATION_7_8
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -23,10 +23,7 @@ interface ProductIosModule {
             factory.createDatabase(
                 klass = ProductRoomDatabase::class,
                 moduleName = "product",
-                migrations = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                migrations = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
             )
-
-        @Provides
-        fun provideProductFileManager(): ProductFileManager = IosProductFileManager()
     }
 }

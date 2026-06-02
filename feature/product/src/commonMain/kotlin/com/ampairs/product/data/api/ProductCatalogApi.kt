@@ -1,17 +1,8 @@
 package com.ampairs.product.data.api
 
-import com.ampairs.product.api.model.ImageApiModel
 import com.ampairs.product.api.model.ProductGroupApiModel
 
 interface ProductCatalogApi {
-
-    // type = ProductClassificationType enum name: BRAND | GROUP | CATEGORY | SUB_CATEGORY
-    suspend fun uploadCatalogItemImage(
-        type: String,
-        fileName: String,
-        contentType: String,
-        imageData: ByteArray,
-    ): Result<ImageApiModel>
 
     suspend fun getGroups(): Result<List<ProductGroupApiModel>>
     suspend fun createGroup(model: ProductGroupApiModel): Result<ProductGroupApiModel>

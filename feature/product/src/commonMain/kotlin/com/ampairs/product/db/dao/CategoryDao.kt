@@ -7,7 +7,6 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.ampairs.product.db.entity.CategoryEntity
-import com.ampairs.product.db.model.CategoryModel
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -16,17 +15,11 @@ interface CategoryDao {
     @Query("SELECT * FROM categoryEntity WHERE id = :id")
     suspend fun categoryById(id: String): CategoryEntity?
 
-    @Transaction
-    @Query("SELECT * FROM categoryEntity WHERE id = :id")
-    suspend fun categoryModelById(id: String): CategoryModel?
-
-    @Transaction
     @Query("SELECT * FROM categoryEntity ORDER BY name ASC, active DESC")
-    suspend fun getCategories(): List<CategoryModel>
+    suspend fun getCategories(): List<CategoryEntity>
 
-    @Transaction
     @Query("SELECT * FROM categoryEntity ORDER BY name ASC, active DESC")
-    fun observeCategories(): Flow<List<CategoryModel>>
+    fun observeCategories(): Flow<List<CategoryEntity>>
 
     @Query("SELECT * FROM categoryEntity WHERE id IN (:ids) ORDER BY name ASC, active DESC")
     suspend fun getCategoriesByIds(ids: List<String>): List<CategoryEntity>

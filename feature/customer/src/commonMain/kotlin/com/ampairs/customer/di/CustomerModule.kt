@@ -6,7 +6,6 @@ import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.db.CustomerDao
 import com.ampairs.customer.data.db.CustomerTypeDao
 import com.ampairs.customer.data.db.CustomerGroupDao
-import com.ampairs.customer.data.db.CustomerImageDao
 import com.ampairs.customer.data.db.StateDao
 import com.ampairs.customer.data.repository.CustomerRepository
 import dev.zacsweers.metro.ContributesTo
@@ -23,9 +22,6 @@ interface CustomerDaoModule {
 
         @Provides
         fun provideCustomerGroupDao(db: CustomerDatabase): CustomerGroupDao = db.customerGroupDao()
-
-        @Provides
-        fun provideCustomerImageDao(db: CustomerDatabase): CustomerImageDao = db.customerImageDao()
 
         @Provides
         fun provideStateDao(db: CustomerDatabase): StateDao = db.stateDao()

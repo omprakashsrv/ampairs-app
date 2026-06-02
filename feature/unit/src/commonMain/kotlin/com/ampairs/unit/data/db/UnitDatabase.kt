@@ -48,4 +48,6 @@ abstract class UnitDatabase : RoomDatabase() {
  * - Desktop: Room with JDBC drivers
  */
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object UnitDatabaseConstructor : RoomDatabaseConstructor<UnitDatabase>
+expect object UnitDatabaseConstructor : RoomDatabaseConstructor<UnitDatabase> {
+    override fun initialize(): UnitDatabase
+}

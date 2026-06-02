@@ -5,7 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.ampairs.product.api.model.ProductApiModel
 import com.ampairs.product.db.entity.ProductEntity
-import com.ampairs.product.db.model.ProductImageModel
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -27,7 +26,6 @@ data class Product(
     var baseUnitId: String? = null,
     var baseUnit: Unit? = null,
     var taxInfos: List<TaxInfo>? = null,
-    var images: List<ProductImage>? = null,
     var description: String = "",
     var stockQuantity: Double? = null,
     var lowStockAlert: Double? = null,
@@ -40,9 +38,6 @@ data class Product(
     // var inventory: Inventory? = null
 ) {
     var quantity: Double by mutableStateOf(0.0)
-
-    val primaryImageUrl: String?
-        get() = images?.firstOrNull()?.image?.url
 
     val isLowStock: Boolean
         get() = stockQuantity != null && lowStockAlert != null && stockQuantity!! <= lowStockAlert!!
@@ -218,11 +213,3 @@ fun List<ProductApiModel>.asDatabaseModel(): List<ProductEntity> {
 //     }
 // }
 
-fun List<ProductImageModel>.asProductImageDomainModel(): List<ProductImage> {
-    return map {
-        ProductImage(
-            productId = it.productImage.product_id,
-            image = it.image.asDomainModel()
-        )
-    }
-}

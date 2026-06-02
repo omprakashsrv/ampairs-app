@@ -1,19 +1,24 @@
 package com.ampairs.product.catalog
 
-import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.file.api.FileEntityType
+import com.ampairs.file.api.FileItem
+import com.ampairs.file.api.FileRepository
+import com.ampairs.file.api.FileUploadStatus
 import com.ampairs.product.data.api.ProductCatalogApi
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
-import com.ampairs.product.db.dao.ImageDao
 import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
-import com.ampairs.product.db.entity.ImageEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 @Inject
@@ -22,7 +27,7 @@ class ProductCatalogRepository(
     private val categoryDao: CategoryDao,
     private val subCategoryDao: SubCategoryDao,
     private val groupDao: GroupDao,
-    private val imageDao: ImageDao,
+    private val fileRepository: FileRepository,
     private val api: ProductCatalogApi,
 ) {
     suspend fun getBrands(): List<CatalogItem> =
@@ -38,47 +43,71 @@ class ProductCatalogRepository(
         groupDao.getActiveGroups().map { CatalogItem(it.id, it.name, it.active == 1) }
 
     fun observeAllItems(type: ProductCatalogType): Flow<List<CatalogItem>> = when (type) {
-        ProductCatalogType.BRANDS -> brandDao.observeBrands().map { list ->
-            list.map { CatalogItem(it.brand.id, it.brand.name, it.brand.active == 1, it.image?.imageUrl()) }
+        ProductCatalogType.BRANDS -> brandDao.observeBrands().flatMapLatest { brands ->
+            if (brands.isEmpty()) flowOf(emptyList())
+            else combine(brands.map { brand ->
+                fileRepository.observePrimaryFile(FileEntityType.BRAND, brand.id)
+                    .map { file -> CatalogItem(brand.id, brand.name, brand.active == 1, file.effectiveUrl()) }
+            }) { it.toList() }
         }
-        ProductCatalogType.CATEGORIES -> categoryDao.observeCategories().map { list ->
-            list.map { CatalogItem(it.category.id, it.category.name, it.category.active == 1, it.image?.imageUrl()) }
+        ProductCatalogType.CATEGORIES -> categoryDao.observeCategories().flatMapLatest { categories ->
+            if (categories.isEmpty()) flowOf(emptyList())
+            else combine(categories.map { category ->
+                fileRepository.observePrimaryFile(FileEntityType.CATEGORY, category.id)
+                    .map { file -> CatalogItem(category.id, category.name, category.active == 1, file.effectiveUrl()) }
+            }) { it.toList() }
         }
-        ProductCatalogType.SUB_CATEGORIES -> subCategoryDao.observeSubCategories().map { list ->
-            list.map { CatalogItem(it.subCategory.id, it.subCategory.name, it.subCategory.active == 1, it.image?.imageUrl()) }
+        ProductCatalogType.SUB_CATEGORIES -> subCategoryDao.observeSubCategories().flatMapLatest { subCategories ->
+            if (subCategories.isEmpty()) flowOf(emptyList())
+            else combine(subCategories.map { sub ->
+                fileRepository.observePrimaryFile(FileEntityType.SUB_CATEGORY, sub.id)
+                    .map { file -> CatalogItem(sub.id, sub.name, sub.active == 1, file.effectiveUrl()) }
+            }) { it.toList() }
         }
-        ProductCatalogType.GROUPS -> groupDao.observeGroupModels().map { list ->
-            list.map { CatalogItem(it.group.id, it.group.name, it.group.active == 1, it.image?.imageUrl()) }
+        ProductCatalogType.GROUPS -> groupDao.observeGroups().flatMapLatest { groups ->
+            if (groups.isEmpty()) flowOf(emptyList())
+            else combine(groups.map { group ->
+                fileRepository.observePrimaryFile(FileEntityType.GROUP, group.id)
+                    .map { file -> CatalogItem(group.id, group.name, group.active == 1, file.effectiveUrl()) }
+            }) { it.toList() }
         }
     }
 
     suspend fun getAllItems(type: ProductCatalogType): List<CatalogItem> = when (type) {
-        ProductCatalogType.BRANDS -> brandDao.getBrands().map {
-            CatalogItem(it.brand.id, it.brand.name, it.brand.active == 1, it.image?.imageUrl())
+        ProductCatalogType.BRANDS -> brandDao.getBrands().map { brand ->
+            val file = fileRepository.observePrimaryFile(FileEntityType.BRAND, brand.id).first()
+            CatalogItem(brand.id, brand.name, brand.active == 1, file.effectiveUrl())
         }
-        ProductCatalogType.CATEGORIES -> categoryDao.getCategories().map {
-            CatalogItem(it.category.id, it.category.name, it.category.active == 1, it.image?.imageUrl())
+        ProductCatalogType.CATEGORIES -> categoryDao.getCategories().map { category ->
+            val file = fileRepository.observePrimaryFile(FileEntityType.CATEGORY, category.id).first()
+            CatalogItem(category.id, category.name, category.active == 1, file.effectiveUrl())
         }
-        ProductCatalogType.SUB_CATEGORIES -> subCategoryDao.getSubCategories().map {
-            CatalogItem(it.subCategory.id, it.subCategory.name, it.subCategory.active == 1, it.image?.imageUrl())
+        ProductCatalogType.SUB_CATEGORIES -> subCategoryDao.getSubCategories().map { sub ->
+            val file = fileRepository.observePrimaryFile(FileEntityType.SUB_CATEGORY, sub.id).first()
+            CatalogItem(sub.id, sub.name, sub.active == 1, file.effectiveUrl())
         }
-        ProductCatalogType.GROUPS -> groupDao.getGroupModels().map {
-            CatalogItem(it.group.id, it.group.name, it.group.active == 1, it.image?.imageUrl())
+        ProductCatalogType.GROUPS -> groupDao.getGroups().map { group ->
+            val file = fileRepository.observePrimaryFile(FileEntityType.GROUP, group.id).first()
+            CatalogItem(group.id, group.name, group.active == 1, file.effectiveUrl())
         }
     }
 
     suspend fun getItemById(type: ProductCatalogType, id: String): CatalogItem? = when (type) {
-        ProductCatalogType.BRANDS -> brandDao.brandModelById(id)?.let {
-            CatalogItem(it.brand.id, it.brand.name, it.brand.active == 1, it.image?.imageUrl())
+        ProductCatalogType.BRANDS -> brandDao.brandById(id)?.let { brand ->
+            val file = fileRepository.observePrimaryFile(FileEntityType.BRAND, id).first()
+            CatalogItem(brand.id, brand.name, brand.active == 1, file.effectiveUrl())
         }
-        ProductCatalogType.CATEGORIES -> categoryDao.categoryModelById(id)?.let {
-            CatalogItem(it.category.id, it.category.name, it.category.active == 1, it.image?.imageUrl())
+        ProductCatalogType.CATEGORIES -> categoryDao.categoryById(id)?.let { category ->
+            val file = fileRepository.observePrimaryFile(FileEntityType.CATEGORY, id).first()
+            CatalogItem(category.id, category.name, category.active == 1, file.effectiveUrl())
         }
-        ProductCatalogType.SUB_CATEGORIES -> subCategoryDao.subCategoryModelById(id)?.let {
-            CatalogItem(it.subCategory.id, it.subCategory.name, it.subCategory.active == 1, it.image?.imageUrl())
+        ProductCatalogType.SUB_CATEGORIES -> subCategoryDao.subCategoryById(id)?.let { sub ->
+            val file = fileRepository.observePrimaryFile(FileEntityType.SUB_CATEGORY, id).first()
+            CatalogItem(sub.id, sub.name, sub.active == 1, file.effectiveUrl())
         }
-        ProductCatalogType.GROUPS -> groupDao.groupModelById(id)?.let {
-            CatalogItem(it.group.id, it.group.name, it.group.active == 1, it.image?.imageUrl())
+        ProductCatalogType.GROUPS -> groupDao.groupById(id)?.let { group ->
+            val file = fileRepository.observePrimaryFile(FileEntityType.GROUP, id).first()
+            CatalogItem(group.id, group.name, group.active == 1, file.effectiveUrl())
         }
     }
 
@@ -117,82 +146,14 @@ class ProductCatalogRepository(
             }
         }
     }
-
-    // Uploads image to server, persists ImageEntity locally, updates entity's image_id.
-    suspend fun uploadItemImage(
-        type: ProductCatalogType,
-        itemId: String,
-        fileName: String,
-        contentType: String,
-        imageData: ByteArray,
-    ): Result<String> = runCatching {
-        val apiImage = api.uploadCatalogItemImage(
-            type = type.toBackendType(),
-            fileName = fileName,
-            contentType = contentType,
-            imageData = imageData,
-        ).getOrThrow()
-
-        val imageEntity = ImageEntity(
-            id = apiImage.id,
-            name = apiImage.name,
-            bucket = apiImage.bucket,
-            object_key = apiImage.url.ifBlank { apiImage.objectKey },
-        )
-        imageDao.insert(imageEntity)
-
-        when (type) {
-            ProductCatalogType.BRANDS -> {
-                val e = brandDao.brandById(itemId) ?: error("Brand not found")
-                brandDao.insert(e.copy(image_id = apiImage.id, synced = 0))
-            }
-            ProductCatalogType.CATEGORIES -> {
-                val e = categoryDao.categoryById(itemId) ?: error("Category not found")
-                categoryDao.insert(e.copy(image_id = apiImage.id, synced = 0))
-            }
-            ProductCatalogType.SUB_CATEGORIES -> {
-                val e = subCategoryDao.subCategoryById(itemId) ?: error("Sub-category not found")
-                subCategoryDao.insert(e.copy(image_id = apiImage.id, synced = 0))
-            }
-            ProductCatalogType.GROUPS -> {
-                val e = groupDao.groupById(itemId) ?: error("Group not found")
-                groupDao.insert(e.copy(image_id = apiImage.id, synced = 0))
-            }
-        }
-
-        imageEntity.imageUrl()
-    }
-
-    suspend fun removeItemImage(type: ProductCatalogType, itemId: String): Result<Unit> = runCatching {
-        when (type) {
-            ProductCatalogType.BRANDS -> {
-                val e = brandDao.brandById(itemId) ?: error("Brand not found")
-                brandDao.insert(e.copy(image_id = null, synced = 0))
-            }
-            ProductCatalogType.CATEGORIES -> {
-                val e = categoryDao.categoryById(itemId) ?: error("Category not found")
-                categoryDao.insert(e.copy(image_id = null, synced = 0))
-            }
-            ProductCatalogType.SUB_CATEGORIES -> {
-                val e = subCategoryDao.subCategoryById(itemId) ?: error("Sub-category not found")
-                subCategoryDao.insert(e.copy(image_id = null, synced = 0))
-            }
-            ProductCatalogType.GROUPS -> {
-                val e = groupDao.groupById(itemId) ?: error("Group not found")
-                groupDao.insert(e.copy(image_id = null, synced = 0))
-            }
-        }
-    }
 }
 
-private fun ImageEntity.imageUrl(): String =
-    ApiUrlBuilder.buildCompleteUrl(object_key)
-
-private fun ProductCatalogType.toBackendType(): String = when (this) {
-    ProductCatalogType.BRANDS -> "BRAND"
-    ProductCatalogType.CATEGORIES -> "CATEGORY"
-    ProductCatalogType.SUB_CATEGORIES -> "SUB_CATEGORY"
-    ProductCatalogType.GROUPS -> "GROUP"
+private fun FileItem?.effectiveUrl(): String? {
+    this ?: return null
+    if (uploadStatus == FileUploadStatus.PENDING || uploadStatus == FileUploadStatus.UPLOADING) {
+        localPath?.let { return "file://$it" }
+    }
+    return imageUrl.takeIf { it.isNotBlank() }
 }
 
 data class CatalogItem(

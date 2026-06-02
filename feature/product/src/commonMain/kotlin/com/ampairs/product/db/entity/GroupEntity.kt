@@ -16,7 +16,6 @@ data class GroupEntity(
     val seq_id: Long = 0,
     val id: String,
     val name: String,
-    val image_id: String? = null,
     val ref_id: String? = null,
     val active: Int = 1,
     val soft_deleted: Int = 0,

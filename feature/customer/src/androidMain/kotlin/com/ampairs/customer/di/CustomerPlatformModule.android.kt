@@ -6,8 +6,7 @@ import com.ampairs.common.database.createAndroidDatabase
 import com.ampairs.common.di.AppScope
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_6_7
-import com.ampairs.customer.data.repository.AndroidFileManager
-import com.ampairs.customer.data.repository.PlatformFileManager
+import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_7_8
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -18,9 +17,6 @@ interface CustomerAndroidModule {
     companion object {
         @Provides @SingleIn(AppScope::class)
         fun provideCustomerDatabase(factory: WorkspaceAwareDatabaseFactory, context: Context): CustomerDatabase =
-            factory.createAndroidDatabase(context = context, queryDispatcher = Dispatchers.IO, moduleName = "customer", migrations = listOf(CUSTOMER_MIGRATION_6_7))
-
-        @Provides
-        fun providePlatformFileManager(context: Context): PlatformFileManager = AndroidFileManager(context)
+            factory.createAndroidDatabase(context = context, queryDispatcher = Dispatchers.IO, moduleName = "customer", migrations = listOf(CUSTOMER_MIGRATION_6_7, CUSTOMER_MIGRATION_7_8))
     }
 }
