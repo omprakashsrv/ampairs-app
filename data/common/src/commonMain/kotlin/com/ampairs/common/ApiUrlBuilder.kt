@@ -130,6 +130,27 @@ object ApiUrlBuilder {
         }
     }
 
+    /**
+     * Authenticated customer-account ecom endpoints. The ecom module uses the
+     * `/api/v1/ecom/{path}` convention (v1 right after /api — see the mobile contract),
+     * unlike the older `/api/{module}/v{n}` modules.
+     * e.g. ecomUrl("account/addresses"), ecomUrl("account/orders")
+     */
+    fun ecomUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/v1/ecom/$cleanPath"
+    }
+
+    /**
+     * Public storefront endpoints scoped to a slug: /api/v1/store/{slug}/{path}
+     * e.g. storeUrl("green-mart", "catalog-meta"), storeUrl("green-mart", "products")
+     */
+    fun storeUrl(slug: String, path: String = ""): String {
+        val cleanPath = path.removePrefix("/")
+        val base = "${ConfigurationManager.apiBaseUrl}/api/v1/store/$slug"
+        return if (cleanPath.isBlank()) base else "$base/$cleanPath"
+    }
+
     fun wsUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.current.wsBaseUrl}/$cleanPath"

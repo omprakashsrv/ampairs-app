@@ -268,6 +268,22 @@ ViewModels (MVI: `StateFlow<UiState>` + `SharedFlow<Event>`): `StorefrontGateVie
 
 ---
 
+## 11a. Phase 1 status (scaffold landed)
+
+Phase 1 (scaffold & wire) is implemented:
+
+- `feature/ecom-api` — all contract DTOs (`Storefront`, `CatalogMeta`, `ListedProduct`, `ProductSync*`, `Cart*`, `Address*`, `EcomOrder*`, `StoreAccess*`) + enums.
+- `feature/ecom` — `EcomApi` + `EcomApiImpl` (Ktor, slug/account URLs), full Room layer (9 entities, 7 DAOs, `EcomRoomDatabase` v1), repositories (storefront, catalog w/ cursor sync, cart, address push/pull, orders, store-access stub), 3 sync delegates, Metro DI (common DAO module + android/ios/desktop DB providers), the `StorefrontGateViewModel` (assisted) + `EcomStorefrontScreen`, and `strings.xml`.
+- Shared wiring — `EcomRoute`, `ecomEntryProvider` chained in `CombinedEntryProvider`, `api(projects.feature.ecom)` in `shared`.
+- Infra — `ApiUrlBuilder.ecomUrl`/`storeUrl`, `SyncEntity.ECOM_PRODUCT/ECOM_ADDRESS/ECOM_ORDER`, both modules in `settings.gradle.kts`.
+
+**Compile gate not run in CI sandbox.** The KMP plugin (2.3.21) requires a JetBrains-vendor JDK 21 toolchain; this container has only OpenJDK and the network policy blocks `api.foojay.io` toolchain provisioning (403), and the repo's `org.gradle.java.home` points at a macOS path. Code was written by mirroring `feature/product`/`product-api` exactly. **Run locally before merging:**
+```bash
+./gradlew :feature:ecom:compileKotlinDesktop
+./gradlew shared:compileKotlinIosSimulatorArm64
+./gradlew androidApp:compileDebugKotlinAndroid
+```
+
 ## 12. What is explicitly out of scope (v1)
 
 Merchant-management screens (create/publish storefront, list products, Pending-Merchant-Review edit/confirm), Direction B, payments, delivery fee/ETA, split-shipment UI (data model supports it per FR-029), Desktop-specific UX (compiles only).

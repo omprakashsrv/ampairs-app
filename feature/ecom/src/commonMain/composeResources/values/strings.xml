@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ecom_loading">Loading…</string>
+    <string name="ecom_store_unavailable_title">Store not available</string>
+    <string name="ecom_store_unavailable_body">This store is not published yet, or the link is incorrect. Please check the address and try again.</string>
+    <string name="ecom_request_access_title">Request store access</string>
+    <string name="ecom_request_access_btn">Request access</string>
+    <string name="ecom_pending_title">Access pending</string>
+    <string name="ecom_pending_body">The store will review your request. We\'ll notify you by SMS once you\'re approved.</string>
+    <string name="ecom_shop_placeholder_title">Storefront ready</string>
+    <string name="ecom_shop_placeholder_body">Browse, cart and checkout screens are coming in the next phase.</string>
+</resources>

@@ -114,6 +114,7 @@ kotlin {
 
                 // Feature modules — api so androidApp can see Metro-generated supertypes
                 api(projects.feature.auth)
+                api(projects.feature.ecom)
                 api(projects.feature.agent)
                 api(projects.feature.form)
                 api(projects.feature.unit)
