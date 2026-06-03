@@ -164,7 +164,7 @@ All user-visible text → `strings.xml` → `ampairsapp.feature.ecom.generated.r
 | # | Screen | Key API calls | Notes |
 |---|---|---|---|
 | 1 | **LoginGate** (login-first only) | reuse auth `POST /auth/v1/...` | phone+OTP via `feature/auth`; then access check |
-| 2 | **RequestAccess / Pending** (login-first only) | `POST /ecom/account/store-access` *(see Open Q1)* | store identity strip + your number; poll/SSE for grant |
+| 2 | **RequestAccess / Pending** (login-first only) | `POST /ecom/account/store-access` + `GET …/store-access/{slug}` *(future API — see §11.1)* | store identity strip + your number; poll for grant |
 | 3 | **BrowseHome** | `GET /store/{slug}` (bootstrap), `GET /store/{slug}/catalog-meta` | category tiles (3-col), brand row, popular grid, search box |
 | 4 | **DrillDown / Search results** | `GET /store/{slug}/products?category=&brand=&subcategory=`, `…/products/search?q=` | subcategory refine rail, removable filter chips, paged grid (Paging3 wrapper) |
 | 5 | **ProductDetail** | `GET /store/{slug}/products/{id}` | image, price/MRP/savings, stock, quick-add, sticky action bar |
@@ -248,13 +248,22 @@ ViewModels (MVI: `StateFlow<UiState>` + `SharedFlow<Event>`): `StorefrontGateVie
 
 ---
 
-## 11. Open questions / risks
+## 11. Resolved decisions & remaining risks
 
-1. **Store-access request endpoint** — the mobile contract has no `request store access` / `pending` endpoint; that flow is design-only (B2B gate). If `accessMode = LOGIN_FIRST` is to be real, the backend `ecom` module needs a `POST /ecom/account/store-access` + status. Confirm whether to (a) build UI against a to-be-added endpoint, or (b) keep the gate as a local demo state for now.
-2. **Storefront slug source** — how does the app learn which storefront to open? Deep link (`store.ampairs.com/{slug}` universal/app link), a stored "last store", or an in-app store picker? Affects the entry point and `EcomRoute.Storefront` launch.
-3. **`accessMode` field** — is it on the backend `GET /store/{slug}` payload, or purely a client config for the demo toggle? Drives whether §4's branch reads server or DataStore.
-4. **Standalone vs in-app surface** — should ecom ship as its own customer app entry (separate launcher / deep-link target) or live behind the existing merchant app shell? The plan assumes a standalone entry surface; confirm.
-5. **Profile data** — contract lacks a `GET /ecom/account/profile`; Account hero (name/email/phone) likely comes from the auth user profile (`UserDataService`). Confirm the source.
+**Resolved (confirmed by product owner):**
+
+1. **Store-access flow → build against a defined future API.** The `LOGIN_FIRST` gate targets a contract the backend `ecom` module will add. Assumed shape (mobile drives the UI to this; backend implements to match):
+   - `POST /ecom/account/store-access` — body `{ "storefront_slug": "green-mart" }`, auth required. Returns `{ "status": "PENDING" | "GRANTED" | "REJECTED", "requested_at": "…" }`.
+   - `GET /ecom/account/store-access/{slug}` — auth required. Returns the same access-status object; `404 ACCESS_NOT_REQUESTED` if none. Drives the Pending screen's poll.
+   - `GET /store/{slug}` (bootstrap) gains `"access_mode": "GUEST_FIRST" | "LOGIN_FIRST"` and, for authed callers, `"viewer_access": "GRANTED" | "PENDING" | "NONE"` so the gate resolves in one round-trip.
+   - Until the backend ships these, the repository's `StoreAccessApi` is feature-flagged to a stub that auto-grants (demo), behind the same interface — no UI rework when the real endpoint lands.
+2. **Surface → standalone customer storefront.** Ecom is opened by slug/deep-link with its own `EcomShell` (Browse/Orders/Account tabs), independent of the merchant workspace drawer. Not surfaced inside the merchant app navigation.
+3. **Slug source (default, extensible)** — support an Android App Link / iOS Universal Link for `store.ampairs.com/{slug}` **and** a "last store" persisted in DataStore (`ecom_last_storefront_slug`). An in-app store picker can be layered on later without changing `EcomRoute.Storefront`.
+4. **`accessMode` source (default, both)** — read `access_mode` from the `GET /store/{slug}` payload when present; otherwise fall back to a local DataStore flag (`ecom_access_mode_{slug}`) so the demo toggle works before the backend field exists.
+
+**Remaining risks / minor confirms (non-blocking — sensible defaults assumed):**
+
+5. **Profile data** — contract lacks `GET /ecom/account/profile`; Account hero (name/phone/email) is sourced from the auth user profile (`UserDataService` in `feature/auth-api`). Flag if a separate ecom profile is intended.
 6. **Order status realtime** — tracking advances via polling (`GET …/orders/{ref}`) in v1; STOMP/Krossbow push is available in the stack if low-latency updates are wanted later.
 
 ---
