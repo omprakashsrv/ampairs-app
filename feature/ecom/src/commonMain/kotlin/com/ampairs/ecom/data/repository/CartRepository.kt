@@ -7,25 +7,31 @@ import com.ampairs.ecom.data.db.dao.CartDao
 import com.ampairs.ecom.data.db.entity.CartItemEntity
 import com.ampairs.ecom.domain.EcomLogger
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * Online cart with an optimistic local Room mirror (contract §9 — cart is online-only).
  * Server is authoritative for quantities/stock caps; every successful call replaces the mirror.
+ *
+ * Active-cart identity is derived from Room (keyed by storefront), so this repository is safe
+ * to inject unscoped — no in-memory state to share across ViewModels.
  */
 @Inject
 class CartRepository(
     private val api: EcomApi,
     private val cartDao: CartDao,
 ) {
-    private val activeCartId = MutableStateFlow<String?>(null)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeItems(storefrontId: String): Flow<List<CartItemEntity>> =
+        cartDao.observeCartForStorefront(storefrontId).flatMapLatest { cart ->
+            if (cart == null) flowOf(emptyList()) else cartDao.observeItems(cart.uid)
+        }
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun observeItems(): Flow<List<CartItemEntity>> =
-        activeCartId.flatMapLatest { id -> if (id == null) flowOf(emptyList()) else cartDao.observeItems(id) }
+    fun observeCart(storefrontId: String): Flow<com.ampairs.ecom.data.db.entity.CartEntity?> =
+        cartDao.observeCartForStorefront(storefrontId)
 
     /** Get-or-create the cart for a storefront, returning the live server cart. */
     suspend fun ensureCart(slug: String, storefrontId: String): Result<CartResponse> {
@@ -61,9 +67,12 @@ class CartRepository(
         return api.claimCart(slug, token).onSuccess { persist(storefrontId, it) }
     }
 
+    /** Current session token for a storefront (needed by checkout). */
+    suspend fun sessionToken(storefrontId: String): String? =
+        cartDao.cartForStorefront(storefrontId)?.session_token
+
     private suspend fun persist(storefrontId: String, cart: CartResponse) {
         cartDao.upsertCart(cart.toCartEntity(storefrontId))
         cartDao.replaceItems(cart.uid, cart.items.map { it.toEntity(cart.uid) })
-        activeCartId.value = cart.uid
     }
 }

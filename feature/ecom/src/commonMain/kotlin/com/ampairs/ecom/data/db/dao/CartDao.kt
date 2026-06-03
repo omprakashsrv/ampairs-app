@@ -20,6 +20,9 @@ interface CartDao {
     @Query("SELECT * FROM cart WHERE storefront_id = :storefrontId LIMIT 1")
     suspend fun cartForStorefront(storefrontId: String): CartEntity?
 
+    @Query("SELECT * FROM cart WHERE storefront_id = :storefrontId LIMIT 1")
+    fun observeCartForStorefront(storefrontId: String): Flow<CartEntity?>
+
     @Query("SELECT * FROM cart_item WHERE cart_id = :cartId")
     fun observeItems(cartId: String): Flow<List<CartItemEntity>>
 
