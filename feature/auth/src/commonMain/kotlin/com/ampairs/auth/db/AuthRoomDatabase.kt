@@ -24,5 +24,7 @@ abstract class AuthRoomDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object AuthRoomDatabaseConstructor : RoomDatabaseConstructor<AuthRoomDatabase>
+expect object AuthRoomDatabaseConstructor : RoomDatabaseConstructor<AuthRoomDatabase> {
+    override fun initialize(): AuthRoomDatabase
+}
 

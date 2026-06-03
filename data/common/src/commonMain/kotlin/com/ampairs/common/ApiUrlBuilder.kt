@@ -130,6 +130,11 @@ object ApiUrlBuilder {
         }
     }
 
+    fun fileUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/file/$cleanPath"
+    }
+
     fun wsUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.current.wsBaseUrl}/$cleanPath"

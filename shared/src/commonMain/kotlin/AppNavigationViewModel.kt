@@ -9,6 +9,7 @@ import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.firebase.performance.FirebasePerformance
 import com.ampairs.common.firebase.performance.PerformanceAttributes
 import com.ampairs.common.firebase.performance.PerformanceTraces
+import com.ampairs.di.WorkspaceManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.GlobalNavigationManager
@@ -37,11 +38,14 @@ class AppNavigationViewModel(
     private val workspaceRepository: OfflineFirstWorkspaceRepository,
     private val tokenRepository: TokenRepository,
     private val userWorkspaceRepository: UserWorkspaceRepository,
+    private val workspaceManager: WorkspaceManager,
 ) : ViewModel() {
 
     // Triple: (shouldResume, workspaceId, workspaceSlug)
     private val _autoResumeState = MutableStateFlow<Triple<Boolean, String?, String?>?>(null)
     val autoResumeState: StateFlow<Triple<Boolean, String?, String?>?> = _autoResumeState.asStateFlow()
+
+    val workspaceSession: StateFlow<WorkspaceManager.WorkspaceSession?> = workspaceManager.session
 
     private val _logoutEvent = MutableSharedFlow<Unit>()
     val logoutEvent: SharedFlow<Unit> = _logoutEvent.asSharedFlow()
@@ -65,6 +69,7 @@ class AppNavigationViewModel(
                 if (hasWorkspace) {
                     val workspace = workspaceRepository.getWorkspaceById(lastWorkspaceId)
                     if (workspace != null) {
+                        workspaceManager.activateWorkspace(lastWorkspaceId, workspace.slug, lastUserId)
                         WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
                         GlobalNavigationManager.getInstance().onWorkspaceSelected()
                         _autoResumeState.value = Triple(true, lastWorkspaceId, workspace.slug)
@@ -87,6 +92,7 @@ class AppNavigationViewModel(
             UnauthenticatedHandler.onUnauthenticated.collectLatest {
                 WorkspaceContextIntegration.clearWorkspaceContext()
                 appPreferences.clearLastWorkspaceId()
+                workspaceManager.clearSession()
                 _logoutEvent.emit(Unit)
             }
         }

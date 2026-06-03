@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import com.ampairs.product.db.entity.ImageEntity
 import com.ampairs.product.db.entity.ProductEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -94,12 +93,6 @@ interface ProductDao {
 
     @Query("DELETE FROM productEntity")
     suspend fun deleteAll()
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertImage(image: ImageEntity)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertImages(images: List<ImageEntity>)
 
     // For Paging3 support - these would need to be properly integrated with Room's PagingSource
     @Query("SELECT * FROM productEntity WHERE name LIKE ('%' || :searchText || '%') ORDER BY name")

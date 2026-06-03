@@ -45,14 +45,5 @@ fun MainView() {
         }
     }
 
-    val androidGraph = appGraph as AndroidAppGraph
-    App(
-        appGraph = androidGraph,
-        onWorkspaceEntered = { workspaceSlug ->
-            androidGraph.centralSyncService.start(workspaceSlug)
-        },
-        onWorkspaceLeft = {
-            androidGraph.centralSyncService.stop()
-        }
-    )
+    App(appGraph = appGraph as AndroidAppGraph)
 }

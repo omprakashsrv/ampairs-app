@@ -12,6 +12,7 @@ import com.ampairs.product.api.model.ProductGroupApiModel
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+
 @Inject
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -38,7 +39,6 @@ class ProductCatalogApiImpl(
         response.data?.firstOrNull() ?: model
     }
 
-    // No standalone GET /categories endpoint — fetch all via all-groups-category and extract
     override suspend fun getCategories(): Result<List<ProductGroupApiModel>> = runCatching {
         val response: Response<AllProductGroupApiModel> = get(client, ApiUrlBuilder.productUrl("v1/products/all-groups-category"))
         if (response.error != null) throw Exception(response.error?.message ?: "Network error")

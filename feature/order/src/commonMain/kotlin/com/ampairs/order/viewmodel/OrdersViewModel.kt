@@ -17,13 +17,13 @@ import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.db.dto.asDomainModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.launch
 
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class OrdersViewModel(val orderRepository: OrderRepository) : ViewModel() {

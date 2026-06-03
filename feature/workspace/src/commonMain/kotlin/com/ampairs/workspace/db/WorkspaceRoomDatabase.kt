@@ -48,5 +48,7 @@ abstract class WorkspaceRoomDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object WorkspaceRoomDatabaseConstructor : RoomDatabaseConstructor<WorkspaceRoomDatabase>
+expect object WorkspaceRoomDatabaseConstructor : RoomDatabaseConstructor<WorkspaceRoomDatabase> {
+    override fun initialize(): WorkspaceRoomDatabase
+}
 

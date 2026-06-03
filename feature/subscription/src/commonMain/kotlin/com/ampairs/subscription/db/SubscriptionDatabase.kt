@@ -21,4 +21,6 @@ abstract class SubscriptionDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object SubscriptionDatabaseConstructor : RoomDatabaseConstructor<SubscriptionDatabase>
+expect object SubscriptionDatabaseConstructor : RoomDatabaseConstructor<SubscriptionDatabase> {
+    override fun initialize(): SubscriptionDatabase
+}

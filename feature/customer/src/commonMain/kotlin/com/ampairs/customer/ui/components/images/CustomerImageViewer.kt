@@ -28,11 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
-import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.common.util.DateTimeFormatter
-import com.ampairs.customer.domain.CustomerImage
-import com.ampairs.customer.domain.CustomerImageStatus
 import com.ampairs.customer.util.CustomerLogger
+import com.ampairs.file.api.FileItem
+import com.ampairs.file.api.FileUploadStatus
 import ampairsapp.feature.customer.generated.resources.Res
 import ampairsapp.feature.customer.generated.resources.customer_cancel
 import ampairsapp.feature.customer.generated.resources.customer_delete
@@ -42,15 +40,12 @@ import ampairsapp.feature.customer.generated.resources.customer_image_delete_cd
 import ampairsapp.feature.customer.generated.resources.customer_image_delete_confirm
 import ampairsapp.feature.customer.generated.resources.customer_image_delete_title
 import ampairsapp.feature.customer.generated.resources.customer_image_detail_content_type
-import ampairsapp.feature.customer.generated.resources.customer_image_detail_created
-import ampairsapp.feature.customer.generated.resources.customer_image_detail_description
 import ampairsapp.feature.customer.generated.resources.customer_image_detail_filename
 import ampairsapp.feature.customer.generated.resources.customer_image_detail_filesize
 import ampairsapp.feature.customer.generated.resources.customer_image_detail_local_copy
 import ampairsapp.feature.customer.generated.resources.customer_image_detail_server_url
 import ampairsapp.feature.customer.generated.resources.customer_image_detail_status
 import ampairsapp.feature.customer.generated.resources.customer_image_detail_thumbnail
-import ampairsapp.feature.customer.generated.resources.customer_image_detail_updated
 import ampairsapp.feature.customer.generated.resources.customer_image_details_collapse
 import ampairsapp.feature.customer.generated.resources.customer_image_details_expand
 import ampairsapp.feature.customer.generated.resources.customer_image_details_title
@@ -68,10 +63,10 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CustomerImageViewer(
-    image: CustomerImage?,
+    image: FileItem?,
     onDismiss: () -> Unit,
-    onDelete: (CustomerImage) -> Unit,
-    onSetPrimary: (CustomerImage) -> Unit,
+    onDelete: (FileItem) -> Unit,
+    onSetPrimary: (FileItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isDetailsExpanded by remember { mutableStateOf(false) }
@@ -127,7 +122,7 @@ fun CustomerImageViewer(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ImageViewerHeader(
-    image: CustomerImage,
+    image: FileItem,
     onClose: () -> Unit,
     onDelete: () -> Unit,
     onSetPrimary: () -> Unit,
@@ -214,7 +209,7 @@ private fun ImageViewerHeader(
 
 @Composable
 private fun ImageContent(
-    image: CustomerImage,
+    image: FileItem,
     modifier: Modifier = Modifier
 ) {
     var scale by remember { mutableStateOf(1f) }
@@ -230,20 +225,23 @@ private fun ImageContent(
     }
 
     val imageModel = when {
-        !image.localPath.isNullOrBlank() -> {
+        (image.uploadStatus == FileUploadStatus.PENDING || image.uploadStatus == FileUploadStatus.UPLOADING) && !image.localPath.isNullOrBlank() -> {
             val filePath = "file://${image.localPath}"
             CustomerLogger.d("CustomerImageViewer", "Using local file: $filePath")
             filePath
         }
-        !image.imageUrl.isNullOrBlank() -> {
-            val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.imageUrl)
-            CustomerLogger.d("CustomerImageViewer", "Loading image URL: ${image.imageUrl} -> $completeUrl")
-            completeUrl
+        image.imageUrl.isNotBlank() -> {
+            CustomerLogger.d("CustomerImageViewer", "Loading image URL: ${image.imageUrl}")
+            image.imageUrl
         }
-        !image.thumbnailUrl.isNullOrBlank() -> {
-            val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.thumbnailUrl)
-            CustomerLogger.d("CustomerImageViewer", "Loading thumbnail URL: ${image.thumbnailUrl} -> $completeUrl")
-            completeUrl
+        image.thumbnailUrl.isNotBlank() -> {
+            CustomerLogger.d("CustomerImageViewer", "Loading thumbnail URL: ${image.thumbnailUrl}")
+            image.thumbnailUrl
+        }
+        !image.localPath.isNullOrBlank() -> {
+            val filePath = "file://${image.localPath}"
+            CustomerLogger.d("CustomerImageViewer", "Using local file fallback: $filePath")
+            filePath
         }
         else -> {
             CustomerLogger.d("CustomerImageViewer", "No image available for ${image.uid}")
@@ -333,7 +331,7 @@ private fun ImageContent(
 
 @Composable
 private fun ImageDetailsExpandable(
-    image: CustomerImage,
+    image: FileItem,
     isExpanded: Boolean,
     onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier
@@ -382,19 +380,16 @@ private fun ImageDetailsExpandable(
 
 @Composable
 private fun ImageDetails(
-    image: CustomerImage,
+    image: FileItem,
     modifier: Modifier = Modifier
 ) {
     val labelFileName = stringResource(Res.string.customer_image_detail_filename)
     val labelFileSize = stringResource(Res.string.customer_image_detail_filesize)
     val labelContentType = stringResource(Res.string.customer_image_detail_content_type)
-    val labelDescription = stringResource(Res.string.customer_image_detail_description)
     val labelStatus = stringResource(Res.string.customer_image_detail_status)
     val labelServerUrl = stringResource(Res.string.customer_image_detail_server_url)
     val labelThumbnail = stringResource(Res.string.customer_image_detail_thumbnail)
     val labelLocalCopy = stringResource(Res.string.customer_image_detail_local_copy)
-    val labelCreated = stringResource(Res.string.customer_image_detail_created)
-    val labelUpdated = stringResource(Res.string.customer_image_detail_updated)
     val statusPending = stringResource(Res.string.customer_image_status_pending)
     val statusUploading = stringResource(Res.string.customer_image_status_uploading)
     val statusCompleted = stringResource(Res.string.customer_image_status_completed)
@@ -410,36 +405,25 @@ private fun ImageDetails(
         DetailRow(label = labelFileSize, value = formatFileSize(image.fileSize))
         DetailRow(label = labelContentType, value = image.contentType)
 
-        if (!image.description.isNullOrBlank()) {
-            DetailRow(label = labelDescription, value = image.description)
-        }
-
         DetailRow(
             label = labelStatus,
             value = when (image.uploadStatus) {
-                CustomerImageStatus.PENDING -> statusPending
-                CustomerImageStatus.UPLOADING -> statusUploading
-                CustomerImageStatus.COMPLETED -> statusCompleted
-                CustomerImageStatus.FAILED -> statusFailed
+                FileUploadStatus.PENDING -> statusPending
+                FileUploadStatus.UPLOADING -> statusUploading
+                FileUploadStatus.COMPLETED -> statusCompleted
+                FileUploadStatus.FAILED -> statusFailed
                 else -> statusUnknown
             }
         )
 
-        if (!image.imageUrl.isNullOrBlank()) {
+        if (image.imageUrl.isNotBlank()) {
             DetailRow(label = labelServerUrl, value = valueAvailable, isUrl = true)
         }
-        if (!image.thumbnailUrl.isNullOrBlank()) {
+        if (image.thumbnailUrl.isNotBlank()) {
             DetailRow(label = labelThumbnail, value = valueAvailable, isUrl = true)
         }
         if (!image.localPath.isNullOrBlank()) {
             DetailRow(label = labelLocalCopy, value = valueAvailable, isUrl = true)
-        }
-
-        image.createdAt?.let { createdAt ->
-            DetailRow(label = labelCreated, value = DateTimeFormatter.formatTimestamp(createdAt))
-        }
-        image.updatedAt?.let { updatedAt ->
-            DetailRow(label = labelUpdated, value = DateTimeFormatter.formatTimestamp(updatedAt))
         }
     }
 }

@@ -2,7 +2,7 @@ package com.ampairs.form.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.form.domain.EntityConfigSchema
@@ -41,7 +41,7 @@ class FormConfigViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(entityType: String): FormConfigViewModel
     }

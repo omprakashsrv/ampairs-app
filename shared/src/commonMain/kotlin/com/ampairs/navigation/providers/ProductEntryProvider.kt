@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.product.catalog.CatalogFormScreen
 import com.ampairs.product.catalog.ProductCatalogListScreen
 import com.ampairs.product.catalog.ProductCatalogType
 import com.ampairs.product.ui.create.ProductFormScreen
@@ -35,6 +36,8 @@ fun productEntryProvider(
         ProductCatalogListScreen(
             catalogType = ProductCatalogType.GROUPS,
             title = "Product Groups",
+            onItemClick = { id -> backStack.add(ProductRoute.CatalogItemForm("GROUPS", id)) },
+            onCreateItem = { backStack.add(ProductRoute.CatalogItemForm("GROUPS")) },
         )
     }
 
@@ -100,6 +103,8 @@ fun productEntryProvider(
         ProductCatalogListScreen(
             catalogType = ProductCatalogType.BRANDS,
             title = "Brands",
+            onItemClick = { id -> backStack.add(ProductRoute.CatalogItemForm("BRANDS", id)) },
+            onCreateItem = { backStack.add(ProductRoute.CatalogItemForm("BRANDS")) },
         )
     }
 
@@ -107,6 +112,8 @@ fun productEntryProvider(
         ProductCatalogListScreen(
             catalogType = ProductCatalogType.CATEGORIES,
             title = "Categories",
+            onItemClick = { id -> backStack.add(ProductRoute.CatalogItemForm("CATEGORIES", id)) },
+            onCreateItem = { backStack.add(ProductRoute.CatalogItemForm("CATEGORIES")) },
         )
     }
 
@@ -114,7 +121,20 @@ fun productEntryProvider(
         ProductCatalogListScreen(
             catalogType = ProductCatalogType.SUB_CATEGORIES,
             title = "Sub-categories",
+            onItemClick = { id -> backStack.add(ProductRoute.CatalogItemForm("SUB_CATEGORIES", id)) },
+            onCreateItem = { backStack.add(ProductRoute.CatalogItemForm("SUB_CATEGORIES")) },
         )
+    }
+
+    is ProductRoute.CatalogItemForm -> {
+        val type = ProductCatalogType.valueOf(key.catalogType)
+        NavEntry(key) {
+            CatalogFormScreen(
+                catalogType = type,
+                itemId = key.itemId,
+                onSaveSuccess = { backStack.removeLastOrNull() },
+            )
+        }
     }
 
     is ProductRoute.ProductDetails -> NavEntry(key) {

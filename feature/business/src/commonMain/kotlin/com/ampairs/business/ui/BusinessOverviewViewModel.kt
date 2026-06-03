@@ -6,12 +6,13 @@ import com.ampairs.business.data.api.BusinessApi
 import com.ampairs.business.data.repository.BusinessRepository
 import com.ampairs.business.domain.BusinessOverview
 import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.form.data.repository.ConfigLookup
 import com.ampairs.form.domain.EntityType
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +27,7 @@ import kotlin.time.ExperimentalTime
  * ViewModel for Business Overview Screen.
  * Manages loading and displaying business overview dashboard.
  */
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class BusinessOverviewViewModel(

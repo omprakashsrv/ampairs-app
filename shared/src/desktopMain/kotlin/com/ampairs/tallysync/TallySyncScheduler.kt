@@ -1,7 +1,7 @@
 package com.ampairs.tallysync
 
 import co.touchlab.kermit.Logger
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import dev.zacsweers.metro.Inject
@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.minutes
 private val log = Logger.withTag("TallySyncScheduler")
 
 @Inject
-@SingleIn(AppScope::class)
+@SingleIn(WorkspaceScope::class)
 class TallySyncScheduler(
     val syncService: TallySyncService,
     val centralSyncService: CentralSyncService,

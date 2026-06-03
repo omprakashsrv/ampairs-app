@@ -7,7 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.ampairs.product.db.entity.CategoryEntity
-import com.ampairs.product.db.model.CategoryModel
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CategoryDao {
@@ -15,9 +15,11 @@ interface CategoryDao {
     @Query("SELECT * FROM categoryEntity WHERE id = :id")
     suspend fun categoryById(id: String): CategoryEntity?
 
-    @Transaction
     @Query("SELECT * FROM categoryEntity ORDER BY name ASC, active DESC")
-    suspend fun getCategories(): List<CategoryModel>
+    suspend fun getCategories(): List<CategoryEntity>
+
+    @Query("SELECT * FROM categoryEntity ORDER BY name ASC, active DESC")
+    fun observeCategories(): Flow<List<CategoryEntity>>
 
     @Query("SELECT * FROM categoryEntity WHERE id IN (:ids) ORDER BY name ASC, active DESC")
     suspend fun getCategoriesByIds(ids: List<String>): List<CategoryEntity>
@@ -27,6 +29,9 @@ interface CategoryDao {
 
     @Query("SELECT * FROM categoryEntity WHERE active = 1 ORDER BY name ASC")
     suspend fun getActiveCategories(): List<CategoryEntity>
+
+    @Query("SELECT * FROM categoryEntity ORDER BY name ASC, active DESC")
+    suspend fun getAllCategoryEntities(): List<CategoryEntity>
 
     @Query("SELECT * FROM categoryEntity WHERE name LIKE '%' || :searchText || '%' ORDER BY name ASC")
     suspend fun getCategoriesByName(searchText: String): List<CategoryEntity>

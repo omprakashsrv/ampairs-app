@@ -45,9 +45,9 @@ kotlin {
                 implementation(libs.coil.core)
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network)
-                // FileKit for cross-platform file picking
-                implementation(libs.filekit.core)
-                implementation(libs.filekit.dialogs)
+                // File module for centralized file picking and upload
+                api(projects.feature.fileApi)
+                implementation(projects.feature.file)
             }
         }
         androidMain {
@@ -78,7 +78,6 @@ room {
 }
 
 dependencies {
-    add("kspCommonMainMetadata", libs.room.compiler)
     add("kspAndroid", libs.room.compiler)
     add("kspDesktop", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)

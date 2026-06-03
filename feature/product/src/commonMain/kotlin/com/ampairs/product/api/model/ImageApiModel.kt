@@ -10,4 +10,5 @@ data class ImageApiModel(
     @SerialName("name") val name: String = "",
     @SerialName("bucket") val bucket: String = "",
     @SerialName("object_key") val objectKey: String = "",
+    @SerialName("url") val url: String = "",
 )

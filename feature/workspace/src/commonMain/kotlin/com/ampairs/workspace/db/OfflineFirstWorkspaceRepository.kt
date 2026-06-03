@@ -13,6 +13,8 @@ import com.ampairs.workspace.domain.asDomainModel
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 /**
@@ -77,8 +79,15 @@ class OfflineFirstWorkspaceRepository(
         }
     }
 
-    fun observeWorkspaces(): Flow<List<Workspace>> =
-        workspaceDao.getAllWorkspaces().map { entities -> entities.map { it.asDomainModel() } }
+    fun observeWorkspaces(): Flow<List<Workspace>> = flow {
+        val userId = getCurrentUserId()
+        val source = if (userId != null) {
+            workspaceDao.getAllWorkspacesForUser(userId)
+        } else {
+            workspaceDao.getAllWorkspaces()
+        }
+        emitAll(source.map { entities -> entities.map { it.asDomainModel() } })
+    }
 
     suspend fun syncWorkspaces() {
         val currentUserId = getCurrentUserId() ?: return

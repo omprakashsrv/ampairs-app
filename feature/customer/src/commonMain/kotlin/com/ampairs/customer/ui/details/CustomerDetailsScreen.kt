@@ -69,7 +69,7 @@ import ampairsapp.feature.customer.generated.resources.customer_edit
 import ampairsapp.feature.customer.generated.resources.customer_delete
 import ampairsapp.feature.customer.generated.resources.customer_tab_details
 import ampairsapp.feature.customer.generated.resources.customer_tab_images
-import ampairsapp.feature.customer.generated.resources.customer_tab_overview
+import ampairsapp.feature.customer.generated.resources.customer_tab_details
 import ampairsapp.feature.customer.generated.resources.customer_section_basic
 import ampairsapp.feature.customer.generated.resources.customer_section_financial
 import ampairsapp.feature.customer.generated.resources.customer_section_address
@@ -221,24 +221,15 @@ private fun CustomerDetailsMobile(
     imagesReadOnly: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val tabs = buildList {
-        add(stringResource(Res.string.customer_tab_overview))
-        if (showImages) add(stringResource(Res.string.customer_tab_images))
-    }
     var selectedTab by remember { mutableStateOf(0) }
 
     Column(modifier = modifier) {
         CustomerHeroSection(customer = customer)
 
-        if (tabs.size > 1) {
+        if (showImages) {
             PrimaryTabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title) }
-                    )
-                }
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(Res.string.customer_tab_details)) })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(Res.string.customer_tab_images)) })
             }
         }
 
@@ -266,14 +257,8 @@ private fun CustomerDetailsExpanded(
     onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tabs = buildList {
-        add(stringResource(Res.string.customer_tab_overview))
-        if (showImages) add(stringResource(Res.string.customer_tab_images))
-    }
-    var selectedTab by remember { mutableStateOf(0) }
-
     Row(modifier = modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Left panel: hero + stats
+        // Left panel: summary + edit button
         OutlinedCard(modifier = Modifier.width(280.dp).fillMaxHeight()) {
             Column(
                 modifier = Modifier
@@ -350,31 +335,20 @@ private fun CustomerDetailsExpanded(
             }
         }
 
-        // Right panel: tabs
-        OutlinedCard(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                if (tabs.size > 1) {
-                    PrimaryTabRow(selectedTabIndex = selectedTab) {
-                        tabs.forEachIndexed { index, title ->
-                            Tab(
-                                selected = selectedTab == index,
-                                onClick = { selectedTab = index },
-                                text = { Text(title) }
-                            )
-                        }
-                    }
-                }
-                when (selectedTab) {
-                    0 -> CustomerOverviewTab(customer = customer, modifier = Modifier.fillMaxSize())
-                    1 -> if (showImages) {
-                        CustomerImageManagementScreen(
-                            customerId = customer.uid,
-                            readOnly = imagesReadOnly,
-                            viewModel = assistedMetroViewModel<CustomerImageViewModel, CustomerImageViewModel.Factory> { create(customer.uid) },
-                            modifier = Modifier.fillMaxSize().padding(16.dp)
-                        )
-                    }
-                }
+        // Details panel
+        OutlinedCard(modifier = Modifier.weight(if (showImages) 0.6f else 1f).fillMaxHeight()) {
+            CustomerOverviewTab(customer = customer, modifier = Modifier.fillMaxSize())
+        }
+
+        // Images panel (no tabs on desktop)
+        if (showImages) {
+            OutlinedCard(modifier = Modifier.weight(0.4f).fillMaxHeight()) {
+                CustomerImageManagementScreen(
+                    customerId = customer.uid,
+                    readOnly = imagesReadOnly,
+                    viewModel = assistedMetroViewModel<CustomerImageViewModel, CustomerImageViewModel.Factory> { create(customer.uid) },
+                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                )
             }
         }
     }

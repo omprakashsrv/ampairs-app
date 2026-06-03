@@ -8,19 +8,14 @@ import com.ampairs.business.domain.BusinessImage
 import com.ampairs.business.domain.BusinessImageType
 import com.ampairs.business.domain.UpdateBusinessImageRequest
 import com.ampairs.common.ApiUrlBuilder
-import io.github.vinceglb.filekit.FileKit
-import io.github.vinceglb.filekit.dialogs.FileKitType
-import io.github.vinceglb.filekit.dialogs.openFilePicker
-import io.github.vinceglb.filekit.name
-import io.github.vinceglb.filekit.readBytes
-import io.github.vinceglb.filekit.size
+import com.ampairs.file.picker.FilePicker
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -55,18 +50,13 @@ data class BusinessImagesUiState(
  * ViewModel for Business Images management.
  * Handles logo and gallery image operations.
  */
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class BusinessImagesViewModel(
-    private val businessApi: BusinessApi
+    private val businessApi: BusinessApi,
+    private val filePicker: FilePicker,
 ) : ViewModel() {
-
-    companion object {
-        private val SUPPORTED_IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "webp")
-        private const val MAX_LOGO_SIZE = 10 * 1024 * 1024L // 10MB for logo
-        private const val MAX_IMAGE_SIZE = 10 * 1024 * 1024L // 10MB for gallery images
-    }
 
     private val _uiState = MutableStateFlow(BusinessImagesUiState())
     val uiState: StateFlow<BusinessImagesUiState> = _uiState.asStateFlow()
@@ -123,83 +113,39 @@ class BusinessImagesViewModel(
 
     // ==================== Logo Operations ====================
 
-    /**
-     * Pick and upload logo in one action using FileKit
-     */
     @OptIn(ExperimentalTime::class)
     fun pickAndUploadLogo() {
         viewModelScope.launch {
-            try {
-                val file = FileKit.openFilePicker(
-                    type = FileKitType.Image
-                )
-
-                if (file == null) {
-                    return@launch
+            val result = filePicker.pickSingleImage() ?: return@launch
+            _uiState.update { it.copy(
+                selectedLogoBytes = result.imageData,
+                selectedLogoFileName = result.fileName,
+                selectedLogoContentType = result.contentType,
+                isUploadingLogo = true,
+                error = null,
+            )}
+            businessApi.uploadLogo(result.imageData, result.fileName, result.contentType)
+                .onSuccess { business ->
+                    val hasLogo = !business.logoUrl.isNullOrBlank()
+                    val cacheBuster = Clock.System.now().toEpochMilliseconds()
+                    _uiState.update { it.copy(
+                        business = business,
+                        logoUrl = if (hasLogo) ApiUrlBuilder.businessLogoUrl() else null,
+                        logoThumbnailUrl = if (hasLogo) ApiUrlBuilder.businessLogoThumbnailUrl() else null,
+                        logoCacheBuster = cacheBuster,
+                        isUploadingLogo = false,
+                        selectedLogoBytes = null,
+                        selectedLogoFileName = null,
+                        selectedLogoContentType = null,
+                        successMessage = "Logo uploaded successfully",
+                    )}
                 }
-
-                val fileName = file.name
-                val fileSize = file.size()
-
-                // Validate file extension
-                val extension = fileName.substringAfterLast(".", "").lowercase()
-                if (extension !in SUPPORTED_IMAGE_EXTENSIONS) {
-                    _uiState.update { it.copy(error = "Unsupported file type. Please select JPG, PNG, or WebP.") }
-                    return@launch
+                .onFailure { error ->
+                    _uiState.update { it.copy(
+                        isUploadingLogo = false,
+                        error = error.message ?: "Failed to upload logo",
+                    )}
                 }
-
-                // Validate file size
-                if (fileSize > MAX_LOGO_SIZE) {
-                    _uiState.update { it.copy(error = "Image too large. Maximum size is 10MB.") }
-                    return@launch
-                }
-
-                val bytes = file.readBytes()
-                val contentType = when (extension) {
-                    "png" -> "image/png"
-                    "webp" -> "image/webp"
-                    else -> "image/jpeg"
-                }
-
-                // Set and upload immediately
-                _uiState.update { it.copy(
-                    selectedLogoBytes = bytes,
-                    selectedLogoFileName = fileName,
-                    selectedLogoContentType = contentType,
-                    isUploadingLogo = true,
-                    error = null
-                )}
-
-                // Upload
-                businessApi.uploadLogo(bytes, fileName, contentType)
-                    .onSuccess { business ->
-                        val hasLogo = !business.logoUrl.isNullOrBlank()
-                        val cacheBuster = Clock.System.now().toEpochMilliseconds()
-                        _uiState.update { it.copy(
-                            business = business,
-                            logoUrl = if (hasLogo) ApiUrlBuilder.businessLogoUrl() else null,
-                            logoThumbnailUrl = if (hasLogo) ApiUrlBuilder.businessLogoThumbnailUrl() else null,
-                            logoCacheBuster = cacheBuster,
-                            isUploadingLogo = false,
-                            selectedLogoBytes = null,
-                            selectedLogoFileName = null,
-                            selectedLogoContentType = null,
-                            successMessage = "Logo uploaded successfully"
-                        )}
-                    }
-                    .onFailure { error ->
-                        _uiState.update { it.copy(
-                            isUploadingLogo = false,
-                            error = error.message ?: "Failed to upload logo"
-                        )}
-                    }
-
-            } catch (e: Exception) {
-                _uiState.update { it.copy(
-                    isUploadingLogo = false,
-                    error = e.message ?: "Failed to pick image"
-                )}
-            }
         }
     }
 
@@ -291,96 +237,50 @@ class BusinessImagesViewModel(
 
     // ==================== Gallery Image Operations ====================
 
-    /**
-     * Pick and upload gallery image in one action using FileKit
-     */
     fun pickAndUploadImage(
         imageType: BusinessImageType = BusinessImageType.GALLERY,
         title: String? = null,
-        description: String? = null
+        description: String? = null,
     ) {
         viewModelScope.launch {
-            try {
-                val file = FileKit.openFilePicker(
-                    type = FileKitType.Image
-                )
-
-                if (file == null) {
-                    return@launch
-                }
-
-                val fileName = file.name
-                val fileSize = file.size()
-
-                // Validate file extension
-                val extension = fileName.substringAfterLast(".", "").lowercase()
-                if (extension !in SUPPORTED_IMAGE_EXTENSIONS) {
-                    _uiState.update { it.copy(error = "Unsupported file type. Please select JPG, PNG, or WebP.") }
-                    return@launch
-                }
-
-                // Validate file size
-                if (fileSize > MAX_IMAGE_SIZE) {
-                    _uiState.update { it.copy(error = "Image too large. Maximum size is 10MB.") }
-                    return@launch
-                }
-
-                // Check max images limit
-                if (_uiState.value.images.size >= 20) {
-                    _uiState.update { it.copy(error = "Maximum 20 images allowed.") }
-                    return@launch
-                }
-
-                val bytes = file.readBytes()
-                val contentType = when (extension) {
-                    "png" -> "image/png"
-                    "webp" -> "image/webp"
-                    else -> "image/jpeg"
-                }
-
-                // Set uploading state
-                _uiState.update { it.copy(
-                    selectedImageBytes = bytes,
-                    selectedImageFileName = fileName,
-                    selectedImageContentType = contentType,
-                    isUploadingImage = true,
-                    error = null
-                )}
-
-                // Upload
-                businessApi.uploadImage(
-                    imageData = bytes,
-                    fileName = fileName,
-                    contentType = contentType,
-                    imageType = imageType,
-                    title = title,
-                    description = description
-                )
-                    .onSuccess { newImage ->
-                        _uiState.update { state ->
-                            state.copy(
-                                images = state.images + newImage,
-                                isUploadingImage = false,
-                                selectedImageBytes = null,
-                                selectedImageFileName = null,
-                                selectedImageContentType = null,
-                                successMessage = "Image uploaded successfully"
-                            )
-                        }
-                    }
-                    .onFailure { error ->
-                        _uiState.update { it.copy(
-                            isUploadingImage = false,
-                            error = error.message ?: "Failed to upload image"
-                        )}
-                    }
-
-            } catch (e: Exception) {
-                _uiState.update { it.copy(
-                    isUploadingImage = false,
-                    error = e.message ?: "Failed to pick image"
-                )}
+            if (_uiState.value.images.size >= 20) {
+                _uiState.update { it.copy(error = "Maximum 20 images allowed.") }
+                return@launch
             }
+            val result = filePicker.pickSingleImage() ?: return@launch
+            _uiState.update { it.copy(
+                selectedImageBytes = result.imageData,
+                selectedImageFileName = result.fileName,
+                selectedImageContentType = result.contentType,
+                isUploadingImage = true,
+                error = null,
+            )}
+            businessApi.uploadImage(
+                imageData = result.imageData,
+                fileName = result.fileName,
+                contentType = result.contentType,
+                imageType = imageType,
+                title = title,
+                description = description,
+            )
+                .onSuccess { newImage ->
+                    _uiState.update { state ->
+                        state.copy(
+                            images = state.images + newImage,
+                            isUploadingImage = false,
+                            selectedImageBytes = null,
+                            selectedImageFileName = null,
+                            selectedImageContentType = null,
+                            successMessage = "Image uploaded successfully",
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(
+                        isUploadingImage = false,
+                        error = error.message ?: "Failed to upload image",
+                    )}
+                }
         }
     }
 

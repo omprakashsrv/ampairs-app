@@ -1,5 +1,6 @@
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -20,7 +21,9 @@ import com.ampairs.workspace.navigation.DynamicModulesMenu
 import coil3.compose.setSingletonImageLoaderFactory
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.DesktopAppGraph
+import com.ampairs.di.DesktopWorkspaceModule
 import com.ampairs.tallysync.TallySettingsScreen
+import com.ampairs.tallysync.TallySyncScheduler
 import dev.zacsweers.metro.createGraphFactory
 
 fun main() = application {
@@ -89,11 +92,15 @@ private fun ApplicationScope.TallyWindow(
     onCloseRequest = state::close, title = state.title,
     onKeyEvent = { false }
 ) {
-    TallySettingsScreen(
-        workspaceSlug = workspaceSlug,
-        scheduler = appGraph.tallySyncScheduler,
-        dataStore = appGraph.appPreferences,
-    )
+    val session by appGraph.workspaceManager.session.collectAsState()
+    val scheduler = (session?.graph as? DesktopWorkspaceModule)?.tallySyncScheduler
+    if (scheduler != null) {
+        TallySettingsScreen(
+            workspaceSlug = workspaceSlug,
+            scheduler = scheduler,
+            dataStore = appGraph.appPreferences,
+        )
+    }
 }
 
 @Composable
@@ -133,13 +140,15 @@ private fun ApplicationScope.MainWindow(
             },
             onWorkspaceEntered = { workspaceSlug ->
                 onWorkspaceSlugChanged(workspaceSlug)
-                appGraph.centralSyncService.start(workspaceSlug)
-                appGraph.tallySyncScheduler.start(workspaceSlug)
+                // centralSyncService is started by WorkspaceManager.activateWorkspace()
+                val scheduler = (appGraph.workspaceManager.session.value?.graph as? DesktopWorkspaceModule)?.tallySyncScheduler
+                scheduler?.start(workspaceSlug)
             },
             onWorkspaceLeft = {
                 onWorkspaceSlugChanged("")
-                appGraph.tallySyncScheduler.stop()
-                appGraph.centralSyncService.stop()
+                // centralSyncService is stopped by WorkspaceManager.clearSession()
+                val scheduler = (appGraph.workspaceManager.session.value?.graph as? DesktopWorkspaceModule)?.tallySyncScheduler
+                scheduler?.stop()
             }
         )
 

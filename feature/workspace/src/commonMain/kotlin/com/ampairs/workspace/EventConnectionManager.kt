@@ -33,7 +33,6 @@ class EventConnectionManager(
         workspaceId: String,
         userId: String,
         deviceId: String,
-        scope: CoroutineScope,
     ) {
         disconnect()
 

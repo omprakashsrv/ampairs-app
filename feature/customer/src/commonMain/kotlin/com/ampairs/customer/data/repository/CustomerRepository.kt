@@ -5,7 +5,6 @@ import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.db.CustomerDao
-import com.ampairs.customer.data.db.CustomerImageDao
 import com.ampairs.customer.data.db.toDomain
 import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.Customer
@@ -33,7 +32,6 @@ class CustomerRepository(
     private val customerDao: CustomerDao,
     private val customerApi: CustomerApi,
     private val appPreferences: AppPreferencesDataStore,
-    private val customerImageDao: CustomerImageDao
 ) : CustomerDataService, CacheCleanable {
     // Event listener job for cleanup
     private var eventListenerJob: Job? = null
@@ -119,21 +117,7 @@ class CustomerRepository(
 
     fun observeCustomers(): Flow<List<CustomerListItem>> {
         return customerDao.getAllCustomers()
-            .map { entities ->
-                if (entities.isEmpty()) {
-                    emptyList()
-                } else {
-                    // Fetch only primary images for customers in the current list
-                    val customerIds = entities.map { it.id }
-                    val primaryImagesMap = customerImageDao.getPrimaryImagesForCustomers(customerIds)
-                        .associate { it.customerId to it.thumbnailUrl }
-
-                    entities.map { entity ->
-                        val thumbnailUrl = primaryImagesMap[entity.id]
-                         entity.toDomain().toListItem(thumbnailUrl)
-                    }
-                }
-            }
+            .map { entities -> entities.map { entity -> entity.toDomain().toListItem() } }
     }
 
     fun observeCustomer(customerId: String): Flow<Customer?> {
@@ -143,21 +127,7 @@ class CustomerRepository(
 
     fun searchCustomers(query: String): Flow<List<CustomerListItem>> {
         return customerDao.searchCustomers(query)
-            .map { entities ->
-                if (entities.isEmpty()) {
-                    emptyList()
-                } else {
-                    // Fetch only primary images for customers in the search results
-                    val customerIds = entities.map { it.id }
-                    val primaryImagesMap = customerImageDao.getPrimaryImagesForCustomers(customerIds)
-                        .associate { it.customerId to it.thumbnailUrl }
-
-                    entities.map { entity ->
-                        val thumbnailUrl = primaryImagesMap[entity.id]
-                        entity.toDomain().toListItem(thumbnailUrl)
-                    }
-                }
-            }
+            .map { entities -> entities.map { entity -> entity.toDomain().toListItem() } }
     }
 
     suspend fun getCustomer(customerId: String): Customer? {

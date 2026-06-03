@@ -16,4 +16,6 @@ abstract class BusinessDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object BusinessDatabaseConstructor : RoomDatabaseConstructor<BusinessDatabase>
+expect object BusinessDatabaseConstructor : RoomDatabaseConstructor<BusinessDatabase> {
+    override fun initialize(): BusinessDatabase
+}

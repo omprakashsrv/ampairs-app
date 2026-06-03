@@ -1,48 +1,28 @@
 package com.ampairs.common.database
 
-import androidx.room.Room
+import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import com.ampairs.common.workspace.WorkspaceContext
 import kotlinx.coroutines.CoroutineDispatcher
 
-/**
- * Factory for creating workspace-aware Room databases.
- * Each workspace gets its own isolated database files.
- */
 class WorkspaceAwareDatabaseFactory(
     val databasePathProvider: DatabasePathProvider,
     val queryDispatcher: CoroutineDispatcher
-) {
+)
 
-    /**
-     * Create a workspace-aware Room database
-     * @param moduleName The module name (e.g., "customer", "product")
-     * @param workspaceSlug Optional workspace slug. If not provided, uses current workspace context
-     * @param migrations List of database migrations to apply
-     * @return Room database builder configured for the workspace
-     */
-    inline fun <reified T : androidx.room.RoomDatabase> createDatabase(
-        klass: kotlin.reflect.KClass<T>,
-        moduleName: String,
-        workspaceSlug: String? = null,
-        migrations: List<Migration> = emptyList()
-    ): T {
-        val slug = workspaceSlug ?: WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
-        val dbPath = databasePathProvider.getWorkspaceDatabasePath(slug, moduleName)
-
-        return createDatabaseInternal<T>(dbPath, migrations)
-    }
-
-    inline fun <reified T : androidx.room.RoomDatabase> createDatabaseInternal(
-        dbPath: String,
-        migrations: List<Migration> = emptyList()
-    ): T {
-        return createPlatformDatabase<T>(dbPath, migrations)
-    }
+/**
+ * Create a fresh Room database for the given workspace, bypassing any DSM caching.
+ * Use this in Metro @SingleIn(WorkspaceScope::class) providers — Metro is the cache.
+ */
+inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.createDatabase(
+    moduleName: String,
+    workspaceSlug: String,
+    migrations: List<Migration> = emptyList()
+): T {
+    val dbPath = databasePathProvider.getWorkspaceDatabasePath(workspaceSlug, moduleName)
+    return createPlatformDatabase(dbPath, migrations)
 }
 
-expect inline fun <reified T : androidx.room.RoomDatabase> WorkspaceAwareDatabaseFactory.createPlatformDatabase(
+expect inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.createPlatformDatabase(
     dbPath: String,
     migrations: List<Migration> = emptyList()
 ): T

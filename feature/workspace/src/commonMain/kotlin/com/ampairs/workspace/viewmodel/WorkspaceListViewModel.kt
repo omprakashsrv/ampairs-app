@@ -9,22 +9,22 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserDataService
 import com.ampairs.auth.api.UserWorkspaceRepository
-import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreManager
-import com.ampairs.common.database.DatabaseScopeManager
-import com.ampairs.workspace.EventConnectionManager
+import com.ampairs.common.workspace.WorkspaceActivator
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.UserInvitationRepository
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.ui.WorkspaceListState
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -34,6 +34,7 @@ sealed interface WorkspaceListEvent {
     data class NavigateToModules(val workspaceId: String, val workspaceSlug: String) : WorkspaceListEvent
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @ContributesIntoMap(AppScope::class)
 @ViewModelKey
 @Inject
@@ -43,8 +44,7 @@ class WorkspaceListViewModel(
     private val tokenRepository: TokenRepository,
     private val userDataService: UserDataService,
     private val invitationRepository: UserInvitationRepository,
-    private val deviceService: DeviceService,
-    private val eventConnectionManager: EventConnectionManager,
+    private val workspaceActivator: WorkspaceActivator,
     private val appPreferences: AppPreferencesDataStore,
 ) : ViewModel() {
 
@@ -53,6 +53,8 @@ class WorkspaceListViewModel(
 
     private val _events = Channel<WorkspaceListEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
+
+    private val _searchQuery = MutableStateFlow("")
 
     init {
         loadUserData()
@@ -76,7 +78,11 @@ class WorkspaceListViewModel(
 
     private fun observeWorkspaces() {
         _state.value = _state.value.copy(isLoading = true)
-        workspaceRepository.observeWorkspaces()
+        _searchQuery
+            .flatMapLatest { query ->
+                if (query.isEmpty()) workspaceRepository.observeWorkspaces()
+                else workspaceRepository.searchWorkspaces(query)
+            }
             .onEach { workspaces ->
                 _state.value = _state.value.copy(
                     workspaces = workspaces,
@@ -135,38 +141,27 @@ class WorkspaceListViewModel(
 
             val previousSlug = WorkspaceContextManager.getInstance().currentWorkspace.value?.slug
             if (previousSlug != null && previousSlug != workspace.slug) {
-                DatabaseScopeManager.getInstance().clearWorkspaceDatabases(previousSlug)
                 DataStoreManager.clearDataStoresForWorkspace(previousSlug)
             }
 
             userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspaceId)
             appPreferences.setLastWorkspaceId(workspaceId)
-            WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
+            // Immediately refresh the in-memory token-repo cache so that the Ktor
+            // defaultRequest plugin sends the correct X-Workspace-ID header for
+            // every API call that follows (including syncFromRemote in new VMs).
+            tokenRepository.getWorkspaceId()
 
-            val deviceId = deviceService.getDeviceId()
-            eventConnectionManager.connectToWorkspace(
-                workspaceId = workspaceId,
-                userId = currentUserId,
-                deviceId = deviceId,
-                scope = viewModelScope
-            )
+            // Activate Metro workspace graph FIRST (tears down old graph, creates new one),
+            // then update the legacy global singleton so both systems reflect the same workspace.
+            workspaceActivator.activateWorkspace(workspaceId, workspace.slug, currentUserId)
+            WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
 
             GlobalNavigationManager.getInstance().onWorkspaceSelected()
             _events.send(WorkspaceListEvent.NavigateToModules(workspaceId, workspace.slug))
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        eventConnectionManager.disconnect()
-    }
-
-    fun loadWorkspaces() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isRefreshing = true, error = null)
-            syncWorkspaces()
-        }
-    }
+    fun loadWorkspaces() = refreshWorkspaces()
 
     fun refreshWorkspaces() {
         viewModelScope.launch {
@@ -177,23 +172,7 @@ class WorkspaceListViewModel(
 
     fun searchWorkspaces(query: String) {
         _state.value = _state.value.copy(searchQuery = query)
-        viewModelScope.launch {
-            workspaceRepository.searchWorkspaces(query)
-                .onEach { workspaces ->
-                    _state.value = _state.value.copy(
-                        workspaces = workspaces,
-                        isLoading = false,
-                        error = null
-                    )
-                }
-                .catch { e ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        error = e.message ?: "Failed to search workspaces"
-                    )
-                }
-                .launchIn(viewModelScope)
-        }
+        _searchQuery.value = query
     }
 
     fun clearError() {
@@ -204,10 +183,6 @@ class WorkspaceListViewModel(
         viewModelScope.launch {
             tokenRepository.clearTokens()
         }
-    }
-
-    fun loadCachedWorkspaces() {
-        // No-op: observeWorkspaces() already observes the local DB reactively
     }
 
     fun refreshInvitations() {

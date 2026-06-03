@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.inventory.domain.Inventory
@@ -29,7 +29,7 @@ class InventoryViewModel(@Assisted val id: String?, private val inventoryReposit
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(id: String?): InventoryViewModel
     }

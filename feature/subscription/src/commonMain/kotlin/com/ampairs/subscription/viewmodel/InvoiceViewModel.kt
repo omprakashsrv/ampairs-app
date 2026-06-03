@@ -6,7 +6,7 @@ import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.domain.model.InvoiceSummary
 import com.ampairs.subscription.domain.model.PaymentLinkResponse
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.subscription.repository.InvoiceRepository
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.ContributesIntoMap
@@ -19,7 +19,7 @@ import kotlin.time.Clock
 /**
  * ViewModel for invoice operations
  */
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 @OptIn(kotlin.time.ExperimentalTime::class)

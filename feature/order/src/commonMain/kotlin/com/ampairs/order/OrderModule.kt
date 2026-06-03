@@ -1,13 +1,13 @@
 package com.ampairs.order
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.order.db.OrderRoomDatabase
 import com.ampairs.order.db.dao.OrderDao
 import com.ampairs.order.db.dao.OrderItemDao
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface OrderDaoModule {
     companion object {
         @Provides

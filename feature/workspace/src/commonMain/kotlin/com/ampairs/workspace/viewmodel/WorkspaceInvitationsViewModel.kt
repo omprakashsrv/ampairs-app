@@ -15,6 +15,7 @@ import com.ampairs.workspace.db.OfflineFirstWorkspaceInvitationRepository
 import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
 import com.ampairs.workspace.domain.InvitationAcceptanceResult
 import com.ampairs.workspace.domain.WorkspaceInvitation
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -394,6 +395,7 @@ class WorkspaceInvitationsViewModel(
 /**
  * UI state for workspace invitations screen
  */
+@Immutable
 data class WorkspaceInvitationsState(
     val invitations: List<WorkspaceInvitation> = emptyList(),
     val isLoading: Boolean = false,

@@ -7,7 +7,7 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.ModuleDetailResponse
@@ -27,7 +27,7 @@ class WorkspaceModulesViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(workspaceId: String?): WorkspaceModulesViewModel
     }
@@ -45,8 +45,8 @@ class WorkspaceModulesViewModel(
             moduleRepository.observeAllModules(wsId)
                 .onEach {
                     _isLoading.value = false
-                    val installedModules = it.filter { m -> m.isInstalled }.map { m -> m.toApiModel() }
-                    globalNavigationManager.updateInstalledModules(installedModules)
+                    val installedModules = it.filter { m -> m.isInstalled }.map { m -> m.toApiModel(wsId) }
+                    globalNavigationManager.updateInstalledModules(installedModules, fromWorkspaceId = wsId)
                 }
                 .catch { e ->
                     _isLoading.value = false
@@ -59,12 +59,15 @@ class WorkspaceModulesViewModel(
         ?: MutableStateFlow(emptyList())
 
     val activeModules: StateFlow<List<InstalledModule>> = allModules
-        .map { modules -> modules.filter { it.isInstalled && it.enabled && it.status == "ACTIVE" }.map { it.toApiModel() } }
+        .map { modules ->
+            modules.filter { it.isInstalled && it.enabled && it.status == "ACTIVE" }
+                .map { it.toApiModel(workspaceId ?: "") }
+        }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // Legacy: kept for WorkspaceModulesScreen which uses InstalledModule
     val installedModules: StateFlow<List<InstalledModule>> = allModules
-        .map { modules -> modules.filter { it.isInstalled }.map { it.toApiModel() } }
+        .map { modules -> modules.filter { it.isInstalled }.map { it.toApiModel(workspaceId ?: "") } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun loadInstalledModules() {
@@ -198,9 +201,9 @@ class WorkspaceModulesViewModel(
     }
 }
 
-private fun WorkspaceModule.toApiModel(): InstalledModule = InstalledModule(
+private fun WorkspaceModule.toApiModel(workspaceId: String): InstalledModule = InstalledModule(
     id = installedId ?: moduleCode,
-    workspaceId = "",
+    workspaceId = workspaceId,
     moduleCode = moduleCode,
     name = name,
     category = category,

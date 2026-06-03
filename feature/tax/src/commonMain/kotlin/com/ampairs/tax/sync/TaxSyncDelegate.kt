@@ -1,6 +1,6 @@
 package com.ampairs.tax.sync
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
@@ -10,7 +10,7 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.TAX)
 class TaxSyncDelegate(
     private val taxCodeRepository: TaxCodeRepository,

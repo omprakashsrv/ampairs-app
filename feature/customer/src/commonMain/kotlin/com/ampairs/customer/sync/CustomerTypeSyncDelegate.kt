@@ -1,6 +1,6 @@
 package com.ampairs.customer.sync
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
@@ -10,7 +10,7 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.CUSTOMER_TYPE)
 class CustomerTypeSyncDelegate(
     private val customerTypeRepository: CustomerTypeRepository,
