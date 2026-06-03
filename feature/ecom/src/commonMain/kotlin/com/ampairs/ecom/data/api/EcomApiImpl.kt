@@ -26,7 +26,8 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.request.delete
+import io.ktor.client.request.request
+import io.ktor.http.HttpMethod
 import io.ktor.http.isSuccess
 
 @Inject
@@ -128,7 +129,10 @@ class EcomApiImpl(
 
     override suspend fun deleteAddress(addressId: String): Result<Unit> = try {
         // DELETE returns 204 No Content — check status directly rather than parsing an empty body.
-        val response = client.delete(ApiUrlBuilder.ecomUrl("account/addresses/$addressId"))
+        // (Use request{} with an explicit method to avoid an empty-body deserialization failure.)
+        val response = client.request(ApiUrlBuilder.ecomUrl("account/addresses/$addressId")) {
+            method = HttpMethod.Delete
+        }
         if (response.status.isSuccess()) Result.success(Unit)
         else Result.failure(Exception("HTTP ${response.status.value}: ${response.status.description}"))
     } catch (e: Exception) {
