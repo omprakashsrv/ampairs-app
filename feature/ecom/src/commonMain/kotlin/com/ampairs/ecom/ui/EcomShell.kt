@@ -49,7 +49,9 @@ fun EcomShell(
     onLogin: () -> Unit,
     onLoggedOut: () -> Unit,
 ) {
-    var tab by rememberSaveable { mutableStateOf(EcomTab.Shop) }
+    // Persist the selected tab as a saveable Int index (enums aren't reliably saveable on CMP).
+    var tabIndex by rememberSaveable { mutableStateOf(0) }
+    val tab = EcomTab.entries[tabIndex]
     val snackbar = remember { SnackbarHostState() }
 
     Scaffold(
@@ -58,19 +60,19 @@ fun EcomShell(
             NavigationBar {
                 NavigationBarItem(
                     selected = tab == EcomTab.Shop,
-                    onClick = { tab = EcomTab.Shop },
+                    onClick = { tabIndex = 0 },
                     icon = { Icon(Icons.Filled.Storefront, contentDescription = null) },
                     label = { Text(stringResource(Res.string.ecom_tab_shop)) },
                 )
                 NavigationBarItem(
                     selected = tab == EcomTab.Orders,
-                    onClick = { tab = EcomTab.Orders },
+                    onClick = { tabIndex = 1 },
                     icon = { Icon(Icons.Filled.Receipt, contentDescription = null) },
                     label = { Text(stringResource(Res.string.ecom_tab_orders)) },
                 )
                 NavigationBarItem(
                     selected = tab == EcomTab.Account,
-                    onClick = { tab = EcomTab.Account },
+                    onClick = { tabIndex = 2 },
                     icon = { Icon(Icons.Filled.Person, contentDescription = null) },
                     label = { Text(stringResource(Res.string.ecom_tab_account)) },
                 )
@@ -89,7 +91,7 @@ fun EcomShell(
                 )
                 EcomTab.Orders -> OrdersListScreen(onOpenOrder = onOpenOrder)
                 EcomTab.Account -> AccountScreen(
-                    onOpenOrders = { tab = EcomTab.Orders },
+                    onOpenOrders = { tabIndex = 1 },
                     onOpenAddresses = onOpenAddresses,
                     onLogin = onLogin,
                     onLoggedOut = onLoggedOut,
