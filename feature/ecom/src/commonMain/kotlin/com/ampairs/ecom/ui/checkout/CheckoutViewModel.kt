@@ -91,7 +91,7 @@ class CheckoutViewModel(
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.ECOM_ADDRESS))
     }
 
-    fun selectAddress(addressId: String) = form.update { it.copy(selectedAddressId = addressId, touchedSelection = true) }
+    fun selectAddress(addressId: String) = form.update { it.copy(selectedAddressId = addressId) }
     fun setNotes(notes: String) = form.update { it.copy(notes = notes) }
 
     fun placeOrder() {

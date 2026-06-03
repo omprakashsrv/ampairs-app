@@ -11,7 +11,7 @@ import com.ampairs.ecom.domain.EcomLogger
 import com.ampairs.ecom.domain.EcomSession
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Catalog read model + cursor-based incremental sync (contract §3, §9).

@@ -11,7 +11,7 @@ import com.ampairs.ecom.data.db.entity.TaxonomyImageEntity
 import com.ampairs.ecom.domain.EcomLogger
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Bootstraps storefront branding + taxonomy and exposes them reactively from Room.
