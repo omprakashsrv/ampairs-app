@@ -20,10 +20,10 @@ import androidx.navigation3.runtime.NavKey
 import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_more
-import com.ampairs.common.ui.moduleCodeToDisplayName
-import com.ampairs.workspace.navigation.DynamicModuleRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -32,10 +32,12 @@ fun AppNavigationRail(
     currentRoute: NavKey?
 ) {
     val globalNavManager = remember { GlobalNavigationManager.getInstance() }
-    val navigationService by globalNavManager.navigationService.collectAsState()
-    val navigationRoutes by remember(navigationService) {
-        navigationService?.allActiveRoutes ?: MutableStateFlow(emptyList<DynamicModuleRoute>())
-    }.collectAsState()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val navigationRoutes by remember {
+        globalNavManager.navigationService.flatMapLatest { service ->
+            service?.allActiveRoutes ?: flowOf(emptyList())
+        }
+    }.collectAsState(initial = emptyList())
 
     val activeModuleCode = resolveActiveModuleCode(currentRoute)
 
