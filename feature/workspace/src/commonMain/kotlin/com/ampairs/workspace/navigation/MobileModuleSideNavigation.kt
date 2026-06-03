@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Mobile-style side navigation for module navigation
@@ -25,9 +26,9 @@ fun MobileModuleSideNavigation(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val navigationRoutes by navigationService.navigationRoutes.collectAsState()
-    val isLoading by navigationService.isLoading.collectAsState()
-    val error by navigationService.error.collectAsState()
+    val navigationRoutes by navigationService.navigationRoutes.collectAsStateWithLifecycle()
+    val isLoading by navigationService.isLoading.collectAsStateWithLifecycle()
+    val error by navigationService.error.collectAsStateWithLifecycle()
     var selectedRoute by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
@@ -83,7 +84,7 @@ fun MobileModuleSideNavigation(
             }
         } else {
             // Create grouped navigation with module names as groups
-            navigationRoutes.forEach { moduleRoute ->
+            navigationRoutes.forEachIndexed { index, moduleRoute ->
                 // Module group header
                 item {
                     Row(
@@ -138,7 +139,7 @@ fun MobileModuleSideNavigation(
                 }
 
                 // Add spacing between module groups
-                if (moduleRoute != navigationRoutes.last()) {
+                if (index < navigationRoutes.lastIndex) {
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
