@@ -14,13 +14,13 @@ import com.ampairs.common.model.UiState
 import com.ampairs.product.domain.Constants.Companion.PAGE_SIZE
 import com.ampairs.invoice.db.InvoiceRepository
 import kotlinx.coroutines.Dispatchers
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.launch
 
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class InvoicesViewModel(val invoiceRepository: InvoiceRepository) : ViewModel() {

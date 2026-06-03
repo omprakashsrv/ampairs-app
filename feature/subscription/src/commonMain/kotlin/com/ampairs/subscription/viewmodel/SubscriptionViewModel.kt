@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.DeviceService
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.feature.FeatureGate
 import com.ampairs.subscription.feature.LimitChecker
@@ -25,7 +25,7 @@ import kotlin.time.Clock
  * ViewModel for subscription management screens
  */
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @OptIn(kotlin.time.ExperimentalTime::class)
 class SubscriptionViewModel(

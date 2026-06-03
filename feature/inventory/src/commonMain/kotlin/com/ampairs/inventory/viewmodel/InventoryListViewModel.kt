@@ -13,13 +13,13 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.product.domain.Constants.Companion.PAGE_SIZE
 import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.inventory.domain.asDomainModel
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.map
 
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class InventoryListViewModel(val inventoryRepository: InventoryRepository) : ViewModel() {

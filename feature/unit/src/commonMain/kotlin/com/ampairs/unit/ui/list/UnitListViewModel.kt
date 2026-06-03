@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.unit.data.repository.UnitRepository
 import com.ampairs.unit.domain.model.Unit
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -29,7 +29,7 @@ data class UnitListUiState(
     val searchQuery: String = ""
 )
 
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class UnitListViewModel(

@@ -1,18 +1,17 @@
 package com.ampairs.customer.di
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.db.CustomerDao
 import com.ampairs.customer.data.db.CustomerTypeDao
 import com.ampairs.customer.data.db.CustomerGroupDao
-import com.ampairs.customer.data.db.CustomerImageDao
 import com.ampairs.customer.data.db.StateDao
 import com.ampairs.customer.data.repository.CustomerRepository
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface CustomerDaoModule {
     companion object {
         @Provides
@@ -23,9 +22,6 @@ interface CustomerDaoModule {
 
         @Provides
         fun provideCustomerGroupDao(db: CustomerDatabase): CustomerGroupDao = db.customerGroupDao()
-
-        @Provides
-        fun provideCustomerImageDao(db: CustomerDatabase): CustomerImageDao = db.customerImageDao()
 
         @Provides
         fun provideStateDao(db: CustomerDatabase): StateDao = db.stateDao()

@@ -2,13 +2,13 @@ package com.ampairs.workspace.navigation
 
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.ModuleMenuItem
-import com.ampairs.workspace.api.model.ModuleRouteInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 
@@ -53,17 +53,6 @@ class DynamicModuleNavigationService {
         }
         .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
 
-    // Unavailable modules (installed but not implemented locally)
-    val unavailableModules: StateFlow<List<DynamicModuleRoute>> = _installedModules
-        .map { modules ->
-            modules
-                .filter { it.status == "ACTIVE" && it.enabled }
-                .map { module -> mapToNavigationRoute(module) }
-                .filter { route -> !isModuleImplementationAvailable(route.moduleCode) }
-                .sortedBy { it.navigationIndex }
-        }
-        .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
-
     /**
      * Update the installed modules list (called from WorkspaceModulesViewModel)
      */
@@ -87,13 +76,21 @@ class DynamicModuleNavigationService {
     }
 
     /**
-     * Reset the service state when switching workspaces or logging out
-     * This clears the installed modules to prevent stale navigation data
+     * Reset the service state when switching workspaces or logging out.
+     * Call [close] to also cancel the service's coroutine scope when discarding this instance.
      */
     fun reset() {
         _installedModules.value = emptyList()
         _isLoading.value = false
         _error.value = null
+    }
+
+    /**
+     * Cancel the service's coroutine scope. Call this before discarding the instance to
+     * stop the stateIn collectors that would otherwise keep running on the old scope.
+     */
+    fun close() {
+        serviceScope.cancel()
     }
 
     /**

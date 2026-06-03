@@ -4,12 +4,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import com.ampairs.workspace.context.WorkspaceContextManager
-import com.ampairs.workspace.db.WorkspaceModuleRepository
 import com.ampairs.common.concurrency.Volatile
 import com.ampairs.common.concurrency.synchronized
 import kotlinx.coroutines.launch
@@ -45,16 +45,13 @@ class GlobalNavigationManager private constructor() {
         workspaceSelected && service != null
     }.stateIn(scope, SharingStarted.Eagerly, false)
 
+    // Cached per-platform constant — navigation pattern never changes at runtime
+    private val isOnMobilePlatform = PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.SIDE_DRAWER
+
     // State to determine when hamburger menu should be visible
-    val shouldShowHamburgerMenu: StateFlow<Boolean> = combine(
-        isNavigationAvailable,
-        // Only show on mobile platforms
-        navigationService
-    ) { navigationAvailable, service ->
-        navigationAvailable &&
-        service != null &&
-        PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.SIDE_DRAWER
-    }.stateIn(scope, SharingStarted.Eagerly, false)
+    val shouldShowHamburgerMenu: StateFlow<Boolean> = isNavigationAvailable
+        .map { available -> available && isOnMobilePlatform }
+        .stateIn(scope, SharingStarted.Eagerly, false)
 
     companion object {
         @Volatile
@@ -73,6 +70,7 @@ class GlobalNavigationManager private constructor() {
     fun onWorkspaceSelected() {
         val currentService = _navigationService.value
         currentService?.reset()
+        currentService?.close()
         _navigationService.value = DynamicModuleNavigationService()
     }
 
@@ -80,7 +78,9 @@ class GlobalNavigationManager private constructor() {
      * Called when workspace is cleared - destroys navigation service
      */
     fun onWorkspaceCleared() {
-        _navigationService.value?.reset()
+        val currentService = _navigationService.value
+        currentService?.reset()
+        currentService?.close()
         _navigationService.value = null
         _isLoadingModules.value = false
     }
@@ -93,9 +93,20 @@ class GlobalNavigationManager private constructor() {
     }
 
     /**
-     * Update the navigation service with loaded modules
+     * Update the navigation service with loaded modules.
+     *
+     * [fromWorkspaceId] should always be supplied. If it doesn't match the currently active
+     * workspace the update is a stale emission from a previous session's ViewModel and is dropped,
+     * preventing workspace-A modules from appearing in workspace-B's nav after a switch.
      */
-    fun updateInstalledModules(modules: List<com.ampairs.workspace.api.model.InstalledModule>) {
+    fun updateInstalledModules(
+        modules: List<com.ampairs.workspace.api.model.InstalledModule>,
+        fromWorkspaceId: String? = null,
+    ) {
+        if (fromWorkspaceId != null) {
+            val activeId = workspaceManager.getCurrentWorkspaceId()
+            if (activeId != null && activeId != fromWorkspaceId) return
+        }
         _navigationService.value?.updateInstalledModules(modules)
         _isLoadingModules.value = false
     }

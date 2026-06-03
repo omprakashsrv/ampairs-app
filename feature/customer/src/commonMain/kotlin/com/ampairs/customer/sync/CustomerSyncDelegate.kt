@@ -1,6 +1,6 @@
 package com.ampairs.customer.sync
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
@@ -11,7 +11,7 @@ import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.CUSTOMER)
 class CustomerSyncDelegate(
     private val customerRepository: CustomerRepository,

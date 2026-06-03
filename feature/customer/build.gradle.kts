@@ -26,6 +26,8 @@ kotlin {
         commonMain {
             dependencies {
                 api(projects.feature.customerApi)
+                api(projects.feature.fileApi)
+                api(projects.feature.file)
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
                 implementation(libs.kermit)
@@ -95,7 +97,6 @@ room {
 }
 
 dependencies {
-    add("kspCommonMainMetadata", libs.room.compiler)
     add("kspAndroid", libs.room.compiler)
     add("kspDesktop", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)

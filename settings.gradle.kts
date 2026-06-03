@@ -31,6 +31,8 @@ include(":data:sync")
 include(":data:event")
 include(":tally")
 include(
+    ":feature:file-api",
+    ":feature:file",
     ":feature:auth-api",
     ":feature:auth",
     ":feature:ecom-api",

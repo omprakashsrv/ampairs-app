@@ -20,4 +20,6 @@ abstract class FormDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object FormDatabaseConstructor : RoomDatabaseConstructor<FormDatabase>
+expect object FormDatabaseConstructor : RoomDatabaseConstructor<FormDatabase> {
+    override fun initialize(): FormDatabase
+}

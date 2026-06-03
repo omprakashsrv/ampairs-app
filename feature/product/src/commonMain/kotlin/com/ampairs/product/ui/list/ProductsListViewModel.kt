@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.domain.ProductListItem
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -32,7 +32,7 @@ data class ProductsListUiState(
     val error: String? = null
 )
 
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class ProductsListViewModel(

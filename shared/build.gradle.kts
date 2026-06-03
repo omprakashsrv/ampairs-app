@@ -129,6 +129,8 @@ kotlin {
                 api(projects.feature.order)
                 api(projects.feature.invoice)
                 api(projects.feature.workspace)
+                api(projects.feature.fileApi)
+                api(projects.feature.file)
 
                 implementation(libs.compose.runtime)
                 implementation(libs.compose.ui)
@@ -207,7 +209,6 @@ room {
 }
 
 dependencies {
-    add("kspCommonMainMetadata", libs.room.compiler)
     add("kspAndroid", libs.room.compiler)
     add("kspDesktop", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)

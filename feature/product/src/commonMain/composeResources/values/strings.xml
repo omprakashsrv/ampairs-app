@@ -190,4 +190,23 @@
     <string name="prod_catalog_empty">No items found</string>
     <string name="prod_catalog_active">Active</string>
     <string name="prod_catalog_inactive">Inactive</string>
+    <string name="prod_catalog_add_item">Add item</string>
+
+    <!-- Catalog form screen -->
+    <string name="prod_catalog_add_brand">New Brand</string>
+    <string name="prod_catalog_add_category">New Category</string>
+    <string name="prod_catalog_add_sub_category">New Sub-category</string>
+    <string name="prod_catalog_add_group">New Group</string>
+    <string name="prod_catalog_edit_brand">Edit Brand</string>
+    <string name="prod_catalog_edit_category">Edit Category</string>
+    <string name="prod_catalog_edit_sub_category">Edit Sub-category</string>
+    <string name="prod_catalog_edit_group">Edit Group</string>
+    <string name="prod_catalog_form_name_label">Name *</string>
+    <string name="prod_catalog_form_name_error">Name is required</string>
+    <string name="prod_catalog_form_active_label">Active</string>
+    <string name="prod_catalog_form_save">Save</string>
+    <string name="prod_catalog_form_saving">Saving…</string>
+    <string name="prod_catalog_form_image_label">Image</string>
+    <string name="prod_catalog_form_change_image">Change Image</string>
+    <string name="prod_catalog_form_remove_image">Remove image</string>
 </resources>

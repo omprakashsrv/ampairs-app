@@ -266,7 +266,7 @@ class TallySyncService(
         groupDao.getGroups().associate { it.name to it.id }
 
     private suspend fun buildCategoryNameIndex(): Map<String, String> =
-        categoryDao.getCategories().associate { it.category.name to it.category.id }
+        categoryDao.getCategories().associate { it.name to it.id }
 
     private suspend fun buildCustomerGroupNameIndex(): Map<String, String> =
         customerGroupDao.getAllCustomerGroups().first().associate { it.name to it.id }

@@ -17,6 +17,7 @@ import com.ampairs.workspace.db.WorkspaceMemberRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceMemberRepository
 import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
 import com.ampairs.workspace.domain.WorkspaceMember
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +41,7 @@ class MemberDetailsViewModel(
         fun create(workspaceId: String, memberId: String): MemberDetailsViewModel
     }
 
+    @Immutable
     data class MemberDetailsState(
         val isLoading: Boolean = false,
         val member: WorkspaceMember? = null,

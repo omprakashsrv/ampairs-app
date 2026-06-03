@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.data.repository.TaxConfigurationRepository
 import com.ampairs.tax.domain.model.TaxStrategy
 import com.ampairs.tax.domain.model.TaxCodeType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  * - Create/Update operations
  * - Validation
  */
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class TaxConfigurationViewModel(

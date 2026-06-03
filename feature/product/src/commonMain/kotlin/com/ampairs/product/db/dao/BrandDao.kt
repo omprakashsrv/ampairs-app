@@ -7,7 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.ampairs.product.db.entity.BrandEntity
-import com.ampairs.product.db.model.BrandModel
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BrandDao {
@@ -15,15 +15,20 @@ interface BrandDao {
     @Query("SELECT * FROM brandEntity WHERE id = :id")
     suspend fun brandById(id: String): BrandEntity?
 
-    @Transaction
     @Query("SELECT * FROM brandEntity ORDER BY name ASC, active DESC")
-    suspend fun getBrands(): List<BrandModel>
+    suspend fun getBrands(): List<BrandEntity>
+
+    @Query("SELECT * FROM brandEntity ORDER BY name ASC, active DESC")
+    fun observeBrands(): Flow<List<BrandEntity>>
 
     @Query("SELECT * FROM brandEntity WHERE synced = 0")
     suspend fun unSyncedBrands(): List<BrandEntity>
 
     @Query("SELECT * FROM brandEntity WHERE active = 1 ORDER BY name ASC")
     suspend fun getActiveBrands(): List<BrandEntity>
+
+    @Query("SELECT * FROM brandEntity ORDER BY name ASC, active DESC")
+    suspend fun getAllBrands(): List<BrandEntity>
 
     @Query("SELECT * FROM brandEntity WHERE name LIKE '%' || :searchText || '%' ORDER BY name ASC")
     suspend fun getBrandsByName(searchText: String): List<BrandEntity>

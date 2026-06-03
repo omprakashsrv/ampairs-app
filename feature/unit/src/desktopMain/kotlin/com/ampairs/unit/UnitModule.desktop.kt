@@ -1,24 +1,29 @@
 package com.ampairs.unit
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.database.createDatabase
+import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.unit.data.db.UnitDatabase
 import com.ampairs.unit.data.db.migrations.UNIT_MIGRATION_1_2
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
+import com.ampairs.common.workspace.WorkspaceClosableRegistry
 
-// Replaced Koin unitPlatformModule for Desktop.
-// UnitDatabase is provided without @SingleIn (workspace-aware factory).
-
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface UnitDesktopModule {
     companion object {
         @Provides
-        fun provideUnitDatabase(factory: WorkspaceAwareDatabaseFactory): UnitDatabase =
-            factory.createDatabase(
-                klass = UnitDatabase::class,
-                moduleName = "unit",
-                migrations = listOf(UNIT_MIGRATION_1_2)
-            )
+        @SingleIn(WorkspaceScope::class)
+        fun provideUnitDatabase(
+            factory: WorkspaceAwareDatabaseFactory,
+            config: WorkspaceConfig,
+            closableRegistry: WorkspaceClosableRegistry,
+        ): UnitDatabase = factory.createDatabase<UnitDatabase>(
+            moduleName = "unit",
+            workspaceSlug = config.workspaceSlug,
+            migrations = listOf(UNIT_MIGRATION_1_2),
+        ).also { closableRegistry.register { it.close() } }
     }
 }

@@ -3,6 +3,7 @@ package com.ampairs.product.data.api
 import com.ampairs.product.api.model.ProductGroupApiModel
 
 interface ProductCatalogApi {
+
     suspend fun getGroups(): Result<List<ProductGroupApiModel>>
     suspend fun createGroup(model: ProductGroupApiModel): Result<ProductGroupApiModel>
     suspend fun updateGroup(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel>

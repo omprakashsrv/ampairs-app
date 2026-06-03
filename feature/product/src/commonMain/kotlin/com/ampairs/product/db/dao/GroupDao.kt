@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.ampairs.product.db.entity.GroupEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface GroupDao {
@@ -16,6 +17,9 @@ interface GroupDao {
 
     @Query("SELECT * FROM groupEntity ORDER BY name ASC, active DESC")
     suspend fun getGroups(): List<GroupEntity>
+
+    @Query("SELECT * FROM groupEntity ORDER BY name ASC, active DESC")
+    fun observeGroups(): Flow<List<GroupEntity>>
 
     @Query("SELECT * FROM groupEntity WHERE synced = 0")
     suspend fun unSyncedGroups(): List<GroupEntity>

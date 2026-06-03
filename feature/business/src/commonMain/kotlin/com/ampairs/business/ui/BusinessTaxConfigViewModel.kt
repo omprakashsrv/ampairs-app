@@ -8,7 +8,7 @@ import com.ampairs.business.domain.TaxConfigurationUpdateRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
  * ViewModel for Business Tax Configuration Screen.
  * Manages loading, editing, and saving tax settings.
  */
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class BusinessTaxConfigViewModel(

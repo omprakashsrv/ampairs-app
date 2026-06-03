@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -39,11 +36,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import com.ampairs.product.ui.images.ProductImageManagementScreen
+import com.ampairs.product.ui.images.ProductImageViewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -115,6 +116,8 @@ import ampairsapp.feature.product.generated.resources.prod_sku_format
 import ampairsapp.feature.product.generated.resources.prod_load_error_title
 import ampairsapp.feature.product.generated.resources.prod_retry
 import ampairsapp.feature.product.generated.resources.prod_cancel
+import ampairsapp.feature.product.generated.resources.prod_form_tab_details
+import ampairsapp.feature.product.generated.resources.prod_form_tab_images
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,9 +169,9 @@ fun ProductDetailsScreen(
             uiState.product != null -> {
                 val product = uiState.product!!
                 if (isExpanded) {
-                    ProductDetailsExpanded(product = product, uiState = uiState, onManageVariants = onManageVariants, onEdit = { onEditProduct(productId) }, modifier = Modifier.fillMaxSize())
+                    ProductDetailsExpanded(product = product, uiState = uiState, primaryImageUrl = uiState.primaryImageUrl, onManageVariants = onManageVariants, onEdit = { onEditProduct(productId) }, modifier = Modifier.fillMaxSize())
                 } else {
-                    ProductDetailsMobile(product = product, uiState = uiState, onManageVariants = onManageVariants, modifier = Modifier.fillMaxSize())
+                    ProductDetailsMobile(product = product, uiState = uiState, primaryImageUrl = uiState.primaryImageUrl, onManageVariants = onManageVariants, modifier = Modifier.fillMaxSize())
                 }
             }
 
@@ -198,16 +201,33 @@ fun ProductDetailsScreen(
 private fun ProductDetailsMobile(
     product: Product,
     uiState: ProductDetailsUiState,
+    primaryImageUrl: String?,
     onManageVariants: ((String, String) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
-        ProductHeroSection(product = product)
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants)
+    var selectedTab by remember { mutableStateOf(0) }
+
+    Column(modifier = modifier) {
+        ProductHeroSection(product = product, primaryImageUrl = primaryImageUrl)
+
+        PrimaryTabRow(selectedTabIndex = selectedTab) {
+            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(Res.string.prod_form_tab_details)) })
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(Res.string.prod_form_tab_images)) })
+        }
+
+        when (selectedTab) {
+            0 -> Column(
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants, showInlineImages = false)
+            }
+            1 -> ProductImageManagementScreen(
+                productId = product.id,
+                readOnly = true,
+                viewModel = assistedMetroViewModel<ProductImageViewModel, ProductImageViewModel.Factory>(key = product.id) { create(product.id) },
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+            )
         }
     }
 }
@@ -218,6 +238,7 @@ private fun ProductDetailsMobile(
 private fun ProductDetailsExpanded(
     product: Product,
     uiState: ProductDetailsUiState,
+    primaryImageUrl: String?,
     onManageVariants: ((String, String) -> Unit)?,
     onEdit: () -> Unit,
     modifier: Modifier = Modifier
@@ -241,10 +262,9 @@ private fun ProductDetailsExpanded(
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                     contentAlignment = Alignment.Center
                 ) {
-                    val firstImage = product.images?.firstOrNull()
-                    if (firstImage?.image?.url?.isNotBlank() == true) {
+                    if (!primaryImageUrl.isNullOrBlank()) {
                         AsyncImage(
-                            model = firstImage.image.url,
+                            model = primaryImageUrl,
                             contentDescription = stringResource(Res.string.prod_list_cd_product_image),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -311,8 +331,8 @@ private fun ProductDetailsExpanded(
             }
         }
 
-        // Right panel
-        OutlinedCard(modifier = Modifier.weight(1f).fillMaxHeight()) {
+        // Details panel
+        OutlinedCard(modifier = Modifier.weight(0.6f).fillMaxHeight()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -320,8 +340,18 @@ private fun ProductDetailsExpanded(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants)
+                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants, showInlineImages = false)
             }
+        }
+
+        // Images panel (no tabs on desktop)
+        OutlinedCard(modifier = Modifier.weight(0.4f).fillMaxHeight()) {
+            ProductImageManagementScreen(
+                productId = product.id,
+                readOnly = true,
+                viewModel = assistedMetroViewModel<ProductImageViewModel, ProductImageViewModel.Factory>(key = product.id) { create(product.id) },
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+            )
         }
     }
 }
@@ -329,7 +359,7 @@ private fun ProductDetailsExpanded(
 // ─── Hero section (mobile) ────────────────────────────────────────────────────
 
 @Composable
-private fun ProductHeroSection(product: Product, modifier: Modifier = Modifier) {
+private fun ProductHeroSection(product: Product, primaryImageUrl: String?, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         modifier = modifier.fillMaxWidth()
@@ -346,10 +376,9 @@ private fun ProductHeroSection(product: Product, modifier: Modifier = Modifier) 
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center
             ) {
-                val firstImage = product.images?.firstOrNull()
-                if (firstImage?.image?.url?.isNotBlank() == true) {
+                if (!primaryImageUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = firstImage.image.url,
+                        model = primaryImageUrl,
                         contentDescription = stringResource(Res.string.prod_list_cd_product_image),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -419,10 +448,11 @@ private fun PriceStatCard(label: String, value: String, modifier: Modifier = Mod
 private fun ProductInfoContent(
     product: Product,
     uiState: ProductDetailsUiState,
-    onManageVariants: ((String, String) -> Unit)?
+    onManageVariants: ((String, String) -> Unit)?,
+    showInlineImages: Boolean = true,
 ) {
-    if (!product.images.isNullOrEmpty()) {
-        ProductImagesSection(product = product)
+    if (showInlineImages && !uiState.primaryImageUrl.isNullOrBlank()) {
+        ProductImagesSection(primaryImageUrl = uiState.primaryImageUrl!!)
     }
 
     if (!product.active || product.isLowStock) {
@@ -486,23 +516,20 @@ private fun ProductInfoContent(
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 @Composable
-private fun ProductImagesSection(product: Product, modifier: Modifier = Modifier) {
+private fun ProductImagesSection(primaryImageUrl: String, modifier: Modifier = Modifier) {
     OutlinedCard(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(text = stringResource(Res.string.prod_section_images), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
-                items(product.images ?: emptyList()) { productImage ->
-                    Box(
-                        modifier = Modifier.size(100.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (productImage.image.url?.isNotBlank() == true) {
-                            AsyncImage(model = productImage.image.url, contentDescription = stringResource(Res.string.prod_list_cd_product_image), modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                        } else {
-                            Icon(Icons.Default.Category, contentDescription = null, modifier = Modifier.size(36.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
+            Box(
+                modifier = Modifier.size(100.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = primaryImageUrl,
+                    contentDescription = stringResource(Res.string.prod_list_cd_product_image),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
             }
         }
     }

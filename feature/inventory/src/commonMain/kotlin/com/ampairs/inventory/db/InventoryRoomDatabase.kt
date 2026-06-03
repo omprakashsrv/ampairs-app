@@ -18,4 +18,6 @@ abstract class InventoryRoomDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object InventoryRoomDatabaseConstructor : RoomDatabaseConstructor<InventoryRoomDatabase>
+expect object InventoryRoomDatabaseConstructor : RoomDatabaseConstructor<InventoryRoomDatabase> {
+    override fun initialize(): InventoryRoomDatabase
+}

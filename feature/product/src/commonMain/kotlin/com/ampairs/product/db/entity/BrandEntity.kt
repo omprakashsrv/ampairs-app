@@ -15,7 +15,6 @@ data class BrandEntity(
     val seq_id: Long = 0,
     val id: String,
     val name: String,
-    val image_id: String? = null,
     val active: Int = 1,
     val soft_deleted: Int = 0,
     val synced: Int = 0

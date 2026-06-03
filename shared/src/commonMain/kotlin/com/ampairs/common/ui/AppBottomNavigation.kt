@@ -63,10 +63,11 @@ import com.ampairs.tax.ui.navigation.TaxCodeDetailRoute
 import com.ampairs.tax.ui.navigation.TaxCodeSearchRoute
 import com.ampairs.tax.ui.navigation.TaxConfigurationRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
-import com.ampairs.workspace.navigation.DynamicModuleRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.navigation.ModuleCodes
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import org.jetbrains.compose.resources.stringResource
 
 fun moduleCodeToRoute(code: String): NavKey? = when (code) {
@@ -151,10 +152,12 @@ fun AppBottomNavigation(
     currentRoute: NavKey?
 ) {
     val globalNavManager = remember { GlobalNavigationManager.getInstance() }
-    val navigationService by globalNavManager.navigationService.collectAsState()
-    val navigationRoutes by remember(navigationService) {
-        navigationService?.navigationRoutes ?: MutableStateFlow(emptyList<DynamicModuleRoute>())
-    }.collectAsState()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val navigationRoutes by remember {
+        globalNavManager.navigationService.flatMapLatest { service ->
+            service?.navigationRoutes ?: flowOf(emptyList())
+        }
+    }.collectAsState(initial = emptyList())
 
     val activeModuleCode = resolveActiveModuleCode(currentRoute)
     // Bottom nav shows Home + up to 3 modules (by navigationIndex) + More

@@ -198,6 +198,12 @@ sealed interface ProductRoute : NavKey {
 
     @Serializable
     data object SubCategories : ProductRoute
+
+    @Serializable
+    data class CatalogItemForm(
+        val catalogType: String = "",
+        val itemId: String? = null,
+    ) : ProductRoute
 }
 
 // Ecom storefront routes (customer-facing standalone surface)

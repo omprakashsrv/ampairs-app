@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.unit.data.repository.UnitRepository
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import dev.zacsweers.metro.Assisted
@@ -54,7 +54,7 @@ class UnitFormViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(unitId: String?): UnitFormViewModel
     }

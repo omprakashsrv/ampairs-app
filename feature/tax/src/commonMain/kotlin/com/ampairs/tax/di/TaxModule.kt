@@ -1,6 +1,7 @@
 package com.ampairs.tax.di
 
 import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.tax.calculation.ITaxCalculationStrategy
 import com.ampairs.tax.calculation.strategy.AustraliaGSTStrategy
 import com.ampairs.tax.calculation.strategy.CanadaGSTHSTStrategy
@@ -31,7 +32,7 @@ import dev.zacsweers.metro.SingleIn
 // - All ViewModels: @Inject
 // Platform DB providers are in TaxModule.android/ios/desktop.kt
 
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface TaxDaoModule {
     companion object {
         @Provides
@@ -54,11 +55,11 @@ interface TaxDaoModule {
     }
 }
 
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface TaxStrategyModule {
     companion object {
         @Provides
-        @SingleIn(AppScope::class)
+        @SingleIn(WorkspaceScope::class)
         fun provideTaxStrategiesMap(
             indiaGST: IndiaGSTStrategy,
             usaSalesTax: USASalesTaxStrategy,

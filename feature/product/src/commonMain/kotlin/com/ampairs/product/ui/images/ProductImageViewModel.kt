@@ -2,12 +2,13 @@ package com.ampairs.product.ui.images
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
-import com.ampairs.product.data.repository.ProductImageFilePicker
-import com.ampairs.product.data.repository.ProductImageRepository
+import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.file.api.FileEntityType
+import com.ampairs.file.api.FileItem
+import com.ampairs.file.api.FilePickerResult
+import com.ampairs.file.api.FileRepository
+import com.ampairs.file.picker.FilePicker
 import com.ampairs.product.util.ProductLogger
-import com.ampairs.product.domain.ProductUploadImage
-import com.ampairs.product.domain.ProductUploadImageListItem
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -28,42 +29,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ProductImageUploadData(
-    val fileName: String,
-    val fileSize: Long,
-    val contentType: String,
-    val imageData: ByteArray,
+    val pickerResult: FilePickerResult,
     val description: String = "",
     val isPrimary: Boolean = false,
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as ProductImageUploadData
-        if (fileName != other.fileName) return false
-        if (fileSize != other.fileSize) return false
-        if (contentType != other.contentType) return false
-        if (!imageData.contentEquals(other.imageData)) return false
-        if (description != other.description) return false
-        if (isPrimary != other.isPrimary) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = fileName.hashCode()
-        result = 31 * result + fileSize.hashCode()
-        result = 31 * result + contentType.hashCode()
-        result = 31 * result + imageData.contentHashCode()
-        result = 31 * result + description.hashCode()
-        result = 31 * result + isPrimary.hashCode()
-        return result
-    }
+    val fileName: String get() = pickerResult.fileName
+    val fileSize: Long get() = pickerResult.fileSize
+    val contentType: String get() = pickerResult.contentType
 }
 
 data class ProductImageUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val images: List<ProductUploadImageListItem> = emptyList(),
-    val selectedImage: ProductUploadImage? = null,
+    val images: List<FileItem> = emptyList(),
+    val selectedImage: FileItem? = null,
     val isUploading: Boolean = false,
     val error: String? = null,
     val showImageViewer: Boolean = false,
@@ -75,14 +54,14 @@ data class ProductImageUiState(
 @AssistedInject
 class ProductImageViewModel(
     @Assisted private val productId: String,
-    private val repository: ProductImageRepository,
-    private val imagePicker: ProductImageFilePicker,
+    private val fileRepository: FileRepository,
+    private val filePicker: FilePicker,
     private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(productId: String): ProductImageViewModel
     }
@@ -96,7 +75,11 @@ class ProductImageViewModel(
 
     init {
         loadImages()
-        syncService.observeEntity(SyncEntity.PRODUCT_IMAGE)
+        viewModelScope.launch {
+            fileRepository.pullFromServer(FileEntityType.PRODUCT, productId)
+                .onFailure { ProductLogger.w(TAG, "Initial image pull failed", it) }
+        }
+        syncService.observeEntity(SyncEntity.FILE)
             .onEach { state ->
                 _uiState.update {
                     it.copy(
@@ -106,14 +89,13 @@ class ProductImageViewModel(
                 }
             }
             .launchIn(viewModelScope)
-        syncService.emit(SyncEvent.TriggerPull(SyncEntity.PRODUCT_IMAGE))
     }
 
     fun loadImages() {
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, error = null) }
-                repository.observeProductImages(productId)
+                fileRepository.observeFiles(FileEntityType.PRODUCT, productId)
                     .catch { error ->
                         ProductLogger.e(TAG, "Failed to observe images", error)
                         _uiState.update {
@@ -121,7 +103,13 @@ class ProductImageViewModel(
                         }
                     }
                     .collect { images ->
-                        _uiState.update { it.copy(isLoading = false, images = images, error = null) }
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                images = images.sortedWith(compareByDescending<FileItem> { it.isPrimary }.thenBy { it.displayOrder }),
+                                error = null,
+                            )
+                        }
                     }
             } catch (e: Exception) {
                 ProductLogger.e(TAG, "Failed to load images", e)
@@ -141,16 +129,9 @@ class ProductImageViewModel(
     fun pickSingleImage() {
         viewModelScope.launch {
             try {
-                val pickerResult = imagePicker.pickImage()
+                val pickerResult = filePicker.pickSingleImage()
                 if (pickerResult != null) {
-                    showUploadDialog(
-                        ProductImageUploadData(
-                            fileName = pickerResult.fileName,
-                            fileSize = pickerResult.fileSize,
-                            contentType = pickerResult.contentType,
-                            imageData = pickerResult.imageData,
-                        )
-                    )
+                    showUploadDialog(ProductImageUploadData(pickerResult = pickerResult))
                 }
             } catch (e: Exception) {
                 ProductLogger.e(TAG, "Error picking image", e)
@@ -164,19 +145,16 @@ class ProductImageViewModel(
             try {
                 _uiState.update { it.copy(isUploading = true, error = null) }
 
-                val result = repository.saveImageLocally(
-                    productId = productId,
-                    fileName = uploadData.fileName,
-                    contentType = uploadData.contentType,
-                    fileSize = uploadData.fileSize,
-                    imageData = uploadData.imageData,
-                    description = uploadData.description.takeIf { it.isNotBlank() },
+                val result = fileRepository.saveLocally(
+                    entityType = FileEntityType.PRODUCT,
+                    entityUid = productId,
+                    result = uploadData.pickerResult,
                     isPrimary = uploadData.isPrimary,
                 )
 
                 result.fold(
                     onSuccess = {
-                        syncService.markPendingPush(SyncEntity.PRODUCT_IMAGE)
+                        syncService.markPendingPush(SyncEntity.FILE)
                         _uiState.update {
                             it.copy(isUploading = false, showUploadDialog = false, uploadData = null, error = null)
                         }
@@ -194,14 +172,9 @@ class ProductImageViewModel(
     }
 
     fun showImageViewer(uid: String) {
-        viewModelScope.launch {
-            try {
-                val image = repository.getProductImage(uid)
-                _uiState.update { it.copy(selectedImage = image, showImageViewer = true, error = null) }
-            } catch (e: Exception) {
-                ProductLogger.e(TAG, "Failed to load image details", e)
-                _uiState.update { it.copy(error = "Failed to load image: ${e.message}") }
-            }
+        val image = _uiState.value.images.find { it.uid == uid }
+        if (image != null) {
+            _uiState.update { it.copy(selectedImage = image, showImageViewer = true, error = null) }
         }
     }
 
@@ -212,10 +185,12 @@ class ProductImageViewModel(
     fun setPrimaryImage(uid: String) {
         viewModelScope.launch {
             try {
-                val result = repository.setPrimaryImage(uid)
+                val result = fileRepository.setPrimaryFile(FileEntityType.PRODUCT, productId, uid)
                 result.fold(
-                    onSuccess = { updatedImage ->
-                        _uiState.update { it.copy(selectedImage = updatedImage) }
+                    onSuccess = {
+                        syncService.markPendingPush(SyncEntity.FILE)
+                        val updated = _uiState.value.images.find { it.uid == uid }
+                        if (updated != null) _uiState.update { it.copy(selectedImage = updated.copy(isPrimary = true)) }
                     },
                     onFailure = { error ->
                         ProductLogger.e(TAG, "Failed to set primary image", error)
@@ -232,9 +207,10 @@ class ProductImageViewModel(
     fun deleteImage(uid: String) {
         viewModelScope.launch {
             try {
-                val result = repository.deleteImage(uid)
+                val result = fileRepository.deleteFile(uid)
                 result.fold(
                     onSuccess = {
+                        syncService.markPendingPush(SyncEntity.FILE)
                         if (_uiState.value.selectedImage?.uid == uid) hideImageViewer()
                     },
                     onFailure = { error ->
@@ -250,7 +226,16 @@ class ProductImageViewModel(
     }
 
     fun syncImages() {
-        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.PRODUCT_IMAGE))
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, syncError = false) }
+            fileRepository.pullFromServer(FileEntityType.PRODUCT, productId)
+                .onFailure {
+                    ProductLogger.e(TAG, "Image sync failed", it)
+                    _uiState.update { s -> s.copy(syncError = true) }
+                }
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+        syncService.emit(SyncEvent.TriggerPush(SyncEntity.FILE))
     }
 
     fun clearError() {

@@ -9,7 +9,7 @@ import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.domain.model.TaxRule
 import com.ampairs.workspace.context.WorkspaceContextManager
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -43,7 +43,7 @@ class TaxCodeDetailViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(taxCodeId: String): TaxCodeDetailViewModel
     }

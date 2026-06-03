@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateStore
 import com.ampairs.customer.domain.MasterState
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.workspace.context.WorkspaceContextManager
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -33,7 +33,7 @@ data class StateListUiState(
     val isLoadingImportStates: Boolean = false
 )
 
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class StateListViewModel(

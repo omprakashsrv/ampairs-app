@@ -13,12 +13,7 @@ import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.ui.WorkspaceCreateState
-import io.github.vinceglb.filekit.FileKit
-import io.github.vinceglb.filekit.dialogs.FileKitType
-import io.github.vinceglb.filekit.dialogs.openFilePicker
-import io.github.vinceglb.filekit.name
-import io.github.vinceglb.filekit.readBytes
-import io.github.vinceglb.filekit.size
+import com.ampairs.file.picker.FilePicker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -40,12 +35,8 @@ sealed interface WorkspaceCreateEvent {
 class WorkspaceCreateViewModel(
     private val workspaceRepository: WorkspaceRepository,
     private val workspaceApi: WorkspaceApi,
+    private val filePicker: FilePicker,
 ) : ViewModel() {
-
-    companion object {
-        private val SUPPORTED_IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "webp")
-        private const val MAX_FILE_SIZE = 5 * 1024 * 1024L // 5MB for avatars
-    }
 
     private val _state = MutableStateFlow(WorkspaceCreateState())
     val state: StateFlow<WorkspaceCreateState> = _state.asStateFlow()
@@ -411,57 +402,13 @@ class WorkspaceCreateViewModel(
 
     fun pickAvatar() {
         viewModelScope.launch {
-            try {
-                val file = FileKit.openFilePicker(
-                    type = FileKitType.Image
-                )
-
-                if (file == null) {
-                    return@launch
-                }
-
-                val fileName = file.name
-                val fileSize = file.size()
-
-                // Validate file extension
-                val extension = fileName.substringAfterLast(".", "").lowercase()
-                if (extension !in SUPPORTED_IMAGE_EXTENSIONS) {
-                    _state.value = _state.value.copy(
-                        avatarMessage = "Unsupported file type. Please select JPG, PNG, or WebP."
-                    )
-                    return@launch
-                }
-
-                // Validate file size
-                if (fileSize > MAX_FILE_SIZE) {
-                    _state.value = _state.value.copy(
-                        avatarMessage = "Image too large. Maximum size is 5MB."
-                    )
-                    return@launch
-                }
-
-                // Determine content type
-                val contentType = when (extension) {
-                    "jpg", "jpeg" -> "image/jpeg"
-                    "png" -> "image/png"
-                    "webp" -> "image/webp"
-                    else -> "image/*"
-                }
-
-                // Read file data
-                val imageData = file.readBytes()
-
-                _state.value = _state.value.copy(
-                    selectedAvatarData = imageData,
-                    selectedAvatarFileName = fileName,
-                    selectedAvatarContentType = contentType,
-                    avatarMessage = null
-                )
-            } catch (_: Exception) {
-                _state.value = _state.value.copy(
-                    avatarMessage = "Failed to select image"
-                )
-            }
+            val result = filePicker.pickSingleImage() ?: return@launch
+            _state.value = _state.value.copy(
+                selectedAvatarData = result.imageData,
+                selectedAvatarFileName = result.fileName,
+                selectedAvatarContentType = result.contentType,
+                avatarMessage = null,
+            )
         }
     }
 

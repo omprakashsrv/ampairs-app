@@ -6,7 +6,7 @@ import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.common.viewmodel.handleCancellation
 import com.ampairs.common.viewmodel.shouldShowAsError
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -26,7 +26,7 @@ data class CustomersListUiState(
     val error: String? = null
 )
 
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class CustomersListViewModel(

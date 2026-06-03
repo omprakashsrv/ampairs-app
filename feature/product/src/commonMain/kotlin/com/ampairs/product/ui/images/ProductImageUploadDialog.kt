@@ -78,9 +78,9 @@ fun ProductImageUploadDialog(
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary,
                             )
-                            FileInfoRow(label = "Name", value = uploadData.fileName)
-                            FileInfoRow(label = "Size", value = formatFileSize(uploadData.fileSize))
-                            FileInfoRow(label = "Type", value = uploadData.contentType)
+                            FileInfoRow(label = "Name", value = uploadData.pickerResult.fileName)
+                            FileInfoRow(label = "Size", value = formatFileSize(uploadData.pickerResult.fileSize))
+                            FileInfoRow(label = "Type", value = uploadData.pickerResult.contentType)
                         }
                     }
 

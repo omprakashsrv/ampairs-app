@@ -50,4 +50,6 @@ abstract class TaxRoomDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object TaxRoomDatabaseConstructor : RoomDatabaseConstructor<TaxRoomDatabase>
+expect object TaxRoomDatabaseConstructor : RoomDatabaseConstructor<TaxRoomDatabase> {
+    override fun initialize(): TaxRoomDatabase
+}

@@ -2,6 +2,9 @@ package com.ampairs.product.ui.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.file.api.FileEntityType
+import com.ampairs.file.api.FileRepository
+import com.ampairs.file.api.FileUploadStatus
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
@@ -9,7 +12,7 @@ import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.domain.Product
 import com.ampairs.unit.data.repository.UnitLookup
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -35,12 +38,14 @@ data class ProductDetailsUiState(
     val groupName: String = "",
     val subCategoryName: String = "",
     val baseUnitName: String = "",
+    val primaryImageUrl: String? = null,
 )
 
 @AssistedInject
 class ProductDetailsViewModel(
     @Assisted private val productId: String,
     private val productRepository: ProductRepository,
+    private val fileRepository: FileRepository,
     private val categoryDao: CategoryDao,
     private val brandDao: BrandDao,
     private val groupDao: GroupDao,
@@ -50,7 +55,7 @@ class ProductDetailsViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(productId: String): ProductDetailsViewModel
     }
@@ -60,6 +65,7 @@ class ProductDetailsViewModel(
 
     init {
         observeProduct()
+        observePrimaryImage()
     }
 
     private fun observeProduct() {
@@ -72,6 +78,22 @@ class ProductDetailsViewModel(
             .catch { e ->
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load product") }
             }
+            .launchIn(viewModelScope)
+    }
+
+    private fun observePrimaryImage() {
+        fileRepository.observePrimaryFile(FileEntityType.PRODUCT, productId)
+            .onEach { file ->
+                val url = when {
+                    file == null -> null
+                    file.uploadStatus == FileUploadStatus.PENDING || file.uploadStatus == FileUploadStatus.UPLOADING ->
+                        file.localPath?.let { "file://$it" }
+                    file.imageUrl.isNotBlank() -> file.imageUrl
+                    else -> null
+                }
+                _uiState.update { it.copy(primaryImageUrl = url) }
+            }
+            .catch { }
             .launchIn(viewModelScope)
     }
 

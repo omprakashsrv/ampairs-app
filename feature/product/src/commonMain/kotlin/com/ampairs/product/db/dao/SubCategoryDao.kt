@@ -7,7 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.ampairs.product.db.entity.SubCategoryEntity
-import com.ampairs.product.db.model.SubCategoryModel
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SubCategoryDao {
@@ -15,15 +15,20 @@ interface SubCategoryDao {
     @Query("SELECT * FROM subCategoryEntity WHERE id = :id")
     suspend fun subCategoryById(id: String): SubCategoryEntity?
 
-    @Transaction
     @Query("SELECT * FROM subCategoryEntity ORDER BY name ASC, active DESC")
-    suspend fun getSubCategories(): List<SubCategoryModel>
+    suspend fun getSubCategories(): List<SubCategoryEntity>
+
+    @Query("SELECT * FROM subCategoryEntity ORDER BY name ASC, active DESC")
+    fun observeSubCategories(): Flow<List<SubCategoryEntity>>
 
     @Query("SELECT * FROM subCategoryEntity WHERE synced = 0")
     suspend fun unSyncedSubCategories(): List<SubCategoryEntity>
 
     @Query("SELECT * FROM subCategoryEntity WHERE active = 1 ORDER BY name ASC")
     suspend fun getActiveSubCategories(): List<SubCategoryEntity>
+
+    @Query("SELECT * FROM subCategoryEntity ORDER BY name ASC, active DESC")
+    suspend fun getAllSubCategoryEntities(): List<SubCategoryEntity>
 
     @Query("SELECT * FROM subCategoryEntity WHERE name LIKE '%' || :searchText || '%' ORDER BY name ASC")
     suspend fun getSubCategoriesByName(searchText: String): List<SubCategoryEntity>

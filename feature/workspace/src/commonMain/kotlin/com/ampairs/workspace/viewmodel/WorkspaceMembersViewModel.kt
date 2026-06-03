@@ -13,6 +13,7 @@ import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.UserRoleResponse
 import com.ampairs.workspace.db.OfflineFirstWorkspaceMemberRepository
 import com.ampairs.workspace.domain.WorkspaceMember
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -194,6 +195,7 @@ class WorkspaceMembersViewModel(
     }
 }
 
+@Immutable
 data class WorkspaceMembersState(
     val members: List<WorkspaceMember> = emptyList(),
     val isLoading: Boolean = false,
