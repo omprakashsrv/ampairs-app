@@ -1,6 +1,6 @@
 package com.ampairs.ecom.sync
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.data.repository.AddressRepository
 import com.ampairs.ecom.data.repository.CatalogRepository
 import com.ampairs.ecom.data.repository.EcomOrderRepository
@@ -13,7 +13,7 @@ import dev.zacsweers.metro.Inject
 
 /** Catalog incremental sync (cursor-based, pull-only). */
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.ECOM_PRODUCT)
 class EcomCatalogSyncDelegate(
     private val catalogRepository: CatalogRepository,
@@ -33,7 +33,7 @@ class EcomCatalogSyncDelegate(
 
 /** Saved-address push/pull (offline-first CRUD). */
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.ECOM_ADDRESS)
 class EcomAddressSyncDelegate(
     private val addressRepository: AddressRepository,
@@ -57,7 +57,7 @@ class EcomAddressSyncDelegate(
 
 /** Order-history pull (orders are placed via checkout, never pushed). */
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.ECOM_ORDER)
 class EcomOrderSyncDelegate(
     private val orderRepository: EcomOrderRepository,

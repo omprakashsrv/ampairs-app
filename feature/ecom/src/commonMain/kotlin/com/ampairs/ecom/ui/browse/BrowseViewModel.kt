@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.browse
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.api.model.TaxonomyType
 import com.ampairs.ecom.data.db.entity.TaxonomyImageEntity
 import com.ampairs.ecom.data.repository.CartRepository
@@ -40,7 +40,7 @@ data class BrowseUiState(
 )
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 class BrowseViewModel(
     private val storefrontRepository: StorefrontRepository,

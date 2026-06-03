@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.checkout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.api.model.CheckoutRequest
 import com.ampairs.ecom.data.db.entity.CustomerAddressEntity
 import com.ampairs.ecom.data.repository.AddressRepository
@@ -44,7 +44,7 @@ sealed interface CheckoutEvent {
 }
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 class CheckoutViewModel(
     private val addressRepository: AddressRepository,

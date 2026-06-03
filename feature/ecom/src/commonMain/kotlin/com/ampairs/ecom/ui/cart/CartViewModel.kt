@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.cart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.data.db.entity.CartItemEntity
 import com.ampairs.ecom.data.repository.CartRepository
 import com.ampairs.ecom.domain.EcomSession
@@ -30,7 +30,7 @@ data class CartUiState(
 )
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 class CartViewModel(
     private val cartRepository: CartRepository,

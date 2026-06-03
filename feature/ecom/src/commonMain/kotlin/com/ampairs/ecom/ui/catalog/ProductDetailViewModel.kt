@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.catalog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.data.db.entity.ListedProductEntity
 import com.ampairs.ecom.data.repository.CartRepository
 import com.ampairs.ecom.data.repository.CatalogRepository
@@ -81,7 +81,7 @@ class ProductDetailViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(productId: String): ProductDetailViewModel
     }

@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.account
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.ecom.data.db.entity.CustomerAddressEntity
 import com.ampairs.ecom.data.repository.AddressRepository
@@ -33,7 +33,7 @@ data class AddressDraft(
 )
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 class AddressesViewModel(
     private val addressRepository: AddressRepository,

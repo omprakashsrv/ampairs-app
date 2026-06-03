@@ -3,7 +3,7 @@ package com.ampairs.ecom.ui.gate
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.api.model.AccessMode
 import com.ampairs.ecom.api.model.StoreAccessStatus
 import com.ampairs.ecom.api.model.StorefrontStatus
@@ -107,7 +107,7 @@ class StorefrontGateViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(slug: String): StorefrontGateViewModel
     }

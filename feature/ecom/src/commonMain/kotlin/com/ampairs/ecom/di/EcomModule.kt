@@ -1,6 +1,6 @@
 package com.ampairs.ecom.di
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.data.db.EcomRoomDatabase
 import com.ampairs.ecom.data.db.dao.AddressDao
 import com.ampairs.ecom.data.db.dao.CartDao
@@ -17,7 +17,7 @@ import dev.zacsweers.metro.Provides
  * platform (EcomModule.android/ios/desktop). Repositories, sync delegates, ViewModels are
  * auto-wired via their @Inject / @ContributesIntoMap annotations.
  */
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface EcomDaoModule {
     companion object {
         @Provides fun provideStorefrontDao(db: EcomRoomDatabase): StorefrontDao = db.storefrontDao()

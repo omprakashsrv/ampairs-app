@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.order
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.data.db.entity.EcomOrderEntity
 import com.ampairs.ecom.data.db.entity.EcomOrderLineItemEntity
 import com.ampairs.ecom.data.repository.EcomOrderRepository
@@ -57,7 +57,7 @@ class OrderTrackingViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(orderRef: String): OrderTrackingViewModel
     }

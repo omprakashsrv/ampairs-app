@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.order
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.data.db.entity.EcomOrderEntity
 import com.ampairs.ecom.data.repository.EcomOrderRepository
 import com.ampairs.ecom.domain.EcomSession
@@ -27,7 +27,7 @@ data class OrdersUiState(
 )
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 class OrdersViewModel(
     private val orderRepository: EcomOrderRepository,

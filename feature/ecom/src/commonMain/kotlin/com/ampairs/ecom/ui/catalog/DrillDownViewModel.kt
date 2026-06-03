@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.catalog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.api.model.TaxonomyType
 import com.ampairs.ecom.data.repository.CartRepository
 import com.ampairs.ecom.data.repository.CatalogRepository
@@ -119,7 +119,7 @@ class DrillDownViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(args: DrillDownArgs): DrillDownViewModel
     }
