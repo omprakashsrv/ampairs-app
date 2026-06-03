@@ -9,7 +9,7 @@ import com.ampairs.file.api.FileRepository
 import com.ampairs.file.api.FileUploadStatus
 import com.ampairs.file.picker.FilePicker
 import com.ampairs.customer.util.CustomerLogger
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -56,7 +56,7 @@ class CustomerImageViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(customerId: String): CustomerImageViewModel
     }

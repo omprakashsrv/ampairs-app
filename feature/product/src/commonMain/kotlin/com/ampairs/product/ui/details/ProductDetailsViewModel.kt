@@ -12,7 +12,7 @@ import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.domain.Product
 import com.ampairs.unit.data.repository.UnitLookup
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -55,7 +55,7 @@ class ProductDetailsViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(productId: String): ProductDetailsViewModel
     }

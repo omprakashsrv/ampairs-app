@@ -6,7 +6,7 @@ import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.customer.util.CustomerConstants
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import dev.zacsweers.metro.Assisted
@@ -42,7 +42,7 @@ class CustomerGroupFormViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(customerGroupId: String?): CustomerGroupFormViewModel
     }

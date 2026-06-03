@@ -1,12 +1,12 @@
 package com.ampairs.file
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.file.db.FileRoomDatabase
 import com.ampairs.file.db.dao.FileDao
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface FileModule {
     companion object {
         @Provides

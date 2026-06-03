@@ -7,7 +7,7 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.ModuleDetailResponse
@@ -27,7 +27,7 @@ class WorkspaceModulesViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(workspaceId: String?): WorkspaceModulesViewModel
     }

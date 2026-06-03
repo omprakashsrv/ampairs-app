@@ -9,7 +9,6 @@ val tallyPlatformModule: Module = module {
     single<TallyRoomDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
         factory.createDatabase(
-            klass = TallyRoomDatabase::class,
             moduleName = "tally"
         )
     }

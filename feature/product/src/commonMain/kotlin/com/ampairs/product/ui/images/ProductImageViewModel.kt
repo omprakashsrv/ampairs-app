@@ -2,7 +2,7 @@ package com.ampairs.product.ui.images
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.file.api.FileEntityType
 import com.ampairs.file.api.FileItem
 import com.ampairs.file.api.FilePickerResult
@@ -61,7 +61,7 @@ class ProductImageViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(productId: String): ProductImageViewModel
     }

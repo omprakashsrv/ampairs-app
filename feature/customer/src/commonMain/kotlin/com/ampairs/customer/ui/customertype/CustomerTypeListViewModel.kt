@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.customer.domain.CustomerType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -35,7 +35,7 @@ data class CustomerTypeListUiState(
     val isLoadingImportCustomerTypes: Boolean = false
 )
 
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class CustomerTypeListViewModel(

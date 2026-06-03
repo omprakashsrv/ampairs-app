@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.domain.Order
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +23,7 @@ class OrderViewViewModel(@Assisted val orderId: String, val orderRepository: Ord
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(orderId: String): OrderViewViewModel
     }

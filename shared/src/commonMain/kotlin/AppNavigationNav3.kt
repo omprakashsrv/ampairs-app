@@ -2,6 +2,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -10,6 +11,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -19,6 +21,7 @@ import com.ampairs.common.ui.GlobalAppLayoutNav3
 import com.ampairs.navigation.combinedEntryProvider
 import com.ampairs.navigation.createNav3SavedStateConfig
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
+import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.collectLatest
 
@@ -40,6 +43,7 @@ fun AppNavigationNav3(
 ) {
     val viewModel: AppNavigationViewModel = metroViewModel()
     val autoResumeState by viewModel.autoResumeState.collectAsState()
+    val workspaceSession by viewModel.workspaceSession.collectAsStateWithLifecycle()
 
     // Show loading while checking auto-resume
     if (autoResumeState == null) {
@@ -114,33 +118,42 @@ fun AppNavigationNav3(
             }
     }
 
+    val appFactory = LocalMetroViewModelFactory.current
+    val effectiveFactory = remember(workspaceSession) {
+        // WorkspaceGraph @GraphExtension inherits all parent (AppScope) bindings, so its factory
+        // already resolves both workspace-feature VMs and app/auth VMs.
+        workspaceSession?.graph?.metroViewModelFactory ?: appFactory
+    }
+
     // Global App Layout wraps NavDisplay - header is rendered ONCE here
-    GlobalAppLayoutNav3(
-        backStack = backStack
-    ) { globalPaddingValues ->
-        NavDisplay(
-            backStack = backStack,
-            onBack = { backStack.removeLastOrNull() },
-            entryDecorators = listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator()
-            ),
-            entryProvider = { key ->
-                combinedEntryProvider(
-                    key = key,
-                    backStack = backStack,
-                    onLoginSuccess = {
-                        backStack.clear()
-                        backStack.add(Route.Workspace)
-                    },
-                    onNavigationServiceReady = onNavigationServiceReady,
-                    sharedViewModelStoreOwner = authViewModelStoreOwner
-                )
-            },
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .padding(globalPaddingValues)
-        )
+    CompositionLocalProvider(LocalMetroViewModelFactory provides effectiveFactory) {
+        GlobalAppLayoutNav3(
+            backStack = backStack
+        ) { globalPaddingValues ->
+            NavDisplay(
+                backStack = backStack,
+                onBack = { backStack.removeLastOrNull() },
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator()
+                ),
+                entryProvider = { key ->
+                    combinedEntryProvider(
+                        key = key,
+                        backStack = backStack,
+                        onLoginSuccess = {
+                            backStack.clear()
+                            backStack.add(Route.Workspace)
+                        },
+                        onNavigationServiceReady = onNavigationServiceReady,
+                        sharedViewModelStoreOwner = authViewModelStoreOwner
+                    )
+                },
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(globalPaddingValues)
+            )
+        }
     }
 }
 

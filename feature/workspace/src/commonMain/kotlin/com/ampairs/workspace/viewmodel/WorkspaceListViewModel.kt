@@ -9,11 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserDataService
 import com.ampairs.auth.api.UserWorkspaceRepository
-import com.ampairs.common.DeviceService
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreManager
-import com.ampairs.common.database.DatabaseScopeManager
-import com.ampairs.workspace.EventConnectionManager
+import com.ampairs.common.workspace.WorkspaceActivator
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.UserInvitationRepository
@@ -46,8 +44,7 @@ class WorkspaceListViewModel(
     private val tokenRepository: TokenRepository,
     private val userDataService: UserDataService,
     private val invitationRepository: UserInvitationRepository,
-    private val deviceService: DeviceService,
-    private val eventConnectionManager: EventConnectionManager,
+    private val workspaceActivator: WorkspaceActivator,
     private val appPreferences: AppPreferencesDataStore,
 ) : ViewModel() {
 
@@ -144,20 +141,16 @@ class WorkspaceListViewModel(
 
             val previousSlug = WorkspaceContextManager.getInstance().currentWorkspace.value?.slug
             if (previousSlug != null && previousSlug != workspace.slug) {
-                DatabaseScopeManager.getInstance().clearWorkspaceDatabases(previousSlug)
                 DataStoreManager.clearDataStoresForWorkspace(previousSlug)
             }
 
             userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspaceId)
             appPreferences.setLastWorkspaceId(workspaceId)
-            WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
 
-            val deviceId = deviceService.getDeviceId()
-            eventConnectionManager.connectToWorkspace(
-                workspaceId = workspaceId,
-                userId = currentUserId,
-                deviceId = deviceId,
-            )
+            // Activate Metro workspace graph FIRST (tears down old graph, creates new one),
+            // then update the legacy global singleton so both systems reflect the same workspace.
+            workspaceActivator.activateWorkspace(workspaceId, workspace.slug, currentUserId)
+            WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
 
             GlobalNavigationManager.getInstance().onWorkspaceSelected()
             _events.send(WorkspaceListEvent.NavigateToModules(workspaceId, workspace.slug))

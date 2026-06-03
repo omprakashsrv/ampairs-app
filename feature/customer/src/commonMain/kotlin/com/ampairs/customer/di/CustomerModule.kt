@@ -1,6 +1,6 @@
 package com.ampairs.customer.di
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.db.CustomerDao
@@ -11,7 +11,7 @@ import com.ampairs.customer.data.repository.CustomerRepository
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface CustomerDaoModule {
     companion object {
         @Provides

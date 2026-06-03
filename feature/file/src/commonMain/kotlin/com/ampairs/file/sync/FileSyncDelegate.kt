@@ -1,6 +1,6 @@
 package com.ampairs.file.sync
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.file.domain.FileRepositoryImpl
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
@@ -10,7 +10,7 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.FILE)
 class FileSyncDelegate(
     private val repository: FileRepositoryImpl,

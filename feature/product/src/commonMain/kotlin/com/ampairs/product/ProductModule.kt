@@ -1,6 +1,6 @@
 package com.ampairs.product
 
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.db.ProductRoomDatabase
@@ -14,7 +14,7 @@ import com.ampairs.product.db.dao.VariantAttributeDao
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface ProductDaoModule {
     companion object {
         @Provides

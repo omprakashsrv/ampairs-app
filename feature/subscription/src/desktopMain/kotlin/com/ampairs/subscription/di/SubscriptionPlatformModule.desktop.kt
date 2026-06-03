@@ -1,27 +1,31 @@
 package com.ampairs.subscription.di
 
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.database.createDatabase
+import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.subscription.db.SubscriptionDatabase
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import java.net.InetAddress
 import java.net.NetworkInterface
 import java.util.prefs.Preferences
+import com.ampairs.common.workspace.WorkspaceClosableRegistry
 
-// Replaced Koin subscriptionPlatformModule (actual) for Desktop.
-// SubscriptionDatabase is provided without @SingleIn (workspace-aware factory).
-
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface SubscriptionDesktopModule {
     companion object {
         @Provides
+        @SingleIn(WorkspaceScope::class)
         fun provideSubscriptionDatabase(
-            factory: WorkspaceAwareDatabaseFactory
-        ): SubscriptionDatabase = factory.createDatabase(
-            klass = SubscriptionDatabase::class,
-            moduleName = "subscription"
-        )
+            factory: WorkspaceAwareDatabaseFactory,
+            config: WorkspaceConfig,
+            closableRegistry: WorkspaceClosableRegistry,
+        ): SubscriptionDatabase = factory.createDatabase<SubscriptionDatabase>(
+            moduleName = "subscription",
+            workspaceSlug = config.workspaceSlug,
+        ).also { closableRegistry.register { it.close() } }
     }
 }
 

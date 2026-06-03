@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.domain.Invoice
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -26,7 +26,7 @@ class InvoiceViewViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(invoiceId: String): InvoiceViewViewModel
     }

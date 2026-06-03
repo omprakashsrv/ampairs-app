@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.ampairs.common.di.AppScope
 import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
+import com.ampairs.sync.db.SyncStateDatabase
 import com.ampairs.sync.db.SyncStateEntity
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.concurrent.Volatile
 import kotlin.time.Clock
 
 private val log = Logger.withTag("CentralSyncService")
@@ -37,10 +39,13 @@ private val log = Logger.withTag("CentralSyncService")
  */
 @Inject
 @SingleIn(AppScope::class)
-class CentralSyncService(
-    private val delegates: Map<SyncEntity, SyncDelegate>,
-    private val dbFactory: SyncDatabaseFactory,
-) {
+class CentralSyncService {
+    @Volatile
+    private var delegates: Map<SyncEntity, SyncDelegate> = emptyMap()
+
+    fun setDelegates(newDelegates: Map<SyncEntity, SyncDelegate>) {
+        delegates = newDelegates
+    }
     private val _syncStates = MutableStateFlow<Map<SyncEntity, EntitySyncState>>(emptyMap())
     val syncStates: StateFlow<Map<SyncEntity, EntitySyncState>> = _syncStates.asStateFlow()
 
@@ -59,16 +64,15 @@ class CentralSyncService(
     // region — Lifecycle
 
     /**
-     * Must be called after workspace selection. Opens the sync-state DB for the workspace,
-     * restores persisted states, then kicks off pending syncs and event processing.
+     * Must be called after workspace selection with the workspace's SyncStateDatabase.
+     * Restores persisted states, then kicks off pending syncs and event processing.
      */
-    fun start(workspaceSlug: String) {
+    fun start(db: SyncStateDatabase) {
         stop() // clean up any prior session
 
         val newScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
         scope = newScope
 
-        val db = dbFactory.create(workspaceSlug)
         val syncDao = db.syncStateDao()
         dao = syncDao
 
@@ -98,7 +102,7 @@ class CentralSyncService(
                 }
         }
 
-        log.i { "Started for workspace: $workspaceSlug" }
+        log.i { "Started" }
     }
 
     /**
