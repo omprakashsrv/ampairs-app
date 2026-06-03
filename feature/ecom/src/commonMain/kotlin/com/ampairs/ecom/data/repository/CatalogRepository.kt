@@ -27,6 +27,16 @@ class CatalogRepository(
     fun observeVisible(storefrontId: String): Flow<List<ListedProductEntity>> =
         productDao.observeVisible(storefrontId)
 
+    fun observeProduct(productId: String): Flow<ListedProductEntity?> =
+        productDao.observeById(productId)
+
+    /** Refresh one product from the server (fresh stock) and cache it. */
+    suspend fun refreshProduct(slug: String, productId: String, storefrontId: String): Result<ListedProduct> {
+        val result = api.getProduct(slug, productId)
+        result.onSuccess { productDao.upsert(it.toEntity(storefrontId)) }
+        return result
+    }
+
     fun observeFiltered(
         storefrontId: String,
         category: String? = null,

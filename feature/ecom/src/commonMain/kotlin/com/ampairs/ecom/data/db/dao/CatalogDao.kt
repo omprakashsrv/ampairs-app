@@ -42,6 +42,12 @@ interface ListedProductDao {
     @Query("SELECT * FROM listed_product WHERE uid = :uid")
     suspend fun byId(uid: String): ListedProductEntity?
 
+    @Query("SELECT * FROM listed_product WHERE uid = :uid")
+    fun observeById(uid: String): Flow<ListedProductEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(product: ListedProductEntity)
+
     @Query("SELECT * FROM listed_product WHERE storefront_id = :storefrontId AND is_visible = 1 ORDER BY name ASC")
     fun observeVisible(storefrontId: String): Flow<List<ListedProductEntity>>
 
