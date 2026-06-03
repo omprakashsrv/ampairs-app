@@ -284,6 +284,90 @@ All feature dependencies reach screens via Metro-injected ViewModels.
 
 ---
 
+## 6. WorkspaceScope — Child Graph for Per-Workspace Isolation
+
+Each workspace gets its own isolated dependency graph. Workspace-aware modules contribute to `WorkspaceScope`, not `AppScope`.
+
+```kotlin
+// ✅ Workspace-aware database module (android platform)
+@ContributesTo(WorkspaceScope::class)   // NOT AppScope!
+interface FeatureAndroidModule {
+    companion object {
+        @Provides
+        @SingleIn(WorkspaceScope::class)   // one per workspace graph lifetime
+        fun provideFeatureDatabase(
+            factory: WorkspaceAwareDatabaseFactory,
+            context: Context,
+            config: WorkspaceConfig,
+            closableRegistry: WorkspaceClosableRegistry,
+        ): FeatureDatabase {
+            return factory.createAndroidDatabase<FeatureDatabase>(   // explicit reified type!
+                context = context,
+                queryDispatcher = Dispatchers.IO,
+                moduleName = "feature_name",
+                workspaceSlug = config.workspaceSlug,
+            ).also { closableRegistry.register { it.close() } }
+        }
+    }
+}
+
+// ✅ Workspace-aware ViewModel
+@ContributesIntoMap(WorkspaceScope::class)   // NOT AppScope!
+@ViewModelKey
+@Inject
+class BusinessOverviewViewModel(private val repo: BusinessRepository) : ViewModel()
+```
+
+### Reified type inference gotcha
+
+```kotlin
+// ❌ WRONG — Kotlin cannot infer T through .also { }
+factory.createAndroidDatabase(...).also { closableRegistry.register { it.close() } }
+
+// ✅ CORRECT — always write the explicit type param
+factory.createAndroidDatabase<FeatureDatabase>(...).also { closableRegistry.register { it.close() } }
+```
+
+### Workspace switch — ensuring fresh ViewModels
+
+In `AppNavigationNav3.kt`, wrapping `NavDisplay` in `key(generation)` forces complete remount:
+
+```kotlin
+key(workspaceSession?.generation ?: 0L) {
+    NavDisplay(
+        backStack = backStack,
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator()
+        ),
+        // ...
+    )
+}
+```
+
+And the factory is swapped to the new workspace graph:
+
+```kotlin
+val effectiveFactory = remember(workspaceSession) {
+    workspaceSession?.graph?.metroViewModelFactory ?: appFactory
+}
+CompositionLocalProvider(LocalMetroViewModelFactory provides effectiveFactory) { ... }
+```
+
+### Stale Ktor header after workspace switch
+
+`TokenRepositoryImpl.cachedWorkspaceId` is set only at login. After switching workspace, call `tokenRepository.getWorkspaceId()` (the async version that reads from DB and updates the cache) **before** `activateWorkspace()`:
+
+```kotlin
+userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspaceId)
+tokenRepository.getWorkspaceId()   // refresh cache so Ktor uses correct X-Workspace-ID
+workspaceActivator.activateWorkspace(workspaceId, workspace.slug, currentUserId)
+```
+
+Without this, the Ktor `defaultRequest` plugin sends the old workspace ID on every API call in the new workspace's ViewModels, corrupting the new workspace's DB with old data.
+
+---
+
 ## Anti-Patterns
 
 ```kotlin
@@ -294,9 +378,17 @@ val featureModule = module {
     viewModel { FeatureViewModel(get()) }
 }
 
-// ❌ Scoped workspace-aware DB — causes stale data after workspace switch
+// ❌ AppScope for workspace-aware DB — causes stale data after workspace switch
 @Provides @SingleIn(AppScope::class)
 fun provideFeatureDatabase(...): FeatureDatabase = ...
+
+// ❌ Missing reified type through .also chain
+factory.createAndroidDatabase(...).also { ... }   // T inference fails
+
+// ❌ No key(generation) wrapper around NavDisplay — old VM instances survive workspace switch
+
+// ❌ Eager sync delegate resolution — forces all DBs to initialize on workspace switch
+centralSyncService.setDelegates(graph.syncDelegates)   // pass a lambda instead
 
 // ❌ ViewModel created in entry provider — breaks Metro wiring
 NavEntry(key) { CustomerListScreen(viewModel = CustomerListViewModel(...)) }
@@ -306,4 +398,7 @@ val graph = LocalAppGraph.current   // NEVER
 
 // ❌ Passing ViewModel as non-default param (caller must provide it)
 @Composable fun MyScreen(viewModel: MyViewModel)   // no default = forced injection from outside
+
+// ❌ Forgetting to refresh token cache before workspace activation
+workspaceActivator.activateWorkspace(...)   // Ktor still sends old workspace ID!
 ```

@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -130,29 +131,33 @@ fun AppNavigationNav3(
         GlobalAppLayoutNav3(
             backStack = backStack
         ) { globalPaddingValues ->
-            NavDisplay(
-                backStack = backStack,
-                onBack = { backStack.removeLastOrNull() },
-                entryDecorators = listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator()
-                ),
-                entryProvider = { key ->
-                    combinedEntryProvider(
-                        key = key,
-                        backStack = backStack,
-                        onLoginSuccess = {
-                            backStack.clear()
-                            backStack.add(Route.Workspace)
-                        },
-                        onNavigationServiceReady = onNavigationServiceReady,
-                        sharedViewModelStoreOwner = authViewModelStoreOwner
-                    )
-                },
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(globalPaddingValues)
-            )
+            // key(generation) forces NavDisplay and its ViewModelStores to remount on workspace
+            // switch, ensuring stale ViewModels from the previous workspace are never reused.
+            key(workspaceSession?.generation ?: 0L) {
+                NavDisplay(
+                    backStack = backStack,
+                    onBack = { backStack.removeLastOrNull() },
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator()
+                    ),
+                    entryProvider = { key ->
+                        combinedEntryProvider(
+                            key = key,
+                            backStack = backStack,
+                            onLoginSuccess = {
+                                backStack.clear()
+                                backStack.add(Route.Workspace)
+                            },
+                            onNavigationServiceReady = onNavigationServiceReady,
+                            sharedViewModelStoreOwner = authViewModelStoreOwner
+                        )
+                    },
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(globalPaddingValues)
+                )
+            }
         }
     }
 }

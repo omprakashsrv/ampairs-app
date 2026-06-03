@@ -7,7 +7,6 @@ import com.ampairs.business.data.db.toDomain
 import com.ampairs.business.data.db.toEntity
 import com.ampairs.business.domain.*
 import com.ampairs.business.util.BusinessConstants
-import com.ampairs.common.di.AppScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.workspace.context.WorkspaceContextManager
 import dev.zacsweers.metro.Inject
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+
 
 @Inject
 class BusinessRepository(

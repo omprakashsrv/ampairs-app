@@ -40,12 +40,19 @@ private val log = Logger.withTag("CentralSyncService")
 @Inject
 @SingleIn(AppScope::class)
 class CentralSyncService {
+    // Resolved lazily on first sync event — avoids forcing database creation during workspace switch.
     @Volatile
-    private var delegates: Map<SyncEntity, SyncDelegate> = emptyMap()
+    private var delegatesResolver: () -> Map<SyncEntity, SyncDelegate> = { emptyMap() }
+    @Volatile
+    private var resolvedDelegates: Map<SyncEntity, SyncDelegate>? = null
 
-    fun setDelegates(newDelegates: Map<SyncEntity, SyncDelegate>) {
-        delegates = newDelegates
+    fun setDelegates(resolver: () -> Map<SyncEntity, SyncDelegate>) {
+        delegatesResolver = resolver
+        resolvedDelegates = null
     }
+
+    private val delegates: Map<SyncEntity, SyncDelegate>
+        get() = resolvedDelegates ?: delegatesResolver().also { resolvedDelegates = it }
     private val _syncStates = MutableStateFlow<Map<SyncEntity, EntitySyncState>>(emptyMap())
     val syncStates: StateFlow<Map<SyncEntity, EntitySyncState>> = _syncStates.asStateFlow()
 
@@ -171,18 +178,13 @@ class CentralSyncService {
 
     private suspend fun initializeStates() {
         val currentDao = dao ?: return
-        val persisted = currentDao.getAll().associateBy { it.entityName }
-
-        val initialMap = delegates.keys.associateWith { entity ->
-            val row = persisted[entity]
-            EntitySyncState(
-                entity = entity,
-                status = if (row != null)
-                    SyncStatus.from(row.statusName, row.pendingCount)
-                else
-                    SyncStatus.Idle,
-                lastSyncedAt = row?.lastSyncedAt,
-                errorMessage = row?.errorMessage,
+        val persisted = currentDao.getAll()
+        val initialMap = persisted.associate { row ->
+            row.entityName to EntitySyncState(
+                entity = row.entityName,
+                status = SyncStatus.from(row.statusName, row.pendingCount),
+                lastSyncedAt = row.lastSyncedAt,
+                errorMessage = row.errorMessage,
             )
         }
         _syncStates.value = initialMap

@@ -36,14 +36,15 @@ class WorkspaceManager(
         val oldSession = _session.value
         oldSession?.graph?.workspaceResources?.close()
         centralSyncService.stop()
-        centralSyncService.setDelegates(emptyMap())
+        centralSyncService.setDelegates { emptyMap() }
 
         val config = WorkspaceConfig(workspaceId, workspaceSlug)
         val graph = workspaceGraphFactory.create(config)
         val session = WorkspaceSession(++generationCounter, graph, config)
         _session.value = session
 
-        centralSyncService.setDelegates(graph.syncDelegates)
+        // Delegates are resolved lazily on first sync event — avoids creating all databases upfront.
+        centralSyncService.setDelegates { graph.syncDelegates }
         centralSyncService.start(graph.syncStateDatabase)
 
         val deviceId = deviceService.getDeviceId()
@@ -57,7 +58,7 @@ class WorkspaceManager(
     fun clearSession() {
         _session.value?.graph?.workspaceResources?.close()
         centralSyncService.stop()
-        centralSyncService.setDelegates(emptyMap())
+        centralSyncService.setDelegates { emptyMap() }
         _session.value = null
     }
 }

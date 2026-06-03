@@ -146,6 +146,10 @@ class WorkspaceListViewModel(
 
             userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspaceId)
             appPreferences.setLastWorkspaceId(workspaceId)
+            // Immediately refresh the in-memory token-repo cache so that the Ktor
+            // defaultRequest plugin sends the correct X-Workspace-ID header for
+            // every API call that follows (including syncFromRemote in new VMs).
+            tokenRepository.getWorkspaceId()
 
             // Activate Metro workspace graph FIRST (tears down old graph, creates new one),
             // then update the legacy global singleton so both systems reflect the same workspace.

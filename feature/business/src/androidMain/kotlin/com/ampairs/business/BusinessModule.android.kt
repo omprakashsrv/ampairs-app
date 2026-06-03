@@ -22,11 +22,13 @@ interface BusinessAndroidModule {
             context: Context,
             config: WorkspaceConfig,
             closableRegistry: WorkspaceClosableRegistry,
-        ): BusinessDatabase = factory.createAndroidDatabase<BusinessDatabase>(
-            context = context,
-            queryDispatcher = Dispatchers.IO,
-            moduleName = "business",
-            workspaceSlug = config.workspaceSlug,
-        ).also { closableRegistry.register { it.close() } }
+        ): BusinessDatabase {
+            return factory.createAndroidDatabase<BusinessDatabase>(
+                context = context,
+                queryDispatcher = Dispatchers.IO,
+                moduleName = "business",
+                workspaceSlug = config.workspaceSlug,
+            ).also { closableRegistry.register { it.close() } }
+        }
     }
 }
