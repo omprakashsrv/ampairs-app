@@ -104,6 +104,8 @@ kotlin {
                 implementation(libs.google.firebase.crashlytics)
                 implementation(libs.google.firebase.perf)
                 implementation(libs.google.firebase.messaging)
+                // Kermit logging
+                implementation(libs.kermit)
             }
         }
 
