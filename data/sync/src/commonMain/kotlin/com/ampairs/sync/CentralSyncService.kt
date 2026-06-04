@@ -36,9 +36,10 @@ private val log = Logger.withTag("CentralSyncService")
  * Design principles:
  * - Sync state is persisted in Room so pending work survives process death.
  * - ViewModels never call APIs directly — they emit SyncEvents.
- * - Push-only on launch/reconnect: only entities with PENDING_PUSH are synced automatically.
- * - Pulls are exclusively driven by backend WebSocket events via [onBackendEvent].
- * - No periodic polling — state drives sync.
+ * - Pushes: entities entering PENDING_PUSH after a local write are synced automatically.
+ * - Pulls are driven two ways: (1) live backend WebSocket events via [onBackendEvent], and
+ *   (2) checkpoint reconciliation via [reconcileCheckpoints] on connect / reconnect / hourly,
+ *   which pulls only entities the server has advanced past (in dependency order).
  */
 @Inject
 @SingleIn(AppScope::class)
@@ -123,8 +124,8 @@ class CentralSyncService {
 
     /**
      * Called by EventConnectionManager when the WebSocket connection is (re)established.
-     * Flushes any pending pushes that accumulated while offline. Pulls are not triggered
-     * here — they come in via [onBackendEvent] once the server sends WebSocket events.
+     * Flushes any pending pushes that accumulated while offline. Pulls are reconciled separately by
+     * the bootstrap ([reconcileCheckpoints]), which EventConnectionManager runs on the same (re)connect.
      */
     fun onConnectionRestored() {
         scope?.launch {
