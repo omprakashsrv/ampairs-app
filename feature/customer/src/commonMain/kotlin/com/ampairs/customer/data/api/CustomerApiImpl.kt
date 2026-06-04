@@ -143,11 +143,10 @@ class CustomerApiImpl(
         return response.data ?: throw Exception("Failed to bulk import states")
     }
 
-    override suspend fun getAvailableStatesForImport(workspaceId: String): List<MasterState> {
+    override suspend fun getAvailableStatesForImport(): List<MasterState> {
         val response: Response<List<MasterState>> = get(
             client,
-            ApiUrlBuilder.customerUrl("v1/master-states/available-for-import"),
-            mapOf("workspace_id" to workspaceId)
+            ApiUrlBuilder.customerUrl("v1/master-states/available-for-import")
         )
         return response.data ?: emptyList()
     }

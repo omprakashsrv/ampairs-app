@@ -3,9 +3,8 @@ package com.ampairs.product.data.repository
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.common.sentry.ErrorTracking
-import com.ampairs.common.event.IEventManager
-import com.ampairs.common.event.EventType
-import com.ampairs.common.event.EventLogger
+import com.ampairs.common.EventType
+import com.ampairs.product.util.ProductLogger
 import com.ampairs.common.cache.CacheCleanable
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.data.api.ProductApi
@@ -27,15 +26,8 @@ import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toDomain
 import com.ampairs.product.domain.toDomainList
 import com.ampairs.product.domain.toSummary
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -50,64 +42,14 @@ class ProductRepository(
     private val variantDao: ProductVariantDao,
     private val attributeDao: VariantAttributeDao
 ) : ProductDataService, CacheCleanable {
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private var eventListenerJob: Job? = null
 
-    /**
-     * Set up real-time event listener for product updates from other devices.
-     * Call this after workspace is selected and EventManager is available.
-     *
-     * @param eventManager The EventManager instance for the current workspace
-     */
-    fun setupEventListener(eventManager: IEventManager) {
-        // Cancel existing listener if any
-        eventListenerJob?.cancel()
-
-        // Set up new listener
-        eventListenerJob = scope.launch {
-            eventManager.events
-                .filter { it.isForEntityType("product") }
-                .collect { event ->
-                    handleProductEvent(event.eventType, event.entityId)
-                }
-        }
-        EventLogger.i("ProductRepository", "Real-time event listener initialized for product module")
-    }
-
-    /**
-     * Stop listening to real-time events (e.g., when switching workspaces)
-     */
-    fun stopEventListener() {
-        eventListenerJob?.cancel()
-        eventListenerJob = null
-        scope.cancel()
-        EventLogger.i("ProductRepository", "Real-time event listener stopped")
-    }
-
-    /**
-     * Handle incoming product events from other devices.
-     * Updates local database to reflect changes made on other devices.
-     */
     private suspend fun handleProductEvent(eventType: EventType, productId: String) {
-        EventLogger.i("ProductRepository", "📨 Received event: $eventType for product: $productId")
-
         when (eventType) {
             EventType.PRODUCT_CREATED,
             EventType.PRODUCT_UPDATED,
-            EventType.PRODUCT_STOCK_CHANGED -> {
-                // Fetch fresh data from server and update local database
-                refreshProductFromServer(productId)
-            }
-
-            EventType.PRODUCT_DELETED -> {
-                // Delete from local database
-                productDao.deleteById(productId)
-                EventLogger.i("ProductRepository", "🗑️ Deleted product: $productId")
-            }
-
-            else -> {
-                // Ignore other event types
-            }
+            EventType.PRODUCT_STOCK_CHANGED -> refreshProductFromServer(productId)
+            EventType.PRODUCT_DELETED -> productDao.deleteById(productId)
+            else -> Unit
         }
     }
 
@@ -140,12 +82,12 @@ class ProductRepository(
                 // Update Room database - this automatically triggers Flow updates!
                 productDao.insert(product.toEntity())
 
-                EventLogger.i("ProductRepository", "✅ Refreshed product from server: $productId")
+                ProductLogger.i("ProductRepository", "✅ Refreshed product from server: $productId")
             }.onFailure { error ->
-                EventLogger.w("ProductRepository", "Product not found on server: $productId - ${error.message}")
+                ProductLogger.w("ProductRepository", "Product not found on server: $productId - ${error.message}")
             }
         } catch (e: Exception) {
-            EventLogger.w("ProductRepository", "Failed to refresh product $productId: ${e.message}")
+            ProductLogger.w("ProductRepository", "Failed to refresh product $productId: ${e.message}")
             // Graceful degradation - UI continues showing cached data
         }
     }
@@ -537,7 +479,7 @@ class ProductRepository(
                 attributeDao.insertAttributes(attributes)
             }
         } catch (e: Exception) {
-            EventLogger.w("ProductRepository", "Failed to update variant attributes", e)
+            ProductLogger.w("ProductRepository", "Failed to update variant attributes", e)
         }
     }
 }

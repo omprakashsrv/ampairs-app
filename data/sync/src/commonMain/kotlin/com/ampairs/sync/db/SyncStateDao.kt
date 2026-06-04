@@ -23,6 +23,12 @@ interface SyncStateDao {
     @Upsert
     suspend fun upsert(state: SyncStateEntity)
 
+    @Query("SELECT lastSyncedAtIso FROM entity_sync_state WHERE entityName = :entity")
+    suspend fun getLastSyncedAtIso(entity: SyncEntity): String?
+
+    @Query("UPDATE entity_sync_state SET lastSyncedAtIso = :iso WHERE entityName = :entity")
+    suspend fun setLastSyncedAtIso(entity: SyncEntity, iso: String)
+
     @Query("DELETE FROM entity_sync_state")
     suspend fun deleteAll()
 }

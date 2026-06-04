@@ -1,25 +1,19 @@
 package com.ampairs.customer.data.repository
 
-import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.db.CustomerDao
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.customer.data.db.toDomain
 import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.toListItem
-import com.ampairs.common.event.IEventManager
-import com.ampairs.common.event.EventType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import com.ampairs.common.EventType
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlin.time.ExperimentalTime
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_UID_REQUIRED
@@ -31,45 +25,9 @@ import com.ampairs.customer.util.CustomerLogger
 class CustomerRepository(
     private val customerDao: CustomerDao,
     private val customerApi: CustomerApi,
-    private val appPreferences: AppPreferencesDataStore,
+    private val syncStateDao: SyncStateDao,
 ) : CustomerDataService, CacheCleanable {
-    // Event listener job for cleanup
-    private var eventListenerJob: Job? = null
 
-    /**
-     * Set up real-time event listener for customer updates from other devices.
-     * Call this after workspace is selected and EventManager is available.
-     *
-     * @param eventManager The EventManager instance for the current workspace
-     */
-    fun setupEventListener(eventManager: IEventManager) {
-        // Cancel existing listener if any
-        eventListenerJob?.cancel()
-
-        // Set up new listener
-        eventListenerJob = CoroutineScope(Dispatchers.Default).launch {
-            eventManager.events
-                .filter { it.isForEntityType("customer") }
-                .collect { event ->
-                    handleCustomerEvent(event.eventType, event.entityId)
-                }
-        }
-        CustomerLogger.i("CustomerRepository", "Real-time event listener initialized for customer module")
-    }
-
-    /**
-     * Stop listening to real-time events (e.g., when switching workspaces)
-     */
-    fun stopEventListener() {
-        eventListenerJob?.cancel()
-        eventListenerJob = null
-        CustomerLogger.i("CustomerRepository", "Real-time event listener stopped")
-    }
-
-    /**
-     * Handle incoming customer events from other devices.
-     * Updates local database to reflect changes made on other devices.
-     */
     private suspend fun handleCustomerEvent(eventType: EventType, customerId: String) {
         CustomerLogger.i("CustomerRepository", "📨 Received event: $eventType for customer: $customerId")
 
@@ -307,7 +265,7 @@ class CustomerRepository(
     }
 
     private suspend fun getLastSyncTime(): String {
-        return appPreferences.getCustomerLastSyncTime().first()
+        return syncStateDao.getLastSyncedAtIso(SyncEntity.CUSTOMER) ?: ""
     }
 
     /**
@@ -434,7 +392,7 @@ class CustomerRepository(
 
             // Update last sync time using the latest timestamp from all batches
             if (maxServerTime.isNotBlank()) {
-                appPreferences.setCustomerLastSyncTime(maxServerTime)
+                syncStateDao.setLastSyncedAtIso(SyncEntity.CUSTOMER, maxServerTime)
             }
 
             CustomerLogger.i("CustomerRepository", "Batch sync completed: $totalSynced customers synced in $currentPage batches")

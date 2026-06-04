@@ -35,6 +35,8 @@ include(
     ":feature:file",
     ":feature:auth-api",
     ":feature:auth",
+    ":feature:ecom-api",
+    ":feature:ecom",
     ":feature:customer-api",
     ":feature:product-api",
     ":feature:tax-api",

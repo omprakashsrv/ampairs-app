@@ -36,7 +36,8 @@ private val log = Logger.withTag("CentralSyncService")
  * Design principles:
  * - Sync state is persisted in Room so pending work survives process death.
  * - ViewModels never call APIs directly — they emit SyncEvents.
- * - Pushes: entities entering PENDING_PUSH after a local write are synced automatically.
+ * - Pushes: entities entering PENDING_PUSH after a local write are synced automatically; on
+ *   startup/reconnect persisted pending states are replayed (push → pull per entity).
  * - Pulls are driven two ways: (1) live backend WebSocket events via [onBackendEvent], and
  *   (2) checkpoint reconciliation via [reconcileCheckpoints] on connect / reconnect / hourly,
  *   which pulls only entities the server has advanced past (in dependency order).
@@ -98,8 +99,13 @@ class CentralSyncService {
             processEvents()
         }
 
+        // Replay persisted pending states — push first so local unsynced data reaches the
+        // server before we overwrite anything with a pull (e.g. after process death).
+        newScope.launch { processPendingStates() }
+
         // Reactively observe SyncStateEntity — only fire push triggers for entities that *newly*
-        // enter PENDING_PUSH. Pulls are driven exclusively by WebSocket events.
+        // enter PENDING_PUSH. Pulls are driven by WebSocket events, checkpoint reconciliation, and
+        // the one-shot processPendingStates() above for process-death recovery.
         // Delta set keyed by entityName prevents re-triggering a push that's already in progress.
         newScope.launch {
             var previousPushSet = emptySet<SyncEntity>()
@@ -123,14 +129,15 @@ class CentralSyncService {
     }
 
     /**
-     * Called by EventConnectionManager when the WebSocket connection is (re)established.
-     * Flushes any pending pushes that accumulated while offline. Pulls are reconciled separately by
-     * the bootstrap ([reconcileCheckpoints]), which EventConnectionManager runs on the same (re)connect.
+     * Called by EventSyncBridge when the WebSocket connection is (re)established.
+     * Flushes pending pushes first so local unsynced data reaches the server before
+     * any pull overwrites it. Also replays persisted PENDING_PULL states (process-death recovery).
+     * Checkpoint reconciliation ([reconcileCheckpoints]) is triggered separately by EventSyncBridge.
      */
     fun onConnectionRestored() {
         scope?.launch {
-            log.i { "WebSocket reconnected — flushing pending pushes" }
-            processPendingPushes()
+            log.i { "WebSocket reconnected — flushing pending states (push → pull per entity)" }
+            processPendingStates()
         }
     }
 
@@ -147,7 +154,7 @@ class CentralSyncService {
 
     // endregion
 
-    // region — Public API for ViewModels and EventConnectionManager
+    // region — Public API for ViewModels and EventSyncBridge
 
     /**
      * Emit a sync event. Non-suspending so ViewModels can call from any context.
@@ -178,8 +185,8 @@ class CentralSyncService {
     /**
      * Bootstrap reconciliation. Called on workspace connect, on reconnect, and on the hourly timer
      * with the server's `max(updatedAt)` per entity (ISO-8601 string, or null when the entity has
-     * no rows). For each entity whose server checkpoint is newer than the client's last-synced
-     * watermark, schedules a pull. Pulls run in dependency order (parents before dependents).
+     * no rows). For each entity whose server checkpoint is ahead of what was last pulled this
+     * session, schedules a pull. Pulls run in dependency order (parents before dependents).
      */
     fun reconcileCheckpoints(serverCheckpoints: Map<SyncEntity, String?>) {
         val currentScope = scope ?: return
@@ -214,7 +221,7 @@ class CentralSyncService {
     }
 
     /**
-     * Called by EventConnectionManager when a backend WebSocket event arrives.
+     * Called by EventSyncBridge when a backend WebSocket event arrives.
      * Routes to the matching SyncDelegate after marking state as PENDING_PULL.
      *
      * [lastUpdatedAt] is the slim signal's change watermark (ISO-8601, diagnostic). We always pull
@@ -264,11 +271,32 @@ class CentralSyncService {
 
     // region — Pending state processing
 
-    private suspend fun processPendingPushes() {
+    /**
+     * Replays persisted pending states on startup or reconnect.
+     * For each entity that has pending work, push runs before pull so that local unsynced
+     * data reaches the server before a pull could overwrite it. Different entities run
+     * concurrently; push → pull ordering is enforced within each entity's coroutine.
+     */
+    private suspend fun processPendingStates() {
         val currentDao = dao ?: return
-        currentDao.getPending()
+        val pending = currentDao.getPending()
+        if (pending.isEmpty()) return
+
+        val pushEntities = pending
             .filter { it.statusName == SyncPersistStatus.PENDING_PUSH }
-            .forEach { row -> emit(SyncEvent.TriggerPush(row.entityName)) }
+            .map { it.entityName }.toSet()
+        val pullEntities = pending
+            .filter { it.statusName == SyncPersistStatus.PENDING_PULL }
+            .map { it.entityName }.toSet()
+
+        log.d { "Replaying pending states — push: ${pushEntities.map { it.name }}, pull: ${pullEntities.map { it.name }}" }
+
+        (pushEntities + pullEntities).forEach { entity ->
+            scope?.launch {
+                if (entity in pushEntities) executePush(entity)
+                if (entity in pullEntities) executePull(entity)
+            }
+        }
     }
 
     // endregion

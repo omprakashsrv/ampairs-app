@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
 
-@Database(entities = [SyncStateEntity::class], version = 1)
+@Database(entities = [SyncStateEntity::class], version = 2)
 @ConstructedBy(SyncStateDatabaseConstructor::class)
 @TypeConverters(SyncStateConverters::class)
 abstract class SyncStateDatabase : RoomDatabase() {

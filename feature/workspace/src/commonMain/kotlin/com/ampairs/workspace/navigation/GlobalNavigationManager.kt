@@ -9,10 +9,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
-import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.common.concurrency.Volatile
 import com.ampairs.common.concurrency.synchronized
-import kotlinx.coroutines.launch
 
 /**
  * Global navigation manager that observes workspace context changes
@@ -26,11 +24,11 @@ import kotlinx.coroutines.launch
 class GlobalNavigationManager private constructor() {
 
     private val scope = CoroutineScope(Dispatchers.Default)
-    private val workspaceManager = WorkspaceContextManager.getInstance()
 
     // Navigation service state
     private val _navigationService = MutableStateFlow<DynamicModuleNavigationService?>(null)
-    val navigationService: StateFlow<DynamicModuleNavigationService?> = _navigationService.asStateFlow()
+    val navigationService: StateFlow<DynamicModuleNavigationService?> =
+        _navigationService.asStateFlow()
 
     // Module loading state
     private val _isLoadingModules = MutableStateFlow(false)
@@ -39,14 +37,14 @@ class GlobalNavigationManager private constructor() {
     // Combined state to determine when navigation should be available
     // Don't depend on loading state to prevent drawer disappearing during module loads
     val isNavigationAvailable: StateFlow<Boolean> = combine(
-        workspaceManager.isWorkspaceSelected,
         navigationService
-    ) { workspaceSelected, service ->
-        workspaceSelected && service != null
+    ) { _ ->
+        true
     }.stateIn(scope, SharingStarted.Eagerly, false)
 
     // Cached per-platform constant — navigation pattern never changes at runtime
-    private val isOnMobilePlatform = PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.SIDE_DRAWER
+    private val isOnMobilePlatform =
+        PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.SIDE_DRAWER
 
     // State to determine when hamburger menu should be visible
     val shouldShowHamburgerMenu: StateFlow<Boolean> = isNavigationAvailable
@@ -101,12 +99,7 @@ class GlobalNavigationManager private constructor() {
      */
     fun updateInstalledModules(
         modules: List<com.ampairs.workspace.api.model.InstalledModule>,
-        fromWorkspaceId: String? = null,
     ) {
-        if (fromWorkspaceId != null) {
-            val activeId = workspaceManager.getCurrentWorkspaceId()
-            if (activeId != null && activeId != fromWorkspaceId) return
-        }
         _navigationService.value?.updateInstalledModules(modules)
         _isLoadingModules.value = false
     }
