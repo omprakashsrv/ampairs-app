@@ -9,6 +9,7 @@ data class SyncStateEntity(
     @PrimaryKey val entityName: SyncEntity,
     val statusName: SyncPersistStatus,
     val lastSyncedAt: Long? = null,
+    val lastSyncedAtIso: String? = null,
     val pendingCount: Int = 0,
     val errorMessage: String? = null,
     val updatedAt: Long,

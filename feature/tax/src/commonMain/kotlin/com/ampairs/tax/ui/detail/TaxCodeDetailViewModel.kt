@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.calculation.TaxCalculationEngine
 import com.ampairs.tax.calculation.model.*
+import com.ampairs.business.data.repository.BusinessRepository
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.domain.model.TaxRule
-import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -38,7 +38,7 @@ class TaxCodeDetailViewModel(
     private val taxCodeRepository: TaxCodeRepository,
     private val taxRuleRepository: TaxRuleRepository,
     private val taxCalculationEngine: TaxCalculationEngine,
-    private val workspaceContext: WorkspaceContextManager
+    private val businessRepository: BusinessRepository,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -229,8 +229,7 @@ class TaxCodeDetailViewModel(
                     return@launch
                 }
 
-                // Use the calculation engine with the loaded rule
-                val countryCode = workspaceContext.getCurrentCountryCode() ?: "IN"
+                val countryCode = businessRepository.getCachedBusiness()?.country ?: "IN"
 
                 val request = TaxCalculationRequest(
                     taxCode = currentState.taxCode.code,

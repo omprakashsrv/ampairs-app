@@ -8,6 +8,7 @@ import com.ampairs.common.workspace.WorkspaceConfig
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import com.ampairs.business.data.db.migrations.BUSINESS_MIGRATION_2_3
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 
 @ContributesTo(WorkspaceScope::class)
@@ -22,6 +23,7 @@ interface BusinessDesktopModule {
         ): BusinessDatabase = factory.createDatabase<BusinessDatabase>(
             moduleName = "business",
             workspaceSlug = config.workspaceSlug,
+            migrations = listOf(BUSINESS_MIGRATION_2_3),
         ).also { closableRegistry.register { it.close() } }
     }
 }

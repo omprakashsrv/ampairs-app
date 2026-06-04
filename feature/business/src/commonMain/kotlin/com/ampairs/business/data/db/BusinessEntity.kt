@@ -18,7 +18,6 @@ import kotlin.time.ExperimentalTime
     tableName = "business_profile",
     indices = [
         Index(value = ["uid"], unique = true),
-        Index(value = ["workspace_id"], unique = false),
         Index(value = ["active"]),
         Index(value = ["synced"])  // Performance optimization for sync queries
     ]
@@ -29,8 +28,6 @@ data class BusinessEntity(
     val uid: String,
     @ColumnInfo(name = "seq_id")
     val seqId: String?,
-    @ColumnInfo(name = "workspace_id")
-    val workspaceId: String?,
     val name: String,
     @ColumnInfo(name = "business_type")
     val businessType: String,
@@ -99,16 +96,12 @@ private val listSerializer = ListSerializer(String.serializer())
 private val mapSerializer = MapSerializer(String.serializer(), String.serializer())
 
 @OptIn(ExperimentalTime::class)
-fun Business.toEntity(
-    markSynced: Boolean,
-    workspaceId: String?
-): BusinessEntity {
+fun Business.toEntity(markSynced: Boolean): BusinessEntity {
     // Evaluate timestamp inside function to avoid race conditions
     val nowEpochMillis = Clock.System.now().toEpochMilliseconds()
     return BusinessEntity(
         uid = id.ifBlank { "${BusinessConstants.LOCAL_ID_PREFIX}$nowEpochMillis" },
         seqId = seqId,
-        workspaceId = workspaceId,
         name = name,
         businessType = businessType.name,
         description = description,
@@ -166,7 +159,6 @@ fun BusinessEntity.toDomain(): Business {
     return Business(
         id = uid,
         seqId = seqId,
-        workspaceId = workspaceId,
         name = name,
         businessType = runCatching { BusinessType.valueOf(businessType) }
             .getOrDefault(BusinessType.RETAIL),

@@ -10,7 +10,7 @@ sealed interface SyncEvent {
     /** Pull + push for all entities (or a single entity if specified). */
     data class TriggerFullSync(val entity: SyncEntity? = null) : SyncEvent
 
-    /** Emitted by EventConnectionManager when a backend WebSocket event arrives. */
+    /** Emitted by EventSyncBridge when a backend WebSocket event arrives. */
     data class BackendEventReceived(
         val entityType: String,
         val entityId: String,

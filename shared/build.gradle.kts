@@ -171,8 +171,6 @@ kotlin {
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
 
-                implementation(libs.bundles.krossbow)
-
                 implementation(libs.datastore)
                 implementation(libs.datastore.preferences)
             }

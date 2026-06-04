@@ -10,6 +10,7 @@ import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.Dispatchers
+import com.ampairs.sync.db.migrations.SYNC_MIGRATION_1_2
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 
 @ContributesTo(WorkspaceScope::class)
@@ -27,6 +28,7 @@ interface SyncAndroidModule {
             queryDispatcher = Dispatchers.IO,
             moduleName = "sync",
             workspaceSlug = config.workspaceSlug,
+            migrations = listOf(SYNC_MIGRATION_1_2),
         ).also { closableRegistry.register { it.close() } }
     }
 }

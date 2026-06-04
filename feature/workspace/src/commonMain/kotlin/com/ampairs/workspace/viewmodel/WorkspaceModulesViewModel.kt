@@ -46,7 +46,7 @@ class WorkspaceModulesViewModel(
                 .onEach {
                     _isLoading.value = false
                     val installedModules = it.filter { m -> m.isInstalled }.map { m -> m.toApiModel(wsId) }
-                    globalNavigationManager.updateInstalledModules(installedModules, fromWorkspaceId = wsId)
+                    globalNavigationManager.updateInstalledModules(installedModules)
                 }
                 .catch { e ->
                     _isLoading.value = false

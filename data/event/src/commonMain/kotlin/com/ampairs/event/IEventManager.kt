@@ -1,5 +1,6 @@
-package com.ampairs.common.event
+package com.ampairs.event
 
+import com.ampairs.common.EventType
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 

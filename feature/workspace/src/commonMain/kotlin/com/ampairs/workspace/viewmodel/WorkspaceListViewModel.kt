@@ -12,10 +12,8 @@ import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.config.DataStoreManager
 import com.ampairs.common.workspace.WorkspaceActivator
-import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.UserInvitationRepository
-import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.ui.WorkspaceListState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,6 +25,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
@@ -139,7 +138,8 @@ class WorkspaceListViewModel(
             val workspace = _state.value.workspaces.find { it.id == workspaceId } ?: return@launch
             val currentUserId = tokenRepository.getCurrentUserId() ?: return@launch
 
-            val previousSlug = WorkspaceContextManager.getInstance().currentWorkspace.value?.slug
+            val previousWorkspaceId = appPreferences.getLastWorkspaceId().first()
+            val previousSlug = _state.value.workspaces.find { it.id == previousWorkspaceId }?.slug
             if (previousSlug != null && previousSlug != workspace.slug) {
                 DataStoreManager.clearDataStoresForWorkspace(previousSlug)
             }
@@ -154,7 +154,6 @@ class WorkspaceListViewModel(
             // Activate Metro workspace graph FIRST (tears down old graph, creates new one),
             // then update the legacy global singleton so both systems reflect the same workspace.
             workspaceActivator.activateWorkspace(workspaceId, workspace.slug, currentUserId)
-            WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
 
             GlobalNavigationManager.getInstance().onWorkspaceSelected()
             _events.send(WorkspaceListEvent.NavigateToModules(workspaceId, workspace.slug))

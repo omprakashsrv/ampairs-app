@@ -1,5 +1,6 @@
-package com.ampairs.common.event
+package com.ampairs.event
 
+import com.ampairs.common.EventType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject

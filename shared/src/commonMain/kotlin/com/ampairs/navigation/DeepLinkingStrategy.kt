@@ -1,6 +1,5 @@
 package com.ampairs.navigation
 
-import com.ampairs.workspace.context.WorkspaceContextManager
 import kotlinx.serialization.Serializable
 
 /**
@@ -30,19 +29,7 @@ object DeepLinkingStrategy {
         onNavigateToWorkspaceSelection: (returnPath: String) -> Unit,
         onNavigateToTarget: (route: Any) -> Unit
     ) {
-        val workspaceManager = WorkspaceContextManager.getInstance()
-        val currentWorkspace = workspaceManager.currentWorkspace.value
-
-        // Parse the deep link to extract the target route
-        val targetRoute = parseDeepLinkToRoute(deepLinkUrl)
-
-        if (currentWorkspace != null) {
-            // Workspace context exists, navigate directly to target
-            onNavigateToTarget(targetRoute)
-        } else {
-            // No workspace context, redirect to workspace selection with return path
-            onNavigateToWorkspaceSelection(deepLinkUrl)
-        }
+        // TODO: implement once WorkspaceContext is wired to WorkspaceManager session
     }
 
     /**

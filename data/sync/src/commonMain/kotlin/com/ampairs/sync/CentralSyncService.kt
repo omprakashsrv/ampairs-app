@@ -88,8 +88,13 @@ class CentralSyncService {
             processEvents()
         }
 
+        // Replay persisted pending states — push first so local unsynced data reaches the
+        // server before we overwrite anything with a pull (e.g. after process death).
+        newScope.launch { processPendingStates() }
+
         // Reactively observe SyncStateEntity — only fire push triggers for entities that *newly*
-        // enter PENDING_PUSH. Pulls are driven exclusively by WebSocket events.
+        // enter PENDING_PUSH. Pulls are driven exclusively by WebSocket events (and the
+        // one-shot processPendingStates() above for process-death recovery).
         // Delta set keyed by entityName prevents re-triggering a push that's already in progress.
         newScope.launch {
             var previousPushSet = emptySet<SyncEntity>()
@@ -113,14 +118,14 @@ class CentralSyncService {
     }
 
     /**
-     * Called by EventConnectionManager when the WebSocket connection is (re)established.
-     * Flushes any pending pushes that accumulated while offline. Pulls are not triggered
-     * here — they come in via [onBackendEvent] once the server sends WebSocket events.
+     * Called by EventSyncBridge when the WebSocket connection is (re)established.
+     * Flushes pending pushes first so local unsynced data reaches the server before
+     * any pull overwrites it. Also replays persisted PENDING_PULL states (process-death recovery).
      */
     fun onConnectionRestored() {
         scope?.launch {
-            log.i { "WebSocket reconnected — flushing pending pushes" }
-            processPendingPushes()
+            log.i { "WebSocket reconnected — flushing pending states (push → pull per entity)" }
+            processPendingStates()
         }
     }
 
@@ -136,7 +141,7 @@ class CentralSyncService {
 
     // endregion
 
-    // region — Public API for ViewModels and EventConnectionManager
+    // region — Public API for ViewModels and EventSyncBridge
 
     /**
      * Emit a sync event. Non-suspending so ViewModels can call from any context.
@@ -156,7 +161,7 @@ class CentralSyncService {
     }
 
     /**
-     * Called by EventConnectionManager when a backend WebSocket event arrives.
+     * Called by EventSyncBridge when a backend WebSocket event arrives.
      * Routes to the matching SyncDelegate after marking state as PENDING_PULL.
      */
     fun onBackendEvent(entityType: String, entityId: String, eventType: String) {
@@ -195,11 +200,32 @@ class CentralSyncService {
 
     // region — Pending state processing
 
-    private suspend fun processPendingPushes() {
+    /**
+     * Replays persisted pending states on startup or reconnect.
+     * For each entity that has pending work, push runs before pull so that local unsynced
+     * data reaches the server before a pull could overwrite it. Different entities run
+     * concurrently; push → pull ordering is enforced within each entity's coroutine.
+     */
+    private suspend fun processPendingStates() {
         val currentDao = dao ?: return
-        currentDao.getPending()
+        val pending = currentDao.getPending()
+        if (pending.isEmpty()) return
+
+        val pushEntities = pending
             .filter { it.statusName == SyncPersistStatus.PENDING_PUSH }
-            .forEach { row -> emit(SyncEvent.TriggerPush(row.entityName)) }
+            .map { it.entityName }.toSet()
+        val pullEntities = pending
+            .filter { it.statusName == SyncPersistStatus.PENDING_PULL }
+            .map { it.entityName }.toSet()
+
+        log.d { "Replaying pending states — push: ${pushEntities.map { it.name }}, pull: ${pullEntities.map { it.name }}" }
+
+        (pushEntities + pullEntities).forEach { entity ->
+            scope?.launch {
+                if (entity in pushEntities) executePush(entity)
+                if (entity in pullEntities) executePull(entity)
+            }
+        }
     }
 
     // endregion
