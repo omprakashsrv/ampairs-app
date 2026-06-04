@@ -75,20 +75,6 @@ class WorkspaceContextManager private constructor() {
     fun getCurrentWorkspaceSlug(): String? = _currentWorkspace.value?.slug
 
     /**
-     * Check if user has access to specific module
-     */
-    fun hasModuleAccess(moduleCode: String): Boolean {
-        return _currentWorkspace.value?.enabledModules?.contains(moduleCode) ?: false
-    }
-
-    /**
-     * Set loading state during workspace operations
-     */
-    fun setLoading(loading: Boolean) {
-        _isLoading.value = loading
-    }
-
-    /**
      * Validate workspace context before operations
      * Throws exception if no workspace is selected
      */
@@ -112,17 +98,8 @@ data class WorkspaceContext(
     val description: String? = null,
     val logoUrl: String? = null,
     val primaryColor: String? = null,
-    val enabledModules: Set<String> = emptySet(),
     val userRole: String? = null,
     val permissions: Set<String> = emptySet(),
     val settings: Map<String, Any> = emptyMap()
 )
 
-/**
- * Workspace context state for UI components
- */
-enum class WorkspaceContextState {
-    NO_WORKSPACE,        // No workspace selected, show workspace selection
-    WORKSPACE_SELECTED,  // Workspace selected, show main app content
-    LOADING             // Loading workspace data
-}

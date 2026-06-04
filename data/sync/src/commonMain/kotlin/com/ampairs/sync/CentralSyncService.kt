@@ -113,7 +113,7 @@ class CentralSyncService {
     }
 
     /**
-     * Called by EventConnectionManager when the WebSocket connection is (re)established.
+     * Called by EventSyncBridge when the WebSocket connection is (re)established.
      * Flushes any pending pushes that accumulated while offline. Pulls are not triggered
      * here — they come in via [onBackendEvent] once the server sends WebSocket events.
      */
@@ -136,7 +136,7 @@ class CentralSyncService {
 
     // endregion
 
-    // region — Public API for ViewModels and EventConnectionManager
+    // region — Public API for ViewModels and EventSyncBridge
 
     /**
      * Emit a sync event. Non-suspending so ViewModels can call from any context.
@@ -156,7 +156,7 @@ class CentralSyncService {
     }
 
     /**
-     * Called by EventConnectionManager when a backend WebSocket event arrives.
+     * Called by EventSyncBridge when a backend WebSocket event arrives.
      * Routes to the matching SyncDelegate after marking state as PENDING_PULL.
      */
     fun onBackendEvent(entityType: String, entityId: String, eventType: String) {

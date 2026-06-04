@@ -1,4 +1,4 @@
-package com.ampairs.common.event
+package com.ampairs.event
 
 sealed class ConnectionState {
     data object Disconnected : ConnectionState()

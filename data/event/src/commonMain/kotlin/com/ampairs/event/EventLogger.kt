@@ -1,4 +1,4 @@
-package com.ampairs.common.event
+package com.ampairs.event
 
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.common.sentry.SentryLevel

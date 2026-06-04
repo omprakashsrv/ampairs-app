@@ -26,7 +26,6 @@ object WorkspaceContextIntegration {
             description = workspace.description,
             logoUrl = workspace.avatarUrl, // Use avatarUrl from domain model
             primaryColor = null, // Not available in current domain model
-            enabledModules = emptySet(), // Module information comes from separate API
             userRole = null, // User role comes from workspace member data
             permissions = emptySet(), // Permissions come from workspace member data
             settings = mapOf(

@@ -1,4 +1,4 @@
-package com.ampairs.common.event
+package com.ampairs.common
 
 import kotlinx.serialization.Serializable
 
@@ -28,6 +28,26 @@ enum class EventType {
     INVOICE_PAID,
     INVOICE_PARTIAL_PAID,
     INVOICE_OVERDUE,
+
+    BUSINESS_UPDATED,
+
+    TAX_CREATED,
+    TAX_UPDATED,
+    TAX_DELETED,
+
+    UNIT_CREATED,
+    UNIT_UPDATED,
+    UNIT_DELETED,
+
+    INVENTORY_UPDATED,
+    INVENTORY_STOCK_ADJUSTED,
+
+    FORM_CREATED,
+    FORM_UPDATED,
+    FORM_DELETED,
+
+    FILE_UPLOADED,
+    FILE_DELETED,
 
     USER_STATUS_CHANGED,
     DEVICE_CONNECTED,
