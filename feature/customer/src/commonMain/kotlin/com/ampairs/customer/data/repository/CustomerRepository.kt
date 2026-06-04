@@ -363,28 +363,33 @@ class CustomerRepository(
                 // Process this batch
                 val batchCustomers = pageResponse.content
                 if (batchCustomers.isNotEmpty()) {
-                    // Insert/update customers from server and mark as synced
-                    // Only insert customers that don't conflict with existing local UIDs
+                    // Reconcile each server row: skip if a local unsynced edit exists (local wins);
+                    // permanently delete locally if the server marks it DELETED; otherwise upsert.
                     val entities = batchCustomers.mapNotNull { serverCustomer ->
                         val existingCustomer = customerDao.getCustomerById(serverCustomer.uid)
-                        if (existingCustomer != null && !existingCustomer.synced) {
-                            // Skip server customer if we have unsynced local version with same UID
-                            CustomerLogger.w("CustomerRepository", "Skipping server customer ${serverCustomer.uid} - conflicts with unsynced local version")
-                            null
-                        } else {
-                            serverCustomer.toEntity().copy(synced = true)
+                        when {
+                            existingCustomer != null && !existingCustomer.synced -> {
+                                CustomerLogger.w("CustomerRepository", "Skipping server customer ${serverCustomer.uid} - unsynced local version wins")
+                                null
+                            }
+                            serverCustomer.status?.equals("DELETED", ignoreCase = true) == true -> {
+                                // Server-removed → permanently delete from local DB.
+                                customerDao.deleteCustomer(serverCustomer.uid)
+                                null
+                            }
+                            else -> serverCustomer.toEntity().copy(synced = true)
                         }
                     }
-                    customerDao.insertCustomers(entities)
+                    if (entities.isNotEmpty()) customerDao.insertCustomers(entities)
 
-                    // Track the latest timestamp from this batch
+                    // Track the latest timestamp from this batch (deleted rows advance it too)
                     val batchMaxTime = getMaxUpdatedAtFromServerCustomers(batchCustomers)
                     if (batchMaxTime > maxServerTime) {
                         maxServerTime = batchMaxTime
                     }
 
-                    totalSynced += entities.size
-                    CustomerLogger.i("CustomerRepository", "Synced batch ${currentPage + 1}: ${entities.size} customers (page ${currentPage + 1}/${pageResponse.totalPages})")
+                    totalSynced += batchCustomers.size
+                    CustomerLogger.i("CustomerRepository", "Synced batch ${currentPage + 1}: ${batchCustomers.size} customers (page ${currentPage + 1}/${pageResponse.totalPages})")
                 }
 
                 currentPage++
