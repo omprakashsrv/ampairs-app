@@ -68,6 +68,12 @@ class CentralSyncService {
     private val pushMutexes = SyncEntity.entries.associateWith { Mutex() }
     private val pullMutexes = SyncEntity.entries.associateWith { Mutex() }
 
+    // The server checkpoint (ISO-8601 max updatedAt) each entity was last pulled up to this session.
+    // Lets repeated bootstraps (hourly / reconnect) skip entities the server hasn't advanced past.
+    // Both sides come from the checkpoint endpoint, so the string comparison is exact. Reset in stop().
+    private val lastPulledCheckpoints = mutableMapOf<SyncEntity, String>()
+    private val reconcileMutex = Mutex()
+
     private var scope: CoroutineScope? = null
     private var dao: SyncStateDao? = null
 
@@ -134,6 +140,7 @@ class CentralSyncService {
         dao = null
         _syncStates.value = emptyMap()
         _syncLogs.value = emptyList()
+        lastPulledCheckpoints.clear()
         log.i { "Stopped" }
     }
 
@@ -176,27 +183,32 @@ class CentralSyncService {
     fun reconcileCheckpoints(serverCheckpoints: Map<SyncEntity, String?>) {
         val currentScope = scope ?: return
         currentScope.launch {
-            // lastSyncedAt() is suspend, so build the set with a loop (not a filter lambda).
-            val laggards = mutableSetOf<SyncEntity>()
-            for (entity in delegates.keys) {
-                val server = serverCheckpoints[entity]
-                if (server.isNullOrBlank()) continue // no server data → never pull
-                val client = runCatching { delegates[entity]?.lastSyncedAt() }.getOrNull()
-                if (client.isNullOrBlank() || server > client) { // string compare valid for ISO-8601
-                    laggards.add(entity)
+            // Serialize reconciles (connect + reconnect + hourly can overlap) so the skip decisions
+            // and the lastPulledCheckpoints map stay consistent.
+            reconcileMutex.withLock {
+                val laggards = mutableSetOf<SyncEntity>()
+                for (entity in delegates.keys) {
+                    val server = serverCheckpoints[entity]
+                    if (server.isNullOrBlank()) continue // no server data → never pull
+                    val pulled = lastPulledCheckpoints[entity]
+                    // Skip when the server hasn't advanced past what we already pulled this session.
+                    // Both values come from the checkpoint endpoint, so the ISO-8601 compare is exact.
+                    if (pulled == null || server > pulled) {
+                        laggards.add(entity)
+                    }
                 }
-            }
 
-            if (laggards.isEmpty()) {
-                log.i { "Bootstrap reconcile: all entities in sync" }
-                return@launch
+                if (laggards.isEmpty()) {
+                    log.i { "Bootstrap reconcile: all entities in sync" }
+                    return@withLock
+                }
+                log.i { "Bootstrap reconcile: pulling ${laggards.map { it.name }}" }
+                laggards.forEach { entity ->
+                    updateState(entity) { it.copy(status = SyncStatus.PendingPull) }
+                    persistPersistStatus(entity, SyncPersistStatus.PENDING_PULL)
+                }
+                pullEntities(laggards, serverCheckpoints)
             }
-            log.i { "Bootstrap reconcile: pulling ${laggards.map { it.name }}" }
-            laggards.forEach { entity ->
-                updateState(entity) { it.copy(status = SyncStatus.PendingPull) }
-                persistPersistStatus(entity, SyncPersistStatus.PENDING_PULL)
-            }
-            pullEntities(laggards)
         }
     }
 
@@ -307,8 +319,11 @@ class CentralSyncService {
      * satisfied are pulled together in a wave; the next wave starts only after the current one
      * completes. If a dependency's pull fails, its dependents are held (left PENDING_PULL) and
      * retried on the next reconcile cycle (reconnect / hourly).
+     *
+     * On a successful pull the entity's target server checkpoint is recorded so the next bootstrap
+     * can skip it while the server stays at that checkpoint.
      */
-    private suspend fun pullEntities(entities: Set<SyncEntity>) {
+    private suspend fun pullEntities(entities: Set<SyncEntity>, checkpoints: Map<SyncEntity, String?>) {
         val pending = entities.filter { delegates[it] != null }.toMutableSet()
         val failed = mutableSetOf<SyncEntity>()
         while (pending.isNotEmpty()) {
@@ -324,7 +339,11 @@ class CentralSyncService {
             }
             results.forEach { (e, ok) ->
                 pending.remove(e)
-                if (!ok) failed.add(e)
+                if (ok) {
+                    checkpoints[e]?.let { lastPulledCheckpoints[e] = it }
+                } else {
+                    failed.add(e)
+                }
             }
         }
     }
