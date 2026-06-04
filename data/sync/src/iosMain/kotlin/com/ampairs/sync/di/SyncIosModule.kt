@@ -8,6 +8,7 @@ import com.ampairs.sync.db.SyncStateDatabase
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import com.ampairs.sync.db.migrations.SYNC_MIGRATION_1_2
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 
 @ContributesTo(WorkspaceScope::class)
@@ -22,6 +23,7 @@ interface SyncIosModule {
         ): SyncStateDatabase = factory.createDatabase<SyncStateDatabase>(
             moduleName = "sync",
             workspaceSlug = config.workspaceSlug,
+            migrations = listOf(SYNC_MIGRATION_1_2),
         ).also { closableRegistry.register { it.close() } }
     }
 }

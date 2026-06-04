@@ -66,9 +66,9 @@ class StateStore(
         }
     }
 
-    suspend fun getAvailableStatesForImport(workspaceId: String): Result<List<MasterState>> {
+    suspend fun getAvailableStatesForImport(): Result<List<MasterState>> {
         return try {
-            val masterStates = customerApi.getAvailableStatesForImport(workspaceId)
+            val masterStates = customerApi.getAvailableStatesForImport()
             Result.success(masterStates)
         } catch (e: Exception) {
             Result.failure(e)

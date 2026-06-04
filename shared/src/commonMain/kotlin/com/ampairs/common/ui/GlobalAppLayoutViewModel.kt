@@ -11,11 +11,10 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.common.firebase.analytics.AnalyticsEvents
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.state.AppHeaderStateManager
-import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.di.WorkspaceManager
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.WorkspaceList
-import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -35,6 +34,7 @@ class GlobalAppLayoutViewModel(
     private val tokenRepository: com.ampairs.auth.api.TokenRepository,
     private val analytics: FirebaseAnalytics,
     private val appPreferences: AppPreferencesDataStore,
+    private val workspaceManager: WorkspaceManager,
 ) : ViewModel() {
 
     sealed interface NavEvent {
@@ -51,14 +51,11 @@ class GlobalAppLayoutViewModel(
         observeWorkspaceContext()
     }
 
-    // Observe WorkspaceContextManager so the header updates immediately whenever
-    // the user switches workspaces (WorkspaceContextIntegration.setWorkspaceFromDomain
-    // updates WorkspaceContextManager but not AppHeaderStateManager directly).
     private fun observeWorkspaceContext() {
         viewModelScope.launch {
-            WorkspaceContextManager.getInstance().currentWorkspace.collect { context ->
-                if (context != null) {
-                    loadWorkspaceById(context.id)
+            workspaceManager.session.collect { session ->
+                if (session != null) {
+                    loadWorkspaceById(session.config.workspaceId)
                 }
             }
         }
@@ -120,7 +117,6 @@ class GlobalAppLayoutViewModel(
 
     fun clearWorkspace() {
         viewModelScope.launch {
-            WorkspaceContextIntegration.clearWorkspaceContext()
             appPreferences.clearLastWorkspaceId()
             _navEvent.emit(NavEvent.NavigateToWorkspace)
         }
@@ -130,7 +126,6 @@ class GlobalAppLayoutViewModel(
         viewModelScope.launch {
             analytics.logEvent(AnalyticsEvents.LOGOUT)
             analytics.setUserId(null)
-            WorkspaceContextIntegration.clearWorkspaceContext()
             val currentUserId = tokenRepository.getCurrentUserId()
             currentUserId?.let { userId ->
                 try {
@@ -151,7 +146,6 @@ class GlobalAppLayoutViewModel(
             tokenRepository.clearCurrentUser()
             appPreferences.clearLastUserId()
             appPreferences.clearLastWorkspaceId()
-            WorkspaceContextIntegration.clearWorkspaceContext()
             AppHeaderStateManager.instance.reset()
             _navEvent.emit(NavEvent.NavigateToUserSelection)
         }

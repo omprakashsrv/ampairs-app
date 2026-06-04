@@ -1,10 +1,11 @@
 package com.ampairs.customer.data.repository
 
-import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.db.CustomerDao
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.customer.data.db.toDomain
 import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.Customer
@@ -12,7 +13,6 @@ import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.toListItem
 import com.ampairs.common.EventType
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.time.ExperimentalTime
 import com.ampairs.common.sentry.ErrorTracking
@@ -25,7 +25,7 @@ import com.ampairs.customer.util.CustomerLogger
 class CustomerRepository(
     private val customerDao: CustomerDao,
     private val customerApi: CustomerApi,
-    private val appPreferences: AppPreferencesDataStore,
+    private val syncStateDao: SyncStateDao,
 ) : CustomerDataService, CacheCleanable {
 
     private suspend fun handleCustomerEvent(eventType: EventType, customerId: String) {
@@ -265,7 +265,7 @@ class CustomerRepository(
     }
 
     private suspend fun getLastSyncTime(): String {
-        return appPreferences.getCustomerLastSyncTime().first()
+        return syncStateDao.getLastSyncedAtIso(SyncEntity.CUSTOMER) ?: ""
     }
 
     /**
@@ -392,7 +392,7 @@ class CustomerRepository(
 
             // Update last sync time using the latest timestamp from all batches
             if (maxServerTime.isNotBlank()) {
-                appPreferences.setCustomerLastSyncTime(maxServerTime)
+                syncStateDao.setLastSyncedAtIso(SyncEntity.CUSTOMER, maxServerTime)
             }
 
             CustomerLogger.i("CustomerRepository", "Batch sync completed: $totalSynced customers synced in $currentPage batches")

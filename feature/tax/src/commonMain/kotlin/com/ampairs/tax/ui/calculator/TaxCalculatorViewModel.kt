@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.calculation.TaxCalculationEngine
 import com.ampairs.tax.calculation.model.*
+import com.ampairs.business.data.repository.BusinessRepository
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxCode
-import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -25,7 +25,7 @@ class TaxCalculatorViewModel(
     private val taxCalculationEngine: TaxCalculationEngine,
     private val taxCodeRepository: TaxCodeRepository,
     private val taxRuleRepository: TaxRuleRepository,
-    private val workspaceContext: WorkspaceContextManager
+    private val businessRepository: BusinessRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TaxCalculatorUiState())
@@ -37,9 +37,9 @@ class TaxCalculatorViewModel(
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     init {
-        // Set default country from workspace context
+        // Set default country from business profile
         viewModelScope.launch {
-            val countryCode = workspaceContext.getCurrentCountryCode() ?: "IN"
+            val countryCode = businessRepository.getCachedBusiness()?.country ?: "IN"
             _uiState.update {
                 it.copy(
                     sourceCountry = countryCode,

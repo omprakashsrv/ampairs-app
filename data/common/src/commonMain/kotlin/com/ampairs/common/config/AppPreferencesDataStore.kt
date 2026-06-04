@@ -20,26 +20,6 @@ interface AppPreferencesDataStore {
     suspend fun setThemePreference(preference: ThemePreference)
 
     /**
-     * Get the last customer sync time as ISO 8601 string (yyyy-mm-ddTHH:mm:ss)
-     */
-    fun getCustomerLastSyncTime(): Flow<String>
-
-    /**
-     * Set the last customer sync time as ISO 8601 string (yyyy-mm-ddTHH:mm:ss)
-     */
-    suspend fun setCustomerLastSyncTime(timestamp: String)
-
-    /**
-     * Get the last form config sync time as ISO 8601 string (yyyy-mm-ddTHH:mm:ss)
-     */
-    fun getFormConfigLastSyncTime(): Flow<String>
-
-    /**
-     * Set the last form config sync time as ISO 8601 string (yyyy-mm-ddTHH:mm:ss)
-     */
-    suspend fun setFormConfigLastSyncTime(timestamp: String)
-
-    /**
      * Get the last update check time as epoch milliseconds
      */
     fun getLastUpdateCheckTime(): Flow<Long>
