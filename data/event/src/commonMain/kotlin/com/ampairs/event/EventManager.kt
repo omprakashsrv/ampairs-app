@@ -112,7 +112,12 @@ class EventManager(
         connectionTimeout = 30.seconds
     }
 
-    private val json = Json { ignoreUnknownKeys = true }
+    // coerceInputValues maps unrecognised enum values (e.g. new backend event types) to the
+    // declared default (EventType.UNKNOWN) instead of throwing and dropping the event.
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
 
     /**
      * Connect to WebSocket and subscribe to workspace events.

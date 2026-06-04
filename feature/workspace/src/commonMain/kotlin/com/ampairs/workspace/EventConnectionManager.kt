@@ -54,6 +54,7 @@ class EventConnectionManager(
                             entityType = event.entityType,
                             entityId = event.entityId,
                             eventType = event.eventType.name,
+                            lastUpdatedAt = event.lastUpdatedAt,
                         )
                     }
                 }

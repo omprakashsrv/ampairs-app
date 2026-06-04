@@ -203,12 +203,23 @@ class CentralSyncService {
     /**
      * Called by EventConnectionManager when a backend WebSocket event arrives.
      * Routes to the matching SyncDelegate after marking state as PENDING_PULL.
+     *
+     * [lastUpdatedAt] is the slim signal's change watermark (ISO-8601, diagnostic). We always pull
+     * on a live signal — the incremental pull returns only new rows, and the safe skip-when-in-sync
+     * comparison lives in the bootstrap reconcile (which compares same-source watermarks). The live
+     * signal's time is the server's emit time, not the entity's updatedAt, so it is not used to skip.
      */
-    fun onBackendEvent(entityType: String, entityId: String, eventType: String) {
+    fun onBackendEvent(
+        entityType: String,
+        entityId: String,
+        eventType: String,
+        lastUpdatedAt: String? = null,
+    ) {
         val entity = SyncEntity.fromEntityType(entityType) ?: run {
             log.d { "Ignoring unknown entityType: $entityType" }
             return
         }
+        log.d { "Backend event ${entity.name} (watermark=$lastUpdatedAt) — scheduling pull" }
         updateAndPersistStatus(entity, SyncStatus.PendingPull)
         emit(SyncEvent.BackendEventReceived(entityType, entityId, eventType))
     }
