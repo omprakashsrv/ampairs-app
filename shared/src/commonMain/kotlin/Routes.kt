@@ -206,6 +206,49 @@ sealed interface ProductRoute : NavKey {
     ) : ProductRoute
 }
 
+// Ecom storefront routes (customer-facing standalone surface)
+@Serializable
+sealed interface EcomRoute : NavKey {
+    /** Entry point — resolves the access gate, then hosts the shop shell. */
+    @Serializable
+    data class Storefront(val slug: String) : EcomRoute
+
+    @Serializable
+    data object Browse : EcomRoute
+
+    @Serializable
+    data class DrillDown(
+        val category: String? = null,
+        val brand: String? = null,
+        val subcategory: String? = null,
+        val query: String? = null,
+    ) : EcomRoute
+
+    @Serializable
+    data class ProductDetail(val productId: String) : EcomRoute
+
+    @Serializable
+    data object Cart : EcomRoute
+
+    @Serializable
+    data object Checkout : EcomRoute
+
+    @Serializable
+    data class OrderPlaced(val orderRef: String) : EcomRoute
+
+    @Serializable
+    data object Orders : EcomRoute
+
+    @Serializable
+    data class OrderTracking(val orderRef: String) : EcomRoute
+
+    @Serializable
+    data object Account : EcomRoute
+
+    @Serializable
+    data object Addresses : EcomRoute
+}
+
 // Customer routes
 @Serializable
 sealed interface CustomerRoute : NavKey {

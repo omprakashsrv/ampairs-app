@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gate -->
+    <string name="ecom_loading">Loading…</string>
+    <string name="ecom_store_unavailable_title">Store not available</string>
+    <string name="ecom_store_unavailable_body">This store is not published yet, or the link is incorrect. Please check the address and try again.</string>
+    <string name="ecom_request_access_title">Request store access</string>
+    <string name="ecom_request_access_btn">Request access</string>
+    <string name="ecom_pending_title">Access pending</string>
+    <string name="ecom_pending_body">The store will review your request. We\'ll notify you by SMS once you\'re approved.</string>
+    <string name="ecom_shop_placeholder_title">Storefront ready</string>
+    <string name="ecom_shop_placeholder_body">Browse, cart and checkout screens are coming in the next phase.</string>
+
+    <!-- Browse / catalog -->
+    <string name="ecom_search_placeholder">Search products…</string>
+    <string name="ecom_shop_by_category">Shop by category</string>
+    <string name="ecom_shop_by_brand">Shop by brand</string>
+    <string name="ecom_popular">Popular</string>
+    <string name="ecom_view_cart">View cart</string>
+    <string name="ecom_result_count">%1$d products</string>
+    <string name="ecom_add_to_cart">Add to cart</string>
+    <string name="ecom_out_of_stock">Out of stock</string>
+    <string name="ecom_save_amount">You save %1$s</string>
+    <string name="ecom_no_results">No products found</string>
+
+    <!-- Bottom nav -->
+    <string name="ecom_tab_shop">Shop</string>
+    <string name="ecom_tab_orders">Orders</string>
+    <string name="ecom_tab_account">Account</string>
+
+    <!-- Cart -->
+    <string name="ecom_cart_title">Your cart</string>
+    <string name="ecom_cart_empty">Your cart is empty</string>
+    <string name="ecom_delivery_title">Standard delivery</string>
+    <string name="ecom_delivery_subtitle">Fulfilled by the merchant</string>
+    <string name="ecom_bill_details">Bill details</string>
+    <string name="ecom_item_total_mrp">Item total (MRP)</string>
+    <string name="ecom_product_discount">Product discount</string>
+    <string name="ecom_delivery">Delivery</string>
+    <string name="ecom_free">FREE</string>
+    <string name="ecom_to_pay">To pay</string>
+    <string name="ecom_subtotal">Subtotal</string>
+    <string name="ecom_checkout">Checkout</string>
+
+    <!-- Checkout -->
+    <string name="ecom_checkout_title">Checkout</string>
+    <string name="ecom_step_address">Address</string>
+    <string name="ecom_step_review">Review</string>
+    <string name="ecom_step_place">Place</string>
+    <string name="ecom_select_address">Select delivery address</string>
+    <string name="ecom_add_address">Add address</string>
+    <string name="ecom_place_order">Place order</string>
+    <string name="ecom_order_notes">Delivery notes (optional)</string>
+    <string name="ecom_continue">Continue</string>
+
+    <!-- Order placed / tracking -->
+    <string name="ecom_order_placed_title">Order placed</string>
+    <string name="ecom_order_placed_sub">Thanks! Your order has been received.</string>
+    <string name="ecom_track_order">Track order</string>
+    <string name="ecom_continue_shopping">Continue shopping</string>
+    <string name="ecom_order_ref">Order reference</string>
+    <string name="ecom_tracking_title">Track order</string>
+    <string name="ecom_orders_title">My orders</string>
+    <string name="ecom_no_orders">No orders yet</string>
+    <string name="ecom_items_count">%1$d items</string>
+
+    <!-- Status labels -->
+    <string name="ecom_status_pending_review">Reviewing your order</string>
+    <string name="ecom_status_confirmed">Order confirmed</string>
+    <string name="ecom_status_processing">Being packed</string>
+    <string name="ecom_status_dispatched">Out for delivery</string>
+    <string name="ecom_status_delivered">Delivered</string>
+    <string name="ecom_status_cancelled">Cancelled</string>
+    <string name="ecom_status_placed">Order placed</string>
+
+    <!-- Account -->
+    <string name="ecom_account_title">Account</string>
+    <string name="ecom_account_cross_store">One Ampairs account works across every store. Your order history here is specific to this store.</string>
+    <string name="ecom_account_orders">My orders</string>
+    <string name="ecom_account_addresses">Saved addresses</string>
+    <string name="ecom_account_help">Help &amp; support</string>
+    <string name="ecom_logout">Log out</string>
+    <string name="ecom_signin_title">Log in or register</string>
+    <string name="ecom_signin_body">Log in with your phone number to place orders and track them.</string>
+    <string name="ecom_login">Log in</string>
+
+    <!-- Addresses -->
+    <string name="ecom_addresses_title">Saved addresses</string>
+    <string name="ecom_no_addresses">No saved addresses</string>
+    <string name="ecom_address_label">Label (e.g. Home)</string>
+    <string name="ecom_address_line1">Address line 1</string>
+    <string name="ecom_address_line2">Address line 2</string>
+    <string name="ecom_address_city">City</string>
+    <string name="ecom_address_state">State</string>
+    <string name="ecom_address_pin">PIN code</string>
+    <string name="ecom_address_phone">Phone</string>
+    <string name="ecom_address_default">Set as default</string>
+    <string name="ecom_save">Save</string>
+    <string name="ecom_delete">Delete</string>
+</resources>

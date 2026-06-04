@@ -15,7 +15,10 @@ enum class SyncEntity(val entityType: String) {
     UNIT("unit"),
     INVENTORY("inventory"),
     FORM("form"),
-    FILE("file");
+    FILE("file"),
+    ECOM_PRODUCT("ecom_product"),
+    ECOM_ADDRESS("ecom_address"),
+    ECOM_ORDER("ecom_order");
 
     companion object {
         fun fromEntityType(type: String): SyncEntity? =

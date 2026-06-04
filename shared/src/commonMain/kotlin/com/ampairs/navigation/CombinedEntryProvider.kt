@@ -24,6 +24,7 @@ import com.ampairs.navigation.providers.agentEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
 import com.ampairs.navigation.providers.customerEntryProvider
+import com.ampairs.navigation.providers.ecomEntryProvider
 import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
 import com.ampairs.navigation.providers.orderEntryProvider
@@ -56,6 +57,7 @@ fun combinedEntryProvider(
     return authEntryProvider(key, backStack, onLoginSuccess, sharedViewModelStoreOwner)
         ?: workspaceEntryProvider(key, backStack, onNavigationServiceReady)
         ?: customerEntryProvider(key, backStack)
+        ?: ecomEntryProvider(key, backStack)
         ?: productEntryProvider(key, backStack)
         ?: taxEntryProvider(key, backStack)
         ?: businessEntryProvider(key, backStack)
