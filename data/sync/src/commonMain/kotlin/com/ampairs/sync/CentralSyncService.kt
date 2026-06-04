@@ -88,8 +88,13 @@ class CentralSyncService {
             processEvents()
         }
 
+        // Replay any pulls that were persisted but never executed (e.g. process death
+        // between onBackendEvent writing PENDING_PULL and executeBackendEvent completing).
+        newScope.launch { processPendingPulls() }
+
         // Reactively observe SyncStateEntity — only fire push triggers for entities that *newly*
-        // enter PENDING_PUSH. Pulls are driven exclusively by WebSocket events.
+        // enter PENDING_PUSH. Pulls are driven exclusively by WebSocket events (and the
+        // one-shot processPendingPulls() above for process-death recovery).
         // Delta set keyed by entityName prevents re-triggering a push that's already in progress.
         newScope.launch {
             var previousPushSet = emptySet<SyncEntity>()
@@ -114,13 +119,14 @@ class CentralSyncService {
 
     /**
      * Called by EventSyncBridge when the WebSocket connection is (re)established.
-     * Flushes any pending pushes that accumulated while offline. Pulls are not triggered
-     * here — they come in via [onBackendEvent] once the server sends WebSocket events.
+     * Flushes pending pushes and replays any pulls that were persisted but not yet executed
+     * (e.g. process death between [onBackendEvent] writing PENDING_PULL and the pull completing).
      */
     fun onConnectionRestored() {
         scope?.launch {
-            log.i { "WebSocket reconnected — flushing pending pushes" }
+            log.i { "WebSocket reconnected — flushing pending pushes and pulls" }
             processPendingPushes()
+            processPendingPulls()
         }
     }
 
@@ -200,6 +206,13 @@ class CentralSyncService {
         currentDao.getPending()
             .filter { it.statusName == SyncPersistStatus.PENDING_PUSH }
             .forEach { row -> emit(SyncEvent.TriggerPush(row.entityName)) }
+    }
+
+    private suspend fun processPendingPulls() {
+        val currentDao = dao ?: return
+        currentDao.getPending()
+            .filter { it.statusName == SyncPersistStatus.PENDING_PULL }
+            .forEach { row -> emit(SyncEvent.TriggerPull(row.entityName)) }
     }
 
     // endregion
