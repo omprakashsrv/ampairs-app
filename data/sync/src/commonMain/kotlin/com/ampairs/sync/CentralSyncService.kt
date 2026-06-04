@@ -11,8 +11,11 @@ import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -156,6 +159,48 @@ class CentralSyncService {
     }
 
     /**
+     * Mark an entity as needing a server pull and trigger it.
+     * Used when a backend signal indicates this entity changed.
+     */
+    fun markPendingPull(entity: SyncEntity) {
+        updateAndPersistStatus(entity, SyncStatus.PendingPull)
+        emit(SyncEvent.TriggerPull(entity))
+    }
+
+    /**
+     * Bootstrap reconciliation. Called on workspace connect, on reconnect, and on the hourly timer
+     * with the server's `max(updatedAt)` per entity (ISO-8601 string, or null when the entity has
+     * no rows). For each entity whose server checkpoint is newer than the client's last-synced
+     * watermark, schedules a pull. Pulls run in dependency order (parents before dependents).
+     */
+    fun reconcileCheckpoints(serverCheckpoints: Map<SyncEntity, String?>) {
+        val currentScope = scope ?: return
+        currentScope.launch {
+            // lastSyncedAt() is suspend, so build the set with a loop (not a filter lambda).
+            val laggards = mutableSetOf<SyncEntity>()
+            for (entity in delegates.keys) {
+                val server = serverCheckpoints[entity]
+                if (server.isNullOrBlank()) continue // no server data → never pull
+                val client = runCatching { delegates[entity]?.lastSyncedAt() }.getOrNull()
+                if (client.isNullOrBlank() || server > client) { // string compare valid for ISO-8601
+                    laggards.add(entity)
+                }
+            }
+
+            if (laggards.isEmpty()) {
+                log.i { "Bootstrap reconcile: all entities in sync" }
+                return@launch
+            }
+            log.i { "Bootstrap reconcile: pulling ${laggards.map { it.name }}" }
+            laggards.forEach { entity ->
+                updateState(entity) { it.copy(status = SyncStatus.PendingPull) }
+                persistPersistStatus(entity, SyncPersistStatus.PENDING_PULL)
+            }
+            pullEntities(laggards)
+        }
+    }
+
+    /**
      * Called by EventConnectionManager when a backend WebSocket event arrives.
      * Routes to the matching SyncDelegate after marking state as PENDING_PULL.
      */
@@ -232,9 +277,9 @@ class CentralSyncService {
 
     // region — Sync execution
 
-    private suspend fun executePull(entity: SyncEntity) {
-        val delegate = delegates[entity] ?: return
-        pullMutexes[entity]?.withLock {
+    private suspend fun executePull(entity: SyncEntity): Boolean {
+        val delegate = delegates[entity] ?: return false
+        return pullMutexes[entity]?.withLock {
             updateState(entity) { it.copy(status = SyncStatus.Syncing) }
             appendLog(SyncLogEntry(Clock.System.now().toEpochMilliseconds(), entity, SyncLogEntry.Direction.PULL, SyncLogEntry.Outcome.STARTED, "Pull started"))
             val result = runCatching { delegate.pullFromServer() }.fold(
@@ -242,6 +287,34 @@ class CentralSyncService {
                 onFailure = { SyncResult.Failure(it) },
             )
             applyResult(entity, result, wasPull = true)
+            result is SyncResult.Success
+        } ?: false
+    }
+
+    /**
+     * Pull a batch of entities in dependency order. Entities whose in-batch dependencies are all
+     * satisfied are pulled together in a wave; the next wave starts only after the current one
+     * completes. If a dependency's pull fails, its dependents are held (left PENDING_PULL) and
+     * retried on the next reconcile cycle (reconnect / hourly).
+     */
+    private suspend fun pullEntities(entities: Set<SyncEntity>) {
+        val pending = entities.filter { delegates[it] != null }.toMutableSet()
+        val failed = mutableSetOf<SyncEntity>()
+        while (pending.isNotEmpty()) {
+            val wave = pending.filter { e ->
+                delegates[e]?.dependsOn?.none { dep -> dep in pending || dep in failed } ?: false
+            }
+            if (wave.isEmpty()) {
+                log.w { "Holding ${pending.map { it.name }} — dependencies unavailable or failed" }
+                break
+            }
+            val results = coroutineScope {
+                wave.map { e -> async { e to executePull(e) } }.awaitAll()
+            }
+            results.forEach { (e, ok) ->
+                pending.remove(e)
+                if (!ok) failed.add(e)
+            }
         }
     }
 

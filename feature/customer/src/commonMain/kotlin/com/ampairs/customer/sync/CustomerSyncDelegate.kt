@@ -19,6 +19,10 @@ class CustomerSyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.CUSTOMER
 
+    // Customer rows reference a group and a type — pull those first so names resolve locally.
+    override val dependsOn: List<SyncEntity> =
+        listOf(SyncEntity.CUSTOMER_GROUP, SyncEntity.CUSTOMER_TYPE)
+
     override suspend fun pullFromServer(): SyncResult =
         customerRepository.pullFromServer().fold(
             onSuccess = { SyncResult.Success(it) },

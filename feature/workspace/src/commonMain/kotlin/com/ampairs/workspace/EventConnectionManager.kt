@@ -5,11 +5,13 @@ import com.ampairs.common.event.ConnectionState
 import com.ampairs.common.event.EventLogger
 import com.ampairs.common.event.IEventManager
 import com.ampairs.sync.CentralSyncService
+import com.ampairs.workspace.sync.SyncBootstrapService
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
 class EventConnectionManager(
     private val eventManagerProvider: EventManagerProvider,
     private val syncService: CentralSyncService,
+    private val bootstrapService: SyncBootstrapService,
 ) {
     private val scope = CoroutineScope(Dispatchers.Default)
     private var connectionJob: Job? = null
@@ -55,11 +58,25 @@ class EventConnectionManager(
                     }
                 }
 
-                // Notify CentralSyncService whenever the WebSocket (re)connects
+                // On every (re)connect: flush pending pushes AND re-run the checkpoint bootstrap so
+                // anything missed while offline is reconciled and pulled in dependency order.
                 launch {
                     eventManager.connectionState
                         .filter { it is ConnectionState.Connected }
-                        .collect { syncService.onConnectionRestored() }
+                        .collect {
+                            syncService.onConnectionRestored()
+                            bootstrapService.bootstrap()
+                        }
+                }
+
+                // Hourly safety net — re-reconcile checkpoints in case a live event was missed.
+                launch {
+                    while (true) {
+                        delay(HOURLY_RECONCILE_INTERVAL_MS)
+                        if (currentEventManager?.isConnected() == true) {
+                            runCatching { bootstrapService.bootstrap() }
+                        }
+                    }
                 }
 
                 EventLogger.i("EventConnectionManager", "✅ Event sync ready for workspace: $workspaceId")
@@ -84,6 +101,10 @@ class EventConnectionManager(
     }
 
     fun isConnected(): Boolean = currentEventManager?.isConnected() ?: false
+
+    private companion object {
+        const val HOURLY_RECONCILE_INTERVAL_MS = 60 * 60 * 1000L
+    }
 }
 
 /**

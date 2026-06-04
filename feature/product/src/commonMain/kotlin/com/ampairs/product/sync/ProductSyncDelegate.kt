@@ -22,6 +22,11 @@ class ProductSyncDelegate(
     // products can be inserted due to FK constraints.
     override val pushDependencies: List<SyncEntity> = listOf(SyncEntity.PRODUCT_CATALOG)
 
+    // For pulls, products reference catalog, unit and tax — pull those first so a product's
+    // unit/tax/category references resolve locally.
+    override val dependsOn: List<SyncEntity> =
+        listOf(SyncEntity.PRODUCT_CATALOG, SyncEntity.UNIT, SyncEntity.TAX)
+
     override suspend fun pullFromServer(): SyncResult =
         productRepository.pullFromServer().fold(
             onSuccess = { SyncResult.Success(it) },
