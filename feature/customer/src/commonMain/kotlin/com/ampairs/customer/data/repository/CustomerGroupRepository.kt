@@ -309,21 +309,24 @@ class CustomerGroupRepository(
                 if (pageResponse.error != null) throw Exception(pageResponse.error?.message ?: "Network error")
                 val batchGroups = pageResponse.data?.content ?: emptyList()
 
-                // Process batch with conflict resolution
+                // Reconcile: local unsynced wins; server-removed (active=false) is permanently
+                // deleted from the local DB; otherwise upsert.
                 val groupsToInsert = batchGroups.mapNotNull { serverGroup ->
                     val existing = customerGroupDao.getCustomerGroupById(serverGroup.uid)
-                    if (existing != null && !existing.synced) {
-                        // Skip server entity to preserve local changes
-                        null
-                    } else {
-                        serverGroup.toEntity().copy(synced = true)
+                    when {
+                        existing != null && !existing.synced -> null
+                        !serverGroup.active -> {
+                            customerGroupDao.hardDeleteCustomerGroup(serverGroup.uid)
+                            null
+                        }
+                        else -> serverGroup.toEntity().copy(synced = true)
                     }
                 }
 
                 if (groupsToInsert.isNotEmpty()) {
                     customerGroupDao.insertCustomerGroups(groupsToInsert)
-                    totalSynced += groupsToInsert.size
                 }
+                totalSynced += batchGroups.size
 
                 currentPage++
             } while (batchGroups.size == batchSize && totalSynced < 10000) // Safety limit

@@ -282,21 +282,24 @@ class CustomerTypeRepository(
                 if (pageResponse.error != null) throw Exception(pageResponse.error?.message ?: "Network error")
                 val batchTypes = pageResponse.data?.content ?: emptyList()
 
-                // Process batch with conflict resolution
+                // Reconcile: local unsynced wins; server-removed (active=false) is permanently
+                // deleted from the local DB; otherwise upsert.
                 val typesToInsert = batchTypes.mapNotNull { serverType ->
                     val existing = customerTypeDao.getCustomerTypeById(serverType.uid)
-                    if (existing != null && !existing.synced) {
-                        // Skip server entity to preserve local changes
-                        null
-                    } else {
-                        serverType.toEntity().copy(synced = true)
+                    when {
+                        existing != null && !existing.synced -> null
+                        !serverType.active -> {
+                            customerTypeDao.hardDeleteCustomerType(serverType.uid)
+                            null
+                        }
+                        else -> serverType.toEntity().copy(synced = true)
                     }
                 }
 
                 if (typesToInsert.isNotEmpty()) {
                     customerTypeDao.insertCustomerTypes(typesToInsert)
-                    totalSynced += typesToInsert.size
                 }
+                totalSynced += batchTypes.size
 
                 currentPage++
             } while (batchTypes.size == batchSize && totalSynced < 10000) // Safety limit
