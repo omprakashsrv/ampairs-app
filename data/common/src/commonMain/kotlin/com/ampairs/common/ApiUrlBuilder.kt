@@ -163,7 +163,7 @@ object ApiUrlBuilder {
 
     fun wsUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
-        return "${ConfigurationManager.current.wsBaseUrl}/$cleanPath"
+        return "${ConfigurationManager.current.wsBaseUrl}/api/$cleanPath"
     }
 
     fun buildCompleteUrl(path: String): String {
