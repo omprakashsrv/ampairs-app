@@ -163,6 +163,15 @@ class FileRepositoryImpl(
             )
         }
         dao.insertAll(entities)
+
+        // Set reconciliation: permanently delete local images for this entity that the server no
+        // longer returns (deleted server-side). Only fully-synced COMPLETED rows are touched, so a
+        // pending local upload is never removed.
+        val serverUids = response.images.map { it.uid }.toSet()
+        dao.getByEntity(entityType.backendValue, entityUid)
+            .filter { it.synced == 1 && it.uploadStatus == FileUploadStatus.COMPLETED.name && it.uid !in serverUids }
+            .forEach { dao.hardDeleteByUid(it.uid) }
+
         FileLogger.d(TAG, "Pulled ${entities.size} images for ${entityType.backendValue}/$entityUid")
         entities.size
     }
