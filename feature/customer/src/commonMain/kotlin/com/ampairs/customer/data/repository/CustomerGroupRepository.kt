@@ -111,9 +111,6 @@ class CustomerGroupRepository(
     suspend fun getCustomerGroupById(id: String): CustomerGroup? =
         customerGroupDao.getCustomerGroupById(id)?.toCustomerGroup()
 
-    suspend fun getCustomerGroupByName(name: String): CustomerGroup? =
-        customerGroupDao.getCustomerGroupByName(name)?.toCustomerGroup()
-
     /** Non-sync feature: fetch the master list of groups available to import (hits the API). */
     suspend fun getAvailableCustomerGroupsForImport(): Result<List<CustomerGroup>> {
         return try {

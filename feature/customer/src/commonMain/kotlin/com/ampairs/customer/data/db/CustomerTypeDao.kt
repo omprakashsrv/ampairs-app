@@ -1,6 +1,9 @@
 package com.ampairs.customer.data.db
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -15,9 +18,6 @@ interface CustomerTypeDao {
     @Query("SELECT * FROM customer_types WHERE id = :id")
     suspend fun getCustomerTypeById(id: String): CustomerTypeEntity?
 
-    @Query("SELECT * FROM customer_types WHERE name = :name AND active = 1")
-    suspend fun getCustomerTypeByName(name: String): CustomerTypeEntity?
-
     @Query("SELECT * FROM customer_types WHERE synced = 0")
     suspend fun getUnsyncedCustomerTypes(): List<CustomerTypeEntity>
 
@@ -27,9 +27,6 @@ interface CustomerTypeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomerTypes(customerTypes: List<CustomerTypeEntity>)
 
-    @Update
-    suspend fun updateCustomerType(customerType: CustomerTypeEntity)
-
     @Query("UPDATE customer_types SET active = 0 WHERE id = :id")
     suspend fun deleteCustomerType(id: String)
 
@@ -38,10 +35,4 @@ interface CustomerTypeDao {
 
     @Query("DELETE FROM customer_types")
     suspend fun clearAll()
-
-    @Query("SELECT COUNT(*) FROM customer_types WHERE active = 1")
-    suspend fun getActiveCustomerTypesCount(): Int
-
-    @Query("SELECT COUNT(*) FROM customer_types WHERE synced = 0")
-    fun observeUnsyncedCount(): Flow<Int>
 }

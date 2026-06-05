@@ -25,25 +25,3 @@ data class CustomerGroup(
     @SerialName("updated_at")
     val updatedAt: String? = null
 )
-
-data class CustomerGroupListItem(
-    val id: String,
-    val name: String,
-    val description: String?,
-    val groupCode: String?,
-    val displayOrder: Int?,
-    val defaultDiscountPercentage: Double?,
-    val priorityLevel: Int?,
-    val active: Boolean
-)
-
-fun CustomerGroup.toListItem(): CustomerGroupListItem = CustomerGroupListItem(
-    id = uid,
-    name = name,
-    description = description,
-    groupCode = groupCode,
-    displayOrder = displayOrder,
-    defaultDiscountPercentage = defaultDiscountPercentage,
-    priorityLevel = priorityLevel,
-    active = active
-)

@@ -47,5 +47,4 @@ interface CustomerApi {
     suspend fun bulkImportStates(request: BulkImportRequest): BulkImportResponse
     suspend fun getAvailableStatesForImport(): List<MasterState>
     suspend fun deleteState(stateId: String)
-    suspend fun getState(stateId: String): State?
 }

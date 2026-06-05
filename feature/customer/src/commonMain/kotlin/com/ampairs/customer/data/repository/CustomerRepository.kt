@@ -57,9 +57,6 @@ class CustomerRepository(
 
     override suspend fun clearCache() { customerDao.clearWorkspaceCustomers() }
 
-    /** Reactive count of locally unsynced rows — drives PendingPush status in CentralSyncService. */
-    fun observeUnsyncedCount(): Flow<Int> = customerDao.observeUnsyncedCount()
-
     suspend fun getCustomerCount(): Int = customerDao.getCustomerCount()
 
     suspend fun getUniqueCities(): List<String> = customerDao.getUniqueCities()

@@ -16,19 +16,7 @@ interface CustomerTypeApi {
 
     suspend fun getAvailableCustomerTypesForImport(): Response<List<CustomerType>>
 
-    suspend fun getCustomerTypeById(id: String): Response<CustomerType>
-
-    suspend fun createCustomerType(customerType: CustomerType): Response<CustomerType>
-
-    suspend fun updateCustomerType(id: String, customerType: CustomerType): Response<CustomerType>
-
     suspend fun bulkUpsertTypes(types: List<CustomerType>): Result<List<CustomerType>>
 
     suspend fun deleteCustomerType(id: String): Response<Unit>
-
-    suspend fun searchCustomerTypes(
-        query: String,
-        page: Int = 0,
-        size: Int = 100
-    ): Response<PageResponse<CustomerType>>
 }

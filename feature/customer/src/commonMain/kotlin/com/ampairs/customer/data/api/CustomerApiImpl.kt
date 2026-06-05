@@ -157,16 +157,4 @@ class CustomerApiImpl(
             ApiUrlBuilder.customerUrl("v1/states/$stateId")
         )
     }
-
-    override suspend fun getState(stateId: String): State? {
-        return try {
-            val response: Response<State> = get(
-                client,
-                ApiUrlBuilder.customerUrl("v1/states/$stateId")
-            )
-            response.data
-        } catch (_: Exception) {
-            null
-        }
-    }
 }

@@ -5,7 +5,6 @@ import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.api.BulkImportRequest
 import com.ampairs.customer.data.api.BulkImportResponse
 import com.ampairs.customer.data.db.StateDao
-import com.ampairs.customer.data.db.toDomain
 import com.ampairs.customer.data.db.toDomainList
 import com.ampairs.customer.data.db.toEntity
 import kotlinx.coroutines.flow.Flow
@@ -22,9 +21,6 @@ class StateStore(
 
     fun searchStatesFlow(query: String): Flow<List<State>> =
         stateDao.searchStates(query).map { it.toDomainList() }
-
-    suspend fun getStateById(stateId: String): State? =
-        stateDao.getStateById(stateId)?.toDomain()
 
     suspend fun syncStates(): Result<Int> {
         return try {

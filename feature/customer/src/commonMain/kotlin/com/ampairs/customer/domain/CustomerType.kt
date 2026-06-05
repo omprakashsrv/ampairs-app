@@ -23,25 +23,3 @@ data class CustomerType(
     @SerialName("updated_at")
     val updatedAt: String? = null
 )
-
-data class CustomerTypeListItem(
-    val id: String,
-    val name: String,
-    val description: String?,
-    val typeCode: String?,
-    val displayOrder: Int?,
-    val defaultCreditLimit: Double?,
-    val defaultCreditDays: Int?,
-    val active: Boolean
-)
-
-fun CustomerType.toListItem(): CustomerTypeListItem = CustomerTypeListItem(
-    id = uid,
-    name = name,
-    description = description,
-    typeCode = typeCode,
-    displayOrder = displayOrder,
-    defaultCreditLimit = defaultCreditLimit,
-    defaultCreditDays = defaultCreditDays,
-    active = active
-)

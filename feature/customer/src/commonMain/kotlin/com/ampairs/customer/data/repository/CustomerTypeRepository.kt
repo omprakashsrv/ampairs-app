@@ -105,9 +105,6 @@ class CustomerTypeRepository(
     suspend fun getCustomerTypeById(id: String): CustomerType? =
         customerTypeDao.getCustomerTypeById(id)?.toCustomerType()
 
-    suspend fun getCustomerTypeByName(name: String): CustomerType? =
-        customerTypeDao.getCustomerTypeByName(name)?.toCustomerType()
-
     /** Non-sync feature: fetch the master list of types available to import (hits the API). */
     suspend fun getAvailableCustomerTypesForImport(): Result<List<CustomerType>> {
         return try {

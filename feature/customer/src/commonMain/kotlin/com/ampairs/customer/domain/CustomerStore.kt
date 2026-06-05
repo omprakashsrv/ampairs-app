@@ -1,16 +1,11 @@
 package com.ampairs.customer.domain
 
-import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.customer.data.repository.CustomerRepository
-import com.ampairs.sync.CentralSyncService
-import com.ampairs.sync.SyncEntity
-import com.ampairs.sync.SyncEvent
 
 @Inject
 class CustomerStore(
     private val repository: CustomerRepository,
-    private val syncService: CentralSyncService,
 ) {
 
     fun observeCustomers() = repository.observeCustomers()
@@ -24,9 +19,6 @@ class CustomerStore(
     suspend fun updateCustomer(customer: Customer): Result<Customer> = repository.updateCustomer(customer)
 
     suspend fun deleteCustomer(customerId: String): Result<Unit> = repository.deleteCustomer(customerId)
-
-    /** Manual refresh: fire a full (push + pull) sync through the central coordinator. */
-    fun syncCustomers() = syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CUSTOMER))
 
     suspend fun getUniqueCities(): List<String> = repository.getUniqueCities()
 

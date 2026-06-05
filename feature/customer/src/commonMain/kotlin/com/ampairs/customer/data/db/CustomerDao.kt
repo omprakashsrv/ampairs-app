@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -40,9 +39,6 @@ interface CustomerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomers(customers: List<CustomerEntity>)
 
-    @Update
-    suspend fun updateCustomer(customer: CustomerEntity)
-
     @Query("DELETE FROM customers WHERE id = :customerId")
     suspend fun deleteCustomer(customerId: String)
 
@@ -51,10 +47,6 @@ interface CustomerDao {
 
     @Query("SELECT * FROM customers WHERE synced = 0")
     suspend fun getUnsyncedCustomers(): List<CustomerEntity>
-
-    @Query("SELECT COUNT(*) FROM customers WHERE synced = 0")
-    fun observeUnsyncedCount(): Flow<Int>
-
 
     @Query("DELETE FROM customers")
     suspend fun clearWorkspaceCustomers()
