@@ -130,9 +130,23 @@ class ProductRepository(
     override suspend fun clearCache() { productDao.deleteAll() }
 
     suspend fun syncProducts(): Result<Int> = runCatching {
-        val products = productApi.getProducts().getOrThrow()
-        productDao.insertAll(products.asDatabaseModel())
-        products.size
+        var page = 0
+        var total = 0
+        var hasNext: Boolean
+        do {
+            val pageResp = productApi.getProductsSync(lastSync = null, page = page, size = 100).getOrThrow()
+            val batch = pageResp.content
+            // Permanently delete locally anything the server reports as DELETED.
+            batch.filter { it.status?.equals("DELETED", ignoreCase = true) == true }
+                .forEach { productDao.deleteById(it.id) }
+            // Upsert the rest.
+            val toUpsert = batch.filter { it.status?.equals("DELETED", ignoreCase = true) != true }
+            if (toUpsert.isNotEmpty()) productDao.insertAll(toUpsert.asDatabaseModel())
+            total += batch.size
+            hasNext = pageResp.hasNext
+            page++
+        } while (hasNext && total < 10000)
+        total
     }
 
     suspend fun createProduct(product: Product): Result<Product> {
