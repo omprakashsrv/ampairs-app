@@ -140,13 +140,20 @@ feature/{name}/src/
 ```
 Compose UI  →  ViewModel (MVI/StateFlow)
                     ↓
-              Repository (business logic)
-               ↙          ↘
-         Room DB         Ktor API
-       (local first)   (background sync)
+              Repository (local-only: Room + mark PENDING_PUSH)
+                    ↓                         ↑ observes flag
+              Room DB  ←———————  CentralSyncService
+                    ↑                         ↓ drives push/pull
+              SyncDelegate (the only layer with the Ktor API)  →  Ktor API
 ```
 
-ViewModels observe Room DAOs via reactive `Flow` for UI updates, and call explicit `syncXxx()` methods to pull from the server. All writes go to Room first with `synced = false`. If sync fails, data is preserved locally and retried on next sync cycle.
+The **repository is local-only** — it never talks to the network. Every write goes to Room with
+`synced = false` and flags the entity `PENDING_PUSH` via `SyncStateDao`. `CentralSyncService` observes
+that flag and runs a **bulk push** through the feature's `SyncDelegate`, which is the single place that
+holds the API; pulls are **batched** and permanently delete rows the server reports as deleted.
+ViewModels observe Room DAOs via reactive `Flow` for UI updates and trigger manual refreshes with
+`syncService.emit(TriggerFullSync(entity))`. If a push fails, data is preserved locally and retried on
+reconnect. See `.claude/skills/offline-sync/SKILL.md` for the full architecture.
 
 ### Workspace-Scoped Databases
 
@@ -288,9 +295,11 @@ On iOS: use `Dispatchers.Default` — `Dispatchers.IO` does not exist on Kotlin/
 
 ### Offline-First Rules
 
-- Write to Room with `synced = false` before any network call
+- Repository is local-only: write to Room with `synced = false`, then `syncStateDao.markPendingPush(...)` — never call the API from the repository's write path
+- All entity ↔ server traffic (bulk push, batched pull, events) lives in `{Name}SyncDelegate`, which holds the API
+- Delete soft-deletes (`active = false, synced = false`) so the push picks it up
 - Generate UIDs in ViewModel: `UidGenerator.generateUid(prefix)` — never in Repository
-- Preserve local unsynced changes over server data during pull sync
+- Preserve local unsynced changes over server data during pull sync; permanently delete server-`DELETED` rows on pull
 - Batch sync: 100 records/batch, max 10,000/cycle
 
 ### API Conventions

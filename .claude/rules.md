@@ -141,11 +141,15 @@ SomeLogger.w("Tag", "message", exception)   // w/e/i/d — NOT warn/error/info/d
 
 ## Offline-First Rules
 
-- Database-first: always write to Room with `synced = false` before any network call
+- Repository is local-only: write to Room with `synced = false`, then `syncStateDao.markPendingPush(SyncEntity.X, now)`. The repository's create/update/delete path MUST NOT inject or call the feature `Api`
+- All entity ↔ server traffic (bulk push, batched pull, backend events) lives in `{Name}SyncDelegate`, which injects the `Api` + `Dao` and is `@ContributesIntoMap(WorkspaceScope::class)`
+- Delete soft-deletes (`active = false, synced = false`) — never just `active = false`, or the push (which reads `synced = 0`) won't send it
+- Pull is batched and permanently deletes rows the server reports `DELETED`/`active = false`; local unsynced edits win
 - Conflict resolution: local unsynced changes always win over server data during pull sync
 - Batch sync: default 100 records/batch, max 10,000/cycle, always check `hasNext`
 - Sync timestamp authority: use server's `updatedAt` string (ISO 8601) — never client clock for sync tracking
-- Offline-first pattern: reactive DAO `Flow` for UI observation + explicit `syncXxx()` for API calls; ViewModels call both in `init {}`
+- Allowed exception: the repo may keep the `Api` only for a non-sync, UI-invoked feature (import-from-master / available-for-import; file entity-scoped pull / set-primary)
+- ViewModels never call `repository.syncXxx()`; reactive DAO `Flow` for UI + `syncService.emit(TriggerPull/TriggerFullSync(X))` for refresh. Full guide: `/offline-sync`
 
 ---
 
