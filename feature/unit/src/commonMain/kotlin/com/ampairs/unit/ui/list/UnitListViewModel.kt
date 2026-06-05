@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.unit.data.repository.UnitRepository
 import com.ampairs.unit.domain.model.Unit
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -33,7 +37,8 @@ data class UnitListUiState(
 @ViewModelKey
 @Inject
 class UnitListViewModel(
-    private val unitRepository: UnitRepository
+    private val unitRepository: UnitRepository,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UnitListUiState())
@@ -43,7 +48,10 @@ class UnitListViewModel(
 
     init {
         observeUnits()
-        syncUnits()
+        syncService.observeEntity(SyncEntity.UNIT)
+            .onEach { state -> _uiState.update { it.copy(isRefreshing = state?.status is SyncStatus.Syncing) } }
+            .launchIn(viewModelScope)
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.UNIT))
     }
 
     fun updateSearchQuery(query: String) {
@@ -64,16 +72,7 @@ class UnitListViewModel(
     }
 
     fun syncUnits() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, error = null) }
-            try {
-                unitRepository.syncUnits()
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Sync failed") }
-            } finally {
-                _uiState.update { it.copy(isRefreshing = false) }
-            }
-        }
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.UNIT))
     }
 
     @OptIn(FlowPreview::class)

@@ -14,8 +14,6 @@ data class Business(
     val id: String = "",
     @SerialName("seq_id")
     val seqId: String? = null,
-    @SerialName("workspace_id")
-    val workspaceId: String? = null,
     val name: String = "",
     @SerialName("business_type")
     val businessType: BusinessType = BusinessType.RETAIL,

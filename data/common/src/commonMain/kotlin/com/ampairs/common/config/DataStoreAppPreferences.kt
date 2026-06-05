@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.ampairs.common.theme.ThemePreference
-import com.ampairs.common.workspace.WorkspaceContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -71,40 +70,6 @@ class DataStoreAppPreferences(
     override suspend fun setThemePreference(preference: ThemePreference) {
         dataStore.edit { preferences ->
             preferences[THEME_PREFERENCE_KEY] = preference.name
-        }
-    }
-
-    override fun getCustomerLastSyncTime(): Flow<String> {
-        return dataStore.data.map { preferences ->
-            val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
-            val key = getCustomerLastSyncTimeKey(workspaceSlug)
-            preferences[key] ?: "" // Default to empty string (sync all on first run)
-        }
-    }
-
-    override suspend fun setCustomerLastSyncTime(timestamp: String) {
-        val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
-        val key = getCustomerLastSyncTimeKey(workspaceSlug)
-
-        dataStore.edit { preferences ->
-            preferences[key] = timestamp
-        }
-    }
-
-    override fun getFormConfigLastSyncTime(): Flow<String> {
-        return dataStore.data.map { preferences ->
-            val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
-            val key = getFormConfigLastSyncTimeKey(workspaceSlug)
-            preferences[key] ?: "" // Default to empty string (sync all on first run)
-        }
-    }
-
-    override suspend fun setFormConfigLastSyncTime(timestamp: String) {
-        val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
-        val key = getFormConfigLastSyncTimeKey(workspaceSlug)
-
-        dataStore.edit { preferences ->
-            preferences[key] = timestamp
         }
     }
 

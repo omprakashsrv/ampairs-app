@@ -2,20 +2,26 @@ package com.ampairs.product.ui.create
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.workspace.context.WorkspaceContextManager
-import com.ampairs.product.domain.Group
-import com.ampairs.product.domain.Product
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.SubCategoryDao
+import com.ampairs.product.domain.Group
 import com.ampairs.product.domain.asCategoryGroupDomainModel
 import com.ampairs.product.domain.asGroupDomainModel
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
 import com.ampairs.tax.data.repository.TaxCodeLookup
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.unit.data.repository.UnitLookup
-import com.ampairs.unit.domain.model.Unit as UnitDomain
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,21 +31,13 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import com.ampairs.common.di.WorkspaceScope
-import com.ampairs.sync.CentralSyncService
-import com.ampairs.sync.SyncEntity
-import dev.zacsweers.metro.Assisted
-import dev.zacsweers.metro.AssistedFactory
-import dev.zacsweers.metro.AssistedInject
-import dev.zacsweers.metro.ContributesIntoMap
-import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
-import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import com.ampairs.unit.domain.model.Unit as UnitDomain
+
 @AssistedInject
 @OptIn(FlowPreview::class)
 class ProductFormViewModel(
     @Assisted private val productId: String?,
     private val productRepository: ProductRepository,
-    private val workspaceContextManager: WorkspaceContextManager,
     private val taxCodeRepository: TaxCodeLookup,
     private val syncService: CentralSyncService,
     private val categoryDao: CategoryDao,

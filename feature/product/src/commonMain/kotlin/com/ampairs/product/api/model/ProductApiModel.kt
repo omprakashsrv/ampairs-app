@@ -19,6 +19,7 @@ data class ProductApiModel(
     @SerialName("tax_code") val taxCode: String,
     @SerialName("active") val active: Boolean = true,
     @SerialName("soft_deleted") val softDeleted: Boolean = false,
+    @SerialName("status") val status: String? = null,
     @SerialName("tax_codes") val taxCodes: List<TaxCodeApiModel> = emptyList(),
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,

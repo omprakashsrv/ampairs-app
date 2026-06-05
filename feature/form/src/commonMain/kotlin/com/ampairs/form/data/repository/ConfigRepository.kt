@@ -1,7 +1,8 @@
 package com.ampairs.form.data.repository
 
-import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.form.data.api.ConfigApi
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.form.data.db.EntityAttributeDefinitionDao
 import com.ampairs.form.data.db.EntityFieldConfigDao
 import com.ampairs.form.data.db.toEntity
@@ -20,7 +21,7 @@ class ConfigRepository(
     private val api: ConfigApi,
     private val fieldConfigDao: EntityFieldConfigDao,
     private val attributeDefinitionDao: EntityAttributeDefinitionDao,
-    private val appPreferences: AppPreferencesDataStore
+    private val syncStateDao: SyncStateDao,
 ) : ConfigLookup {
 
     suspend fun getConfigSchema(entityType: String): Result<EntityConfigSchema> {
@@ -68,7 +69,7 @@ class ConfigRepository(
 
     override suspend fun syncFormConfigs(): Result<Int> {
         return try {
-            val lastSyncTime = appPreferences.getFormConfigLastSyncTime().first()
+            val lastSyncTime = syncStateDao.getLastSyncedAtIso(SyncEntity.FORM) ?: ""
 
             val schemas = if (lastSyncTime.isBlank()) {
                 api.getAllConfigSchemas()
@@ -95,7 +96,7 @@ class ConfigRepository(
                 schema.fieldConfigs.mapNotNull { it.updatedAt } +
                     schema.attributeDefinitions.mapNotNull { it.updatedAt }
             }
-            appPreferences.setFormConfigLastSyncTime(allTimestamps.maxOrNull() ?: currentTimestamp())
+            syncStateDao.setLastSyncedAtIso(SyncEntity.FORM, allTimestamps.maxOrNull() ?: currentTimestamp())
 
             Result.success(savedCount)
         } catch (e: Exception) {

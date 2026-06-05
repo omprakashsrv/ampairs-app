@@ -4,7 +4,6 @@ import com.ampairs.file.api.FileEntityType
 import com.ampairs.file.api.FileItem
 import com.ampairs.file.api.FileRepository
 import com.ampairs.file.api.FileUploadStatus
-import com.ampairs.product.data.api.ProductCatalogApi
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
@@ -13,6 +12,8 @@ import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -20,7 +21,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+/**
+ * Local-only data access for the product catalog (brands/categories/sub-categories/groups).
+ * The catalog API is owned by the sync layer ([com.ampairs.product.data.repository.ProductCatalogSyncRepository]) —
+ * writes here persist to Room as unsynced and mark PRODUCT_CATALOG as PENDING_PUSH so
+ * CentralSyncService runs the automatic bulk push.
+ */
+@OptIn(ExperimentalTime::class)
 @Inject
 class ProductCatalogRepository(
     private val brandDao: BrandDao,
@@ -28,8 +38,12 @@ class ProductCatalogRepository(
     private val subCategoryDao: SubCategoryDao,
     private val groupDao: GroupDao,
     private val fileRepository: FileRepository,
-    private val api: ProductCatalogApi,
+    private val syncStateDao: SyncStateDao,
 ) {
+
+    private suspend fun markPending() {
+        syncStateDao.markPendingPush(SyncEntity.PRODUCT_CATALOG, Clock.System.now().toEpochMilliseconds())
+    }
     suspend fun getBrands(): List<CatalogItem> =
         brandDao.getActiveBrands().map { CatalogItem(it.id, it.name, it.active == 1) }
 
@@ -118,6 +132,7 @@ class ProductCatalogRepository(
             ProductCatalogType.SUB_CATEGORIES -> subCategoryDao.insert(SubCategoryEntity(id = uid, name = name, synced = 0))
             ProductCatalogType.GROUPS -> groupDao.insert(GroupEntity(id = uid, name = name, synced = 0))
         }
+        markPending()
     }
 
     suspend fun updateItem(
@@ -145,6 +160,7 @@ class ProductCatalogRepository(
                 groupDao.insert(e.copy(name = name, active = activeInt, synced = 0))
             }
         }
+        markPending()
     }
 }
 

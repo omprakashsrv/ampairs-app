@@ -125,7 +125,12 @@ class LoginViewModel(
             }
             val userEntity = userRepository.getUser()
             if (userEntity == null) {
-                val apiResult = userRepository.getUserApi()
+                val apiResult = try {
+                    userRepository.getUserApi()
+                } catch (_: Exception) {
+                    _navEvent.emit(LoginNavEvent.NavigateToAuthRoute)
+                    return@launch
+                }
                 if (apiResult.data != null && apiResult.error == null) {
                     val userData = apiResult.data!!
                     userRepository.saveUser(userData)

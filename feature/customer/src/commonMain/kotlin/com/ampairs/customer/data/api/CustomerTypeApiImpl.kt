@@ -39,11 +39,13 @@ class CustomerTypeApiImpl(
             "sortDirection" to sortDirection
         )
 
-        lastSyncTime?.let { params["lastSyncTime"] = it }
+        lastSyncTime?.let { params["last_sync"] = it }
 
+        // Incremental sync feed: returns rows updated since last_sync INCLUDING inactive
+        // (soft-deleted) types, so the client can permanently delete removed rows.
         val response: Response<PageResponse<CustomerType>> = get(
             client,
-            ApiUrlBuilder.customerUrl("v1/types"),
+            ApiUrlBuilder.customerUrl("v1/types/sync"),
             params
         )
         return response

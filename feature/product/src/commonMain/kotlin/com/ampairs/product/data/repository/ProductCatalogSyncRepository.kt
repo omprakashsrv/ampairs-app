@@ -58,45 +58,37 @@ class ProductCatalogSyncRepository(
 
     private suspend fun pushGroups(): Int {
         val unsynced = groupDao.unSyncedGroups()
-        var count = 0
-        for (entity in unsynced) {
-            val model = listOf(entity).asGroupApiModel().first()
-            api.updateGroup(entity.id, model)
-                .onSuccess { groupDao.markAsSynced(entity.id); count++ }
-        }
-        return count
+        if (unsynced.isEmpty()) return 0
+        return api.updateGroups(unsynced.asGroupApiModel()).fold(
+            onSuccess = { unsynced.forEach { groupDao.markAsSynced(it.id) }; unsynced.size },
+            onFailure = { throw it },
+        )
     }
 
     private suspend fun pushCategories(): Int {
         val unsynced = categoryDao.unSyncedCategories()
-        var count = 0
-        for (entity in unsynced) {
-            val model = listOf(entity).asCategoryApiModel().first()
-            api.updateCategory(entity.id, model)
-                .onSuccess { categoryDao.markAsSynced(entity.id); count++ }
-        }
-        return count
+        if (unsynced.isEmpty()) return 0
+        return api.updateCategories(unsynced.asCategoryApiModel()).fold(
+            onSuccess = { unsynced.forEach { categoryDao.markAsSynced(it.id) }; unsynced.size },
+            onFailure = { throw it },
+        )
     }
 
     private suspend fun pushBrands(): Int {
         val unsynced = brandDao.unSyncedBrands()
-        var count = 0
-        for (entity in unsynced) {
-            val model = listOf(entity).asBrandApiModel().first()
-            api.updateBrand(entity.id, model)
-                .onSuccess { brandDao.markAsSynced(entity.id); count++ }
-        }
-        return count
+        if (unsynced.isEmpty()) return 0
+        return api.updateBrands(unsynced.asBrandApiModel()).fold(
+            onSuccess = { unsynced.forEach { brandDao.markAsSynced(it.id) }; unsynced.size },
+            onFailure = { throw it },
+        )
     }
 
     private suspend fun pushSubCategories(): Int {
         val unsynced = subCategoryDao.unSyncedSubCategories()
-        var count = 0
-        for (entity in unsynced) {
-            val model = listOf(entity).asSubCategoryApiModel().first()
-            api.updateSubCategory(entity.id, model)
-                .onSuccess { subCategoryDao.markAsSynced(entity.id); count++ }
-        }
-        return count
+        if (unsynced.isEmpty()) return 0
+        return api.updateSubCategories(unsynced.asSubCategoryApiModel()).fold(
+            onSuccess = { unsynced.forEach { subCategoryDao.markAsSynced(it.id) }; unsynced.size },
+            onFailure = { throw it },
+        )
     }
 }

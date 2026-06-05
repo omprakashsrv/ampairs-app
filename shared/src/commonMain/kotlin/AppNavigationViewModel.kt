@@ -11,7 +11,6 @@ import com.ampairs.common.firebase.performance.PerformanceAttributes
 import com.ampairs.common.firebase.performance.PerformanceTraces
 import com.ampairs.di.WorkspaceManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
-import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -70,7 +69,6 @@ class AppNavigationViewModel(
                     val workspace = workspaceRepository.getWorkspaceById(lastWorkspaceId)
                     if (workspace != null) {
                         workspaceManager.activateWorkspace(lastWorkspaceId, workspace.slug, lastUserId)
-                        WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
                         GlobalNavigationManager.getInstance().onWorkspaceSelected()
                         _autoResumeState.value = Triple(true, lastWorkspaceId, workspace.slug)
                     } else {
@@ -90,7 +88,6 @@ class AppNavigationViewModel(
     private fun observeUnauthenticated() {
         viewModelScope.launch {
             UnauthenticatedHandler.onUnauthenticated.collectLatest {
-                WorkspaceContextIntegration.clearWorkspaceContext()
                 appPreferences.clearLastWorkspaceId()
                 workspaceManager.clearSession()
                 _logoutEvent.emit(Unit)

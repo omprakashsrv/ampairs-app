@@ -11,7 +11,6 @@ import com.ampairs.subscription.feature.LimitChecker
 import com.ampairs.subscription.feature.LimitUpgradeSuggestion
 import com.ampairs.subscription.feature.UsageStatus
 import com.ampairs.subscription.repository.SubscriptionRepository
-import com.ampairs.workspace.context.WorkspaceContextManager
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -68,8 +67,9 @@ class SubscriptionViewModel(
     }
 
     // Get workspace and user IDs from context managers
+    // TODO : refactor this
     private val workspaceId: String
-        get() = WorkspaceContextManager.getInstance().currentWorkspace.value?.id ?: ""
+        get() =  ""
 
     private val userId: String
         get() = runBlocking { tokenRepository.getCurrentUserId() ?: "" }

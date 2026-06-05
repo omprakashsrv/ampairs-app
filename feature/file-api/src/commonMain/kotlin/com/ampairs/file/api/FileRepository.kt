@@ -13,6 +13,5 @@ interface FileRepository {
     ): Result<FileItem>
     suspend fun deleteFile(fileUid: String): Result<Unit>
     suspend fun setPrimaryFile(entityType: FileEntityType, entityUid: String, fileUid: String): Result<Unit>
-    suspend fun pushPendingToServer(): Result<Int>
     suspend fun pullFromServer(entityType: FileEntityType, entityUid: String): Result<Int>
 }

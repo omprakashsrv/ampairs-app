@@ -1,11 +1,9 @@
 package com.ampairs.di
 
-import com.ampairs.common.DeviceService
 import com.ampairs.common.di.AppScope
 import com.ampairs.common.workspace.WorkspaceActivator
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.sync.CentralSyncService
-import com.ampairs.workspace.EventConnectionManager
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -19,8 +17,6 @@ import kotlinx.coroutines.flow.asStateFlow
 class WorkspaceManager(
     private val workspaceGraphFactory: WorkspaceGraph.Factory,
     private val centralSyncService: CentralSyncService,
-    private val eventConnectionManager: EventConnectionManager,
-    private val deviceService: DeviceService,
 ) : WorkspaceActivator {
     data class WorkspaceSession(
         val generation: Long,
@@ -43,16 +39,11 @@ class WorkspaceManager(
         val session = WorkspaceSession(++generationCounter, graph, config)
         _session.value = session
 
-        // Delegates are resolved lazily on first sync event — avoids creating all databases upfront.
+        // Delegates resolved lazily on first sync event — avoids creating all databases upfront.
         centralSyncService.setDelegates { graph.syncDelegates }
         centralSyncService.start(graph.syncStateDatabase)
 
-        val deviceId = deviceService.getDeviceId()
-        eventConnectionManager.connectToWorkspace(
-            workspaceId = workspaceId,
-            userId = userId,
-            deviceId = deviceId,
-        )
+        graph.eventSyncBridge.start()
     }
 
     fun clearSession() {

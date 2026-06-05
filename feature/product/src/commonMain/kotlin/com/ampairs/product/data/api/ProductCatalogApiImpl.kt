@@ -86,4 +86,28 @@ class ProductCatalogApiImpl(
         val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/sub-categories"), listOf(model))
         response.data?.firstOrNull() ?: model
     }
+
+    override suspend fun updateGroups(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>> = runCatching {
+        if (models.isEmpty()) return@runCatching emptyList()
+        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/groups"), models)
+        response.data ?: models
+    }
+
+    override suspend fun updateCategories(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>> = runCatching {
+        if (models.isEmpty()) return@runCatching emptyList()
+        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/categories"), models)
+        response.data ?: models
+    }
+
+    override suspend fun updateBrands(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>> = runCatching {
+        if (models.isEmpty()) return@runCatching emptyList()
+        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/brands"), models)
+        response.data ?: models
+    }
+
+    override suspend fun updateSubCategories(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>> = runCatching {
+        if (models.isEmpty()) return@runCatching emptyList()
+        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/sub-categories"), models)
+        response.data ?: models
+    }
 }

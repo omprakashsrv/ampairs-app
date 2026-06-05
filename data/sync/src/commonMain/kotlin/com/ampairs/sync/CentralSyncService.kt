@@ -11,8 +11,11 @@ import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,9 +36,11 @@ private val log = Logger.withTag("CentralSyncService")
  * Design principles:
  * - Sync state is persisted in Room so pending work survives process death.
  * - ViewModels never call APIs directly — they emit SyncEvents.
- * - Push-only on launch/reconnect: only entities with PENDING_PUSH are synced automatically.
- * - Pulls are exclusively driven by backend WebSocket events via [onBackendEvent].
- * - No periodic polling — state drives sync.
+ * - Pushes: entities entering PENDING_PUSH after a local write are synced automatically; on
+ *   startup/reconnect persisted pending states are replayed (push → pull per entity).
+ * - Pulls are driven two ways: (1) live backend WebSocket events via [onBackendEvent], and
+ *   (2) checkpoint reconciliation via [reconcileCheckpoints] on connect / reconnect / hourly,
+ *   which pulls only entities the server has advanced past (in dependency order).
  */
 @Inject
 @SingleIn(AppScope::class)
@@ -65,6 +70,12 @@ class CentralSyncService {
     private val pushMutexes = SyncEntity.entries.associateWith { Mutex() }
     private val pullMutexes = SyncEntity.entries.associateWith { Mutex() }
 
+    // The server checkpoint (ISO-8601 max updatedAt) each entity was last pulled up to this session.
+    // Lets repeated bootstraps (hourly / reconnect) skip entities the server hasn't advanced past.
+    // Both sides come from the checkpoint endpoint, so the string comparison is exact. Reset in stop().
+    private val lastPulledCheckpoints = mutableMapOf<SyncEntity, String>()
+    private val reconcileMutex = Mutex()
+
     private var scope: CoroutineScope? = null
     private var dao: SyncStateDao? = null
 
@@ -88,8 +99,13 @@ class CentralSyncService {
             processEvents()
         }
 
+        // Replay persisted pending states — push first so local unsynced data reaches the
+        // server before we overwrite anything with a pull (e.g. after process death).
+        newScope.launch { processPendingStates() }
+
         // Reactively observe SyncStateEntity — only fire push triggers for entities that *newly*
-        // enter PENDING_PUSH. Pulls are driven exclusively by WebSocket events.
+        // enter PENDING_PUSH. Pulls are driven by WebSocket events, checkpoint reconciliation, and
+        // the one-shot processPendingStates() above for process-death recovery.
         // Delta set keyed by entityName prevents re-triggering a push that's already in progress.
         newScope.launch {
             var previousPushSet = emptySet<SyncEntity>()
@@ -113,14 +129,15 @@ class CentralSyncService {
     }
 
     /**
-     * Called by EventConnectionManager when the WebSocket connection is (re)established.
-     * Flushes any pending pushes that accumulated while offline. Pulls are not triggered
-     * here — they come in via [onBackendEvent] once the server sends WebSocket events.
+     * Called by EventSyncBridge when the WebSocket connection is (re)established.
+     * Flushes pending pushes first so local unsynced data reaches the server before
+     * any pull overwrites it. Also replays persisted PENDING_PULL states (process-death recovery).
+     * Checkpoint reconciliation ([reconcileCheckpoints]) is triggered separately by EventSyncBridge.
      */
     fun onConnectionRestored() {
         scope?.launch {
-            log.i { "WebSocket reconnected — flushing pending pushes" }
-            processPendingPushes()
+            log.i { "WebSocket reconnected — flushing pending states (push → pull per entity)" }
+            processPendingStates()
         }
     }
 
@@ -131,12 +148,13 @@ class CentralSyncService {
         dao = null
         _syncStates.value = emptyMap()
         _syncLogs.value = emptyList()
+        lastPulledCheckpoints.clear()
         log.i { "Stopped" }
     }
 
     // endregion
 
-    // region — Public API for ViewModels and EventConnectionManager
+    // region — Public API for ViewModels and EventSyncBridge
 
     /**
      * Emit a sync event. Non-suspending so ViewModels can call from any context.
@@ -156,14 +174,72 @@ class CentralSyncService {
     }
 
     /**
-     * Called by EventConnectionManager when a backend WebSocket event arrives.
-     * Routes to the matching SyncDelegate after marking state as PENDING_PULL.
+     * Mark an entity as needing a server pull and trigger it.
+     * Used when a backend signal indicates this entity changed.
      */
-    fun onBackendEvent(entityType: String, entityId: String, eventType: String) {
+    fun markPendingPull(entity: SyncEntity) {
+        updateAndPersistStatus(entity, SyncStatus.PendingPull)
+        emit(SyncEvent.TriggerPull(entity))
+    }
+
+    /**
+     * Bootstrap reconciliation. Called on workspace connect, on reconnect, and on the hourly timer
+     * with the server's `max(updatedAt)` per entity (ISO-8601 string, or null when the entity has
+     * no rows). For each entity whose server checkpoint is ahead of what was last pulled this
+     * session, schedules a pull. Pulls run in dependency order (parents before dependents).
+     */
+    fun reconcileCheckpoints(serverCheckpoints: Map<SyncEntity, String?>) {
+        val currentScope = scope ?: return
+        currentScope.launch {
+            // Serialize reconciles (connect + reconnect + hourly can overlap) so the skip decisions
+            // and the lastPulledCheckpoints map stay consistent.
+            reconcileMutex.withLock {
+                val laggards = mutableSetOf<SyncEntity>()
+                for (entity in delegates.keys) {
+                    val server = serverCheckpoints[entity]
+                    if (server.isNullOrBlank()) continue // no server data → never pull
+                    val pulled = lastPulledCheckpoints[entity]
+                    // Skip when the server hasn't advanced past what we already pulled this session.
+                    // Both values come from the checkpoint endpoint, so the ISO-8601 compare is exact.
+                    if (pulled == null || server > pulled) {
+                        laggards.add(entity)
+                    }
+                }
+
+                if (laggards.isEmpty()) {
+                    log.i { "Bootstrap reconcile: all entities in sync" }
+                    return@withLock
+                }
+                log.i { "Bootstrap reconcile: pulling ${laggards.map { it.name }}" }
+                laggards.forEach { entity ->
+                    updateState(entity) { it.copy(status = SyncStatus.PendingPull) }
+                    persistPersistStatus(entity, SyncPersistStatus.PENDING_PULL)
+                }
+                pullEntities(laggards, serverCheckpoints)
+            }
+        }
+    }
+
+    /**
+     * Called by EventSyncBridge when a backend WebSocket event arrives.
+     * Routes to the matching SyncDelegate after marking state as PENDING_PULL.
+     *
+     * [lastUpdatedAt] is the slim signal's change watermark (ISO-8601, diagnostic). We always pull
+     * on a live signal — the incremental pull returns only new rows, and the safe skip-when-in-sync
+     * comparison lives in the bootstrap reconcile (which compares same-source watermarks). The live
+     * signal's time is the server's emit time, not the entity's updatedAt, so it is not used to skip.
+     */
+    fun onBackendEvent(
+        entityType: String,
+        entityId: String,
+        eventType: String,
+        lastUpdatedAt: String? = null,
+    ) {
         val entity = SyncEntity.fromEntityType(entityType) ?: run {
             log.d { "Ignoring unknown entityType: $entityType" }
             return
         }
+        log.d { "Backend event ${entity.name} (watermark=$lastUpdatedAt) — scheduling pull" }
         updateAndPersistStatus(entity, SyncStatus.PendingPull)
         emit(SyncEvent.BackendEventReceived(entityType, entityId, eventType))
     }
@@ -195,11 +271,32 @@ class CentralSyncService {
 
     // region — Pending state processing
 
-    private suspend fun processPendingPushes() {
+    /**
+     * Replays persisted pending states on startup or reconnect.
+     * For each entity that has pending work, push runs before pull so that local unsynced
+     * data reaches the server before a pull could overwrite it. Different entities run
+     * concurrently; push → pull ordering is enforced within each entity's coroutine.
+     */
+    private suspend fun processPendingStates() {
         val currentDao = dao ?: return
-        currentDao.getPending()
+        val pending = currentDao.getPending()
+        if (pending.isEmpty()) return
+
+        val pushEntities = pending
             .filter { it.statusName == SyncPersistStatus.PENDING_PUSH }
-            .forEach { row -> emit(SyncEvent.TriggerPush(row.entityName)) }
+            .map { it.entityName }.toSet()
+        val pullEntities = pending
+            .filter { it.statusName == SyncPersistStatus.PENDING_PULL }
+            .map { it.entityName }.toSet()
+
+        log.d { "Replaying pending states — push: ${pushEntities.map { it.name }}, pull: ${pullEntities.map { it.name }}" }
+
+        (pushEntities + pullEntities).forEach { entity ->
+            scope?.launch {
+                if (entity in pushEntities) executePush(entity)
+                if (entity in pullEntities) executePull(entity)
+            }
+        }
     }
 
     // endregion
@@ -232,9 +329,9 @@ class CentralSyncService {
 
     // region — Sync execution
 
-    private suspend fun executePull(entity: SyncEntity) {
-        val delegate = delegates[entity] ?: return
-        pullMutexes[entity]?.withLock {
+    private suspend fun executePull(entity: SyncEntity): Boolean {
+        val delegate = delegates[entity] ?: return false
+        return pullMutexes[entity]?.withLock {
             updateState(entity) { it.copy(status = SyncStatus.Syncing) }
             appendLog(SyncLogEntry(Clock.System.now().toEpochMilliseconds(), entity, SyncLogEntry.Direction.PULL, SyncLogEntry.Outcome.STARTED, "Pull started"))
             val result = runCatching { delegate.pullFromServer() }.fold(
@@ -242,6 +339,41 @@ class CentralSyncService {
                 onFailure = { SyncResult.Failure(it) },
             )
             applyResult(entity, result, wasPull = true)
+            result is SyncResult.Success
+        } ?: false
+    }
+
+    /**
+     * Pull a batch of entities in dependency order. Entities whose in-batch dependencies are all
+     * satisfied are pulled together in a wave; the next wave starts only after the current one
+     * completes. If a dependency's pull fails, its dependents are held (left PENDING_PULL) and
+     * retried on the next reconcile cycle (reconnect / hourly).
+     *
+     * On a successful pull the entity's target server checkpoint is recorded so the next bootstrap
+     * can skip it while the server stays at that checkpoint.
+     */
+    private suspend fun pullEntities(entities: Set<SyncEntity>, checkpoints: Map<SyncEntity, String?>) {
+        val pending = entities.filter { delegates[it] != null }.toMutableSet()
+        val failed = mutableSetOf<SyncEntity>()
+        while (pending.isNotEmpty()) {
+            val wave = pending.filter { e ->
+                delegates[e]?.dependsOn?.none { dep -> dep in pending || dep in failed } ?: false
+            }
+            if (wave.isEmpty()) {
+                log.w { "Holding ${pending.map { it.name }} — dependencies unavailable or failed" }
+                break
+            }
+            val results = coroutineScope {
+                wave.map { e -> async { e to executePull(e) } }.awaitAll()
+            }
+            results.forEach { (e, ok) ->
+                pending.remove(e)
+                if (ok) {
+                    checkpoints[e]?.let { lastPulledCheckpoints[e] = it }
+                } else {
+                    failed.add(e)
+                }
+            }
         }
     }
 

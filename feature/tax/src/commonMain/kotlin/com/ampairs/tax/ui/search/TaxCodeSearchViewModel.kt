@@ -2,11 +2,11 @@ package com.ampairs.tax.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.business.data.repository.BusinessRepository
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.domain.model.MasterTaxCode
 import com.ampairs.tax.domain.model.TaxCodeType
 import com.ampairs.tax.domain.model.TaxCode
-import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 @Inject
 class TaxCodeSearchViewModel(
     private val taxCodeRepository: TaxCodeRepository,
-    private val workspaceContext: WorkspaceContextManager
+    private val businessRepository: BusinessRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TaxCodeSearchUiState())
@@ -117,9 +117,10 @@ class TaxCodeSearchViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSearching = true, searchError = null) }
 
+            val countryCode = businessRepository.getCachedBusiness()?.country ?: "IN"
             val result = taxCodeRepository.searchMasterTaxCodes(
                 query = query,
-                countryCode = workspaceContext.getCurrentCountryCode() ?: "IN",
+                countryCode = countryCode,
                 codeType = _uiState.value.selectedCodeType?.name,
                 category = _uiState.value.selectedCategory,
                 page = 0,

@@ -11,6 +11,10 @@ class InvoiceSyncDelegate : SyncDelegate {
 
     override val entity: SyncEntity = SyncEntity.INVOICE
 
+    // Invoices reference orders, customers, products and tax — pull those first.
+    override val dependsOn: List<SyncEntity> =
+        listOf(SyncEntity.ORDER, SyncEntity.CUSTOMER, SyncEntity.PRODUCT, SyncEntity.TAX)
+
     override suspend fun pullFromServer(): SyncResult = SyncResult.Success(0)
 
     override suspend fun pushPendingToServer(): SyncResult = SyncResult.Success(0)

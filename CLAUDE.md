@@ -352,7 +352,10 @@ val myPlatformModule = module {
 ### Core Principles
 
 **1. Database-First Writes**
-All CRUD saves to Room first (`synced = false`), then syncs to server async. If sync fails, data remains locally.
+All CRUD saves to Room first (`synced = false`) and flags the entity `PENDING_PUSH` via
+`SyncStateDao.markPendingPush(...)`. `CentralSyncService` then runs the bulk push through the
+feature's `SyncDelegate` (the only layer that holds the API). The repository never calls the network.
+If the push fails, data stays local and retries on reconnect.
 
 **2. Client-Side UID Generation**
 `UidGenerator.generateUid(prefix)` → `{PREFIX}{YYYYMMDDHHMMSS}{RANDOM}` (32 chars). Generate in ViewModel, never in repository.
@@ -363,22 +366,30 @@ ISO 8601 strings (`yyyy-MM-ddTHH:mm:ss`) for natural string comparison. Server's
 **4. Paginated Batch Sync**
 Default 100 records/batch, max 10,000/sync cycle. Loop protection with `hasNext` guard.
 
-### Repository Create Pattern
+### Repository Create Pattern (local-only — the API lives in the SyncDelegate)
+
+The repository never touches the network. It writes to Room and flags the entity for an automatic
+bulk push via `SyncStateDao`; the `{Name}SyncDelegate` owns all API traffic. See `/offline-sync`.
 
 ```kotlin
-suspend fun createEntity(entity: Entity): Result<Entity> {
-    require(entity.uid.isNotBlank()) { "UID must be set by ViewModel" }
-    dao.insertEntity(entity.toEntity().copy(synced = false))
-    return try {
-        val serverEntity = api.createEntity(entity)
-        val resolved = if (serverEntity.uid != entity.uid) serverEntity.copy(uid = entity.uid) else serverEntity
-        dao.insertEntity(resolved.toEntity().copy(synced = true))
-        Result.success(resolved)
-    } catch (e: Exception) {
-        Result.success(entity)  // Graceful fallback — already saved locally
+@Inject
+class EntityRepository(
+    private val dao: EntityDao,
+    private val syncStateDao: SyncStateDao,   // NOT the Api
+) {
+    suspend fun createEntity(entity: Entity): Result<Entity> {
+        require(entity.uid.isNotBlank()) { "UID must be set by ViewModel" }
+        dao.insertEntity(entity.toEntity().copy(synced = false))
+        syncStateDao.markPendingPush(SyncEntity.ENTITY, Clock.System.now().toEpochMilliseconds())
+        return Result.success(entity)
     }
+    // delete: soft-delete (active = false, synced = false) + markPending — never just active = false
 }
 ```
+
+The push (bulk), pull (batched; permanently deletes server-`DELETED` rows) and backend-event refresh
+live in `{Name}SyncDelegate`, which injects the `Api` + `Dao`. CentralSyncService observes the
+`PENDING_PUSH` flag and drives the push automatically.
 
 ### Conflict Resolution
 

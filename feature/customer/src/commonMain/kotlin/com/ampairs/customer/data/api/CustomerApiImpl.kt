@@ -91,7 +91,7 @@ class CustomerApiImpl(
     override suspend fun deleteCustomer(customerId: String) {
         val response = delete<Response<Unit>>(
             client,
-            ApiUrlBuilder.customerUrl("v1/customers/$customerId")
+            ApiUrlBuilder.customerUrl("v1/$customerId")
         )
         // Check for error in response and throw if delete failed
         response.error?.let { error ->
@@ -103,7 +103,7 @@ class CustomerApiImpl(
         return try {
             val response: Response<Customer> = get(
                 client,
-                ApiUrlBuilder.customerUrl("v1/customers/$customerId")
+                ApiUrlBuilder.customerUrl("v1/$customerId")
             )
             response.data
         } catch (_: Exception) {
@@ -143,11 +143,10 @@ class CustomerApiImpl(
         return response.data ?: throw Exception("Failed to bulk import states")
     }
 
-    override suspend fun getAvailableStatesForImport(workspaceId: String): List<MasterState> {
+    override suspend fun getAvailableStatesForImport(): List<MasterState> {
         val response: Response<List<MasterState>> = get(
             client,
-            ApiUrlBuilder.customerUrl("v1/master-states/available-for-import"),
-            mapOf("workspace_id" to workspaceId)
+            ApiUrlBuilder.customerUrl("v1/master-states/available-for-import")
         )
         return response.data ?: emptyList()
     }

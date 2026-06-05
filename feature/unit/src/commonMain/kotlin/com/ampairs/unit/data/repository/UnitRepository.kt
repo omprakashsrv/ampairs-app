@@ -1,6 +1,5 @@
 package com.ampairs.unit.data.repository
 
-import com.ampairs.unit.data.api.UnitApi
 import com.ampairs.unit.data.db.dao.UnitDao
 import com.ampairs.unit.data.repository.UnitLookup
 import dev.zacsweers.metro.Inject
@@ -8,14 +7,24 @@ import com.ampairs.unit.data.db.entity.toEntity
 import com.ampairs.unit.data.db.entity.toUnit
 import com.ampairs.unit.domain.model.Unit
 import com.ampairs.unit.util.UnitLogger
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+/**
+ * Local-only data access for units. The [UnitApi] is owned by the sync layer
+ * ([com.ampairs.unit.sync.UnitSyncDelegate]); writes here persist to Room as unsynced and mark
+ * UNIT as PENDING_PUSH so CentralSyncService runs the automatic bulk push.
+ */
+@OptIn(ExperimentalTime::class)
 @Inject
 class UnitRepository(
-    private val unitApi: UnitApi,
-    private val unitDao: UnitDao
+    private val unitDao: UnitDao,
+    private val syncStateDao: SyncStateDao,
 ) : UnitLookup {
 
     fun observeUnits(): Flow<List<Unit>> =
@@ -35,59 +44,39 @@ class UnitRepository(
 
     suspend fun getUnitByName(name: String): Unit? = unitDao.getUnitByName(name)?.toUnit()
 
+    /** Offline-first create: persist locally as unsynced and flag for automatic bulk push. */
     suspend fun createUnit(unit: Unit): Result<Unit> {
         return try {
             unitDao.insertUnit(unit.toEntity().copy(synced = false))
-
-            try {
-                val response = unitApi.createUnit(unit)
-                if (response.data != null && response.error == null) {
-                    val serverUnit = response.data!!
-                    val finalUnit = if (serverUnit.uid != unit.uid) serverUnit.copy(uid = unit.uid) else serverUnit
-                    unitDao.insertUnit(finalUnit.toEntity().copy(synced = true))
-                    Result.success(finalUnit)
-                } else {
-                    Result.success(unit)
-                }
-            } catch (e: Exception) {
-                UnitLogger.w("UnitRepository", "Server sync failed, using local data", e)
-                Result.success(unit)
-            }
+            markPending()
+            Result.success(unit)
         } catch (e: Exception) {
             UnitLogger.e("UnitRepository", "Failed to create unit", e)
             Result.failure(e)
         }
     }
 
+    /** Offline-first update: persist locally as unsynced and flag for automatic bulk push. */
     suspend fun updateUnit(unit: Unit): Result<Unit> {
         return try {
-            unitDao.updateUnit(unit.toEntity().copy(synced = false))
-
-            try {
-                val response = unitApi.updateUnit(unit.uid, unit)
-                if (response.data != null && response.error == null) {
-                    unitDao.insertUnit(response.data!!.toEntity().copy(synced = true))
-                    Result.success(response.data!!)
-                } else {
-                    Result.success(unit)
-                }
-            } catch (e: Exception) {
-                UnitLogger.w("UnitRepository", "Server update failed, using local data", e)
-                Result.success(unit)
-            }
+            unitDao.insertUnit(unit.toEntity().copy(synced = false))
+            markPending()
+            Result.success(unit)
         } catch (e: Exception) {
             UnitLogger.e("UnitRepository", "Failed to update unit", e)
             Result.failure(e)
         }
     }
 
+    /** Offline-first delete: mark inactive + unsynced locally and flag for automatic bulk push. */
     suspend fun deleteUnit(id: String): Result<kotlin.Unit> {
         return try {
-            unitDao.deleteUnit(id)
-            try {
-                unitApi.deleteUnit(id)
-            } catch (e: Exception) {
-                UnitLogger.w("UnitRepository", "Server delete failed, marked inactive locally", e)
+            val existing = unitDao.getUnitById(id)
+            if (existing != null) {
+                unitDao.insertUnit(existing.copy(active = false, synced = false))
+                markPending()
+            } else {
+                unitDao.deleteUnit(id)
             }
             Result.success(kotlin.Unit)
         } catch (e: Exception) {
@@ -96,116 +85,7 @@ class UnitRepository(
         }
     }
 
-    suspend fun syncUnits(): Result<Int> {
-        return try {
-            val unsyncedUnits = unitDao.getUnsyncedUnits()
-            var syncedCount = 0
-
-            for (entity in unsyncedUnits) {
-                val unit = entity.toUnit()
-                try {
-                    if (!entity.active) {
-                        unitApi.deleteUnit(unit.uid)
-                        unitDao.deleteUnit(unit.uid)
-                        syncedCount++
-                    } else {
-                        val response = unitApi.createUnit(unit)
-                        if (response.data != null && response.error == null) {
-                            unitDao.insertUnit(response.data!!.toEntity().copy(synced = true))
-                            syncedCount++
-                        }
-                    }
-                } catch (e: Exception) {
-                    UnitLogger.w("UnitRepository", "Failed to sync unit ${unit.uid}", e)
-                }
-            }
-
-            val serverSyncCount = syncUnitsFromServer().getOrElse { 0 }
-            Result.success(syncedCount + serverSyncCount)
-        } catch (e: Exception) {
-            UnitLogger.e("UnitRepository", "Sync failed", e)
-            Result.failure(e)
-        }
-    }
-
-    suspend fun pullFromServer(): Result<Int> = syncUnitsFromServer()
-
-    suspend fun pushPendingToServer(): Result<Int> {
-        return try {
-            val unsyncedUnits = unitDao.getUnsyncedUnits()
-            var syncedCount = 0
-            var failedCount = 0
-            for (entity in unsyncedUnits) {
-                val unit = entity.toUnit()
-                try {
-                    if (!entity.active) {
-                        unitApi.deleteUnit(unit.uid)
-                        unitDao.deleteUnit(unit.uid)
-                        syncedCount++
-                    } else {
-                        val response = unitApi.createUnit(unit)
-                        if (response.data != null && response.error == null) {
-                            unitDao.insertUnit(response.data!!.toEntity().copy(synced = true))
-                            syncedCount++
-                        } else {
-                            failedCount++
-                        }
-                    }
-                } catch (e: Exception) {
-                    UnitLogger.w("UnitRepository", "Failed to push unit ${unit.uid}", e)
-                    failedCount++
-                }
-            }
-            if (failedCount > 0) Result.failure(Exception("$failedCount unit(s) failed to sync"))
-            else Result.success(syncedCount)
-        } catch (e: Exception) {
-            UnitLogger.e("UnitRepository", "Push failed", e)
-            Result.failure(e)
-        }
-    }
-
-    suspend fun handleExternalEvent(unitId: String, eventType: String) {
-        try {
-            val response = unitApi.getUnitById(unitId)
-            if (response.data != null && response.error == null) {
-                val existing = unitDao.getUnitById(unitId)
-                if (existing == null || existing.synced) {
-                    unitDao.insertUnit(response.data!!.toEntity().copy(synced = true)) // don't overwrite unsynced local edits
-                }
-            }
-        } catch (e: Exception) {
-            UnitLogger.w("UnitRepository", "Failed to handle event for unit $unitId", e)
-        }
-    }
-
-    private suspend fun syncUnitsFromServer(batchSize: Int = 100): Result<Int> {
-        return try {
-            var totalSynced = 0
-            var currentPage = 0
-
-            do {
-                val pageResponse = unitApi.getUnits(currentPage, batchSize)
-                if (pageResponse.error != null) throw Exception(pageResponse.error?.message ?: "Network error")
-                val batchUnits = pageResponse.data?.content ?: emptyList()
-
-                val unitsToInsert = batchUnits.mapNotNull { serverUnit ->
-                    val existing = unitDao.getUnitById(serverUnit.uid)
-                    if (existing != null && !existing.synced) null
-                    else serverUnit.toEntity().copy(synced = true)
-                }
-
-                if (unitsToInsert.isNotEmpty()) {
-                    unitDao.insertUnits(unitsToInsert)
-                    totalSynced += unitsToInsert.size
-                }
-
-                currentPage++
-            } while (batchUnits.size == batchSize && totalSynced < 10000)
-
-            Result.success(totalSynced)
-        } catch (e: Exception) {
-            UnitLogger.e("UnitRepository", "Failed to sync from server", e)
-            Result.failure(e)
-        }
+    private suspend fun markPending() {
+        syncStateDao.markPendingPush(SyncEntity.UNIT, Clock.System.now().toEpochMilliseconds())
     }
 }

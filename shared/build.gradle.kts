@@ -104,6 +104,8 @@ kotlin {
                 implementation(libs.google.firebase.crashlytics)
                 implementation(libs.google.firebase.perf)
                 implementation(libs.google.firebase.messaging)
+                // Kermit logging
+                implementation(libs.kermit)
             }
         }
 
@@ -114,6 +116,7 @@ kotlin {
 
                 // Feature modules — api so androidApp can see Metro-generated supertypes
                 api(projects.feature.auth)
+                api(projects.feature.ecom)
                 api(projects.feature.agent)
                 api(projects.feature.form)
                 api(projects.feature.unit)
@@ -170,8 +173,6 @@ kotlin {
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
-
-                implementation(libs.bundles.krossbow)
 
                 implementation(libs.datastore)
                 implementation(libs.datastore.preferences)

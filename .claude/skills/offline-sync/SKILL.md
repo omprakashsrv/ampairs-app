@@ -7,19 +7,36 @@ Apply it whenever adding a new entity, adding a new write operation, or debuggin
 
 ## Core Principle
 
-**Every local write triggers an automatic server push via `CentralSyncService`. No ViewModel calls sync APIs directly.**
+**The repository is local-only. It never talks to the network.** Every local write goes to Room
+(`synced = false`) and then flags the entity `PENDING_PUSH` via `SyncStateDao.markPendingPush(...)`.
+`CentralSyncService` observes that flag and runs the bulk push through the feature's `SyncDelegate`,
+which is the **single place that holds the API**.
 
 ```
-UI Write → ViewModel → Repository (writes to Room with synced=false)
-                     ↓
-         ViewModel calls syncService.markPendingPush(SyncEntity.X)
-                     ↓
-         CentralSyncService persists PENDING_PUSH state to SyncStateDatabase
-                     ↓
-         CentralSyncService emits TriggerPush → executePush() via SyncDelegate
-                     ↓
-         SyncDelegate.pushPendingToServer() → Repository reads unsynced rows → API call
+UI Write → ViewModel → Repository
+                          ├─ Room write (synced = false)
+                          └─ syncStateDao.markPendingPush(SyncEntity.X)   ← no API here
+                                       ↓
+        CentralSyncService reactive observer sees PENDING_PUSH
+                                       ↓
+        CentralSyncService emits TriggerPush → executePush() (per-entity Mutex)
+                                       ↓
+        SyncDelegate.pushPendingToServer()  ← injects the API + DAO
+            reads unsynced rows from the DAO → bulk API call → mark rows synced=true
 ```
+
+**Layering rule (the important one):**
+- **Repository** = local data access only: Room reads/writes + `markPendingPush`. No `Api` injected
+  for the entity-update flow.
+- **SyncDelegate** = the entire server conversation for that entity: bulk push, batched pull
+  (permanently deleting server-`DELETED` rows), and backend-event refresh. Injects `Api` + `Dao`.
+- **CentralSyncService** = coordinator. Nothing else triggers the network.
+
+**Allowed exception:** a repository may still inject the `Api` for a *non-sync, UI-invoked* feature
+that has no central-sync equivalent — e.g. customer-group/type "import from master /
+available-for-import", or the file repo's entity-scoped `pullFromServer(type, uid)` /
+`setPrimaryFile`. The entity create/update/delete path must never call the API.
+
 
 ---
 
@@ -55,49 +72,95 @@ for the first to complete, then runs and picks up any records written during the
 
 ## SyncDelegate Registration Pattern
 
+The delegate injects the **API + DAO** (not the repository) and owns the full server conversation.
+It is contributed to `WorkspaceScope::class` (every workspace-aware delegate lives in the workspace
+child graph — see `/metro-di`). `SyncStateDao` is only needed when the pull tracks an incremental
+`lastSyncedAtIso` checkpoint.
+
 ```kotlin
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.MY_ENTITY)
 class MyEntitySyncDelegate(
-    private val repository: MyEntityRepository,
+    private val api: MyEntityApi,
+    private val dao: MyEntityDao,
+    private val syncStateDao: SyncStateDao,   // only if the pull is timestamp-incremental
 ) : SyncDelegate {
     override val entity = SyncEntity.MY_ENTITY
 
     override suspend fun pullFromServer(): SyncResult =
-        repository.pullFromServer().fold(
+        pull().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun pushPendingToServer(): SyncResult =
-        repository.pushPendingToServer().fold(
+        pushPending().fold(
             onSuccess = { SyncResult.Success(it) },
             onFailure = { SyncResult.Failure(it) },
         )
 
     override suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult =
         pullFromServer()
+
+    // Bulk push: read unsynced rows from the DAO, send in batches of 100, mark synced=true.
+    private suspend fun pushPending(): Result<Int> { /* ... */ }
+
+    // Batched pull: page through the server; permanently delete rows the server marks DELETED;
+    // local unsynced edits win; upsert the rest.
+    private suspend fun pull(): Result<Int> { /* ... */ }
 }
 ```
 
+**Reference delegates** (copy these): `CustomerSyncDelegate`, `UnitSyncDelegate`,
+`CustomerGroupSyncDelegate`, `ProductSyncDelegate`, `FileSyncDelegate`.
+
 ---
 
-## ViewModel Write Pattern (REQUIRED for every write)
+## Repository Write Pattern (the pending-push flag lives in the repository)
+
+The repository marks the entity pending on every successful local write — this is what makes the
+push automatic. The repository injects `SyncStateDao`, never the `Api`.
 
 ```kotlin
-// After any successful local write:
-syncService.markPendingPush(SyncEntity.MY_ENTITY)
+@Inject
+class MyEntityRepository(
+    private val dao: MyEntityDao,
+    private val syncStateDao: SyncStateDao,
+) {
+    suspend fun create(entity: MyEntity): Result<MyEntity> {
+        require(entity.uid.isNotBlank())            // UID is set by the ViewModel
+        dao.insert(entity.toEntity().copy(synced = false))
+        markPending()
+        return Result.success(entity)
+    }
+
+    suspend fun delete(id: String): Result<Unit> {
+        val existing = dao.getById(id) ?: return Result.success(Unit)
+        dao.insert(existing.copy(active = false, synced = false))   // soft-delete + unsynced
+        markPending()
+        return Result.success(Unit)
+    }
+
+    private suspend fun markPending() =
+        syncStateDao.markPendingPush(SyncEntity.MY_ENTITY, Clock.System.now().toEpochMilliseconds())
+}
 ```
 
-Examples in codebase:
-- `ProductFormViewModel` — `syncService.markPendingPush(SyncEntity.PRODUCT)` after create/update
-- `CustomerFormViewModel` — `syncService.markPendingPush(SyncEntity.CUSTOMER)` after create/update
-- `CustomerGroupFormViewModel` — `syncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)` after save
-- `CustomerTypeFormViewModel` — `syncService.markPendingPush(SyncEntity.CUSTOMER_TYPE)` after save
-- `UnitFormViewModel` — `syncService.markPendingPush(SyncEntity.UNIT)` after save
+`SyncStateDao.markPendingPush(entity, now)` is an `INSERT … ON CONFLICT DO UPDATE` upsert that sets
+`PENDING_PUSH` **without wiping `lastSyncedAtIso`** (the pull checkpoint).
 
-**Never call `repository.syncXxx()` directly from a ViewModel.** Use `syncService.emit(SyncEvent.TriggerFullSync(entity))` for manual refreshes.
+> Delete must set `synced = false` (not only `active = false`) — the push reads `synced = 0`, so a
+> row that's merely inactive would never be pushed. Several DAOs' `deleteXxx` only set `active = 0`;
+> fetch + `copy(active = false, synced = false)` in the repo instead.
+
+**ViewModels** no longer need to call `markPendingPush` (the repo does it). A redundant
+`syncService.markPendingPush(...)` from a VM is harmless but unnecessary. **Never call
+`repository.syncXxx()` from a ViewModel** — use `syncService.emit(SyncEvent.TriggerFullSync(entity))`
+for manual refreshes.
+
+**Reference repositories** (copy these): `CustomerRepository`, `UnitRepository`,
+`CustomerGroupRepository`, `ProductRepository`.
 
 ---
 
@@ -139,14 +202,23 @@ if (result.productsSynced > 0)       centralSyncService.markPendingPush(SyncEnti
 
 ---
 
-## Repository Push Pattern
+## Delegate Push Pattern (the API lives here, not the repository)
 
-The `pushPendingToServer()` method in repositories:
-1. Reads all rows with `synced = false` from Room
-2. For deletions (active = false): calls DELETE API, then hard-deletes locally
-3. For creates/updates: tries UPDATE first, falls back to CREATE on 404
-4. On success: marks the row `synced = true` in Room
+The `pushPending()` method **inside the delegate**:
+1. Reads all rows with `synced = false` from the DAO
+2. For deletions (`active = false`): calls the DELETE API, then **hard-deletes** locally
+3. For creates/updates: bulk-upserts in batches of 100 (per-row fallback if the batch fails)
+4. On success: marks each row `synced = true` in Room
 5. Never generates UIDs — expects them pre-set (UID generation is ViewModel responsibility)
+6. Returns `Result.failure()` when there were items to push but none succeeded (see Rule 2 below)
+
+## Delegate Pull Pattern
+
+The `pull()` method **inside the delegate** pages through the server and reconciles each row:
+- Local **unsynced** edits win → skip the server row
+- Server row marked `DELETED` / `active = false` → **permanently hard-delete** the local row
+- Otherwise → upsert as `synced = true`
+- Advance the `lastSyncedAtIso` checkpoint (timestamp-incremental pulls only)
 
 ---
 
@@ -233,12 +305,28 @@ withTimeout(130_000L) {
 ## Adding a New Syncable Entity — Checklist
 
 - [ ] Add entry to `SyncEntity` enum
-- [ ] Add `observeUnsyncedCount(): Flow<Int>` to DAO (optional but useful)
-- [ ] Repository has `pushPendingToServer(): Result<Int>` and `pullFromServer(): Result<Int>`
-- [ ] Create `{Name}SyncDelegate` with `@SyncEntityKey(SyncEntity.X)` in feature's `sync/` package
-- [ ] All ViewModel write operations call `syncService.markPendingPush(SyncEntity.X)` on success
-- [ ] List ViewModel observes `syncService.observeEntity(X)` for `isRefreshing`; manual refresh calls `emit(TriggerFullSync(X))`
+- [ ] **Repository (local-only):** inject `Dao` + `SyncStateDao` — **not** the `Api`. `create/update/delete`
+      write to Room (`synced = false`) and call `syncStateDao.markPendingPush(SyncEntity.X, now)`
+- [ ] Delete soft-deletes (`active = false, synced = false`) so the push picks it up
+- [ ] **Delegate (`{Name}SyncDelegate`):** inject `Api` + `Dao` (+ `SyncStateDao` if the pull is
+      timestamp-incremental). Implement bulk `pushPending()`, batched `pull()` (delete server-`DELETED`
+      rows), and `handleBackendEvent()`. Annotate `@ContributesIntoMap(WorkspaceScope::class)` +
+      `@SyncEntityKey(SyncEntity.X)`. Set `dependsOn` / `pushDependencies` for FK ordering
+- [ ] List ViewModel observes `syncService.observeEntity(X)` for `isRefreshing`; opens with
+      `emit(TriggerPull(X))`; manual refresh calls `emit(TriggerFullSync(X))`. Do **not** call repo sync
 - [ ] If Tally writes this entity, add `markPendingPush(X)` in `TallySyncScheduler`
+
+### When the repository may still hold the `Api`
+Only for a **non-sync, UI-invoked** feature with no central-sync path: import-from-master /
+available-for-import (customer group/type), or the file repo's entity-scoped
+`pullFromServer(type, uid)` / `setPrimaryFile`. The create/update/delete path stays API-free.
+
+### Entities intentionally NOT on this pattern
+- **Tax** — writes are online subscribe/unsubscribe (the server mints the workspace tax code); a
+  3-repo cluster (code/rule/component) whose sync is aggregated in `MyTaxCodesViewModel`.
+- **Form** — server-authoritative, pull-only (no local writes).
+- **Order / Invoice** — sync not yet implemented (no-op delegates).
+- **Ecom** — separate storefront module (catalog/order pull-only; address has its own CRUD).
 
 ---
 

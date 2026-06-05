@@ -55,6 +55,10 @@ interface FileDao {
     @Query("DELETE FROM file_items WHERE entityType = :entityType AND entityUid = :entityUid")
     suspend fun deleteByEntity(entityType: String, entityUid: String)
 
+    /** Permanent hard-delete by uid (used to remove server-removed images during pull). */
+    @Query("DELETE FROM file_items WHERE uid = :uid")
+    suspend fun hardDeleteByUid(uid: String)
+
     @Query("DELETE FROM file_items")
     suspend fun deleteAll()
 }
