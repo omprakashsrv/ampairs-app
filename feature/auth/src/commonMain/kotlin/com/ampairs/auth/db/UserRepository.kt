@@ -90,7 +90,11 @@ class UserRepository(
     }
 
     suspend fun getUserApi(): Response<UserApiModel> {
-        return authApi.getUser()
+        return try {
+            authApi.getUser()
+        } catch (e: Exception) {
+            Response(data = null, error = com.ampairs.common.model.Error(message = e.message ?: "Network error"))
+        }
     }
 
     suspend fun getToken(): UserToken? {
