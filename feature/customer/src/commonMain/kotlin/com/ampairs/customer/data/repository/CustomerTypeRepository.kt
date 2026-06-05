@@ -9,14 +9,28 @@ import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.CustomerType
 import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.customer.util.CustomerLogger
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+/**
+ * Local-only data access for customer types + the "import from master" feature.
+ *
+ * Writes (create/update/delete) persist to Room as unsynced and mark CUSTOMER_TYPE as
+ * PENDING_PUSH; CentralSyncService then runs the bulk push via [CustomerTypeSyncDelegate].
+ * The API is injected ONLY for [getAvailableCustomerTypesForImport] — all push/pull/event
+ * traffic lives in the delegate.
+ */
+@OptIn(ExperimentalTime::class)
 @Inject
 class CustomerTypeRepository(
     private val customerTypeApi: CustomerTypeApi,
-    private val customerTypeDao: CustomerTypeDao
+    private val customerTypeDao: CustomerTypeDao,
+    private val syncStateDao: SyncStateDao,
 ) {
 
     fun observeCustomerTypes(): Flow<List<CustomerType>> =
@@ -29,94 +43,44 @@ class CustomerTypeRepository(
             customerTypeDao.searchCustomerTypes(query).map { entities -> entities.map { it.toCustomerType() } }
         }
 
-    /**
-     * Create a new customer type
-     */
+    /** Offline-first create: persist locally as unsynced and flag for automatic bulk push. */
     suspend fun createCustomerType(customerType: CustomerType): Result<CustomerType> {
         return try {
-            // Generate UID if not provided
-            val uid = if (customerType.uid.isBlank()) {
+            val uid = customerType.uid.ifBlank {
                 UidGenerator.generateUid(CustomerConstants.CUSTOMER_TYPE_UID_PREFIX)
-            } else {
-                customerType.uid
             }
-
             val customerTypeWithUid = customerType.copy(uid = uid)
-
-            // 1. Save locally first with unsynced status
-            val unsyncedEntity = customerTypeWithUid.toEntity().copy(synced = false)
-            customerTypeDao.insertCustomerType(unsyncedEntity)
-
-            // 2. Try to sync with server
-            try {
-                val response = customerTypeApi.createCustomerType(customerTypeWithUid)
-                if (response.data != null && response.error == null) {
-                    // Server success - correct UID if needed and mark as synced
-                    val serverCustomerType = response.data!!
-                    val finalCustomerType = if (serverCustomerType.uid != uid) {
-                        serverCustomerType.copy(uid = uid) // Keep local UID consistent
-                    } else {
-                        serverCustomerType
-                    }
-                    customerTypeDao.insertCustomerType(finalCustomerType.toEntity().copy(synced = true))
-                    Result.success(finalCustomerType)
-                } else {
-                    // Server failed but data is saved locally
-                    Result.success(customerTypeWithUid)
-                }
-            } catch (e: Exception) {
-                CustomerLogger.w("CustomerTypeRepository", "Server sync failed, using local data", e)
-                Result.success(customerTypeWithUid)
-            }
+            customerTypeDao.insertCustomerType(customerTypeWithUid.toEntity().copy(synced = false))
+            markPending()
+            Result.success(customerTypeWithUid)
         } catch (e: Exception) {
             CustomerLogger.e("CustomerTypeRepository", "Failed to create customer type", e)
             Result.failure(e)
         }
     }
 
-    /**
-     * Update an existing customer type
-     */
+    /** Offline-first update: persist locally as unsynced and flag for automatic bulk push. */
     suspend fun updateCustomerType(customerType: CustomerType): Result<CustomerType> {
         return try {
-            // 1. Save locally first with unsynced status
-            val unsyncedEntity = customerType.toEntity().copy(synced = false)
-            customerTypeDao.updateCustomerType(unsyncedEntity)
-
-            // 2. Try to sync with server
-            try {
-                val response = customerTypeApi.updateCustomerType(customerType.uid, customerType)
-                if (response.data != null && response.error == null) {
-                    customerTypeDao.insertCustomerType(response.data!!.toEntity().copy(synced = true))
-                    Result.success(response.data!!)
-                } else {
-                    Result.success(customerType)
-                }
-            } catch (e: Exception) {
-                CustomerLogger.w("CustomerTypeRepository", "Server update failed, using local data", e)
-                Result.success(customerType)
-            }
+            customerTypeDao.insertCustomerType(customerType.toEntity().copy(synced = false))
+            markPending()
+            Result.success(customerType)
         } catch (e: Exception) {
             CustomerLogger.e("CustomerTypeRepository", "Failed to update customer type", e)
             Result.failure(e)
         }
     }
 
-    /**
-     * Delete a customer type
-     */
+    /** Offline-first delete: mark inactive + unsynced locally and flag for automatic bulk push. */
     suspend fun deleteCustomerType(id: String): Result<Unit> {
         return try {
-            // 1. Mark as inactive locally first
-            customerTypeDao.deleteCustomerType(id)
-
-            // 2. Try to delete from server
-            try {
-                customerTypeApi.deleteCustomerType(id)
-            } catch (e: Exception) {
-                CustomerLogger.w("CustomerTypeRepository", "Server delete failed, marked inactive locally", e)
+            val existing = customerTypeDao.getCustomerTypeById(id)
+            if (existing != null) {
+                customerTypeDao.insertCustomerType(existing.copy(active = false, synced = false))
+                markPending()
+            } else {
+                customerTypeDao.deleteCustomerType(id)
             }
-
             Result.success(Unit)
         } catch (e: Exception) {
             CustomerLogger.e("CustomerTypeRepository", "Failed to delete customer type", e)
@@ -124,27 +88,14 @@ class CustomerTypeRepository(
         }
     }
 
-    /**
-     * Import customer types from available list
-     */
-    suspend fun importCustomerType(customerType: CustomerType): Result<CustomerType> {
-        return createCustomerType(customerType)
-    }
+    /** Import a master type into this workspace — persists locally and flags for bulk push. */
+    suspend fun importCustomerType(customerType: CustomerType): Result<CustomerType> =
+        createCustomerType(customerType)
 
-    /**
-     * Bulk import customer types
-     */
     suspend fun bulkImportCustomerTypes(customerTypes: List<CustomerType>): Result<List<CustomerType>> {
         return try {
-            val results = customerTypes.map { customerType ->
-                importCustomerType(customerType)
-            }
-
-            val successfulImports = results.mapNotNull { result ->
-                result.getOrNull()
-            }
-
-            Result.success(successfulImports)
+            val imported = customerTypes.mapNotNull { importCustomerType(it).getOrNull() }
+            Result.success(imported)
         } catch (e: Exception) {
             CustomerLogger.e("CustomerTypeRepository", "Failed to bulk import customer types", e)
             Result.failure(e)
@@ -157,14 +108,11 @@ class CustomerTypeRepository(
     suspend fun getCustomerTypeByName(name: String): CustomerType? =
         customerTypeDao.getCustomerTypeByName(name)?.toCustomerType()
 
-    /**
-     * Get available customer types for import
-     */
+    /** Non-sync feature: fetch the master list of types available to import (hits the API). */
     suspend fun getAvailableCustomerTypesForImport(): Result<List<CustomerType>> {
         return try {
             val response = customerTypeApi.getAvailableCustomerTypesForImport()
             if (response.data != null && response.error == null) {
-                // Filter out already imported customer types
                 val existingTypes = customerTypeDao.getAllCustomerTypes().first().map { it.name }
                 val availableTypes = response.data!!.filter { it.name !in existingTypes }
                 Result.success(availableTypes)
@@ -177,137 +125,7 @@ class CustomerTypeRepository(
         }
     }
 
-    suspend fun pushPendingToServer(): Result<Int> {
-        return try {
-            val unsyncedTypes = customerTypeDao.getUnsyncedCustomerTypes()
-            var syncedCount = 0
-            var failedCount = 0
-
-            for (entity in unsyncedTypes.filter { !it.active }) {
-                try {
-                    customerTypeApi.deleteCustomerType(entity.id)
-                    customerTypeDao.deleteCustomerType(entity.id)
-                    syncedCount++
-                } catch (e: Exception) {
-                    CustomerLogger.w("CustomerTypeRepository", "Failed to delete type ${entity.id}", e)
-                    failedCount++
-                }
-            }
-
-            val activeUnsynced = unsyncedTypes.filter { it.active }
-            for (batch in activeUnsynced.chunked(10)) {
-                val types = batch.map { it.toCustomerType() }
-                customerTypeApi.bulkUpsertTypes(types)
-                    .onSuccess {
-                        batch.forEach { entity ->
-                            customerTypeDao.insertCustomerType(entity.copy(synced = true))
-                        }
-                        syncedCount += batch.size
-                    }
-                    .onFailure { e ->
-                        CustomerLogger.w("CustomerTypeRepository", "Batch upsert failed", e)
-                        failedCount += batch.size
-                    }
-            }
-
-            if (failedCount > 0) Result.failure(Exception("$failedCount customer type(s) failed to sync"))
-            else Result.success(syncedCount)
-        } catch (e: Exception) {
-            CustomerLogger.e("CustomerTypeRepository", "Push failed", e)
-            Result.failure(e)
-        }
-    }
-
-    suspend fun pullFromServer(): Result<Int> = syncCustomerTypesFromServerInBatches()
-
-    /**
-     * Sync customer types with server using offline-first pattern
-     */
-    suspend fun syncCustomerTypes(): Result<Int> {
-        return try {
-            // FIRST: Sync unsynced local customer types to server (prevents data loss)
-            val unsyncedTypes = customerTypeDao.getUnsyncedCustomerTypes()
-            var syncedCount = 0
-
-            // Handle deletions individually
-            for (entity in unsyncedTypes.filter { !it.active }) {
-                try {
-                    customerTypeApi.deleteCustomerType(entity.id)
-                    customerTypeDao.deleteCustomerType(entity.id)
-                    syncedCount++
-                } catch (e: Exception) {
-                    CustomerLogger.w("CustomerTypeRepository", "Failed to delete customer type ${entity.id}", e)
-                }
-            }
-
-            // Bulk upsert active unsynced types in batches of 10
-            val activeUnsynced = unsyncedTypes.filter { it.active }
-            for (batch in activeUnsynced.chunked(10)) {
-                val types = batch.map { it.toCustomerType() }
-                customerTypeApi.bulkUpsertTypes(types)
-                    .onSuccess {
-                        batch.forEach { entity ->
-                            customerTypeDao.insertCustomerType(entity.copy(synced = true))
-                        }
-                        syncedCount += batch.size
-                    }
-                    .onFailure { e ->
-                        CustomerLogger.w("CustomerTypeRepository", "Batch upsert failed", e)
-                    }
-            }
-
-            // SECOND: Sync from server in batches (incremental sync)
-            val serverSyncResult = syncCustomerTypesFromServerInBatches()
-            val serverSyncCount = serverSyncResult.getOrElse { 0 }
-
-            CustomerLogger.i("CustomerTypeRepository", "Sync completed: $syncedCount local → server, $serverSyncCount server → local")
-            Result.success(syncedCount + serverSyncCount)
-        } catch (e: Exception) {
-            CustomerLogger.e("CustomerTypeRepository", "Sync failed", e)
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Sync customer types from server in batches using timestamp-based incremental sync
-     */
-    private suspend fun syncCustomerTypesFromServerInBatches(batchSize: Int = 100): Result<Int> {
-        return try {
-            var totalSynced = 0
-            var currentPage = 0
-
-            do {
-                // Fetch one page of customer types
-                val pageResponse = customerTypeApi.getCustomerTypes(currentPage, batchSize)
-                if (pageResponse.error != null) throw Exception(pageResponse.error?.message ?: "Network error")
-                val batchTypes = pageResponse.data?.content ?: emptyList()
-
-                // Reconcile: local unsynced wins; server-removed (active=false) is permanently
-                // deleted from the local DB; otherwise upsert.
-                val typesToInsert = batchTypes.mapNotNull { serverType ->
-                    val existing = customerTypeDao.getCustomerTypeById(serverType.uid)
-                    when {
-                        existing != null && !existing.synced -> null
-                        !serverType.active -> {
-                            customerTypeDao.hardDeleteCustomerType(serverType.uid)
-                            null
-                        }
-                        else -> serverType.toEntity().copy(synced = true)
-                    }
-                }
-
-                if (typesToInsert.isNotEmpty()) {
-                    customerTypeDao.insertCustomerTypes(typesToInsert)
-                }
-                totalSynced += batchTypes.size
-
-                currentPage++
-            } while (batchTypes.size == batchSize && totalSynced < 10000) // Safety limit
-
-            Result.success(totalSynced)
-        } catch (e: Exception) {
-            CustomerLogger.e("CustomerTypeRepository", "Failed to sync from server", e)
-            Result.failure(e)
-        }
+    private suspend fun markPending() {
+        syncStateDao.markPendingPush(SyncEntity.CUSTOMER_TYPE, Clock.System.now().toEpochMilliseconds())
     }
 }

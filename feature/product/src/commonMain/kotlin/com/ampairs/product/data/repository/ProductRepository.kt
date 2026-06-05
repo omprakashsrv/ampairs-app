@@ -3,11 +3,9 @@ package com.ampairs.product.data.repository
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import com.ampairs.common.sentry.ErrorTracking
-import com.ampairs.common.EventType
 import com.ampairs.product.util.ProductLogger
 import com.ampairs.common.cache.CacheCleanable
 import com.ampairs.product.data.ProductDataService
-import com.ampairs.product.data.api.ProductApi
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.VariantAttributeDao
@@ -20,76 +18,36 @@ import com.ampairs.product.domain.ProductType
 import com.ampairs.product.domain.ProductVariant
 import com.ampairs.product.domain.ServiceType
 import com.ampairs.product.domain.asDomainModel
-import com.ampairs.product.domain.asDatabaseModel
-import com.ampairs.product.domain.asProductApiModel
-import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toDomain
 import com.ampairs.product.domain.toDomainList
+import com.ampairs.product.domain.toEntity
 import com.ampairs.product.domain.toSummary
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 /**
- * Repository for product data following Store5 offline-first pattern
- * Similar to CustomerRepository implementation
+ * Local-only data access for products and variants. The [ProductApi] is NOT injected here —
+ * all product ↔ server traffic (bulk push, batched pull, backend events) lives in
+ * [com.ampairs.product.sync.ProductSyncDelegate].
+ *
+ * Writes (create/update/delete) persist to Room as unsynced and mark PRODUCT as PENDING_PUSH;
+ * CentralSyncService's reactive observer then runs the automatic bulk push.
  */
+@OptIn(ExperimentalTime::class)
 @Inject
 class ProductRepository(
-    private val productApi: ProductApi,
     private val productDao: ProductDao,
     private val variantDao: ProductVariantDao,
-    private val attributeDao: VariantAttributeDao
+    private val attributeDao: VariantAttributeDao,
+    private val syncStateDao: SyncStateDao,
 ) : ProductDataService, CacheCleanable {
 
-    private suspend fun handleProductEvent(eventType: EventType, productId: String) {
-        when (eventType) {
-            EventType.PRODUCT_CREATED,
-            EventType.PRODUCT_UPDATED,
-            EventType.PRODUCT_STOCK_CHANGED -> refreshProductFromServer(productId)
-            EventType.PRODUCT_DELETED -> productDao.deleteById(productId)
-            else -> Unit
-        }
-    }
-
-    /**
-     * Refresh a single product from server (called when event received from another device).
-     * Updates local Room database which automatically triggers Flow updates.
-     */
-    private suspend fun refreshProductFromServer(productId: String) {
-        try {
-            val result = productApi.getProduct(productId)
-
-            result.onSuccess { productApiModel ->
-                // Convert API model to domain, then to entity
-                val product = Product(
-                    id = productApiModel.id,
-                    name = productApiModel.name,
-                    code = productApiModel.code,
-                    groupId = productApiModel.groupId ?: "",
-                    brandId = productApiModel.brandId ?: "",
-                    categoryId = productApiModel.categoryId ?: "",
-                    subCategoryId = productApiModel.subCategoryId ?: "",
-                    active = productApiModel.active,
-                    taxCode = productApiModel.taxCode,
-                    mrp = productApiModel.mrp,
-                    dp = productApiModel.dp,
-                    sellingPrice = productApiModel.sellingPrice,
-                    baseUnitId = productApiModel.baseUnitId
-                )
-
-                // Update Room database - this automatically triggers Flow updates!
-                productDao.insert(product.toEntity())
-
-                ProductLogger.i("ProductRepository", "✅ Refreshed product from server: $productId")
-            }.onFailure { error ->
-                ProductLogger.w("ProductRepository", "Product not found on server: $productId - ${error.message}")
-            }
-        } catch (e: Exception) {
-            ProductLogger.w("ProductRepository", "Failed to refresh product $productId: ${e.message}")
-            // Graceful degradation - UI continues showing cached data
-        }
+    private suspend fun markPending() {
+        syncStateDao.markPendingPush(SyncEntity.PRODUCT, Clock.System.now().toEpochMilliseconds())
     }
 
     fun observeProducts(): Flow<List<ProductListItem>> =
@@ -129,26 +87,6 @@ class ProductRepository(
 
     override suspend fun clearCache() { productDao.deleteAll() }
 
-    suspend fun syncProducts(): Result<Int> = runCatching {
-        var page = 0
-        var total = 0
-        var hasNext: Boolean
-        do {
-            val pageResp = productApi.getProductsSync(lastSync = null, page = page, size = 100).getOrThrow()
-            val batch = pageResp.content
-            // Permanently delete locally anything the server reports as DELETED.
-            batch.filter { it.status?.equals("DELETED", ignoreCase = true) == true }
-                .forEach { productDao.deleteById(it.id) }
-            // Upsert the rest.
-            val toUpsert = batch.filter { it.status?.equals("DELETED", ignoreCase = true) != true }
-            if (toUpsert.isNotEmpty()) productDao.insertAll(toUpsert.asDatabaseModel())
-            total += batch.size
-            hasNext = pageResp.hasNext
-            page++
-        } while (hasNext && total < 10000)
-        total
-    }
-
     suspend fun createProduct(product: Product): Result<Product> {
         return try {
             val productWithId = if (product.id.isBlank()) {
@@ -156,6 +94,7 @@ class ProductRepository(
             } else product
 
             productDao.insert(productWithId.toEntity())
+            markPending()
             Result.success(productWithId)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "ProductRepository.createProduct")
@@ -176,6 +115,7 @@ class ProductRepository(
                 product.toEntity()
             }
             productDao.update(entityToUpdate)
+            markPending()
             Result.success(product)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "ProductRepository.updateProduct")
@@ -184,7 +124,8 @@ class ProductRepository(
     }
 
     /**
-     * Delete a product
+     * Delete a product. Hard-deletes locally; the server-side delete is reconciled on the next
+     * pull (server reports status=DELETED) — products have no delete branch in the bulk push.
      */
     suspend fun deleteProduct(productId: String): Result<Unit> {
         return try {
@@ -196,7 +137,6 @@ class ProductRepository(
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     private fun generateLocalId(): String {
         return "local_${Clock.System.now().toEpochMilliseconds()}_${(1000..9999).random()}"
     }
@@ -205,42 +145,7 @@ class ProductRepository(
         return productDao.countProducts()
     }
 
-    suspend fun getUnSyncedProducts(): List<Product> {
-        return productDao.unSyncedProducts().map { it.toDomainProduct() }
-    }
-
-    suspend fun pullFromServer(): Result<Int> = syncProducts()
-
-    // Push unsynced local changes first, then pull server updates — mirrors CustomerRepository.syncCustomers()
-    suspend fun fullSync(): Result<Int> {
-        val pushResult = pushPendingToServer()
-        val pullResult = syncProducts()
-        return if (pullResult.isFailure) pullResult
-        else Result.success((pushResult.getOrElse { 0 }) + (pullResult.getOrElse { 0 }))
-    }
-
-    suspend fun pushPendingToServer(): Result<Int> = runCatching {
-        val unsynced = productDao.unSyncedProducts()
-        if (unsynced.isEmpty()) return@runCatching 0
-        var pushed = 0
-        for (batch in unsynced.chunked(10)) {
-            val apiModels = batch.map { it.asProductApiModel() }
-            productApi.bulkUpdateProducts(apiModels)
-                .onSuccess {
-                    batch.forEach { entity -> productDao.insert(entity.copy(synced = 1)) }
-                    pushed += batch.size
-                }
-                .onFailure { throw it }
-        }
-        pushed
-    }
-
-    suspend fun handleExternalEvent(productId: String, eventType: String) {
-        refreshProductFromServer(productId)
-    }
-
     // Extension functions for data conversion
-    @OptIn(ExperimentalTime::class)
     private fun Product.toEntity(): ProductEntity {
         val now = Clock.System.now()
         return ProductEntity(
