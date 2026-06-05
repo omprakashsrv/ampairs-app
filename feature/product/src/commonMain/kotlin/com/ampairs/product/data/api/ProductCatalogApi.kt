@@ -19,4 +19,10 @@ interface ProductCatalogApi {
     suspend fun getSubCategories(): Result<List<ProductGroupApiModel>>
     suspend fun createSubCategory(model: ProductGroupApiModel): Result<ProductGroupApiModel>
     suspend fun updateSubCategory(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel>
+
+    // Bulk upsert — send all unsynced rows of a catalog type in one request.
+    suspend fun updateGroups(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>>
+    suspend fun updateCategories(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>>
+    suspend fun updateBrands(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>>
+    suspend fun updateSubCategories(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>>
 }

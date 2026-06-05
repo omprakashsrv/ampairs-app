@@ -40,11 +40,13 @@ class CustomerGroupApiImpl(
             "sortDirection" to sortDirection
         )
 
-        lastSyncTime?.let { params["lastSyncTime"] = it }
+        lastSyncTime?.let { params["last_sync"] = it }
 
+        // Incremental sync feed: returns rows updated since last_sync INCLUDING inactive
+        // (soft-deleted) groups, so the client can permanently delete removed rows.
         val response: Response<PageResponse<CustomerGroup>> = get(
             client,
-            ApiUrlBuilder.customerUrl("v1/groups"),
+            ApiUrlBuilder.customerUrl("v1/groups/sync"),
             params
         )
         return response

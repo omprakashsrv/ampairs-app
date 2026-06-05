@@ -5,6 +5,7 @@ import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
+import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
 import com.ampairs.common.postList
@@ -29,6 +30,25 @@ class ProductApiImpl(
             val response: Response<List<ProductApiModel>> = get(
                 client,
                 ApiUrlBuilder.productUrl("v1/products")
+            )
+            if (response.data != null && response.error == null) {
+                Result.success(response.data!!)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Server returned no data"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getProductsSync(lastSync: String?, page: Int, size: Int): Result<PageResponse<ProductApiModel>> {
+        return try {
+            val params = mutableMapOf("page" to page.toString(), "size" to size.toString())
+            lastSync?.let { params["last_sync"] = it }
+            val response: Response<PageResponse<ProductApiModel>> = get(
+                client,
+                ApiUrlBuilder.productUrl("v1/products/sync"),
+                params
             )
             if (response.data != null && response.error == null) {
                 Result.success(response.data!!)

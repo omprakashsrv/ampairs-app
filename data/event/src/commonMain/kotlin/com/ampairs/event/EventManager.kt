@@ -72,7 +72,12 @@ class EventManager(
         connectionTimeout = 30.seconds
     }
 
-    private val json = Json { ignoreUnknownKeys = true }
+    // coerceInputValues maps unrecognised enum values (e.g. new backend event types) to the
+    // declared default (EventType.UNKNOWN) instead of throwing and dropping the event.
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
 
     override suspend fun connect() {
         if (_connectionState.value is ConnectionState.Connected) {

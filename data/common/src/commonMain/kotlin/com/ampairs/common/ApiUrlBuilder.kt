@@ -64,6 +64,11 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/unit/$cleanPath"
     }
 
+    fun eventUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/event/$cleanPath"
+    }
+
     fun businessUrl(path: String = ""): String {
         val cleanPath = path.removePrefix("/")
         val base = "${ConfigurationManager.apiBaseUrl}/api/business/v1/businesses"
@@ -158,7 +163,7 @@ object ApiUrlBuilder {
 
     fun wsUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
-        return "${ConfigurationManager.current.wsBaseUrl}/$cleanPath"
+        return "${ConfigurationManager.current.wsBaseUrl}/api/$cleanPath"
     }
 
     fun buildCompleteUrl(path: String): String {

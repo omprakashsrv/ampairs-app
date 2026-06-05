@@ -11,6 +11,9 @@ class OrderSyncDelegate : SyncDelegate {
 
     override val entity: SyncEntity = SyncEntity.ORDER
 
+    // Orders reference customers and products — pull those first.
+    override val dependsOn: List<SyncEntity> = listOf(SyncEntity.CUSTOMER, SyncEntity.PRODUCT)
+
     override suspend fun pullFromServer(): SyncResult = SyncResult.Success(0)
 
     override suspend fun pushPendingToServer(): SyncResult = SyncResult.Success(0)

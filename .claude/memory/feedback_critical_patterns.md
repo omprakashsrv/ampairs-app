@@ -76,3 +76,39 @@ ApiUrlBuilder.productUrl("v1/items")      // product feature
 Store backend entity IDs as `String` in form state, with a separate display name string. Never store the full domain object reference in form state.
 
 **Reference:** `CustomerFormState` in `CustomerFormViewModel.kt`
+
+---
+
+## Rule 7: Repositories are local-only — the API lives in the SyncDelegate
+
+The entity create/update/delete flow must **not** inject or call the feature `Api`. The repository
+writes to Room (`synced = false`) and flags the entity for push via
+`syncStateDao.markPendingPush(SyncEntity.X, Clock.System.now().toEpochMilliseconds())`.
+`CentralSyncService`'s reactive observer turns that flag into an automatic bulk push, executed by the
+`{Name}SyncDelegate` — the **single place** that injects the `Api` (+ `Dao`) and owns bulk push,
+batched pull (permanently deleting server-`DELETED` rows), and backend-event refresh.
+
+```kotlin
+// ✅ Repository — local-only
+@Inject class CustomerRepository(dao: CustomerDao, syncStateDao: SyncStateDao) {
+    suspend fun createCustomer(c: Customer): Result<Customer> {
+        dao.insertCustomer(c.toEntity().copy(synced = false))
+        syncStateDao.markPendingPush(SyncEntity.CUSTOMER, Clock.System.now().toEpochMilliseconds())
+        return Result.success(c)
+    }
+}
+
+// ❌ Repository calling the API directly in the write path — do not do this
+val server = customerApi.createCustomer(c)   // belongs in CustomerSyncDelegate
+```
+
+**Why:** keeping the API out of the repository makes every write offline-first by construction
+(one path: write + flag), yields a single bulk push/pull per entity, and lets multi-device
+WebSocket events drive pulls. **Delete must set `synced = false` (not just `active = false`)** or the
+push (which reads `synced = 0`) will never send it.
+
+**Allowed exception:** the repo may keep the `Api` only for a *non-sync, UI-invoked* feature with no
+central-sync path — import-from-master / available-for-import (customer group/type), or the file
+repo's entity-scoped `pullFromServer(type, uid)` / `setPrimaryFile`.
+
+**Reference:** `CustomerRepository` + `CustomerSyncDelegate`. Full guide: `/offline-sync`.

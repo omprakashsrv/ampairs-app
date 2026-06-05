@@ -43,6 +43,7 @@ import kotlinx.coroutines.launch
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -417,9 +418,7 @@ class CustomerFormViewModel(
             .onEach { types -> _uiState.update { it.copy(customerTypes = types, isLoadingCustomerTypes = false) } }
             .launchIn(viewModelScope)
         _uiState.update { it.copy(isLoadingCustomerTypes = true) }
-        viewModelScope.launch {
-            try { customerTypeRepository.syncCustomerTypes() } catch (_: Exception) {}
-        }
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CUSTOMER_TYPE))
     }
 
     private fun loadCustomerGroups() {
@@ -427,9 +426,7 @@ class CustomerFormViewModel(
             .onEach { groups -> _uiState.update { it.copy(customerGroups = groups, isLoadingCustomerGroups = false) } }
             .launchIn(viewModelScope)
         _uiState.update { it.copy(isLoadingCustomerGroups = true) }
-        viewModelScope.launch {
-            try { customerGroupRepository.syncCustomerGroups() } catch (_: Exception) {}
-        }
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CUSTOMER_GROUP))
     }
 
     private fun loadEntityConfig() {

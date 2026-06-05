@@ -16,6 +16,14 @@ interface SyncDelegate {
      */
     val pushDependencies: List<SyncEntity> get() = emptyList()
 
+    /**
+     * Entities that must be pulled (present locally) before this entity is pulled — its referenced
+     * parents (e.g. customer depends on customer_group + customer_type). During bootstrap the
+     * CentralSyncService pulls dependencies first, in topological waves; a dependent is held if a
+     * dependency's pull fails. Defaults to [pushDependencies] since push wants the same ordering.
+     */
+    val dependsOn: List<SyncEntity> get() = pushDependencies
+
     /** Pull the latest data from the server into local Room DB. */
     suspend fun pullFromServer(): SyncResult
 

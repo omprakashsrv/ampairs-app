@@ -52,4 +52,12 @@ enum class EventType {
     USER_STATUS_CHANGED,
     DEVICE_CONNECTED,
     DEVICE_DISCONNECTED,
+
+    // Generic entity change events (backend EntityChangePublisher — any entity type)
+    ENTITY_CREATED,
+    ENTITY_UPDATED,
+    ENTITY_DELETED,
+
+    // Fallback for any event type the client doesn't recognise (decoded via coerceInputValues).
+    UNKNOWN,
 }
