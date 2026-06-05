@@ -12,22 +12,37 @@ import com.ampairs.file.db.dao.FileDao
 import com.ampairs.file.db.entity.FileEntity
 import com.ampairs.file.manager.FileManager
 import com.ampairs.file.util.FileLogger
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 
+/**
+ * Local-only data access for files/images plus the entity-scoped pull and set-primary calls that
+ * the image ViewModels invoke directly. The central-sync multipart push lives in
+ * [com.ampairs.file.sync.FileSyncDelegate], not here.
+ *
+ * Local writes ([saveLocally]/[deleteFile]) mark FILE as PENDING_PUSH so CentralSyncService runs
+ * the upload push automatically.
+ */
 @Inject
 @ContributesBinding(AppScope::class)
 class FileRepositoryImpl(
     private val dao: FileDao,
     private val api: FileApiService,
     private val fileManager: FileManager,
+    private val syncStateDao: SyncStateDao,
 ) : FileRepository {
 
     companion object {
         private const val TAG = "FileRepository"
+    }
+
+    private suspend fun markPending() {
+        syncStateDao.markPendingPush(SyncEntity.FILE, Clock.System.now().toEpochMilliseconds())
     }
 
     override fun observeFiles(entityType: FileEntityType, entityUid: String): Flow<List<FileItem>> =
@@ -62,12 +77,14 @@ class FileRepositoryImpl(
             updatedAt = now,
         )
         dao.insert(entity)
+        markPending()
         FileLogger.d(TAG, "Saved locally: uid=$uid, entity=${entityType.backendValue}/$entityUid")
         entity.toDomain()
     }
 
     override suspend fun deleteFile(fileUid: String): Result<Unit> = runCatching {
         dao.softDelete(fileUid)
+        markPending()
         FileLogger.d(TAG, "Soft deleted: uid=$fileUid")
     }
 
@@ -81,64 +98,6 @@ class FileRepositoryImpl(
         // Propagate to server
         api.setPrimaryImage(fileUid).getOrNull()
         FileLogger.d(TAG, "Set primary: uid=$fileUid, entity=${entityType.backendValue}/$entityUid")
-    }
-
-    override suspend fun pushPendingToServer(): Result<Int> = runCatching {
-        val pending = dao.getPendingUploads()
-        val deletes = dao.getPendingDeletes()
-        var syncedCount = 0
-        var failedCount = 0
-
-        // Push pending deletes first
-        deletes.forEach { entity ->
-            api.deleteImage(entity.uid).fold(
-                onSuccess = { dao.markSynced(entity.uid); syncedCount++ },
-                onFailure = { FileLogger.w(TAG, "Delete failed for ${entity.uid}", it) },
-            )
-        }
-
-        // Push pending uploads
-        pending.forEach { entity ->
-            val localPath = entity.localPath
-            if (localPath == null) {
-                FileLogger.w(TAG, "No local path for pending upload uid=${entity.uid}")
-                dao.updateUploadStatus(entity.uid, FileUploadStatus.FAILED.name)
-                failedCount++
-                return@forEach
-            }
-            val imageData = runCatching { fileManager.readFile(localPath) }.getOrNull()
-            if (imageData == null) {
-                FileLogger.w(TAG, "Could not read local file: $localPath")
-                dao.updateUploadStatus(entity.uid, FileUploadStatus.FAILED.name)
-                failedCount++
-                return@forEach
-            }
-            dao.updateUploadStatus(entity.uid, FileUploadStatus.UPLOADING.name)
-            val entityType = FileEntityType.entries.firstOrNull { it.backendValue == entity.entityType }
-                ?: run {
-                    FileLogger.w(TAG, "Unknown entity type: ${entity.entityType}")
-                    dao.updateUploadStatus(entity.uid, FileUploadStatus.FAILED.name)
-                    failedCount++
-                    return@forEach
-                }
-            api.upload(entityType, entity.entityUid, entity.uid, entity.fileName, entity.contentType, imageData, entity.isPrimary == 1).fold(
-                onSuccess = { apiModel ->
-                    dao.markUploaded(entity.uid, apiModel.imageUrl.toAbsoluteUrl(), apiModel.thumbnailUrl.toAbsoluteUrl())
-                    syncedCount++
-                    FileLogger.d(TAG, "Uploaded: uid=${entity.uid}, imageUrl=${apiModel.imageUrl}")
-                },
-                onFailure = { e ->
-                    FileLogger.e(TAG, "Upload failed for ${entity.uid}", e)
-                    dao.updateUploadStatus(entity.uid, FileUploadStatus.FAILED.name)
-                    failedCount++
-                },
-            )
-        }
-
-        if (syncedCount == 0 && failedCount > 0) {
-            error("All $failedCount file uploads failed — will retry on reconnect")
-        }
-        syncedCount
     }
 
     override suspend fun pullFromServer(entityType: FileEntityType, entityUid: String): Result<Int> = runCatching {
