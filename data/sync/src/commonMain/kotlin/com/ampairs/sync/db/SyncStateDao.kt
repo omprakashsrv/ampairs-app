@@ -29,6 +29,20 @@ interface SyncStateDao {
     @Query("UPDATE entity_sync_state SET lastSyncedAtIso = :iso WHERE entityName = :entity")
     suspend fun setLastSyncedAtIso(entity: SyncEntity, iso: String)
 
+    /**
+     * Mark an entity as PENDING_PUSH so CentralSyncService's reactive observer fires an
+     * automatic bulk push. Upsert that preserves `lastSyncedAtIso` (never wipes the pull
+     * checkpoint). Repositories call this after any local write instead of touching the API.
+     */
+    @Query(
+        """
+        INSERT INTO entity_sync_state (entityName, statusName, lastSyncedAt, lastSyncedAtIso, pendingCount, errorMessage, updatedAt)
+        VALUES (:entity, 'PENDING_PUSH', NULL, NULL, 0, NULL, :now)
+        ON CONFLICT(entityName) DO UPDATE SET statusName = 'PENDING_PUSH', updatedAt = :now
+        """
+    )
+    suspend fun markPendingPush(entity: SyncEntity, now: Long)
+
     @Query("DELETE FROM entity_sync_state")
     suspend fun deleteAll()
 }

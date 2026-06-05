@@ -14,11 +14,15 @@ import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.util.CustomerConstants
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
 import kotlinx.coroutines.flow.first
 
 @Inject
 class CustomerActionHandler(
     private val customerRepository: CustomerRepository,
+    private val syncService: CentralSyncService,
 ) : ActionHandler {
 
     override val moduleName = "customer"
@@ -188,13 +192,10 @@ class CustomerActionHandler(
         return ActionResult.Success("You have $count customer(s).")
     }
 
-    private suspend fun syncCustomers(): ActionResult {
-        val result = customerRepository.syncCustomers()
-        return if (result.isSuccess) {
-            ActionResult.Success("Synced ${result.getOrDefault(0)} customer(s).")
-        } else {
-            ActionResult.Error("Sync failed: ${result.exceptionOrNull()?.message}")
-        }
+    private fun syncCustomers(): ActionResult {
+        // Push + pull are coordinated by CentralSyncService; this just kicks off a full sync.
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CUSTOMER))
+        return ActionResult.Success("Customer sync started.")
     }
 
     companion object {
