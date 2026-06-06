@@ -2,6 +2,7 @@ package com.ampairs.invoice.api.model
 
 import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.invoice.db.entity.InvoiceEntity
+import com.ampairs.invoice.db.entity.InvoiceItemEntity
 import com.ampairs.invoice.domain.Address
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.domain.Invoice
@@ -33,6 +34,7 @@ data class InvoiceApiModel(
     @SerialName("total_items") var totalItems: Int = 0,
     @SerialName("active") var active: Boolean = true,
     @SerialName("last_updated") var lastUpdated: Long = 0,
+    @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("soft_deleted") var softDeleted: Boolean = false,
     @SerialName("total_quantity") var totalQuantity: Double = 0.0,
     @SerialName("billing_address") var billingAddress: Address? = null,
@@ -99,3 +101,61 @@ fun InvoiceApiModel.toInvoiceDatabaseModel(): InvoiceEntity {
         discount = this.discount?.let { Json.encodeToString(this.discount) }
     )
 }
+
+// --- Entity -> API (for offline sync push, spec 010). Reads product_id/tax_code straight off the
+// entity, so no product lookup is needed; reverses toInvoiceDatabaseModel. ---
+
+private fun String?.decodeTaxInfos(): List<TaxInfoApiModel>? =
+    this?.takeIf { it.isNotBlank() && it != "null" }
+        ?.let { runCatching { Json.decodeFromString<List<TaxInfoApiModel>>(it) }.getOrNull() }
+
+private fun String?.decodeDiscounts(): List<Discount>? =
+    this?.takeIf { it.isNotBlank() && it != "null" }
+        ?.let { runCatching { Json.decodeFromString<List<Discount>>(it) }.getOrNull() }
+
+fun InvoiceItemEntity.toApiModel(): InvoiceItemApiModel = InvoiceItemApiModel(
+    id = id,
+    description = description,
+    quantity = quantity,
+    price = selling_price,
+    productPrice = product_price,
+    mrp = mrp,
+    dp = dp,
+    totalCost = total_cost,
+    totalTax = total_tax,
+    basePrice = base_price,
+    invoiceId = invoice_id,
+    productId = product_id,
+    taxCode = tax_code,
+    active = active == 1L,
+    softDeleted = soft_deleted == 1L,
+    discount = discount.decodeDiscounts(),
+    taxInfoApiModels = tax_info.decodeTaxInfos() ?: arrayListOf(),
+)
+
+fun InvoiceEntity.toApiModel(items: List<InvoiceItemEntity>): InvoiceApiModel = InvoiceApiModel(
+    id = id,
+    invoiceDate = invoice_date,
+    invoiceNumber = invoice_number,
+    order_ref_id = order_ref_id,
+    fromCustomerId = from_customer_id,
+    fromCustomerName = from_customer_name,
+    toCustomerId = to_customer_id,
+    toCustomerName = to_customer_name,
+    fromCustomerGst = from_customer_gst,
+    toCustomerGst = to_customer_gst,
+    created_by = created_by,
+    updated_by = updated_by,
+    totalCost = total_cost,
+    basePrice = base_price,
+    totalTax = total_tax,
+    status = runCatching { InvoiceStatus.valueOf(status) }.getOrDefault(InvoiceStatus.DRAFT),
+    totalItems = total_items.toInt(),
+    active = active == 1L,
+    lastUpdated = last_updated,
+    softDeleted = soft_deleted == 1L,
+    totalQuantity = total_quantity,
+    discount = discount.decodeDiscounts(),
+    invoiceItems = items.map { it.toApiModel() },
+    taxInfoApiModels = tax_info.decodeTaxInfos(),
+)

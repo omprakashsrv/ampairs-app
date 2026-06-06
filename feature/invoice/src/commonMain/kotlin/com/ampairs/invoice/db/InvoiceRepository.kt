@@ -19,16 +19,26 @@ import com.ampairs.invoice.db.entity.InvoiceItemEntity
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.domain.InvoiceItem
-import com.ampairs.invoice.api.model.toApiModel
+import com.ampairs.invoice.domain.asDatabaseModel as invoiceAsEntity
 import com.ampairs.invoice.domain.asDomainModelSimple
 import com.ampairs.product.data.ProductDataService
-import com.ampairs.common.di.AppScope
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
+import kotlin.time.Clock
 
+/**
+ * Local-only invoice repository (offline-first, spec 010). Writes go to Room and flag the entity
+ * PENDING_PUSH; the [com.ampairs.invoice.sync.InvoiceSyncDelegate] owns all invoice ↔ server traffic.
+ *
+ * NOTE (intermediate): [getInvoiceResource]/[updateInvoices]/[updateInvoice] (legacy list pull,
+ * replaced by syncService TriggerPull in A3) still reference [invoiceApi]. The create/edit path no
+ * longer touches the network.
+ */
 @Inject
 class InvoiceRepository(
     val invoiceDao: InvoiceDao,
@@ -36,22 +46,22 @@ class InvoiceRepository(
     val productDataService: ProductDataService,
     val customerDataService: CustomerDataService,
     val invoiceApi: InvoiceApi,
+    val syncStateDao: SyncStateDao,
 ) {
     @Transaction
     suspend fun saveInvoice(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
-        invoiceDao.insert(invoiceEntity)
+        invoiceDao.insert(invoiceEntity.copy(synced = 0))
         invoiceItemDao.insertAll(invoiceItems)
-        val invoice = getInvoice(invoiceEntity.id)
-        saveInvoice(invoice)
+        markPending()
     }
 
     suspend fun saveInvoice(invoice: Invoice?) {
-        invoice?.toApiModel()?.let {
-            val response = invoiceApi.updateInvoice(it)
-            val updatedInvoice = response.data
-            updatedInvoice?.toInvoiceDatabaseModel()?.let { entity -> invoiceDao.insert(entity) }
-        }
+        val inv = invoice ?: return
+        saveInvoice(inv.invoiceAsEntity(), inv.items.invoiceAsEntity(inv.id))
     }
+
+    private suspend fun markPending() =
+        syncStateDao.markPendingPush(SyncEntity.INVOICE, Clock.System.now().toEpochMilliseconds())
 
     suspend fun getInvoice(id: String): Invoice {
         val entity = invoiceDao.selectById(id) ?: return Invoice()
