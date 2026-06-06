@@ -51,8 +51,12 @@ android {
         val release by creating {
             storeFile = file("$rootDir/ampairs.jks")
             storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
+                ?: System.getenv("KEYSTORE_PASSWORD")
             keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
-            keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS", "ampairs")
+                ?: System.getenv("KEY_PASSWORD")
+            keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
+                ?: System.getenv("KEY_ALIAS")
+                ?: "ampairs"
         }
     }
 
