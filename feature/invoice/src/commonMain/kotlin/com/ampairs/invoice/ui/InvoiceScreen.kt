@@ -178,7 +178,7 @@ fun InvoiceScreen(
                                                 invoiceViewModel.invoiceItems.remove(invoiceItem)
                                             }
                                             invoiceViewModel.invoice.updateTotalCost()
-                                            invoiceViewModel.updateTaxInfos()
+                                            invoiceViewModel.recalculate()
                                         }
                                         Text(
                                             invoiceItem.totalCost.toDecimal(),
@@ -227,7 +227,7 @@ fun InvoiceScreen(
                                     invoiceViewModel.selectedInvoiceItem?.updateTotal()
                                     invoiceViewModel.invoice.updateDiscount()
                                     invoiceViewModel.invoice.updateTotalCost()
-                                    invoiceViewModel.updateTaxInfos()
+                                    invoiceViewModel.recalculate()
                                 }
                             }
                         }
@@ -259,7 +259,7 @@ fun InvoiceScreen(
                                     }
                                     invoiceViewModel.invoice.updateDiscount()
                                     invoiceViewModel.invoice.updateTotalCost()
-                                    invoiceViewModel.updateTaxInfos()
+                                    invoiceViewModel.recalculate()
                                 }
                             }
                         }
