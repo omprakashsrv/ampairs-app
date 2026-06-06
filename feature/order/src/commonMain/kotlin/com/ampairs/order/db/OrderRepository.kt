@@ -18,14 +18,25 @@ import com.ampairs.order.db.dto.asItemDatabaseModel
 import com.ampairs.order.db.entity.OrderEntity
 import com.ampairs.order.db.entity.OrderItemEntity
 import com.ampairs.order.domain.Order
+import com.ampairs.order.domain.asDatabaseModel as orderAsEntity
 import com.ampairs.order.domain.asDomainModel
 import com.ampairs.product.data.ProductDataService
-import com.ampairs.common.di.AppScope
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.datetime.Clock
 
+/**
+ * Local-only order repository (offline-first, spec 010). Writes go to Room and flag the entity
+ * PENDING_PUSH; the [com.ampairs.order.sync.OrderSyncDelegate] owns all order ↔ server traffic.
+ *
+ * NOTE (intermediate state): [createInvoice] (order→invoice conversion, refactored in A3/T024) and
+ * [getOrderResource] (legacy list pull, replaced by syncService TriggerPull in A3) still reference
+ * [orderApi]. The create/edit path no longer touches the network.
+ */
 @Inject
 class OrderRepository(
     val orderDao: OrderDao,
@@ -33,23 +44,22 @@ class OrderRepository(
     val productDataService: ProductDataService,
     val customerDataService: CustomerDataService,
     val orderApi: OrderApi,
+    val syncStateDao: SyncStateDao,
 ) {
     @Transaction
     suspend fun saveOrder(orderEntity: OrderEntity, orderItems: List<OrderItemEntity>) {
-        orderDao.insert(orderEntity)
+        orderDao.insert(orderEntity.copy(synced = 0))
         orderItemDao.insertAll(orderItems)
-        val order = getOrder(orderEntity.id)
-        saveOrder(order)
+        markPending()
     }
 
     suspend fun saveOrder(order: Order?) {
-        order?.toApiModel()?.let {
-            val orderResponse = orderApi.updateOrder(it)
-            val updatedOrder = orderResponse.data
-            updatedOrder?.toOrderDatabaseModel()?.let { it1 -> orderDao.insert(it1) }
-            orderResponse
-        }
+        val o = order ?: return
+        saveOrder(o.orderAsEntity(), o.items.orderAsEntity(o.id))
     }
+
+    private suspend fun markPending() =
+        syncStateDao.markPendingPush(SyncEntity.ORDER, Clock.System.now().toEpochMilliseconds())
 
     suspend fun createInvoice(order: Order?) {
         order?.toApiModel()?.let {
@@ -108,6 +118,4 @@ class OrderRepository(
     fun getOrders(searchText: String): PagingSource<Int, OrderEntity> {
         return orderDao.getOrdersBySearchPagingSource(searchText)
     }
-
-
 }
