@@ -178,7 +178,7 @@ fun OrderScreen(
                                                 orderViewModel.orderItems.remove(orderItem)
                                             }
                                             orderViewModel.order.updateTotalCost()
-                                            orderViewModel.updateTaxInfos()
+                                            orderViewModel.recalculate()
                                         }
                                         Text(
                                             orderItem.totalCost.toDecimal(),
@@ -227,7 +227,7 @@ fun OrderScreen(
                                     orderViewModel.selectedOrderItem?.updateTotal()
                                     orderViewModel.order.updateDiscount()
                                     orderViewModel.order.updateTotalCost()
-                                    orderViewModel.updateTaxInfos()
+                                    orderViewModel.recalculate()
                                 }
                             }
                         }
@@ -259,7 +259,7 @@ fun OrderScreen(
                                     }
                                     orderViewModel.order.updateDiscount()
                                     orderViewModel.order.updateTotalCost()
-                                    orderViewModel.updateTaxInfos()
+                                    orderViewModel.recalculate()
                                 }
                             }
                         }
