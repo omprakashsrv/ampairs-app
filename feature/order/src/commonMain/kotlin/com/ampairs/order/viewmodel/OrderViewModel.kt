@@ -78,6 +78,23 @@ class OrderViewModel(
         viewModelScope.launch(DispatcherProvider.io) { computeTotals() }
     }
 
+    /** Add a product from the picker: new line (qty 1) or increment the existing line, then recompute. */
+    fun addProduct(productId: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val existing = orderItems.find { it.product?.id == productId }
+            if (existing != null) {
+                existing.quantity = existing.quantity + 1.0
+            } else {
+                val product = productDataService.getById(productId) ?: return@launch
+                val item = OrderItem(product)
+                if (item.quantity <= 0.0) item.quantity = 1.0
+                orderItems.add(item)
+            }
+            order.items = orderItems
+            computeTotals()
+        }
+    }
+
     fun saveOrder(onOrderSaved: (String) -> Unit) {
         savingOrder = true
         viewModelScope.launch(DispatcherProvider.io) {

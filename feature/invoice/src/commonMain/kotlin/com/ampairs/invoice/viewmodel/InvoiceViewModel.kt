@@ -80,6 +80,23 @@ class InvoiceViewModel(
         viewModelScope.launch(DispatcherProvider.io) { computeTotals() }
     }
 
+    /** Add a product from the picker: new line (qty 1) or increment the existing line, then recompute. */
+    fun addProduct(productId: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val existing = invoiceItems.find { it.product?.id == productId }
+            if (existing != null) {
+                existing.quantity = existing.quantity + 1.0
+            } else {
+                val product = productDataService.getById(productId) ?: return@launch
+                val item = InvoiceItem(product)
+                if (item.quantity <= 0.0) item.quantity = 1.0
+                invoiceItems.add(item)
+            }
+            invoice.items = invoiceItems
+            computeTotals()
+        }
+    }
+
     fun saveInvoice(onInvoiceSaved: (String) -> Unit) {
         savingInvoice = true
         viewModelScope.launch(DispatcherProvider.io) {

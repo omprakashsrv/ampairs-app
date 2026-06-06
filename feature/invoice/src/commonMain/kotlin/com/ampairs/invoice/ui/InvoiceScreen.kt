@@ -190,7 +190,7 @@ fun InvoiceScreen(
                         }
                     }
                 }) { _ ->
-                productPickerSlot { _ -> }
+                productPickerSlot { productId -> invoiceViewModel.addProduct(productId) }
             }
         }
 

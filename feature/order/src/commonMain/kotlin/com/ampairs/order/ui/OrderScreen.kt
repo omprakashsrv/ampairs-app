@@ -190,7 +190,7 @@ fun OrderScreen(
                         }
                     }
                 }) { innerPadding ->
-                productPickerSlot { _ -> }
+                productPickerSlot { productId -> orderViewModel.addProduct(productId) }
             }
         }
 
