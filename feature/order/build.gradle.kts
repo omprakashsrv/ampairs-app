@@ -42,6 +42,7 @@ kotlin {
                 implementation(projects.feature.customerApi)
                 implementation(projects.feature.productApi)
                 implementation(projects.feature.taxApi)
+                implementation(projects.feature.invoice)
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
