@@ -28,5 +28,9 @@ data class InvoiceItemEntity(
     val tax_info: String? = null,
     val discount: String? = null,
     val active: Long = 1,
-    val soft_deleted: Long = 0
+    val soft_deleted: Long = 0,
+    // spec 010: unit of measure + base-unit quantity (FR-014) and selected variant
+    val unit_id: String = "",
+    val base_quantity: Double = 0.0,
+    val variant_sku: String? = null
 )
