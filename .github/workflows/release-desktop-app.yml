@@ -160,6 +160,17 @@ jobs:
             [System.IO.File]::WriteAllBytes($certPath, $certBytes)
             $env:WINDOWS_SIGN_CERT_FILE = $certPath
             $env:WINDOWS_SIGN_PASSWORD = "${{ secrets.WINDOWS_SIGN_PASSWORD }}"
+
+            # signtool.exe is installed with the Windows SDK but not in PATH by default
+            $signtoolDir = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" |
+              Where-Object { $_.Directory.Name -eq "x64" } |
+              Select-Object -First 1 -ExpandProperty DirectoryName
+            if ($signtoolDir) {
+              $env:PATH = "$signtoolDir;$env:PATH"
+              Write-Output "✅ signtool.exe found: $signtoolDir"
+            } else {
+              Write-Warning "⚠️ signtool.exe not found — MSI signing will be skipped"
+            }
             Write-Output "✅ Code signing configured"
           }
 
