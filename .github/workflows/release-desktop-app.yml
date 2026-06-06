@@ -167,11 +167,11 @@ jobs:
               Select-Object -First 1 -ExpandProperty DirectoryName
             if ($signtoolDir) {
               $env:PATH = "$signtoolDir;$env:PATH"
-              Write-Output "✅ signtool.exe found: $signtoolDir"
+              Write-Output "OK: signtool.exe found at $signtoolDir"
             } else {
-              Write-Warning "⚠️ signtool.exe not found — MSI signing will be skipped"
+              Write-Warning "WARN: signtool.exe not found - MSI signing will be skipped"
             }
-            Write-Output "✅ Code signing configured"
+            Write-Output "OK: Code signing configured"
           }
 
           # Build MSI
@@ -188,7 +188,7 @@ jobs:
           }
           "msi_path=$MSI_FILE" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "msi_name=$((Get-Item $MSI_FILE).Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Output "✅ MSI ready: $MSI_FILE"
+          Write-Output "MSI ready: $MSI_FILE"
         shell: powershell
 
       - name: Upload MSI artifact
