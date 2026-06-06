@@ -50,7 +50,8 @@ class InvoiceRepository(
 ) {
     @Transaction
     suspend fun saveInvoice(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
-        invoiceDao.insert(invoiceEntity.copy(synced = 0))
+        val numbered = if (invoiceEntity.invoice_number.isBlank()) assignNumber(invoiceEntity) else invoiceEntity
+        invoiceDao.insert(numbered.copy(synced = 0))
         invoiceItemDao.insertAll(invoiceItems)
         markPending()
     }
@@ -58,6 +59,19 @@ class InvoiceRepository(
     suspend fun saveInvoice(invoice: Invoice?) {
         val inv = invoice ?: return
         saveInvoice(inv.invoiceAsEntity(), inv.items.invoiceAsEntity(inv.id))
+    }
+
+    /**
+     * Client-assigned sequential GST invoice number (spec 010 C4/C5): "{series}/{seq padded}".
+     * Sequence = max for the series + 1 (per-workspace DB). Series defaults to [DEFAULT_SERIES] until
+     * business-settings-driven per-device/branch/FY prefixes land; the backend's
+     * UNIQUE(owner, series, sequence_number) is the cross-device backstop.
+     */
+    private suspend fun assignNumber(entity: InvoiceEntity): InvoiceEntity {
+        val series = entity.series.ifBlank { DEFAULT_SERIES }
+        val seq = (invoiceDao.maxSequenceForSeries(series) ?: 0L) + 1L
+        val number = "$series/" + seq.toString().padStart(4, '0')
+        return entity.copy(series = series, sequence_number = seq, invoice_number = number)
     }
 
     private suspend fun markPending() =
@@ -142,5 +156,9 @@ class InvoiceRepository(
         } else {
             invoiceDao.getInvoicesBySearchPagingSource(searchText)
         }
+    }
+
+    private companion object {
+        const val DEFAULT_SERIES = "INV"
     }
 }
