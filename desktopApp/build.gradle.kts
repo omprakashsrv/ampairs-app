@@ -40,7 +40,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Ampairs"
-            packageVersion = "1.0.19"
+            packageVersion = "1.0.1"
             description = "Empowering Retail, One byte at a time"
             copyright = "Copyright 2025 Ampairs. All rights reserved."
             vendor = "Ampairs"
