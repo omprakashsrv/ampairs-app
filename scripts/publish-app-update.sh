@@ -33,14 +33,15 @@ set -u  # Exit on undefined variable
 # ============================================================================
 
 # Required environment variables
-: "${AMPAIRS_ADMIN_TOKEN:?Error: AMPAIRS_ADMIN_TOKEN not set}"
+: "${AMPAIRS_API_KEY:?Error: AMPAIRS_API_KEY not set}"
 : "${AWS_ACCESS_KEY_ID:?Error: AWS_ACCESS_KEY_ID not set}"
 : "${AWS_SECRET_ACCESS_KEY:?Error: AWS_SECRET_ACCESS_KEY not set}"
 
 # Default configuration
 API_BASE_URL="${API_BASE_URL:-https://api.ampairs.in}"
 S3_BUCKET="${S3_BUCKET:-ampairs-app-updates}"
-AWS_REGION="${AWS_REGION:-ap-south-1}"
+AWS_REGION="${AWS_REGION:-default}"
+AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL:-}"
 
 # ============================================================================
 # Color Output
@@ -90,10 +91,11 @@ Options:
   --s3-bucket <name>        Override S3 bucket name
 
 Environment Variables:
-  AMPAIRS_ADMIN_TOKEN       Admin JWT token (required)
-  AWS_ACCESS_KEY_ID         AWS access key (required)
-  AWS_SECRET_ACCESS_KEY     AWS secret key (required)
-  AWS_REGION                AWS region (default: ap-south-1)
+  AMPAIRS_API_KEY           API key with APP_UPDATES scope (required)
+  AWS_ACCESS_KEY_ID         S3 access key (required)
+  AWS_SECRET_ACCESS_KEY     S3 secret key (required)
+  AWS_ENDPOINT_URL          S3-compatible endpoint
+  AWS_REGION                S3 region (default: default)
   API_BASE_URL              API base URL (default: https://api.ampairs.in)
   S3_BUCKET                 S3 bucket name (default: ampairs-app-updates)
 
@@ -196,10 +198,14 @@ upload_to_s3() {
     log_info "Uploading to S3: s3://$S3_BUCKET/$s3_key"
 
     if command -v aws >/dev/null 2>&1; then
+        ENDPOINT_ARGS=""
+        if [[ -n "$AWS_ENDPOINT_URL" ]]; then
+            ENDPOINT_ARGS="--endpoint-url $AWS_ENDPOINT_URL"
+        fi
         aws s3 cp "$file" "s3://$S3_BUCKET/$s3_key" \
+            $ENDPOINT_ARGS \
             --region "$AWS_REGION" \
-            --no-progress \
-            --acl private
+            --no-progress
     else
         log_error "AWS CLI not found. Please install: https://aws.amazon.com/cli/"
         exit 1
@@ -251,10 +257,10 @@ EOF
     # Make API request
     local response=$(curl -s -w "\n%{http_code}" \
         -X POST \
-        -H "Authorization: Bearer $AMPAIRS_ADMIN_TOKEN" \
+        -H "X-API-Key: $AMPAIRS_API_KEY" \
         -H "Content-Type: application/json" \
         -d "$json_payload" \
-        "$API_BASE_URL/api/v1/app-updates")
+        "$API_BASE_URL/api/core/v1/app-updates")
 
     local http_code=$(echo "$response" | tail -n1)
     local body=$(echo "$response" | sed '$d')

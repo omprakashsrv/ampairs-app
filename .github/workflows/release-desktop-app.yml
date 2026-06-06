@@ -8,8 +8,9 @@ on:
 env:
   JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'temurin'
-  AWS_REGION: ap-south-1
-  S3_BUCKET: ampairs-artifacts
+  AWS_REGION: default
+  AWS_ENDPOINT_URL: ${{ vars.AWS_ENDPOINT_URL }}
+  S3_BUCKET: ampairs-app-updates
   API_BASE_URL: https://api.ampairs.in
 
 jobs:
@@ -314,9 +315,10 @@ jobs:
 
       - name: Publish to S3 and register in database
         env:
-          AMPAIRS_ADMIN_TOKEN: ${{ secrets.AMPAIRS_ADMIN_TOKEN }}
+          AMPAIRS_API_KEY: ${{ secrets.AMPAIRS_API_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ env.AWS_ENDPOINT_URL }}
           API_BASE_URL: ${{ env.API_BASE_URL }}
           S3_BUCKET: ${{ env.S3_BUCKET }}
           AWS_REGION: ${{ env.AWS_REGION }}
