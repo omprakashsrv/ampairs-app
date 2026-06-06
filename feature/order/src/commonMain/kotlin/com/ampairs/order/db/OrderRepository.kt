@@ -27,7 +27,7 @@ import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Local-only order repository (offline-first, spec 010). Writes go to Room and flag the entity
