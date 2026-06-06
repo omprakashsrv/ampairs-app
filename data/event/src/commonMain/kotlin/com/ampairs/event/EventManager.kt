@@ -61,13 +61,19 @@ class EventManager(
     private val baseReconnectionDelay = 1000L
     private val maxReconnectionDelay = 30000L
     private var shouldReconnect = false
-    private val heartbeatIntervalMillis = 15_000L
+    private val heartbeatIntervalMillis = 30_000L
 
     private val stompClient = StompClient(KtorWebSocketClient(httpClient)) {
-        heartBeat = HeartBeat(15.seconds, 15.seconds)
+        // Server closes at 15s if no STOMP \n heartbeat arrives. Send every 10s to stay well
+        // within that window. Setting expectedPeriod=0 tells the server we don't want heartbeats
+        // back, so Krossbow won't kill the connection when the server stays silent.
+        heartBeat = HeartBeat(
+            minSendPeriod = 10.seconds,
+            expectedPeriod = 0.seconds,
+        )
         heartBeatTolerance = HeartBeatTolerance(
-            outgoingMargin = 3.seconds,
-            incomingMargin = 5.seconds,
+            outgoingMargin = 2.seconds,
+            incomingMargin = 0.seconds,
         )
         connectionTimeout = 30.seconds
     }
@@ -205,13 +211,13 @@ class EventManager(
     private fun startHeartbeat() {
         heartbeatJob = scope.launch {
             while (isActive && stompSession != null) {
-                delay(heartbeatIntervalMillis)
                 try {
                     stompSession?.send(StompSendHeaders("/app/heartbeat"), FrameBody.Text(""))
                     EventLogger.d("EventManager", "💓 Heartbeat sent")
                 } catch (e: Exception) {
                     EventLogger.w("EventManager", "Heartbeat failed", e)
                 }
+                delay(heartbeatIntervalMillis)
             }
         }
     }

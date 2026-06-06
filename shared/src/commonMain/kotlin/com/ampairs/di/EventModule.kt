@@ -12,6 +12,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.websocket.WebSockets
 
 @ContributesTo(WorkspaceScope::class)
@@ -29,6 +30,12 @@ interface EventModule {
         ): EventManager {
             val wsHttpClient = HttpClient(engine) {
                 install(WebSockets)
+                // The shared engine has socketTimeout = 15s for regular API calls. WebSocket
+                // sessions are long-lived and receive no frames when idle, so we must override
+                // the socket timeout to prevent the 15s disconnect cycle.
+                install(HttpTimeout) {
+                    socketTimeoutMillis = Long.MAX_VALUE
+                }
             }
             return EventManager(
                 workspaceId = config.workspaceId,
