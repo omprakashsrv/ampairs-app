@@ -19,6 +19,16 @@ import com.ampairs.order.domain.asDatabaseModel
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.tax.calculation.document.DiscountInput
+import com.ampairs.tax.calculation.document.DiscountKind
+import com.ampairs.tax.calculation.document.DocumentCalcInput
+import com.ampairs.tax.calculation.document.DocumentTotalsCalculator
+import com.ampairs.tax.calculation.document.LineCalcInput
+import com.ampairs.tax.calculation.document.OverallDiscountMode
+import com.ampairs.tax.calculation.document.PriceMode
+import com.ampairs.tax.calculation.document.ScenarioResolver
+import com.ampairs.tax.calculation.document.TaxRateProvider
+import com.ampairs.tax.calculation.document.TaxScenario
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -35,6 +45,7 @@ class OrderViewModel(
     val orderRepository: OrderRepository,
     val productDataService: ProductDataService,
     val tokenRepository: TokenRepository,
+    val taxRateProvider: TaxRateProvider,
 ) :
     ViewModel() {
 
@@ -44,6 +55,7 @@ class OrderViewModel(
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): OrderViewModel
     }
+
     fun updateOrderItems(products: List<ProductSummary>) {
         orderItems.removeAll(orderItems.filter { orderItem ->
             !products.map { it.id }.contains(orderItem.product?.id)
@@ -58,14 +70,35 @@ class OrderViewModel(
         }
         orderItems.removeAll(orderItems.filter { orderItem -> orderItem.quantity <= 0 })
         order.items = orderItems
-        updateTaxInfos()
+        recalculate()
+    }
+
+    /** Recompute GST + discount totals through the shared calculator and push them into UI state. */
+    fun recalculate() {
+        viewModelScope.launch(DispatcherProvider.io) { computeTotals() }
+    }
+
+    /** Add a product from the picker: new line (qty 1) or increment the existing line, then recompute. */
+    fun addProduct(productId: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val existing = orderItems.find { it.product?.id == productId }
+            if (existing != null) {
+                existing.quantity = existing.quantity + 1.0
+            } else {
+                val product = productDataService.getById(productId) ?: return@launch
+                val item = OrderItem(product)
+                if (item.quantity <= 0.0) item.quantity = 1.0
+                orderItems.add(item)
+            }
+            order.items = orderItems
+            computeTotals()
+        }
     }
 
     fun saveOrder(onOrderSaved: (String) -> Unit) {
         savingOrder = true
         viewModelScope.launch(DispatcherProvider.io) {
-            order.updateTaxes()
-            order.updateDiscount()
+            computeTotals()
             val userId = tokenRepository.getCurrentUserId() ?: ""
             if (order.createdBy.isEmpty()) {
                 order.createdBy = userId
@@ -78,8 +111,60 @@ class OrderViewModel(
         }
     }
 
-    fun updateTaxInfos() {
-        // TODO: Re-implement once productRepository.getTaxCode() is available
+    private suspend fun computeTotals() {
+        val scenario = ScenarioResolver.resolveFromGstins(
+            sellerGstin = order.fromCustomer?.gstNumber,
+            buyerGstin = order.toCustomer?.gstNumber,
+        )
+        val taxCodes = orderItems.mapNotNull { it.product?.taxCode }
+        val rates = taxRateProvider.resolveAll(taxCodes, scenario)
+
+        val lines = orderItems.map { item ->
+            LineCalcInput(
+                id = item.id,
+                taxCode = item.product?.taxCode ?: "",
+                unitPrice = item.price,
+                quantity = item.quantity,
+                lineDiscount = item.discount.firstOrNull().toDiscountInput(),
+            )
+        }
+        val input = DocumentCalcInput(
+            lines = lines,
+            priceMode = PriceMode.TAX_EXCLUSIVE,
+            overallDiscount = order.discount?.firstOrNull().toDiscountInput(),
+            overallDiscountMode = OverallDiscountMode.POST_TAX_REDUCTION,
+            scenario = scenario,
+            rates = rates,
+        )
+        val result = DocumentTotalsCalculator.calculate(input)
+        val spec = if (scenario == TaxScenario.INTRA) TaxSpec.INTRA else TaxSpec.INTER
+
+        val byId = result.lines.associateBy { it.id }
+        orderItems.forEach { item ->
+            val line = byId[item.id] ?: return@forEach
+            item.basePrice = line.taxable
+            item.totalTax = line.totalTax
+            item.totalCost = line.lineTotal
+            item.taxInfos = line.components.map { c ->
+                TaxInfo(name = c.name, percentage = c.percentage, taxSpec = spec, value = c.amount)
+            }
+        }
+        order.taxSpec = spec
+        order.basePrice = result.taxableSubtotal
+        order.totalTax = result.totalTax
+        order.taxInfos = result.taxComponents.map { c ->
+            TaxInfo(name = c.name, percentage = 0.0, taxSpec = spec, value = c.amount)
+        }.toMutableList()
+        order.totalItems = orderItems.size
+        order.totalQuantity = orderItems.sumOf { it.quantity }
+        order.totalCost = result.grandTotal
+    }
+
+    private fun com.ampairs.order.domain.Discount?.toDiscountInput(): DiscountInput? = when {
+        this == null -> null
+        percent > 0.0 -> DiscountInput(DiscountKind.PERCENT, percent)
+        value > 0.0 -> DiscountInput(DiscountKind.FLAT, value)
+        else -> null
     }
 
     var fromCustomer: Customer? = null
@@ -104,6 +189,7 @@ class OrderViewModel(
                 order.fromCustomer = fromCustomer
                 order.toCustomer = toCustomer
             }
+            computeTotals()
         }
     }
 }

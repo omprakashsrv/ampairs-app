@@ -36,5 +36,10 @@ data class InvoiceEntity(
     val soft_deleted: Long = 0,
     val synced: Long = 0,
     val last_updated: Long = 0,
-    val order_ref_id: String? = null
+    val order_ref_id: String? = null,
+    // spec 010: document tax/discount mode (C1/C2) + client-assigned GST number series (C4/C5)
+    val price_mode: String = "TAX_EXCLUSIVE",
+    val overall_discount_mode: String = "POST_TAX_REDUCTION",
+    val series: String = "DEFAULT",
+    val sequence_number: Long = 0
 )

@@ -50,6 +50,11 @@ kotlin {
                 implementation(libs.lifecycle.viewmodel.navigation3)
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
         androidMain {
             dependencies {
                 implementation(libs.ktor.client.okHttp)

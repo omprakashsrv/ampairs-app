@@ -57,6 +57,10 @@ interface InvoiceDao {
     @Query("SELECT * FROM invoiceEntity WHERE synced = 0 AND active = 1")
     suspend fun getUnsyncedInvoices(): List<InvoiceEntity>
 
+    /** Highest sequence number used in a numbering series (spec 010 C4/C5) — for client numbering. */
+    @Query("SELECT MAX(sequence_number) FROM invoiceEntity WHERE series = :series")
+    suspend fun maxSequenceForSeries(series: String): Long?
+
     @Query("SELECT SUM(total_cost) FROM invoiceEntity WHERE active = 1")
     suspend fun getTotalInvoiceValue(): Double?
 

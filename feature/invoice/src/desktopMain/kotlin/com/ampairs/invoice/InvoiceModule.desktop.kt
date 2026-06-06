@@ -5,6 +5,7 @@ import com.ampairs.common.database.createDatabase
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.invoice.db.InvoiceRoomDatabase
+import com.ampairs.invoice.db.migrations.INVOICE_MIGRATION_1_2
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -22,6 +23,7 @@ interface InvoiceDesktopModule {
         ): InvoiceRoomDatabase = factory.createDatabase<InvoiceRoomDatabase>(
             moduleName = "invoice",
             workspaceSlug = config.workspaceSlug,
+            migrations = listOf(INVOICE_MIGRATION_1_2),
         ).also { closableRegistry.register { it.close() } }
     }
 }

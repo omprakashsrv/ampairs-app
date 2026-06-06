@@ -33,6 +33,7 @@ data class OrderApiModel(
     @SerialName("total_items") var totalItems: Int = 0,
     @SerialName("active") var active: Boolean = true,
     @SerialName("last_updated") var lastUpdated: Long = 0,
+    @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("soft_deleted") var softDeleted: Boolean = false,
     @SerialName("total_quantity") var totalQuantity: Double = 0.0,
     @SerialName("billing_address") var billingAddress: Address? = null,
