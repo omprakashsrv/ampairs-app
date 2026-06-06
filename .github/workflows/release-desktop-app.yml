@@ -6,7 +6,7 @@ on:
       - 'v*'  # Trigger on version tags (e.g., v1.0.0.10)
 
 env:
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'temurin'
   AWS_REGION: ap-south-1
   S3_BUCKET: ampairs-artifacts
@@ -98,12 +98,12 @@ jobs:
       - name: Build DMG package
         run: |
           chmod +x ./gradlew
-          ./gradlew composeApp:clean composeApp:packageDmg --no-configuration-cache
+          ./gradlew desktopApp:clean desktopApp:packageDmg --no-configuration-cache
 
       - name: Find and upload DMG
         id: find-dmg
         run: |
-          DMG_FILE=$(find composeApp/build/compose/binaries/main -name "*.dmg" -type f | head -n 1)
+          DMG_FILE=$(find desktopApp/build/compose/binaries/main -name "*.dmg" -type f | head -n 1)
           if [ -z "$DMG_FILE" ]; then
             echo "Error: DMG file not found"
             exit 1
@@ -163,13 +163,13 @@ jobs:
           }
 
           # Build MSI
-          ./gradlew composeApp:clean composeApp:packageMsi --no-configuration-cache
+          ./gradlew desktopApp:clean desktopApp:packageMsi --no-configuration-cache
         shell: powershell
 
       - name: Find and upload MSI
         id: find-msi
         run: |
-          $MSI_FILE = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          $MSI_FILE = Get-ChildItem -Path "desktopApp\build\compose\binaries\main" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
           if (-not $MSI_FILE) {
             Write-Error "MSI file not found"
             exit 1
@@ -219,12 +219,12 @@ jobs:
       - name: Build DEB package
         run: |
           chmod +x ./gradlew
-          ./gradlew composeApp:clean composeApp:packageDeb --no-configuration-cache
+          ./gradlew desktopApp:clean desktopApp:packageDeb --no-configuration-cache
 
       - name: Find and upload DEB
         id: find-deb
         run: |
-          DEB_FILE=$(find composeApp/build/compose/binaries/main -name "*.deb" -type f | head -n 1)
+          DEB_FILE=$(find desktopApp/build/compose/binaries/main -name "*.deb" -type f | head -n 1)
           if [ -z "$DEB_FILE" ]; then
             echo "Error: DEB file not found"
             exit 1
