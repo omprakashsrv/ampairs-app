@@ -31,7 +31,7 @@ data class AppConfig(
     val webAuthUrl: String
         get() = when (environment) {
             Environment.DEV -> "http://localhost:4200/login"
-            Environment.PRODUCTION -> "https://app.ampairs.com/login"
+            Environment.PRODUCTION -> "https://app.ampairs.in/login"
         }
 
     companion object {

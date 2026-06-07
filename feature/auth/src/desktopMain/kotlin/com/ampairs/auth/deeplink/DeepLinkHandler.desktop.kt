@@ -1,5 +1,6 @@
 package com.ampairs.auth.deeplink
 
+import com.ampairs.common.config.ConfigurationManager
 import com.ampairs.common.desktop.WindowsProtocolRegistrar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -275,20 +276,10 @@ object DeepLinkHandler {
      */
     fun openAuthenticationBrowser(authUrl: String? = null) {
         try {
-            // Use provided URL, or system property/env var, or default based on environment
-            val envProperty = System.getProperty("ampairs.environment")
-                ?: System.getenv("AMPAIRS_ENVIRONMENT")
-                ?: "production"
-
-            val defaultBaseUrl = when (envProperty.lowercase()) {
-                "production", "prod", "release" -> "https://app.ampairs.in/login"
-                else -> "http://localhost:4200/login"
-            }
-
             val baseUrl = authUrl
                 ?: System.getProperty("ampairs.web.authUrl")
                 ?: System.getenv("AMPAIRS_WEB_AUTH_URL")
-                ?: defaultBaseUrl
+                ?: ConfigurationManager.webAuthUrl
 
             // Add query params to indicate desktop client
             val finalUrl = if (baseUrl.contains("?")) {
@@ -302,7 +293,7 @@ object DeepLinkHandler {
                 if (desktop.isSupported(Desktop.Action.BROWSE)) {
                     desktop.browse(URI(finalUrl))
                     println("DeepLinkHandler: Opened browser to: $finalUrl")
-                    println("DeepLinkHandler: Environment: $envProperty")
+                    println("DeepLinkHandler: Environment: ${ConfigurationManager.environment}")
                 } else {
                     println("DeepLinkHandler: Browser action not supported")
                 }

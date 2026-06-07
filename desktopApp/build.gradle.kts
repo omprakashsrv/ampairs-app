@@ -103,7 +103,7 @@ tasks.withType<JavaExec>().configureEach {
     workingDir = rootProject.projectDir
     // Forward -Dampairs.* system properties from the Gradle JVM to the app JVM.
     // Without this, -D flags passed on the command line only reach Gradle, not the app.
-    listOf("ampairs.environment", "ampairs.api.baseUrl").forEach { key ->
+    listOf("ampairs.environment", "ampairs.api.baseUrl", "ampairs.web.authUrl").forEach { key ->
         System.getProperty(key)?.let { systemProperty(key, it) }
     }
 }
