@@ -4,8 +4,9 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.ampairs.tax.domain.model.TaxCodeType
 import com.ampairs.tax.domain.model.TaxCode
+import com.ampairs.tax.domain.model.TaxCodeType
+import kotlinx.datetime.Instant
 
 /**
  * Tax Code Entity - Mobile database storage
@@ -90,8 +91,8 @@ fun TaxCodeEntity.toDomain(): TaxCode {
         isFavorite = isFavorite,
         notes = notes,
         isActive = isActive,
-        addedAt = addedAt,
-        updatedAt = updatedAt,
+        addedAt = Instant.fromEpochMilliseconds(addedAt).toString(),
+        updatedAt = Instant.fromEpochMilliseconds(updatedAt).toString(),
         syncStatus = syncStatus
     )
 }
@@ -111,8 +112,8 @@ fun TaxCode.toEntity(): TaxCodeEntity {
         isFavorite = isFavorite,
         notes = notes,
         isActive = isActive,
-        addedAt = addedAt,
-        updatedAt = updatedAt,
+        addedAt = Instant.parse(addedAt).toEpochMilliseconds(),
+        updatedAt = Instant.parse(updatedAt).toEpochMilliseconds(),
         syncStatus = syncStatus
     )
 }

@@ -45,6 +45,7 @@ kotlin {
                 implementation(libs.material3.adaptive)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
+                implementation(libs.kotlinx.dateTime)
                 // Navigation 3 for NavKey
                 implementation(libs.navigation3.ui)
                 implementation(libs.lifecycle.viewmodel.navigation3)

@@ -60,6 +60,7 @@ import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.util.formatDecimal
+import kotlinx.datetime.Instant
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.tax.generated.resources.Res
@@ -665,6 +666,10 @@ private fun TaxRuleItem(rule: com.ampairs.tax.domain.model.TaxRule, modifier: Mo
         }
     }
 }
+
+private fun formatTimestamp(timestamp: String): String =
+    runCatching { formatTimestamp(Instant.parse(timestamp).toEpochMilliseconds()) }
+        .getOrDefault(timestamp)
 
 private fun formatTimestamp(timestamp: Long): String {
     val seconds = timestamp / 1000
