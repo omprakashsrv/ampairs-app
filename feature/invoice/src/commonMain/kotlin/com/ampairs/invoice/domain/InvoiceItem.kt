@@ -16,11 +16,30 @@ class InvoiceItem(var product: ProductSummary?) {
         set(value) {
             field = value
             if (product != null) product!!.quantity = value
+            baseQuantity = value * unitMultiplier
             updateTotal()
         }
 
+    // spec 010 FR-014: unit of measure + base-unit quantity, and selected variant
+    var unitId: String = product?.baseUnitId ?: ""
+    var unitName: String by mutableStateOf("")          // transient display (short name)
+    var unitMultiplier: Double = 1.0                    // 1 selected unit = multiplier base units
+    var baseQuantity: Double by mutableStateOf(product?.quantity ?: 0.0)
+    var variantSku: String? = null
+
+    /** Switch the line's unit of measure, rescaling the per-unit price and base quantity. */
+    fun selectUnit(unitId: String, name: String, multiplier: Double) {
+        this.unitId = unitId
+        this.unitName = name
+        this.unitMultiplier = if (multiplier > 0.0) multiplier else 1.0
+        this.price = productPrice * this.unitMultiplier
+        this.baseQuantity = quantity * this.unitMultiplier
+        updateTotal()
+    }
+
     fun updateTotal() {
         totalCost = quantity * price
+        baseQuantity = quantity * unitMultiplier
     }
 
     fun updateTaxes(taxSpec: TaxSpec) {
@@ -84,7 +103,10 @@ fun List<InvoiceItem>.asDatabaseModel(invoiceId: String): List<InvoiceItemEntity
             total_tax = invoiceItem.totalTax,
             active = if (invoiceItem.active) 1 else 0,
             soft_deleted = if (invoiceItem.softDeleted) 1 else 0,
-            discount = if (invoiceItem.discount.size > 0) Json.encodeToString(invoiceItem.discount) else null
+            discount = if (invoiceItem.discount.size > 0) Json.encodeToString(invoiceItem.discount) else null,
+            unit_id = invoiceItem.unitId,
+            base_quantity = invoiceItem.baseQuantity,
+            variant_sku = invoiceItem.variantSku
         )
     }
 }

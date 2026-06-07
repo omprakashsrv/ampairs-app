@@ -18,6 +18,8 @@ import com.ampairs.invoice.domain.TaxSpec
 import com.ampairs.invoice.domain.asDatabaseModel
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.domain.ProductSummary
+import com.ampairs.unit.data.repository.UnitOption
+import com.ampairs.unit.data.repository.UnitOptionsLookup
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.tax.calculation.document.DiscountInput
 import com.ampairs.tax.calculation.document.DiscountKind
@@ -50,6 +52,7 @@ class InvoiceViewModel(
     val productDataService: ProductDataService,
     val tokenRepository: TokenRepository,
     val taxRateProvider: TaxRateProvider,
+    val unitOptionsLookup: UnitOptionsLookup,
 ) :
     ViewModel() {
 
@@ -80,6 +83,23 @@ class InvoiceViewModel(
     /** Recompute GST + discount totals through the shared calculator and push them into UI state. */
     fun recalculate() {
         viewModelScope.launch(DispatcherProvider.io) { computeTotals() }
+    }
+
+    /** Load the sellable unit choices for the given line's product (base unit first). */
+    fun loadUnitOptions(item: InvoiceItem) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val productId = item.product?.id ?: item.productId
+            if (productId.isNullOrBlank()) { unitOptions = emptyList(); return@launch }
+            val baseUnitId = item.product?.baseUnitId ?: item.unitId.takeIf { it.isNotBlank() }
+            unitOptions = unitOptionsLookup.unitsForProduct(productId, baseUnitId)
+        }
+    }
+
+    /** Apply a unit choice to a line: rescales price + base quantity, then recomputes totals. */
+    fun selectUnit(item: InvoiceItem, option: UnitOption) {
+        item.selectUnit(option.unitId, option.shortName, option.multiplier)
+        invoice.updateTotalCost()
+        recalculate()
     }
 
     fun selectPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
@@ -226,6 +246,10 @@ class InvoiceViewModel(
     var overallDiscountAmount by mutableStateOf(0.0)
         private set
     var totals by mutableStateOf(TotalsUi())
+        private set
+
+    // Unit choices for the currently edited line (loaded on demand).
+    var unitOptions by mutableStateOf<List<UnitOption>>(emptyList())
         private set
 
     init {

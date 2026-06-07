@@ -31,4 +31,8 @@
     <string name="inv_edit_ok">OK</string>
     <string name="inv_edit_discount_label">Discount %% :</string>
     <string name="inv_edit_price_label">Price :</string>
+    <string name="inv_edit_unit_label">Unit :</string>
+    <string name="inv_edit_unit_base">base unit</string>
+    <string name="inv_edit_base_qty">Base qty</string>
+    <string name="inv_edit_has_variants">Has variants</string>
 </resources>
