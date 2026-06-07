@@ -8,7 +8,7 @@ on:
 env:
   JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'temurin'
-  AWS_REGION: auto
+  AWS_REGION: default
   AWS_ENDPOINT_URL: ${{ vars.AWS_ENDPOINT_URL }}
   S3_BUCKET: ampairs-app-updates
   API_BASE_URL: https://api.ampairs.in
