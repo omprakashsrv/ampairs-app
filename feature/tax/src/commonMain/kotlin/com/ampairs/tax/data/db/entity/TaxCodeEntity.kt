@@ -43,6 +43,9 @@ data class TaxCodeEntity(
     val shortDescription: String,
 
     // Workspace-specific configuration
+    @ColumnInfo(name = "custom_name")
+    val customName: String? = null,
+
     @ColumnInfo(name = "custom_tax_rule_id")
     val customTaxRuleId: String? = null,
 
@@ -80,6 +83,7 @@ fun TaxCodeEntity.toDomain(): TaxCode {
         codeType = TaxCodeType.valueOf(codeType),
         description = description,
         shortDescription = shortDescription,
+        customName = customName,
         customTaxRuleId = customTaxRuleId,
         usageCount = usageCount,
         lastUsedAt = lastUsedAt,
@@ -100,6 +104,7 @@ fun TaxCode.toEntity(): TaxCodeEntity {
         codeType = codeType.name,
         description = description,
         shortDescription = shortDescription,
+        customName = customName,
         customTaxRuleId = customTaxRuleId,
         usageCount = usageCount,
         lastUsedAt = lastUsedAt,

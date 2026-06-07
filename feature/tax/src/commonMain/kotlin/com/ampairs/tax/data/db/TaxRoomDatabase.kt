@@ -37,7 +37,7 @@ import com.ampairs.tax.data.db.entity.TaxRuleEntity
         TaxRuleEntity::class,
         TaxConfigurationEntity::class
     ],
-    version = 2,  // Incremented from v1 due to schema change
+    version = 3,  // v2→v3: added custom_name to tax_codes
     exportSchema = true
 )
 @ConstructedBy(TaxRoomDatabaseConstructor::class)

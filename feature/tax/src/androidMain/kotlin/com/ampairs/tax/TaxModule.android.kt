@@ -11,6 +11,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.Dispatchers
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
+import com.ampairs.tax.data.db.migrations.TAX_MIGRATION_2_3
 
 @ContributesTo(WorkspaceScope::class)
 interface TaxAndroidModule {
@@ -27,6 +28,7 @@ interface TaxAndroidModule {
             queryDispatcher = Dispatchers.IO,
             moduleName = "tax",
             workspaceSlug = config.workspaceSlug,
+            migrations = listOf(TAX_MIGRATION_2_3),
         ).also { closableRegistry.register { it.close() } }
     }
 }

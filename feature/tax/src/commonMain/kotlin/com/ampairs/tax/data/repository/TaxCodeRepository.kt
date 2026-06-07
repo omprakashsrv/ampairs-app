@@ -127,6 +127,7 @@ class TaxCodeRepository(
     ): Result<List<MasterTaxCode>> {
         return try {
             taxConfigApi.getPopularTaxCodes(countryCode, industry, limit)
+                .map { it.content }
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.getPopularTaxCodes")
             Result.failure(e)
