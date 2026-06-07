@@ -27,6 +27,7 @@ import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,6 +41,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,6 +66,12 @@ fun InvoiceViewScreen(
     viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory> { create(invoiceId) }
 ) {
     val invoice = viewModel.invoice
+    var showPreview by remember { mutableStateOf(false) }
+
+    if (showPreview) {
+        TaxInvoicePreviewScreen(invoice = invoice, onClose = { showPreview = false })
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -82,6 +93,12 @@ fun InvoiceViewScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showPreview = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.Print,
+                            contentDescription = "Print"
+                        )
+                    }
                     IconButton(onClick = { onNavigateBack(invoice.id) }) {
                         Icon(
                             imageVector = Icons.Filled.Edit,
