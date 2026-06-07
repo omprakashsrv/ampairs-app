@@ -9,6 +9,7 @@ import ampairsapp.feature.order.generated.resources.ord_list_col_total
 import ampairsapp.feature.order.generated.resources.ord_list_count
 import ampairsapp.feature.order.generated.resources.ord_list_empty_desc
 import ampairsapp.feature.order.generated.resources.ord_list_empty_title
+import ampairsapp.feature.order.generated.resources.ord_list_new
 import ampairsapp.feature.order.generated.resources.ord_list_search_placeholder
 import ampairsapp.feature.order.generated.resources.ord_list_title
 import androidx.compose.foundation.clickable
@@ -26,10 +27,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,13 +60,23 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun OrdersScreen(
     onOrderSelected: (String) -> Unit,
+    onCreateOrder: () -> Unit = {},
     viewModel: OrdersViewModel = metroViewModel()
 ) {
     val lazyListState = rememberLazyListState()
     val orders = viewModel.orders.collectAsLazyPagingItems()
     val scope = rememberCoroutineScope()
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onCreateOrder,
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = { Text(stringResource(Res.string.ord_list_new)) }
+            )
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
