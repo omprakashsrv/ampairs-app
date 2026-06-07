@@ -19,16 +19,23 @@ import ampairsapp.feature.invoice.generated.resources.inv_create_mrp
 import ampairsapp.feature.invoice.generated.resources.inv_create_tax
 import ampairsapp.feature.invoice.generated.resources.inv_create_confirm
 import ampairsapp.feature.invoice.generated.resources.inv_create_cancel
+import ampairsapp.feature.invoice.generated.resources.inv_cust_from
+import ampairsapp.feature.invoice.generated.resources.inv_cust_to
+import ampairsapp.feature.invoice.generated.resources.inv_cust_select
+import ampairsapp.feature.invoice.generated.resources.inv_cust_title
+import ampairsapp.feature.invoice.generated.resources.inv_cust_search
 import ampairsapp.feature.invoice.generated.resources.inv_view_discount
 import ampairsapp.feature.invoice.generated.resources.inv_view_items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,6 +53,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +61,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -71,6 +80,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.components.CartItem
 import com.ampairs.common.format.toDecimal
+import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.domain.InvoiceItem
 import com.ampairs.unit.data.repository.UnitOption
@@ -160,6 +170,17 @@ fun InvoiceScreen(
                 scaffoldState = scaffoldState,
                 sheetContent = {
                     LazyColumn {
+                        item {
+                            CustomerSelectSection(
+                                fromName = invoiceViewModel.fromCustomerName,
+                                toName = invoiceViewModel.toCustomerName,
+                                results = invoiceViewModel.customerResults,
+                                onSearch = invoiceViewModel::searchCustomers,
+                                onPickFrom = invoiceViewModel::selectFromCustomer,
+                                onPickTo = invoiceViewModel::selectToCustomer,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            )
+                        }
                         item {
                             InvoiceTotalsPanel(
                                 totals = invoiceViewModel.totals,
@@ -488,4 +509,102 @@ private fun UnitVariantRow(
             )
         }
     }
+}
+
+@Composable
+private fun CustomerSelectSection(
+    fromName: String,
+    toName: String,
+    results: List<CustomerListItem>,
+    onSearch: (String) -> Unit,
+    onPickFrom: (String) -> Unit,
+    onPickTo: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var picking by remember { mutableStateOf<String?>(null) }
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            CustomerRow(stringResource(Res.string.inv_cust_from), fromName) { onSearch(""); picking = "from" }
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+            CustomerRow(stringResource(Res.string.inv_cust_to), toName) { onSearch(""); picking = "to" }
+        }
+    }
+    if (picking != null) {
+        CustomerPickerDialog(
+            results = results,
+            onSearch = onSearch,
+            onSelect = { id ->
+                if (picking == "from") onPickFrom(id) else onPickTo(id)
+                picking = null
+            },
+            onDismiss = { picking = null },
+        )
+    }
+}
+
+@Composable
+private fun CustomerRow(label: String, name: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            name.ifBlank { stringResource(Res.string.inv_cust_select) },
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (name.isBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun CustomerPickerDialog(
+    results: List<CustomerListItem>,
+    onSearch: (String) -> Unit,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.inv_cust_title)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it; onSearch(it) },
+                    placeholder = { Text(stringResource(Res.string.inv_cust_search)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp)) {
+                    items(results.size) { index ->
+                        val customer = results[index]
+                        Column(
+                            modifier = Modifier.fillMaxWidth().clickable { onSelect(customer.id) }.padding(vertical = 10.dp)
+                        ) {
+                            Text(customer.name, style = MaterialTheme.typography.bodyMedium)
+                            if (!customer.phone.isNullOrBlank()) {
+                                Text(
+                                    customer.phone!!,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        HorizontalDivider()
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.inv_edit_ok)) }
+        }
+    )
 }
