@@ -8,7 +8,7 @@ on:
 env:
   JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'temurin'
-  AWS_REGION: default
+  AWS_REGION: auto
   AWS_ENDPOINT_URL: ${{ vars.AWS_ENDPOINT_URL }}
   S3_BUCKET: ampairs-app-updates
   API_BASE_URL: https://api.ampairs.in
@@ -299,24 +299,19 @@ jobs:
           echo "file_name=$(basename $FILE)" >> $GITHUB_OUTPUT
           echo "Found artifact: $FILE"
 
-      - name: Verify AWS secrets are configured
+      - name: Configure S3 credentials
         run: |
           if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
-            echo "❌ ERROR: AWS_ACCESS_KEY_ID secret is not set"
+            echo "ERROR: AWS_ACCESS_KEY_ID secret is not set"
             exit 1
           fi
           if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
-            echo "❌ ERROR: AWS_SECRET_ACCESS_KEY secret is not set"
+            echo "ERROR: AWS_SECRET_ACCESS_KEY secret is not set"
             exit 1
           fi
-          echo "✅ AWS credentials secrets are configured"
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "OK: S3 credentials configured"
 
       - name: Install jq (for JSON processing)
         run: sudo apt-get update && sudo apt-get install -y jq bc
