@@ -9,6 +9,14 @@ import ampairsapp.feature.order.generated.resources.ord_view_col_qty
 import ampairsapp.feature.order.generated.resources.ord_view_col_rate
 import ampairsapp.feature.order.generated.resources.ord_view_col_total
 import ampairsapp.feature.order.generated.resources.ord_view_create_invoice
+import ampairsapp.feature.order.generated.resources.ord_conv_title
+import ampairsapp.feature.order.generated.resources.ord_conv_line1
+import ampairsapp.feature.order.generated.resources.ord_conv_line2
+import ampairsapp.feature.order.generated.resources.ord_conv_line3
+import ampairsapp.feature.order.generated.resources.ord_conv_line4
+import ampairsapp.feature.order.generated.resources.ord_conv_note
+import ampairsapp.feature.order.generated.resources.ord_conv_confirm
+import ampairsapp.feature.order.generated.resources.ord_conv_cancel
 import ampairsapp.feature.order.generated.resources.ord_view_discount
 import ampairsapp.feature.order.generated.resources.ord_view_from
 import ampairsapp.feature.order.generated.resources.ord_view_items
@@ -29,6 +37,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -39,11 +48,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -65,6 +80,7 @@ fun OrderViewScreen(
     viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory> { create(orderId) }
 ) {
     val order = viewModel.order
+    var showConvertConfirm by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -143,7 +159,7 @@ fun OrderViewScreen(
                 }
                 if (!order.orderNumber.isNullOrEmpty() && order.invoiceRefId.isNullOrEmpty()) {
                     Button(
-                        onClick = { viewModel.createInvoice() },
+                        onClick = { showConvertConfirm = true },
                         enabled = !viewModel.savingOrder,
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
@@ -284,5 +300,52 @@ fun OrderViewScreen(
 
             item { Spacer(Modifier.height(80.dp)) }
         }
+    }
+
+    if (showConvertConfirm) {
+        AlertDialog(
+            onDismissRequest = { showConvertConfirm = false },
+            title = { Text(stringResource(Res.string.ord_conv_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(
+                        stringResource(Res.string.ord_conv_line1),
+                        stringResource(Res.string.ord_conv_line2),
+                        stringResource(Res.string.ord_conv_line3),
+                        stringResource(Res.string.ord_conv_line4),
+                    ).forEach { line ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                "  $line",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                    Text(
+                        stringResource(Res.string.ord_conv_note),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showConvertConfirm = false
+                    viewModel.createInvoice()
+                }) { Text(stringResource(Res.string.ord_conv_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConvertConfirm = false }) {
+                    Text(stringResource(Res.string.ord_conv_cancel))
+                }
+            }
+        )
     }
 }

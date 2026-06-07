@@ -32,4 +32,12 @@
     <string name="ord_edit_ok">OK</string>
     <string name="ord_edit_discount_label">Discount %% :</string>
     <string name="ord_edit_price_label">Price :</string>
+    <string name="ord_conv_title">Create invoice from this order?</string>
+    <string name="ord_conv_line1">Lines, units &amp; prices are copied</string>
+    <string name="ord_conv_line2">Tax breakdown &amp; discounts are copied</string>
+    <string name="ord_conv_line3">Order ⇄ invoice are cross-linked</string>
+    <string name="ord_conv_line4">Invoice number is assigned on save</string>
+    <string name="ord_conv_note">Already converted? This opens the existing invoice — no duplicate.</string>
+    <string name="ord_conv_confirm">Create invoice</string>
+    <string name="ord_conv_cancel">Cancel</string>
 </resources>
