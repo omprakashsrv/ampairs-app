@@ -11,13 +11,15 @@ data class TaxCode(
     @SerialName("code_type") val codeType: TaxCodeType,
     @SerialName("description") val description: String,
     @SerialName("short_description") val shortDescription: String,
+    @SerialName("custom_name") val customName: String? = null,
     @SerialName("custom_tax_rule_id") val customTaxRuleId: String? = null,
     @SerialName("usage_count") val usageCount: Int = 0,
     @SerialName("last_used_at") val lastUsedAt: Long? = null,
     @SerialName("is_favorite") val isFavorite: Boolean = false,
     @SerialName("notes") val notes: String? = null,
     @SerialName("is_active") val isActive: Boolean = true,
-    @SerialName("added_at") val addedAt: Long,
-    @SerialName("updated_at") val updatedAt: Long,
+    // Backend serializes these as ISO 8601 strings (e.g. "2026-05-25T17:01:04.083622Z")
+    @SerialName("added_at") val addedAt: String,
+    @SerialName("updated_at") val updatedAt: String,
     @SerialName("sync_status") val syncStatus: String = "SYNCED",
 )

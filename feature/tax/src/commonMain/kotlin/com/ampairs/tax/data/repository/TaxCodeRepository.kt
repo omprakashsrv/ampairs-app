@@ -19,7 +19,7 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 class TaxCodeRepository(
     private val taxConfigApi: TaxConfigurationApi,
-    private val workspaceTaxCodeDao: TaxCodeDao,
+    private val taxCodeDao: TaxCodeDao,
 ) : TaxCodeLookup {
 
     // ==================== Workspace Tax Codes (Offline Available) ====================
@@ -28,7 +28,7 @@ class TaxCodeRepository(
      * Observe workspace tax codes (offline available)
      */
     fun observeWorkspaceTaxCodes(): Flow<List<TaxCode>> {
-        return workspaceTaxCodeDao.observeTaxCodes()
+        return taxCodeDao.observeTaxCodes()
             .map { entities -> entities.map { it.toDomain() } }
     }
 
@@ -36,7 +36,7 @@ class TaxCodeRepository(
      * Observe favorite tax codes
      */
     fun observeFavorites(): Flow<List<TaxCode>> {
-        return workspaceTaxCodeDao.observeFavorites()
+        return taxCodeDao.observeFavorites()
             .map { entities -> entities.map { it.toDomain() } }
     }
 
@@ -44,21 +44,21 @@ class TaxCodeRepository(
      * Get workspace tax code by ID (offline)
      */
     suspend fun getById(id: String): TaxCode? {
-        return workspaceTaxCodeDao.getById(id)?.toDomain()
+        return taxCodeDao.getById(id)?.toDomain()
     }
 
     /**
      * Get workspace tax code by code (offline)
      */
     suspend fun getByCode(code: String): TaxCode? {
-        return workspaceTaxCodeDao.getByCode(code)?.toDomain()
+        return taxCodeDao.getByCode(code)?.toDomain()
     }
 
     /**
      * Search workspace tax codes (offline)
      */
     override suspend fun searchWorkspaceTaxCodes(query: String, limit: Int): List<TaxCode> {
-        return workspaceTaxCodeDao.searchTaxCodes(query, limit)
+        return taxCodeDao.searchTaxCodes(query, limit)
             .map { it.toDomain() }
     }
 
@@ -67,7 +67,7 @@ class TaxCodeRepository(
      */
     override suspend fun incrementUsageCount(id: String) {
         val timestamp = kotlin.time.Clock.System.now().toEpochMilliseconds()
-        workspaceTaxCodeDao.incrementUsageCount(id, timestamp)
+        taxCodeDao.incrementUsageCount(id, timestamp)
     }
 
     /**
@@ -75,7 +75,7 @@ class TaxCodeRepository(
      */
     suspend fun setFavorite(id: String, isFavorite: Boolean): Result<Unit> {
         return try {
-            workspaceTaxCodeDao.setFavorite(id, isFavorite)
+            taxCodeDao.setFavorite(id, isFavorite)
             Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.setFavorite")
@@ -158,7 +158,7 @@ class TaxCodeRepository(
                 val workspaceTaxCode = result.getOrThrow()
 
                 // Save to local database
-                workspaceTaxCodeDao.insert(workspaceTaxCode.toEntity())
+                taxCodeDao.insert(workspaceTaxCode.toEntity())
 
                 Result.success(workspaceTaxCode)
             } else {
@@ -176,7 +176,7 @@ class TaxCodeRepository(
     suspend fun unsubscribeFromTaxCode(workspaceTaxCodeId: String): Result<Unit> {
         return try {
             // Deactivate locally first
-            workspaceTaxCodeDao.deactivate(workspaceTaxCodeId)
+            taxCodeDao.deactivate(workspaceTaxCodeId)
 
             // Try to delete from server
             try {
@@ -184,17 +184,17 @@ class TaxCodeRepository(
 
                 if (result.isSuccess) {
                     // Permanently delete from local DB
-                    workspaceTaxCodeDao.delete(workspaceTaxCodeId)
+                    taxCodeDao.delete(workspaceTaxCodeId)
                     Result.success(Unit)
                 } else {
                     // Mark as pending deletion
-                    workspaceTaxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
+                    taxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
                     Result.success(Unit)
                 }
             } catch (e: Exception) {
                 // Network error - mark as pending deletion
                 ErrorTracking.captureException(e, "TaxCodeRepository.unsubscribeFromTaxCode.sync")
-                workspaceTaxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
+                taxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
                 Result.success(Unit)
             }
         } catch (e: Exception) {
@@ -221,7 +221,7 @@ class TaxCodeRepository(
 
                 // Save all subscribed codes to local database
                 val entities = bulkResult.subscribedCodes.map { it.toEntity() }
-                workspaceTaxCodeDao.insertAll(entities)
+                taxCodeDao.insertAll(entities)
 
                 Result.success(bulkResult.successCount)
             } else {
@@ -256,7 +256,7 @@ class TaxCodeRepository(
 
                 // Upsert to local database
                 val entities = codes.map { it.toEntity() }
-                workspaceTaxCodeDao.insertAll(entities)
+                taxCodeDao.insertAll(entities)
 
                 Result.success(codes.size)
             } else {
@@ -272,8 +272,8 @@ class TaxCodeRepository(
      * Get last sync time for incremental sync
      */
     private suspend fun getLastSyncTime(): Long? {
-        val codes = workspaceTaxCodeDao.getModifiedAfter( 0L)
-        return codes.maxOfOrNull { it.updatedAt }
+        val codes = taxCodeDao.getModifiedAfter(0L)
+        return codes.maxOfOrNull { it.updatedAt }   // entity stores epoch-millis Long
     }
 
     /**
@@ -281,7 +281,7 @@ class TaxCodeRepository(
      */
     suspend fun syncUnsyncedChanges(): Result<Int> {
         return try {
-            val unsyncedCodes = workspaceTaxCodeDao.getUnsyncedCodes()
+            val unsyncedCodes = taxCodeDao.getUnsyncedCodes()
             var syncedCount = 0
 
             unsyncedCodes.forEach { entity ->
@@ -291,7 +291,7 @@ class TaxCodeRepository(
                     "DELETE_PENDING" -> {
                         val result = taxConfigApi.unsubscribeFromTaxCode( code.id)
                         if (result.isSuccess) {
-                            workspaceTaxCodeDao.delete(code.id)
+                            taxCodeDao.delete(code.id)
                             syncedCount++
                         }
                     }
@@ -305,7 +305,7 @@ class TaxCodeRepository(
                             notes = code.notes
                         )
                         if (result.isSuccess) {
-                            workspaceTaxCodeDao.updateSyncStatus(code.id, "SYNCED")
+                            taxCodeDao.updateSyncStatus(code.id, "SYNCED")
                             syncedCount++
                         }
                     }
