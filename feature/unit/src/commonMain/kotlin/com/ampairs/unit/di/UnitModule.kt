@@ -5,6 +5,7 @@ import com.ampairs.unit.data.db.UnitDatabase
 import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
 import com.ampairs.unit.data.repository.UnitLookup
+import com.ampairs.unit.data.repository.UnitOptionsLookup
 import com.ampairs.unit.data.repository.UnitRepository
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -20,6 +21,9 @@ interface UnitDaoModule {
 
         @Provides
         fun provideUnitLookup(repo: UnitRepository): UnitLookup = repo
+
+        @Provides
+        fun provideUnitOptionsLookup(repo: UnitRepository): UnitOptionsLookup = repo
     }
 }
 

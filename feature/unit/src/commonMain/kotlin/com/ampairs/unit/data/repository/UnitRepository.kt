@@ -1,7 +1,10 @@
 package com.ampairs.unit.data.repository
 
+import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
 import com.ampairs.unit.data.repository.UnitLookup
+import com.ampairs.unit.data.repository.UnitOption
+import com.ampairs.unit.data.repository.UnitOptionsLookup
 import dev.zacsweers.metro.Inject
 import com.ampairs.unit.data.db.entity.toEntity
 import com.ampairs.unit.data.db.entity.toUnit
@@ -24,8 +27,9 @@ import kotlin.time.ExperimentalTime
 @Inject
 class UnitRepository(
     private val unitDao: UnitDao,
+    private val unitConversionDao: UnitConversionDao,
     private val syncStateDao: SyncStateDao,
-) : UnitLookup {
+) : UnitLookup, UnitOptionsLookup {
 
     fun observeUnits(): Flow<List<Unit>> =
         unitDao.getAllUnits().map { entities -> entities.map { it.toUnit() } }
@@ -83,6 +87,42 @@ class UnitRepository(
             UnitLogger.e("UnitRepository", "Failed to delete unit", e)
             Result.failure(e)
         }
+    }
+
+    override suspend fun unitsForProduct(productId: String, baseUnitId: String?): List<UnitOption> {
+        val base = baseUnitId?.takeIf { it.isNotBlank() }?.let { unitDao.getUnitById(it)?.toUnit() }
+        val options = mutableListOf<UnitOption>()
+        if (base != null) {
+            options.add(
+                UnitOption(
+                    unitId = base.uid,
+                    name = base.name,
+                    shortName = base.shortName,
+                    multiplier = 1.0,
+                    isBase = true,
+                    decimalPlaces = base.decimalPlaces,
+                )
+            )
+        }
+        val conversions = unitConversionDao.getUnitConversionsByProductId(productId).first()
+        for (conversion in conversions) {
+            // Only surface conversions hanging off the product's base unit (if known).
+            if (base != null && conversion.baseUnitId != base.uid) continue
+            if (options.any { it.unitId == conversion.derivedUnitId }) continue
+            val derived = unitDao.getUnitById(conversion.derivedUnitId)?.toUnit() ?: continue
+            if (conversion.multiplier <= 0.0) continue
+            options.add(
+                UnitOption(
+                    unitId = derived.uid,
+                    name = derived.name,
+                    shortName = derived.shortName,
+                    multiplier = conversion.multiplier,
+                    isBase = false,
+                    decimalPlaces = derived.decimalPlaces,
+                )
+            )
+        }
+        return options
     }
 
     private suspend fun markPending() {
