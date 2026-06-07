@@ -9,6 +9,7 @@ import ampairsapp.feature.invoice.generated.resources.inv_list_col_total
 import ampairsapp.feature.invoice.generated.resources.inv_list_count
 import ampairsapp.feature.invoice.generated.resources.inv_list_empty_desc
 import ampairsapp.feature.invoice.generated.resources.inv_list_empty_title
+import ampairsapp.feature.invoice.generated.resources.inv_list_new
 import ampairsapp.feature.invoice.generated.resources.inv_list_search_placeholder
 import ampairsapp.feature.invoice.generated.resources.inv_list_title
 import androidx.compose.foundation.clickable
@@ -26,10 +27,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,13 +60,23 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun InvoicesScreen(
     onInvoiceSelected: (String) -> Unit,
+    onCreateInvoice: () -> Unit = {},
     viewModel: InvoicesViewModel = metroViewModel()
 ) {
     val lazyListState = rememberLazyListState()
     val invoices = viewModel.invoices.collectAsLazyPagingItems()
     val scope = rememberCoroutineScope()
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onCreateInvoice,
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = { Text(stringResource(Res.string.inv_list_new)) }
+            )
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

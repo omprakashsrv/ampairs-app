@@ -6,6 +6,7 @@
     <string name="ord_list_cd_search_clear">Clear search</string>
     <string name="ord_list_empty_title">No orders yet</string>
     <string name="ord_list_empty_desc">Orders will appear here once created</string>
+    <string name="ord_list_new">New order</string>
     <string name="ord_list_col_number">Order #</string>
     <string name="ord_list_col_customer">Customer</string>
     <string name="ord_list_col_status">Status</string>
