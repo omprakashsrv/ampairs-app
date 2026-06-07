@@ -101,6 +101,11 @@ compose.resources {
 
 tasks.withType<JavaExec>().configureEach {
     workingDir = rootProject.projectDir
+    // Forward -Dampairs.* system properties from the Gradle JVM to the app JVM.
+    // Without this, -D flags passed on the command line only reach Gradle, not the app.
+    listOf("ampairs.environment", "ampairs.api.baseUrl").forEach { key ->
+        System.getProperty(key)?.let { systemProperty(key, it) }
+    }
 }
 
 // Windows MSI code signing — set WINDOWS_SIGN_CERT_FILE and WINDOWS_SIGN_PASSWORD env vars to enable
