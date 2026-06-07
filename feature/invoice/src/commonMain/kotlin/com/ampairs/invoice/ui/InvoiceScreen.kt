@@ -120,6 +120,17 @@ fun InvoiceScreen(
                 scaffoldState = scaffoldState,
                 sheetContent = {
                     LazyColumn {
+                        item {
+                            InvoiceTotalsPanel(
+                                totals = invoiceViewModel.totals,
+                                overallDiscountKind = invoiceViewModel.overallDiscountKind,
+                                overallDiscountAmount = invoiceViewModel.overallDiscountAmount,
+                                onPriceMode = invoiceViewModel::selectPriceMode,
+                                onOverallDiscount = invoiceViewModel::setOverallDiscount,
+                                onOverallDiscountMode = invoiceViewModel::selectOverallDiscountMode,
+                                modifier = Modifier.padding(12.dp),
+                            )
+                        }
                         items(invoiceViewModel.invoiceItems.size) { index ->
                             val invoiceItem = invoiceViewModel.invoiceItems[index]
                             ListItem(
