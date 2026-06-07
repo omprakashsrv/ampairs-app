@@ -41,8 +41,8 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 108
-        versionName = "1.0.8"
+        versionCode = 109
+        versionName = "1.0.9"
 
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
