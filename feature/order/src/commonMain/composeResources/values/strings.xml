@@ -40,4 +40,6 @@
     <string name="ord_conv_note">Already converted? This opens the existing invoice — no duplicate.</string>
     <string name="ord_conv_confirm">Create invoice</string>
     <string name="ord_conv_cancel">Cancel</string>
+    <string name="ord_edit_taxable">Taxable</string>
+    <string name="ord_edit_line_total">Line total</string>
 </resources>

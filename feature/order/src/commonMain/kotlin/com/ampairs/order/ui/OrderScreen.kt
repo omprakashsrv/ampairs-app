@@ -6,13 +6,17 @@ import ampairsapp.feature.order.generated.resources.ord_edit_next
 import ampairsapp.feature.order.generated.resources.ord_edit_ok
 import ampairsapp.feature.order.generated.resources.ord_edit_price_label
 import ampairsapp.feature.order.generated.resources.ord_edit_save
+import ampairsapp.feature.order.generated.resources.ord_edit_taxable
+import ampairsapp.feature.order.generated.resources.ord_edit_line_total
 import ampairsapp.feature.order.generated.resources.ord_view_discount
 import ampairsapp.feature.order.generated.resources.ord_view_items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +27,7 @@ import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -289,6 +294,16 @@ fun OrderScreen(
                                 }
                             }
                         }
+
+                        val sel = orderViewModel.selectedOrderItem
+                        if (sel != null) {
+                            HorizontalDivider(Modifier.padding(vertical = 6.dp))
+                            BreakRow(stringResource(Res.string.ord_edit_taxable), sel.basePrice.toDecimal())
+                            sel.taxInfos.forEach { ti ->
+                                BreakRow("${ti.name} ${ti.percentage.toDecimal()}%", (ti.value ?: 0.0).toDecimal())
+                            }
+                            BreakRow(stringResource(Res.string.ord_edit_line_total), sel.totalCost.toDecimal(), bold = true)
+                        }
                     }
                 },
                 onDismissRequest = { orderViewModel.selectedOrderItem = null },
@@ -299,5 +314,24 @@ fun OrderScreen(
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun BreakRow(label: String, value: String, bold: Boolean = false) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            label,
+            style = if (bold) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = if (bold) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
