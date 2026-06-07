@@ -8,6 +8,10 @@ import ampairsapp.feature.order.generated.resources.ord_edit_price_label
 import ampairsapp.feature.order.generated.resources.ord_edit_save
 import ampairsapp.feature.order.generated.resources.ord_edit_taxable
 import ampairsapp.feature.order.generated.resources.ord_edit_line_total
+import ampairsapp.feature.order.generated.resources.ord_edit_unit_label
+import ampairsapp.feature.order.generated.resources.ord_edit_unit_base
+import ampairsapp.feature.order.generated.resources.ord_edit_base_qty
+import ampairsapp.feature.order.generated.resources.ord_edit_has_variants
 import ampairsapp.feature.order.generated.resources.ord_view_discount
 import ampairsapp.feature.order.generated.resources.ord_view_items
 import androidx.compose.foundation.clickable
@@ -21,15 +25,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.progressSemantics
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -37,7 +48,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -46,6 +62,8 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.common.components.CartItem
 import com.ampairs.common.format.toDecimal
 import com.ampairs.order.domain.Discount
+import com.ampairs.order.domain.OrderItem
+import com.ampairs.unit.data.repository.UnitOption
 import com.ampairs.order.viewmodel.OrderViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import kotlinx.coroutines.launch
@@ -217,6 +235,17 @@ fun OrderScreen(
                 },
                 text = {
                     Column {
+                        val selItem = orderViewModel.selectedOrderItem
+                        LaunchedEffect(selItem?.id) {
+                            if (selItem != null) orderViewModel.loadUnitOptions(selItem)
+                        }
+                        if (selItem != null) {
+                            UnitVariantRow(
+                                item = selItem,
+                                options = orderViewModel.unitOptions,
+                                onUnitSelected = { orderViewModel.selectUnit(selItem, it) },
+                            )
+                        }
                         Row {
                             Text(text = stringResource(Res.string.ord_edit_discount_label))
                             Column(
@@ -312,6 +341,73 @@ fun OrderScreen(
                         Text(stringResource(Res.string.ord_edit_ok))
                     }
                 }
+            )
+        }
+    }
+}
+
+@Composable
+private fun UnitVariantRow(
+    item: OrderItem,
+    options: List<UnitOption>,
+    onUnitSelected: (UnitOption) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = stringResource(Res.string.ord_edit_unit_label))
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.End
+        ) {
+            var expanded by remember { mutableStateOf(false) }
+            val currentLabel = item.unitName.ifBlank {
+                options.firstOrNull { it.unitId == item.unitId }?.shortName
+                    ?: stringResource(Res.string.ord_edit_unit_base)
+            }
+            Box {
+                OutlinedButton(
+                    onClick = { expanded = true },
+                    enabled = options.isNotEmpty()
+                ) {
+                    Text(currentLabel, style = MaterialTheme.typography.labelMedium)
+                    Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    options.forEach { option ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (option.isBase) "${option.shortName} (${stringResource(Res.string.ord_edit_unit_base)})"
+                                    else "${option.shortName} · ×${option.multiplier.toDecimal()}"
+                                )
+                            },
+                            onClick = {
+                                expanded = false
+                                onUnitSelected(option)
+                            }
+                        )
+                    }
+                }
+            }
+            if (item.unitMultiplier != 1.0) {
+                Text(
+                    "${stringResource(Res.string.ord_edit_base_qty)}: ${item.baseQuantity.toDecimal()}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+    if (item.product?.hasVariants == true) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AssistChip(
+                onClick = {},
+                label = { Text(item.variantSku ?: stringResource(Res.string.ord_edit_has_variants)) }
             )
         }
     }

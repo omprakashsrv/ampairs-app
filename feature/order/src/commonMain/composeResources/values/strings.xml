@@ -42,4 +42,9 @@
     <string name="ord_conv_cancel">Cancel</string>
     <string name="ord_edit_taxable">Taxable</string>
     <string name="ord_edit_line_total">Line total</string>
+    <string name="ord_edit_unit_label">Unit :</string>
+    <string name="ord_edit_unit_base">base unit</string>
+    <string name="ord_edit_base_qty">Base qty</string>
+    <string name="ord_edit_variant">Variant</string>
+    <string name="ord_edit_has_variants">Has variants</string>
 </resources>
