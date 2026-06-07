@@ -36,7 +36,15 @@ jobs:
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          VERSION_CODE=$(echo $VERSION | awk -F. '{print $NF}')
+          # X.Y.Z → concatenated e.g. 1.0.1 → 10001  |  X.Y.Z.B → last segment e.g. 1.0.0.18 → 18
+          PARTS=$(echo $VERSION | tr '.' ' ')
+          COUNT=$(echo $VERSION | tr -cd '.' | wc -c)
+          if [ "$COUNT" -eq 3 ]; then
+            read -r MAJOR MINOR PATCH BUILD <<< "$PARTS"
+            VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          else
+            VERSION_CODE=$(echo $VERSION | awk -F. '{print $NF}')
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "Version: $VERSION (code: $VERSION_CODE)"

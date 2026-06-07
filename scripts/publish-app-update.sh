@@ -137,18 +137,25 @@ calculate_file_size() {
 }
 
 # Extract version code from version string
+# 3-part X.Y.Z  → concatenated digits, e.g. 1.0.1 → 101
+# 4-part X.Y.Z.B → last component, e.g. 1.0.0.18 → 18
 extract_version_code() {
     local version=$1
-    # Extract last component (e.g., "1.0.0.10" -> "10")
-    echo "$version" | awk -F. '{print $NF}'
+    local parts
+    IFS='.' read -ra parts <<< "$version"
+    if [ "${#parts[@]}" -eq 4 ]; then
+        echo "${parts[3]}"
+    else
+        echo "${parts[0]}$(printf '%02d' "${parts[1]}")$(printf '%02d' "${parts[2]}")"
+    fi
 }
 
-# Validate version format
+# Validate version format — accepts X.Y.Z or X.Y.Z.B
 validate_version() {
     local version=$1
-    if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
         log_error "Invalid version format: $version"
-        log_info "Expected format: MAJOR.MINOR.PATCH.BUILD (e.g., 1.0.0.10)"
+        log_info "Expected format: X.Y.Z (e.g., 1.0.1) or X.Y.Z.B (e.g., 1.0.0.18)"
         exit 1
     fi
 }
