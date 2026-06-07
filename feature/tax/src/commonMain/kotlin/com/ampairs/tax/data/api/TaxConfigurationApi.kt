@@ -7,10 +7,9 @@ import com.ampairs.tax.domain.model.TaxRule
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.domain.model.WorkspaceTaxComponent
 import com.ampairs.tax.domain.model.TaxConfiguration
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-/**
- * Tax Configuration API Interface
- */
 interface TaxConfigurationApi {
 
     // Workspace Configuration
@@ -18,7 +17,7 @@ interface TaxConfigurationApi {
     suspend fun createWorkspaceConfiguration(config: TaxConfiguration): Result<TaxConfiguration>
     suspend fun updateWorkspaceConfiguration(config: TaxConfiguration): Result<TaxConfiguration>
 
-    // Master Tax Codes (Server-side only)
+    // Master Tax Codes (server-side search, not synced to mobile)
     suspend fun searchMasterTaxCodes(
         query: String,
         countryCode: String,
@@ -30,13 +29,14 @@ interface TaxConfigurationApi {
 
     suspend fun getMasterTaxCode(codeId: String): Result<MasterTaxCode>
 
+    // Backend: GET /tax/v1/master-codes/popular → PageResponse<MasterTaxCodeDto>
     suspend fun getPopularTaxCodes(
         countryCode: String,
         industry: String? = null,
         limit: Int = 20
-    ): Result<List<MasterTaxCode>>
+    ): Result<PageResponse<MasterTaxCode>>
 
-    // Workspace Tax Codes (Synced to mobile)
+    // Workspace Tax Codes
     suspend fun getTaxCodes(
         modifiedAfter: Long? = null,
         page: Int = 0,
@@ -50,9 +50,15 @@ interface TaxConfigurationApi {
         notes: String? = null
     ): Result<TaxCode>
 
-    suspend fun unsubscribeFromTaxCode(
-        workspaceTaxCodeId: String
-    ): Result<Unit>
+    suspend fun unsubscribeFromTaxCode(workspaceTaxCodeId: String): Result<Unit>
+
+    // Backend: PATCH /tax/v1/codes/{taxCodeId}
+    suspend fun updateTaxCodeConfig(
+        taxCodeId: String,
+        isFavorite: Boolean? = null,
+        notes: String? = null,
+        customName: String? = null,
+    ): Result<TaxCode>
 
     suspend fun bulkSubscribeTaxCodes(
         masterTaxCodeIds: List<String>,
@@ -62,7 +68,7 @@ interface TaxConfigurationApi {
     // Tax Component Types
     suspend fun getComponentTypes(countryCode: String): Result<List<TaxComponentType>>
 
-    // Workspace Tax Components
+    // TODO: no backend endpoint yet for GET /tax/v1/components
     suspend fun getWorkspaceComponents(
         modifiedAfter: Long? = null,
         page: Int = 0,
@@ -76,40 +82,39 @@ interface TaxConfigurationApi {
         size: Int = 100
     ): Result<PageResponse<TaxRule>>
 
-    suspend fun getTaxRulesByTaxCode(
-        taxCodeId: String
-    ): Result<List<TaxRule>>
+    suspend fun getTaxRulesByTaxCode(taxCodeId: String): Result<List<TaxRule>>
 
-    suspend fun createTaxRule(
-        rule: TaxRule
-    ): Result<TaxRule>
+    // Backend: PUT /tax/v1/rules/{ruleId}
+    suspend fun updateTaxRule(ruleId: String, rule: TaxRule): Result<TaxRule>
 
-    suspend fun updateTaxRule(
-        ruleId: String,
-        rule: TaxRule
-    ): Result<TaxRule>
+    // Backend: DELETE /tax/v1/rules/{ruleId}
+    suspend fun deleteTaxRule(ruleId: String): Result<Unit>
 
-    suspend fun bulkImportTaxRules(
-        rules: List<TaxRule>
-    ): Result<BulkImportResult>
+    // TODO: no backend endpoint yet for POST /tax/v1/rules
+    suspend fun createTaxRule(rule: TaxRule): Result<TaxRule>
+
+    // TODO: no backend endpoint yet for POST /tax/v1/rules/bulk-import
+    suspend fun bulkImportTaxRules(rules: List<TaxRule>): Result<BulkImportResult>
 }
 
-/**
- * Bulk Subscribe Result
- */
+@Serializable
 data class BulkSubscribeResult(
-    val successCount: Int,
-    val failureCount: Int,
-    val subscribedCodes: List<TaxCode>,
-    val errors: List<String> = emptyList()
+    @SerialName("success_count") val successCount: Int,
+    @SerialName("failure_count") val failureCount: Int,
+    @SerialName("subscribed_codes") val subscribedCodes: List<TaxCode>,
+    val errors: List<BulkOperationError> = emptyList(),
 )
 
-/**
- * Bulk Import Result
- */
+@Serializable
+data class BulkOperationError(
+    @SerialName("master_tax_code_id") val masterTaxCodeId: String,
+    @SerialName("error_message") val errorMessage: String,
+)
+
+@Serializable
 data class BulkImportResult(
-    val successCount: Int,
-    val failureCount: Int,
-    val importedRules: List<TaxRule>,
-    val errors: List<String> = emptyList()
+    @SerialName("success_count") val successCount: Int,
+    @SerialName("failure_count") val failureCount: Int,
+    @SerialName("imported_rules") val importedRules: List<TaxRule>,
+    val errors: List<String> = emptyList(),
 )
