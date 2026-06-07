@@ -76,7 +76,7 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
-                implementation(libs.jmapviewer)
+                implementation(files("$rootDir/libs/jmapviewer-2.24.jar"))
             }
         }
         val iosArm64Main by getting

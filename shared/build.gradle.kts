@@ -183,7 +183,7 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okHttp)
-                implementation(libs.jmapviewer)
+                implementation(files("$rootDir/libs/jmapviewer-2.24.jar"))
                 implementation(libs.kermit)
 
                 implementation(project(":tally"))
