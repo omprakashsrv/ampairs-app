@@ -120,6 +120,17 @@ fun OrderScreen(
                 scaffoldState = scaffoldState,
                 sheetContent = {
                     LazyColumn {
+                        item {
+                            OrderTotalsPanel(
+                                totals = orderViewModel.totals,
+                                overallDiscountKind = orderViewModel.overallDiscountKind,
+                                overallDiscountAmount = orderViewModel.overallDiscountAmount,
+                                onPriceMode = orderViewModel::setPriceMode,
+                                onOverallDiscount = orderViewModel::setOverallDiscount,
+                                onOverallDiscountMode = orderViewModel::setOverallDiscountMode,
+                                modifier = Modifier.padding(12.dp),
+                            )
+                        }
                         items(orderViewModel.orderItems.size) { index ->
                             val orderItem = orderViewModel.orderItems[index]
                             ListItem(

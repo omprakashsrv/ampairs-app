@@ -29,6 +29,8 @@ import com.ampairs.tax.calculation.document.PriceMode
 import com.ampairs.tax.calculation.document.ScenarioResolver
 import com.ampairs.tax.calculation.document.TaxRateProvider
 import com.ampairs.tax.calculation.document.TaxScenario
+import com.ampairs.order.ui.TaxGroupUi
+import com.ampairs.order.ui.TotalsUi
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -77,6 +79,16 @@ class OrderViewModel(
     fun recalculate() {
         viewModelScope.launch(DispatcherProvider.io) { computeTotals() }
     }
+
+    fun setPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
+
+    fun setOverallDiscount(kind: DiscountKind, amount: Double) {
+        overallDiscountKind = kind
+        overallDiscountAmount = amount
+        recalculate()
+    }
+
+    fun setOverallDiscountMode(mode: OverallDiscountMode) { overallDiscountMode = mode; recalculate() }
 
     /** Add a product from the picker: new line (qty 1) or increment the existing line, then recompute. */
     fun addProduct(productId: String) {
@@ -128,11 +140,12 @@ class OrderViewModel(
                 lineDiscount = item.discount.firstOrNull().toDiscountInput(),
             )
         }
+        val overall = if (overallDiscountAmount > 0.0) DiscountInput(overallDiscountKind, overallDiscountAmount) else null
         val input = DocumentCalcInput(
             lines = lines,
-            priceMode = PriceMode.TAX_EXCLUSIVE,
-            overallDiscount = order.discount?.firstOrNull().toDiscountInput(),
-            overallDiscountMode = OverallDiscountMode.POST_TAX_REDUCTION,
+            priceMode = priceMode,
+            overallDiscount = overall,
+            overallDiscountMode = overallDiscountMode,
             scenario = scenario,
             rates = rates,
         )
@@ -158,6 +171,31 @@ class OrderViewModel(
         order.totalItems = orderItems.size
         order.totalQuantity = orderItems.sumOf { it.quantity }
         order.totalCost = result.grandTotal
+
+        // also persist the chosen modes onto the order for save round-trip
+        order.discount = overall?.let { mutableListOf(com.ampairs.order.domain.Discount(if (it.kind == DiscountKind.PERCENT) it.amount else 0.0, if (it.kind == DiscountKind.FLAT) it.amount else 0.0)) }
+
+        val groups = result.lines.flatMap { it.components }
+            .groupBy { it.name to it.percentage }
+            .map { (k, v) -> TaxGroupUi(name = k.first, percentage = k.second, amount = v.sumOf { c -> c.amount }) }
+            .sortedWith(compareBy({ taxOrder(it.name) }, { it.percentage }))
+        totals = TotalsUi(
+            subtotalGross = result.lines.sumOf { it.gross },
+            lineDiscountTotal = result.lineDiscountTotal,
+            overallDiscountValue = result.overallDiscountValue,
+            taxableSubtotal = result.taxableSubtotal,
+            taxGroups = groups,
+            totalTax = result.totalTax,
+            grandTotal = result.grandTotal,
+            scenario = scenario,
+            priceMode = priceMode,
+            overallDiscountMode = overallDiscountMode,
+            itemCount = orderItems.size,
+        )
+    }
+
+    private fun taxOrder(name: String): Int = when (name) {
+        "CGST" -> 0; "SGST" -> 1; "IGST" -> 2; else -> 3
     }
 
     private fun com.ampairs.order.domain.Discount?.toDiscountInput(): DiscountInput? = when {
@@ -173,6 +211,18 @@ class OrderViewModel(
     var selectedOrderItem by mutableStateOf<OrderItem?>(null)
     var savingOrder by mutableStateOf(false)
     var order = Order()
+
+    // Document settings (spec 010 C1/C2) — observable so the totals panel reacts.
+    var priceMode by mutableStateOf(PriceMode.TAX_EXCLUSIVE)
+        private set
+    var overallDiscountMode by mutableStateOf(OverallDiscountMode.POST_TAX_REDUCTION)
+        private set
+    var overallDiscountKind by mutableStateOf(DiscountKind.PERCENT)
+        private set
+    var overallDiscountAmount by mutableStateOf(0.0)
+        private set
+    var totals by mutableStateOf(TotalsUi())
+        private set
 
     init {
         viewModelScope.launch(DispatcherProvider.io) {
