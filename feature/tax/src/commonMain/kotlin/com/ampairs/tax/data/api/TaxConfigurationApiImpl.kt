@@ -27,6 +27,8 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -343,11 +345,13 @@ class TaxConfigurationApiImpl(
 
 // ── Request DTOs ─────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 private data class SubscribeTaxCodeRequest(
     @SerialName("master_tax_code_id") val masterTaxCodeId: String,
     @SerialName("custom_tax_rule_id") val customTaxRuleId: String? = null,
-    @SerialName("is_favorite") val isFavorite: Boolean = false,
+    // @EncodeDefault: global encodeDefaults=false would drop this when false; backend requires it present
+    @EncodeDefault @SerialName("is_favorite") val isFavorite: Boolean = false,
     val notes: String? = null,
 )
 
@@ -358,10 +362,11 @@ private data class UpdateTaxCodeConfigRequest(
     @SerialName("custom_name") val customName: String? = null,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 private data class BulkSubscribeRequest(
     @SerialName("master_tax_code_ids") val masterTaxCodeIds: List<String>,
-    @SerialName("apply_default_rules") val applyDefaultRules: Boolean = true,
+    @EncodeDefault @SerialName("apply_default_rules") val applyDefaultRules: Boolean = true,
 )
 
 @Serializable
