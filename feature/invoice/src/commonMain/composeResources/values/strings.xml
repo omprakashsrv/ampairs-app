@@ -35,4 +35,14 @@
     <string name="inv_edit_unit_base">base unit</string>
     <string name="inv_edit_base_qty">Base qty</string>
     <string name="inv_edit_has_variants">Has variants</string>
+    <!-- Inline product create (spec 010, screen 6) -->
+    <string name="inv_create_cd">New product</string>
+    <string name="inv_create_title">New product</string>
+    <string name="inv_create_name">Name</string>
+    <string name="inv_create_code">Code / SKU</string>
+    <string name="inv_create_price">Selling price</string>
+    <string name="inv_create_mrp">MRP</string>
+    <string name="inv_create_tax">Tax code (HSN)</string>
+    <string name="inv_create_confirm">Create &amp; add</string>
+    <string name="inv_create_cancel">Cancel</string>
 </resources>

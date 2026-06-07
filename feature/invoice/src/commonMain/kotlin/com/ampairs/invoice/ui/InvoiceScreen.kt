@@ -10,6 +10,15 @@ import ampairsapp.feature.invoice.generated.resources.inv_edit_unit_label
 import ampairsapp.feature.invoice.generated.resources.inv_edit_unit_base
 import ampairsapp.feature.invoice.generated.resources.inv_edit_base_qty
 import ampairsapp.feature.invoice.generated.resources.inv_edit_has_variants
+import ampairsapp.feature.invoice.generated.resources.inv_create_cd
+import ampairsapp.feature.invoice.generated.resources.inv_create_title
+import ampairsapp.feature.invoice.generated.resources.inv_create_name
+import ampairsapp.feature.invoice.generated.resources.inv_create_code
+import ampairsapp.feature.invoice.generated.resources.inv_create_price
+import ampairsapp.feature.invoice.generated.resources.inv_create_mrp
+import ampairsapp.feature.invoice.generated.resources.inv_create_tax
+import ampairsapp.feature.invoice.generated.resources.inv_create_confirm
+import ampairsapp.feature.invoice.generated.resources.inv_create_cancel
 import ampairsapp.feature.invoice.generated.resources.inv_view_discount
 import ampairsapp.feature.invoice.generated.resources.inv_view_items
 import androidx.compose.foundation.clickable
@@ -17,12 +26,15 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -33,10 +45,12 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -78,13 +92,20 @@ fun InvoiceScreen(
     val invoiceViewModel = viewModel
 
     val scope = rememberCoroutineScope()
+    var showCreateProduct by remember { mutableStateOf(false) }
     val bottomSheetState =
         rememberStandardBottomSheetState(initialValue = SheetValue.Hidden, skipHiddenState = false)
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = bottomSheetState
     )
 
-    Scaffold(bottomBar = {
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showCreateProduct = true }) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(Res.string.inv_create_cd))
+            }
+        },
+        bottomBar = {
         val invoiceItems = invoiceViewModel.invoiceItems
         if (invoiceItems.size > 0) {
             BottomAppBar(
@@ -329,7 +350,77 @@ fun InvoiceScreen(
                 }
             )
         }
+
+        if (showCreateProduct) {
+            CreateProductDialog(
+                onDismiss = { showCreateProduct = false },
+                onCreate = { name, code, price, mrp, tax ->
+                    invoiceViewModel.createAndAddProduct(name, code, price, mrp, tax)
+                    showCreateProduct = false
+                }
+            )
+        }
     }
+}
+
+@Composable
+private fun CreateProductDialog(
+    onDismiss: () -> Unit,
+    onCreate: (name: String, code: String, price: Double, mrp: Double, taxCode: String) -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    var price by remember { mutableStateOf("") }
+    var mrp by remember { mutableStateOf("") }
+    var tax by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.inv_create_title)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text(stringResource(Res.string.inv_create_name)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = code, onValueChange = { code = it },
+                    label = { Text(stringResource(Res.string.inv_create_code)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = price, onValueChange = { price = it.filter { c -> c.isDigit() || c == '.' } },
+                    label = { Text(stringResource(Res.string.inv_create_price)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = mrp, onValueChange = { mrp = it.filter { c -> c.isDigit() || c == '.' } },
+                    label = { Text(stringResource(Res.string.inv_create_mrp)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = tax, onValueChange = { tax = it },
+                    label = { Text(stringResource(Res.string.inv_create_tax)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onCreate(name.trim(), code.trim(), price.toDoubleOrNull() ?: 0.0, mrp.toDoubleOrNull() ?: 0.0, tax.trim())
+                },
+                enabled = name.isNotBlank()
+            ) { Text(stringResource(Res.string.inv_create_confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.inv_create_cancel)) }
+        }
+    )
 }
 
 @Composable

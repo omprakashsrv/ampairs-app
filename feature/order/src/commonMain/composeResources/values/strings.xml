@@ -47,4 +47,14 @@
     <string name="ord_edit_base_qty">Base qty</string>
     <string name="ord_edit_variant">Variant</string>
     <string name="ord_edit_has_variants">Has variants</string>
+    <!-- Inline product create (spec 010, screen 6) -->
+    <string name="ord_create_cd">New product</string>
+    <string name="ord_create_title">New product</string>
+    <string name="ord_create_name">Name</string>
+    <string name="ord_create_code">Code / SKU</string>
+    <string name="ord_create_price">Selling price</string>
+    <string name="ord_create_mrp">MRP</string>
+    <string name="ord_create_tax">Tax code (HSN)</string>
+    <string name="ord_create_confirm">Create &amp; add</string>
+    <string name="ord_create_cancel">Cancel</string>
 </resources>

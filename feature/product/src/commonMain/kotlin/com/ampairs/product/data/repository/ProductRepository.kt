@@ -87,6 +87,31 @@ class ProductRepository(
 
     override suspend fun clearCache() { productDao.deleteAll() }
 
+    override suspend fun quickCreate(
+        id: String,
+        name: String,
+        code: String,
+        sellingPrice: Double,
+        mrp: Double,
+        taxCode: String,
+        baseUnitId: String?,
+    ): ProductSummary? {
+        require(id.isNotBlank()) { "Product UID must be set by the ViewModel" }
+        val product = Product(
+            id = id,
+            name = name,
+            code = code,
+            sellingPrice = sellingPrice,
+            dp = sellingPrice,
+            mrp = if (mrp > 0.0) mrp else sellingPrice,
+            taxCode = taxCode,
+            baseUnitId = baseUnitId,
+            active = true,
+            productType = ProductType.RETAIL,
+        )
+        return createProduct(product).getOrNull()?.toSummary()
+    }
+
     suspend fun createProduct(product: Product): Result<Product> {
         return try {
             val productWithId = if (product.id.isBlank()) {

@@ -16,7 +16,9 @@ import com.ampairs.order.domain.OrderItem
 import com.ampairs.order.domain.TaxInfo
 import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.domain.asDatabaseModel
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.unit.data.repository.UnitOption
 import com.ampairs.unit.data.repository.UnitOptionsLookup
@@ -122,6 +124,23 @@ class OrderViewModel(
                 if (item.quantity <= 0.0) item.quantity = 1.0
                 orderItems.add(item)
             }
+            order.items = orderItems
+            computeTotals()
+        }
+    }
+
+    /** Inline-create a product (offline-first) and add it as a new line. UID minted here. */
+    fun createAndAddProduct(name: String, code: String, price: Double, mrp: Double, taxCode: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch(DispatcherProvider.io) {
+            val uid = UidGenerator.generateUid(Constants.PRODUCT_PREFIX)
+            val summary = productDataService.quickCreate(
+                id = uid, name = name, code = code,
+                sellingPrice = price, mrp = mrp, taxCode = taxCode, baseUnitId = null,
+            ) ?: return@launch
+            val item = OrderItem(summary)
+            if (item.quantity <= 0.0) item.quantity = 1.0
+            orderItems.add(item)
             order.items = orderItems
             computeTotals()
         }
