@@ -1,5 +1,6 @@
 package com.ampairs.tax.domain.model
 
+import com.ampairs.common.serialization.EpochMillisSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -42,9 +43,11 @@ data class TaxRule(
     @SerialName("is_active")
     val isActive: Boolean = true,
 
+    @Serializable(with = EpochMillisSerializer::class)
     @SerialName("created_at")
     val createdAt: Long = 0,
 
+    @Serializable(with = EpochMillisSerializer::class)
     @SerialName("updated_at")
     val updatedAt: Long = 0,
 
