@@ -29,7 +29,8 @@ data class Order(
     val shippingAddress: String?,
     val active: Boolean,
     val softDeleted: Boolean,
-    val discount: List<Discount>?
+    val discount: List<Discount>?,
+    val synced: Boolean = true,
 )
 
 fun OrderEntity.asDomainModel(): Order {
@@ -55,7 +56,8 @@ fun OrderEntity.asDomainModel(): Order {
         taxInfo = this.tax_info,
         shippingAddress = this.shipping_address,
         billingAddress = this.billing_address,
-        discount = this.discount?.let { Json.decodeFromString(it) }
+        discount = this.discount?.let { Json.decodeFromString(it) },
+        synced = this.synced == 1L,
     )
 }
 

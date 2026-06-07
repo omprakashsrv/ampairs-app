@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.HorizontalDivider
@@ -236,6 +237,14 @@ private fun OrderRow(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (!order.synced) {
+                Icon(
+                    Icons.Filled.CloudOff,
+                    contentDescription = "Saved offline",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(16.dp).padding(end = 4.dp)
+                )
+            }
             Text(
                 text = order.orderNumber.ifBlank { "—" },
                 style = MaterialTheme.typography.bodyMedium,
