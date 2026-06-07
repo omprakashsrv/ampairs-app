@@ -60,7 +60,7 @@ import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.util.formatDecimal
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.tax.generated.resources.Res

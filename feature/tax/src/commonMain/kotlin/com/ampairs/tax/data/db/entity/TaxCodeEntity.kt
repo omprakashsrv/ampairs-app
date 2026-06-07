@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.domain.model.TaxCodeType
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Tax Code Entity - Mobile database storage

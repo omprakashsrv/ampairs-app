@@ -10,7 +10,6 @@ import com.ampairs.tax.domain.model.MasterTaxCode
 import com.ampairs.tax.domain.model.TaxCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
 import kotlin.time.ExperimentalTime
 
 /**
@@ -274,8 +273,7 @@ class TaxCodeRepository(
      */
     private suspend fun getLastSyncTime(): Long? {
         val codes = taxCodeDao.getModifiedAfter(0L)
-        val latestIso = codes.maxOfOrNull { it.updatedAt } ?: return null
-        return runCatching { Instant.parse(latestIso).toEpochMilliseconds() }.getOrNull()
+        return codes.maxOfOrNull { it.updatedAt }   // entity stores epoch-millis Long
     }
 
     /**
