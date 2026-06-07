@@ -16,8 +16,12 @@ import com.ampairs.invoice.domain.InvoiceItem
 import com.ampairs.invoice.domain.TaxInfo
 import com.ampairs.invoice.domain.TaxSpec
 import com.ampairs.invoice.domain.asDatabaseModel
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.ProductSummary
+import com.ampairs.unit.data.repository.UnitOption
+import com.ampairs.unit.data.repository.UnitOptionsLookup
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.tax.calculation.document.DiscountInput
 import com.ampairs.tax.calculation.document.DiscountKind
@@ -29,6 +33,8 @@ import com.ampairs.tax.calculation.document.PriceMode
 import com.ampairs.tax.calculation.document.ScenarioResolver
 import com.ampairs.tax.calculation.document.TaxRateProvider
 import com.ampairs.tax.calculation.document.TaxScenario
+import com.ampairs.invoice.ui.TaxGroupUi
+import com.ampairs.invoice.ui.TotalsUi
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -48,6 +54,7 @@ class InvoiceViewModel(
     val productDataService: ProductDataService,
     val tokenRepository: TokenRepository,
     val taxRateProvider: TaxRateProvider,
+    val unitOptionsLookup: UnitOptionsLookup,
 ) :
     ViewModel() {
 
@@ -80,6 +87,33 @@ class InvoiceViewModel(
         viewModelScope.launch(DispatcherProvider.io) { computeTotals() }
     }
 
+    /** Load the sellable unit choices for the given line's product (base unit first). */
+    fun loadUnitOptions(item: InvoiceItem) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val productId = item.product?.id ?: item.productId
+            if (productId.isNullOrBlank()) { unitOptions = emptyList(); return@launch }
+            val baseUnitId = item.product?.baseUnitId ?: item.unitId.takeIf { it.isNotBlank() }
+            unitOptions = unitOptionsLookup.unitsForProduct(productId, baseUnitId)
+        }
+    }
+
+    /** Apply a unit choice to a line: rescales price + base quantity, then recomputes totals. */
+    fun selectUnit(item: InvoiceItem, option: UnitOption) {
+        item.selectUnit(option.unitId, option.shortName, option.multiplier)
+        invoice.updateTotalCost()
+        recalculate()
+    }
+
+    fun selectPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
+
+    fun setOverallDiscount(kind: DiscountKind, amount: Double) {
+        overallDiscountKind = kind
+        overallDiscountAmount = amount
+        recalculate()
+    }
+
+    fun selectOverallDiscountMode(mode: OverallDiscountMode) { overallDiscountMode = mode; recalculate() }
+
     /** Add a product from the picker: new line (qty 1) or increment the existing line, then recompute. */
     fun addProduct(productId: String) {
         viewModelScope.launch(DispatcherProvider.io) {
@@ -92,6 +126,23 @@ class InvoiceViewModel(
                 if (item.quantity <= 0.0) item.quantity = 1.0
                 invoiceItems.add(item)
             }
+            invoice.items = invoiceItems
+            computeTotals()
+        }
+    }
+
+    /** Inline-create a product (offline-first) and add it as a new line. UID minted here. */
+    fun createAndAddProduct(name: String, code: String, price: Double, mrp: Double, taxCode: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch(DispatcherProvider.io) {
+            val uid = UidGenerator.generateUid(Constants.PRODUCT_PREFIX)
+            val summary = productDataService.quickCreate(
+                id = uid, name = name, code = code,
+                sellingPrice = price, mrp = mrp, taxCode = taxCode, baseUnitId = null,
+            ) ?: return@launch
+            val item = InvoiceItem(summary)
+            if (item.quantity <= 0.0) item.quantity = 1.0
+            invoiceItems.add(item)
             invoice.items = invoiceItems
             computeTotals()
         }
@@ -133,11 +184,12 @@ class InvoiceViewModel(
                 lineDiscount = item.discount.firstOrNull().toDiscountInput(),
             )
         }
+        val overall = if (overallDiscountAmount > 0.0) DiscountInput(overallDiscountKind, overallDiscountAmount) else null
         val input = DocumentCalcInput(
             lines = lines,
-            priceMode = PriceMode.TAX_EXCLUSIVE,
-            overallDiscount = invoice.discount?.firstOrNull().toDiscountInput(),
-            overallDiscountMode = OverallDiscountMode.POST_TAX_REDUCTION,
+            priceMode = priceMode,
+            overallDiscount = overall,
+            overallDiscountMode = overallDiscountMode,
             scenario = scenario,
             rates = rates,
         )
@@ -163,6 +215,30 @@ class InvoiceViewModel(
         invoice.totalItems = invoiceItems.size
         invoice.totalQuantity = invoiceItems.sumOf { it.quantity }
         invoice.totalCost = result.grandTotal
+
+        invoice.discount = overall?.let { mutableListOf(com.ampairs.invoice.domain.Discount(if (it.kind == DiscountKind.PERCENT) it.amount else 0.0, if (it.kind == DiscountKind.FLAT) it.amount else 0.0)) }
+
+        val groups = result.lines.flatMap { it.components }
+            .groupBy { it.name to it.percentage }
+            .map { (k, v) -> TaxGroupUi(name = k.first, percentage = k.second, amount = v.sumOf { c -> c.amount }) }
+            .sortedWith(compareBy({ taxOrder(it.name) }, { it.percentage }))
+        totals = TotalsUi(
+            subtotalGross = result.lines.sumOf { it.gross },
+            lineDiscountTotal = result.lineDiscountTotal,
+            overallDiscountValue = result.overallDiscountValue,
+            taxableSubtotal = result.taxableSubtotal,
+            taxGroups = groups,
+            totalTax = result.totalTax,
+            grandTotal = result.grandTotal,
+            scenario = scenario,
+            priceMode = priceMode,
+            overallDiscountMode = overallDiscountMode,
+            itemCount = invoiceItems.size,
+        )
+    }
+
+    private fun taxOrder(name: String): Int = when (name) {
+        "CGST" -> 0; "SGST" -> 1; "IGST" -> 2; else -> 3
     }
 
     private fun com.ampairs.invoice.domain.Discount?.toDiscountInput(): DiscountInput? = when {
@@ -179,6 +255,57 @@ class InvoiceViewModel(
     var savingInvoice by mutableStateOf(false)
     var invoice = Invoice()
 
+    // Document settings (spec 010 C1/C2) — observable so the totals panel reacts.
+    var priceMode by mutableStateOf(PriceMode.TAX_EXCLUSIVE)
+        private set
+    var overallDiscountMode by mutableStateOf(OverallDiscountMode.POST_TAX_REDUCTION)
+        private set
+    var overallDiscountKind by mutableStateOf(DiscountKind.PERCENT)
+        private set
+    var overallDiscountAmount by mutableStateOf(0.0)
+        private set
+    var totals by mutableStateOf(TotalsUi())
+        private set
+
+    // Unit choices for the currently edited line (loaded on demand).
+    var unitOptions by mutableStateOf<List<UnitOption>>(emptyList())
+        private set
+
+    // In-editor customer selection (observable so the editor header reacts).
+    var fromCustomerName by mutableStateOf("")
+        private set
+    var toCustomerName by mutableStateOf("")
+        private set
+    var customerResults by mutableStateOf<List<com.ampairs.customer.domain.CustomerListItem>>(emptyList())
+        private set
+
+    /** Search the workspace's customers for the picker (blank query = full list). */
+    fun searchCustomers(query: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            customerResults = customerDataService.listCustomers(query)
+        }
+    }
+
+    fun selectFromCustomer(customerId: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val customer = customerDataService.getById(customerId) ?: return@launch
+            fromCustomer = customer
+            invoice.fromCustomer = customer
+            fromCustomerName = customer.name
+            computeTotals()
+        }
+    }
+
+    fun selectToCustomer(customerId: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val customer = customerDataService.getById(customerId) ?: return@launch
+            toCustomer = customer
+            invoice.toCustomer = customer
+            toCustomerName = customer.name
+            computeTotals()
+        }
+    }
+
     init {
         viewModelScope.launch(DispatcherProvider.io) {
             if (!id.isNullOrEmpty()) {
@@ -194,6 +321,8 @@ class InvoiceViewModel(
                 invoice.fromCustomer = fromCustomer
                 invoice.toCustomer = toCustomer
             }
+            fromCustomerName = fromCustomer?.name ?: ""
+            toCustomerName = toCustomer?.name ?: ""
             computeTotals()
         }
     }

@@ -54,9 +54,10 @@ data class MasterTaxCode(
     @SerialName("metadata")
     val metadata: Map<String, String> = emptyMap(), // Additional attributes
 
+    // Backend serializes these as ISO 8601 strings (e.g. "2026-05-25T17:01:04.083622Z")
     @SerialName("created_at")
-    val createdAt: Long,
+    val createdAt: String,
 
     @SerialName("updated_at")
-    val updatedAt: Long
+    val updatedAt: String,
 )

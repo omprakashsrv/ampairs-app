@@ -6,6 +6,7 @@
     <string name="ord_list_cd_search_clear">Clear search</string>
     <string name="ord_list_empty_title">No orders yet</string>
     <string name="ord_list_empty_desc">Orders will appear here once created</string>
+    <string name="ord_list_new">New order</string>
     <string name="ord_list_col_number">Order #</string>
     <string name="ord_list_col_customer">Customer</string>
     <string name="ord_list_col_status">Status</string>
@@ -32,4 +33,35 @@
     <string name="ord_edit_ok">OK</string>
     <string name="ord_edit_discount_label">Discount %% :</string>
     <string name="ord_edit_price_label">Price :</string>
+    <string name="ord_conv_title">Create invoice from this order?</string>
+    <string name="ord_conv_line1">Lines, units &amp; prices are copied</string>
+    <string name="ord_conv_line2">Tax breakdown &amp; discounts are copied</string>
+    <string name="ord_conv_line3">Order ⇄ invoice are cross-linked</string>
+    <string name="ord_conv_line4">Invoice number is assigned on save</string>
+    <string name="ord_conv_note">Already converted? This opens the existing invoice — no duplicate.</string>
+    <string name="ord_conv_confirm">Create invoice</string>
+    <string name="ord_conv_cancel">Cancel</string>
+    <string name="ord_edit_taxable">Taxable</string>
+    <string name="ord_edit_line_total">Line total</string>
+    <string name="ord_edit_unit_label">Unit :</string>
+    <string name="ord_edit_unit_base">base unit</string>
+    <string name="ord_edit_base_qty">Base qty</string>
+    <string name="ord_edit_variant">Variant</string>
+    <string name="ord_edit_has_variants">Has variants</string>
+    <!-- Inline product create (spec 010, screen 6) -->
+    <string name="ord_create_cd">New product</string>
+    <string name="ord_create_title">New product</string>
+    <string name="ord_create_name">Name</string>
+    <string name="ord_create_code">Code / SKU</string>
+    <string name="ord_create_price">Selling price</string>
+    <string name="ord_create_mrp">MRP</string>
+    <string name="ord_create_tax">Tax code (HSN)</string>
+    <string name="ord_create_confirm">Create &amp; add</string>
+    <string name="ord_create_cancel">Cancel</string>
+    <!-- In-editor customer selection (spec 010 launch flow) -->
+    <string name="ord_cust_from">From (seller)</string>
+    <string name="ord_cust_to">To (customer)</string>
+    <string name="ord_cust_select">Select</string>
+    <string name="ord_cust_title">Select customer</string>
+    <string name="ord_cust_search">Search customers…</string>
 </resources>

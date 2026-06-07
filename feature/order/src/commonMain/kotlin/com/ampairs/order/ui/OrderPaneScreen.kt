@@ -38,6 +38,7 @@ fun OrderPaneScreen(
                             navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, selectedOrderId)
                         }
                     },
+                    onCreateOrder = { onOrderEdit(null) },
                     viewModel = ordersViewModel
                 )
             }

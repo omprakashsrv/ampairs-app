@@ -38,7 +38,8 @@ fun InvoicePaneScreen(
                         scope.launch {
                             navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, selectedInvoiceId)
                         }
-                    }
+                    },
+                    onCreateInvoice = { onInvoiceEdit(null) }
                 )
             }
         },

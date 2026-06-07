@@ -118,6 +118,10 @@ class OrderViewViewModel(
         taxInfos = this@toInvoiceItem.taxInfos.map { it.toInvoiceTaxInfo() }
         discountPercent = this@toInvoiceItem.discountPercent
         this@toInvoiceItem.discount.forEach { discount.add(InvoiceDiscount(it.percent, it.value)) }
+        unitId = this@toInvoiceItem.unitId
+        unitMultiplier = this@toInvoiceItem.unitMultiplier
+        baseQuantity = this@toInvoiceItem.baseQuantity
+        variantSku = this@toInvoiceItem.variantSku
     }
 
     private fun OrderTaxInfo.toInvoiceTaxInfo(): InvoiceTaxInfo = InvoiceTaxInfo(

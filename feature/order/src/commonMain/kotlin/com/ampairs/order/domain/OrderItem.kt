@@ -16,11 +16,30 @@ class OrderItem(var product: ProductSummary?) {
         set(value) {
             field = value
             if (product != null) product!!.quantity = value
+            baseQuantity = value * unitMultiplier
             updateTotal()
         }
 
+    // spec 010 FR-014: unit of measure + base-unit quantity, and selected variant
+    var unitId: String = product?.baseUnitId ?: ""
+    var unitName: String by mutableStateOf("")          // transient display (short name)
+    var unitMultiplier: Double = 1.0                    // 1 selected unit = multiplier base units
+    var baseQuantity: Double by mutableStateOf(product?.quantity ?: 0.0)
+    var variantSku: String? = null
+
+    /** Switch the line's unit of measure, rescaling the per-unit price and base quantity. */
+    fun selectUnit(unitId: String, name: String, multiplier: Double) {
+        this.unitId = unitId
+        this.unitName = name
+        this.unitMultiplier = if (multiplier > 0.0) multiplier else 1.0
+        this.price = productPrice * this.unitMultiplier
+        this.baseQuantity = quantity * this.unitMultiplier
+        updateTotal()
+    }
+
     fun updateTotal() {
         totalCost = quantity * price
+        baseQuantity = quantity * unitMultiplier
     }
 
     fun updateTaxes(taxSpec: TaxSpec) {
@@ -85,7 +104,10 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
             total_tax = orderItem.totalTax,
             active = if (orderItem.active) 1 else 0,
             soft_deleted = if (orderItem.softDeleted) 1 else 0,
-            discount = if (orderItem.discount.isNotEmpty()) Json.encodeToString(orderItem.discount) else null
+            discount = if (orderItem.discount.isNotEmpty()) Json.encodeToString(orderItem.discount) else null,
+            unit_id = orderItem.unitId,
+            base_quantity = orderItem.baseQuantity,
+            variant_sku = orderItem.variantSku
         )
     }
 }
@@ -107,6 +129,11 @@ fun List<OrderItemEntity>.asItemsDomainModel(): List<OrderItem> {
         orderItem1.softDeleted = orderItem.soft_deleted == 1
         orderItem1.taxInfos = Json.decodeFromString(orderItem.tax_info ?: "")
         orderItem1.discount = Json.decodeFromString(orderItem.discount ?: "")
+        orderItem1.unitId = orderItem.unit_id
+        orderItem1.baseQuantity = orderItem.base_quantity
+        orderItem1.unitMultiplier =
+            if (orderItem.quantity > 0.0 && orderItem.base_quantity > 0.0) orderItem.base_quantity / orderItem.quantity else 1.0
+        orderItem1.variantSku = orderItem.variant_sku
         orderItem1
     }
 }

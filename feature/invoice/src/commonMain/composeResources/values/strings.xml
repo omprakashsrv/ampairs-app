@@ -6,6 +6,7 @@
     <string name="inv_list_cd_search_clear">Clear search</string>
     <string name="inv_list_empty_title">No invoices yet</string>
     <string name="inv_list_empty_desc">Invoices will appear here once created</string>
+    <string name="inv_list_new">New invoice</string>
     <string name="inv_list_col_number">Invoice #</string>
     <string name="inv_list_col_customer">Customer</string>
     <string name="inv_list_col_status">Status</string>
@@ -31,4 +32,24 @@
     <string name="inv_edit_ok">OK</string>
     <string name="inv_edit_discount_label">Discount %% :</string>
     <string name="inv_edit_price_label">Price :</string>
+    <string name="inv_edit_unit_label">Unit :</string>
+    <string name="inv_edit_unit_base">base unit</string>
+    <string name="inv_edit_base_qty">Base qty</string>
+    <string name="inv_edit_has_variants">Has variants</string>
+    <!-- Inline product create (spec 010, screen 6) -->
+    <string name="inv_create_cd">New product</string>
+    <string name="inv_create_title">New product</string>
+    <string name="inv_create_name">Name</string>
+    <string name="inv_create_code">Code / SKU</string>
+    <string name="inv_create_price">Selling price</string>
+    <string name="inv_create_mrp">MRP</string>
+    <string name="inv_create_tax">Tax code (HSN)</string>
+    <string name="inv_create_confirm">Create &amp; add</string>
+    <string name="inv_create_cancel">Cancel</string>
+    <!-- In-editor customer selection (spec 010 launch flow) -->
+    <string name="inv_cust_from">From (seller)</string>
+    <string name="inv_cust_to">To (customer)</string>
+    <string name="inv_cust_select">Select</string>
+    <string name="inv_cust_title">Select customer</string>
+    <string name="inv_cust_search">Search customers…</string>
 </resources>
