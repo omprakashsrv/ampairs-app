@@ -6,10 +6,11 @@ on:
       - 'v*'  # Trigger on version tags (e.g., v1.0.0.10)
 
 env:
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'temurin'
-  AWS_REGION: ap-south-1
-  S3_BUCKET: ampairs-artifacts
+  AWS_REGION: default
+  AWS_ENDPOINT_URL: ${{ vars.AWS_ENDPOINT_URL }}
+  S3_BUCKET: ampairs-app-updates
   API_BASE_URL: https://api.ampairs.in
 
 jobs:
@@ -35,7 +36,15 @@ jobs:
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          VERSION_CODE=$(echo $VERSION | awk -F. '{print $NF}')
+          # X.Y.Z → concatenated e.g. 1.0.1 → 10001  |  X.Y.Z.B → last segment e.g. 1.0.0.18 → 18
+          PARTS=$(echo $VERSION | tr '.' ' ')
+          COUNT=$(echo $VERSION | tr -cd '.' | wc -c)
+          if [ "$COUNT" -eq 3 ]; then
+            read -r MAJOR MINOR PATCH BUILD <<< "$PARTS"
+            VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          else
+            VERSION_CODE=$(echo $VERSION | awk -F. '{print $NF}')
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "Version: $VERSION (code: $VERSION_CODE)"
@@ -98,12 +107,12 @@ jobs:
       - name: Build DMG package
         run: |
           chmod +x ./gradlew
-          ./gradlew composeApp:clean composeApp:packageDmg --no-configuration-cache
+          ./gradlew desktopApp:clean desktopApp:packageDmg --no-configuration-cache
 
       - name: Find and upload DMG
         id: find-dmg
         run: |
-          DMG_FILE=$(find composeApp/build/compose/binaries/main -name "*.dmg" -type f | head -n 1)
+          DMG_FILE=$(find desktopApp/build/compose/binaries/main -name "*.dmg" -type f | head -n 1)
           if [ -z "$DMG_FILE" ]; then
             echo "Error: DMG file not found"
             exit 1
@@ -159,24 +168,35 @@ jobs:
             [System.IO.File]::WriteAllBytes($certPath, $certBytes)
             $env:WINDOWS_SIGN_CERT_FILE = $certPath
             $env:WINDOWS_SIGN_PASSWORD = "${{ secrets.WINDOWS_SIGN_PASSWORD }}"
-            Write-Output "✅ Code signing configured"
+
+            # signtool.exe is installed with the Windows SDK but not in PATH by default
+            $signtoolDir = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" |
+              Where-Object { $_.Directory.Name -eq "x64" } |
+              Select-Object -First 1 -ExpandProperty DirectoryName
+            if ($signtoolDir) {
+              $env:PATH = "$signtoolDir;$env:PATH"
+              Write-Output "OK: signtool.exe found at $signtoolDir"
+            } else {
+              Write-Warning "WARN: signtool.exe not found - MSI signing will be skipped"
+            }
+            Write-Output "OK: Code signing configured"
           }
 
           # Build MSI
-          ./gradlew composeApp:clean composeApp:packageMsi --no-configuration-cache
+          ./gradlew desktopApp:clean desktopApp:packageMsi --no-configuration-cache
         shell: powershell
 
       - name: Find and upload MSI
         id: find-msi
         run: |
-          $MSI_FILE = Get-ChildItem -Path "composeApp\build\compose\binaries\main" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          $MSI_FILE = Get-ChildItem -Path "desktopApp\build\compose\binaries\main" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
           if (-not $MSI_FILE) {
             Write-Error "MSI file not found"
             exit 1
           }
           "msi_path=$MSI_FILE" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "msi_name=$((Get-Item $MSI_FILE).Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Write-Output "✅ MSI ready: $MSI_FILE"
+          Write-Output "MSI ready: $MSI_FILE"
         shell: powershell
 
       - name: Upload MSI artifact
@@ -219,12 +239,12 @@ jobs:
       - name: Build DEB package
         run: |
           chmod +x ./gradlew
-          ./gradlew composeApp:clean composeApp:packageDeb --no-configuration-cache
+          ./gradlew desktopApp:clean desktopApp:packageDeb --no-configuration-cache
 
       - name: Find and upload DEB
         id: find-deb
         run: |
-          DEB_FILE=$(find composeApp/build/compose/binaries/main -name "*.deb" -type f | head -n 1)
+          DEB_FILE=$(find desktopApp/build/compose/binaries/main -name "*.deb" -type f | head -n 1)
           if [ -z "$DEB_FILE" ]; then
             echo "Error: DEB file not found"
             exit 1
@@ -287,24 +307,19 @@ jobs:
           echo "file_name=$(basename $FILE)" >> $GITHUB_OUTPUT
           echo "Found artifact: $FILE"
 
-      - name: Verify AWS secrets are configured
+      - name: Configure S3 credentials
         run: |
           if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
-            echo "❌ ERROR: AWS_ACCESS_KEY_ID secret is not set"
+            echo "ERROR: AWS_ACCESS_KEY_ID secret is not set"
             exit 1
           fi
           if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
-            echo "❌ ERROR: AWS_SECRET_ACCESS_KEY secret is not set"
+            echo "ERROR: AWS_SECRET_ACCESS_KEY secret is not set"
             exit 1
           fi
-          echo "✅ AWS credentials secrets are configured"
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "OK: S3 credentials configured"
 
       - name: Install jq (for JSON processing)
         run: sudo apt-get update && sudo apt-get install -y jq bc
@@ -314,9 +329,10 @@ jobs:
 
       - name: Publish to S3 and register in database
         env:
-          AMPAIRS_ADMIN_TOKEN: ${{ secrets.AMPAIRS_ADMIN_TOKEN }}
+          AMPAIRS_API_KEY: ${{ secrets.AMPAIRS_API_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ env.AWS_ENDPOINT_URL }}
           API_BASE_URL: ${{ env.API_BASE_URL }}
           S3_BUCKET: ${{ env.S3_BUCKET }}
           AWS_REGION: ${{ env.AWS_REGION }}

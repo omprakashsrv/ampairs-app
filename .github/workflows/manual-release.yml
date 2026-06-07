@@ -23,7 +23,7 @@ on:
         default: false
 
 env:
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: 'temurin'
 
 jobs:
@@ -59,12 +59,12 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build DMG package
-        run: ./gradlew packageDmg
+        run: ./gradlew desktopApp:packageDmg
 
       - name: Find DMG file
         id: find-dmg
         run: |
-          DMG_FILE=$(find composeApp/build/compose/binaries/main/dmg -name "*.dmg" | head -n 1)
+          DMG_FILE=$(find desktopApp/build/compose/binaries/main/dmg -name "*.dmg" | head -n 1)
           echo "dmg_path=$DMG_FILE" >> $GITHUB_OUTPUT
           echo "dmg_name=$(basename $DMG_FILE)" >> $GITHUB_OUTPUT
 
@@ -104,13 +104,13 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build MSI package
-        run: ./gradlew packageMsi
+        run: ./gradlew desktopApp:packageMsi
         shell: bash
 
       - name: Find MSI file
         id: find-msi
         run: |
-          $MSI_FILE = Get-ChildItem -Path "composeApp\build\compose\binaries\main\msi" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          $MSI_FILE = Get-ChildItem -Path "desktopApp\build\compose\binaries\main\msi" -Filter "*.msi" -Recurse | Select-Object -First 1 -ExpandProperty FullName
           echo "msi_path=$MSI_FILE" >> $env:GITHUB_OUTPUT
           echo "msi_name=$(Split-Path -Leaf $MSI_FILE)" >> $env:GITHUB_OUTPUT
         shell: pwsh
@@ -154,12 +154,12 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build DEB package
-        run: ./gradlew packageDeb
+        run: ./gradlew desktopApp:packageDeb
 
       - name: Find DEB file
         id: find-deb
         run: |
-          DEB_FILE=$(find composeApp/build/compose/binaries/main/deb -name "*.deb" | head -n 1)
+          DEB_FILE=$(find desktopApp/build/compose/binaries/main/deb -name "*.deb" | head -n 1)
           echo "deb_path=$DEB_FILE" >> $GITHUB_OUTPUT
           echo "deb_name=$(basename $DEB_FILE)" >> $GITHUB_OUTPUT
 
@@ -194,7 +194,7 @@ jobs:
 
       - name: Install Android SDK components
         run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
           echo "y" | sdkmanager --licenses
 
       - name: Cache Gradle packages
@@ -223,14 +223,14 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build Release APK
-        run: ./gradlew composeApp:assembleRelease
+        run: ./gradlew androidApp:assembleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
       - name: Build Release AAB
-        run: ./gradlew composeApp:bundleRelease
+        run: ./gradlew androidApp:bundleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -240,14 +240,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Ampairs-Android-APK
-          path: composeApp/build/outputs/apk/release/*.apk
+          path: androidApp/build/outputs/apk/release/*.apk
           retention-days: 30
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: Ampairs-Android-AAB
-          path: composeApp/build/outputs/bundle/release/*.aab
+          path: androidApp/build/outputs/bundle/release/*.aab
           retention-days: 30
 
   # ============================

@@ -41,8 +41,8 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 18
-        versionName = "1.0.0.18"
+        versionCode = 108
+        versionName = "1.0.8"
 
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
@@ -51,8 +51,12 @@ android {
         val release by creating {
             storeFile = file("$rootDir/ampairs.jks")
             storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
+                ?: System.getenv("KEYSTORE_PASSWORD")
             keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
-            keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS", "ampairs")
+                ?: System.getenv("KEY_PASSWORD")
+            keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
+                ?: System.getenv("KEY_ALIAS")
+                ?: "ampairs"
         }
     }
 

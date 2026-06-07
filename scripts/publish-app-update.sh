@@ -33,14 +33,15 @@ set -u  # Exit on undefined variable
 # ============================================================================
 
 # Required environment variables
-: "${AMPAIRS_ADMIN_TOKEN:?Error: AMPAIRS_ADMIN_TOKEN not set}"
+: "${AMPAIRS_API_KEY:?Error: AMPAIRS_API_KEY not set}"
 : "${AWS_ACCESS_KEY_ID:?Error: AWS_ACCESS_KEY_ID not set}"
 : "${AWS_SECRET_ACCESS_KEY:?Error: AWS_SECRET_ACCESS_KEY not set}"
 
 # Default configuration
 API_BASE_URL="${API_BASE_URL:-https://api.ampairs.in}"
 S3_BUCKET="${S3_BUCKET:-ampairs-app-updates}"
-AWS_REGION="${AWS_REGION:-ap-south-1}"
+AWS_REGION="${AWS_REGION:-default}"
+AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL:-}"
 
 # ============================================================================
 # Color Output
@@ -90,10 +91,11 @@ Options:
   --s3-bucket <name>        Override S3 bucket name
 
 Environment Variables:
-  AMPAIRS_ADMIN_TOKEN       Admin JWT token (required)
-  AWS_ACCESS_KEY_ID         AWS access key (required)
-  AWS_SECRET_ACCESS_KEY     AWS secret key (required)
-  AWS_REGION                AWS region (default: ap-south-1)
+  AMPAIRS_API_KEY           API key with APP_UPDATES scope (required)
+  AWS_ACCESS_KEY_ID         S3 access key (required)
+  AWS_SECRET_ACCESS_KEY     S3 secret key (required)
+  AWS_ENDPOINT_URL          S3-compatible endpoint
+  AWS_REGION                S3 region (default: default)
   API_BASE_URL              API base URL (default: https://api.ampairs.in)
   S3_BUCKET                 S3 bucket name (default: ampairs-app-updates)
 
@@ -135,18 +137,25 @@ calculate_file_size() {
 }
 
 # Extract version code from version string
+# 3-part X.Y.Z  → concatenated digits, e.g. 1.0.1 → 101
+# 4-part X.Y.Z.B → last component, e.g. 1.0.0.18 → 18
 extract_version_code() {
     local version=$1
-    # Extract last component (e.g., "1.0.0.10" -> "10")
-    echo "$version" | awk -F. '{print $NF}'
+    local parts
+    IFS='.' read -ra parts <<< "$version"
+    if [ "${#parts[@]}" -eq 4 ]; then
+        echo "${parts[3]}"
+    else
+        echo "${parts[0]}$(printf '%02d' "${parts[1]}")$(printf '%02d' "${parts[2]}")"
+    fi
 }
 
-# Validate version format
+# Validate version format — accepts X.Y.Z or X.Y.Z.B
 validate_version() {
     local version=$1
-    if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
         log_error "Invalid version format: $version"
-        log_info "Expected format: MAJOR.MINOR.PATCH.BUILD (e.g., 1.0.0.10)"
+        log_info "Expected format: X.Y.Z (e.g., 1.0.1) or X.Y.Z.B (e.g., 1.0.0.18)"
         exit 1
     fi
 }
@@ -196,10 +205,14 @@ upload_to_s3() {
     log_info "Uploading to S3: s3://$S3_BUCKET/$s3_key"
 
     if command -v aws >/dev/null 2>&1; then
+        ENDPOINT_ARGS=""
+        if [[ -n "$AWS_ENDPOINT_URL" ]]; then
+            ENDPOINT_ARGS="--endpoint-url $AWS_ENDPOINT_URL"
+        fi
         aws s3 cp "$file" "s3://$S3_BUCKET/$s3_key" \
+            $ENDPOINT_ARGS \
             --region "$AWS_REGION" \
-            --no-progress \
-            --acl private
+            --no-progress
     else
         log_error "AWS CLI not found. Please install: https://aws.amazon.com/cli/"
         exit 1
@@ -251,10 +264,10 @@ EOF
     # Make API request
     local response=$(curl -s -w "\n%{http_code}" \
         -X POST \
-        -H "Authorization: Bearer $AMPAIRS_ADMIN_TOKEN" \
+        -H "X-API-Key: $AMPAIRS_API_KEY" \
         -H "Content-Type: application/json" \
         -d "$json_payload" \
-        "$API_BASE_URL/api/v1/app-updates")
+        "$API_BASE_URL/api/core/v1/app-updates")
 
     local http_code=$(echo "$response" | tail -n1)
     local body=$(echo "$response" | sed '$d')
