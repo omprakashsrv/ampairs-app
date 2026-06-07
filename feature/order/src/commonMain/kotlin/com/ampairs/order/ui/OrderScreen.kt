@@ -125,9 +125,9 @@ fun OrderScreen(
                                 totals = orderViewModel.totals,
                                 overallDiscountKind = orderViewModel.overallDiscountKind,
                                 overallDiscountAmount = orderViewModel.overallDiscountAmount,
-                                onPriceMode = orderViewModel::setPriceMode,
+                                onPriceMode = orderViewModel::selectPriceMode,
                                 onOverallDiscount = orderViewModel::setOverallDiscount,
-                                onOverallDiscountMode = orderViewModel::setOverallDiscountMode,
+                                onOverallDiscountMode = orderViewModel::selectOverallDiscountMode,
                                 modifier = Modifier.padding(12.dp),
                             )
                         }

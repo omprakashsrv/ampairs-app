@@ -80,7 +80,7 @@ class OrderViewModel(
         viewModelScope.launch(DispatcherProvider.io) { computeTotals() }
     }
 
-    fun setPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
+    fun selectPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
 
     fun setOverallDiscount(kind: DiscountKind, amount: Double) {
         overallDiscountKind = kind
@@ -88,7 +88,7 @@ class OrderViewModel(
         recalculate()
     }
 
-    fun setOverallDiscountMode(mode: OverallDiscountMode) { overallDiscountMode = mode; recalculate() }
+    fun selectOverallDiscountMode(mode: OverallDiscountMode) { overallDiscountMode = mode; recalculate() }
 
     /** Add a product from the picker: new line (qty 1) or increment the existing line, then recompute. */
     fun addProduct(productId: String) {
