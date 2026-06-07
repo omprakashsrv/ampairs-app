@@ -46,4 +46,10 @@
     <string name="inv_create_tax">Tax code (HSN)</string>
     <string name="inv_create_confirm">Create &amp; add</string>
     <string name="inv_create_cancel">Cancel</string>
+    <!-- In-editor customer selection (spec 010 launch flow) -->
+    <string name="inv_cust_from">From (seller)</string>
+    <string name="inv_cust_to">To (customer)</string>
+    <string name="inv_cust_select">Select</string>
+    <string name="inv_cust_title">Select customer</string>
+    <string name="inv_cust_search">Search customers…</string>
 </resources>

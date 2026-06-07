@@ -267,6 +267,41 @@ class OrderViewModel(
     var unitOptions by mutableStateOf<List<UnitOption>>(emptyList())
         private set
 
+    // In-editor customer selection (observable so the editor header reacts).
+    var fromCustomerName by mutableStateOf("")
+        private set
+    var toCustomerName by mutableStateOf("")
+        private set
+    var customerResults by mutableStateOf<List<com.ampairs.customer.domain.CustomerListItem>>(emptyList())
+        private set
+
+    /** Search the workspace's customers for the picker (blank query = full list). */
+    fun searchCustomers(query: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            customerResults = customerDataService.listCustomers(query)
+        }
+    }
+
+    fun selectFromCustomer(customerId: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val customer = customerDataService.getById(customerId) ?: return@launch
+            fromCustomer = customer
+            order.fromCustomer = customer
+            fromCustomerName = customer.name
+            computeTotals()
+        }
+    }
+
+    fun selectToCustomer(customerId: String) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val customer = customerDataService.getById(customerId) ?: return@launch
+            toCustomer = customer
+            order.toCustomer = customer
+            toCustomerName = customer.name
+            computeTotals()
+        }
+    }
+
     init {
         viewModelScope.launch(DispatcherProvider.io) {
             if (!id.isNullOrEmpty()) {
@@ -282,6 +317,8 @@ class OrderViewModel(
                 order.fromCustomer = fromCustomer
                 order.toCustomer = toCustomer
             }
+            fromCustomerName = fromCustomer?.name ?: ""
+            toCustomerName = toCustomer?.name ?: ""
             computeTotals()
         }
     }

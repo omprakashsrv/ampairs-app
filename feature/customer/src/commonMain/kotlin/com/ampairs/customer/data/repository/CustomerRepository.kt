@@ -11,6 +11,7 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.toListItem
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -54,6 +55,9 @@ class CustomerRepository(
     }
 
     override suspend fun getById(uid: String): Customer? = getCustomer(uid)
+
+    override suspend fun listCustomers(query: String): List<CustomerListItem> =
+        (if (query.isBlank()) observeCustomers() else searchCustomers(query)).first()
 
     override suspend fun clearCache() { customerDao.clearWorkspaceCustomers() }
 
