@@ -160,14 +160,17 @@ jobs:
 
       # Setup code signing and build MSI in one step
       - name: Build and sign MSI package
+        env:
+          SIGN_CERT_BASE64: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}
+          SIGN_PASSWORD: ${{ secrets.WINDOWS_SIGN_PASSWORD }}
         run: |
-          # Setup code signing certificate if available
-          if ("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}" -and "${{ secrets.WINDOWS_SIGN_PASSWORD }}") {
-            $certBytes = [System.Convert]::FromBase64String("${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}")
+          # Setup code signing certificate if available — read from env, never interpolate secrets inline
+          if ($env:SIGN_CERT_BASE64 -and $env:SIGN_PASSWORD) {
+            $certBytes = [System.Convert]::FromBase64String($env:SIGN_CERT_BASE64)
             $certPath = "$env:TEMP\ampairs-cert.pfx"
             [System.IO.File]::WriteAllBytes($certPath, $certBytes)
             $env:WINDOWS_SIGN_CERT_FILE = $certPath
-            $env:WINDOWS_SIGN_PASSWORD = "${{ secrets.WINDOWS_SIGN_PASSWORD }}"
+            $env:WINDOWS_SIGN_PASSWORD = $env:SIGN_PASSWORD
 
             # signtool.exe is installed with the Windows SDK but not in PATH by default
             $signtoolDir = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" |
@@ -307,19 +310,14 @@ jobs:
           echo "file_name=$(basename $FILE)" >> $GITHUB_OUTPUT
           echo "Found artifact: $FILE"
 
-      - name: Configure S3 credentials
+      - name: Verify S3 credentials are set
+        env:
+          KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
-            echo "ERROR: AWS_ACCESS_KEY_ID secret is not set"
-            exit 1
-          fi
-          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
-            echo "ERROR: AWS_SECRET_ACCESS_KEY secret is not set"
-            exit 1
-          fi
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-          echo "OK: S3 credentials configured"
+          [ -n "$KEY_ID" ] || { echo "ERROR: AWS_ACCESS_KEY_ID secret is not set"; exit 1; }
+          [ -n "$SECRET" ] || { echo "ERROR: AWS_SECRET_ACCESS_KEY secret is not set"; exit 1; }
+          echo "OK: S3 credentials present"
 
       - name: Install jq (for JSON processing)
         run: sudo apt-get update && sudo apt-get install -y jq bc
