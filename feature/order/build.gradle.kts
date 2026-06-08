@@ -43,6 +43,7 @@ kotlin {
                 implementation(projects.feature.productApi)
                 implementation(projects.feature.taxApi)
                 implementation(projects.feature.unitApi)
+                implementation(projects.feature.store)
                 implementation(projects.feature.invoice)
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)

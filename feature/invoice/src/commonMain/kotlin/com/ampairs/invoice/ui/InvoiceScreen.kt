@@ -186,6 +186,7 @@ fun InvoiceScreen(
                                 totals = invoiceViewModel.totals,
                                 overallDiscountKind = invoiceViewModel.overallDiscountKind,
                                 overallDiscountAmount = invoiceViewModel.overallDiscountAmount,
+                                showOverallDiscount = invoiceViewModel.showDiscount,
                                 onPriceMode = invoiceViewModel::selectPriceMode,
                                 onOverallDiscount = invoiceViewModel::setOverallDiscount,
                                 onOverallDiscountMode = invoiceViewModel::selectOverallDiscountMode,
@@ -284,7 +285,7 @@ fun InvoiceScreen(
                                 onUnitSelected = { invoiceViewModel.selectUnit(selItem, it) },
                             )
                         }
-                        Row {
+                        if (invoiceViewModel.showDiscount) Row {
                             Text(text = stringResource(Res.string.inv_edit_discount_label))
                             Column(
                                 modifier = Modifier.weight(1f),

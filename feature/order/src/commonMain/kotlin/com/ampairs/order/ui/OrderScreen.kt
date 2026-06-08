@@ -188,6 +188,7 @@ fun OrderScreen(
                                 totals = orderViewModel.totals,
                                 overallDiscountKind = orderViewModel.overallDiscountKind,
                                 overallDiscountAmount = orderViewModel.overallDiscountAmount,
+                                showOverallDiscount = orderViewModel.showDiscount,
                                 onPriceMode = orderViewModel::selectPriceMode,
                                 onOverallDiscount = orderViewModel::setOverallDiscount,
                                 onOverallDiscountMode = orderViewModel::selectOverallDiscountMode,
@@ -286,7 +287,7 @@ fun OrderScreen(
                                 onUnitSelected = { orderViewModel.selectUnit(selItem, it) },
                             )
                         }
-                        Row {
+                        if (orderViewModel.showDiscount) Row {
                             Text(text = stringResource(Res.string.ord_edit_discount_label))
                             Column(
                                 modifier = Modifier.weight(1f),
