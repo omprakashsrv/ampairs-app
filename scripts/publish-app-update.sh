@@ -39,7 +39,7 @@ set -u  # Exit on undefined variable
 
 # Default configuration
 API_BASE_URL="${API_BASE_URL:-https://api.ampairs.in}"
-S3_BUCKET="${S3_BUCKET:-ampairs-app-updates}"
+S3_BUCKET="${S3_BUCKET:-ampairs-artifacts}"
 AWS_REGION="${AWS_REGION:-default}"
 AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL:-}"
 
@@ -97,7 +97,7 @@ Environment Variables:
   AWS_ENDPOINT_URL          S3-compatible endpoint
   AWS_REGION                S3 region (default: default)
   API_BASE_URL              API base URL (default: https://api.ampairs.in)
-  S3_BUCKET                 S3 bucket name (default: ampairs-app-updates)
+  S3_BUCKET                 S3 bucket name (default: ampairs-artifacts)
 
 Examples:
   # Basic release
@@ -383,7 +383,7 @@ main() {
 
     # Generate S3 key and filename
     FILE_EXTENSION="${FILE_PATH##*.}"
-    S3_KEY="updates/${PLATFORM,,}-${VERSION}.${FILE_EXTENSION}"
+    S3_KEY="updates/${VERSION}/${PLATFORM,,}-${VERSION}.${FILE_EXTENSION}"
     FILENAME="${PLATFORM,,}-${VERSION}.${FILE_EXTENSION}"
 
     # Summary
