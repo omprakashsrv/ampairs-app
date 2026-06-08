@@ -12,30 +12,29 @@ Versions from `gradle/libs.versions.toml`:
 | AGP (Android Gradle Plugin) | 9.2.1 |
 | Compose Multiplatform | 1.11.0 |
 | Compose Material | 1.9.0 |
-| Room KMP | 2.8.3 |
-| Ktor | 3.3.2 |
-| Koin | 4.1.1 |
-| Store5 | 5.1.0-alpha08 |
-| Navigation3 | 1.0.0-alpha06 |
-| DataStore | 1.2.0 |
-| kotlinx.coroutines | 1.10.2 |
-| kotlinx.datetime | 0.7.1 |
-| Coil | 3.3.0 |
+| Room KMP | 2.8.4 |
+| Ktor | 3.5.0 |
+| Metro | 1.1.1 |
+| Navigation3 | 1.1.1 |
+| DataStore | 1.2.1 |
+| kotlinx.coroutines | 1.11.0 |
+| kotlinx.datetime | 0.8.0 |
+| Coil | 3.4.0 |
 | Material Kolor | 3.0.1 |
-| Firebase BOM | 34.9.0 |
-| Sentry KMP | 0.23.1 |
+| Firebase BOM | 34.14.0 |
+| Sentry KMP | 0.26.0 |
 | AWS SDK Kotlin | 1.5.44 |
 | Wire (Protocol Buffers) | 5.4.0 |
 | Krossbow (STOMP/WebSocket) | 9.3.0 |
 | WorkManager | 2.11.1 |
-| Play Billing | 8.3.0 |
-| Kermit (logging) | 2.0.8 |
-| Lifecycle ViewModel | 2.9.6 |
+| Play Billing | 9.0.0 |
+| Kermit (logging) | 2.1.0 |
+| Lifecycle ViewModel | 2.10.0 |
 | Moko Permissions | 0.20.1 |
-| FileKit | 0.12.0 |
+| FileKit | 0.14.1 |
 | Haze (UI blur) | 1.7.2 |
 | Material3 Adaptive | 1.2.0 |
-| Maps Compose | 8.1.0 |
+| Maps Compose | 8.3.0 |
 | Play Services Location | 21.3.0 |
 | Play Services Auth | 21.5.0 |
 | Play Integrity | 1.6.0 |

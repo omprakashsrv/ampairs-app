@@ -51,7 +51,7 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 
 | Library | Version | Purpose |
 |---|---|---|
-| Firebase BOM | 34.13.0 | Crashlytics, Analytics, Perf, FCM |
+| Firebase BOM | 34.14.0 | Crashlytics, Analytics, Perf, FCM |
 | Sentry KMP | 0.26.0 | Error monitoring |
 | Krossbow | 9.3.0 | STOMP/WebSocket real-time |
 | Wire | 5.4.0 | Protocol Buffers (Tally ERP) |
@@ -157,7 +157,7 @@ reconnect. See `.claude/skills/offline-sync/SKILL.md` for the full architecture.
 
 ### Workspace-Scoped Databases
 
-Each workspace gets isolated Room database instances. The `DatabaseScopeManager` in `data/common` manages the lifecycle. Each platform's `@ContributesTo` Metro module provides the database via `@Provides @SingleIn(AppScope::class)`. DAOs, Repositories, and Stores are unscoped (`@Inject` without `@SingleIn`) so they are created fresh per injection site and are safe across workspace switches.
+Each workspace gets its own Metro child graph (`WorkspaceScope`). Each platform's `@ContributesTo(WorkspaceScope::class)` module provides the database via `@Provides @SingleIn(WorkspaceScope::class)` and registers it with `WorkspaceClosableRegistry` so it is closed on workspace switch. DAOs and Repositories are unscoped (`@Inject` without `@SingleIn`) so they are created fresh per injection site and always see the current workspace's DB.
 
 ### Dependency Injection (Metro)
 

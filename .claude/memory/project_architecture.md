@@ -39,7 +39,7 @@ feature/{name}/src/commonMain/kotlin/com/ampairs/{name}/
 ├── data/db/           # Room database class, DAOs, entities
 ├── data/repository/   # Repository implementations
 ├── domain/            # Domain models and business logic
-├── di/                # Koin module (common + platform variants)
+├── di/                # Metro DI (platform @ContributesTo modules + @Inject classes)
 └── ui/                # Compose screens and ViewModels
 ```
 

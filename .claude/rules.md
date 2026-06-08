@@ -69,13 +69,20 @@ Screen has zero knowledge of repos, managers, or LocalAppGraph
 
 ### Metro DI chain for every new feature module
 
-**Platform `@ContributesTo` module** (per platform source set):
+**Platform `@ContributesTo` module** (per platform source set — use `WorkspaceScope` for workspace-aware DBs):
 ```kotlin
-@ContributesTo(AppScope::class)
+@ContributesTo(WorkspaceScope::class)
 interface MyFeaturePlatformModule {
     companion object {
-        @Provides @SingleIn(AppScope::class)
-        fun provideDatabase(...): MyFeatureDatabase = ...
+        @Provides @SingleIn(WorkspaceScope::class)
+        fun provideDatabase(
+            factory: WorkspaceAwareDatabaseFactory,
+            context: Context,
+            config: WorkspaceConfig,
+            closableRegistry: WorkspaceClosableRegistry,
+        ): MyFeatureDatabase = factory.createAndroidDatabase<MyFeatureDatabase>(
+            context = context, moduleName = "my_feature", workspaceSlug = config.workspaceSlug,
+        ).also { closableRegistry.register { it.close() } }
     }
 }
 ```
@@ -106,12 +113,12 @@ class MyViewModel(@Assisted val id: String, private val repo: MyRepository) : Vi
 ```
 
 ### New workspace-aware module checklist
-- [ ] Database: `@Provides @SingleIn(AppScope::class)` in platform `@ContributesTo` module
+- [ ] Database: `@Provides @SingleIn(WorkspaceScope::class)` in platform `@ContributesTo(WorkspaceScope::class)` module
+- [ ] DB registered: `.also { closableRegistry.register { it.close() } }` so it closes on workspace switch
+- [ ] Explicit reified type param: `createAndroidDatabase<MyDatabase>(...)` — never omit
 - [ ] DAOs and Repositories: `@Inject` class (unscoped — new instance per injection site, safe across workspace switches)
-- [ ] Stores: `@Inject` class (unscoped)
-- [ ] ViewModels: `@Inject` + `@ContributesIntoMap(AppScope::class)` + `@ViewModelKey`; or `@AssistedInject` + inner `Factory` if a runtime param is needed
+- [ ] ViewModels: `@Inject` + `@ContributesIntoMap(WorkspaceScope::class)` + `@ViewModelKey`; or `@AssistedInject` + inner `Factory` if a runtime param is needed
 - [ ] Platform DB path handles Android (`workspace_{slug}_{module}.db`) vs iOS/Desktop (`workspace_{slug}/{module}.db`)
-- [ ] `DatabaseScopeManager` integrated in the platform `@Provides` function
 
 ---
 

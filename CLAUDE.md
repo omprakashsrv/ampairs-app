@@ -67,8 +67,8 @@ feature/{name}/src/
 │   ├── data/api/              # API interface + implementation
 │   ├── data/db/               # Room database, DAOs, entities
 │   ├── data/repository/       # Repository implementations
-│   ├── domain/                # Store5 stores, business logic
-│   ├── di/                    # Koin module definitions
+│   ├── domain/                # Business logic, domain models
+│   ├── di/                    # Metro DI module definitions
 │   └── ui/                   # Compose screens and ViewModels
 ├── androidMain/               # Android-specific DI, DB factories
 ├── iosMain/                   # iOS-specific DI, DB factories
@@ -84,27 +84,26 @@ feature/{name}/src/
 | Language | Kotlin KMP | 2.3.21 |
 | UI | Compose Multiplatform | 1.11.0 |
 | Design | Material 3 + Material Kolor | 1.9.0 / 3.0.1 |
-| DI | Koin | 4.1.1 |
-| Database | Room KMP | 2.8.3 |
-| Offline cache | Store5 | 5.1.0-alpha08 |
-| HTTP | Ktor | 3.3.2 |
-| Navigation | Navigation3 (AndroidX) | 1.0.0-alpha06 |
-| Image loading | Coil | 3.3.0 |
+| DI | Metro | 1.1.1 |
+| Database | Room KMP | 2.8.4 |
+| HTTP | Ktor | 3.5.0 |
+| Navigation | Navigation3 (AndroidX) | 1.1.1 |
+| Image loading | Coil | 3.4.0 |
 | Serialization | kotlinx.serialization | (kotlin 2.3.21 bundled) |
-| Date/Time | kotlinx.datetime | 0.7.1 |
-| Coroutines | kotlinx.coroutines | 1.10.2 |
-| Logging | Kermit | 2.0.8 |
-| Crash reporting | Sentry KMP | 0.23.1 |
-| Firebase | Crashlytics / Analytics / Perf / FCM | BOM 34.9.0 |
+| Date/Time | kotlinx.datetime | 0.8.0 |
+| Coroutines | kotlinx.coroutines | 1.11.0 |
+| Logging | Kermit | 2.1.0 |
+| Crash reporting | Sentry KMP | 0.26.0 |
+| Firebase | Crashlytics / Analytics / Perf / FCM | BOM 34.14.0 |
 | Cloud storage | AWS SDK Kotlin | 1.5.44 |
 | Protocol Buffers | Wire | 5.4.0 |
 | Real-time | Krossbow (STOMP/WebSocket) | 9.3.0 |
-| Preferences | DataStore | 1.2.0 |
+| Preferences | DataStore | 1.2.1 |
 | Background sync | WorkManager (Android) | 2.11.1 |
 | Paging | AndroidX Paging | 3.3.6 |
-| In-app billing | Play Billing / StoreKit | 8.3.0 |
-| File picking | FileKit | 0.12.0 |
-| Maps | Maps Compose (Android) | 8.1.0 |
+| In-app billing | Play Billing / StoreKit | 9.0.0 |
+| File picking | FileKit | 0.14.1 |
+| Maps | Maps Compose (Android) | 8.3.0 |
 | Permissions | Moko Permissions | 0.20.1 |
 | UI blur | Haze | 1.7.2 |
 | Adaptive UI | Material3 Adaptive | 1.2.0 |
@@ -117,11 +116,11 @@ feature/{name}/src/
 
 ## Architecture
 
-### Offline-First with Store5
+### Offline-First with CentralSyncService
 
-- **Pattern**: Store5 for offline-first data management across all feature modules
-- **Layers**: Presentation (Compose/MVI) → Store5 (cache) → Repository → Room DB + Ktor API
-- **Sync**: Database-first writes, background server sync, incremental pull with timestamp tracking
+- **Pattern**: Repository → Room DB (source of truth) + `CentralSyncService` for background sync
+- **Layers**: Presentation (Compose/MVI) → ViewModel → Repository → Room DB; network only via `SyncDelegate`
+- **Sync**: Database-first writes (`synced = false`), `SyncStateDao.markPendingPush()` triggers automatic bulk push via `CentralSyncService` → `{Name}SyncDelegate`
 
 ### Navigation with Navigation3
 
@@ -154,22 +153,22 @@ Navigation is implemented via **entry providers** in `shared/src/commonMain/kotl
 
 ### State Management (MVI)
 
-- **ViewModels**: 52+ ViewModels using `koinInject` / `koinViewModel`
+- **ViewModels**: 52+ ViewModels using `metroViewModel()` / `assistedMetroViewModel()`
 - **State**: `StateFlow<UiState>` + `SharedFlow<UiEvent>` in each ViewModel
 - **Resource**: `Resource<T>` wrapper for Loading/Success/Error states
 
-### Dependency Injection with Koin
+### Dependency Injection with Metro
 
-Each feature has a Koin module hierarchy:
+Each feature uses Metro DI with `@ContributesTo` platform modules and `@Inject` on repositories/DAOs:
 
 ```
-{feature}PlatformModule.android.kt   ← Database factory (factory{})
-{feature}PlatformModule.desktop.kt
-{feature}PlatformModule.ios.kt
-{feature}Module.kt (commonMain)      ← DAOs, Repos, Stores, ViewModels
+{Feature}AndroidModule.kt (androidMain)   ← @ContributesTo(WorkspaceScope), @Provides DB
+{Feature}IosModule.kt (iosMain)
+{Feature}DesktopModule.kt (desktopMain)
+@Inject classes in commonMain             ← DAOs, Repos, ViewModels
 ```
 
-**CRITICAL**: All workspace-aware layers must use `factory {}` not `single {}`. See Workspace-Scoped Database section.
+**CRITICAL**: All workspace-aware databases use `@SingleIn(WorkspaceScope::class)`. See `/metro-di` and the Workspace-Scoped Database section.
 
 ---
 
@@ -299,51 +298,56 @@ import kotlinx.coroutines.flow.Flow
 
 ### The Problem
 
-When users switch workspaces, all databases must be replaced. Using Koin `single {}` caches stale database references.
+When users switch workspaces all databases must be replaced. Each workspace gets its own Metro child graph (`WorkspaceScope`) so stale DB instances are impossible when the pattern is followed correctly.
 
-### The Rule: factory for Every Workspace-Aware Layer
+### The Rule: WorkspaceScope for Every Workspace-Aware DB
 
 ```
-Database (factory) → DAOs (factory) → Repositories (factory) → Stores (factory)
-→ ViewModels (viewModel/viewModelOf — already correct)
+@SingleIn(WorkspaceScope::class) DB → unscoped @Inject DAOs → unscoped @Inject Repositories
+→ @ContributesIntoMap(WorkspaceScope::class) ViewModels
 ```
 
-**Exceptions** — these remain `single {}`:
+**Exceptions** — these live in `AppScope`:
 - `AuthRoomDatabase` — exists before workspace selection
 - `WorkspaceRoomDatabase` — stores the workspace list itself
 
 ### Implementation
 
 ```kotlin
-// ❌ WRONG
-val myPlatformModule = module {
-    single<MyDatabase> { factory.createDatabase(...) }  // Stale after switch!
-}
-
-// ✅ CORRECT
-val myPlatformModule = module {
-    factory<MyDatabase> { factory.createDatabase(...) }
+// ✅ CORRECT — platform @ContributesTo module
+@ContributesTo(WorkspaceScope::class)
+interface MyFeatureAndroidModule {
+    companion object {
+        @Provides @SingleIn(WorkspaceScope::class)
+        fun provideDatabase(
+            factory: WorkspaceAwareDatabaseFactory,
+            context: Context,
+            config: WorkspaceConfig,
+            closableRegistry: WorkspaceClosableRegistry,
+        ): MyDatabase = factory.createAndroidDatabase<MyDatabase>(
+            context = context,
+            moduleName = "my_feature",
+            workspaceSlug = config.workspaceSlug,
+        ).also { closableRegistry.register { it.close() } }
+    }
 }
 ```
+
+See `/metro-di` for the complete Metro DI workspace pattern.
 
 ### Database Path Structures
 
 - **Android**: `workspace_{slug}_{module}.db` (flat file)
 - **iOS/Desktop**: `workspace_{slug}/{module}.db` (directory + file)
 
-### DatabaseScopeManager
-
-`data/common/src/commonMain/kotlin/.../DatabaseScopeManager.kt` — centralized singleton managing database lifecycle. Caches by `{workspaceSlug}:{moduleName}` key. Always cleared on workspace switch.
-
 ### Verification Checklist for New Modules
 
-- [ ] Database: `factory` in platform module
-- [ ] DAOs: `factory` in common module
-- [ ] Repositories: `factory` in common module
-- [ ] Stores: `factory` in common module
-- [ ] ViewModels: `viewModel` or `viewModelOf`
-- [ ] Path parsing handles platform-specific format
-- [ ] `DatabaseScopeManager` integration in platform factory
+- [ ] Database: `@Provides @SingleIn(WorkspaceScope::class)` in platform `@ContributesTo(WorkspaceScope::class)` module
+- [ ] DB registered: `.also { closableRegistry.register { it.close() } }`
+- [ ] DAOs and Repositories: `@Inject` class, unscoped
+- [ ] ViewModels: `@ContributesIntoMap(WorkspaceScope::class)` + `@ViewModelKey` + `@Inject`
+- [ ] Path handles Android flat vs iOS/Desktop directory format
+- [ ] Explicit reified type param `createDatabase<MyDatabase>(...)` — never omit
 
 ---
 
@@ -396,20 +400,6 @@ live in `{Name}SyncDelegate`, which injects the `Api` + `Dao`. CentralSyncServic
 - Unsynced local changes always win over server data during pull sync
 - Server UID conflicts: correct server response to maintain local UID
 - Last-write-wins (server timestamp) for synced entities
-
-### Store5 Integration
-
-Keep sync logic in Repository, not Store5 fetcher. Clear Store5 cache after successful sync.
-
-```kotlin
-val entityStore = StoreBuilder.from(
-    fetcher = Fetcher.of { key -> repository.observeEntities().first() },
-    sourceOfTruth = SourceOfTruth.of(
-        reader = { key -> repository.observeEntities() },
-        writer = { _, _ -> }  // Writes handled by repository
-    )
-).build()
-```
 
 ---
 
@@ -468,7 +458,7 @@ User taps module → tryNavigateToModule()
 
 - **Options**: `ThemePreference.SYSTEM / LIGHT / DARK` (default: LIGHT)
 - **Manager**: `ThemeManager` with `StateFlow<ThemePreference>` and `@Composable isDarkTheme()`
-- **Usage**: `val themeManager: ThemeManager = koinInject()`
+- **Usage**: injected via Metro ViewModel or provided as `CompositionLocal` in `App.kt`
 - **Apply**: `PlatformAmpairsTheme(darkTheme = themeManager.isDarkTheme())`
 - **Set**: `themeManager.setThemePreference(ThemePreference.DARK)`
 - **Colors**: Material Kolor 3.0.1 for dynamic color generation
@@ -493,7 +483,7 @@ Files in `shared/src/`:
 
 - **Dispatchers**: Use `Dispatchers.Default` for IO in `iosMain` — `Dispatchers.IO` actual is internal on Kotlin/Native even at coroutines 1.10.2; `Dispatchers.IO` is safe only in `commonMain` (via expect)
 - **File Paths**: Always use Documents directory (`getIosDatabasePath()`)
-- **Koin Init**: Must be initialized in `MainViewController` before app launch
+- **Metro Init**: App graph is created in `MainViewController` before launch
 - **Foundation APIs**: Require `@OptIn(ExperimentalForeignApi::class)`
 - **Navigation**: Side drawer pattern (no hardware back button)
 - **Compilation test**: `./gradlew shared:compileKotlinIosSimulatorArm64`
@@ -514,11 +504,10 @@ Files in `shared/src/`:
 
 | Issue | Solution |
 |---|---|
-| Stale data after workspace switch | Check entire DI chain uses `factory`, not `single` |
+| Stale data after workspace switch | Verify DB uses `@SingleIn(WorkspaceScope::class)` and is registered with `WorkspaceClosableRegistry` |
 | iOS database path wrong | Use `getIosDatabasePath()`, not hardcoded paths |
 | `Dispatchers.IO` crash in `iosMain` | Use `Dispatchers.Default` — the Native actual is internal; `Dispatchers.IO` only works in `commonMain` |
 | `java.*` compile error in commonMain | Use KMP equivalent (kotlinx.datetime, etc.) |
-| Store5 stale cache | Clear cache explicitly after successful sync |
 | Room migration error | Add migration script, check schema version increment |
 | `String.format()` compile error | Use string interpolation `"$value"` |
 | `Response<T>.data` NPE | Always null-check; no `.success` property exists |
@@ -545,4 +534,4 @@ Files in `shared/src/`:
 - **No platform imports in commonMain**: If `java.*` or `android.*` appear → wrong file
 - **Compile all targets frequently**: Don't wait until end of feature to test iOS/Desktop
 - **KMP libraries only in version catalog**: Verify KMP support before adding dependency
-- **factory vs single**: Workspace-aware = factory; cross-workspace singletons = single
+- **WorkspaceScope vs AppScope**: Workspace-aware DBs = `@SingleIn(WorkspaceScope::class)`; cross-workspace singletons = `@SingleIn(AppScope::class)`

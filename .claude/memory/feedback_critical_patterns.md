@@ -1,17 +1,18 @@
 ---
 name: Critical Code Patterns
-description: Project-specific conventions that cause bugs when violated — Koin factory/single, UID generation, Response null-check, Logger API
+description: Project-specific conventions that cause bugs when violated — Metro WorkspaceScope, UID generation, Response null-check, Logger API
 type: feedback
 originSessionId: 35585732-55ed-4e7b-8cf2-fb305112b179
 ---
-## Rule 1: factory vs single in Koin for workspace-aware components
+## Rule 1: WorkspaceScope for workspace-aware databases (Metro DI)
 
-All workspace-aware DI must use `factory {}` not `single {}` for the full dependency chain:
-`Database → DAOs → Repositories → Stores → ViewModels (viewModel/viewModelOf)`
+All workspace-aware databases must use `@SingleIn(WorkspaceScope::class)` in a `@ContributesTo(WorkspaceScope::class)` platform module, and must be registered with `WorkspaceClosableRegistry`. DAOs and Repositories are unscoped `@Inject` classes (new instance per injection site — safe across workspace switches).
 
-**Why:** `single` caches the old database reference after a workspace switch, causing stale data from the previous workspace to appear in the new workspace. This was a major bug found in production.
+`@SingleIn(WorkspaceScope::class) DB → unscoped @Inject DAOs → unscoped @Inject Repositories → @ContributesIntoMap(WorkspaceScope::class) ViewModels`
 
-**How to apply:** When adding a new feature module, verify every layer uses `factory`. Exceptions: `AuthRoomDatabase` and `WorkspaceRoomDatabase` stay as `single` because they exist before workspace selection and store the workspace list itself.
+**Why:** Each workspace gets its own Metro child graph (`WorkspaceScope`). When a workspace switch occurs, the old child graph is torn down (all registered DB closables are closed) and a new one is created. Unscoped DAOs/Repos therefore always receive the current workspace's DB. This replaced the old Koin `factory {}` pattern, which was error-prone and had stale-data bugs.
+
+**How to apply:** When adding a new feature module, use `@SingleIn(WorkspaceScope::class)` on the DB provider and `.also { closableRegistry.register { it.close() } }`. Always pass an explicit reified type param: `createAndroidDatabase<MyDatabase>(...)`. Exceptions: `AuthRoomDatabase` and `WorkspaceRoomDatabase` live in `AppScope` because they predate workspace selection.
 
 ---
 
