@@ -71,9 +71,6 @@ kotlin {
                 // UUID generation
                 implementation(libs.uuid)
 
-                // Haze (glassmorphism effect used in components)
-                implementation(libs.haze)
-
                 // Sentry KMP
                 implementation(libs.sentry.kmp)
 

@@ -81,8 +81,8 @@ feature/{name}/src/
 
 | Concern | Library | Version |
 |---|---|---|
-| Language | Kotlin KMP | 2.3.21 |
-| UI | Compose Multiplatform | 1.11.0 |
+| Language | Kotlin KMP | 2.4.0 |
+| UI | Compose Multiplatform | 1.11.1 |
 | Design | Material 3 + Material Kolor | 1.9.0 / 3.0.1 |
 | DI | Metro | 1.1.1 |
 | Database | Room KMP | 2.8.4 |
@@ -93,7 +93,7 @@ feature/{name}/src/
 | Date/Time | kotlinx.datetime | 0.8.0 |
 | Coroutines | kotlinx.coroutines | 1.11.0 |
 | Logging | Kermit | 2.1.0 |
-| Crash reporting | Sentry KMP | 0.26.0 |
+| Crash reporting | Sentry KMP | 0.27.0 |
 | Firebase | Crashlytics / Analytics / Perf / FCM | BOM 34.14.0 |
 | Cloud storage | AWS SDK Kotlin | 1.5.44 |
 | Protocol Buffers | Wire | 5.4.0 |
@@ -105,12 +105,11 @@ feature/{name}/src/
 | File picking | FileKit | 0.14.1 |
 | Maps | Maps Compose (Android) | 8.3.0 |
 | Permissions | Moko Permissions | 0.20.1 |
-| UI blur | Haze | 1.7.2 |
 | Adaptive UI | Material3 Adaptive | 1.2.0 |
 | Location | Play Services Location (Android) | 21.3.0 |
 | UUID | benasher44/uuid | 0.8.4 |
 
-**Android SDK**: Min 24 / Target 36 / Compile 36 | **Java**: 21+ | **App version**: 1.0.0.17 (versionCode 17)
+**Android SDK**: Min 24 / Target 36 / Compile 36 | **Java**: 21+ | **App version**: 1.0.9 (versionCode 109)
 
 ---
 

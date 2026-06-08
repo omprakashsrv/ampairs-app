@@ -1,8 +1,8 @@
 # Ampairs Mobile Application
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-blue)
-![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.11.0-brightgreen)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-blue)
+![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.11.1-brightgreen)
 ![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20iOS%20%7C%20Desktop-orange)
 
 A Kotlin Multiplatform business management client for the Ampairs ecosystem. Built with Compose Multiplatform and an offline-first architecture, targeting **Android, iOS, Desktop (JVM), and WebAssembly**.
@@ -36,8 +36,8 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 
 | Library | Version | Purpose |
 |---|---|---|
-| Kotlin KMP | 2.3.21 | Language & multiplatform |
-| Compose Multiplatform | 1.11.0 | Declarative UI across platforms |
+| Kotlin KMP | 2.4.0 | Language & multiplatform |
+| Compose Multiplatform | 1.11.1 | Declarative UI across platforms |
 | Material 3 + Material Kolor | 1.9.0 / 3.0.1 | Design system + dynamic colors |
 | Metro | 1.1.1 | Dependency injection (compile-time) |
 | Room KMP | 2.8.4 | Local database |
@@ -52,7 +52,7 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 | Library | Version | Purpose |
 |---|---|---|
 | Firebase BOM | 34.14.0 | Crashlytics, Analytics, Perf, FCM |
-| Sentry KMP | 0.26.0 | Error monitoring |
+| Sentry KMP | 0.27.0 | Error monitoring |
 | Krossbow | 9.3.0 | STOMP/WebSocket real-time |
 | Wire | 5.4.0 | Protocol Buffers (Tally ERP) |
 | Coil | 3.4.0 | Image loading & caching |
@@ -62,7 +62,6 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 | WorkManager | 2.11.1 | Android background sync |
 | Play Billing | 9.0.0 | Android in-app purchases |
 | Maps Compose | 8.3.0 | Android Google Maps |
-| Haze | 1.7.2 | UI blur / glassmorphism |
 | Adaptive Layouts | 1.2.0 | Multi-pane adaptive UI |
 | Lifecycle ViewModel | 2.10.0 | ViewModel + SavedState |
 
@@ -81,7 +80,7 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 
 ```
 ampairs-app/
-├── androidApp/              # Android entry point (versionName 1.0.0.17)
+├── androidApp/              # Android entry point (versionName 1.0.9)
 ├── desktopApp/              # Desktop JVM entry point
 ├── iosApp/                  # Xcode project wrapper
 ├── shared/                  # Compose UI, navigation (Nav3), DI root, Firebase

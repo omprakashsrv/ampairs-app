@@ -4,18 +4,17 @@ android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
-androidx-core = "1.18.0"
+androidx-core = "1.19.0"
 
 compose-tooling = "1.7.6"
-compose-plugin = "1.11.0"
+compose-plugin = "1.11.1"
 compose-material = "1.9.0"
 compose-material-icons = "1.7.3"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 ksp = "2.3.7"
 androidx-room = "2.8.4"
 androidx-sqlite-bundled = "2.6.2"
 coil = "3.4.0"
-haze = "1.7.2"
 
 kotlinx-dateTime = "0.8.0"
 kotlinx = "1.11.0"
@@ -33,8 +32,6 @@ navigation3-ui = "1.1.1"
 lifecycle-viewmodel = "2.10.0"
 lifecycle-viewmodel-navigation3 = "2.10.0"
 savedstate = "1.4.0"
-kotlin-inject = "0.9.0"
-crashkios = "0.9.0"
 firebase-crashlytics = "19.4.4"
 firebase-analytics = "22.5.0"
 firebase-perf = "21.0.5"
@@ -47,7 +44,7 @@ play-services-location = "21.3.0"
 maps-compose = "8.3.0"
 accompanist-permissions = "0.37.3"
 play-services-coroutines = "1.11.0"
-play-services-auth = "21.5.1"
+play-services-auth = "21.6.0"
 play-integrity = "1.6.0"
 app-update = "2.1.0"
 billing = "9.0.0"
@@ -57,7 +54,7 @@ firebase-auth = "24.1.0"
 google-services = "4.4.4"
 firebase-crashlytics-gradle = "3.0.7"
 firebase-perf-gradle = "2.0.2"
-sentry-kmp = "0.26.0"
+sentry-kmp = "0.27.0"
 junit5 = "5.11.0"
 
 [libraries]
@@ -100,8 +97,6 @@ sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "and
 image-loader = { module = "io.github.qdsfdhvh:image-loader", version.ref = "image-loader" }
 
 kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
-kotlin-inject-runtime = { group = "me.tatarka.inject", name = "kotlin-inject-runtime", version.ref = "kotlin-inject" }
-crashkios-crashlytics = { group = "co.touchlab.crashkios", name = "crashlytics", version.ref = "crashkios" }
 google-firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx", version.ref = "firebase-crashlytics" }
 google-firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx", version.ref = "firebase-analytics" }
 google-firebase-perf = { group = "com.google.firebase", name = "firebase-perf-ktx", version.ref = "firebase-perf" }
@@ -136,8 +131,6 @@ coil-core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 
-haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
-
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work-runtime" }
 
 sentry-kmp = { module = "io.sentry:sentry-kotlin-multiplatform", version.ref = "sentry-kmp" }
@@ -159,7 +152,6 @@ accompanist-permissions = { module = "com.google.accompanist:accompanist-permiss
 # Native Firebase for Android
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebase-auth" }
-
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
