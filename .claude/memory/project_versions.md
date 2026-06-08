@@ -8,9 +8,9 @@ Versions from `gradle/libs.versions.toml`:
 
 | Dependency | Version |
 |---|---|
-| Kotlin | 2.3.21 |
+| Kotlin | 2.4.0 |
 | AGP (Android Gradle Plugin) | 9.2.1 |
-| Compose Multiplatform | 1.11.0 |
+| Compose Multiplatform | 1.11.1 |
 | Compose Material | 1.9.0 |
 | Room KMP | 2.8.4 |
 | Ktor | 3.5.0 |
@@ -22,7 +22,7 @@ Versions from `gradle/libs.versions.toml`:
 | Coil | 3.4.0 |
 | Material Kolor | 3.0.1 |
 | Firebase BOM | 34.14.0 |
-| Sentry KMP | 0.26.0 |
+| Sentry KMP | 0.27.0 |
 | AWS SDK Kotlin | 1.5.44 |
 | Wire (Protocol Buffers) | 5.4.0 |
 | Krossbow (STOMP/WebSocket) | 9.3.0 |
@@ -32,7 +32,6 @@ Versions from `gradle/libs.versions.toml`:
 | Lifecycle ViewModel | 2.10.0 |
 | Moko Permissions | 0.20.1 |
 | FileKit | 0.14.1 |
-| Haze (UI blur) | 1.7.2 |
 | Material3 Adaptive | 1.2.0 |
 | Maps Compose | 8.3.0 |
 | Play Services Location | 21.3.0 |
@@ -44,6 +43,6 @@ Versions from `gradle/libs.versions.toml`:
 
 **Android SDK**: minSdk 24 / targetSdk 36 / compileSdk 36
 
-**App version**: versionName `1.0.0.17`, versionCode `17` (in `androidApp/build.gradle.kts`)
+**App version**: versionName `1.0.9`, versionCode `109` (in `androidApp/build.gradle.kts`)
 
 **Why:** These versions are in the version catalog and are referenced across all modules. When adding dependencies, always add to `gradle/libs.versions.toml` and reference via version catalog aliases, not hardcoded strings.
