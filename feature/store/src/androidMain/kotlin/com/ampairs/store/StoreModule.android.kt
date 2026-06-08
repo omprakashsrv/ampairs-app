@@ -1,0 +1,32 @@
+package com.ampairs.store
+
+import android.content.Context
+import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.database.createAndroidDatabase
+import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.common.workspace.WorkspaceClosableRegistry
+import com.ampairs.common.workspace.WorkspaceConfig
+import com.ampairs.store.data.db.StoreDatabase
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.Dispatchers
+
+@ContributesTo(WorkspaceScope::class)
+interface StoreAndroidModule {
+    companion object {
+        @Provides
+        @SingleIn(WorkspaceScope::class)
+        fun provideStoreDatabase(
+            factory: WorkspaceAwareDatabaseFactory,
+            context: Context,
+            config: WorkspaceConfig,
+            closableRegistry: WorkspaceClosableRegistry,
+        ): StoreDatabase = factory.createAndroidDatabase<StoreDatabase>(
+            context = context,
+            queryDispatcher = Dispatchers.IO,
+            moduleName = "store",
+            workspaceSlug = config.workspaceSlug,
+        ).also { closableRegistry.register { it.close() } }
+    }
+}

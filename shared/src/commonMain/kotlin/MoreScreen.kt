@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -336,6 +337,12 @@ fun MoreScreen(
                         Icons.Default.Sync
                     ) {
                         backStack.add(WorkspaceRoute.SyncStatus)
+                    },
+                    Triple(
+                        "Settings",
+                        Icons.Default.Tune
+                    ) {
+                        backStack.add(Route.Settings)
                     },
                 )
                 items.forEachIndexed { index, (label, icon, action) ->

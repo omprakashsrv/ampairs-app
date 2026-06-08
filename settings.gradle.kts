@@ -46,6 +46,7 @@ include(
     ":feature:agent",
     ":feature:form",
     ":feature:unit",
+    ":feature:store",
     ":feature:update",
     ":feature:tax",
     ":feature:subscription",
