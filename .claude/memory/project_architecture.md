@@ -15,7 +15,7 @@ The project migrated from `composeApp/` to a fully separated multi-module layout
 - `data/common/` — DatabaseScopeManager, WorkspaceAwareDatabaseFactory, DataStore, ApiUrlBuilder
 - `tallyModule/` — Tally ERP integration (JVM only)
 - `thirdparty/androidx/paging/compose/` — Custom KMP Paging3 wrapper
-- `feature/{name}/` — 16 isolated feature modules (auth, agent, aws, business, customer, event, form, inventory, invoice, order, product, subscription, tax, unit, update, workspace)
+- `feature/{name}/` — 17 isolated feature modules (auth, agent, aws, business, customer, event, form, inventory, invoice, order, product, store, subscription, tax, unit, update, workspace). `store` = workspace settings: server-driven definition catalog (pull-only, filtered to installed modules) + synced overrides (`SyncEntity.STORE`), consumed via `StoreSettingsProvider`
 
 **Why:** The migration decouples platforms and enables independent module compilation, improving build times and separation of concerns.
 
