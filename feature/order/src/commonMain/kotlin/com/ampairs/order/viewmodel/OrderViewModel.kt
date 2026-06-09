@@ -311,8 +311,8 @@ class OrderViewModel(
     init {
         viewModelScope.launch(DispatcherProvider.io) {
             // Apply workspace settings as defaults before the first totals computation.
-            showDiscount = storeSettings.getBoolean("order", "show_discount_options")
-            priceMode = if (storeSettings.getBoolean("common", "prices_include_tax")) {
+            showDiscount = storeSettings.getBoolean("order", "show_discount_options", default = true)
+            priceMode = if (storeSettings.getBoolean("common", "prices_include_tax", default = false)) {
                 PriceMode.TAX_INCLUSIVE
             } else {
                 PriceMode.TAX_EXCLUSIVE

@@ -8,6 +8,7 @@ import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.postList
+import com.ampairs.store.domain.definition.StoreSettingDefinition
 import com.ampairs.store.domain.model.StoreSetting
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -37,5 +38,9 @@ class StoreSettingApiImpl(
 
     override suspend fun push(settings: List<StoreSetting>): Response<List<StoreSetting>> {
         return postList(client, ApiUrlBuilder.settingUrl("v1/settings"), settings)
+    }
+
+    override suspend fun definitions(): Response<List<StoreSettingDefinition>> {
+        return get(client, ApiUrlBuilder.settingUrl("v1/settings/definitions"))
     }
 }

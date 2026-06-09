@@ -2,6 +2,7 @@ package com.ampairs.store.data.api
 
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
+import com.ampairs.store.domain.definition.StoreSettingDefinition
 import com.ampairs.store.domain.model.StoreSetting
 
 /**
@@ -19,4 +20,7 @@ interface StoreSettingApi {
 
     /** Bulk upsert (and soft-delete via active=false) of setting overrides. */
     suspend fun push(settings: List<StoreSetting>): Response<List<StoreSetting>>
+
+    /** Setting definition catalog for the workspace's installed modules (read-only). */
+    suspend fun definitions(): Response<List<StoreSettingDefinition>>
 }
