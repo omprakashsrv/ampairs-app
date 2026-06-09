@@ -5,74 +5,59 @@ import com.ampairs.common.model.Response
 import com.ampairs.unit.domain.model.Unit
 
 /**
- * API interface for Unit Management operations
+ * API interface for Unit Management operations.
  *
- * Communicates with Spring Boot backend for unit synchronization
+ * Talks to the unified `/v1/units/sync` contract on the Spring Boot backend:
+ *  - PULL via [getUnitsSync] (GET, snake_case params, includes soft-deleted rows)
+ *  - PUSH via [bulkUpdateUnits] (POST, bulk upsert, soft-deletes sent in-band)
+ *
+ * [getUnitById] and [searchUnits] remain for UI / event-refresh use.
  */
 interface UnitApi {
 
     /**
-     * Get paginated list of units
+     * Incremental pull of units through the unified `/v1/units/sync` endpoint.
      *
+     * The response INCLUDES soft-deleted (inactive) rows so the client can permanently
+     * hard-delete them locally. Throws on a non-null API error.
+     *
+     * @param lastSync ISO 8601 checkpoint; only sent when non-blank
      * @param page Page number (0-indexed)
      * @param size Page size (default: 100)
-     * @param lastSyncTime ISO 8601 timestamp for incremental sync (optional)
-     * @param sortBy Sort field (default: "name")
-     * @param sortDirection "ASC" or "DESC" (default: "ASC")
-     * @return Paginated response with unit list
+     * @param sortBy Sort field (default: "updatedAt")
+     * @param sortDir "ASC" or "DESC" (default: "ASC")
      */
-    suspend fun getUnits(
+    suspend fun getUnitsSync(
+        lastSync: String,
         page: Int = 0,
         size: Int = 100,
-        lastSyncTime: String? = null,
-        sortBy: String = "name",
-        sortDirection: String = "ASC"
-    ): Response<PageResponse<Unit>>
+        sortBy: String = "updatedAt",
+        sortDir: String = "ASC",
+    ): PageResponse<Unit>
 
     /**
-     * Search units by name
+     * Bulk upsert units through the unified `/v1/units/sync` endpoint.
+     *
+     * Accepts active upserts AND soft-deleted (active = false) rows in the same body.
+     * Returns the server-reconciled units. Throws on failure.
+     */
+    suspend fun bulkUpdateUnits(units: List<Unit>): List<Unit>
+
+    /**
+     * Search units by name.
      *
      * @param query Search query string
      * @param page Page number (0-indexed)
      * @param size Page size (default: 100)
-     * @return Paginated response with matching units
      */
     suspend fun searchUnits(
         query: String,
         page: Int = 0,
-        size: Int = 100
+        size: Int = 100,
     ): Response<PageResponse<Unit>>
 
     /**
-     * Get single unit by ID
-     *
-     * @param id Unit UID
-     * @return Unit details
+     * Get single unit by ID (used by backend-event refresh).
      */
     suspend fun getUnitById(id: String): Response<Unit>
-
-    /**
-     * Create a new unit
-     *
-     * @param unit Unit to create
-     * @return Created unit with server-generated metadata
-     */
-    suspend fun createUnit(unit: Unit): Response<Unit>
-
-    /**
-     * Update an existing unit
-     *
-     * @param id Unit UID to update
-     * @param unit Updated unit data
-     * @return Updated unit
-     */
-    suspend fun updateUnit(id: String, unit: Unit): Response<Unit>
-
-    /**
-     * Delete a unit
-     *
-     * @param id Unit UID to delete
-     * @return Success response
-     */
-    suspend fun deleteUnit(id: String): Response<kotlin.Unit>
 }

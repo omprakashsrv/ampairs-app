@@ -8,55 +8,43 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
-import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
 import com.ampairs.product.domain.Constants.Companion.PAGE_SIZE
 import com.ampairs.invoice.db.InvoiceRepository
-import kotlinx.coroutines.Dispatchers
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
-class InvoicesViewModel(val invoiceRepository: InvoiceRepository) : ViewModel() {
+class InvoicesViewModel(
+    val invoiceRepository: InvoiceRepository,
+    private val syncService: CentralSyncService,
+) : ViewModel() {
 
     var searchText by mutableStateOf("")
     val invoicesState = mutableStateOf<UiState<Boolean>>(UiState.Empty)
 
     init {
-        syncTaxInfos()
-    }
-
-    private fun syncTaxInfos() {
-        viewModelScope.launch(DispatcherProvider.io) {
-            invoiceRepository.getInvoiceResource().collect { response ->
-                viewModelScope.launch(Dispatchers.Main) {
-                    when (response.status) {
-                        is Resource.Status.Loading -> {
-                            invoicesState.value = UiState.Loading(false)
-                        }
-
-                        is Resource.Status.Success -> {
-                            invoicesState.value = UiState.Success(true)
-                        }
-
-                        is Resource.Status.EmptySuccess -> {
-                            invoicesState.value = UiState.Empty
-                        }
-
-                        is Resource.Status.Error -> {
-                            val status = response.status as Resource.Status.Error
-                            invoicesState.value = UiState.Error(status.errorMessage)
-                        }
-                    }
+        syncService.observeEntity(SyncEntity.INVOICE)
+            .onEach { state ->
+                val status = state?.status
+                invoicesState.value = when (status) {
+                    is SyncStatus.Syncing -> UiState.Loading(false)
+                    is SyncStatus.Failed -> UiState.Error(status.reason)
+                    else -> UiState.Success(true)
                 }
             }
-        }
+            .launchIn(viewModelScope)
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.INVOICE))
     }
 
     val invoices = Pager(config = PagingConfig(

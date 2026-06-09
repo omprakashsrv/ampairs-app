@@ -18,29 +18,11 @@ class OrderApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository) :
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun updateOrder(order: OrderApiModel): Response<OrderApiModel> {
-        return post(
-            client,
-            ApiUrlBuilder.orderUrl("v1/orders"),
-            order
-        )
-    }
-
     override suspend fun createInvoice(order: OrderApiModel): Response<OrderApiModel> {
         return post(
             client,
             ApiUrlBuilder.orderUrl("v1/orders/create-invoice"),
             order
-        )
-    }
-
-    override suspend fun getOrders(lastUpdated: Long): Response<List<OrderApiModel>> {
-        return get(
-            client,
-            ApiUrlBuilder.orderUrl("v1/orders"),
-            buildMap {
-                put("last_updated", lastUpdated)
-            }
         )
     }
 

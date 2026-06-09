@@ -35,25 +35,71 @@ class ProductCatalogSyncRepository(
 
     suspend fun pullFromServer(): Result<Int> = runCatching {
         var count = 0
-
-        api.getGroups().getOrNull()?.let { models ->
-            groupDao.insertAll(models.asGroupDatabaseEntity())
-            count += models.size
-        }
-        api.getCategories().getOrNull()?.let { models ->
-            categoryDao.insertAll(models.asCategoryDatabaseEntity())
-            count += models.size
-        }
-        api.getBrands().getOrNull()?.let { models ->
-            brandDao.insertAll(models.asBrandDatabaseEntity())
-            count += models.size
-        }
-        api.getSubCategories().getOrNull()?.let { models ->
-            subCategoryDao.insertAll(models.asSubCategoryDatabaseEntity())
-            count += models.size
-        }
-
+        count += pullGroups()
+        count += pullCategories()
+        count += pullBrands()
+        count += pullSubCategories()
         count
+    }
+
+    private suspend fun pullGroups(): Int {
+        var page = 0
+        var total = 0
+        var hasNext: Boolean
+        do {
+            val pageResp = api.getGroupsSync(lastSync = null, page = page, size = 100).getOrThrow()
+            val batch = pageResp.content
+            if (batch.isNotEmpty()) groupDao.insertAll(batch.asGroupDatabaseEntity())
+            total += batch.size
+            hasNext = pageResp.hasNext
+            page++
+        } while (hasNext && total < 10000)
+        return total
+    }
+
+    private suspend fun pullCategories(): Int {
+        var page = 0
+        var total = 0
+        var hasNext: Boolean
+        do {
+            val pageResp = api.getCategoriesSync(lastSync = null, page = page, size = 100).getOrThrow()
+            val batch = pageResp.content
+            if (batch.isNotEmpty()) categoryDao.insertAll(batch.asCategoryDatabaseEntity())
+            total += batch.size
+            hasNext = pageResp.hasNext
+            page++
+        } while (hasNext && total < 10000)
+        return total
+    }
+
+    private suspend fun pullBrands(): Int {
+        var page = 0
+        var total = 0
+        var hasNext: Boolean
+        do {
+            val pageResp = api.getBrandsSync(lastSync = null, page = page, size = 100).getOrThrow()
+            val batch = pageResp.content
+            if (batch.isNotEmpty()) brandDao.insertAll(batch.asBrandDatabaseEntity())
+            total += batch.size
+            hasNext = pageResp.hasNext
+            page++
+        } while (hasNext && total < 10000)
+        return total
+    }
+
+    private suspend fun pullSubCategories(): Int {
+        var page = 0
+        var total = 0
+        var hasNext: Boolean
+        do {
+            val pageResp = api.getSubCategoriesSync(lastSync = null, page = page, size = 100).getOrThrow()
+            val batch = pageResp.content
+            if (batch.isNotEmpty()) subCategoryDao.insertAll(batch.asSubCategoryDatabaseEntity())
+            total += batch.size
+            hasNext = pageResp.hasNext
+            page++
+        } while (hasNext && total < 10000)
+        return total
     }
 
     private suspend fun pushGroups(): Int {

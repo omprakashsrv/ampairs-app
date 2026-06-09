@@ -76,7 +76,13 @@ class ProductSyncDelegate(
         var total = 0
         var hasNext: Boolean
         do {
-            val pageResp = productApi.getProductsSync(lastSync = null, page = page, size = 100).getOrThrow()
+            val pageResp = productApi.getProductsSync(
+                lastSync = null,
+                page = page,
+                size = 100,
+                sortBy = "updatedAt",
+                sortDir = "ASC",
+            ).getOrThrow()
             val batch = pageResp.content
             // Permanently delete locally anything the server reports as DELETED.
             batch.filter { it.status?.equals("DELETED", ignoreCase = true) == true }

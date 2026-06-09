@@ -42,6 +42,12 @@ class CustomerGroupSyncDelegate(
     override suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult =
         pullFromServer()
 
+    /**
+     * Bulk push all locally unsynced rows through the unified /sync endpoint. Soft-deleted rows
+     * (active = false) are sent IN-BAND in the same bulk body so the server can mark them DELETED;
+     * there is no separate per-row DELETE call. After a successful push, soft-deleted rows are
+     * hard-deleted locally and active rows are marked synced = true.
+     */
     private suspend fun pushPending(): Result<Int> {
         return try {
             val unsynced = customerGroupDao.getUnsyncedCustomerGroups()
@@ -50,22 +56,12 @@ class CustomerGroupSyncDelegate(
             var syncedCount = 0
             var failedCount = 0
 
-            for (entity in unsynced.filter { !it.active }) {
-                try {
-                    customerGroupApi.deleteCustomerGroup(entity.id)
-                    customerGroupDao.hardDeleteCustomerGroup(entity.id)
-                    syncedCount++
-                } catch (e: Exception) {
-                    CustomerLogger.w("CustomerGroupSyncDelegate", "Failed to delete group ${entity.id}", e)
-                    failedCount++
-                }
-            }
-
-            val activeUnsynced = unsynced.filter { it.active }
-            for (batch in activeUnsynced.chunked(100)) {
+            for (batch in unsynced.chunked(100)) {
+                // Active rows derive a groupCode when missing; soft-deleted rows are included as-is
+                // so the delete propagates server-side in the same bulk body.
                 val groups = batch.map { entity ->
                     entity.toCustomerGroup().let { group ->
-                        if (group.groupCode.isNullOrBlank()) {
+                        if (entity.active && group.groupCode.isNullOrBlank()) {
                             val derived = group.name
                                 .filter { it.isLetterOrDigit() || it == ' ' }
                                 .trim().replace(' ', '_').uppercase().take(20)
@@ -76,7 +72,14 @@ class CustomerGroupSyncDelegate(
                 }
                 customerGroupApi.bulkUpsertGroups(groups)
                     .onSuccess {
-                        batch.forEach { entity -> customerGroupDao.insertCustomerGroup(entity.copy(synced = true)) }
+                        // Push succeeded — reconcile each row locally.
+                        batch.forEach { entity ->
+                            if (!entity.active) {
+                                customerGroupDao.hardDeleteCustomerGroup(entity.id)
+                            } else {
+                                customerGroupDao.insertCustomerGroup(entity.copy(synced = true))
+                            }
+                        }
                         syncedCount += batch.size
                     }
                     .onFailure { e ->

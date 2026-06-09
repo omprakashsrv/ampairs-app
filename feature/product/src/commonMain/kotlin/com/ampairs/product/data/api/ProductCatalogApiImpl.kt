@@ -4,10 +4,10 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
+import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.postList
 import com.ampairs.common.di.AppScope
-import com.ampairs.product.api.model.AllProductGroupApiModel
 import com.ampairs.product.api.model.ProductGroupApiModel
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -23,91 +23,78 @@ class ProductCatalogApiImpl(
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun getGroups(): Result<List<ProductGroupApiModel>> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = get(client, ApiUrlBuilder.productUrl("v1/products/groups"))
-        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
-        response.data ?: emptyList()
+    private suspend fun pullPage(
+        path: String,
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>> = runCatching {
+        val params = mutableMapOf(
+            "page" to page.toString(),
+            "size" to size.toString(),
+        )
+        if (!lastSync.isNullOrBlank()) params["last_sync"] = lastSync
+        val response: Response<PageResponse<ProductGroupApiModel>> = get(
+            client,
+            ApiUrlBuilder.productUrl(path),
+            params,
+        )
+        if (response.data != null && response.error == null) {
+            response.data!!
+        } else {
+            throw Exception(response.error?.message ?: "Server returned no data")
+        }
     }
 
-    override suspend fun createGroup(model: ProductGroupApiModel): Result<ProductGroupApiModel> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/groups"), listOf(model))
-        response.data?.firstOrNull() ?: model
-    }
+    override suspend fun getGroupsSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>> =
+        pullPage("v1/products/groups/sync", lastSync, page, size)
 
-    override suspend fun updateGroup(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/groups"), listOf(model))
-        response.data?.firstOrNull() ?: model
-    }
+    override suspend fun getCategoriesSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>> =
+        pullPage("v1/products/categories/sync", lastSync, page, size)
 
-    override suspend fun getCategories(): Result<List<ProductGroupApiModel>> = runCatching {
-        val response: Response<AllProductGroupApiModel> = get(client, ApiUrlBuilder.productUrl("v1/products/all-groups-category"))
-        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
-        response.data?.categories ?: emptyList()
-    }
+    override suspend fun getBrandsSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>> =
+        pullPage("v1/products/brands/sync", lastSync, page, size)
 
-    override suspend fun createCategory(model: ProductGroupApiModel): Result<ProductGroupApiModel> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/categories"), listOf(model))
-        response.data?.firstOrNull() ?: model
-    }
-
-    override suspend fun updateCategory(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/categories"), listOf(model))
-        response.data?.firstOrNull() ?: model
-    }
-
-    override suspend fun getBrands(): Result<List<ProductGroupApiModel>> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = get(client, ApiUrlBuilder.productUrl("v1/products/brands"))
-        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
-        response.data ?: emptyList()
-    }
-
-    override suspend fun createBrand(model: ProductGroupApiModel): Result<ProductGroupApiModel> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/brands"), listOf(model))
-        response.data?.firstOrNull() ?: model
-    }
-
-    override suspend fun updateBrand(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/brands"), listOf(model))
-        response.data?.firstOrNull() ?: model
-    }
-
-    override suspend fun getSubCategories(): Result<List<ProductGroupApiModel>> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = get(client, ApiUrlBuilder.productUrl("v1/products/sub-categories"))
-        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
-        response.data ?: emptyList()
-    }
-
-    override suspend fun createSubCategory(model: ProductGroupApiModel): Result<ProductGroupApiModel> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/sub-categories"), listOf(model))
-        response.data?.firstOrNull() ?: model
-    }
-
-    override suspend fun updateSubCategory(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel> = runCatching {
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/sub-categories"), listOf(model))
-        response.data?.firstOrNull() ?: model
-    }
+    override suspend fun getSubCategoriesSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>> =
+        pullPage("v1/products/sub-categories/sync", lastSync, page, size)
 
     override suspend fun updateGroups(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>> = runCatching {
         if (models.isEmpty()) return@runCatching emptyList()
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/groups"), models)
+        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/groups/sync"), models)
         response.data ?: models
     }
 
     override suspend fun updateCategories(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>> = runCatching {
         if (models.isEmpty()) return@runCatching emptyList()
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/categories"), models)
+        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/categories/sync"), models)
         response.data ?: models
     }
 
     override suspend fun updateBrands(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>> = runCatching {
         if (models.isEmpty()) return@runCatching emptyList()
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/brands"), models)
+        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/brands/sync"), models)
         response.data ?: models
     }
 
     override suspend fun updateSubCategories(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>> = runCatching {
         if (models.isEmpty()) return@runCatching emptyList()
-        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/sub-categories"), models)
+        val response: Response<List<ProductGroupApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/sub-categories/sync"), models)
         response.data ?: models
     }
 }

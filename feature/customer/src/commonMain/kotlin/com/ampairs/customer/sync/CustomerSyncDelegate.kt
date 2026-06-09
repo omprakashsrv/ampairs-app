@@ -58,8 +58,10 @@ class CustomerSyncDelegate(
     // --- Push -------------------------------------------------------------------------------
 
     /**
-     * Bulk push all locally unsynced rows. Deletions go through the single-row DELETE API (no bulk
-     * delete endpoint); active upserts go through the bulk update API in batches of 100.
+     * Bulk push all locally unsynced rows through the unified /sync endpoint. Soft-deleted rows
+     * (active = false) are sent IN-BAND in the same bulk body so the server can mark them DELETED;
+     * there is no separate per-row DELETE call. After a successful push, soft-deleted rows are
+     * hard-deleted locally and active rows are marked synced = true.
      */
     private suspend fun pushPending(): Result<Int> {
         return try {
@@ -69,59 +71,34 @@ class CustomerSyncDelegate(
             var syncedCount = 0
             var failedCount = 0
 
-            // 1. Deletions (active = false) — DELETE API, then hard-delete locally.
-            for (entity in unsynced.filter { !it.active }) {
-                val uid = entity.id
+            for (batch in unsynced.chunked(100)) {
                 try {
-                    customerApi.deleteCustomer(uid)
-                    customerDao.deleteCustomer(uid)
-                    syncedCount++
-                } catch (e: Exception) {
-                    val msg = e.message ?: ""
-                    if (msg.contains("404") || msg.contains("405") || msg.contains("Not Found")) {
-                        customerDao.deleteCustomer(uid)
-                        syncedCount++
-                    } else {
-                        CustomerLogger.w("CustomerSyncDelegate", "Delete push failed for $uid: $msg")
-                        failedCount++
+                    // Active rows are sanitized (drop unsyncable garbage names); soft-deleted rows
+                    // are always included so the delete propagates server-side.
+                    val sanitized = batch.mapNotNull { entity ->
+                        if (!entity.active) entity.toDomain()
+                        else entity.toDomain().sanitizeForServer()
                     }
-                }
-            }
-
-            // 2. Active upserts — bulk update in batches of 100.
-            val activeUnsynced = unsynced.filter { it.active }
-            for (batch in activeUnsynced.chunked(100)) {
-                try {
-                    val sanitized = batch.mapNotNull { it.toDomain().sanitizeForServer() }
                     if (sanitized.isEmpty()) {
                         // Whole batch is unsyncable garbage — mark done locally so it stops retrying.
                         batch.forEach { customerDao.insertCustomer(it.copy(synced = true)) }
                         syncedCount += batch.size
                         continue
                     }
-                    val serverCustomers = customerApi.bulkUpdateCustomers(sanitized)
-                    val serverById = serverCustomers.associateBy { it.uid }
+                    customerApi.bulkUpdateCustomers(sanitized)
+                    // Push succeeded — reconcile each row locally.
                     for (entity in batch) {
-                        val serverCustomer = serverById[entity.id]
-                        val resolved = serverCustomer?.toEntity()?.copy(synced = true)
-                            ?: entity.copy(synced = true)
-                        customerDao.insertCustomer(resolved)
+                        if (!entity.active) {
+                            customerDao.deleteCustomer(entity.id)
+                        } else {
+                            customerDao.insertCustomer(entity.copy(synced = true))
+                        }
                     }
                     syncedCount += batch.size
                 } catch (batchError: Exception) {
                     ErrorTracking.captureException(batchError, "CustomerSyncDelegate.pushPending.bulk")
-                    // Batch failed — per-row fallback so one bad record can't block the rest.
-                    for (entity in batch) {
-                        try {
-                            val serverCustomer = pushCustomerToServer(entity.toDomain())
-                            val resolved = serverCustomer?.toEntity()?.copy(synced = true)
-                                ?: entity.copy(synced = true)
-                            customerDao.insertCustomer(resolved)
-                            syncedCount++
-                        } catch (_: Exception) {
-                            failedCount++
-                        }
-                    }
+                    CustomerLogger.w("CustomerSyncDelegate", "Batch push failed", batchError)
+                    failedCount += batch.size
                 }
             }
 
@@ -236,17 +213,4 @@ class CustomerSyncDelegate(
     // Returns null for records whose name can never be valid (< 2 chars from Tally garbage data).
     private fun Customer.sanitizeForServer(): Customer? =
         if ((name?.trim()?.length ?: 0) >= 2) this else null
-
-    // Try update first; fall back to create if the customer doesn't exist on the server yet.
-    private suspend fun pushCustomerToServer(customer: Customer): Customer? {
-        val sanitized = customer.sanitizeForServer() ?: run {
-            CustomerLogger.w("CustomerSyncDelegate", "Skipping unsyncable customer ${customer.uid}: name '${customer.name}' too short")
-            return null
-        }
-        return try {
-            customerApi.updateCustomer(sanitized)
-        } catch (_: Exception) {
-            customerApi.createCustomer(sanitized)
-        }
-    }
 }

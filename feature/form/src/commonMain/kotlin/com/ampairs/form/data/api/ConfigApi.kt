@@ -1,5 +1,6 @@
 package com.ampairs.form.data.api
 
+import com.ampairs.common.model.PageResponse
 import com.ampairs.form.domain.EntityConfigSchema
 import com.ampairs.form.domain.EntityFieldConfig
 import com.ampairs.form.domain.EntityAttributeDefinition
@@ -8,6 +9,45 @@ import com.ampairs.form.domain.EntityAttributeDefinition
  * API interface for form configuration
  */
 interface ConfigApi {
+
+    // --- Unified sync contract (two feeds, one per record type) ---------------------------------
+
+    /**
+     * Incremental sync feed (pull) of field configs updated at/after [lastSync].
+     * GET v1/config/field-configs/sync
+     */
+    suspend fun getFieldConfigsSync(
+        lastSync: String,
+        page: Int,
+        size: Int,
+        sortBy: String = "updatedAt",
+        sortDir: String = "ASC",
+    ): PageResponse<EntityFieldConfig>
+
+    /**
+     * Incremental sync feed (pull) of attribute definitions updated at/after [lastSync].
+     * GET v1/config/attribute-definitions/sync
+     */
+    suspend fun getAttributeDefinitionsSync(
+        lastSync: String,
+        page: Int,
+        size: Int,
+        sortBy: String = "updatedAt",
+        sortDir: String = "ASC",
+    ): PageResponse<EntityAttributeDefinition>
+
+    /**
+     * Bulk push (UID-keyed upsert) of field configs.
+     * POST v1/config/field-configs/sync
+     */
+    suspend fun pushFieldConfigs(fieldConfigs: List<EntityFieldConfig>): List<EntityFieldConfig>
+
+    /**
+     * Bulk push (UID-keyed upsert) of attribute definitions.
+     * POST v1/config/attribute-definitions/sync
+     */
+    suspend fun pushAttributeDefinitions(attributeDefinitions: List<EntityAttributeDefinition>): List<EntityAttributeDefinition>
+
     /**
      * Get configuration schema for specific entity type
      * @param entityType: "customer", "product", "inventory", etc.

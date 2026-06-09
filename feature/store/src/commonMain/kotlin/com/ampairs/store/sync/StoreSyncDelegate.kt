@@ -42,22 +42,40 @@ class StoreSyncDelegate(
     override suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult =
         pullFromServer()
 
-    /** Bulk push all unsynced rows; on success mark synced (or hard-delete locally inactive rows). */
+    /**
+     * Bulk push all unsynced rows in batches of 100 (like [com.ampairs.customer.sync.CustomerSyncDelegate]).
+     * Per successful batch: mark active rows synced=true and hard-delete locally inactive (soft-deleted) rows.
+     */
     private suspend fun pushPending(): Result<Int> {
         return try {
             val unsynced = dao.getUnsynced()
             if (unsynced.isEmpty()) return Result.success(0)
 
-            val payload = unsynced.map { it.toStoreSetting() }
-            val response = api.push(payload)
-            if (response.data != null && response.error == null) {
-                for (row in unsynced) {
-                    if (!row.active) dao.hardDelete(row.id)
-                    else dao.insert(row.copy(synced = true))
+            var syncedCount = 0
+            var failedCount = 0
+
+            for (batch in unsynced.chunked(100)) {
+                val payload = batch.map { it.toStoreSetting() }
+                val response = api.push(payload)
+                if (response.data != null && response.error == null) {
+                    for (row in batch) {
+                        if (!row.active) dao.hardDelete(row.id)
+                        else dao.insert(row.copy(synced = true))
+                    }
+                    syncedCount += batch.size
+                } else {
+                    StoreLogger.w(
+                        "StoreSyncDelegate",
+                        "Settings push batch failed: ${response.error?.message ?: "unknown error"}",
+                    )
+                    failedCount += batch.size
                 }
-                Result.success(unsynced.size)
+            }
+
+            if (syncedCount == 0 && failedCount > 0) {
+                Result.failure(Exception("$failedCount setting(s) failed to push — will retry on reconnect"))
             } else {
-                Result.failure(Exception(response.error?.message ?: "Failed to push settings"))
+                Result.success(syncedCount)
             }
         } catch (e: Exception) {
             StoreLogger.e("StoreSyncDelegate", "Push failed", e)

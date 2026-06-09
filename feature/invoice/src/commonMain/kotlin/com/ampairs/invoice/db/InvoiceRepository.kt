@@ -2,18 +2,9 @@ package com.ampairs.invoice.db
 
 import androidx.paging.PagingSource
 import androidx.room.Transaction
-import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.common.flower_core.Resource
-import com.ampairs.common.flower_core.networkResource
-import com.ampairs.common.model.Response
 import com.ampairs.customer.data.CustomerDataService
-import com.ampairs.invoice.api.InvoiceApi
-import com.ampairs.invoice.api.model.InvoiceApiModel
-import com.ampairs.invoice.api.model.toInvoiceDatabaseModel
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
-import com.ampairs.invoice.db.dto.asDatabaseModel
-import com.ampairs.invoice.db.dto.asItemDatabaseModel
 import com.ampairs.invoice.db.entity.InvoiceEntity
 import com.ampairs.invoice.db.entity.InvoiceItemEntity
 import com.ampairs.invoice.domain.Discount
@@ -25,19 +16,14 @@ import com.ampairs.product.data.ProductDataService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 
 /**
  * Local-only invoice repository (offline-first, spec 010). Writes go to Room and flag the entity
- * PENDING_PUSH; the [com.ampairs.invoice.sync.InvoiceSyncDelegate] owns all invoice ↔ server traffic.
- *
- * NOTE (intermediate): [getInvoiceResource]/[updateInvoices]/[updateInvoice] (legacy list pull,
- * replaced by syncService TriggerPull in A3) still reference [invoiceApi]. The create/edit path no
- * longer touches the network.
+ * PENDING_PUSH; the [com.ampairs.invoice.sync.InvoiceSyncDelegate] owns all invoice ↔ server traffic
+ * (bulk push, batched pull). The list refresh is driven by CentralSyncService (TriggerPull); this
+ * repository never touches the network.
  */
 @Inject
 class InvoiceRepository(
@@ -45,7 +31,6 @@ class InvoiceRepository(
     val invoiceItemDao: InvoiceItemDao,
     val productDataService: ProductDataService,
     val customerDataService: CustomerDataService,
-    val invoiceApi: InvoiceApi,
     val syncStateDao: SyncStateDao,
 ) {
     @Transaction
@@ -114,40 +99,6 @@ class InvoiceRepository(
         }.toMutableList()
 
         return invoice
-    }
-
-    fun getInvoiceResource(): Flow<Resource<List<InvoiceApiModel>>> {
-        return networkResource(shouldMakeNetworkRequest = { true }, makeNetworkRequest = {
-            val sharedFlow = MutableSharedFlow<Response<List<InvoiceApiModel>>>(replay = 10)
-            var fetchSize = 1000
-            while (fetchSize == 1000) {
-                val lastUpdated = invoiceDao.getMaxLastUpdated() ?: 0
-                val response = invoiceApi.getInvoices(lastUpdated)
-                val invoices = response.data
-                if (invoices != null) {
-                    invoiceDao.updateInvoices(invoices.asDatabaseModel())
-                    val itemEntities = invoices.asItemDatabaseModel()
-                    if (itemEntities.isNotEmpty()) {
-                        invoiceItemDao.updateInvoiceItems(itemEntities)
-                    }
-                }
-                fetchSize = response.data?.size ?: 0
-                sharedFlow.emit(response)
-            }
-            sharedFlow
-        }, processNetworkResponse = {}).flowOn(DispatcherProvider.io)
-    }
-
-    suspend fun updateInvoices(invoices: List<InvoiceApiModel>) {
-        invoiceDao.updateInvoices(invoices.asDatabaseModel())
-        val items = invoices.asItemDatabaseModel()
-        if (items.isNotEmpty()) {
-            invoiceItemDao.updateInvoiceItems(items)
-        }
-    }
-
-    suspend fun updateInvoice(invoiceApiModel: InvoiceApiModel) {
-        invoiceDao.insert(invoiceApiModel.toInvoiceDatabaseModel())
     }
 
     fun getInvoicePaging(searchText: String): PagingSource<Int, InvoiceEntity> {

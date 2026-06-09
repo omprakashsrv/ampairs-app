@@ -42,6 +42,12 @@ class CustomerTypeSyncDelegate(
     override suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult =
         pullFromServer()
 
+    /**
+     * Bulk push all locally unsynced rows through the unified /sync endpoint. Soft-deleted rows
+     * (active = false) are sent IN-BAND in the same bulk body so the server can mark them DELETED;
+     * there is no separate per-row DELETE call. After a successful push, soft-deleted rows are
+     * hard-deleted locally and active rows are marked synced = true.
+     */
     private suspend fun pushPending(): Result<Int> {
         return try {
             val unsynced = customerTypeDao.getUnsyncedCustomerTypes()
@@ -50,23 +56,19 @@ class CustomerTypeSyncDelegate(
             var syncedCount = 0
             var failedCount = 0
 
-            for (entity in unsynced.filter { !it.active }) {
-                try {
-                    customerTypeApi.deleteCustomerType(entity.id)
-                    customerTypeDao.hardDeleteCustomerType(entity.id)
-                    syncedCount++
-                } catch (e: Exception) {
-                    CustomerLogger.w("CustomerTypeSyncDelegate", "Failed to delete type ${entity.id}", e)
-                    failedCount++
-                }
-            }
-
-            val activeUnsynced = unsynced.filter { it.active }
-            for (batch in activeUnsynced.chunked(100)) {
+            for (batch in unsynced.chunked(100)) {
+                // Soft-deleted (active = false) rows are included in-band so the delete propagates.
                 val types = batch.map { it.toCustomerType() }
                 customerTypeApi.bulkUpsertTypes(types)
                     .onSuccess {
-                        batch.forEach { entity -> customerTypeDao.insertCustomerType(entity.copy(synced = true)) }
+                        // Push succeeded — reconcile each row locally.
+                        batch.forEach { entity ->
+                            if (!entity.active) {
+                                customerTypeDao.hardDeleteCustomerType(entity.id)
+                            } else {
+                                customerTypeDao.insertCustomerType(entity.copy(synced = true))
+                            }
+                        }
                         syncedCount += batch.size
                     }
                     .onFailure { e ->

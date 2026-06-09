@@ -2,14 +2,11 @@ package com.ampairs.product.data.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
-import com.ampairs.common.post
 import com.ampairs.common.postList
-import com.ampairs.common.put
 import com.ampairs.product.api.model.ProductApiModel
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -25,26 +22,21 @@ class ProductApiImpl(
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun getProducts(): Result<List<ProductApiModel>> {
+    override suspend fun getProductsSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+        sortBy: String,
+        sortDir: String,
+    ): Result<PageResponse<ProductApiModel>> {
         return try {
-            val response: Response<List<ProductApiModel>> = get(
-                client,
-                ApiUrlBuilder.productUrl("v1/products")
+            val params = mutableMapOf(
+                "page" to page.toString(),
+                "size" to size.toString(),
+                "sort_by" to sortBy,
+                "sort_dir" to sortDir,
             )
-            if (response.data != null && response.error == null) {
-                Result.success(response.data!!)
-            } else {
-                Result.failure(Exception(response.error?.message ?: "Server returned no data"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun getProductsSync(lastSync: String?, page: Int, size: Int): Result<PageResponse<ProductApiModel>> {
-        return try {
-            val params = mutableMapOf("page" to page.toString(), "size" to size.toString())
-            lastSync?.let { params["last_sync"] = it }
+            if (!lastSync.isNullOrBlank()) params["last_sync"] = lastSync
             val response: Response<PageResponse<ProductApiModel>> = get(
                 client,
                 ApiUrlBuilder.productUrl("v1/products/sync"),
@@ -73,40 +65,9 @@ class ProductApiImpl(
         }
     }
 
-    override suspend fun createProduct(product: ProductApiModel): Result<ProductApiModel> {
-        return try {
-            val response: Response<ProductApiModel> = post(
-                client,
-                ApiUrlBuilder.productUrl("v1/products"),
-                product
-            )
-            response.data?.let { Result.success(it) }
-                ?: Result.failure(Exception("Failed to create product"))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun updateProduct(productId: String, product: ProductApiModel): Result<ProductApiModel> = runCatching {
-        val response: Response<ProductApiModel> = put(client, ApiUrlBuilder.productUrl("v1/products/$productId"), product)
-        response.data ?: error("Failed to update product $productId")
-    }
-
     override suspend fun bulkUpdateProducts(products: List<ProductApiModel>): Result<List<ProductApiModel>> = runCatching {
-        val response: Response<List<ProductApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products"), products)
+        val response: Response<List<ProductApiModel>> = postList(client, ApiUrlBuilder.productUrl("v1/products/sync"), products)
         response.data ?: emptyList()
-    }
-
-    override suspend fun deleteProduct(productId: String): Result<Unit> {
-        return try {
-            delete<Response<Unit>>(
-                client,
-                ApiUrlBuilder.productUrl("v1/products/$productId")
-            )
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
     }
 
     override suspend fun searchProducts(query: String): Result<List<ProductApiModel>> {

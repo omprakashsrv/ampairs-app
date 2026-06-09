@@ -2,12 +2,9 @@ package com.ampairs.customer.data.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
-import com.ampairs.common.post
 import com.ampairs.common.postList
-import com.ampairs.common.put
 import com.ampairs.customer.domain.CustomerType
 import com.ampairs.common.model.Response
 import com.ampairs.common.model.PageResponse
@@ -35,11 +32,11 @@ class CustomerTypeApiImpl(
         val params = mutableMapOf(
             "page" to page.toString(),
             "size" to size.toString(),
-            "sortBy" to sortBy,
-            "sortDirection" to sortDirection
+            "sort_by" to sortBy,
+            "sort_dir" to sortDirection
         )
 
-        lastSyncTime?.let { params["last_sync"] = it }
+        lastSyncTime?.takeIf { it.isNotBlank() }?.let { params["last_sync"] = it }
 
         // Incremental sync feed: returns rows updated since last_sync INCLUDING inactive
         // (soft-deleted) types, so the client can permanently delete removed rows.
@@ -67,35 +64,9 @@ class CustomerTypeApiImpl(
         return response
     }
 
-    override suspend fun createCustomerType(customerType: CustomerType): Response<CustomerType> {
-        val response: Response<CustomerType> = post(
-            client,
-            ApiUrlBuilder.customerUrl("v1/types"),
-            customerType
-        )
-        return response
-    }
-
-    override suspend fun updateCustomerType(id: String, customerType: CustomerType): Response<CustomerType> {
-        val response: Response<CustomerType> = put(
-            client,
-            ApiUrlBuilder.customerUrl("v1/types/$id"),
-            customerType
-        )
-        return response
-    }
-
     override suspend fun bulkUpsertTypes(types: List<CustomerType>): Result<List<CustomerType>> = runCatching {
-        val response: Response<List<CustomerType>> = postList(client, ApiUrlBuilder.customerUrl("v1/types"), types)
+        val response: Response<List<CustomerType>> = postList(client, ApiUrlBuilder.customerUrl("v1/types/sync"), types)
         response.data ?: emptyList()
-    }
-
-    override suspend fun deleteCustomerType(id: String): Response<Unit> {
-        val response: Response<Unit> = delete(
-            client,
-            ApiUrlBuilder.customerUrl("v1/types/$id")
-        )
-        return response
     }
 
     override suspend fun searchCustomerTypes(
