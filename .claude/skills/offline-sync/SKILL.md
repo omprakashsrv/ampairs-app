@@ -40,6 +40,32 @@ available-for-import", or the file repo's entity-scoped `pullFromServer(type, ui
 
 ---
 
+## Canonical Sync API Contract (every standard entity)
+
+All standard syncable entities share ONE unified REST contract. Pull and push use the same URL.
+
+```
+PULL   GET  {domain}Url("v1/{resource}/sync")
+            ?last_sync={ISO8601}&page={Int}&size={Int}&sort_by=updatedAt&sort_dir=ASC
+       → Response<PageResponse<T>>   (content + hasNext; INCLUDES soft-deleted rows)
+
+PUSH   POST {domain}Url("v1/{resource}/sync")        (same URL as pull)
+       body: List<T>   (active upserts AND soft-deleted rows; client UID-keyed)
+       → Response<List<T>>           (delegate batches at 100)
+
+DELETE in-band: the push body carries soft-deleted rows (active=false / status=DELETED).
+       There is NO per-row DELETE call in the sync path. On pull, rows the server reports
+       DELETED/inactive are permanently hard-deleted locally; local unsynced edits win.
+```
+
+- **Query params are snake_case**: `last_sync`, `page`, `size`, `sort_by`, `sort_dir`. `last_sync` is sent only when non-blank.
+- The `/sync` GET **must return soft-deleted rows** so deletions propagate to every device.
+- Backend mirror: `GET/POST /{module}/v1/{resource}/sync` → `ApiResponse<PageResponse<T>>` / `ApiResponse<List<T>>`. The legacy non-`/sync` list+bulk endpoints were removed.
+- **On the contract:** customer, customer_group, customer_type, product, product_catalog (groups/categories/brands/sub-categories, paginated), unit, store/settings, order, invoice.
+- **Off-pattern by design** (do NOT force onto this contract): **Tax** (subscribe/unsubscribe), **Form** (pull-only schema registry), **File** (entity-scoped multipart, UI-invoked).
+
+---
+
 ## Key Files
 
 | File | Role |
@@ -205,10 +231,9 @@ if (result.productsSynced > 0)       centralSyncService.markPendingPush(SyncEnti
 ## Delegate Push Pattern (the API lives here, not the repository)
 
 The `pushPending()` method **inside the delegate**:
-1. Reads all rows with `synced = false` from the DAO
-2. For deletions (`active = false`): calls the DELETE API, then **hard-deletes** locally
-3. For creates/updates: bulk-upserts in batches of 100 (per-row fallback if the batch fails)
-4. On success: marks each row `synced = true` in Room
+1. Reads all rows with `synced = false` from the DAO (active upserts AND soft-deleted rows)
+2. Bulk-upserts the whole set to `POST v1/{resource}/sync` in batches of 100 — deletions ride along **in-band** as soft-deleted rows (`active = false` / `status = DELETED`). No per-row DELETE call.
+3. On success: marks active rows `synced = true`; **hard-deletes the `active = false` rows locally** (they're now confirmed on the server)
 5. Never generates UIDs — expects them pre-set (UID generation is ViewModel responsibility)
 6. Returns `Result.failure()` when there were items to push but none succeeded (see Rule 2 below)
 
@@ -325,8 +350,14 @@ available-for-import (customer group/type), or the file repo's entity-scoped
 - **Tax** — writes are online subscribe/unsubscribe (the server mints the workspace tax code); a
   3-repo cluster (code/rule/component) whose sync is aggregated in `MyTaxCodesViewModel`.
 - **Form** — server-authoritative, pull-only (no local writes).
-- **Order / Invoice** — sync not yet implemented (no-op delegates).
 - **Ecom** — separate storefront module (catalog/order pull-only; address has its own CRUD).
+
+> **Order / Invoice are now on the canonical `/sync` contract** (`GET/POST v1/orders/sync`,
+> `v1/invoices/sync`). Note: the app still has a separate non-sync list pull
+> (`getOrderResource` / `getInvoiceResource` via the legacy `GET v1/{orders|invoices}` with
+> `last_updated`) used by the list ViewModels — a follow-up should converge those onto the
+> delegate-only pull. The backend `GET /invoice/v1/invoices` (last_updated) was kept alive for
+> that reason; the order equivalent never existed on the backend.
 
 ---
 
