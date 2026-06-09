@@ -7,6 +7,7 @@ import com.ampairs.common.httpClient
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.form.domain.EntityAttributeDefinition
 import com.ampairs.form.domain.EntityConfigSchema
@@ -26,6 +27,80 @@ class ConfigApiImpl(
 ) : ConfigApi {
 
     private val client = httpClient(engine, tokenRepository)
+
+    private fun <T> emptyPage(page: Int, size: Int): PageResponse<T> = PageResponse(
+        content = emptyList(),
+        pageNumber = page,
+        pageSize = size,
+        totalPages = 0,
+        totalElements = 0L,
+        hasNext = false,
+        hasPrevious = false,
+        first = true,
+        last = true,
+    )
+
+    override suspend fun getFieldConfigsSync(
+        lastSync: String,
+        page: Int,
+        size: Int,
+        sortBy: String,
+        sortDir: String,
+    ): PageResponse<EntityFieldConfig> {
+        val response: Response<PageResponse<EntityFieldConfig>> = client.get(
+            ApiUrlBuilder.formUrl("v1/config/field-configs/sync")
+        ) {
+            parameter("page", page)
+            parameter("size", size)
+            parameter("sort_by", sortBy)
+            parameter("sort_dir", sortDir)
+            if (lastSync.isNotBlank()) parameter("last_sync", lastSync)
+        }.body()
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun getAttributeDefinitionsSync(
+        lastSync: String,
+        page: Int,
+        size: Int,
+        sortBy: String,
+        sortDir: String,
+    ): PageResponse<EntityAttributeDefinition> {
+        val response: Response<PageResponse<EntityAttributeDefinition>> = client.get(
+            ApiUrlBuilder.formUrl("v1/config/attribute-definitions/sync")
+        ) {
+            parameter("page", page)
+            parameter("size", size)
+            parameter("sort_by", sortBy)
+            parameter("sort_dir", sortDir)
+            if (lastSync.isNotBlank()) parameter("last_sync", lastSync)
+        }.body()
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun pushFieldConfigs(fieldConfigs: List<EntityFieldConfig>): List<EntityFieldConfig> {
+        val response = client.post(
+            ApiUrlBuilder.formUrl("v1/config/field-configs/sync")
+        ) {
+            setBody(fieldConfigs)
+        }.body<Response<List<EntityFieldConfig>>>()
+        if (response.error != null) throw Exception(response.error?.message ?: "Failed to push field configs")
+        return response.data ?: emptyList()
+    }
+
+    override suspend fun pushAttributeDefinitions(
+        attributeDefinitions: List<EntityAttributeDefinition>
+    ): List<EntityAttributeDefinition> {
+        val response = client.post(
+            ApiUrlBuilder.formUrl("v1/config/attribute-definitions/sync")
+        ) {
+            setBody(attributeDefinitions)
+        }.body<Response<List<EntityAttributeDefinition>>>()
+        if (response.error != null) throw Exception(response.error?.message ?: "Failed to push attribute definitions")
+        return response.data ?: emptyList()
+    }
 
     override suspend fun getConfigSchema(entityType: String): EntityConfigSchema {
         val response: Response<EntityConfigSchema> = client.get(

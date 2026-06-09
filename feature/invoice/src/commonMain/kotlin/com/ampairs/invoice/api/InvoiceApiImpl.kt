@@ -18,16 +18,6 @@ class InvoiceApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository)
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun getInvoices(lastUpdated: Long): Response<List<InvoiceApiModel>> {
-        return get(
-            client,
-            ApiUrlBuilder.invoiceUrl("v1/invoices"),
-            buildMap {
-                put("last_updated", lastUpdated)
-            }
-        )
-    }
-
     override suspend fun bulkUpdateInvoices(invoices: List<InvoiceApiModel>): List<InvoiceApiModel> {
         val response: Response<List<InvoiceApiModel>> = post(
             client,

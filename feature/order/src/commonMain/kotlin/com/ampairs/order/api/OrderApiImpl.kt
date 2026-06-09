@@ -26,16 +26,6 @@ class OrderApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository) :
         )
     }
 
-    override suspend fun getOrders(lastUpdated: Long): Response<List<OrderApiModel>> {
-        return get(
-            client,
-            ApiUrlBuilder.orderUrl("v1/orders"),
-            buildMap {
-                put("last_updated", lastUpdated)
-            }
-        )
-    }
-
     override suspend fun bulkUpdateOrders(orders: List<OrderApiModel>): List<OrderApiModel> {
         val response: Response<List<OrderApiModel>> = post(
             client,

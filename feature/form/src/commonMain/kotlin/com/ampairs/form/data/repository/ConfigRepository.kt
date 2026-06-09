@@ -16,6 +16,14 @@ import kotlinx.coroutines.flow.first
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
+/**
+ * Form-config repository. Reads/writes are local (Room); the server round-trip lives in
+ * [com.ampairs.form.sync.FormSyncDelegate] on the unified /sync contract.
+ *
+ * The [api] is retained ONLY for the read-only UI fetch [getConfigSchema] (an allowed non-sync,
+ * UI-invoked exception). The local-write path ([saveConfigSchema]) does NOT call the API — it writes
+ * Room with `synced = false` and flags PENDING_PUSH so the delegate bulk-pushes the change.
+ */
 @Inject
 class ConfigRepository(
     private val api: ConfigApi,
@@ -67,64 +75,84 @@ class ConfigRepository(
         return getConfigSchema(entityType)
     }
 
+    /**
+     * Incremental pull of BOTH /sync feeds, batched. Mirrors [com.ampairs.form.sync.FormSyncDelegate]
+     * — kept so the legacy direct caller (CustomerFormViewModel) still works. New code should prefer
+     * `syncService.emit(TriggerPull(SyncEntity.FORM))`.
+     */
     override suspend fun syncFormConfigs(): Result<Int> {
         return try {
-            val lastSyncTime = syncStateDao.getLastSyncedAtIso(SyncEntity.FORM) ?: ""
+            val lastSync = syncStateDao.getLastSyncedAtIso(SyncEntity.FORM) ?: ""
+            var total = 0
+            var maxServerTime = ""
 
-            val schemas = if (lastSyncTime.isBlank()) {
-                api.getAllConfigSchemas()
-            } else {
-                api.getConfigSchemasSince(lastSyncTime)
-            }
-
-            var savedCount = 0
-            schemas.forEach { schema ->
-                try {
-                    if (schema.fieldConfigs.isNotEmpty()) {
-                        fieldConfigDao.insertFieldConfigs(schema.fieldConfigs.map { it.toEntity() })
+            var page = 0
+            do {
+                val response = api.getFieldConfigsSync(lastSync, page, 100)
+                val rows = response.content
+                if (rows.isNotEmpty()) {
+                    val entities = rows.mapNotNull { server ->
+                        val existing = fieldConfigDao.getFieldConfigById(server.uid)
+                        if (existing != null && !existing.synced) null
+                        else server.toEntity().copy(synced = true)
                     }
-                    if (schema.attributeDefinitions.isNotEmpty()) {
-                        attributeDefinitionDao.insertAttributeDefinitions(schema.attributeDefinitions.map { it.toEntity() })
-                    }
-                    savedCount++
-                } catch (_: Exception) {
-                    // Continue with other schemas even if one fails
+                    if (entities.isNotEmpty()) fieldConfigDao.insertFieldConfigs(entities)
+                    val batchMax = rows.mapNotNull { it.updatedAt?.takeIf { ts -> ts.isNotBlank() } }.maxOrNull() ?: ""
+                    if (batchMax > maxServerTime) maxServerTime = batchMax
+                    total += rows.size
                 }
-            }
+                page++
+            } while (response.hasNext && total < 10000)
 
-            val allTimestamps = schemas.flatMap { schema ->
-                schema.fieldConfigs.mapNotNull { it.updatedAt } +
-                    schema.attributeDefinitions.mapNotNull { it.updatedAt }
-            }
-            syncStateDao.setLastSyncedAtIso(SyncEntity.FORM, allTimestamps.maxOrNull() ?: currentTimestamp())
+            page = 0
+            do {
+                val response = api.getAttributeDefinitionsSync(lastSync, page, 100)
+                val rows = response.content
+                if (rows.isNotEmpty()) {
+                    val entities = rows.mapNotNull { server ->
+                        val existing = attributeDefinitionDao.getAttributeDefinitionById(server.uid)
+                        if (existing != null && !existing.synced) null
+                        else server.toEntity().copy(synced = true)
+                    }
+                    if (entities.isNotEmpty()) attributeDefinitionDao.insertAttributeDefinitions(entities)
+                    val batchMax = rows.mapNotNull { it.updatedAt?.takeIf { ts -> ts.isNotBlank() } }.maxOrNull() ?: ""
+                    if (batchMax > maxServerTime) maxServerTime = batchMax
+                    total += rows.size
+                }
+                page++
+            } while (response.hasNext && total < 20000)
 
-            Result.success(savedCount)
+            if (maxServerTime.isNotBlank()) {
+                syncStateDao.setLastSyncedAtIso(SyncEntity.FORM, maxServerTime)
+            }
+            Result.success(total)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
+    /**
+     * Local-only write of an edited schema. Writes both record types to Room as `synced = false`
+     * and flags PENDING_PUSH; [com.ampairs.form.sync.FormSyncDelegate] then bulk-pushes to /sync.
+     * No API call here (offline-first write path).
+     */
+    @OptIn(ExperimentalTime::class)
     suspend fun saveConfigSchema(entityType: String, schema: EntityConfigSchema): Result<EntityConfigSchema> {
         return try {
-            val savedSchema = api.saveConfigSchema(entityType, schema)
-
-            // Full sync: replace local data with exactly what the backend returned
-            fieldConfigDao.deleteFieldConfigsByEntityType(entityType)
-            attributeDefinitionDao.deleteAttributeDefinitionsByEntityType(entityType)
-
-            if (savedSchema.fieldConfigs.isNotEmpty()) {
-                fieldConfigDao.insertFieldConfigs(savedSchema.fieldConfigs.map { it.toEntity() })
+            if (schema.fieldConfigs.isNotEmpty()) {
+                fieldConfigDao.insertFieldConfigs(
+                    schema.fieldConfigs.map { it.toEntity().copy(synced = false) }
+                )
             }
-            if (savedSchema.attributeDefinitions.isNotEmpty()) {
-                attributeDefinitionDao.insertAttributeDefinitions(savedSchema.attributeDefinitions.map { it.toEntity() })
+            if (schema.attributeDefinitions.isNotEmpty()) {
+                attributeDefinitionDao.insertAttributeDefinitions(
+                    schema.attributeDefinitions.map { it.toEntity().copy(synced = false) }
+                )
             }
-
-            Result.success(savedSchema)
+            syncStateDao.markPendingPush(SyncEntity.FORM, Clock.System.now().toEpochMilliseconds())
+            Result.success(schema)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-
-    @OptIn(ExperimentalTime::class)
-    private fun currentTimestamp(): String = Clock.System.now().toString()
 }

@@ -7,7 +7,6 @@ import com.ampairs.order.api.model.OrderApiModel
 interface OrderApi {
 
     suspend fun createInvoice(order: OrderApiModel): Response<OrderApiModel>
-    suspend fun getOrders(lastUpdated: Long): Response<List<OrderApiModel>>
 
     /** Bulk upsert for offline sync (spec 010). Server stores taxInfos/totals as supplied. */
     suspend fun bulkUpdateOrders(orders: List<OrderApiModel>): List<OrderApiModel>

@@ -2,19 +2,12 @@ package com.ampairs.order.db
 
 import androidx.paging.PagingSource
 import androidx.room.Transaction
-import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.common.flower_core.Resource
-import com.ampairs.common.flower_core.networkResource
-import com.ampairs.common.model.Response
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.order.api.OrderApi
-import com.ampairs.order.api.model.OrderApiModel
 import com.ampairs.order.api.model.toApiModel
 import com.ampairs.order.api.model.toOrderDatabaseModel
 import com.ampairs.order.db.dao.OrderDao
 import com.ampairs.order.db.dao.OrderItemDao
-import com.ampairs.order.db.dto.asDatabaseModel
-import com.ampairs.order.db.dto.asItemDatabaseModel
 import com.ampairs.order.db.entity.OrderEntity
 import com.ampairs.order.db.entity.OrderItemEntity
 import com.ampairs.order.domain.Order
@@ -24,18 +17,15 @@ import com.ampairs.product.data.ProductDataService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.flowOn
 import kotlin.time.Clock
 
 /**
  * Local-only order repository (offline-first, spec 010). Writes go to Room and flag the entity
  * PENDING_PUSH; the [com.ampairs.order.sync.OrderSyncDelegate] owns all order ↔ server traffic.
+ * The list pull is now driven by CentralSyncService (TriggerPull) via [OrderSyncDelegate].
  *
- * NOTE (intermediate state): [createInvoice] (order→invoice conversion, refactored in A3/T024) and
- * [getOrderResource] (legacy list pull, replaced by syncService TriggerPull in A3) still reference
- * [orderApi]. The create/edit path no longer touches the network.
+ * NOTE: [createInvoice] (order→invoice conversion) still references [orderApi]; that is the only
+ * remaining network call in this repository. The create/edit path no longer touches the network.
  */
 @Inject
 class OrderRepository(
@@ -91,28 +81,6 @@ class OrderRepository(
             it.product = product ?: it.product
         }
         return orderDomain
-    }
-
-    fun getOrderResource(): Flow<Resource<List<OrderApiModel>>> {
-        return networkResource(shouldMakeNetworkRequest = { true }, makeNetworkRequest = {
-            val sharedFlow = MutableSharedFlow<Response<List<OrderApiModel>>>(replay = 10)
-            var fetchSize = 1000
-            while (fetchSize == 1000) {
-                val lastUpdated = orderDao.getMaxLastUpdated() ?: 0
-                val ordersResponse = orderApi.getOrders(lastUpdated)
-                val orders = ordersResponse.data
-                if (orders != null) {
-                    orderDao.updateOrders(
-                        orders.asDatabaseModel(), orders.asItemDatabaseModel()
-                    )
-                }
-                fetchSize = ordersResponse.data?.size ?: 0
-                sharedFlow.emit(ordersResponse)
-            }
-            sharedFlow
-        }, processNetworkResponse = {
-
-        }).flowOn(DispatcherProvider.io)
     }
 
     fun getOrders(searchText: String): PagingSource<Int, OrderEntity> {

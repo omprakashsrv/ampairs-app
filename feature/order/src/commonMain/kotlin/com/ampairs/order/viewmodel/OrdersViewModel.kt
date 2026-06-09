@@ -9,57 +9,45 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.ampairs.common.coroutines.DispatcherProvider
-import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
 import com.ampairs.product.domain.Constants.Companion.PAGE_SIZE
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.db.dto.asDomainModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
-class OrdersViewModel(val orderRepository: OrderRepository) : ViewModel() {
+class OrdersViewModel(
+    val orderRepository: OrderRepository,
+    private val syncService: CentralSyncService,
+) : ViewModel() {
 
     var searchText by mutableStateOf("")
     val ordersState = mutableStateOf<UiState<Boolean>>(UiState.Empty)
 
     init {
-        syncTaxInfos()
-    }
-
-    private fun syncTaxInfos() {
-        viewModelScope.launch(DispatcherProvider.io) {
-            orderRepository.getOrderResource().collect { response ->
-                viewModelScope.launch(Dispatchers.Main) {
-                    when (response.status) {
-                        is Resource.Status.Loading -> {
-                            ordersState.value = UiState.Loading(false)
-                        }
-
-                        is Resource.Status.Success -> {
-                            ordersState.value = UiState.Success(true)
-                        }
-
-                        is Resource.Status.EmptySuccess -> {
-                            ordersState.value = UiState.Empty
-                        }
-
-                        is Resource.Status.Error -> {
-                            val status = response.status as Resource.Status.Error
-                            ordersState.value = UiState.Error(status.errorMessage)
-                        }
-                    }
+        syncService.observeEntity(SyncEntity.ORDER)
+            .onEach { state ->
+                val status = state?.status
+                ordersState.value = when (status) {
+                    is SyncStatus.Syncing -> UiState.Loading(false)
+                    is SyncStatus.Failed -> UiState.Error(status.reason)
+                    else -> UiState.Success(true)
                 }
             }
-        }
+            .launchIn(viewModelScope)
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.ORDER))
     }
 
     val orders = Pager(config = PagingConfig(
