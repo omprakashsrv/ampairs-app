@@ -29,10 +29,12 @@ import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
 import com.ampairs.navigation.providers.orderEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
+import com.ampairs.navigation.providers.storeEntryProvider
 import com.ampairs.navigation.providers.subscriptionEntryProvider
 import com.ampairs.navigation.providers.taxEntryProvider
 import com.ampairs.navigation.providers.unitEntryProvider
 import com.ampairs.navigation.providers.workspaceEntryProvider
+import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
@@ -63,6 +65,7 @@ fun combinedEntryProvider(
         ?: businessEntryProvider(key, backStack)
         ?: subscriptionEntryProvider(key, backStack)
         ?: unitEntryProvider(key, backStack)
+        ?: storeEntryProvider(key, backStack)
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key)
@@ -150,6 +153,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(UnitListRoute)
+        }
+    }
+
+    // Route.Settings redirects to StoreSettingsRoute
+    is Route.Settings -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(StoreSettingsRoute)
         }
     }
 

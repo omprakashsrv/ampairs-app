@@ -13,7 +13,7 @@ kotlin {
     jvmToolchain(21)
 
     android {
-        namespace = "com.ampairs.invoice"
+        namespace = "com.ampairs.store"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         androidResources.enable = true
@@ -39,20 +39,13 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
-                implementation(projects.feature.customerApi)
-                implementation(projects.feature.productApi)
-                implementation(projects.feature.taxApi)
-                implementation(projects.feature.unitApi)
-                implementation(projects.feature.store)
-                implementation(libs.room.runtime)
-                implementation(libs.room.paging)
-                implementation(libs.sqlite.bundled)
-                implementation(libs.paging.common)
-                implementation(libs.paging.componse.common)
-                // Material3 Adaptive
+                // Adaptive layout
                 implementation(libs.material3.adaptive)
-                implementation(libs.material3.adaptive.layout)
-                implementation(libs.material3.adaptive.navigation)
+                implementation(libs.room.runtime)
+                implementation(libs.sqlite.bundled)
+                // Navigation 3 for NavKey
+                implementation(libs.navigation3.ui)
+                implementation(libs.lifecycle.viewmodel.navigation3)
             }
         }
         androidMain {

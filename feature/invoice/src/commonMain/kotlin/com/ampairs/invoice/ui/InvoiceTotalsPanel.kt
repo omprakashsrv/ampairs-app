@@ -66,6 +66,7 @@ fun InvoiceTotalsPanel(
     totals: TotalsUi,
     overallDiscountKind: DiscountKind,
     overallDiscountAmount: Double,
+    showOverallDiscount: Boolean = true,
     onPriceMode: (PriceMode) -> Unit,
     onOverallDiscount: (DiscountKind, Double) -> Unit,
     onOverallDiscountMode: (OverallDiscountMode) -> Unit,
@@ -100,35 +101,37 @@ fun InvoiceTotalsPanel(
                 TotRow("Line discounts", "− ${totals.lineDiscountTotal.toDecimal()}", mono, cs.secondary)
             }
 
-            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Overall discount", style = MaterialTheme.typography.bodyMedium, color = cs.onSurface)
-                    Text(
-                        if (preTax) "apportioned pre-tax" else "post-tax reduction",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = cs.onSurfaceVariant,
-                        modifier = Modifier.clickable { onOverallDiscountMode(if (preTax) OverallDiscountMode.POST_TAX_REDUCTION else OverallDiscountMode.PRE_TAX_APPORTIONED) },
+            if (showOverallDiscount) {
+                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Overall discount", style = MaterialTheme.typography.bodyMedium, color = cs.onSurface)
+                        Text(
+                            if (preTax) "apportioned pre-tax" else "post-tax reduction",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.onSurfaceVariant,
+                            modifier = Modifier.clickable { onOverallDiscountMode(if (preTax) OverallDiscountMode.POST_TAX_REDUCTION else OverallDiscountMode.PRE_TAX_APPORTIONED) },
+                        )
+                    }
+                    SingleChoiceSegmentedButtonRow {
+                        listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to "₹").forEachIndexed { i, (k, l) ->
+                            SegmentedButton(
+                                selected = overallDiscountKind == k,
+                                onClick = { onOverallDiscount(k, overallDiscountAmount) },
+                                shape = SegmentedButtonDefaults.itemShape(i, 2),
+                            ) { Text(l) }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = if (overallDiscountAmount == 0.0) "" else overallDiscountAmount.toString(),
+                        onValueChange = { onOverallDiscount(overallDiscountKind, it.toDoubleOrNull() ?: 0.0) },
+                        placeholder = { Text("0") },
+                        singleLine = true,
+                        modifier = Modifier.padding(start = 8.dp).width(96.dp),
                     )
                 }
-                SingleChoiceSegmentedButtonRow {
-                    listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to "₹").forEachIndexed { i, (k, l) ->
-                        SegmentedButton(
-                            selected = overallDiscountKind == k,
-                            onClick = { onOverallDiscount(k, overallDiscountAmount) },
-                            shape = SegmentedButtonDefaults.itemShape(i, 2),
-                        ) { Text(l) }
-                    }
+                if (preTax && totals.overallDiscountValue > 0.0) {
+                    TotRow("— apportioned across lines", "− ${totals.overallDiscountValue.toDecimal()}", mono, cs.secondary)
                 }
-                OutlinedTextField(
-                    value = if (overallDiscountAmount == 0.0) "" else overallDiscountAmount.toString(),
-                    onValueChange = { onOverallDiscount(overallDiscountKind, it.toDoubleOrNull() ?: 0.0) },
-                    placeholder = { Text("0") },
-                    singleLine = true,
-                    modifier = Modifier.padding(start = 8.dp).width(96.dp),
-                )
-            }
-            if (preTax && totals.overallDiscountValue > 0.0) {
-                TotRow("— apportioned across lines", "− ${totals.overallDiscountValue.toDecimal()}", mono, cs.secondary)
             }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp), color = cs.outlineVariant)

@@ -20,6 +20,7 @@ import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.ProductSummary
+import com.ampairs.store.domain.StoreSettingsProvider
 import com.ampairs.unit.data.repository.UnitOption
 import com.ampairs.unit.data.repository.UnitOptionsLookup
 import com.ampairs.common.di.WorkspaceScope
@@ -55,6 +56,7 @@ class InvoiceViewModel(
     val tokenRepository: TokenRepository,
     val taxRateProvider: TaxRateProvider,
     val unitOptionsLookup: UnitOptionsLookup,
+    val storeSettings: StoreSettingsProvider,
 ) :
     ViewModel() {
 
@@ -267,6 +269,10 @@ class InvoiceViewModel(
     var totals by mutableStateOf(TotalsUi())
         private set
 
+    // Whether discount UI (line + overall) is shown — driven by the workspace setting.
+    var showDiscount by mutableStateOf(true)
+        private set
+
     // Unit choices for the currently edited line (loaded on demand).
     var unitOptions by mutableStateOf<List<UnitOption>>(emptyList())
         private set
@@ -308,6 +314,13 @@ class InvoiceViewModel(
 
     init {
         viewModelScope.launch(DispatcherProvider.io) {
+            // Apply workspace settings as defaults before the first totals computation.
+            showDiscount = storeSettings.getBoolean("invoice", "show_discount_options", default = true)
+            priceMode = if (storeSettings.getBoolean("common", "prices_include_tax", default = false)) {
+                PriceMode.TAX_INCLUSIVE
+            } else {
+                PriceMode.TAX_EXCLUSIVE
+            }
             if (!id.isNullOrEmpty()) {
                 invoice = invoiceRepository.getInvoice(id)
                 fromCustomer = invoice.fromCustomer

@@ -45,6 +45,9 @@ sealed interface Route : NavKey {
     data object Agent : Route
 
     @Serializable
+    data object Settings : Route
+
+    @Serializable
     data object More : Route
 }
 
