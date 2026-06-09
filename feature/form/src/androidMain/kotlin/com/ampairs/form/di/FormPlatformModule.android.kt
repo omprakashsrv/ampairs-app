@@ -25,7 +25,7 @@ interface FormAndroidModule {
         ): FormDatabase = factory.createAndroidDatabase<FormDatabase>(
             context = context,
             queryDispatcher = Dispatchers.IO,
-            moduleName = "form",
+            moduleName = "form_v2",
             workspaceSlug = config.workspaceSlug,
         ).also { closableRegistry.register { it.close() } }
     }

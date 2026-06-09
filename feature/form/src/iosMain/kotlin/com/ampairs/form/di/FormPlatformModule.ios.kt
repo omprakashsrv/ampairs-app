@@ -20,7 +20,7 @@ interface FormIosModule {
             config: WorkspaceConfig,
             closableRegistry: WorkspaceClosableRegistry,
         ): FormDatabase = factory.createDatabase<FormDatabase>(
-            moduleName = "form",
+            moduleName = "form_v2",
             workspaceSlug = config.workspaceSlug,
         ).also { closableRegistry.register { it.close() } }
     }

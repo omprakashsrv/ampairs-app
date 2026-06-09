@@ -1,12 +1,15 @@
 package com.ampairs.form.sync
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.form.FORM_SYNC_BATCH_SIZE
 import com.ampairs.form.data.api.ConfigApi
-import com.ampairs.form.data.db.EntityAttributeDefinitionDao
-import com.ampairs.form.data.db.EntityFieldConfigDao
+import com.ampairs.form.data.db.FormFieldDao
+import com.ampairs.form.data.db.FormSchemaDao
+import com.ampairs.form.data.db.FormSchemaEntity
+import com.ampairs.form.data.db.FormSectionDao
+import com.ampairs.form.data.db.buildSchema
 import com.ampairs.form.data.db.toEntity
-import com.ampairs.form.data.db.toEntityAttributeDefinition
-import com.ampairs.form.data.db.toEntityFieldConfig
+import com.ampairs.form.domain.FormSchema
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
@@ -16,152 +19,93 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
 /**
- * Owns ALL form-config ↔ server traffic on the unified /sync contract. The form domain has two
- * record types (field configs + attribute definitions), each with its own /sync feed:
+ * Owns ALL form-config ↔ server traffic on the single aggregate `/config/schema/sync` feed (spec 011).
+ * One record per entityType. Pull REPLACES each local aggregate (members absent on the server copy are
+ * dropped → delete-by-absence); a locally-dirty aggregate wins (skipped). Push sends dirty aggregates
+ * with `base_version`. The shared FORM checkpoint tracks the max `lastUpdated` seen.
  *
- *   PULL  GET  v1/config/{field-configs|attribute-definitions}/sync
- *   PUSH  POST v1/config/{field-configs|attribute-definitions}/sync
- *
- * Both feeds are paged (batch 100) and reconciled local-unsynced-wins / upsert-as-synced. The single
- * `lastSyncedAtIso` checkpoint for SyncEntity.FORM tracks the max `updatedAt` seen across BOTH feeds.
- *
- * LIMITATION — no soft-delete: the backend form tables (FieldConfig / AttributeDefinition) have no
- * soft-delete column, so the pull feed never carries DELETED rows and the push cannot delete. This
- * delegate therefore upserts only; it never hard-deletes local rows from a server DELETED marker
- * (there is none). Propagating deletions needs a backend `deleted`/`status` column (Flyway migration,
- * out of scope). Local edits are still pushed; physical deletions do not round-trip.
+ * NOTE (spec 011): drafted, compile-gate on device.
  */
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
 @SyncEntityKey(SyncEntity.FORM)
 class FormSyncDelegate(
     private val api: ConfigApi,
-    private val fieldConfigDao: EntityFieldConfigDao,
-    private val attributeDefinitionDao: EntityAttributeDefinitionDao,
+    private val schemaDao: FormSchemaDao,
+    private val sectionDao: FormSectionDao,
+    private val fieldDao: FormFieldDao,
     private val syncStateDao: SyncStateDao,
 ) : SyncDelegate {
 
     override val entity: SyncEntity = SyncEntity.FORM
 
     override suspend fun pullFromServer(): SyncResult =
-        pull().fold(
-            onSuccess = { SyncResult.Success(it) },
-            onFailure = { SyncResult.Failure(it) },
-        )
+        pull().fold(onSuccess = { SyncResult.Success(it) }, onFailure = { SyncResult.Failure(it) })
 
     override suspend fun pushPendingToServer(): SyncResult =
-        pushPending().fold(
-            onSuccess = { SyncResult.Success(it) },
-            onFailure = { SyncResult.Failure(it) },
-        )
+        pushPending().fold(onSuccess = { SyncResult.Success(it) }, onFailure = { SyncResult.Failure(it) })
 
     override suspend fun handleBackendEvent(entityId: String, eventType: String): SyncResult =
-        pull().fold(
-            onSuccess = { SyncResult.Success(it) },
-            onFailure = { SyncResult.Failure(it) },
-        )
+        pull().fold(onSuccess = { SyncResult.Success(it) }, onFailure = { SyncResult.Failure(it) })
 
-    // --- Push -----------------------------------------------------------------------------------
-
-    /**
-     * Bulk push all locally unsynced field configs and attribute definitions in batches of 100.
-     * After a successful batch, the pushed rows are marked synced = true locally. (No soft-delete:
-     * see the class LIMITATION note.)
-     */
-    private suspend fun pushPending(): Result<Int> {
-        return try {
-            var syncedCount = 0
-            var failedCount = 0
-
-            val unsyncedFields = fieldConfigDao.getUnsyncedFieldConfigs()
-            for (batch in unsyncedFields.chunked(100)) {
-                try {
-                    api.pushFieldConfigs(batch.map { it.toEntityFieldConfig() })
-                    fieldConfigDao.insertFieldConfigs(batch.map { it.copy(synced = true) })
-                    syncedCount += batch.size
-                } catch (_: Exception) {
-                    failedCount += batch.size
-                }
+    private suspend fun pull(): Result<Int> = runCatching {
+        val lastSync = syncStateDao.getLastSyncedAtIso(SyncEntity.FORM) ?: ""
+        var total = 0
+        var maxServerTime = ""
+        var page = 0
+        do {
+            val response = api.getSchemaSync(lastSync, page, FORM_SYNC_BATCH_SIZE)
+            val schemas = response.content
+            for (schema in schemas) {
+                val localDirty = schemaDao.getByEntityType(schema.entityType)?.dirty == true
+                if (!localDirty) replaceLocal(schema, dirty = false)   // local unsynced edits win otherwise
+                schema.lastUpdated?.takeIf { it.isNotBlank() && it > maxServerTime }?.let { maxServerTime = it }
+                total++
             }
+            page++
+        } while (response.hasNext && total < 10_000)
 
-            val unsyncedAttributes = attributeDefinitionDao.getUnsyncedAttributeDefinitions()
-            for (batch in unsyncedAttributes.chunked(100)) {
-                try {
-                    api.pushAttributeDefinitions(batch.map { it.toEntityAttributeDefinition() })
-                    attributeDefinitionDao.insertAttributeDefinitions(batch.map { it.copy(synced = true) })
-                    syncedCount += batch.size
-                } catch (_: Exception) {
-                    failedCount += batch.size
-                }
-            }
-
-            if (syncedCount == 0 && failedCount > 0) {
-                Result.failure(Exception("$failedCount form config row(s) failed to push — will retry on reconnect"))
-            } else {
-                Result.success(syncedCount)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        if (maxServerTime.isNotBlank()) syncStateDao.setLastSyncedAtIso(SyncEntity.FORM, maxServerTime)
+        total
     }
 
-    // --- Pull -----------------------------------------------------------------------------------
-
-    /**
-     * Batched incremental pull of BOTH feeds. Local unsynced edits win; everything else is upserted
-     * as synced. Advances the shared FORM checkpoint to the max `updatedAt` across both feeds.
-     */
-    private suspend fun pull(batchSize: Int = 100): Result<Int> {
-        return try {
-            val lastSync = syncStateDao.getLastSyncedAtIso(SyncEntity.FORM) ?: ""
-            var totalSynced = 0
-            var maxServerTime = ""
-
-            // Field configs feed
-            var page = 0
-            do {
-                val response = api.getFieldConfigsSync(lastSync, page, batchSize)
-                val rows = response.content
-                if (rows.isNotEmpty()) {
-                    val entities = rows.mapNotNull { server ->
-                        val existing = fieldConfigDao.getFieldConfigById(server.uid)
-                        if (existing != null && !existing.synced) null            // local unsynced wins
-                        else server.toEntity().copy(synced = true)
-                    }
-                    if (entities.isNotEmpty()) fieldConfigDao.insertFieldConfigs(entities)
-                    val batchMax = rows.mapNotNull { it.updatedAt?.takeIf { ts -> ts.isNotBlank() } }.maxOrNull() ?: ""
-                    if (batchMax > maxServerTime) maxServerTime = batchMax
-                    totalSynced += rows.size
-                }
-                page++
-            } while (response.hasNext && totalSynced < 10000)
-
-            // Attribute definitions feed
-            page = 0
-            do {
-                val response = api.getAttributeDefinitionsSync(lastSync, page, batchSize)
-                val rows = response.content
-                if (rows.isNotEmpty()) {
-                    val entities = rows.mapNotNull { server ->
-                        val existing = attributeDefinitionDao.getAttributeDefinitionById(server.uid)
-                        if (existing != null && !existing.synced) null            // local unsynced wins
-                        else server.toEntity().copy(synced = true)
-                    }
-                    if (entities.isNotEmpty()) attributeDefinitionDao.insertAttributeDefinitions(entities)
-                    val batchMax = rows.mapNotNull { it.updatedAt?.takeIf { ts -> ts.isNotBlank() } }.maxOrNull() ?: ""
-                    if (batchMax > maxServerTime) maxServerTime = batchMax
-                    totalSynced += rows.size
-                }
-                page++
-            } while (response.hasNext && totalSynced < 20000)
-
-            if (maxServerTime.isNotBlank()) {
-                syncStateDao.setLastSyncedAtIso(SyncEntity.FORM, maxServerTime)
+    private suspend fun pushPending(): Result<Int> = runCatching {
+        val dirty = schemaDao.getDirty()
+        if (dirty.isEmpty()) return@runCatching 0
+        var pushed = 0
+        var failed = 0
+        for (header in dirty) {
+            val local = buildSchema(
+                entityType = header.entityType,
+                header = header,
+                sections = sectionDao.getByEntityType(header.entityType),
+                fields = fieldDao.getByEntityType(header.entityType),
+            )
+            try {
+                val resolved = api.pushSchema(listOf(local)).firstOrNull()
+                if (resolved != null) replaceLocal(resolved, dirty = false) else schemaDao.setDirty(header.entityType, false)
+                pushed++
+            } catch (_: Exception) {
+                failed++
             }
-
-            Result.success(totalSynced)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
+        if (pushed == 0 && failed > 0) throw Exception("$failed form schema(s) failed to push — will retry on reconnect")
+        pushed
+    }
+
+    /** Replace the local aggregate for one entityType (delete-by-absence) and set its header. */
+    private suspend fun replaceLocal(schema: FormSchema, dirty: Boolean) {
+        sectionDao.deleteByEntityType(schema.entityType)
+        fieldDao.deleteByEntityType(schema.entityType)
+        sectionDao.insertAll(schema.sections.map { it.toEntity(schema.entityType) })
+        fieldDao.insertAll(schema.fields.map { it.toEntity(schema.entityType) })
+        schemaDao.upsert(
+            FormSchemaEntity(
+                entityType = schema.entityType,
+                version = schema.version,
+                dirty = dirty,
+                updatedAt = schema.lastUpdated,
+            )
+        )
     }
 }
