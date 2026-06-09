@@ -41,7 +41,7 @@ ampairs-app/
 ├── data/common/               # Shared data infrastructure (DB factories, paths, DataStore)
 ├── tallyModule/               # Tally ERP integration (JVM-only)
 ├── thirdparty/androidx/paging/compose/   # Custom Paging3 KMP integration
-└── feature/                   # 16 isolated feature modules
+└── feature/                   # 17 isolated feature modules
     ├── auth/                  # Phone/OTP authentication, JWT, device management
     ├── agent/                 # AI chat/agentic actions
     ├── aws/                   # AWS S3 file uploads
@@ -53,6 +53,7 @@ ampairs-app/
     ├── invoice/               # Invoice creation, GST, PDF
     ├── order/                 # Order management and pricing
     ├── product/               # Product catalog, variants, categories
+    ├── store/                 # Workspace settings (offline-sync; module toggles like tax-inclusive pricing, discount visibility)
     ├── subscription/          # In-app billing (StoreKit/Play Billing)
     ├── tax/                   # Tax codes, configurations, calculator
     ├── unit/                  # Unit and unit conversion management

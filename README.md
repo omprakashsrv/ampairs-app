@@ -100,6 +100,7 @@ ampairs-app/
 │   ├── invoice/            # Invoice creation, GST, PDF, email
 │   ├── order/              # Order management, pricing, status workflow
 │   ├── product/            # Catalog, variants, categories, images
+│   ├── store/              # Workspace settings (offline-sync; module toggles e.g. tax-inclusive pricing, discount visibility)
 │   ├── subscription/       # In-app billing (StoreKit / Play Billing)
 │   ├── tax/                # Tax codes, configurations, calculator
 │   ├── unit/               # Unit definitions and conversions
