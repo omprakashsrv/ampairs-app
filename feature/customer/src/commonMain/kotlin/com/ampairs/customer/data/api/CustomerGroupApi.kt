@@ -18,13 +18,7 @@ interface CustomerGroupApi {
 
     suspend fun getCustomerGroupById(id: String): Response<CustomerGroup>
 
-    suspend fun createCustomerGroup(customerGroup: CustomerGroup): Response<CustomerGroup>
-
-    suspend fun updateCustomerGroup(id: String, customerGroup: CustomerGroup): Response<CustomerGroup>
-
     suspend fun bulkUpsertGroups(groups: List<CustomerGroup>): Result<List<CustomerGroup>>
-
-    suspend fun deleteCustomerGroup(id: String): Response<Unit>
 
     suspend fun searchCustomerGroups(
         query: String,

@@ -31,13 +31,15 @@ class StoreSettingApiImpl(
         val params = mutableMapOf(
             "page" to page.toString(),
             "size" to size.toString(),
+            "sort_by" to "updatedAt",
+            "sort_dir" to "ASC",
         )
-        lastSync?.let { params["last_sync"] = it }
-        return get(client, ApiUrlBuilder.settingUrl("v1/settings"), params)
+        lastSync?.takeIf { it.isNotBlank() }?.let { params["last_sync"] = it }
+        return get(client, ApiUrlBuilder.settingUrl("v1/settings/sync"), params)
     }
 
     override suspend fun push(settings: List<StoreSetting>): Response<List<StoreSetting>> {
-        return postList(client, ApiUrlBuilder.settingUrl("v1/settings"), settings)
+        return postList(client, ApiUrlBuilder.settingUrl("v1/settings/sync"), settings)
     }
 
     override suspend fun definitions(): Response<List<StoreSettingDefinition>> {

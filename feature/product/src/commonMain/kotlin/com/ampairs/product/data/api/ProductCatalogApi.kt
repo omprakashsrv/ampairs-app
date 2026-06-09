@@ -1,24 +1,37 @@
 package com.ampairs.product.data.api
 
+import com.ampairs.common.model.PageResponse
 import com.ampairs.product.api.model.ProductGroupApiModel
 
 interface ProductCatalogApi {
 
-    suspend fun getGroups(): Result<List<ProductGroupApiModel>>
-    suspend fun createGroup(model: ProductGroupApiModel): Result<ProductGroupApiModel>
-    suspend fun updateGroup(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel>
+    /**
+     * Paginated incremental sync feed for each catalog type. Backend has no soft-delete on catalog
+     * entities, so these are upsert-only. [lastSync] is sent only when non-blank.
+     */
+    suspend fun getGroupsSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>>
 
-    suspend fun getCategories(): Result<List<ProductGroupApiModel>>
-    suspend fun createCategory(model: ProductGroupApiModel): Result<ProductGroupApiModel>
-    suspend fun updateCategory(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel>
+    suspend fun getCategoriesSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>>
 
-    suspend fun getBrands(): Result<List<ProductGroupApiModel>>
-    suspend fun createBrand(model: ProductGroupApiModel): Result<ProductGroupApiModel>
-    suspend fun updateBrand(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel>
+    suspend fun getBrandsSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>>
 
-    suspend fun getSubCategories(): Result<List<ProductGroupApiModel>>
-    suspend fun createSubCategory(model: ProductGroupApiModel): Result<ProductGroupApiModel>
-    suspend fun updateSubCategory(id: String, model: ProductGroupApiModel): Result<ProductGroupApiModel>
+    suspend fun getSubCategoriesSync(
+        lastSync: String?,
+        page: Int,
+        size: Int,
+    ): Result<PageResponse<ProductGroupApiModel>>
 
     // Bulk upsert — send all unsynced rows of a catalog type in one request.
     suspend fun updateGroups(models: List<ProductGroupApiModel>): Result<List<ProductGroupApiModel>>

@@ -6,7 +6,6 @@ import com.ampairs.common.model.Response
 
 interface InvoiceApi {
 
-    suspend fun updateInvoice(invoice: InvoiceApiModel): Response<InvoiceApiModel>
     suspend fun getInvoices(lastUpdated: Long): Response<List<InvoiceApiModel>>
 
     /** Bulk upsert for offline sync (spec 010). Server stores taxInfos/totals as supplied. */

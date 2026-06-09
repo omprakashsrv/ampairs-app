@@ -18,14 +18,6 @@ class InvoiceApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository)
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun updateInvoice(invoice: InvoiceApiModel): Response<InvoiceApiModel> {
-        return post(
-            client,
-            ApiUrlBuilder.invoiceUrl("v1/invoices"),
-            invoice
-        )
-    }
-
     override suspend fun getInvoices(lastUpdated: Long): Response<List<InvoiceApiModel>> {
         return get(
             client,

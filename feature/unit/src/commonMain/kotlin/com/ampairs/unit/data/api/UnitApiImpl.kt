@@ -6,7 +6,6 @@ import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
-import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
@@ -16,9 +15,10 @@ import com.ampairs.unit.domain.model.Unit
 import io.ktor.client.engine.HttpClientEngine
 
 /**
- * Ktor-based implementation of UnitApi
+ * Ktor-based implementation of [UnitApi].
  *
- * Uses ApiUrlBuilder for URL construction and httpClient helper for authenticated requests
+ * Uses ApiUrlBuilder for URL construction and httpClient helper for authenticated requests.
+ * Mirrors the canonical CustomerApiImpl bulk `/sync` style.
  */
 @Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class UnitApiImpl(
@@ -28,28 +28,49 @@ class UnitApiImpl(
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun getUnits(
+    override suspend fun getUnitsSync(
+        lastSync: String,
         page: Int,
         size: Int,
-        lastSyncTime: String?,
         sortBy: String,
-        sortDirection: String
-    ): Response<PageResponse<Unit>> {
+        sortDir: String,
+    ): PageResponse<Unit> {
         val params = mutableMapOf(
-            "page" to page.toString(),
-            "size" to size.toString(),
-            "sortBy" to sortBy,
-            "sortDirection" to sortDirection
+            "page" to page,
+            "size" to size,
+            "sort_by" to sortBy,
+            "sort_dir" to sortDir,
         )
+        if (lastSync.isNotBlank()) {
+            params["last_sync"] = lastSync
+        }
 
-        // Add lastSyncTime for incremental sync if provided
-        lastSyncTime?.let { params["lastSyncTime"] = it }
-
-        return get(
+        val response: Response<PageResponse<Unit>> = get(
             client,
-            ApiUrlBuilder.unitUrl("v1/units"),
+            ApiUrlBuilder.unitUrl("v1/units/sync"),
             params
         )
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: PageResponse(
+            content = emptyList(),
+            pageNumber = page,
+            pageSize = size,
+            totalPages = 0,
+            totalElements = 0L,
+            hasNext = false,
+            hasPrevious = false,
+            first = true,
+            last = true
+        )
+    }
+
+    override suspend fun bulkUpdateUnits(units: List<Unit>): List<Unit> {
+        val response: Response<List<Unit>> = post(
+            client,
+            ApiUrlBuilder.unitUrl("v1/units/sync"),
+            units
+        )
+        return response.data ?: throw Exception("Failed to bulk update units")
     }
 
     override suspend fun searchUnits(
@@ -72,29 +93,6 @@ class UnitApiImpl(
 
     override suspend fun getUnitById(id: String): Response<Unit> {
         return get(
-            client,
-            ApiUrlBuilder.unitUrl("v1/units/$id")
-        )
-    }
-
-    override suspend fun createUnit(unit: Unit): Response<Unit> {
-        return post(
-            client,
-            ApiUrlBuilder.unitUrl("v1/units"),
-            unit
-        )
-    }
-
-    override suspend fun updateUnit(id: String, unit: Unit): Response<Unit> {
-        return post(
-            client,
-            ApiUrlBuilder.unitUrl("v1/units/$id"),
-            unit
-        )
-    }
-
-    override suspend fun deleteUnit(id: String): Response<kotlin.Unit> {
-        return delete(
             client,
             ApiUrlBuilder.unitUrl("v1/units/$id")
         )

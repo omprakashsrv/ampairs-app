@@ -37,10 +37,7 @@ interface CustomerApi {
         sortBy: String = "updatedAt",
         sortDir: String = "ASC"
     ): PageResponse<Customer>
-    suspend fun createCustomer(customer: Customer): Customer
-    suspend fun updateCustomer(customer: Customer): Customer
     suspend fun bulkUpdateCustomers(customers: List<Customer>): List<Customer>
-    suspend fun deleteCustomer(customerId: String)
     suspend fun getCustomer(customerId: String): Customer?
     suspend fun getStates(lastSync: String = ""): List<State>
     suspend fun importState(stateCode: String): String

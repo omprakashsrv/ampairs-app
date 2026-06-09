@@ -2,15 +2,11 @@ package com.ampairs.customer.data.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
-import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
-import com.ampairs.common.post
 import com.ampairs.common.postList
-import com.ampairs.common.put
-import com.ampairs.common.put
 import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -36,11 +32,11 @@ class CustomerGroupApiImpl(
         val params = mutableMapOf(
             "page" to page.toString(),
             "size" to size.toString(),
-            "sortBy" to sortBy,
-            "sortDirection" to sortDirection
+            "sort_by" to sortBy,
+            "sort_dir" to sortDirection
         )
 
-        lastSyncTime?.let { params["last_sync"] = it }
+        lastSyncTime?.takeIf { it.isNotBlank() }?.let { params["last_sync"] = it }
 
         // Incremental sync feed: returns rows updated since last_sync INCLUDING inactive
         // (soft-deleted) groups, so the client can permanently delete removed rows.
@@ -68,35 +64,9 @@ class CustomerGroupApiImpl(
         return response
     }
 
-    override suspend fun createCustomerGroup(customerGroup: CustomerGroup): Response<CustomerGroup> {
-        val response: Response<CustomerGroup> = post(
-            client,
-            ApiUrlBuilder.customerUrl("v1/groups"),
-            customerGroup
-        )
-        return response
-    }
-
-    override suspend fun updateCustomerGroup(id: String, customerGroup: CustomerGroup): Response<CustomerGroup> {
-        val response: Response<CustomerGroup> = put(
-            client,
-            ApiUrlBuilder.customerUrl("v1/groups/$id"),
-            customerGroup
-        )
-        return response
-    }
-
     override suspend fun bulkUpsertGroups(groups: List<CustomerGroup>): Result<List<CustomerGroup>> = runCatching {
-        val response: Response<List<CustomerGroup>> = postList(client, ApiUrlBuilder.customerUrl("v1/groups"), groups)
+        val response: Response<List<CustomerGroup>> = postList(client, ApiUrlBuilder.customerUrl("v1/groups/sync"), groups)
         response.data ?: emptyList()
-    }
-
-    override suspend fun deleteCustomerGroup(id: String): Response<Unit> {
-        val response: Response<Unit> = delete(
-            client,
-            ApiUrlBuilder.customerUrl("v1/groups/$id")
-        )
-        return response
     }
 
     override suspend fun searchCustomerGroups(
