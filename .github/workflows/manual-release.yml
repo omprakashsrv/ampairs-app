@@ -219,6 +219,20 @@ jobs:
             echo "Warning: ANDROID_KEYSTORE_BASE64 secret not set. Build may fail if signing is required."
           fi
 
+      - name: Write google-services.json
+        # google-services.json is gitignored (Firebase config is injected, not committed).
+        # The plugin is applied in androidApp/, so the file must land there.
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > androidApp/google-services.json
+            echo "google-services.json written"
+          else
+            echo "ERROR: GOOGLE_SERVICES_JSON secret not set — the google-services plugin will fail the Android build."
+            exit 1
+          fi
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
