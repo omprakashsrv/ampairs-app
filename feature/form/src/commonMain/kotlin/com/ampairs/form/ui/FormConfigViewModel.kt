@@ -161,15 +161,25 @@ class FormConfigViewModel(
             displayName = src.displayName + " copy", displayOrder = src.displayOrder + 1))
     }
 
-    /** Insert or update a field from the Add/Edit sheet. */
+    /** Insert or update a field from the Add/Edit sheet. New custom fields get a stable, unique key. */
     fun upsertField(draft: FormField, targetSectionUid: String, isNew: Boolean) = mutate { s ->
         if (isNew) {
+            val base = draft.fieldKey.ifBlank { draft.displayName.slugKey() }.ifBlank { "field" }
+            val key = uniqueFieldKey(base, s.fields.mapTo(mutableSetOf()) { it.fieldKey })
             val order = s.fields.count { it.sectionUid == targetSectionUid }
             s.copy(fields = s.fields + draft.copy(uid = UidGenerator.generateUid("FF"), source = FieldSource.CUSTOM,
-                sectionUid = targetSectionUid, displayOrder = order))
+                fieldKey = key, sectionUid = targetSectionUid, displayOrder = order))
         } else {
             s.copy(fields = s.fields.map { if (it.uid == draft.uid) draft.copy(sectionUid = targetSectionUid) else it })
         }
+    }
+
+    /** Returns [base] if free, otherwise the first `${base}_N` (N≥2) not already used — no duplicate keys. */
+    private fun uniqueFieldKey(base: String, existing: Set<String>): String {
+        if (base !in existing) return base
+        var i = 2
+        while ("${base}_$i" in existing) i++
+        return "${base}_$i"
     }
 
     // ---- section ops ----------------------------------------------------------------------------

@@ -250,7 +250,7 @@ internal fun ChoiceSourceEditor(draft: FormField, sourceKeys: Collection<String>
 
 /* ── Add / Edit field sheet ───────────────────────────────────────────────────────────────────── */
 
-private fun String.slugKey(): String =
+internal fun String.slugKey(): String =
     trim().lowercase().map { if (it.isLetterOrDigit()) it else '_' }.joinToString("").trim('_').ifBlank { "field" }
 
 @Composable
