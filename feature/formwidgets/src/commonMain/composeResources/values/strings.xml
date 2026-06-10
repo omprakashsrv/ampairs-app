@@ -26,4 +26,16 @@
     <!-- Contact import widget -->
     <string name="widget_contact_import">Import from Contact</string>
     <string name="widget_contact_importing">Importing…</string>
+
+    <!-- Address field widget -->
+    <string name="widget_address_street">Street</string>
+    <string name="widget_address_city">City</string>
+    <string name="widget_address_state">State</string>
+    <string name="widget_address_pincode">Pincode</string>
+    <string name="widget_address_country">Country</string>
+
+    <!-- Business hours widget -->
+    <string name="widget_hours_closed">Closed</string>
+    <string name="widget_hours_open_label">Open</string>
+    <string name="widget_hours_close_label">Close</string>
 </resources>

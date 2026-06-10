@@ -129,6 +129,7 @@ import com.ampairs.customer.ui.components.images.CustomerImageViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.formwidgets.location.LocationService
 import com.ampairs.formwidgets.widget.LocalContactImportHandler
+import com.ampairs.form.render.LocalFormEntityUid
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_GROUP
 import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
@@ -188,7 +189,8 @@ fun CustomerFormScreen(
 
             else -> {
                 CompositionLocalProvider(
-                    LocalContactImportHandler provides { contactData -> viewModel.importContactData(contactData) }
+                    LocalContactImportHandler provides { contactData -> viewModel.importContactData(contactData) },
+                    LocalFormEntityUid provides (customerId ?: ""),
                 ) {
                 CustomerForm(
                     customerId = customerId,

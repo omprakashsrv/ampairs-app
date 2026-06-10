@@ -56,6 +56,7 @@
     <string name="customer_section_billing">Billing Address</string>
     <string name="customer_section_shipping">Shipping Address</string>
     <string name="customer_section_attributes">Custom Attributes</string>
+    <string name="customer_images_save_first">Save the customer first to manage images.</string>
     <string name="customer_section_status">Status</string>
     <string name="customer_section_financial">Financial Information</string>
     <string name="customer_section_additional">Additional Information</string>

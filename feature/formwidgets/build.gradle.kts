@@ -28,6 +28,7 @@ kotlin {
                 implementation(projects.feature.form)
                 implementation(projects.data.common)
                 implementation(libs.kermit)
+                implementation(libs.kotlinx.serialization.json)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 // Compose
