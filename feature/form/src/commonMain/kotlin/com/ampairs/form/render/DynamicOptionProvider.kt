@@ -21,5 +21,7 @@ data class FieldOption(val value: String, val label: String)
 /** Resolves a `dynamicSourceKey` to its provider. Injected with the Metro multibinding set. */
 class DynamicOptionRegistry(providers: Set<DynamicOptionProvider>) {
     private val byKey: Map<String, DynamicOptionProvider> = providers.associateBy { it.sourceKey }
+    /** All registered source keys (for the editor's "From data" picker). */
+    val keys: Set<String> get() = byKey.keys
     fun forKey(sourceKey: String?): DynamicOptionProvider? = sourceKey?.let { byKey[it] }
 }
