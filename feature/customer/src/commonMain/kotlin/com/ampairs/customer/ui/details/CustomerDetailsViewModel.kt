@@ -6,6 +6,7 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.form.data.repository.ConfigLookup
+import com.ampairs.form.domain.FieldSource
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -24,7 +25,13 @@ data class CustomerImagesConfig(
 data class CustomerDetailsUiState(
     val customer: Customer? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    /**
+     * Custom attribute rows ready for display (spec 011, T035): the customer's attributes joined
+     * with the unified schema — hidden fields filtered out, labels from `displayName`. Attributes
+     * with no schema field (stale keys) keep their raw key as the label.
+     */
+    val attributeRows: List<Pair<String, String>> = emptyList(),
 )
 
 @AssistedInject
@@ -82,7 +89,8 @@ class CustomerDetailsViewModel(
                             it.copy(
                                 customer = customer,
                                 isLoading = false,
-                                error = if (customer == null) "Customer not found" else null
+                                error = if (customer == null) "Customer not found" else null,
+                                attributeRows = customer?.let { c -> attributeRowsFor(c) } ?: emptyList(),
                             )
                         }
                     }
@@ -93,6 +101,25 @@ class CustomerDetailsViewModel(
                         error = e.message ?: "Failed to load customer"
                     )
                 }
+            }
+        }
+    }
+
+    /** Read-view honors the schema (T035): hide attributes whose field is hidden; label by displayName. */
+    private suspend fun attributeRowsFor(customer: Customer): List<Pair<String, String>> {
+        val attrs = customer.attributes?.takeIf { it.isNotEmpty() } ?: return emptyList()
+        val schema = try {
+            configRepository.observeSchema("customer").first()
+        } catch (e: Exception) {
+            null
+        }
+        val customFields = schema?.fields?.filter { it.source == FieldSource.CUSTOM }?.associateBy { it.fieldKey }
+        return attrs.mapNotNull { (key, value) ->
+            val field = customFields?.get(key)
+            when {
+                field == null -> key to value                       // no schema info — show raw
+                !field.visible -> null                              // hidden in config — omit
+                else -> field.displayName.ifBlank { key } to value  // configured label
             }
         }
     }

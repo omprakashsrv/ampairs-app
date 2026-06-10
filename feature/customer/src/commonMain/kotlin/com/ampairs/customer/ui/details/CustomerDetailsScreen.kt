@@ -177,6 +177,7 @@ fun CustomerDetailsScreen(
                 if (isExpanded) {
                     CustomerDetailsExpanded(
                         customer = customer,
+                        attributeRows = uiState.attributeRows,
                         showImages = imagesConfig.visible,
                         imagesReadOnly = imagesConfig.readOnly,
                         onEdit = { onEditCustomer(customerId) },
@@ -185,6 +186,7 @@ fun CustomerDetailsScreen(
                 } else {
                     CustomerDetailsMobile(
                         customer = customer,
+                        attributeRows = uiState.attributeRows,
                         showImages = imagesConfig.visible,
                         imagesReadOnly = imagesConfig.readOnly,
                         modifier = Modifier.fillMaxSize()
@@ -217,6 +219,7 @@ fun CustomerDetailsScreen(
 @Composable
 private fun CustomerDetailsMobile(
     customer: Customer,
+    attributeRows: List<Pair<String, String>>,
     showImages: Boolean,
     imagesReadOnly: Boolean,
     modifier: Modifier = Modifier
@@ -234,7 +237,7 @@ private fun CustomerDetailsMobile(
         }
 
         when (selectedTab) {
-            0 -> CustomerOverviewTab(customer = customer, modifier = Modifier.fillMaxSize())
+            0 -> CustomerOverviewTab(customer = customer, attributeRows = attributeRows, modifier = Modifier.fillMaxSize())
             1 -> if (showImages) {
                 CustomerImageManagementScreen(
                     customerId = customer.uid,
@@ -252,6 +255,7 @@ private fun CustomerDetailsMobile(
 @Composable
 private fun CustomerDetailsExpanded(
     customer: Customer,
+    attributeRows: List<Pair<String, String>>,
     showImages: Boolean,
     imagesReadOnly: Boolean,
     onEdit: () -> Unit,
@@ -337,7 +341,7 @@ private fun CustomerDetailsExpanded(
 
         // Details panel
         OutlinedCard(modifier = Modifier.weight(if (showImages) 0.6f else 1f).fillMaxHeight()) {
-            CustomerOverviewTab(customer = customer, modifier = Modifier.fillMaxSize())
+            CustomerOverviewTab(customer = customer, attributeRows = attributeRows, modifier = Modifier.fillMaxSize())
         }
 
         // Images panel (no tabs on desktop)
@@ -497,6 +501,7 @@ private fun StatCard(
 @Composable
 private fun CustomerOverviewTab(
     customer: Customer,
+    attributeRows: List<Pair<String, String>>,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -591,9 +596,9 @@ private fun CustomerOverviewTab(
             }
         }
 
-        customer.attributes?.takeIf { it.isNotEmpty() }?.let { attrs ->
+        if (attributeRows.isNotEmpty()) {
             InfoSection(title = stringResource(Res.string.customer_section_additional)) {
-                attrs.forEach { (key, value) -> InfoRow(label = key, value = value) }
+                attributeRows.forEach { (label, value) -> InfoRow(label = label, value = value) }
             }
         }
 

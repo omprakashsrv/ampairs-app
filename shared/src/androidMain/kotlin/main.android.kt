@@ -10,7 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import com.ampairs.customer.ui.components.location.LocationServiceMapHandler
+import com.ampairs.formwidgets.location.LocationServiceMapHandler
 import com.ampairs.di.AndroidAppGraph
 import com.ampairs.di.AppGraphHolder
 import kotlinx.coroutines.delay

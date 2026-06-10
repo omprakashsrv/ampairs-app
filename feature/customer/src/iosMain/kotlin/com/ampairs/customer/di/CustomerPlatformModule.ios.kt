@@ -7,6 +7,7 @@ import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_6_7
 import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_7_8
+import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_8_9
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -24,7 +25,7 @@ interface CustomerIosModule {
         ): CustomerDatabase = factory.createDatabase<CustomerDatabase>(
             moduleName = "customer",
             workspaceSlug = config.workspaceSlug,
-            migrations = listOf(CUSTOMER_MIGRATION_6_7, CUSTOMER_MIGRATION_7_8),
+            migrations = listOf(CUSTOMER_MIGRATION_6_7, CUSTOMER_MIGRATION_7_8, CUSTOMER_MIGRATION_8_9),
         ).also { closableRegistry.register { it.close() } }
     }
 }

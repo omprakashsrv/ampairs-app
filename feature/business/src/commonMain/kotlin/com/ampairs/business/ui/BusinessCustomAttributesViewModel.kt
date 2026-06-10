@@ -4,91 +4,95 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.business.data.repository.BusinessRepository
 import com.ampairs.business.domain.BusinessProfileUpdateRequest
-import com.ampairs.form.data.repository.ConfigLookup
-import com.ampairs.form.domain.EntityAttributeDefinition
-import com.ampairs.form.domain.EntityType
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.form.data.repository.ConfigLookup
+import com.ampairs.form.domain.FieldSource
+import com.ampairs.form.domain.FormSchema
+import com.ampairs.form.render.CustomFieldWidgetRegistry
+import com.ampairs.form.render.DynamicOptionRegistry
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for Business Custom Attributes Screen.
- * Manages loading custom attribute definitions and business profile data.
+ * ViewModel for the Business Custom Attributes screen (spec 011, US5). Custom fields come from the
+ * unified business `FormSchema`; values bridge to `BusinessProfile.customAttributes`
+ * (`Map<String, String>`), so the save path is unchanged.
  */
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class BusinessCustomAttributesViewModel(
     private val businessRepository: BusinessRepository,
-    private val configRepository: ConfigLookup
+    private val configRepository: ConfigLookup,
+    private val syncService: CentralSyncService,
+    val optionRegistry: DynamicOptionRegistry,
+    val widgetRegistry: CustomFieldWidgetRegistry,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomAttributesUiState())
     val uiState: StateFlow<CustomAttributesUiState> = _uiState.asStateFlow()
 
+    /** Live unified schema for the business form — consumed by the shared attributes section. */
+    val formSchema: StateFlow<FormSchema?> =
+        configRepository.observeSchema("business")
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     init {
         loadData()
+        // Pull the form schema via CentralSyncService → FormSyncDelegate.
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.FORM))
+        observeSchemaPresence()
+    }
+
+    private fun observeSchemaPresence() {
+        viewModelScope.launch {
+            formSchema.collect { schema ->
+                val hasCustom = schema?.fields?.any { it.source == FieldSource.CUSTOM && it.visible } == true
+                _uiState.value = _uiState.value.copy(hasCustomAttributes = hasCustom)
+            }
+        }
     }
 
     private fun loadData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
             try {
-                // Step 1: Load business profile to get current custom attribute values
                 val profileResult = businessRepository.fetchBusinessProfile()
-
-                val businessName: String
-                val customAttributeValues: Map<String, Any?>
-
-                if (profileResult.isSuccess) {
-                    val profile = profileResult.getOrThrow()
-                    businessName = profile.name
-                    customAttributeValues = profile.customAttributes?.mapValues { it.value as Any? } ?: emptyMap()
-                } else {
-                    businessName = ""
-                    customAttributeValues = emptyMap()
+                profileResult.onSuccess { profile ->
+                    _uiState.value = _uiState.value.copy(
+                        businessName = profile.name,
+                        customAttributeValues = profile.customAttributes ?: emptyMap(),
+                        isLoading = false,
+                        error = null,
+                    )
+                }
+                profileResult.onFailure { error ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = "Failed to load business profile: ${profileResult.exceptionOrNull()?.message}"
+                        error = "Failed to load business profile: ${error.message}",
                     )
-                    return@launch
                 }
-
-                // Step 2: Load attribute definitions from config (try fetching from server first)
-                configRepository.refreshConfig(EntityType.BUSINESS)
-
-                // Step 3: Get config schema from database (use first() instead of collect to avoid overwriting values)
-                val schema = configRepository.observeConfigSchema(EntityType.BUSINESS).first()
-                val attributes = schema?.attributeDefinitions?.filter { it.visible } ?: emptyList()
-
-                _uiState.value = _uiState.value.copy(
-                    businessName = businessName,
-                    customAttributes = attributes,
-                    customAttributeValues = customAttributeValues,
-                    hasCustomAttributes = attributes.isNotEmpty(),
-                    isLoading = false,
-                    error = null
-                )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Failed to load data: ${e.message}"
+                    error = "Failed to load data: ${e.message}",
                 )
             }
         }
     }
 
-    fun updateAttributeValue(attributeKey: String, value: Any?) {
-        val currentValues = _uiState.value.customAttributeValues.toMutableMap()
-        currentValues[attributeKey] = value
-        _uiState.value = _uiState.value.copy(customAttributeValues = currentValues)
+    fun updateAttributes(values: Map<String, String>) {
+        _uiState.value = _uiState.value.copy(customAttributeValues = values)
     }
 
     fun saveCustomAttributes() {
@@ -96,13 +100,10 @@ class BusinessCustomAttributesViewModel(
             _uiState.value = _uiState.value.copy(isSaving = true, error = null, saveSuccess = false)
 
             try {
-                // Fetch current business profile
                 val profileResult = businessRepository.fetchBusinessProfile()
 
                 profileResult.onSuccess { currentProfile ->
-                    val customAttributesMap = _uiState.value.customAttributeValues.mapValues { (_, value) ->
-                        value?.toString() ?: ""
-                    }
+                    val customAttributesMap = _uiState.value.customAttributeValues
 
                     val updateRequest = BusinessProfileUpdateRequest(
                         name = currentProfile.name,
@@ -123,29 +124,24 @@ class BusinessCustomAttributesViewModel(
                         taxId = currentProfile.taxId,
                         registrationNumber = currentProfile.registrationNumber,
                         active = currentProfile.active,
-                        customAttributes = customAttributesMap
+                        customAttributes = customAttributesMap,
                     )
 
                     businessRepository.updateBusinessProfile(updateRequest)
                         .onSuccess { updatedProfile ->
-                            val savedCustomAttributes = if (updatedProfile.customAttributes.isNullOrEmpty()) {
-                                customAttributesMap.mapValues { it.value as Any? }
-                            } else {
-                                updatedProfile.customAttributes.mapValues { it.value as Any? }
-                            }
-
+                            val saved = updatedProfile.customAttributes?.takeIf { it.isNotEmpty() } ?: customAttributesMap
                             _uiState.value = _uiState.value.copy(
                                 isSaving = false,
                                 saveSuccess = true,
                                 error = null,
-                                customAttributeValues = savedCustomAttributes
+                                customAttributeValues = saved,
                             )
                         }
                         .onFailure { error ->
                             _uiState.value = _uiState.value.copy(
                                 isSaving = false,
                                 saveSuccess = false,
-                                error = "Failed to save: ${error.message}"
+                                error = "Failed to save: ${error.message}",
                             )
                         }
                 }
@@ -154,14 +150,14 @@ class BusinessCustomAttributesViewModel(
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         saveSuccess = false,
-                        error = "Failed to fetch current profile: ${error.message}"
+                        error = "Failed to fetch current profile: ${error.message}",
                     )
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
                     saveSuccess = false,
-                    error = "Failed to save custom attributes: ${e.message}"
+                    error = "Failed to save custom attributes: ${e.message}",
                 )
             }
         }
@@ -169,6 +165,7 @@ class BusinessCustomAttributesViewModel(
 
     fun refresh() {
         loadData()
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.FORM))
     }
 
     fun clearSaveSuccess() {
@@ -177,7 +174,8 @@ class BusinessCustomAttributesViewModel(
 }
 
 /**
- * UI State for Custom Attributes Screen
+ * UI State for the Custom Attributes screen. Field definitions come from [BusinessCustomAttributesViewModel.formSchema];
+ * this carries the value map and screen status only.
  */
 data class CustomAttributesUiState(
     val isLoading: Boolean = false,
@@ -185,7 +183,6 @@ data class CustomAttributesUiState(
     val error: String? = null,
     val businessName: String = "",
     val hasCustomAttributes: Boolean = false,
-    val customAttributes: List<EntityAttributeDefinition> = emptyList(),
-    val customAttributeValues: Map<String, Any?> = emptyMap(),
-    val saveSuccess: Boolean = false
+    val customAttributeValues: Map<String, String> = emptyMap(),
+    val saveSuccess: Boolean = false,
 )

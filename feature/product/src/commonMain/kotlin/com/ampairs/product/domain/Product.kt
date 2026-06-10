@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.ampairs.product.api.model.ProductApiModel
 import com.ampairs.product.db.entity.ProductEntity
+import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -34,6 +35,7 @@ data class Product(
     var productType: ProductType? = null,
     var serviceType: ServiceType? = null,
     var hasVariants: Boolean = false,
+    var attributes: Map<String, String> = emptyMap(),
     var variants: List<ProductVariant>? = null,
     // var inventory: Inventory? = null
 ) {
@@ -90,7 +92,10 @@ fun ProductEntity.asDomainModel(): Product {
         serviceType = this.service_type?.let { type ->
             try { ServiceType.valueOf(type) } catch (e: Exception) { null }
         },
-        hasVariants = this.has_variants == 1
+        hasVariants = this.has_variants == 1,
+        attributes = this.attributes_json?.let {
+            try { Json.decodeFromString<Map<String, String>>(it) } catch (e: Exception) { null }
+        } ?: emptyMap()
     )
 }
 
@@ -121,7 +126,8 @@ fun Product.asDatabaseModel(): ProductEntity {
         low_stock_alert = this.lowStockAlert,
         product_type = this.productType?.name,
         service_type = this.serviceType?.name,
-        has_variants = if (this.hasVariants) 1 else 0
+        has_variants = if (this.hasVariants) 1 else 0,
+        attributes_json = this.attributes.takeIf { it.isNotEmpty() }?.let { Json.encodeToString(it) }
     )
 }
 
@@ -154,6 +160,9 @@ fun ProductEntity.asProductApiModel(): ProductApiModel {
         softDeleted = this.soft_deleted == 1,
         taxCodes = arrayListOf(),
         unitConversions = arrayListOf(),
+        attributes = this.attributes_json?.let {
+            try { Json.decodeFromString<Map<String, String>>(it) } catch (e: Exception) { null }
+        },
     )
 }
 
@@ -184,7 +193,8 @@ fun List<ProductApiModel>.asDatabaseModel(): List<ProductEntity> {
             base_unit = it.baseUnit?.name,
             selling_price = it.sellingPrice,
             soft_deleted = if (it.softDeleted) 1 else 0,
-            synced = 1
+            synced = 1,
+            attributes_json = it.attributes?.takeIf { m -> m.isNotEmpty() }?.let { m -> Json.encodeToString(m) }
         )
     }
 }

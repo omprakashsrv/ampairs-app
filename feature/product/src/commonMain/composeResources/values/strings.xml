@@ -1,7 +1,7 @@
 <resources>
     <!-- Product list screen -->
     <string name="prod_list_title">Products</string>
-    <string name="prod_list_count">%d products</string>
+    <string name="prod_list_count">%1$d products</string>
     <string name="prod_list_new_product">New Product</string>
     <string name="prod_list_col_name">Name</string>
     <string name="prod_list_col_code">Code</string>
@@ -17,9 +17,9 @@
     <string name="prod_list_refreshing">Refreshing…</string>
     <string name="prod_list_empty_title">No products yet</string>
     <string name="prod_list_empty_desc">Create your first product to get started</string>
-    <string name="prod_list_code_format">Code: %s</string>
-    <string name="prod_list_brand_format">Brand: %s</string>
-    <string name="prod_list_in_stock_format">In Stock (%s)</string>
+    <string name="prod_list_code_format">Code: %1$s</string>
+    <string name="prod_list_brand_format">Brand: %1$s</string>
+    <string name="prod_list_in_stock_format">In Stock (%1$s)</string>
 
     <!-- Shared labels and states -->
     <string name="prod_out_of_stock">Out of Stock</string>
@@ -56,8 +56,8 @@
     <string name="prod_label_base_unit_id">Base Unit ID</string>
     <string name="prod_label_product_type">Product Type</string>
     <string name="prod_label_service_type">Service Type</string>
-    <string name="prod_sku_format">SKU: %s</string>
-    <string name="prod_stock_format">Stock: %s</string>
+    <string name="prod_sku_format">SKU: %1$s</string>
+    <string name="prod_stock_format">Stock: %1$s</string>
 
     <!-- Section headers (shared) -->
     <string name="prod_section_basic">Basic Information</string>
@@ -77,23 +77,23 @@
     <string name="prod_details_cd_delete">Delete</string>
     <string name="prod_details_not_found">Product not found</string>
     <string name="prod_details_delete_title">Delete Product</string>
-    <string name="prod_details_delete_confirm">Are you sure you want to delete %s? This action cannot be undone.</string>
+    <string name="prod_details_delete_confirm">Are you sure you want to delete %1$s? This action cannot be undone.</string>
     <string name="prod_details_delete_btn">Delete</string>
     <string name="prod_details_total_stock_label">Total Stock</string>
     <string name="prod_details_variants_count_label">Variants</string>
     <string name="prod_details_inactive_alert">This product is currently inactive</string>
-    <string name="prod_details_low_stock_alert">Low stock alert: Only %s units remaining</string>
+    <string name="prod_details_low_stock_alert">Low stock alert: Only %1$s units remaining</string>
     <string name="prod_details_variants_low_stock">Some variants are low on stock</string>
-    <string name="prod_details_and_more">And %s more…</string>
+    <string name="prod_details_and_more">And %1$s more…</string>
     <string name="prod_details_no_variants">No variants added yet</string>
 
     <!-- Variant management screen -->
-    <string name="prod_variant_list_title">Variants - %s</string>
+    <string name="prod_variant_list_title">Variants - %1$s</string>
     <string name="prod_variant_add">Add Variant</string>
     <string name="prod_variant_empty_title">No Variants</string>
     <string name="prod_variant_empty_desc">Add variants to manage different product options</string>
     <string name="prod_variant_delete_title">Delete Variant</string>
-    <string name="prod_variant_delete_confirm">Are you sure you want to delete \'%s\'? This action cannot be undone.</string>
+    <string name="prod_variant_delete_confirm">Are you sure you want to delete \'%1$s\'? This action cannot be undone.</string>
     <string name="prod_variant_low_stock">Low Stock</string>
     <string name="prod_variant_selling">Selling</string>
 
@@ -122,7 +122,7 @@
     <string name="prod_form_clear_selection">Clear Selection</string>
     <string name="prod_form_category_id_label">Category ID</string>
     <string name="prod_form_brand_id_label">Brand ID</string>
-    <string name="prod_form_images_count">Images (%s)</string>
+    <string name="prod_form_images_count">Images (%1$s)</string>
     <string name="prod_form_add_image">Add Image</string>
     <string name="prod_form_no_images">No images added</string>
     <string name="prod_form_cd_product_image">Product Image</string>
@@ -144,7 +144,7 @@
 
     <!-- Product Images -->
     <string name="prod_images_title">Product Images</string>
-    <string name="prod_images_count">%d images</string>
+    <string name="prod_images_count">%1$d images</string>
     <string name="prod_images_retry_sync_cd">Retry sync</string>
     <string name="prod_images_error">Image error</string>
     <string name="prod_images_dismiss">Dismiss</string>

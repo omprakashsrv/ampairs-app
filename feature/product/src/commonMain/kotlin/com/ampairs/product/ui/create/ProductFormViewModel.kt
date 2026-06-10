@@ -11,8 +11,13 @@ import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.domain.Group
 import com.ampairs.product.domain.asCategoryGroupDomainModel
 import com.ampairs.product.domain.asGroupDomainModel
+import com.ampairs.form.data.repository.ConfigLookup
+import com.ampairs.form.domain.FormSchema
+import com.ampairs.form.render.CustomFieldWidgetRegistry
+import com.ampairs.form.render.DynamicOptionRegistry
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
 import com.ampairs.tax.data.repository.TaxCodeLookup
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.unit.data.repository.UnitLookup
@@ -24,9 +29,11 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -45,7 +52,18 @@ class ProductFormViewModel(
     private val groupDao: GroupDao,
     private val subCategoryDao: SubCategoryDao,
     private val unitLookup: UnitLookup,
+    private val configRepository: ConfigLookup,
+    val optionRegistry: DynamicOptionRegistry,
+    val widgetRegistry: CustomFieldWidgetRegistry,
 ) : ViewModel() {
+
+    /**
+     * Live unified schema for the product form (spec 011, US5). The schema-driven attributes
+     * section consumes this together with [optionRegistry] / [widgetRegistry].
+     */
+    val formSchema: StateFlow<FormSchema?> =
+        configRepository.observeSchema("product")
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
@@ -70,6 +88,8 @@ class ProductFormViewModel(
                 .collect { query -> searchTaxCodes(query) }
         }
         loadDropdownData()
+        // Pull the form schema so the config-driven attributes section is current.
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.FORM))
     }
 
     private fun loadDropdownData() {

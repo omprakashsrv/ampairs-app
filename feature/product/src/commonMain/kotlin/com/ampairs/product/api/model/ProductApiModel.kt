@@ -29,4 +29,5 @@ data class ProductApiModel(
     @SerialName("unit_conversions") val unitConversions: List<UnitConversionApiModel>,
     @SerialName("images") val images: List<ImageApiModel>,
     @SerialName("inventory") val inventory: InventoryApiModel? = null,
+    @SerialName("attributes") val attributes: Map<String, String>? = null,
 )

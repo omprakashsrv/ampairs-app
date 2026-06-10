@@ -95,6 +95,7 @@ dependencies {
     implementation(projects.data.common)
     implementation(projects.feature.auth)
     implementation(projects.feature.customer)
+    implementation(projects.feature.formwidgets)
 
     // Android Activity + Compose integration
     implementation(libs.androidx.activity.compose)

@@ -45,6 +45,7 @@ include(
     ":feature:subscription-api",
     ":feature:agent",
     ":feature:form",
+    ":feature:formwidgets",
     ":feature:unit",
     ":feature:store",
     ":feature:update",

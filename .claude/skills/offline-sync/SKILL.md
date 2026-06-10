@@ -61,18 +61,21 @@ DELETE in-band: the push body carries soft-deleted rows (active=false / status=D
 - **Query params are snake_case**: `last_sync`, `page`, `size`, `sort_by`, `sort_dir`. `last_sync` is sent only when non-blank.
 - The `/sync` GET **must return soft-deleted rows** so deletions propagate to every device.
 - Backend mirror: `GET/POST /{module}/v1/{resource}/sync` → `ApiResponse<PageResponse<T>>` / `ApiResponse<List<T>>`. The legacy non-`/sync` list+bulk endpoints were removed.
-- **On the contract:** customer, customer_group, customer_type, product, product_catalog (groups/categories/brands/sub-categories, paginated), unit, store/settings, order, invoice, **form** (two feeds — field-configs + attribute-definitions; see Form note below).
+- **On the contract:** customer, customer_group, customer_type, product, product_catalog (groups/categories/brands/sub-categories, paginated), unit, store/settings, order, invoice.
+- **Aggregate-grained on the contract:** **form** — see the Form note below.
 - **Off-pattern by design** (do NOT force onto this contract): **Tax** (subscribe/unsubscribe), **File** (entity-scoped multipart, UI-invoked).
 
-> **Form is on the contract with one caveat — no soft-delete.** The form module has TWO record
-> types, each with its own `/sync` feed: `GET/POST v1/config/field-configs/sync` and
-> `GET/POST v1/config/attribute-definitions/sync` (both paged, both push UID-keyed). `FormSyncDelegate`
-> pulls both feeds (local-unsynced-wins, upsert-as-synced) and pushes both unsynced tables in batches
-> of 100. The shared `SyncEntity.FORM` checkpoint tracks the max `updatedAt` across both feeds.
-> LIMITATION: the backend form tables (`FieldConfig` / `AttributeDefinition`, both extending
-> `BaseDomain`) have **no soft-delete column**, so the pull feed never carries DELETED rows and the
-> push cannot delete — deletions do NOT round-trip between devices. Closing that gap needs a backend
-> `deleted`/`status` column (a Flyway migration), intentionally out of scope.
+> **Form is an aggregate-grained `/sync` resource (spec 011).** A single feed
+> `GET/POST v1/config/schema/sync` carries one `FormSchema` aggregate per entityType (uid =
+> entityType; each bundles its ordered sections + fields). `FormSyncDelegate` runs it under one
+> `SyncEntity.FORM` checkpoint:
+> - **Pull replaces** each local aggregate — local members absent from the server copy are deleted
+>   (delete-by-absence); local-unsynced aggregate wins until pushed.
+> - **Push** sends the dirty aggregate(s) with `base_version`; on a version-conflict response the
+>   delegate re-pulls, re-applies local edits, and retries (aggregate-level last-write-wins).
+> - Checkpoint advances to `max(updatedAt)` across aggregates.
+> Deletions round-trip via absence (no soft-delete column needed — the prior two-feed
+> field-configs/attribute-definitions model and its no-delete gap are gone).
 
 ---
 
@@ -361,10 +364,11 @@ available-for-import (customer group/type), or the file repo's entity-scoped
   3-repo cluster (code/rule/component) whose sync is aggregated in `MyTaxCodesViewModel`.
 - **Ecom** — separate storefront module (catalog/order pull-only; address has its own CRUD).
 
-> **Form is now ON the contract** (push + pull, two feeds — `v1/config/field-configs/sync` and
-> `v1/config/attribute-definitions/sync`) — it is no longer pull-only/server-authoritative. Its only
-> gap vs. the canonical contract is in-band soft-delete: the backend form tables lack a delete column,
-> so deletions don't round-trip. See the Form note under the Canonical Sync API Contract section.
+> **Form is an aggregate-grained `/sync` resource** (spec 011): one feed
+> `GET/POST v1/config/schema/sync` carrying one `FormSchema` per entityType (uid = entityType;
+> sections + fields bundled). Pull replaces the local aggregate (delete-by-absence); push carries
+> `base_version` with aggregate-level last-write-wins + re-pull/retry on version conflict. Deletions
+> round-trip via absence. See the Form note under the Canonical Sync API Contract section.
 
 > **Order / Invoice are now on the canonical `/sync` contract** (`GET/POST v1/orders/sync`,
 > `v1/invoices/sync`). Note: the app still has a separate non-sync list pull
