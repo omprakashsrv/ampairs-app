@@ -95,7 +95,10 @@ class FormValueState internal constructor(
     }
 }
 
-/** Remembers a [FormValueState] for the given schema; re-seeds when the schema identity changes. */
+/**
+ * Remembers a [FormValueState] for the given schema; re-seeds when the schema identity or any of
+ * [reseedKeys] change (e.g. an external import overwriting the backing form state).
+ */
 @Composable
-fun rememberFormValueState(schema: FormSchema, initialValues: Map<String, Any?>): FormValueState =
-    remember(schema) { FormValueState(schema, initialValues) }
+fun rememberFormValueState(schema: FormSchema, initialValues: Map<String, Any?>, vararg reseedKeys: Any?): FormValueState =
+    remember(schema, *reseedKeys) { FormValueState(schema, initialValues) }

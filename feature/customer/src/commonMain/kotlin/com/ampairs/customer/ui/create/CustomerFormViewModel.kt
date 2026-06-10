@@ -197,7 +197,9 @@ data class CustomerFormUiState(
     val showCustomerImages: Boolean = true,
     val customerImagesReadOnly: Boolean = false,
     val isImportingContact: Boolean = false,
-    val contactImportError: String? = null
+    val contactImportError: String? = null,
+    /** Bumped on each successful contact import so config-driven fields re-seed (spec 011). */
+    val contactImportCount: Int = 0
 )
 
 @AssistedInject
@@ -290,7 +292,7 @@ class CustomerFormViewModel(
         if (contactData.state.isNotBlank() && current.state.isBlank()) updated = updated.copy(state = contactData.state)
         if (contactData.pincode.isNotBlank() && current.pincode.isBlank()) updated = updated.copy(pincode = contactData.pincode)
         if (contactData.country.isNotBlank() && current.country.isBlank()) updated = updated.copy(country = contactData.country)
-        _uiState.update { it.copy(formState = validateForm(updated)) }
+        _uiState.update { it.copy(formState = validateForm(updated), contactImportCount = it.contactImportCount + 1) }
     }
 
     fun clearContactImportError() {
