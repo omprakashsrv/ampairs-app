@@ -39,6 +39,8 @@ kotlin {
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
                 implementation(projects.feature.formApi)
+                implementation(projects.feature.form)
+                implementation(projects.data.sync)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 // Coil for image loading

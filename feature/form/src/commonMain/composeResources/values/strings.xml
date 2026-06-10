@@ -49,4 +49,5 @@
     <string name="form_unsaved_save_leave">Save &amp; leave</string>
     <string name="form_unsaved_discard_leave">Discard &amp; leave</string>
     <string name="form_unsaved_keep_editing">Keep editing</string>
+    <string name="form_field_unsupported">Unsupported field: %1$s</string>
 </resources>

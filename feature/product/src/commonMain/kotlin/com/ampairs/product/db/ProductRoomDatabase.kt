@@ -35,7 +35,7 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
         ProductVariantEntity::class,
         VariantAttributeEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @ConstructedBy(ProductRoomDatabaseConstructor::class)

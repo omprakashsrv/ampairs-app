@@ -2,6 +2,7 @@ package com.ampairs.form.sync
 
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.form.FORM_SYNC_BATCH_SIZE
+import com.ampairs.form.FormLogger
 import com.ampairs.form.data.api.ConfigApi
 import com.ampairs.form.data.db.FormFieldDao
 import com.ampairs.form.data.db.FormSchemaDao
@@ -85,7 +86,8 @@ class FormSyncDelegate(
                 val resolved = api.pushSchema(listOf(local)).firstOrNull()
                 if (resolved != null) replaceLocal(resolved, dirty = false) else schemaDao.setDirty(header.entityType, false)
                 pushed++
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                FormLogger.w("FormSyncDelegate", "push failed for '${header.entityType}'", e)
                 failed++
             }
         }

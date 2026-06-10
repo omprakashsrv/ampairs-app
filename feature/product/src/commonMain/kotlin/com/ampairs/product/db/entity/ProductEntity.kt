@@ -39,5 +39,6 @@ data class ProductEntity(
     val ref_id: String? = null,
     val active: Int = 1,
     val soft_deleted: Int = 0,
-    val synced: Int = 0
+    val synced: Int = 0,
+    val attributes_json: String? = null
 )

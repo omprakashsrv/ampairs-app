@@ -25,6 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.form.generated.resources.Res
+import ampairsapp.feature.form.generated.resources.form_field_unsupported
 import com.ampairs.form.domain.FieldDataType
 import com.ampairs.form.domain.FormField
 import com.ampairs.form.domain.OptionSource
@@ -67,7 +70,7 @@ fun FormFieldRenderer(
                     error = error,
                 )
             } else {
-                Text("Unsupported field: ${field.displayName}", modifier = modifier)
+                Text(stringResource(Res.string.form_field_unsupported, field.displayName), modifier = modifier)
             }
         }
     }

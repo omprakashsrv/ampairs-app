@@ -37,6 +37,7 @@ data class CustomerEntity(
     val longitude: Double?,
     val billing_address_json: String?,
     val shipping_address_json: String?,
+    val attributes_json: String? = null,
     val active: Boolean,
     val created_at: String?,
     val updated_at: String?,
@@ -66,6 +67,7 @@ fun Customer.toEntity(): CustomerEntity = CustomerEntity(
     longitude = longitude,
     billing_address_json = billingAddress?.let { Json.encodeToString(it) },
     shipping_address_json = shippingAddress?.let { Json.encodeToString(it) },
+    attributes_json = attributes?.takeIf { it.isNotEmpty() }?.let { Json.encodeToString(it) },
     active = active,
     created_at = createdAt,
     updated_at = updatedAt,
@@ -101,6 +103,13 @@ fun CustomerEntity.toDomain(): Customer = Customer(
     shippingAddress = shipping_address_json?.let {
         try {
             Json.decodeFromString<CustomerAddress>(it)
+        } catch (e: Exception) {
+            null
+        }
+    },
+    attributes = attributes_json?.let {
+        try {
+            Json.decodeFromString<Map<String, String>>(it)
         } catch (e: Exception) {
             null
         }
