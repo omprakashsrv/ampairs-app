@@ -32,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.form.generated.resources.Res
+import ampairsapp.feature.form.generated.resources.*
 import com.ampairs.form.domain.FieldDataType
 import com.ampairs.form.domain.FormField
 import com.ampairs.form.domain.FormSchema
@@ -56,9 +59,9 @@ fun LivePreview(schema: FormSchema, modifier: Modifier = Modifier) {
                 Row(Modifier.fillMaxWidth().background(scheme.primary).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = scheme.onPrimary)
                     Spacer(Modifier.width(12.dp))
-                    Text("New ${schema.entityType.replaceFirstChar { it.uppercase() }}", color = scheme.onPrimary, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    Text(stringResource(Res.string.form_preview_new_entity, schema.entityType.replaceFirstChar { it.uppercase() }), color = scheme.onPrimary, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                     Surface(color = scheme.onPrimary.copy(alpha = 0.2f), shape = RoundedCornerShape(50)) {
-                        Text("Save", Modifier.padding(horizontal = 12.dp, vertical = 5.dp), color = scheme.onPrimary, style = MaterialTheme.typography.labelMedium)
+                        Text(stringResource(Res.string.form_preview_save), Modifier.padding(horizontal = 12.dp, vertical = 5.dp), color = scheme.onPrimary, style = MaterialTheme.typography.labelMedium)
                     }
                 }
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -66,7 +69,7 @@ fun LivePreview(schema: FormSchema, modifier: Modifier = Modifier) {
                         Column(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Filled.VisibilityOff, null, Modifier.size(32.dp), tint = scheme.onSurfaceVariant)
                             Spacer(Modifier.size(8.dp))
-                            Text("Every field is hidden. Turn some on to build the form.", style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant)
+                            Text(stringResource(Res.string.form_preview_all_hidden), style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant)
                         }
                     }
                     sections.forEach { sec ->
@@ -85,7 +88,7 @@ fun LivePreview(schema: FormSchema, modifier: Modifier = Modifier) {
                     }
                     if (anyField) {
                         Surface(color = scheme.primary, shape = RoundedCornerShape(50), modifier = Modifier.fillMaxWidth()) {
-                            Text("Save ${schema.entityType.replaceFirstChar { it.uppercase() }}", Modifier.padding(13.dp), color = scheme.onPrimary, style = MaterialTheme.typography.labelLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            Text(stringResource(Res.string.form_preview_save_entity, schema.entityType.replaceFirstChar { it.uppercase() }), Modifier.padding(13.dp), color = scheme.onPrimary, style = MaterialTheme.typography.labelLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                         }
                     }
                 }
@@ -112,9 +115,9 @@ private fun PreviewField(f: FormField) {
         Spacer(Modifier.size(5.dp))
         val placeholder = f.placeholder?.ifBlank { null } ?: f.defaultValue?.ifBlank { null }
         when (f.dataType) {
-            FieldDataType.CHOICE -> FauxInput(placeholder ?: "Select…", trailing = Icons.Filled.ArrowDropDown, ro = !f.enabled)
+            FieldDataType.CHOICE -> FauxInput(placeholder ?: stringResource(Res.string.form_preview_select), trailing = Icons.Filled.ArrowDropDown, ro = !f.enabled)
             FieldDataType.MULTI_CHOICE -> Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                (f.enumValues ?: listOf("Option A", "Option B")).take(3).forEachIndexed { i, o ->
+                (f.enumValues ?: listOf(stringResource(Res.string.form_preview_option_a), stringResource(Res.string.form_preview_option_b))).take(3).forEachIndexed { i, o ->
                     Surface(shape = RoundedCornerShape(50), color = if (i == 0) scheme.secondaryContainer else Color.Transparent, border = if (i == 0) null else BorderStroke(1.dp, scheme.outline)) {
                         Text(o, Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium, color = if (i == 0) scheme.onSecondaryContainer else scheme.onSurfaceVariant)
                     }
@@ -122,11 +125,11 @@ private fun PreviewField(f: FormField) {
             }
             FieldDataType.CUSTOM -> Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = scheme.surfaceContainerLow, border = BorderStroke(1.dp, scheme.outline)) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(f.widgetKey?.replaceFirstChar { it.uppercase() } ?: "Widget", style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant)
+                    Text(f.widgetKey?.replaceFirstChar { it.uppercase() } ?: stringResource(Res.string.form_preview_widget), style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant)
                 }
             }
-            FieldDataType.TEXTAREA -> FauxInput(placeholder ?: "Type here…", minHeight = 72, ro = !f.enabled)
-            else -> FauxInput(placeholder ?: "Type here…", ro = !f.enabled)
+            FieldDataType.TEXTAREA -> FauxInput(placeholder ?: stringResource(Res.string.form_preview_type_here), minHeight = 72, ro = !f.enabled)
+            else -> FauxInput(placeholder ?: stringResource(Res.string.form_preview_type_here), ro = !f.enabled)
         }
     }
 }

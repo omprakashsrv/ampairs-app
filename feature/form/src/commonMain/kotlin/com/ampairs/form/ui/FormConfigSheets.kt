@@ -67,6 +67,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.form.generated.resources.Res
+import ampairsapp.feature.form.generated.resources.*
 import com.ampairs.form.domain.FieldDataType
 import com.ampairs.form.domain.FieldSource
 import com.ampairs.form.domain.FormField
@@ -97,7 +101,7 @@ internal fun SideSheet(
         ) {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClose) { Icon(Icons.Filled.Close, "Close") }
+                    IconButton(onClose) { Icon(Icons.Filled.Close, stringResource(Res.string.form_sheet_close_cd)) }
                     Column(Modifier.weight(1f)) {
                         Text(title, style = MaterialTheme.typography.titleLarge)
                         if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
@@ -148,7 +152,10 @@ private val MAIN_TYPES = listOf(
 )
 
 private val WIDGET_KINDS = listOf(
-    "address" to "Address", "image_gallery" to "Image Gallery", "location" to "Map Location", "business_hours" to "Business Hours",
+    "address" to Res.string.form_widget_address,
+    "image_gallery" to Res.string.form_widget_image_gallery,
+    "location" to Res.string.form_widget_location,
+    "business_hours" to Res.string.form_widget_business_hours,
 )
 
 @Composable
@@ -196,34 +203,34 @@ internal fun ChoiceSourceEditor(draft: FormField, sourceKeys: Collection<String>
     val mode = draft.optionSource ?: OptionSource.STATIC
     Row(Modifier.fillMaxWidth().padding(bottom = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(selected = mode == OptionSource.STATIC, onClick = { onChange(draft.copy(optionSource = OptionSource.STATIC)) },
-            label = { Text("Fixed list") }, leadingIcon = { Icon(Icons.Filled.List, null, Modifier.size(18.dp)) })
+            label = { Text(stringResource(Res.string.form_sheet_fixed_list)) }, leadingIcon = { Icon(Icons.Filled.List, null, Modifier.size(18.dp)) })
         FilterChip(selected = mode == OptionSource.DYNAMIC, onClick = { onChange(draft.copy(optionSource = OptionSource.DYNAMIC)) },
-            label = { Text("From data") }, leadingIcon = { Icon(Icons.Filled.Dataset, null, Modifier.size(18.dp)) })
+            label = { Text(stringResource(Res.string.form_sheet_from_data)) }, leadingIcon = { Icon(Icons.Filled.Dataset, null, Modifier.size(18.dp)) })
     }
     if (mode == OptionSource.STATIC) {
         val options = draft.enumValues ?: emptyList()
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (options.isEmpty()) Text("No options yet. Add the choices staff can pick from.",
+            if (options.isEmpty()) Text(stringResource(Res.string.form_sheet_no_options),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             options.forEachIndexed { i, o ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(value = o, onValueChange = { v ->
                         onChange(draft.copy(enumValues = options.toMutableList().also { it[i] = v }))
-                    }, singleLine = true, modifier = Modifier.weight(1f), placeholder = { Text("Type an option…") })
+                    }, singleLine = true, modifier = Modifier.weight(1f), placeholder = { Text(stringResource(Res.string.form_sheet_type_option)) })
                     IconButton({ onChange(draft.copy(enumValues = options.filterIndexed { j, _ -> j != i })) }) {
-                        Icon(Icons.Filled.Close, "Remove option", Modifier.size(18.dp))
+                        Icon(Icons.Filled.Close, stringResource(Res.string.form_sheet_remove_option_cd), Modifier.size(18.dp))
                     }
                 }
             }
             TextButton({ onChange(draft.copy(enumValues = options + "")) }) {
-                Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Add option")
+                Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(Res.string.form_sheet_add_option))
             }
         }
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Bind to a live list — it stays in sync as that data changes.",
+            Text(stringResource(Res.string.form_sheet_bind_live),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
-            if (sourceKeys.isEmpty()) Text("No data sources registered for this module yet.",
+            if (sourceKeys.isEmpty()) Text(stringResource(Res.string.form_sheet_no_sources),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             sourceKeys.sorted().forEach { key ->
                 val selected = draft.dynamicSourceKey == key
@@ -271,11 +278,11 @@ internal fun AddEditFieldSheet(
     var targetSection by remember { mutableStateOf(field?.sectionUid ?: sectionUid) }
 
     SideSheet(
-        title = if (isNew) "Add custom field" else "Edit field",
-        subtitle = if (isNew) "Workspace field, fully editable" else if (locked) "Built-in field — limited edits" else "Custom field",
+        title = if (isNew) stringResource(Res.string.form_sheet_add_custom_field) else stringResource(Res.string.form_edit_edit_field),
+        subtitle = if (isNew) stringResource(Res.string.form_sheet_sub_new) else if (locked) stringResource(Res.string.form_sheet_sub_builtin) else stringResource(Res.string.form_sheet_sub_custom),
         onClose = onClose,
         footer = {
-            TextButton(onClose) { Text("Cancel") }
+            TextButton(onClose) { Text(stringResource(Res.string.form_sheet_cancel)) }
             Button(
                 enabled = draft.displayName.isNotBlank(),
                 onClick = {
@@ -284,27 +291,27 @@ internal fun AddEditFieldSheet(
                 },
             ) {
                 Icon(if (isNew) Icons.Filled.Add else Icons.Filled.Check, null, Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp)); Text(if (isNew) "Add field" else "Save changes")
+                Spacer(Modifier.width(6.dp)); Text(if (isNew) stringResource(Res.string.form_edit_add_field) else stringResource(Res.string.form_edit_save_changes))
             }
         },
     ) {
-        FieldGroup("Field label", hint = "This is what your staff will see above the input.") {
+        FieldGroup(stringResource(Res.string.form_sheet_field_label), hint = stringResource(Res.string.form_sheet_field_label_hint)) {
             OutlinedTextField(draft.displayName, { draft = draft.copy(displayName = it) },
-                placeholder = { Text("e.g. Delivery Instructions") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                placeholder = { Text(stringResource(Res.string.form_sheet_field_label_ph)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
         }
-        FieldGroup("Data type", hint = if (locked) "Built-in fields keep their type." else null) {
+        FieldGroup(stringResource(Res.string.form_sheet_data_type), hint = if (locked) stringResource(Res.string.form_sheet_builtin_keep_type) else null) {
             TypeGrid(draft.dataType, enabled = !locked) { t ->
                 draft = draft.copy(dataType = t, widgetKey = if (t == FieldDataType.CUSTOM) draft.widgetKey ?: "address" else null)
             }
         }
         if (draft.dataType == FieldDataType.CUSTOM) {
-            FieldGroup("Widget control") {
+            FieldGroup(stringResource(Res.string.form_sheet_widget_control)) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     WIDGET_KINDS.chunked(2).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             row.forEach { (k, label) ->
                                 Box(Modifier.weight(1f)) {
-                                    TypeCard(label, FieldDataType.CUSTOM.icon(), draft.widgetKey == k) { draft = draft.copy(widgetKey = k) }
+                                    TypeCard(stringResource(label), FieldDataType.CUSTOM.icon(), draft.widgetKey == k) { draft = draft.copy(widgetKey = k) }
                                 }
                             }
                             if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -314,30 +321,30 @@ internal fun AddEditFieldSheet(
             }
         }
         if (draft.dataType == FieldDataType.CHOICE || draft.dataType == FieldDataType.MULTI_CHOICE) {
-            FieldGroup("Options") { ChoiceSourceEditor(draft, sourceKeys) { draft = it } }
+            FieldGroup(stringResource(Res.string.form_sheet_options)) { ChoiceSourceEditor(draft, sourceKeys) { draft = it } }
         }
-        FieldGroup("Section") {
+        FieldGroup(stringResource(Res.string.form_sheet_section)) {
             SectionSelect(schema.sections.sortedBy { it.displayOrder }, targetSection) { targetSection = it }
         }
         if (draft.dataType in listOf(FieldDataType.TEXT, FieldDataType.TEXTAREA, FieldDataType.NUMBER)) {
-            FieldGroup("Placeholder (optional)") {
+            FieldGroup(stringResource(Res.string.form_sheet_placeholder_opt)) {
                 OutlinedTextField(draft.placeholder.orEmpty(), { draft = draft.copy(placeholder = it.ifBlank { null }) },
-                    placeholder = { Text("Hint shown inside the empty field") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    placeholder = { Text(stringResource(Res.string.form_sheet_placeholder_hint)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             }
         }
-        FieldGroup("Help text (optional)") {
+        FieldGroup(stringResource(Res.string.form_sheet_help_opt)) {
             OutlinedTextField(draft.helpText.orEmpty(), { draft = draft.copy(helpText = it.ifBlank { null }) },
-                placeholder = { Text("A short note under the field") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                placeholder = { Text(stringResource(Res.string.form_sheet_help_hint)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
         }
-        SwitchRow("Show on form", "Visible to staff entering data", draft.visible) {
+        SwitchRow(stringResource(Res.string.form_sheet_show_on_form), stringResource(Res.string.form_sheet_show_desc), draft.visible) {
             draft = draft.copy(visible = it, mandatory = if (it) draft.mandatory else false)
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        SwitchRow("Required", "Staff must fill this in", draft.mandatory, enabled = draft.visible && draft.enabled) {
+        SwitchRow(stringResource(Res.string.form_edit_required), stringResource(Res.string.form_sheet_required_desc), draft.mandatory, enabled = draft.visible && draft.enabled) {
             draft = draft.copy(mandatory = it)
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        SwitchRow("Read-only", "Shown but can't be edited", !draft.enabled) {
+        SwitchRow(stringResource(Res.string.form_sheet_readonly), stringResource(Res.string.form_sheet_readonly_desc), !draft.enabled) {
             draft = draft.copy(enabled = !it, mandatory = if (it) false else draft.mandatory)
         }
     }
@@ -350,7 +357,7 @@ private fun SectionSelect(sections: List<FormSection>, selectedUid: String, onSe
     val current = sections.firstOrNull { it.uid == selectedUid }
     ExposedDropdownMenuBox(expanded, { expanded = it }) {
         OutlinedTextField(
-            value = current?.name ?: "Select…", onValueChange = {}, readOnly = true, singleLine = true,
+            value = current?.name ?: stringResource(Res.string.form_preview_select), onValueChange = {}, readOnly = true, singleLine = true,
             leadingIcon = { Icon(Icons.Filled.Folder, null, Modifier.size(18.dp)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
@@ -383,15 +390,15 @@ internal fun AdvancedSheet(
     val isStandard = draft.source == FieldSource.STANDARD
 
     SideSheet(
-        title = "Advanced",
+        title = stringResource(Res.string.form_sheet_advanced_title),
         subtitle = "${draft.displayName} · $sectionName",
         onClose = onClose,
         footer = {
-            TextButton(onClose) { Text("Cancel") }
-            Button({ onApply(draft) }) { Icon(Icons.Filled.Check, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Apply") }
+            TextButton(onClose) { Text(stringResource(Res.string.form_sheet_cancel)) }
+            Button({ onApply(draft) }) { Icon(Icons.Filled.Check, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(Res.string.form_sheet_apply)) }
         },
     ) {
-        FieldGroup("Data type", hint = if (isStandard) "Built-in fields are backed by a data column, so the type is fixed." else null) {
+        FieldGroup(stringResource(Res.string.form_sheet_data_type), hint = if (isStandard) stringResource(Res.string.form_sheet_builtin_type_fixed) else null) {
             if (isStandard) {
                 Surface(shape = RoundedCornerShape(12.dp), color = scheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -409,8 +416,8 @@ internal fun AdvancedSheet(
             }
         }
 
-        FieldGroup("Validation rules", hint = "Pick the checks staff must pass. No formulas — just plain limits.") {
-            SwitchRow("Required", "Can't be left empty", draft.mandatory, enabled = draft.visible && draft.enabled) {
+        FieldGroup(stringResource(Res.string.form_sheet_validation_rules), hint = stringResource(Res.string.form_sheet_validation_hint)) {
+            SwitchRow(stringResource(Res.string.form_edit_required), stringResource(Res.string.form_sheet_required_empty), draft.mandatory, enabled = draft.visible && draft.enabled) {
                 draft = draft.copy(mandatory = it)
             }
             when (draft.dataType) {
@@ -419,18 +426,18 @@ internal fun AdvancedSheet(
                     if (draft.dataType == FieldDataType.TEXT) FormatEditor(draft) { draft = it }
                 }
                 FieldDataType.NUMBER -> NumberRangeEditor(draft) { draft = it }
-                else -> Text("This type has no extra checks.", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                else -> Text(stringResource(Res.string.form_sheet_no_checks), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             }
         }
 
         if (draft.dataType == FieldDataType.CHOICE || draft.dataType == FieldDataType.MULTI_CHOICE) {
-            FieldGroup("Where options come from") { ChoiceSourceEditor(draft, sourceKeys) { draft = it } }
+            FieldGroup(stringResource(Res.string.form_sheet_options_source)) { ChoiceSourceEditor(draft, sourceKeys) { draft = it } }
         }
 
         if (draft.dataType in listOf(FieldDataType.TEXT, FieldDataType.TEXTAREA, FieldDataType.NUMBER)) {
-            FieldGroup("Default value (optional)") {
+            FieldGroup(stringResource(Res.string.form_sheet_default_opt)) {
                 OutlinedTextField(draft.defaultValue.orEmpty(), { draft = draft.copy(defaultValue = it.ifBlank { null }) },
-                    placeholder = { Text("Pre-filled when creating a new record") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    placeholder = { Text(stringResource(Res.string.form_sheet_default_hint)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             }
         }
     }
@@ -444,14 +451,14 @@ private fun LengthRangeEditor(draft: FormField, onChange: (FormField) -> Unit) {
             onChange(draft.copy(validationRules =
                 if (rule == null) draft.validationRules.with(ValidationRule(ValidationRuleType.LENGTH_RANGE, min = 0, max = 100)).orNull()
                 else draft.validationRules.without(ValidationRuleType.LENGTH_RANGE).orNull()))
-        }, label = { Text("Length limits") })
+        }, label = { Text(stringResource(Res.string.form_sheet_length_limits)) })
     }
     if (rule != null) {
         Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             NumBox(rule.min) { v -> onChange(draft.copy(validationRules = draft.validationRules.with(rule.copy(min = v)).orNull())) }
-            Text("to", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(Res.string.form_sheet_to), color = MaterialTheme.colorScheme.onSurfaceVariant)
             NumBox(rule.max) { v -> onChange(draft.copy(validationRules = draft.validationRules.with(rule.copy(max = v)).orNull())) }
-            Text("characters", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(Res.string.form_sheet_characters), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -464,12 +471,12 @@ private fun NumberRangeEditor(draft: FormField, onChange: (FormField) -> Unit) {
             onChange(draft.copy(validationRules =
                 if (rule == null) draft.validationRules.with(ValidationRule(ValidationRuleType.NUMBER_RANGE, minValue = 0.0, maxValue = 100.0)).orNull()
                 else draft.validationRules.without(ValidationRuleType.NUMBER_RANGE).orNull()))
-        }, label = { Text("Number range") })
+        }, label = { Text(stringResource(Res.string.form_sheet_number_range)) })
     }
     if (rule != null) {
         Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             NumBox(rule.minValue?.toInt()) { v -> onChange(draft.copy(validationRules = draft.validationRules.with(rule.copy(minValue = v?.toDouble())).orNull())) }
-            Text("to", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(Res.string.form_sheet_to), color = MaterialTheme.colorScheme.onSurfaceVariant)
             NumBox(rule.maxValue?.toInt()) { v -> onChange(draft.copy(validationRules = draft.validationRules.with(rule.copy(maxValue = v?.toDouble())).orNull())) }
         }
     }
@@ -479,7 +486,7 @@ private fun NumberRangeEditor(draft: FormField, onChange: (FormField) -> Unit) {
 private fun FormatEditor(draft: FormField, onChange: (FormField) -> Unit) {
     val rule = draft.validationRules.rule(ValidationRuleType.FORMAT)
     Column(Modifier.padding(top = 10.dp)) {
-        Text("Format", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(Res.string.form_sheet_format), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(null, FormatKind.EMAIL, FormatKind.PHONE, FormatKind.GSTIN, FormatKind.PAN).forEach { kind ->
@@ -490,7 +497,7 @@ private fun FormatEditor(draft: FormField, onChange: (FormField) -> Unit) {
                             if (kind == null) draft.validationRules.without(ValidationRuleType.FORMAT).orNull()
                             else draft.validationRules.with(ValidationRule(ValidationRuleType.FORMAT, kind = kind)).orNull()))
                     },
-                    label = { Text(kind?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "None") },
+                    label = { Text(kind?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: stringResource(Res.string.form_sheet_format_none)) },
                 )
             }
         }
@@ -523,10 +530,10 @@ internal fun ManageSectionsSheet(
     val scheme = MaterialTheme.colorScheme
     val sections = schema.sections.sortedBy { it.displayOrder }
     SideSheet(
-        title = "Manage sections",
-        subtitle = "Group related fields. The form follows this order.",
+        title = stringResource(Res.string.form_edit_manage_sections),
+        subtitle = stringResource(Res.string.form_sheet_sections_sub),
         onClose = onClose,
-        footer = { Button(onClose) { Icon(Icons.Filled.Check, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Done") } },
+        footer = { Button(onClose) { Icon(Icons.Filled.Check, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(Res.string.form_sheet_done)) } },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             sections.forEachIndexed { i, s ->
@@ -537,23 +544,23 @@ internal fun ManageSectionsSheet(
                         Column(Modifier.weight(1f)) {
                             Text(s.name, style = MaterialTheme.typography.bodyMedium)
                             Text(
-                                "$count field${if (count == 1) "" else "s"}" + (if (isGeneral) " · Default" else "") + (if (!s.visible) " · Hidden" else ""),
+                                pluralStringResource(Res.plurals.form_sheet_field_count, count, count) + (if (isGeneral) " · " + stringResource(Res.string.form_edit_chip_default) else "") + (if (!s.visible) " · " + stringResource(Res.string.form_edit_chip_hidden) else ""),
                                 style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant,
                             )
                         }
-                        IconButton({ onMove(s.uid, -1) }, enabled = i > 0) { Icon(Icons.Filled.ArrowUpward, "Move up", Modifier.size(18.dp)) }
-                        IconButton({ onMove(s.uid, 1) }, enabled = i < sections.size - 1) { Icon(Icons.Filled.ArrowDownward, "Move down", Modifier.size(18.dp)) }
+                        IconButton({ onMove(s.uid, -1) }, enabled = i > 0) { Icon(Icons.Filled.ArrowUpward, stringResource(Res.string.form_edit_move_up), Modifier.size(18.dp)) }
+                        IconButton({ onMove(s.uid, 1) }, enabled = i < sections.size - 1) { Icon(Icons.Filled.ArrowDownward, stringResource(Res.string.form_edit_move_down), Modifier.size(18.dp)) }
                         IconButton({ onToggleVisible(s.uid) }) {
-                            Icon(if (s.visible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff, "Toggle visibility", Modifier.size(18.dp))
+                            Icon(if (s.visible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff, stringResource(Res.string.form_sheet_toggle_visibility_cd), Modifier.size(18.dp))
                         }
                         IconButton({ onDelete(s.uid) }, enabled = !isGeneral) {
-                            Icon(if (isGeneral) Icons.Filled.Lock else Icons.Filled.Delete, "Delete", Modifier.size(18.dp),
+                            Icon(if (isGeneral) Icons.Filled.Lock else Icons.Filled.Delete, stringResource(Res.string.form_sheet_delete_cd), Modifier.size(18.dp),
                                 tint = if (isGeneral) scheme.onSurfaceVariant else scheme.error)
                         }
                     }
                 }
             }
-            TextButton(onAdd) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Add section") }
+            TextButton(onAdd) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(Res.string.form_sheet_add_section)) }
         }
     }
 }
@@ -587,11 +594,11 @@ internal fun DeleteSectionDialog(
                     Box(Modifier.fillMaxSize(), Alignment.Center) { Icon(Icons.Filled.Delete, null, tint = scheme.error) }
                 }
                 Spacer(Modifier.height(16.dp))
-                Text("Delete \"${section.name}\"?", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(Res.string.form_sheet_delete_title, section.name), style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    if (fieldCount == 0) "This section is empty. It will be removed from the form."
-                    else "This section has $fieldCount field${if (fieldCount == 1) "" else "s"}. Choose what happens to them first.",
+                    if (fieldCount == 0) stringResource(Res.string.form_sheet_delete_empty)
+                    else pluralStringResource(Res.plurals.form_sheet_has_fields, fieldCount, fieldCount),
                     style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant,
                 )
                 if (fieldCount > 0) {
@@ -606,7 +613,7 @@ internal fun DeleteSectionDialog(
                             Column(Modifier.padding(12.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     RadioButton(selected = mode == "move", onClick = { mode = "move" })
-                                    Text("Move fields to another section", style = MaterialTheme.typography.bodyLarge)
+                                    Text(stringResource(Res.string.form_sheet_move_fields), style = MaterialTheme.typography.bodyLarge)
                                 }
                                 if (mode == "move") {
                                     Spacer(Modifier.height(8.dp))
@@ -623,8 +630,8 @@ internal fun DeleteSectionDialog(
                             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 RadioButton(selected = mode == "deleteAll", onClick = { mode = "deleteAll" })
                                 Column {
-                                    Text("Delete the section and its custom fields", style = MaterialTheme.typography.bodyLarge)
-                                    Text("Standard fields move to ${general?.name ?: "General"} automatically.",
+                                    Text(stringResource(Res.string.form_sheet_delete_all), style = MaterialTheme.typography.bodyLarge)
+                                    Text(stringResource(Res.string.form_sheet_std_move_to, general?.name ?: "General"),
                                         style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
                                 }
                             }
@@ -633,11 +640,11 @@ internal fun DeleteSectionDialog(
                 }
                 Spacer(Modifier.height(20.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-                    TextButton(onClose) { Text("Cancel") }
+                    TextButton(onClose) { Text(stringResource(Res.string.form_sheet_cancel)) }
                     Button(
                         onClick = { onConfirm(if (fieldCount == 0) "move" else mode, target) },
                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = scheme.error, contentColor = scheme.onError),
-                    ) { Icon(Icons.Filled.Delete, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Delete section") }
+                    ) { Icon(Icons.Filled.Delete, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(Res.string.form_edit_delete_section)) }
                 }
             }
         }

@@ -9,11 +9,17 @@ import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.ToggleOn
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.ampairs.form.domain.FieldDataType
 import com.ampairs.form.domain.FieldSource
 import com.ampairs.form.domain.FormField
 import com.ampairs.form.domain.OptionSource
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.form.generated.resources.Res
+import ampairsapp.feature.form.generated.resources.*
 
 /** Icon + human label for a field's data type (mirrors the design's TYPES map). */
 internal fun FieldDataType.icon(): ImageVector = when (this) {
@@ -27,16 +33,19 @@ internal fun FieldDataType.icon(): ImageVector = when (this) {
     FieldDataType.CUSTOM -> Icons.Filled.Widgets
 }
 
-internal fun FieldDataType.typeLabel(): String = when (this) {
-    FieldDataType.TEXT -> "Text"
-    FieldDataType.TEXTAREA -> "Paragraph"
-    FieldDataType.NUMBER -> "Number"
-    FieldDataType.BOOLEAN -> "Yes / No"
-    FieldDataType.DATE -> "Date"
-    FieldDataType.CHOICE -> "Choice"
-    FieldDataType.MULTI_CHOICE -> "Multi-choice"
-    FieldDataType.CUSTOM -> "Widget"
+internal fun FieldDataType.typeLabelRes(): StringResource = when (this) {
+    FieldDataType.TEXT -> Res.string.form_type_text
+    FieldDataType.TEXTAREA -> Res.string.form_type_paragraph
+    FieldDataType.NUMBER -> Res.string.form_type_number
+    FieldDataType.BOOLEAN -> Res.string.form_type_yesno
+    FieldDataType.DATE -> Res.string.form_type_date
+    FieldDataType.CHOICE -> Res.string.form_type_choice
+    FieldDataType.MULTI_CHOICE -> Res.string.form_type_multi_choice
+    FieldDataType.CUSTOM -> Res.string.form_type_widget
 }
+
+@Composable
+internal fun FieldDataType.typeLabel(): String = stringResource(typeLabelRes())
 
 internal fun FormField.icon(): ImageVector = dataType.icon()
 
@@ -45,17 +54,20 @@ internal val ESSENTIAL_KEYS = setOf("name")
 internal fun FormField.isEssential(): Boolean = source == FieldSource.STANDARD && fieldKey in ESSENTIAL_KEYS
 
 /** One-line summary of a field's type + validation/options (mirrors the design's subline). */
+@Composable
 internal fun FormField.summaryLine(): String {
     val parts = mutableListOf(dataType.typeLabel())
     validationRules?.forEach { rule ->
         when (rule.type.name) {
-            "FORMAT" -> rule.kind?.let { parts.add(it.name.lowercase().replaceFirstChar { c -> c.uppercase() } + " format") }
+            "FORMAT" -> rule.kind?.let {
+                parts.add(stringResource(Res.string.form_summary_format, it.name.lowercase().replaceFirstChar { c -> c.uppercase() }))
+            }
             "LENGTH_RANGE" -> {
                 val min = rule.min; val max = rule.max
                 when {
-                    min != null && max != null -> parts.add("$min–$max chars")
-                    max != null -> parts.add("Max $max")
-                    min != null -> parts.add("Min $min")
+                    min != null && max != null -> parts.add(stringResource(Res.string.form_summary_chars, min, max))
+                    max != null -> parts.add(stringResource(Res.string.form_summary_max, max))
+                    min != null -> parts.add(stringResource(Res.string.form_summary_min, min))
                 }
             }
             "NUMBER_RANGE" -> {
@@ -65,8 +77,11 @@ internal fun FormField.summaryLine(): String {
         }
     }
     if (dataType == FieldDataType.CHOICE || dataType == FieldDataType.MULTI_CHOICE) {
-        if (optionSource == OptionSource.DYNAMIC) parts.add("From ${dynamicSourceKey ?: "data"}")
-        else enumValues?.let { parts.add("${it.size} option${if (it.size == 1) "" else "s"}") }
+        if (optionSource == OptionSource.DYNAMIC) {
+            parts.add(stringResource(Res.string.form_summary_from, dynamicSourceKey ?: stringResource(Res.string.form_summary_data)))
+        } else {
+            enumValues?.let { parts.add(pluralStringResource(Res.plurals.form_summary_options, it.size, it.size)) }
+        }
     }
     return parts.joinToString(" · ")
 }

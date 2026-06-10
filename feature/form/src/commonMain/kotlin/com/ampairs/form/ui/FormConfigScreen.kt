@@ -58,11 +58,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.form.generated.resources.Res
-import ampairsapp.feature.form.generated.resources.form_unsaved_title
-import ampairsapp.feature.form.generated.resources.form_unsaved_message
-import ampairsapp.feature.form.generated.resources.form_unsaved_save_leave
-import ampairsapp.feature.form.generated.resources.form_unsaved_discard_leave
-import ampairsapp.feature.form.generated.resources.form_unsaved_keep_editing
+import ampairsapp.feature.form.generated.resources.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -159,7 +155,7 @@ fun FormConfigScreen(
 
             val schema = state.working
             if (state.isLoading || schema == null) {
-                Box(Modifier.fillMaxSize(), Alignment.Center) { Text("Loading form…", color = scheme.onSurfaceVariant) }
+                Box(Modifier.fillMaxSize(), Alignment.Center) { Text(stringResource(Res.string.form_edit_loading), color = scheme.onSurfaceVariant) }
             } else {
                 val orderedSections = schema.sections.sortedBy { it.displayOrder }
                 val sectionUids = orderedSections.map { it.uid }
@@ -204,7 +200,7 @@ fun FormConfigScreen(
                                 onDeleteSection = { sheet = EditorSheet.DeleteSection(sec.uid) },
                             )
                         }
-                        item { AddDashedButton("Add a section", Icons.Filled.CreateNewFolder, onClick = viewModel::addSection) }
+                        item { AddDashedButton(stringResource(Res.string.form_edit_add_a_section), Icons.Filled.CreateNewFolder, onClick = viewModel::addSection) }
                     }
 
                     if (isExpanded) {
@@ -213,7 +209,7 @@ fun FormConfigScreen(
                                 Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.Visibility, null, tint = scheme.primary)
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Live preview", style = MaterialTheme.typography.titleSmall)
+                                    Text(stringResource(Res.string.form_edit_live_preview), style = MaterialTheme.typography.titleSmall)
                                 }
                                 HorizontalDivider()
                                 LivePreview(schema, Modifier.weight(1f).padding(16.dp))
@@ -230,12 +226,17 @@ fun FormConfigScreen(
                 onClick = { showPreviewSheet = true },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
                 icon = { Icon(Icons.Filled.Visibility, null) },
-                text = { Text("Preview form") },
+                text = { Text(stringResource(Res.string.form_edit_preview_form)) },
             )
         }
 
         // Toast
-        state.toast?.let { msg ->
+        state.toast?.let { toast ->
+            val msg = when (toast) {
+                FormToast.Saved -> stringResource(Res.string.form_edit_toast_saved)
+                FormToast.Discarded -> stringResource(Res.string.form_edit_toast_discarded)
+                is FormToast.SaveFailed -> toast.message ?: stringResource(Res.string.form_edit_toast_save_failed)
+            }
             Surface(
                 Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
                 shape = RoundedCornerShape(8.dp),
@@ -300,7 +301,7 @@ fun FormConfigScreen(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Visibility, null, tint = scheme.primary)
                     Spacer(Modifier.width(8.dp))
-                    Text("Live preview", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.form_edit_live_preview), style = MaterialTheme.typography.titleMedium)
                 }
                 LivePreview(state.working!!, Modifier.padding(horizontal = 16.dp))
             }
@@ -321,11 +322,11 @@ private fun TopBar(
             Modifier.fillMaxWidth().height(64.dp).padding(start = 4.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+            IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.form_edit_back_cd)) }
             Spacer(Modifier.width(4.dp))
             Column {
-                Text("FORM SETTINGS", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
-                Text("Configure Form", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(Res.string.form_edit_overline), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                Text(stringResource(Res.string.form_edit_title), style = MaterialTheme.typography.titleLarge)
             }
             Spacer(Modifier.width(12.dp))
             Surface(color = scheme.surfaceContainerHigh, shape = RoundedCornerShape(8.dp)) {
@@ -336,19 +337,19 @@ private fun TopBar(
                 }
             }
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDiscard, enabled = dirty && !saving) { Text("Discard") }
+            TextButton(onClick = onDiscard, enabled = dirty && !saving) { Text(stringResource(Res.string.form_edit_discard)) }
             Spacer(Modifier.width(8.dp))
             FilledTonalButton(onClick = onSave, enabled = dirty || saving) {
                 Icon(if (dirty) Icons.Filled.CloudUpload else Icons.Filled.CloudDone, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (saving) "Saving…" else if (dirty) "Save" else "Saved")
+                Text(if (saving) stringResource(Res.string.form_edit_saving) else if (dirty) stringResource(Res.string.form_edit_save) else stringResource(Res.string.form_edit_saved))
             }
             Box {
-                IconButton({ menuOpen = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                IconButton({ menuOpen = true }) { Icon(Icons.Filled.MoreVert, stringResource(Res.string.form_edit_more_cd)) }
                 DropdownMenu(menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(text = { Text("Manage sections") }, leadingIcon = { Icon(Icons.Filled.ViewAgenda, null) }, onClick = { onManageSections(); menuOpen = false })
-                    DropdownMenuItem(text = { Text("Expand all") }, onClick = { onExpandAll(); menuOpen = false })
-                    DropdownMenuItem(text = { Text("Collapse all") }, onClick = { onCollapseAll(); menuOpen = false })
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_manage_sections)) }, leadingIcon = { Icon(Icons.Filled.ViewAgenda, null) }, onClick = { onManageSections(); menuOpen = false })
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_expand_all)) }, onClick = { onExpandAll(); menuOpen = false })
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_collapse_all)) }, onClick = { onCollapseAll(); menuOpen = false })
                 }
             }
         }
@@ -363,11 +364,11 @@ private fun UnsavedBanner(saving: Boolean, onDiscard: () -> Unit, onSave: () -> 
             Box(Modifier.size(8.dp).background(scheme.secondary, CircleShape))
             Spacer(Modifier.width(12.dp))
             Text(
-                "Unsaved changes. Saved on this device — staff still see the last published form until you save.",
+                stringResource(Res.string.form_edit_unsaved_banner),
                 style = MaterialTheme.typography.bodyMedium, color = scheme.onSecondaryContainer, modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onDiscard) { Text("Discard") }
-            FilledTonalButton(onClick = onSave) { Text(if (saving) "Saving…" else "Save changes") }
+            TextButton(onClick = onDiscard) { Text(stringResource(Res.string.form_edit_discard)) }
+            FilledTonalButton(onClick = onSave) { Text(if (saving) stringResource(Res.string.form_edit_saving) else stringResource(Res.string.form_edit_save_changes)) }
         }
     }
 }
@@ -379,16 +380,16 @@ private fun Toolbar(schema: FormSchema, onManageSections: () -> Unit, onAddField
     val shown = schema.fields.count { f -> f.visible && schema.sections.firstOrNull { it.uid == f.sectionUid }?.visible == true }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            "${schema.sections.size} sections · $total fields · $shown shown to staff",
+            stringResource(Res.string.form_edit_summary, schema.sections.size, total, shown),
             style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, modifier = Modifier.weight(1f),
             maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
         OutlinedButton(onClick = onManageSections) {
-            Icon(Icons.Filled.ViewAgenda, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Sections")
+            Icon(Icons.Filled.ViewAgenda, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(Res.string.form_edit_sections))
         }
         Spacer(Modifier.width(8.dp))
         FilledTonalButton(onClick = onAddField) {
-            Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Add field")
+            Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(Res.string.form_edit_add_field))
         }
     }
 }
@@ -414,33 +415,33 @@ private fun SectionCard(
     ) {
         Column {
             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton({ vm.toggleCollapsed(section.uid) }) { Icon(Icons.Filled.ExpandMore, if (collapsed) "Expand" else "Collapse") }
+                IconButton({ vm.toggleCollapsed(section.uid) }) { Icon(Icons.Filled.ExpandMore, if (collapsed) stringResource(Res.string.form_edit_expand_cd) else stringResource(Res.string.form_edit_collapse_cd)) }
                 Box(Modifier.sectionDragHandle(dnd, section.uid, onSectionDrop)) {
-                    Icon(Icons.Filled.DragIndicator, "Drag section", Modifier.size(20.dp), tint = scheme.outline)
+                    Icon(Icons.Filled.DragIndicator, stringResource(Res.string.form_edit_drag_section_cd), Modifier.size(20.dp), tint = scheme.outline)
                 }
                 Spacer(Modifier.width(6.dp))
                 InlineEditableText(section.name, MaterialTheme.typography.titleMedium, onCommit = { vm.renameSection(section.uid, it) })
-                if (section.name.equals("General", true)) { Spacer(Modifier.width(8.dp)); Chip("Default", scheme.surfaceContainerHigh, scheme.onSurfaceVariant) }
-                if (!section.visible) { Spacer(Modifier.width(8.dp)); Chip("Hidden", scheme.surfaceContainerHighest, scheme.onSurfaceVariant) }
+                if (section.name.equals("General", true)) { Spacer(Modifier.width(8.dp)); Chip(stringResource(Res.string.form_edit_chip_default), scheme.surfaceContainerHigh, scheme.onSurfaceVariant) }
+                if (!section.visible) { Spacer(Modifier.width(8.dp)); Chip(stringResource(Res.string.form_edit_chip_hidden), scheme.surfaceContainerHighest, scheme.onSurfaceVariant) }
                 Spacer(Modifier.width(8.dp))
-                Text("· ${fields.count { it.visible }}/${fields.size} shown", style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
+                Text(stringResource(Res.string.form_edit_shown_count, fields.count { it.visible }, fields.size), style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
                 Spacer(Modifier.weight(1f))
                 IconButton({ vm.setSectionVisible(section.uid, !section.visible) }) {
-                    Icon(if (section.visible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff, "Toggle section visibility")
+                    Icon(if (section.visible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff, stringResource(Res.string.form_edit_toggle_section_cd))
                 }
                 Box {
-                    IconButton({ menuOpen = true }) { Icon(Icons.Filled.MoreVert, "Section options") }
+                    IconButton({ menuOpen = true }) { Icon(Icons.Filled.MoreVert, stringResource(Res.string.form_edit_section_options_cd)) }
                     DropdownMenu(menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(text = { Text("Add field") }, leadingIcon = { Icon(Icons.Filled.Add, null) }, onClick = { onAddField(); menuOpen = false })
-                        DropdownMenuItem(text = { Text(if (section.visible) "Hide section" else "Show section") }, leadingIcon = { Icon(if (section.visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, null) }, onClick = { vm.setSectionVisible(section.uid, !section.visible); menuOpen = false })
+                        DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_add_field)) }, leadingIcon = { Icon(Icons.Filled.Add, null) }, onClick = { onAddField(); menuOpen = false })
+                        DropdownMenuItem(text = { Text(if (section.visible) stringResource(Res.string.form_edit_hide_section) else stringResource(Res.string.form_edit_show_section)) }, leadingIcon = { Icon(if (section.visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, null) }, onClick = { vm.setSectionVisible(section.uid, !section.visible); menuOpen = false })
                         HorizontalDivider()
-                        DropdownMenuItem(text = { Text("Move up") }, enabled = index > 0, leadingIcon = { Icon(Icons.Filled.ArrowUpward, null) }, onClick = { vm.moveSection(section.uid, -1); menuOpen = false })
-                        DropdownMenuItem(text = { Text("Move down") }, enabled = index < total - 1, leadingIcon = { Icon(Icons.Filled.ArrowDownward, null) }, onClick = { vm.moveSection(section.uid, 1); menuOpen = false })
+                        DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_move_up)) }, enabled = index > 0, leadingIcon = { Icon(Icons.Filled.ArrowUpward, null) }, onClick = { vm.moveSection(section.uid, -1); menuOpen = false })
+                        DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_move_down)) }, enabled = index < total - 1, leadingIcon = { Icon(Icons.Filled.ArrowDownward, null) }, onClick = { vm.moveSection(section.uid, 1); menuOpen = false })
                         HorizontalDivider()
                         if (section.name.equals("General", true)) {
-                            DropdownMenuItem(text = { Text("Default section — can't delete") }, enabled = false, leadingIcon = { Icon(Icons.Filled.Lock, null) }, onClick = {})
+                            DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_default_no_delete)) }, enabled = false, leadingIcon = { Icon(Icons.Filled.Lock, null) }, onClick = {})
                         } else {
-                            DropdownMenuItem(text = { Text("Delete section") }, leadingIcon = { Icon(Icons.Filled.Delete, null, tint = scheme.error) }, onClick = { onDeleteSection(); menuOpen = false })
+                            DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_delete_section)) }, leadingIcon = { Icon(Icons.Filled.Delete, null, tint = scheme.error) }, onClick = { onDeleteSection(); menuOpen = false })
                         }
                     }
                 }
@@ -450,14 +451,14 @@ private fun SectionCard(
                 Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                     if (fields.isEmpty()) {
                         if (insertIdx != null) DropIndicator()
-                        Text("No fields yet — add one or drag a field here.", Modifier.padding(12.dp), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(Res.string.form_edit_no_fields), Modifier.padding(12.dp), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     }
                     fields.forEachIndexed { i, f ->
                         if (insertIdx == i) DropIndicator()
                         FieldRow(f, section.uid, i, fields.size, vm, dnd, onFieldDrop, onEditField, onAdvanced)
                     }
                     if (fields.isNotEmpty() && insertIdx == fields.size) DropIndicator()
-                    AddDashedButton("Add field to ${section.name}", Icons.Filled.Add, onClick = onAddField)
+                    AddDashedButton(stringResource(Res.string.form_edit_add_field_to, section.name), Icons.Filled.Add, onClick = onAddField)
                 }
             }
         }
@@ -488,7 +489,7 @@ private fun FieldRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.fieldDragHandle(dnd, f.uid, onFieldDrop)) {
-            Icon(Icons.Filled.DragIndicator, "Drag to reorder", Modifier.size(20.dp), tint = scheme.outline)
+            Icon(Icons.Filled.DragIndicator, stringResource(Res.string.form_edit_drag_field_cd), Modifier.size(20.dp), tint = scheme.outline)
         }
         Spacer(Modifier.width(6.dp))
         Surface(Modifier.size(34.dp), shape = RoundedCornerShape(8.dp), color = if (f.mandatory) scheme.primaryContainer else scheme.surfaceContainerHigh) {
@@ -500,32 +501,32 @@ private fun FieldRow(
                 InlineEditableText(f.displayName, MaterialTheme.typography.bodyLarge, onCommit = { vm.renameField(f.uid, it) })
                 if (f.mandatory) { Spacer(Modifier.width(6.dp)); Text("*", color = scheme.error, style = MaterialTheme.typography.bodyLarge) }
                 Spacer(Modifier.width(8.dp))
-                if (f.source == FieldSource.CUSTOM) Chip("Custom", scheme.tertiaryContainer, scheme.onTertiaryContainer)
-                else Chip("Standard", scheme.surface, scheme.onSurfaceVariant, bordered = true)
-                if (!f.enabled) { Spacer(Modifier.width(6.dp)); Chip("Read-only", scheme.surfaceContainerHighest, scheme.onSurfaceVariant) }
-                if (!f.visible) { Spacer(Modifier.width(6.dp)); Chip("Hidden", scheme.surfaceContainerHighest, scheme.onSurfaceVariant) }
+                if (f.source == FieldSource.CUSTOM) Chip(stringResource(Res.string.form_edit_chip_custom), scheme.tertiaryContainer, scheme.onTertiaryContainer)
+                else Chip(stringResource(Res.string.form_edit_chip_standard), scheme.surface, scheme.onSurfaceVariant, bordered = true)
+                if (!f.enabled) { Spacer(Modifier.width(6.dp)); Chip(stringResource(Res.string.form_edit_chip_readonly), scheme.surfaceContainerHighest, scheme.onSurfaceVariant) }
+                if (!f.visible) { Spacer(Modifier.width(6.dp)); Chip(stringResource(Res.string.form_edit_chip_hidden), scheme.surfaceContainerHighest, scheme.onSurfaceVariant) }
             }
             Text(f.summaryLine(), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        ControlSwitch(if (essential) "Always" else "Shown", f.visible, enabled = !essential) { vm.setFieldVisible(f.uid, it) }
+        ControlSwitch(if (essential) stringResource(Res.string.form_edit_always) else stringResource(Res.string.form_edit_shown), f.visible, enabled = !essential) { vm.setFieldVisible(f.uid, it) }
         Spacer(Modifier.width(4.dp))
-        ControlSwitch("Required", f.mandatory, enabled = f.enabled && f.visible && !essential) { vm.setFieldRequired(f.uid, it) }
+        ControlSwitch(stringResource(Res.string.form_edit_required), f.mandatory, enabled = f.enabled && f.visible && !essential) { vm.setFieldRequired(f.uid, it) }
         Box {
-            IconButton({ menuOpen = true }) { Icon(Icons.Filled.MoreVert, "Field options") }
+            IconButton({ menuOpen = true }) { Icon(Icons.Filled.MoreVert, stringResource(Res.string.form_edit_field_options_cd)) }
             DropdownMenu(menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(text = { Text("Advanced settings") }, leadingIcon = { Icon(Icons.Filled.Tune, null) }, onClick = { onAdvanced(f.uid); menuOpen = false })
-                DropdownMenuItem(text = { Text("Edit field") }, leadingIcon = { Icon(Icons.Filled.Edit, null) }, onClick = { onEditField(f.uid); menuOpen = false })
-                if (f.enabled) DropdownMenuItem(text = { Text("Make read-only") }, leadingIcon = { Icon(Icons.Filled.Lock, null) }, onClick = { vm.setFieldReadOnly(f.uid, true); menuOpen = false })
-                else DropdownMenuItem(text = { Text("Allow editing") }, leadingIcon = { Icon(Icons.Filled.LockOpen, null) }, onClick = { vm.setFieldReadOnly(f.uid, false); menuOpen = false })
+                DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_advanced)) }, leadingIcon = { Icon(Icons.Filled.Tune, null) }, onClick = { onAdvanced(f.uid); menuOpen = false })
+                DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_edit_field)) }, leadingIcon = { Icon(Icons.Filled.Edit, null) }, onClick = { onEditField(f.uid); menuOpen = false })
+                if (f.enabled) DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_make_readonly)) }, leadingIcon = { Icon(Icons.Filled.Lock, null) }, onClick = { vm.setFieldReadOnly(f.uid, true); menuOpen = false })
+                else DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_allow_editing)) }, leadingIcon = { Icon(Icons.Filled.LockOpen, null) }, onClick = { vm.setFieldReadOnly(f.uid, false); menuOpen = false })
                 HorizontalDivider()
-                DropdownMenuItem(text = { Text("Move up") }, enabled = index > 0, leadingIcon = { Icon(Icons.Filled.ArrowUpward, null) }, onClick = { vm.moveField(sectionUid, f.uid, -1); menuOpen = false })
-                DropdownMenuItem(text = { Text("Move down") }, enabled = index < count - 1, leadingIcon = { Icon(Icons.Filled.ArrowDownward, null) }, onClick = { vm.moveField(sectionUid, f.uid, 1); menuOpen = false })
+                DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_move_up)) }, enabled = index > 0, leadingIcon = { Icon(Icons.Filled.ArrowUpward, null) }, onClick = { vm.moveField(sectionUid, f.uid, -1); menuOpen = false })
+                DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_move_down)) }, enabled = index < count - 1, leadingIcon = { Icon(Icons.Filled.ArrowDownward, null) }, onClick = { vm.moveField(sectionUid, f.uid, 1); menuOpen = false })
                 HorizontalDivider()
                 if (f.source == FieldSource.CUSTOM) {
-                    DropdownMenuItem(text = { Text("Duplicate") }, leadingIcon = { Icon(Icons.Filled.ContentCopy, null) }, onClick = { vm.duplicateField(f.uid); menuOpen = false })
-                    DropdownMenuItem(text = { Text("Delete field") }, leadingIcon = { Icon(Icons.Filled.Delete, null, tint = scheme.error) }, onClick = { vm.deleteField(f.uid); menuOpen = false })
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_duplicate)) }, leadingIcon = { Icon(Icons.Filled.ContentCopy, null) }, onClick = { vm.duplicateField(f.uid); menuOpen = false })
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_delete_field)) }, leadingIcon = { Icon(Icons.Filled.Delete, null, tint = scheme.error) }, onClick = { vm.deleteField(f.uid); menuOpen = false })
                 } else {
-                    DropdownMenuItem(text = { Text("Can't delete standard field") }, enabled = false, leadingIcon = { Icon(Icons.Filled.Delete, null) }, onClick = {})
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.form_edit_cant_delete_standard)) }, enabled = false, leadingIcon = { Icon(Icons.Filled.Delete, null) }, onClick = {})
                 }
             }
         }
@@ -581,6 +582,6 @@ internal fun InlineEditableText(value: String, style: androidx.compose.ui.text.T
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
         )
     } else {
-        Text(value.ifBlank { "Untitled" }, style = style, modifier = Modifier.clickable { draft = value; editing = true })
+        Text(value.ifBlank { stringResource(Res.string.form_edit_untitled) }, style = style, modifier = Modifier.clickable { draft = value; editing = true })
     }
 }

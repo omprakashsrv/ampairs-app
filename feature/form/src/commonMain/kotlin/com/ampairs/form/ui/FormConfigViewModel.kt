@@ -28,6 +28,14 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** One-shot editor feedback; the screen maps each kind to a localized string. */
+sealed interface FormToast {
+    data object Saved : FormToast
+    data object Discarded : FormToast
+    /** Save failure — [message] is the server/transport error when available. */
+    data class SaveFailed(val message: String?) : FormToast
+}
+
 /** UI state for the Form Configuration editor (spec 011, US2). */
 data class FormConfigUiState(
     val entityType: String = "",
@@ -36,7 +44,7 @@ data class FormConfigUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val dirty: Boolean = false,
-    val toast: String? = null,
+    val toast: FormToast? = null,
 )
 
 @AssistedInject
@@ -247,9 +255,9 @@ class FormConfigViewModel(
             _uiState.update {
                 if (result.isSuccess) {
                     baseline = contentKey(working)
-                    it.copy(isSaving = false, dirty = false, toast = "All changes saved")
+                    it.copy(isSaving = false, dirty = false, toast = FormToast.Saved)
                 } else {
-                    it.copy(isSaving = false, toast = result.exceptionOrNull()?.message ?: "Couldn't save")
+                    it.copy(isSaving = false, toast = FormToast.SaveFailed(result.exceptionOrNull()?.message))
                 }
             }
         }
@@ -258,7 +266,7 @@ class FormConfigViewModel(
     fun discard() {
         val base = lastSynced ?: return
         baseline = contentKey(base)
-        _uiState.update { it.copy(working = base, dirty = false, toast = "Changes discarded") }
+        _uiState.update { it.copy(working = base, dirty = false, toast = FormToast.Discarded) }
     }
 
     fun clearToast() = _uiState.update { it.copy(toast = null) }
