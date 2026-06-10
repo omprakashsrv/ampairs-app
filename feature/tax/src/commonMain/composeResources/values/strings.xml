@@ -1,7 +1,7 @@
 <resources>
     <!-- Tax list screen -->
     <string name="tax_list_title">Tax Codes</string>
-    <string name="tax_list_count">%d codes</string>
+    <string name="tax_list_count">%1$d codes</string>
     <string name="tax_list_add_code">Add Code</string>
     <string name="tax_list_cd_sync">Sync</string>
     <string name="tax_list_syncing">Syncing…</string>
@@ -18,7 +18,7 @@
     <string name="tax_list_stats_total">Total</string>
     <string name="tax_list_stats_favorites">Favorites</string>
     <string name="tax_list_stats_unsynced">Unsynced</string>
-    <string name="tax_list_used_times_format">Used %sx</string>
+    <string name="tax_list_used_times_format">Used %1$sx</string>
     <string name="tax_list_cd_favorite">Toggle favorite</string>
     <string name="tax_list_cd_unsubscribe">Unsubscribe</string>
     <string name="tax_list_col_code">Code</string>
@@ -41,7 +41,7 @@
     <!-- Unsubscribe dialog -->
     <string name="tax_unsub_dialog_title">Unsubscribe from Tax Code?</string>
     <string name="tax_unsub_dialog_text">Are you sure you want to unsubscribe from this tax code?</string>
-    <string name="tax_unsub_used_times_format">This code has been used %d times.</string>
+    <string name="tax_unsub_used_times_format">This code has been used %1$d times.</string>
     <string name="tax_unsub_confirm">Unsubscribe</string>
 
     <!-- Detail screen -->
@@ -87,10 +87,10 @@
     <string name="tax_rule_standard">Standard</string>
     <string name="tax_rule_b2b">B2B</string>
     <string name="tax_rule_b2c">B2C</string>
-    <string name="tax_rule_jurisdiction_format">Jurisdiction: %s</string>
+    <string name="tax_rule_jurisdiction_format">Jurisdiction: %1$s</string>
     <string name="tax_rule_tax_code_label">Tax Code:</string>
     <string name="tax_rule_components_label">Tax Components:</string>
     <string name="tax_rule_active">Active</string>
-    <string name="tax_rate_format">%s%%</string>
-    <string name="tax_total_rate_format">%s (Total: %s%%)</string>
+    <string name="tax_rate_format">%1$s%%</string>
+    <string name="tax_total_rate_format">%1$s (Total: %2$s%%)</string>
 </resources>

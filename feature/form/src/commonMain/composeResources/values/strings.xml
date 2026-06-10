@@ -1,6 +1,6 @@
 <resources>
     <!-- Form config screen -->
-    <string name="form_title_configure">Configure %s Form</string>
+    <string name="form_title_configure">Configure %1$s Form</string>
     <string name="form_back_cd">Back</string>
     <string name="form_save_changes">Save Changes</string>
     <string name="form_saving">Saving changes…</string>
@@ -8,7 +8,7 @@
 
     <!-- Empty state -->
     <string name="form_no_config_title">No Configuration Found</string>
-    <string name="form_no_config_desc">Please contact your administrator to seed the form configuration for %s</string>
+    <string name="form_no_config_desc">Please contact your administrator to seed the form configuration for %1$s</string>
 
     <!-- Section headers -->
     <string name="form_section_fields">Field Configurations</string>

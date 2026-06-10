@@ -132,7 +132,7 @@
 
     <!-- Inventory list screen -->
     <string name="inv_list_title">Inventory</string>
-    <string name="inv_list_count">%d items</string>
+    <string name="inv_list_count">%1$d items</string>
     <string name="inv_list_search_placeholder">Search inventory…</string>
     <string name="inv_list_cd_search_clear">Clear search</string>
     <string name="inv_list_add_inventory">Add Inventory</string>

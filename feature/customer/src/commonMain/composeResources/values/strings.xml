@@ -14,7 +14,7 @@
     <string name="customer_no_data_found">No Data Found</string>
     <string name="customer_unknown_error">Unknown error</string>
     <string name="customer_error">Error</string>
-    <string name="customer_code_display">Code: %s</string>
+    <string name="customer_code_display">Code: %1$s</string>
 
     <!-- Customer list screen -->
     <string name="customer_list_title">Parties</string>
@@ -28,7 +28,7 @@
     <string name="customer_list_add_btn">Add Customer</string>
     <string name="customer_image_content_desc">Customer image</string>
     <string name="customer_form_settings_cd">Form Settings</string>
-    <string name="customer_list_count">%d customers</string>
+    <string name="customer_list_count">%1$d customers</string>
     <string name="customer_list_new_party">New Party</string>
     <string name="customer_list_col_name">Name</string>
     <string name="customer_list_col_city">City</string>
@@ -103,14 +103,14 @@
     <string name="customer_location_change">Change Location</string>
     <string name="customer_location_set">Set Location</string>
     <string name="customer_location_hint">You can set location coordinates only, or choose to also auto-populate address fields</string>
-    <string name="customer_location_lat_format">Latitude: %s</string>
-    <string name="customer_location_lon_format">Longitude: %s</string>
+    <string name="customer_location_lat_format">Latitude: %1$s</string>
+    <string name="customer_location_lon_format">Longitude: %1$s</string>
 
     <!-- Customer details screen -->
     <string name="customer_details_load_error">Failed to load customer</string>
     <string name="customer_delete_title">Delete Customer</string>
-    <string name="customer_delete_confirm">Are you sure you want to delete %s? This action cannot be undone.</string>
-    <string name="customer_credit_days_value">%d days</string>
+    <string name="customer_delete_confirm">Are you sure you want to delete %1$s? This action cannot be undone.</string>
+    <string name="customer_credit_days_value">%1$d days</string>
     <string name="customer_status_active_label">Active</string>
     <string name="customer_status_inactive_label">Inactive</string>
     <string name="customer_action_bill">Bill</string>
@@ -186,10 +186,10 @@
     <string name="customer_state_list_empty">No states available</string>
     <string name="customer_state_import_btn">Import States</string>
     <string name="customer_state_delete_title">Delete State</string>
-    <string name="customer_state_delete_confirm">Are you sure you want to delete &#8220;%s&#8221;? This action cannot be undone.</string>
+    <string name="customer_state_delete_confirm">Are you sure you want to delete &#8220;%1$s&#8221;? This action cannot be undone.</string>
     <string name="customer_state_import_dialog_title">Import States</string>
     <string name="customer_state_import_empty">No states available for import</string>
-    <string name="customer_state_import_selected">Import Selected (%d)</string>
+    <string name="customer_state_import_selected">Import Selected (%1$d)</string>
 
     <!-- Location picker dialog -->
     <string name="customer_location_dialog_title">Select Location</string>
@@ -235,7 +235,7 @@
     <string name="customer_image_status_completed">Uploaded Successfully</string>
     <string name="customer_image_status_failed">Upload Failed</string>
     <string name="customer_image_status_unknown">Unknown</string>
-    <string name="customer_image_viewer_cd">Customer image: %s</string>
+    <string name="customer_image_viewer_cd">Customer image: %1$s</string>
     <string name="customer_image_available">Available</string>
 
     <!-- Image upload dialog -->
@@ -256,7 +256,7 @@
 
     <!-- Customer image screen -->
     <string name="customer_images_title">Customer Images</string>
-    <string name="customer_images_count">%d images uploaded</string>
+    <string name="customer_images_count">%1$d images uploaded</string>
     <string name="customer_images_retry_sync_cd">Retry sync</string>
     <string name="customer_images_error">Error</string>
     <string name="customer_images_dismiss">Dismiss</string>
