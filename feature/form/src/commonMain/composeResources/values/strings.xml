@@ -50,4 +50,19 @@
     <string name="form_unsaved_discard_leave">Discard &amp; leave</string>
     <string name="form_unsaved_keep_editing">Keep editing</string>
     <string name="form_field_unsupported">Unsupported field: %1$s</string>
+
+    <!-- Form configuration hub -->
+    <string name="form_hub_title">Form Configuration</string>
+    <string name="form_hub_subtitle">Choose which form to configure</string>
+    <string name="form_hub_back_cd">Back</string>
+    <string name="form_hub_entity_customer">Customer</string>
+    <string name="form_hub_entity_product">Product</string>
+    <string name="form_hub_entity_order">Order</string>
+    <string name="form_hub_entity_invoice">Invoice</string>
+    <string name="form_hub_entity_business">Business</string>
+    <string name="form_hub_entity_customer_desc">Fields on the customer entry form</string>
+    <string name="form_hub_entity_product_desc">Fields on the product entry form</string>
+    <string name="form_hub_entity_order_desc">Fields on the order form</string>
+    <string name="form_hub_entity_invoice_desc">Fields on the invoice form</string>
+    <string name="form_hub_entity_business_desc">Fields on the business profile</string>
 </resources>

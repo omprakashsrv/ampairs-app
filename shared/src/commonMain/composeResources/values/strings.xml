@@ -48,6 +48,7 @@
     <string name="nav_more_members">Team members</string>
     <string name="nav_more_invitations">Invitations</string>
     <string name="nav_more_modules">Modules</string>
+    <string name="nav_more_form_config">Form Configuration</string>
 
     <!-- Home Screen -->
     <string name="home_greeting">Welcome back</string>
