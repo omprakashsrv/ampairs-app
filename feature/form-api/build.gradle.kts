@@ -23,6 +23,11 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
         val iosArm64Main by getting
         val iosSimulatorArm64Main by getting
         val iosMain by creating {
