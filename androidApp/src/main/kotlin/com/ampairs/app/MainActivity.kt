@@ -13,8 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import coil3.compose.setSingletonImageLoaderFactory
 import com.ampairs.app.update.InAppUpdateManager
 import com.ampairs.app.update.UpdateCheckResult
-import com.ampairs.customer.ui.components.contact.ContactPickerResultHolder
-import com.ampairs.customer.ui.components.contact.ContactPickerService
+import com.ampairs.formwidgets.contact.ContactPickerResultHolder
+import com.ampairs.formwidgets.contact.ContactPickerService
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import io.github.vinceglb.filekit.FileKit

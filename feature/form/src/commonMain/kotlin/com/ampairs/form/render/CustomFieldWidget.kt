@@ -27,5 +27,7 @@ interface CustomFieldWidget {
 /** Resolves a `widgetKey` to its widget. Injected with the Metro multibinding set. */
 class CustomFieldWidgetRegistry(widgets: Set<CustomFieldWidget>) {
     private val byKey: Map<String, CustomFieldWidget> = widgets.associateBy { it.widgetKey }
+    /** All registered widget keys (so a renderer can include only CUSTOM fields it can actually draw). */
+    val keys: Set<String> get() = byKey.keys
     fun forKey(widgetKey: String?): CustomFieldWidget? = widgetKey?.let { byKey[it] }
 }

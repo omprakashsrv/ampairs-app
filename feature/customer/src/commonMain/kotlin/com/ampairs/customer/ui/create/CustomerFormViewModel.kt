@@ -18,9 +18,9 @@ import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.util.CustomerConstants
-import com.ampairs.customer.ui.components.contact.ContactData
-import com.ampairs.customer.ui.components.contact.ContactPickerService
-import com.ampairs.customer.ui.components.location.LocationService
+import com.ampairs.formwidgets.contact.ContactData
+import com.ampairs.formwidgets.contact.ContactPickerService
+import com.ampairs.formwidgets.location.LocationService
 import com.ampairs.form.data.repository.ConfigLookup
 import com.ampairs.form.domain.EntityConfigSchema
 import com.ampairs.form.domain.EntityType
@@ -276,6 +276,13 @@ class CustomerFormViewModel(
             _uiState.update { it.copy(isImportingContact = false) }
         }
     }
+
+    /**
+     * Public entry point for the schema-driven contact import widget (form-widgets). The widget
+     * picks the contact itself and hands the resolved [ContactData] back here to fill the form's
+     * fields, reusing the same merge logic as the inline import button.
+     */
+    fun importContactData(contactData: ContactData) = importContact(contactData)
 
     private fun importContact(contactData: ContactData) {
         val current = _uiState.value.formState

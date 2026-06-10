@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -120,13 +121,14 @@ import com.ampairs.common.components.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
 import com.ampairs.customer.ui.components.StringAutocomplete
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
-import com.ampairs.customer.ui.components.location.LocationPickerDialog
-import com.ampairs.customer.ui.components.location.LocationData
-import com.ampairs.customer.ui.components.location.AddressData
+import com.ampairs.formwidgets.location.LocationPickerDialog
+import com.ampairs.formwidgets.location.LocationData
+import com.ampairs.formwidgets.location.AddressData
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.ui.components.images.CustomerImageViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-import com.ampairs.customer.ui.components.location.LocationService
+import com.ampairs.formwidgets.location.LocationService
+import com.ampairs.formwidgets.widget.LocalContactImportHandler
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_GROUP
 import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
@@ -185,6 +187,9 @@ fun CustomerFormScreen(
             }
 
             else -> {
+                CompositionLocalProvider(
+                    LocalContactImportHandler provides { contactData -> viewModel.importContactData(contactData) }
+                ) {
                 CustomerForm(
                     customerId = customerId,
                     formState = uiState.formState,
@@ -230,6 +235,7 @@ fun CustomerFormScreen(
                     locationService = viewModel.locationService,
                     modifier = Modifier.fillMaxSize()
                 )
+                }
             }
         }
     }

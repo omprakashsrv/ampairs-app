@@ -42,12 +42,15 @@ fun CustomerCustomAttributes(
     onAttributesChange: (Map<String, String>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val subSchema = remember(schema) {
+    val subSchema = remember(schema, widgetRegistry) {
         schema?.let { s ->
             val visibleSections = s.sections.filter { it.visible }.map { it.uid }.toSet()
             s.copy(fields = s.fields.filter {
-                it.source == FieldSource.CUSTOM && it.visible &&
-                    it.dataType != FieldDataType.CUSTOM && it.sectionUid in visibleSections
+                it.source == FieldSource.CUSTOM && it.visible && it.sectionUid in visibleSections &&
+                    // Generic data types render directly; CUSTOM types only when a widget is registered
+                    // for their widgetKey (e.g. location / contact), so unbacked customs (image gallery,
+                    // handled by dedicated screens) are still skipped here.
+                    (it.dataType != FieldDataType.CUSTOM || it.widgetKey in widgetRegistry.keys)
             })
         }?.takeIf { it.fields.isNotEmpty() }
     } ?: return

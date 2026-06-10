@@ -45,6 +45,7 @@ kotlin {
                 implementation(projects.feature.authApi)
                 implementation(projects.feature.formApi)
                 implementation(projects.feature.form)
+                implementation(projects.feature.formwidgets)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 // FileKit for cross-platform file picking
@@ -64,20 +65,11 @@ kotlin {
         androidMain {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
-                // Google Play Services - Location
-                implementation(libs.play.services.location)
-                // Google Maps Compose
-                implementation(libs.maps.compose)
-                // Accompanist Permissions
-                implementation(libs.accompanist.permissions)
-                // Coroutines support for GMS Tasks (.await())
-                implementation(libs.play.services.coroutines)
             }
         }
         val desktopMain by getting {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
-                implementation(files("$rootDir/libs/jmapviewer-2.24.jar"))
             }
         }
         val iosArm64Main by getting
