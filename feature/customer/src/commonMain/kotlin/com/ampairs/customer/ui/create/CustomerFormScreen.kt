@@ -144,6 +144,7 @@ fun CustomerFormScreen(
     viewModel: CustomerFormViewModel = assistedMetroViewModel<CustomerFormViewModel, CustomerFormViewModel.Factory> { create(customerId) },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val formSchema by viewModel.formSchema.collectAsStateWithLifecycle()
 
     LaunchedEffect(customerId) {
         if (customerId != null) {
@@ -201,6 +202,15 @@ fun CustomerFormScreen(
                     customerGroups = uiState.customerGroups,
                     onCustomerGroupSelected = viewModel::onCustomerGroupSelected,
                     entityConfig = uiState.entityConfig,
+                    customAttributesContent = { attrs, onChange ->
+                        CustomerCustomAttributes(
+                            schema = formSchema,
+                            optionRegistry = viewModel.optionRegistry,
+                            widgetRegistry = viewModel.widgetRegistry,
+                            attributes = attrs,
+                            onAttributesChange = onChange,
+                        )
+                    },
                     showCustomerImages = uiState.showCustomerImages,
                     customerImagesReadOnly = uiState.customerImagesReadOnly,
                     isContactPickerAvailable = viewModel.isContactPickerAvailable,
@@ -234,6 +244,7 @@ private fun CustomerForm(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    customAttributesContent: (@Composable (Map<String, String>, (Map<String, String>) -> Unit) -> Unit)? = null,
     showCustomerImages: Boolean,
     customerImagesReadOnly: Boolean,
     isContactPickerAvailable: Boolean,
@@ -264,6 +275,7 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            customAttributesContent = customAttributesContent,
             showCustomerImages = showCustomerImages,
             customerImagesReadOnly = customerImagesReadOnly,
             isContactPickerAvailable = isContactPickerAvailable,
@@ -291,6 +303,7 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            customAttributesContent = customAttributesContent,
             showCustomerImages = showCustomerImages,
             customerImagesReadOnly = customerImagesReadOnly,
             isContactPickerAvailable = isContactPickerAvailable,
@@ -317,6 +330,7 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            customAttributesContent = customAttributesContent,
             isContactPickerAvailable = isContactPickerAvailable,
             isImportingContact = isImportingContact,
             contactImportError = contactImportError,
@@ -345,6 +359,7 @@ private fun CustomerFormTabLayout(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    customAttributesContent: (@Composable (Map<String, String>, (Map<String, String>) -> Unit) -> Unit)? = null,
     showCustomerImages: Boolean,
     customerImagesReadOnly: Boolean,
     isContactPickerAvailable: Boolean,
@@ -393,6 +408,7 @@ private fun CustomerFormTabLayout(
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
                 entityConfig = entityConfig,
+                customAttributesContent = customAttributesContent,
                 isContactPickerAvailable = isContactPickerAvailable,
                 isImportingContact = isImportingContact,
                 contactImportError = contactImportError,
@@ -432,6 +448,7 @@ private fun CustomerFormSideBySideLayout(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    customAttributesContent: (@Composable (Map<String, String>, (Map<String, String>) -> Unit) -> Unit)? = null,
     showCustomerImages: Boolean,
     customerImagesReadOnly: Boolean,
     isContactPickerAvailable: Boolean,
@@ -468,6 +485,7 @@ private fun CustomerFormSideBySideLayout(
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
                 entityConfig = entityConfig,
+                customAttributesContent = customAttributesContent,
                 isContactPickerAvailable = isContactPickerAvailable,
                 isImportingContact = isImportingContact,
                 contactImportError = contactImportError,
@@ -514,6 +532,7 @@ private fun CustomerFormFields(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    customAttributesContent: (@Composable (Map<String, String>, (Map<String, String>) -> Unit) -> Unit)? = null,
     isContactPickerAvailable: Boolean,
     isImportingContact: Boolean,
     contactImportError: String?,
@@ -1156,17 +1175,24 @@ private fun CustomerFormFields(
             }
         }
 
-        // Custom Attributes - Only show configured attributes
-        val attributeDefinitions = entityConfig?.attributeDefinitions?.filter { it.visible } ?: emptyList()
-        if (attributeDefinitions.isNotEmpty()) {
-            FormSection(title = stringResource(Res.string.customer_section_attributes)) {
-                AttributesEditor(
-                    attributes = formState.attributes,
-                    attributeDefinitions = attributeDefinitions,
-                    onAttributesChange = { newAttributes ->
-                        onFormChange(formState.copy(attributes = newAttributes))
-                    }
-                )
+        // Custom Attributes — config-driven via the unified FormSchema renderer (spec 011, US1).
+        // Falls back to the legacy editor when no renderer slot is provided.
+        if (customAttributesContent != null) {
+            customAttributesContent(formState.attributes) { newAttributes ->
+                onFormChange(formState.copy(attributes = newAttributes))
+            }
+        } else {
+            val attributeDefinitions = entityConfig?.attributeDefinitions?.filter { it.visible } ?: emptyList()
+            if (attributeDefinitions.isNotEmpty()) {
+                FormSection(title = stringResource(Res.string.customer_section_attributes)) {
+                    AttributesEditor(
+                        attributes = formState.attributes,
+                        attributeDefinitions = attributeDefinitions,
+                        onAttributesChange = { newAttributes ->
+                            onFormChange(formState.copy(attributes = newAttributes))
+                        }
+                    )
+                }
             }
         }
 
