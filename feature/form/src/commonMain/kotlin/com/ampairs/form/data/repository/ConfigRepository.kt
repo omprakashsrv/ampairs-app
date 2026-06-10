@@ -121,10 +121,14 @@ class ConfigRepository(
         fieldDao.deleteByEntityType(schema.entityType)
         sectionDao.insertAll(schema.sections.map { it.toEntity(schema.entityType) })
         fieldDao.insertAll(schema.fields.map { it.toEntity(schema.entityType) })
+        // Never regress the push base: an editor save carries the version its working copy was
+        // loaded with, which may predate a newer pull/conflict-recovery — keep the max so the
+        // next push presents the freshest base_version.
+        val knownVersion = schemaDao.getByEntityType(schema.entityType)?.version ?: 0
         schemaDao.upsert(
             FormSchemaEntity(
                 entityType = schema.entityType,
-                version = schema.version,
+                version = maxOf(schema.version, knownVersion),
                 dirty = dirty,
                 updatedAt = schema.lastUpdated,
             )

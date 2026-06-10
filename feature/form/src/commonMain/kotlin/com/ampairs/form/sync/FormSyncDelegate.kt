@@ -87,12 +87,34 @@ class FormSyncDelegate(
                 if (resolved != null) replaceLocal(resolved, dirty = false) else schemaDao.setDirty(header.entityType, false)
                 pushed++
             } catch (e: Exception) {
-                FormLogger.w("FormSyncDelegate", "push failed for '${header.entityType}'", e)
-                failed++
+                // Optimistic-version conflict recovery (spec 011): the server rejects a stale
+                // base_version with 409. Re-pull the server's current version, rebase the local
+                // aggregate onto it (local edits win at aggregate level), and retry once. The
+                // header version is persisted BEFORE the retry, so even a failed retry leaves the
+                // next cycle pushing a fresh base_version — no permanent conflict loop.
+                FormLogger.w("FormSyncDelegate", "push failed for '${header.entityType}', rebasing on server version", e)
+                if (rebaseAndRetry(header, local)) pushed++ else failed++
             }
         }
         if (pushed == 0 && failed > 0) throw Exception("$failed form schema(s) failed to push — will retry on reconnect")
         pushed
+    }
+
+    /**
+     * Conflict recovery: adopt the server's current aggregate version as the new base (keeping the
+     * local sections/fields — aggregate-level last-write-wins) and retry the push once.
+     * @return true when the rebased push succeeded.
+     */
+    private suspend fun rebaseAndRetry(header: FormSchemaEntity, local: FormSchema): Boolean = try {
+        val serverVersion = api.getConfigSchema(header.entityType).version
+        // Self-heal the header first: the next cycle pushes a fresh base even if this retry fails.
+        schemaDao.upsert(header.copy(version = serverVersion))
+        val resolved = api.pushSchema(listOf(local.copy(version = serverVersion))).firstOrNull()
+        if (resolved != null) replaceLocal(resolved, dirty = false) else schemaDao.setDirty(header.entityType, false)
+        true
+    } catch (re: Exception) {
+        FormLogger.w("FormSyncDelegate", "rebase-retry failed for '${header.entityType}' — will retry next cycle", re)
+        false
     }
 
     /** Replace the local aggregate for one entityType (delete-by-absence) and set its header. */
