@@ -24,6 +24,11 @@ import com.ampairs.customer.ui.components.location.LocationService
 import com.ampairs.form.data.repository.ConfigLookup
 import com.ampairs.form.domain.EntityConfigSchema
 import com.ampairs.form.domain.EntityType
+import com.ampairs.form.domain.FormSchema
+import com.ampairs.form.render.CustomFieldWidgetRegistry
+import com.ampairs.form.render.DynamicOptionRegistry
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import com.ampairs.customer.util.CustomerConstants.DEFAULT_COUNTRY_CODE
 import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
 import com.ampairs.customer.util.CustomerConstants.ERROR_VALIDATION_FIX
@@ -206,6 +211,8 @@ class CustomerFormViewModel(
     val contactPickerService: ContactPickerService,
     val locationService: LocationService,
     private val syncService: CentralSyncService,
+    val optionRegistry: DynamicOptionRegistry,
+    val widgetRegistry: CustomFieldWidgetRegistry,
 ) : ViewModel() {
 
     val isContactPickerAvailable: Boolean get() = contactPickerService.isAvailable()
@@ -219,6 +226,14 @@ class CustomerFormViewModel(
 
     private val _uiState = MutableStateFlow(CustomerFormUiState())
     val uiState: StateFlow<CustomerFormUiState> = _uiState.asStateFlow()
+
+    /**
+     * Live unified schema for the customer form (spec 011, US1). The schema-driven renderer consumes
+     * this together with [optionRegistry] / [widgetRegistry] to produce the entry form from config.
+     */
+    val formSchema: StateFlow<FormSchema?> =
+        configRepository.observeSchema("customer")
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private var originalCustomer: Customer? = null
 
