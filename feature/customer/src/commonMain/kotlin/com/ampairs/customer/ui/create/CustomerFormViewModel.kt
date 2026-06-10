@@ -452,15 +452,9 @@ class CustomerFormViewModel(
             }
             .launchIn(viewModelScope)
 
-        // Sync all form configs from backend (will update database, triggering flow above)
-        viewModelScope.launch {
-            try {
-                configRepository.syncFormConfigs()
-            } catch (e: Exception) {
-                // Silently fail - form will work without config using default behavior
-                CustomerLogger.w("CustomerFormViewModel", "Failed to sync form configs: ${e.message}")
-            }
-        }
+        // Pull the form schema via CentralSyncService → FormSyncDelegate (first run is a full pull,
+        // which seeds standard fields server-side). The reactive flow above updates the UI when rows land.
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.FORM))
     }
 
     fun onCustomerTypeSelected(customerType: CustomerType) {
