@@ -42,4 +42,11 @@
     <string name="form_toggle_visible">Visible</string>
     <string name="form_toggle_mandatory">Mandatory</string>
     <string name="form_toggle_enabled">Enabled</string>
+
+    <!-- Unsaved-changes navigation guard -->
+    <string name="form_unsaved_title">Discard unsaved changes?</string>
+    <string name="form_unsaved_message">You have unsaved form changes. Save them, or discard and leave?</string>
+    <string name="form_unsaved_save_leave">Save &amp; leave</string>
+    <string name="form_unsaved_discard_leave">Discard &amp; leave</string>
+    <string name="form_unsaved_keep_editing">Keep editing</string>
 </resources>

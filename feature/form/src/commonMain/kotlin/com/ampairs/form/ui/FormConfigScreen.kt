@@ -51,10 +51,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.feature.form.generated.resources.Res
+import ampairsapp.feature.form.generated.resources.form_unsaved_title
+import ampairsapp.feature.form.generated.resources.form_unsaved_message
+import ampairsapp.feature.form.generated.resources.form_unsaved_save_leave
+import ampairsapp.feature.form.generated.resources.form_unsaved_discard_leave
+import ampairsapp.feature.form.generated.resources.form_unsaved_keep_editing
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -100,10 +108,37 @@ fun FormConfigScreen(
 
     var sheet by remember { mutableStateOf<EditorSheet?>(null) }
     var showPreviewSheet by remember { mutableStateOf(false) }
+    var showExitGuard by remember { mutableStateOf(false) }
     val dnd = remember { FormDndState() }
+
+    // Unsaved-changes navigation guard: leave immediately when clean, otherwise confirm (T046).
+    val guardedBack: () -> Unit = { if (state.dirty) showExitGuard = true else onNavigateBack() }
 
     LaunchedEffect(state.toast) {
         if (state.toast != null) { delay(2200); viewModel.clearToast() }
+    }
+
+    if (showExitGuard) {
+        AlertDialog(
+            onDismissRequest = { showExitGuard = false },
+            title = { Text(stringResource(Res.string.form_unsaved_title)) },
+            text = { Text(stringResource(Res.string.form_unsaved_message)) },
+            confirmButton = {
+                TextButton(onClick = { showExitGuard = false; viewModel.save(); onNavigateBack() }) {
+                    Text(stringResource(Res.string.form_unsaved_save_leave))
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { showExitGuard = false; viewModel.discard(); onNavigateBack() }) {
+                        Text(stringResource(Res.string.form_unsaved_discard_leave))
+                    }
+                    TextButton(onClick = { showExitGuard = false }) {
+                        Text(stringResource(Res.string.form_unsaved_keep_editing))
+                    }
+                }
+            },
+        )
     }
 
     Box(Modifier.fillMaxSize().background(scheme.surfaceContainerLow)) {
@@ -112,7 +147,7 @@ fun FormConfigScreen(
                 entityLabel = entityType.replaceFirstChar { it.uppercase() },
                 dirty = state.dirty,
                 saving = state.isSaving,
-                onBack = onNavigateBack,
+                onBack = guardedBack,
                 onSave = viewModel::save,
                 onDiscard = viewModel::discard,
                 onManageSections = { sheet = EditorSheet.Sections },
