@@ -62,6 +62,16 @@ class InvoiceRepository(
     private suspend fun markPending() =
         syncStateDao.markPendingPush(SyncEntity.INVOICE, Clock.System.now().toEpochMilliseconds())
 
+    /**
+     * Live "number on save" preview for the editor header (spec 010 v2): the next strictly
+     * sequential number in [series] formatted exactly as [assignNumber] will assign it.
+     */
+    suspend fun nextNumberPreview(series: String?): String {
+        val s = series?.ifBlank { null } ?: DEFAULT_SERIES
+        val seq = (invoiceDao.maxSequenceForSeries(s) ?: 0L) + 1L
+        return "$s/" + seq.toString().padStart(4, '0')
+    }
+
     suspend fun getInvoice(id: String): Invoice {
         val entity = invoiceDao.selectById(id) ?: return Invoice()
         val itemEntities = invoiceItemDao.getInvoiceItems(id)
@@ -95,6 +105,14 @@ class InvoiceRepository(
                 }
             } ?: item.discount
             item.discountPercent = item.discount.firstOrNull()?.percent ?: 0.0
+            // restore unit-of-measure state (spec 010 FR-014) + the price-override flag
+            item.unitId = itemEntity.unit_id
+            item.baseQuantity = itemEntity.base_quantity
+            item.unitMultiplier =
+                if (itemEntity.quantity > 0.0 && itemEntity.base_quantity > 0.0) itemEntity.base_quantity / itemEntity.quantity else 1.0
+            item.variantSku = itemEntity.variant_sku
+            item.priceOverridden =
+                kotlin.math.abs(itemEntity.selling_price - itemEntity.product_price * item.unitMultiplier) > 0.005
             item
         }.toMutableList()
 

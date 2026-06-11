@@ -6,7 +6,7 @@ import androidx.navigation3.runtime.NavKey
 import com.ampairs.order.ui.OrderPaneScreen
 import com.ampairs.order.ui.OrderScreen
 import com.ampairs.order.ui.OrderViewScreen
-import com.ampairs.product.ui.list.ProductsListScreen
+import com.ampairs.store.ui.StoreSettingsRoute
 
 /**
  * Entry provider for Order module routes in Navigation 3.
@@ -27,13 +27,7 @@ fun orderEntryProvider(
             onOrderSaved = { orderId ->
                 backStack.add(OrderRoute.OrderView(id = orderId))
             },
-            productPickerSlot = { onProductClick ->
-                ProductsListScreen(
-                    onProductClick = onProductClick,
-                    onCreateProduct = {},
-                    onFormConfig = {}
-                )
-            }
+            onOpenSettings = { backStack.add(StoreSettingsRoute) }
         )
     }
 

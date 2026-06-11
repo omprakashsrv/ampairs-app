@@ -27,13 +27,24 @@ class InvoiceItem(var product: ProductSummary?) {
     var baseQuantity: Double by mutableStateOf(product?.quantity ?: 0.0)
     var variantSku: String? = null
 
+    /** True once the user manually edited the unit price (spec 010 FR-016/C3). */
+    var priceOverridden: Boolean = false
+
     /** Switch the line's unit of measure, rescaling the per-unit price and base quantity. */
     fun selectUnit(unitId: String, name: String, multiplier: Double) {
         this.unitId = unitId
         this.unitName = name
         this.unitMultiplier = if (multiplier > 0.0) multiplier else 1.0
-        this.price = productPrice * this.unitMultiplier
+        if (!priceOverridden) this.price = productPrice * this.unitMultiplier
         this.baseQuantity = quantity * this.unitMultiplier
+        updateTotal()
+    }
+
+    /** Apply a variant: re-bases the per-unit price on the variant price unless overridden. */
+    fun selectVariant(sku: String?, variantPrice: Double?) {
+        this.variantSku = sku
+        this.productPrice = variantPrice ?: product?.sellingPrice ?: productPrice
+        if (!priceOverridden) this.price = productPrice * unitMultiplier
         updateTotal()
     }
 
