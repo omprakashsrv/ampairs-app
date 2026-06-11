@@ -16,7 +16,6 @@ import ampairsapp.feature.invoice.generated.resources.doc_line_hsn
 import ampairsapp.feature.invoice.generated.resources.doc_line_none
 import ampairsapp.feature.invoice.generated.resources.doc_line_remove_cd
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -83,10 +81,9 @@ fun DocLineGrid(
     modifier: Modifier = Modifier,
 ) {
     val cs = MaterialTheme.colorScheme
-    val hScroll = rememberScrollState()
-    Column(modifier = modifier.fillMaxWidth().horizontalScroll(hScroll)) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Row(
-            Modifier.widthIn(min = 860.dp).padding(horizontal = 8.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Header(stringResource(Res.string.doc_col_product), Modifier.weight(1f), TextAlign.Start)
@@ -166,7 +163,7 @@ private fun GridRow(
 
     Column {
         Row(
-            Modifier.widthIn(min = 860.dp).padding(horizontal = 8.dp).heightIn(min = 52.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp).heightIn(min = 52.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Product
