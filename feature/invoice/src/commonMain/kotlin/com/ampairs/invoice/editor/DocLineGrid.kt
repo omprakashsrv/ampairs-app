@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.graphics.SolidColor
 import com.ampairs.common.format.toDecimal
+import com.ampairs.product.domain.ProductSummary
 import com.ampairs.common.format.toInr
 import com.ampairs.tax.calculation.document.DiscountKind
 import org.jetbrains.compose.resources.stringResource
@@ -78,7 +79,11 @@ fun DocLineGrid(
     onUnitPrice: (String, Double) -> Unit,
     onDiscount: (String, DiscountKind, Double) -> Unit,
     onRemove: (String) -> Unit,
-    onChangeProduct: (String) -> Unit,
+    productResults: List<ProductSummary>,
+    productRatePercents: Map<String, Double?>,
+    onSearchProducts: (String) -> Unit,
+    onPickProduct: (lineId: String, productId: String) -> Unit,
+    onCreateProduct: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val cs = MaterialTheme.colorScheme
@@ -113,7 +118,11 @@ fun DocLineGrid(
                     onUnitPrice = onUnitPrice,
                     onDiscount = onDiscount,
                     onRemove = onRemove,
-                    onChangeProduct = onChangeProduct,
+                    productResults = productResults,
+                    productRatePercents = productRatePercents,
+                    onSearchProducts = onSearchProducts,
+                    onPickProduct = onPickProduct,
+                    onCreateProduct = onCreateProduct,
                 )
             }
             item(key = "footer-hint") {
@@ -158,34 +167,50 @@ private fun GridRow(
     onUnitPrice: (String, Double) -> Unit,
     onDiscount: (String, DiscountKind, Double) -> Unit,
     onRemove: (String) -> Unit,
-    onChangeProduct: (String) -> Unit,
+    productResults: List<ProductSummary>,
+    productRatePercents: Map<String, Double?>,
+    onSearchProducts: (String) -> Unit,
+    onPickProduct: (lineId: String, productId: String) -> Unit,
+    onCreateProduct: (String) -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
     var unitMenu by remember { mutableStateOf(false) }
     var variantMenu by remember { mutableStateOf(false) }
+    var productMenu by remember { mutableStateOf(false) }
 
     Column {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp).heightIn(min = 52.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Product — tap to change via the product picker (prototype: product cell opens picker)
-            Column(
-                Modifier
-                    .weight(1f)
-                    .clickable { onChangeProduct(line.id) }
-                    .padding(horizontal = 4.dp)
-            ) {
-                Text(
-                    line.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    stringResource(Res.string.doc_line_hsn, line.hsn.ifBlank { stringResource(Res.string.doc_line_none) }),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = cs.onSurfaceVariant,
-                    maxLines = 1,
+            // Product — tap opens the type-ahead popover anchored under the cell (no takeover)
+            Box(Modifier.weight(1f)) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { productMenu = true }
+                        .padding(horizontal = 4.dp)
+                ) {
+                    Text(
+                        line.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        stringResource(Res.string.doc_line_hsn, line.hsn.ifBlank { stringResource(Res.string.doc_line_none) }),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cs.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+                DocProductPickerPopover(
+                    expanded = productMenu,
+                    results = productResults,
+                    ratePercents = productRatePercents,
+                    onSearch = onSearchProducts,
+                    onPick = { productId -> productMenu = false; onPickProduct(line.id, productId) },
+                    onCreate = { typed -> productMenu = false; onCreateProduct(typed) },
+                    onDismiss = { productMenu = false },
                 )
             }
             // Variant

@@ -64,6 +64,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
+import com.ampairs.product.domain.ProductSummary
 import com.ampairs.common.format.toInr
 import com.ampairs.tax.calculation.document.DiscountKind
 import org.jetbrains.compose.resources.stringResource
@@ -85,11 +86,16 @@ fun DocLineSheet(
     onQuantity: (String, Double) -> Unit,
     onUnitPrice: (String, Double) -> Unit,
     onDiscount: (String, DiscountKind, Double) -> Unit,
-    onChangeProduct: () -> Unit,
+    productResults: List<ProductSummary>,
+    productRatePercents: Map<String, Double?>,
+    onSearchProducts: (String) -> Unit,
+    onPickProduct: (lineId: String, productId: String) -> Unit,
+    onCreateProduct: (String) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
+    var productMenu by remember { mutableStateOf(false) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             Modifier
@@ -101,12 +107,13 @@ fun DocLineSheet(
         ) {
             Text(stringResource(Res.string.doc_sheet_title), style = MaterialTheme.typography.titleMedium)
 
-            // Product row → change product
-            Surface(
-                color = cs.surfaceContainer,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onChangeProduct),
-            ) {
+            // Product row → type-ahead popover anchored to the row (no takeover)
+            Box {
+                Surface(
+                    color = cs.surfaceContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().clickable { productMenu = true },
+                ) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Inventory2, contentDescription = null, tint = cs.tertiary, modifier = Modifier.size(20.dp))
                     Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
@@ -128,6 +135,16 @@ fun DocLineSheet(
                         modifier = Modifier.size(18.dp),
                     )
                 }
+                }
+                DocProductPickerPopover(
+                    expanded = productMenu,
+                    results = productResults,
+                    ratePercents = productRatePercents,
+                    onSearch = onSearchProducts,
+                    onPick = { productId -> productMenu = false; onPickProduct(line.id, productId) },
+                    onCreate = { typed -> productMenu = false; onCreateProduct(typed) },
+                    onDismiss = { productMenu = false },
+                )
             }
 
             // Variant

@@ -122,7 +122,6 @@ fun DocEditorScaffold(
     var showCustomerPicker by remember { mutableStateOf(false) }
     var createPrefill by remember { mutableStateOf<String?>(null) }
     var editingLineId by remember { mutableStateOf<String?>(null) }
-    var changingProductForLine by remember { mutableStateOf<String?>(null) }
     var totalsExpanded by remember { mutableStateOf(false) }
 
     BoxWithConstraints(
@@ -206,7 +205,11 @@ fun DocEditorScaffold(
                         onUnitPrice = actions.lineUnitPrice,
                         onDiscount = actions.lineDiscount,
                         onRemove = actions.lineRemove,
-                        onChangeProduct = { changingProductForLine = it },
+                        productResults = state.productResults,
+                        productRatePercents = state.productRatePercents,
+                        onSearchProducts = actions.searchProducts,
+                        onPickProduct = actions.changeLineProduct,
+                        onCreateProduct = { createPrefill = it },
                         modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 8.dp),
                     )
                 }
@@ -273,27 +276,15 @@ fun DocEditorScaffold(
                     onQuantity = actions.lineQuantity,
                     onUnitPrice = actions.lineUnitPrice,
                     onDiscount = actions.lineDiscount,
-                    onChangeProduct = { changingProductForLine = lineId },
+                    productResults = state.productResults,
+                    productRatePercents = state.productRatePercents,
+                    onSearchProducts = actions.searchProducts,
+                    onPickProduct = actions.changeLineProduct,
+                    onCreateProduct = { createPrefill = it },
                     onDelete = { actions.lineRemove(lineId); editingLineId = null },
                     onDismiss = { editingLineId = null },
                 )
             }
-        }
-        changingProductForLine?.let { lineId ->
-            DocProductPicker(
-                results = state.productResults,
-                ratePercents = state.productRatePercents,
-                onSearch = actions.searchProducts,
-                onPick = { productId ->
-                    actions.changeLineProduct(lineId, productId)
-                    changingProductForLine = null
-                },
-                onCreate = { typed ->
-                    changingProductForLine = null
-                    createPrefill = typed
-                },
-                onDismiss = { changingProductForLine = null },
-            )
         }
         if (totalsExpanded) {
             ModalBottomSheet(onDismissRequest = { totalsExpanded = false }) {
