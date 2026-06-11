@@ -1,7 +1,6 @@
 package com.ampairs.navigation.providers
 
 import BusinessRoute
-import Route
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -24,9 +23,6 @@ fun businessEntryProvider(
             },
             onNavigateToCustomAttributes = {
                 backStack.add(BusinessRoute.CustomAttributes)
-            },
-            onNavigateToFormConfig = {
-                backStack.add(Route.FormConfig("business"))
             },
             onNavigateToImages = {
                 backStack.add(BusinessRoute.Images)

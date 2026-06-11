@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -34,7 +33,6 @@ fun BusinessOverviewScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToOperations: () -> Unit = {},
     onNavigateToCustomAttributes: () -> Unit = {},
-    onNavigateToFormConfig: () -> Unit = {},
     onNavigateToImages: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: BusinessOverviewViewModel = metroViewModel(),
@@ -254,19 +252,6 @@ fun BusinessOverviewScreen(
                         }
                     }
 
-                    OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToFormConfig) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Tune, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Column {
-                                Text("Form Configuration", style = MaterialTheme.typography.titleMedium)
-                                Text("Customize business form fields and attributes", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
                 }
             }
         }
