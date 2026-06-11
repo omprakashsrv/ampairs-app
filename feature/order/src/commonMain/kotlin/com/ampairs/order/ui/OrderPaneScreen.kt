@@ -51,18 +51,15 @@ fun OrderPaneScreen(
                 OrderViewScreen(
                     orderId = orderId,
                     onOpenInvoice = onOpenInvoice,
-                    onNavigateBack = { navigateBackOrderId ->
-                        if (!navigateBackOrderId.isNullOrEmpty()) {
-                            onOrderEdit(navigateBackOrderId)
-                        } else {
-                            if (navigator.canNavigateBack()) {
-                                scope.launch {
-                                    navigator.navigateBack()
-                                }
-                            }
+                    onEdit = { id -> onOrderEdit(id) },
+                    onNavigateBack = {
+                        if (navigator.canNavigateBack()) {
+                            scope.launch { navigator.navigateBack() }
                         }
                     },
-                    viewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory> { create(orderId) }
+                    // key by id — without it the pane reuses the first document's ViewModel
+                    // for every subsequent row selection
+                    viewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory>(key = orderId) { create(orderId) }
                 )
             }
         }

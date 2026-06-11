@@ -69,9 +69,10 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun InvoiceViewScreen(
     invoiceId: String,
-    onNavigateBack: (invoiceId: String?) -> Unit,
+    onNavigateBack: () -> Unit,
+    onEdit: (invoiceId: String) -> Unit = {},
     onOpenOrder: (orderId: String) -> Unit = {},
-    viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory> { create(invoiceId) }
+    viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory>(key = invoiceId) { create(invoiceId) }
 ) {
     val invoice = viewModel.invoice
     val cs = MaterialTheme.colorScheme
@@ -103,7 +104,7 @@ fun InvoiceViewScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onNavigateBack(null) }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.inv_view_cd_back)
@@ -118,7 +119,7 @@ fun InvoiceViewScreen(
                             contentDescription = stringResource(Res.string.inv_view_print_cd)
                         )
                     }
-                    IconButton(onClick = { onNavigateBack(invoice.id) }) {
+                    IconButton(onClick = { onEdit(invoice.id) }) {
                         Icon(
                             imageVector = Icons.Filled.Edit,
                             contentDescription = stringResource(Res.string.inv_view_cd_edit)

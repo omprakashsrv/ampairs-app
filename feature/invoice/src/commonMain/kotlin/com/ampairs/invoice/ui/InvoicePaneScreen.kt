@@ -50,17 +50,14 @@ fun InvoicePaneScreen(
                 val invoiceId = navigator.currentDestination?.contentKey ?: ""
                 InvoiceViewScreen(
                     invoiceId = invoiceId,
-                    viewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory> { create(invoiceId) },
+                    // key by id — without it the pane reuses the first document's ViewModel
+                    // for every subsequent row selection
+                    viewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory>(key = invoiceId) { create(invoiceId) },
                     onOpenOrder = onOpenOrder,
-                    onNavigateBack = { navigatedInvoiceId ->
-                        if (!navigatedInvoiceId.isNullOrEmpty()) {
-                            onInvoiceEdit(navigatedInvoiceId)
-                        } else {
-                            if (navigator.canNavigateBack()) {
-                                scope.launch {
-                                    navigator.navigateBack()
-                                }
-                            }
+                    onEdit = { id -> onInvoiceEdit(id) },
+                    onNavigateBack = {
+                        if (navigator.canNavigateBack()) {
+                            scope.launch { navigator.navigateBack() }
                         }
                     }
                 )

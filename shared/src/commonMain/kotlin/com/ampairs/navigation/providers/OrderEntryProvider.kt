@@ -26,6 +26,13 @@ fun orderEntryProvider(
             toCustomerId = toCustomerId,
             id = id,
             onOrderSaved = { orderId ->
+                // Land on the order view without stacking duplicates: pop the editor and,
+                // when this was an edit launched FROM the view, pop the stale view too so a
+                // fresh entry (fresh ViewModel) shows the just-saved data.
+                backStack.removeLastOrNull()
+                if ((backStack.lastOrNull() as? OrderRoute.OrderView)?.id == orderId) {
+                    backStack.removeLastOrNull()
+                }
                 backStack.add(OrderRoute.OrderView(id = orderId))
             },
             onOpenSettings = { backStack.add(StoreSettingsRoute) }
@@ -36,13 +43,8 @@ fun orderEntryProvider(
         OrderViewScreen(
             orderId = key.id,
             onOpenInvoice = { invoiceId -> backStack.add(InvoiceRoute.InvoiceView(id = invoiceId)) },
-            onNavigateBack = { orderId ->
-                if (!orderId.isNullOrEmpty()) {
-                    backStack.add(OrderRoute.Root(id = orderId))
-                } else {
-                    backStack.removeLastOrNull()
-                }
-            }
+            onEdit = { orderId -> backStack.add(OrderRoute.Root(id = orderId)) },
+            onNavigateBack = { backStack.removeLastOrNull() }
         )
     }
 

@@ -91,9 +91,10 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun OrderViewScreen(
     orderId: String,
-    onNavigateBack: (orderId: String?) -> Unit,
+    onNavigateBack: () -> Unit,
+    onEdit: (orderId: String) -> Unit = {},
     onOpenInvoice: (invoiceId: String) -> Unit = {},
-    viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory> { create(orderId) }
+    viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory>(key = orderId) { create(orderId) }
 ) {
     val order = viewModel.order
     val cs = MaterialTheme.colorScheme
@@ -120,7 +121,7 @@ fun OrderViewScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onNavigateBack(null) }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.ord_view_cd_back)
@@ -129,7 +130,7 @@ fun OrderViewScreen(
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
-                    IconButton(onClick = { onNavigateBack(order.id) }) {
+                    IconButton(onClick = { onEdit(order.id) }) {
                         Icon(
                             imageVector = Icons.Filled.Edit,
                             contentDescription = stringResource(Res.string.ord_view_cd_edit)

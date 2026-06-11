@@ -23,6 +23,11 @@ fun invoiceEntryProvider(
             toCustomerId = key.toCustomer.ifEmpty { null },
             id = key.id.ifEmpty { null },
             onInvoiceSaved = { invoiceId ->
+                // Land on the invoice view without stacking duplicates (see OrderEntryProvider).
+                backStack.removeLastOrNull()
+                if ((backStack.lastOrNull() as? InvoiceRoute.InvoiceView)?.id == invoiceId) {
+                    backStack.removeLastOrNull()
+                }
                 backStack.add(InvoiceRoute.InvoiceView(id = invoiceId))
             },
             onOpenSettings = { backStack.add(StoreSettingsRoute) }
@@ -33,13 +38,8 @@ fun invoiceEntryProvider(
         InvoiceViewScreen(
             invoiceId = key.id,
             onOpenOrder = { orderId -> backStack.add(OrderRoute.OrderView(id = orderId)) },
-            onNavigateBack = { invoiceId ->
-                if (!invoiceId.isNullOrEmpty()) {
-                    backStack.add(InvoiceRoute.Root(id = invoiceId))
-                } else {
-                    backStack.removeLastOrNull()
-                }
-            }
+            onEdit = { invoiceId -> backStack.add(InvoiceRoute.Root(id = invoiceId)) },
+            onNavigateBack = { backStack.removeLastOrNull() }
         )
     }
 
