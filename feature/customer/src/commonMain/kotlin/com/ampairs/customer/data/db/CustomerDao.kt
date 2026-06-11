@@ -24,8 +24,10 @@ interface CustomerDao {
         SELECT * FROM customers
         WHERE active = 1
         AND (name LIKE '%' || :searchQuery || '%'
-             OR phone LIKE '%' || :searchQuery || '%'
-             OR email LIKE '%' || :searchQuery || '%')
+             OR REPLACE(phone, ' ', '') LIKE '%' || REPLACE(:searchQuery, ' ', '') || '%'
+             OR email LIKE '%' || :searchQuery || '%'
+             OR gstNumber LIKE '%' || :searchQuery || '%'
+             OR state LIKE '%' || :searchQuery || '%')
         ORDER BY name ASC
     """
     )

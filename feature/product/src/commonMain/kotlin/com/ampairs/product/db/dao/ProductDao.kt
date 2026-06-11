@@ -19,6 +19,22 @@ interface ProductDao {
     @Query("SELECT * FROM productEntity WHERE name LIKE '%' || :query || '%' AND active = 1 ORDER BY name ASC")
     fun observeProductsByName(query: String): Flow<List<ProductEntity>>
 
+    // Fast-entry composer lookup (spec 010 v2): name/code substring or tax-code (HSN) prefix.
+    @Query(
+        """
+        SELECT * FROM productEntity
+        WHERE active = 1
+          AND (name LIKE '%' || :term || '%'
+               OR code LIKE '%' || :term || '%'
+               OR tax_code LIKE :term || '%')
+        ORDER BY name ASC LIMIT :limit
+        """
+    )
+    suspend fun searchForEntry(term: String, limit: Long): List<ProductEntity>
+
+    @Query("SELECT * FROM productEntity WHERE active = 1 ORDER BY name ASC LIMIT :limit")
+    suspend fun headProducts(limit: Long): List<ProductEntity>
+
     @Query("SELECT * FROM productEntity WHERE id = :id")
     fun observeProductById(id: String): Flow<ProductEntity?>
 

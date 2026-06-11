@@ -55,6 +55,11 @@ kotlin {
                 implementation(libs.material3.adaptive.navigation)
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
         androidMain {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
