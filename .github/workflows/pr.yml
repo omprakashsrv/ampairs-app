@@ -41,7 +41,10 @@ jobs:
           fi
       - run: chmod +x ./gradlew
       - name: Compile Android (debug)
-        run: ./gradlew :androidApp:compileDebugKotlinAndroid --console=plain
+        # androidApp is a com.android.application module (not a KMP library), so the KMP-style
+        # compileDebugKotlinAndroid task does not exist here. assembleDebug is the canonical build
+        # task and validates Kotlin compile + resource/google-services processing.
+        run: ./gradlew :androidApp:assembleDebug --console=plain
       - name: Compile Desktop
         run: ./gradlew :desktopApp:compileKotlin --console=plain
       - name: Run tests

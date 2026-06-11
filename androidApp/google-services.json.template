@@ -1,15 +1,15 @@
 {
-  "_comment": "Copy to androidApp/google-services.json (gitignored) with real values from the Firebase console (Project settings → Your apps → google-services.json). CI injects it from the GOOGLE_SERVICES_JSON secret.",
+  "_comment": "Format-valid DUMMY Firebase config so debug/PR builds compile without secrets. For real Android builds, CI injects the genuine file from the GOOGLE_SERVICES_JSON secret (and the file at androidApp/google-services.json is gitignored). Get the real values from Firebase console → Project settings → Your apps.",
   "project_info": {
-    "project_number": "YOUR_PROJECT_NUMBER",
-    "firebase_url": "https://YOUR_PROJECT-default-rtdb.REGION.firebasedatabase.app",
-    "project_id": "YOUR_PROJECT_ID",
-    "storage_bucket": "YOUR_PROJECT.firebasestorage.app"
+    "project_number": "000000000000",
+    "firebase_url": "https://ampairs-debug.firebaseio.com",
+    "project_id": "ampairs-debug",
+    "storage_bucket": "ampairs-debug.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "YOUR_MOBILE_SDK_APP_ID",
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
         "android_client_info": {
           "package_name": "com.ampairs.app"
         }
@@ -17,7 +17,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "YOUR_ANDROID_API_KEY"
+          "current_key": "AIzaSyDUMMYKEYFORDEBUGBUILDSONLY00000000"
         }
       ],
       "services": {
