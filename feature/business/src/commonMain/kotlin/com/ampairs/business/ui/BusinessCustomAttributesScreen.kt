@@ -2,6 +2,8 @@ package com.ampairs.business.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -10,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.form.render.ConfigAttributesSection
+import com.ampairs.business.ui.components.BusinessFormSection
 import com.ampairs.business.ui.components.BusinessScreenContent
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
@@ -109,29 +112,44 @@ fun BusinessCustomAttributesScreen(
 
                 else -> {
                     BusinessScreenContent(maxContentWidth = 720.dp) {
-                        // Header
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                text = "Custom Attributes",
-                                style = MaterialTheme.typography.headlineMedium
-                            )
-                            if (uiState.businessName.isNotBlank()) {
+                        // Server-defined-fields note.
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    Icons.Filled.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.size(20.dp),
+                                )
                                 Text(
-                                    text = uiState.businessName,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "These fields are defined by your organisation. New fields may appear here after a sync.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 )
                             }
                         }
 
-                        // Config-driven custom attributes from the unified business FormSchema.
-                        ConfigAttributesSection(
-                            schema = formSchema,
-                            optionRegistry = viewModel.optionRegistry,
-                            widgetRegistry = viewModel.widgetRegistry,
-                            attributes = uiState.customAttributeValues,
-                            onAttributesChange = viewModel::updateAttributes,
-                        )
+                        BusinessFormSection(
+                            icon = Icons.Filled.Code,
+                            title = "Custom Attributes",
+                            subtitle = uiState.businessName.ifBlank { "Additional business information" },
+                        ) {
+                            // Config-driven custom attributes from the unified business FormSchema.
+                            ConfigAttributesSection(
+                                schema = formSchema,
+                                optionRegistry = viewModel.optionRegistry,
+                                widgetRegistry = viewModel.widgetRegistry,
+                                attributes = uiState.customAttributeValues,
+                                onAttributesChange = viewModel::updateAttributes,
+                            )
+                        }
 
                         // Bottom spacing for FAB
                         Spacer(modifier = Modifier.height(80.dp))
