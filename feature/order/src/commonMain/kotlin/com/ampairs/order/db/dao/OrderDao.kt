@@ -106,6 +106,28 @@ interface OrderDao {
     @Query("SELECT * FROM orderEntity WHERE order_number LIKE '%' || :searchText || '%' AND active = 1 ORDER BY order_date DESC")
     fun getOrdersBySearchPagingSource(searchText: String): PagingSource<Int, OrderEntity>
 
+    // Order list v2 (docs/design/order-list-and-view): one search box matches the number and the
+    // buyer/seller names; status / invoiced / offline predicates compose on top.
+    @Query(
+        """
+        SELECT * FROM orderEntity
+        WHERE active = 1
+          AND (:searchText = '' OR order_number LIKE '%' || :searchText || '%'
+               OR to_customer_name LIKE '%' || :searchText || '%'
+               OR from_customer_name LIKE '%' || :searchText || '%')
+          AND (:status = '' OR status = :status)
+          AND (:invoicedOnly = 0 OR (invoice_ref_id IS NOT NULL AND invoice_ref_id != ''))
+          AND (:unsyncedOnly = 0 OR synced = 0)
+        ORDER BY order_date DESC
+        """
+    )
+    fun getOrdersFilteredPagingSource(
+        searchText: String,
+        status: String,
+        invoicedOnly: Int,
+        unsyncedOnly: Int,
+    ): PagingSource<Int, OrderEntity>
+
     @Transaction
     suspend fun updateOrders(orders: List<OrderEntity>, orderItems: List<OrderItemEntity>) {
         insertAll(orders)

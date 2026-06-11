@@ -64,4 +64,32 @@
     <string name="ord_cust_select">Select</string>
     <string name="ord_cust_title">Select customer</string>
     <string name="ord_cust_search">Search customers…</string>
+
+    <!-- Order list v2 (docs/design/order-list-and-view) -->
+    <string name="ord_list_search_hint">Search number or customer…</string>
+    <string name="ord_list_filter_all">All</string>
+    <string name="ord_list_filter_draft">Draft</string>
+    <string name="ord_list_filter_new">New</string>
+    <string name="ord_list_filter_ordered">Ordered</string>
+    <string name="ord_list_filter_invoiced">Invoiced</string>
+    <string name="ord_list_filter_offline">Offline</string>
+    <string name="ord_list_empty_cta">Create your first order</string>
+    <string name="ord_list_no_match_title">No orders match</string>
+    <string name="ord_list_no_match_desc">Try a different search or clear the filters</string>
+    <string name="ord_list_clear_filters">Clear filters</string>
+    <string name="ord_list_items">%1$d items</string>
+    <string name="ord_list_offline_cd">Saved offline</string>
+    <string name="ord_list_invoiced_hint">→ invoiced</string>
+    <string name="ord_list_retry">Retry</string>
+
+    <!-- Order view v2 (post-save landing) -->
+    <string name="ord_view_draft">draft</string>
+    <string name="ord_view_from_seller">From (seller)</string>
+    <string name="ord_view_bill_to">Bill to (buyer)</string>
+    <string name="ord_view_invoice_chip">Invoice %1$s</string>
+    <string name="ord_view_view_invoice">View invoice</string>
+    <string name="ord_view_taxable">Taxable</string>
+    <string name="ord_view_grand">Grand total</string>
+    <string name="ord_view_qty_caption">%1$d items · %2$s qty</string>
+    <string name="ord_view_gstin">GSTIN %1$s</string>
 </resources>

@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun OrderPaneScreen(
     onOrderEdit: (orderId: String?) -> Unit,
+    onOpenInvoice: (invoiceId: String) -> Unit = {},
     ordersViewModel: OrdersViewModel = metroViewModel(),
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
@@ -39,6 +40,7 @@ fun OrderPaneScreen(
                         }
                     },
                     onCreateOrder = { onOrderEdit(null) },
+                    selectedOrderId = navigator.currentDestination?.contentKey,
                     viewModel = ordersViewModel
                 )
             }
@@ -48,6 +50,7 @@ fun OrderPaneScreen(
                 val orderId = navigator.currentDestination?.contentKey ?: ""
                 OrderViewScreen(
                     orderId = orderId,
+                    onOpenInvoice = onOpenInvoice,
                     onNavigateBack = { navigateBackOrderId ->
                         if (!navigateBackOrderId.isNullOrEmpty()) {
                             onOrderEdit(navigateBackOrderId)

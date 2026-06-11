@@ -86,4 +86,20 @@ class OrderRepository(
     fun getOrders(searchText: String): PagingSource<Int, OrderEntity> {
         return orderDao.getOrdersBySearchPagingSource(searchText)
     }
+
+    /** Whether the row has reached the server (drives the order view's sync chip). */
+    suspend fun isOrderSynced(id: String): Boolean = orderDao.selectById(id)?.synced == 1L
+
+    /** Order list v2: search (number/buyer/seller) + status / invoiced / offline filters. */
+    fun getOrdersFiltered(
+        searchText: String,
+        status: String,
+        invoicedOnly: Boolean,
+        unsyncedOnly: Boolean,
+    ): PagingSource<Int, OrderEntity> = orderDao.getOrdersFilteredPagingSource(
+        searchText = searchText.trim(),
+        status = status,
+        invoicedOnly = if (invoicedOnly) 1 else 0,
+        unsyncedOnly = if (unsyncedOnly) 1 else 0,
+    )
 }
