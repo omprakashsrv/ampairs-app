@@ -161,11 +161,6 @@ class BusinessCustomAttributesViewModel(
         }
     }
 
-    fun refresh() {
-        loadData()
-        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.FORM))
-    }
-
     fun clearSaveSuccess() {
         _uiState.value = _uiState.value.copy(saveSuccess = false)
     }

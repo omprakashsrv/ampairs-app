@@ -88,10 +88,6 @@ class BusinessOverviewViewModel(
                 .onSuccess { loadOverview() }
         }
     }
-
-    fun refresh() {
-        loadOverview()
-    }
 }
 
 data class BusinessOverviewUiState(

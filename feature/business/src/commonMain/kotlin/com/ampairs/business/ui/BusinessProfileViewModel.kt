@@ -176,10 +176,6 @@ class BusinessProfileViewModel(
     fun clearSaveSuccess() {
         _uiState.value = _uiState.value.copy(saveSuccess = false, wasCreateOperation = false)
     }
-
-    fun refresh() {
-        loadProfile()
-    }
 }
 
 data class BusinessProfileUiState(

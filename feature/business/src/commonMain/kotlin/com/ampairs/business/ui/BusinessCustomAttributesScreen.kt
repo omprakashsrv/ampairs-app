@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,20 +26,12 @@ fun BusinessCustomAttributesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val formSchema by viewModel.formSchema.collectAsStateWithLifecycle()
-    val pullRefreshState = rememberPullToRefreshState()
-    var isRefreshing by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) {
             snackbarHostState.showSnackbar("Custom attributes saved successfully")
             viewModel.clearSaveSuccess()
-        }
-    }
-
-    LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading) {
-            isRefreshing = false
         }
     }
 
@@ -59,18 +49,10 @@ fun BusinessCustomAttributesScreen(
             }
         }
     ) { paddingValues ->
-        PullToRefreshBox(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            state = pullRefreshState,
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                if (!isRefreshing) {
-                    isRefreshing = true
-                    viewModel.refresh()
-                }
-            }
+                .padding(paddingValues)
         ) {
             when {
                 uiState.isLoading && formSchema == null -> {

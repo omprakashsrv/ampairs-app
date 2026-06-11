@@ -105,10 +105,6 @@ class BusinessOperationsViewModel(
     fun clearSaveSuccess() {
         _uiState.value = _uiState.value.copy(saveSuccess = false)
     }
-
-    fun refresh() {
-        loadOperations()
-    }
 }
 
 data class BusinessOperationsUiState(

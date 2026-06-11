@@ -12,8 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +38,6 @@ fun BusinessImagesScreen(
     viewModel: BusinessImagesViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val pullRefreshState = rememberPullToRefreshState()
-    var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Upload dialog state
@@ -66,76 +62,59 @@ fun BusinessImagesScreen(
         }
     }
 
-    // Handle refresh state
-    LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading) {
-            isRefreshing = false
-        }
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        PullToRefreshBox(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            state = pullRefreshState,
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                if (!isRefreshing) {
-                    isRefreshing = true
-                    viewModel.refresh()
-                }
-            }
+        BusinessScreenContent(
+            modifier = Modifier.padding(paddingValues),
+            maxContentWidth = 720.dp,
+            verticalSpacing = 24.dp,
         ) {
-            BusinessScreenContent(maxContentWidth = 720.dp, verticalSpacing = 24.dp) {
-                Text(
-                    text = "Business Images",
-                    style = MaterialTheme.typography.headlineMedium
-                )
+            Text(
+                text = "Business Images",
+                style = MaterialTheme.typography.headlineMedium
+            )
 
-                when {
-                    uiState.isLoading && uiState.business == null -> {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
+            when {
+                uiState.isLoading && uiState.business == null -> {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
+                }
 
-                    else -> {
-                        // Logo Section - append cache buster to force reload after upload
-                        val logoUrlWithCacheBuster = uiState.logoThumbnailUrl?.let { url ->
-                            if (uiState.logoCacheBuster > 0) "$url?t=${uiState.logoCacheBuster}" else url
-                        }
-                        BusinessLogoSection(
-                            logoUrl = logoUrlWithCacheBuster,
-                            hasLogo = uiState.logoUrl != null,
-                            isUploading = uiState.isUploadingLogo,
-                            isDeleting = uiState.isDeletingLogo,
-                            onUploadClick = { viewModel.pickAndUploadLogo() },
-                            onDeleteClick = { viewModel.deleteLogo() }
-                        )
-
-                        HorizontalDivider()
-
-                        // Gallery Section
-                        BusinessGallerySection(
-                            images = uiState.images,
-                            isUploading = uiState.isUploadingImage,
-                            isDeleting = uiState.isDeletingImage,
-                            onAddClick = { showUploadDialog = true },
-                            onEditClick = { image -> editingImage = image },
-                            onSetPrimaryClick = { viewModel.setImageAsPrimary(it) },
-                            onDeleteClick = { viewModel.deleteImage(it) }
-                        )
-
-                        // Bottom spacing
-                        Spacer(modifier = Modifier.height(16.dp))
+                else -> {
+                    // Logo Section - append cache buster to force reload after upload
+                    val logoUrlWithCacheBuster = uiState.logoThumbnailUrl?.let { url ->
+                        if (uiState.logoCacheBuster > 0) "$url?t=${uiState.logoCacheBuster}" else url
                     }
+                    BusinessLogoSection(
+                        logoUrl = logoUrlWithCacheBuster,
+                        hasLogo = uiState.logoUrl != null,
+                        isUploading = uiState.isUploadingLogo,
+                        isDeleting = uiState.isDeletingLogo,
+                        onUploadClick = { viewModel.pickAndUploadLogo() },
+                        onDeleteClick = { viewModel.deleteLogo() }
+                    )
+
+                    HorizontalDivider()
+
+                    // Gallery Section
+                    BusinessGallerySection(
+                        images = uiState.images,
+                        isUploading = uiState.isUploadingImage,
+                        isDeleting = uiState.isDeletingImage,
+                        onAddClick = { showUploadDialog = true },
+                        onEditClick = { image -> editingImage = image },
+                        onSetPrimaryClick = { viewModel.setImageAsPrimary(it) },
+                        onDeleteClick = { viewModel.deleteImage(it) }
+                    )
+
+                    // Bottom spacing
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }

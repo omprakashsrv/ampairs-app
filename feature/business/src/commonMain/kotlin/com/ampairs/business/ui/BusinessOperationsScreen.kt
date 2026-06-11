@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,8 +30,6 @@ fun BusinessOperationsScreen(
     viewModel: BusinessOperationsViewModel = metroViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val pullRefreshState = rememberPullToRefreshState()
-    var isRefreshing by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle save success
@@ -44,153 +40,135 @@ fun BusinessOperationsScreen(
         }
     }
 
-    // Handle refresh state
-    LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading) {
-            isRefreshing = false
-        }
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        PullToRefreshBox(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            state = pullRefreshState,
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                if (!isRefreshing) {
-                    isRefreshing = true
-                    viewModel.refresh()
-                }
-            }
+        BusinessScreenContent(
+            modifier = Modifier.padding(paddingValues),
+            maxContentWidth = 720.dp,
         ) {
-            BusinessScreenContent(maxContentWidth = 720.dp) {
-                Text(
-                    text = "Operational Settings",
-                    style = MaterialTheme.typography.headlineMedium
-                )
+            Text(
+                text = "Operational Settings",
+                style = MaterialTheme.typography.headlineMedium
+            )
 
-                when {
-                    uiState.isLoading && uiState.operations == null -> {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+            when {
+                uiState.isLoading && uiState.operations == null -> {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                uiState.error != null -> {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = uiState.error ?: "Unknown error",
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+
+                else -> {
+                    val formState = uiState.formState
+
+                    // Regional Settings Section
+                    SectionHeader("Regional Settings")
+
+                    TimezoneDropdown(
+                        selectedTimezone = formState.timezone,
+                        onTimezoneSelected = { viewModel.updateFormState(formState.copy(timezone = it)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    CurrencyDropdown(
+                        selectedCurrency = formState.currency,
+                        onCurrencySelected = { viewModel.updateFormState(formState.copy(currency = it)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    LanguageDropdown(
+                        selectedLanguage = formState.language,
+                        onLanguageSelected = { viewModel.updateFormState(formState.copy(language = it)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Format Settings Section
+                    SectionHeader("Format Settings")
+
+                    DateFormatDropdown(
+                        selectedFormat = formState.dateFormat,
+                        onFormatSelected = { viewModel.updateFormState(formState.copy(dateFormat = it)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    TimeFormatDropdown(
+                        selectedFormat = formState.timeFormat,
+                        onFormatSelected = { viewModel.updateFormState(formState.copy(timeFormat = it)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Business Hours Section
+                    SectionHeader("Business Hours")
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = formState.openingHours,
+                            onValueChange = { viewModel.updateFormState(formState.copy(openingHours = it)) },
+                            label = { Text("Opening Time") },
+                            placeholder = { Text("09:00") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = formState.closingHours,
+                            onValueChange = { viewModel.updateFormState(formState.copy(closingHours = it)) },
+                            label = { Text("Closing Time") },
+                            placeholder = { Text("18:00") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                    }
+
+                    // Operating Days Section
+                    SectionHeader("Operating Days")
+
+                    OperatingDaysSelector(
+                        selectedDays = formState.selectedDays,
+                        onDaysChanged = { viewModel.updateFormState(formState.copy(selectedDays = it)) }
+                    )
+
+                    // Save Button
+                    Button(
+                        onClick = { viewModel.saveOperations() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isSaving
+                    ) {
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text("Save Settings")
                         }
                     }
 
-                    uiState.error != null -> {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = uiState.error ?: "Unknown error",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(16.dp)
-                            )
-                        }
-                    }
-
-                    else -> {
-                        val formState = uiState.formState
-
-                        // Regional Settings Section
-                        SectionHeader("Regional Settings")
-
-                        TimezoneDropdown(
-                            selectedTimezone = formState.timezone,
-                            onTimezoneSelected = { viewModel.updateFormState(formState.copy(timezone = it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        CurrencyDropdown(
-                            selectedCurrency = formState.currency,
-                            onCurrencySelected = { viewModel.updateFormState(formState.copy(currency = it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        LanguageDropdown(
-                            selectedLanguage = formState.language,
-                            onLanguageSelected = { viewModel.updateFormState(formState.copy(language = it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Format Settings Section
-                        SectionHeader("Format Settings")
-
-                        DateFormatDropdown(
-                            selectedFormat = formState.dateFormat,
-                            onFormatSelected = { viewModel.updateFormState(formState.copy(dateFormat = it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        TimeFormatDropdown(
-                            selectedFormat = formState.timeFormat,
-                            onFormatSelected = { viewModel.updateFormState(formState.copy(timeFormat = it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Business Hours Section
-                        SectionHeader("Business Hours")
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = formState.openingHours,
-                                onValueChange = { viewModel.updateFormState(formState.copy(openingHours = it)) },
-                                label = { Text("Opening Time") },
-                                placeholder = { Text("09:00") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
-                            )
-
-                            OutlinedTextField(
-                                value = formState.closingHours,
-                                onValueChange = { viewModel.updateFormState(formState.copy(closingHours = it)) },
-                                label = { Text("Closing Time") },
-                                placeholder = { Text("18:00") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
-                            )
-                        }
-
-                        // Operating Days Section
-                        SectionHeader("Operating Days")
-
-                        OperatingDaysSelector(
-                            selectedDays = formState.selectedDays,
-                            onDaysChanged = { viewModel.updateFormState(formState.copy(selectedDays = it)) }
-                        )
-
-                        // Save Button
-                        Button(
-                            onClick = { viewModel.saveOperations() },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !uiState.isSaving
-                        ) {
-                            if (uiState.isSaving) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            } else {
-                                Text("Save Settings")
-                            }
-                        }
-
-                        // Add bottom spacing
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
+                    // Add bottom spacing
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
