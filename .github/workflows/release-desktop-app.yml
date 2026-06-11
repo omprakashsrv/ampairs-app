@@ -68,7 +68,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Upload release notes artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-notes
           path: release_notes.md
@@ -122,7 +122,7 @@ jobs:
           echo "✅ DMG ready: $DMG_FILE"
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-dmg
           path: ${{ steps.find-dmg.outputs.dmg_path }}
@@ -203,7 +203,7 @@ jobs:
         shell: powershell
 
       - name: Upload MSI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-msi
           path: ${{ steps.find-msi.outputs.msi_path }}
@@ -257,7 +257,7 @@ jobs:
           echo "✅ DEB ready: $DEB_FILE"
 
       - name: Upload DEB artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-deb
           path: ${{ steps.find-deb.outputs.deb_path }}
@@ -343,7 +343,7 @@ jobs:
             --release-notes release_notes.md
 
       - name: Upload to GitHub Release (for backup)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.platform }}
           path: ${{ steps.find-file.outputs.file_path }}
