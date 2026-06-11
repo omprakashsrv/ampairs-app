@@ -59,6 +59,10 @@ class ProductSyncDelegate(
         val unsynced = productDao.unSyncedProducts()
         if (unsynced.isEmpty()) return@runCatching 0
         var pushed = 0
+        var failed = 0
+        var lastError: Throwable? = null
+        // One failed batch must not abort the rest (reference pattern: CustomerSyncDelegate) —
+        // remaining batches still push; failed rows stay synced=0 and retry next cycle.
         for (batch in unsynced.chunked(100)) {
             val apiModels = batch.map { it.asProductApiModel() }
             productApi.bulkUpdateProducts(apiModels)
@@ -66,7 +70,16 @@ class ProductSyncDelegate(
                     batch.forEach { entity -> productDao.insert(entity.copy(synced = 1)) }
                     pushed += batch.size
                 }
-                .onFailure { throw it }
+                .onFailure { error ->
+                    ProductLogger.w("ProductSyncDelegate", "Batch push failed", error)
+                    failed += batch.size
+                    lastError = error
+                }
+        }
+        // Rule 2 (/offline-sync): nothing pushed + failures present must surface as failure,
+        // not Success(0), so CentralSyncService marks the entity FAILED and retries on reconnect.
+        if (pushed == 0 && failed > 0) {
+            throw lastError ?: Exception("$failed product(s) failed to push — will retry on reconnect")
         }
         pushed
     }

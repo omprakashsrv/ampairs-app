@@ -1,0 +1,11 @@
+# Default owner for everything in this repo.
+* @omprakashsrv
+
+# High-blast-radius areas — DI graph, sync engine, shared infra, navigation, CI.
+/shared/                     @omprakashsrv
+/data/                       @omprakashsrv
+/feature/                    @omprakashsrv
+/androidApp/                 @omprakashsrv
+/.github/                    @omprakashsrv
+/.claude/                    @omprakashsrv
+/gradle/libs.versions.toml   @omprakashsrv

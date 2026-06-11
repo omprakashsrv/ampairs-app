@@ -1,0 +1,94 @@
+name: PR Checks
+
+# Validates every pull request BEFORE merge: compiles all three first-class KMP targets
+# (Android, iOS, Desktop) and runs the test suite. The repo's own rules require compiling all
+# targets after any commonMain change — this enforces it as a merge gate instead of by convention.
+#
+# Caching: gradle/actions/setup-gradle caches the Gradle home (downloaded deps, wrapper) and the
+# Gradle build cache (task outputs — only useful because org.gradle.caching=true). A dedicated
+# ~/.konan cache holds the Kotlin/Native compiler + platform libs, which is the slowest part of the
+# iOS build. cache-read-only=false so re-runs of the same PR reuse what earlier runs built.
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  android-desktop:
+    name: Compile Android + Desktop, run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          # Vestigial/empty per-module gradle-wrapper.jar files + very new Gradle the action does
+          # not yet have a checksum for; the build uses the root wrapper. Skip wrapper validation.
+          validate-wrappers: false
+      - name: Cache Kotlin/Native (~/.konan)
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-konan-
+      - name: Write google-services.json
+        # Untracked from VCS; injected from a secret. The google-services plugin runs during the
+        # Android build, so the file must exist under androidApp/ even for a debug compile.
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > androidApp/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON secret not set — copying template so the Android build can proceed."
+            cp androidApp/google-services.json.template androidApp/google-services.json
+          fi
+      - run: chmod +x ./gradlew
+      - name: Compile Android (debug)
+        # compileDebugSources compiles all Kotlin/Java + processes resources WITHOUT packaging or
+        # signing. assembleDebug can't be used here: the debug build type uses the RELEASE signing
+        # config (ampairs.jks), which is gitignored and only injected in the release workflows.
+        run: ./gradlew :androidApp:compileDebugSources --console=plain
+      - name: Compile Desktop
+        run: ./gradlew :desktopApp:compileKotlin --console=plain
+      - name: Run tests
+        run: ./gradlew :feature:tax:desktopTest --console=plain
+
+  ios:
+    name: Compile iOS (simulatorArm64)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          # Vestigial/empty per-module gradle-wrapper.jar files + very new Gradle the action does
+          # not yet have a checksum for; the build uses the root wrapper. Skip wrapper validation.
+          validate-wrappers: false
+      - name: Cache Kotlin/Native (~/.konan)
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-konan-
+      - run: chmod +x ./gradlew
+      - name: Compile iOS framework
+        run: ./gradlew :shared:compileKotlinIosSimulatorArm64 --console=plain

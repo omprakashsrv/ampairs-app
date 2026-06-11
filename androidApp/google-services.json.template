@@ -1,0 +1,31 @@
+{
+  "_comment": "Format-valid DUMMY Firebase config so debug/PR builds compile without secrets. For real Android builds, CI injects the genuine file from the GOOGLE_SERVICES_JSON secret (and the file at androidApp/google-services.json is gitignored). Get the real values from Firebase console → Project settings → Your apps.",
+  "project_info": {
+    "project_number": "000000000000",
+    "firebase_url": "https://ampairs-debug.firebaseio.com",
+    "project_id": "ampairs-debug",
+    "storage_bucket": "ampairs-debug.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "com.ampairs.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUMMYKEYFORDEBUGBUILDSONLY00000000"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
