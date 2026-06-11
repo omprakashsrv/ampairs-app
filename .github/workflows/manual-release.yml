@@ -285,7 +285,7 @@ jobs:
         run: ls -R artifacts/
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.version }}
           name: ${{ inputs.release_name }}
