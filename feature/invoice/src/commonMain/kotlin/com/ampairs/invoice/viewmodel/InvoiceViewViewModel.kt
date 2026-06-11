@@ -8,7 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.domain.Invoice
+import com.ampairs.invoice.editor.DocSyncUi
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -21,7 +28,8 @@ import kotlinx.coroutines.launch
 @AssistedInject
 class InvoiceViewViewModel(
     @Assisted val invoiceId: String,
-    val invoiceRepository: InvoiceRepository
+    val invoiceRepository: InvoiceRepository,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -36,10 +44,36 @@ class InvoiceViewViewModel(
     var savingInvoice by mutableStateOf(false)
         private set
 
+    /** Live document sync chip: this row's synced flag + the INVOICE entity's sync activity. */
+    var syncUi by mutableStateOf(DocSyncUi.NONE)
+        private set
+
     init {
         viewModelScope.launch(DispatcherProvider.io) {
             invoice = invoiceRepository.getInvoice(invoiceId)
+            refreshSyncFlag()
         }
+        syncService.observeEntity(SyncEntity.INVOICE)
+            .onEach { state ->
+                when (state?.status) {
+                    is SyncStatus.Syncing -> syncUi = DocSyncUi.SYNCING
+                    is SyncStatus.Failed -> {
+                        refreshSyncFlag()
+                        if (syncUi == DocSyncUi.OFFLINE) syncUi = DocSyncUi.FAILED
+                    }
+                    else -> refreshSyncFlag()
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private suspend fun refreshSyncFlag() {
+        if (invoiceId.isBlank()) return
+        syncUi = if (invoiceRepository.isInvoiceSynced(invoiceId)) DocSyncUi.SYNCED else DocSyncUi.OFFLINE
+    }
+
+    fun retrySync() {
+        syncService.emit(SyncEvent.TriggerPush(SyncEntity.INVOICE))
     }
 
     fun saveInvoice() {

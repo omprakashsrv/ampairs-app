@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun InvoicePaneScreen(
     onInvoiceEdit: (invoiceId: String?) -> Unit,
+    onOpenOrder: (orderId: String) -> Unit = {},
     invoicesViewModel: InvoicesViewModel = metroViewModel(),
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
@@ -39,7 +40,8 @@ fun InvoicePaneScreen(
                             navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, selectedInvoiceId)
                         }
                     },
-                    onCreateInvoice = { onInvoiceEdit(null) }
+                    onCreateInvoice = { onInvoiceEdit(null) },
+                    selectedInvoiceId = navigator.currentDestination?.contentKey,
                 )
             }
         },
@@ -49,6 +51,7 @@ fun InvoicePaneScreen(
                 InvoiceViewScreen(
                     invoiceId = invoiceId,
                     viewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory> { create(invoiceId) },
+                    onOpenOrder = onOpenOrder,
                     onNavigateBack = { navigatedInvoiceId ->
                         if (!navigatedInvoiceId.isNullOrEmpty()) {
                             onInvoiceEdit(navigatedInvoiceId)

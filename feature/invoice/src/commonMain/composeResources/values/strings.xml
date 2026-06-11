@@ -179,4 +179,27 @@
     <!-- Product picker (line product change) -->
     <string name="doc_pick_title">Select product</string>
     <string name="doc_pick_search">Search product or HSN…</string>
+
+    <!-- Invoice list v2 (docs/design/order-list-and-view, mirrored) -->
+    <string name="inv_list_search_hint">Search number or customer…</string>
+    <string name="inv_list_filter_all">All</string>
+    <string name="inv_list_filter_draft">Draft</string>
+    <string name="inv_list_filter_new">New</string>
+    <string name="inv_list_filter_invoiced">Invoiced</string>
+    <string name="inv_list_filter_from_order">From order</string>
+    <string name="inv_list_filter_offline">Offline</string>
+    <string name="inv_list_empty_cta">Create your first invoice</string>
+    <string name="inv_list_no_match_title">No invoices match</string>
+    <string name="inv_list_no_match_desc">Try a different search or clear the filters</string>
+    <string name="inv_list_clear_filters">Clear filters</string>
+    <string name="inv_list_items">%1$d items</string>
+    <string name="inv_list_offline_cd">Saved offline</string>
+    <string name="inv_list_from_order_hint">← from order</string>
+    <string name="inv_list_retry">Retry</string>
+
+    <!-- Invoice view v2 (post-save landing) -->
+    <string name="inv_view_draft">draft</string>
+    <string name="inv_view_view_order">View order</string>
+    <string name="inv_view_print_cd">Print</string>
+    <string name="inv_view_qty_caption">%1$d items · %2$s qty</string>
 </resources>

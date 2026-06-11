@@ -2,18 +2,15 @@ package com.ampairs.invoice.ui
 
 import ampairsapp.feature.invoice.generated.resources.Res
 import ampairsapp.feature.invoice.generated.resources.inv_view_cd_back
-import ampairsapp.feature.invoice.generated.resources.inv_view_title
 import ampairsapp.feature.invoice.generated.resources.inv_view_cd_edit
-import ampairsapp.feature.invoice.generated.resources.inv_view_col_particulars
-import ampairsapp.feature.invoice.generated.resources.inv_view_col_qty
-import ampairsapp.feature.invoice.generated.resources.inv_view_col_rate
-import ampairsapp.feature.invoice.generated.resources.inv_view_col_total
-import ampairsapp.feature.invoice.generated.resources.inv_view_discount
-import ampairsapp.feature.invoice.generated.resources.inv_view_from
-import ampairsapp.feature.invoice.generated.resources.inv_view_items
+import ampairsapp.feature.invoice.generated.resources.inv_view_draft
+import ampairsapp.feature.invoice.generated.resources.inv_view_print_cd
+import ampairsapp.feature.invoice.generated.resources.inv_view_qty_caption
 import ampairsapp.feature.invoice.generated.resources.inv_view_save
-import ampairsapp.feature.invoice.generated.resources.inv_view_to
+import ampairsapp.feature.invoice.generated.resources.inv_view_title
+import ampairsapp.feature.invoice.generated.resources.inv_view_view_order
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,22 +19,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -47,26 +46,38 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
+import com.ampairs.common.format.toInr
+import com.ampairs.invoice.editor.DocSyncChip
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import com.ampairs.invoice.viewmodel.InvoiceViewViewModel
-import com.ampairs.ui.components.TableCell
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Invoice view v2 (docs/design/order-list-and-view, mirrored) — the post-save landing.
+ * The body IS the printable GST tax invoice ([TaxInvoiceView] paper, centered ≤760dp); the app
+ * chrome adds the mono number, a live sync chip, Print/Edit, a status band and the linked-order
+ * chip (invoices converted from an order navigate back to it).
+ */
+@OptIn(ExperimentalMaterial3Api::class, kotlin.time.ExperimentalTime::class)
 @Composable
 fun InvoiceViewScreen(
     invoiceId: String,
     onNavigateBack: (invoiceId: String?) -> Unit,
+    onOpenOrder: (orderId: String) -> Unit = {},
     viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory> { create(invoiceId) }
 ) {
     val invoice = viewModel.invoice
+    val cs = MaterialTheme.colorScheme
+    val mono = FontFamily.Monospace
     var showPreview by remember { mutableStateOf(false) }
+    val fromOrder = !invoice.orderRefId.isNullOrBlank()
 
     if (showPreview) {
         TaxInvoicePreviewScreen(invoice = invoice, onClose = { showPreview = false })
@@ -77,12 +88,19 @@ fun InvoiceViewScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    val title = stringResource(Res.string.inv_view_title)
-                    Text(
-                        text = if (!invoice.invoiceNumber.isNullOrEmpty()) "$title ${invoice.invoiceNumber}" else title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(Res.string.inv_view_title) + " · ",
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = invoice.invoiceNumber?.ifBlank { null }
+                                ?: stringResource(Res.string.inv_view_draft),
+                            fontFamily = mono,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = { onNavigateBack(null) }) {
@@ -93,10 +111,11 @@ fun InvoiceViewScreen(
                     }
                 },
                 actions = {
+                    DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
                     IconButton(onClick = { showPreview = true }) {
                         Icon(
                             imageVector = Icons.Filled.Print,
-                            contentDescription = "Print"
+                            contentDescription = stringResource(Res.string.inv_view_print_cd)
                         )
                     }
                     IconButton(onClick = { onNavigateBack(invoice.id) }) {
@@ -109,32 +128,14 @@ fun InvoiceViewScreen(
             )
         },
         bottomBar = {
-            BottomAppBar(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ) {
-                Text(
-                    stringResource(Res.string.inv_view_items, invoice.totalItems),
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                invoice.discount?.sumOf { it.value }?.let { discountTotal ->
-                    if (discountTotal > 0) {
-                        Text(
-                            "${stringResource(Res.string.inv_view_discount)}: ${discountTotal.toDecimal()}",
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+            BottomAppBar(containerColor = cs.surfaceContainer) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "₹${invoice.totalCost.toDecimal()}",
-                        modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        invoice.totalCost.toInr(),
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontFamily = mono,
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
                 if (invoice.invoiceNumber.isNullOrEmpty()) {
@@ -147,122 +148,77 @@ fun InvoiceViewScreen(
                             CircularProgressIndicator(
                                 modifier = Modifier.progressSemantics().size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = cs.onPrimary
                             )
                         } else {
                             Text(stringResource(Res.string.inv_view_save))
                         }
                     }
+                } else if (fromOrder) {
+                    FilledTonalButton(
+                        onClick = { invoice.orderRefId?.let(onOpenOrder) },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("  " + stringResource(Res.string.inv_view_view_order))
+                    }
                 }
             }
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+        Box(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
         ) {
-            item {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(Res.string.inv_view_from),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                )
-                                Text(
-                                    text = invoice.fromCustomer?.name ?: "—",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.End
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.inv_view_to),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                )
-                                Text(
-                                    text = invoice.toCustomer?.name ?: "—",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
+            LazyColumn(
+                modifier = Modifier.widthIn(max = 760.dp).fillMaxSize(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+            ) {
+                // ── status band ──
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                    ) {
+                        InvoiceStatusChip(invoice.status.name)
+                        Text(
+                            formatInvoiceInstantDate(invoice.invoiceDate),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontFamily = mono,
+                            color = cs.onSurfaceVariant,
+                        )
+                        Text(
+                            stringResource(Res.string.inv_view_qty_caption, invoice.totalItems, invoice.totalQuantity.toDecimal()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                        if (fromOrder) {
+                            AssistChip(
+                                onClick = { invoice.orderRefId?.let(onOpenOrder) },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(16.dp))
+                                },
+                                label = { Text(stringResource(Res.string.inv_view_view_order), maxLines = 1) },
+                            )
                         }
                     }
                 }
-            }
-
-            item {
-                Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    ) {
-                        TableCell(
-                            text = stringResource(Res.string.inv_view_col_particulars),
-                            weight = 0.4f,
-                            title = true,
-                            alignment = TextAlign.Start
-                        )
-                        TableCell(text = stringResource(Res.string.inv_view_col_rate), weight = 0.22f, title = true)
-                        TableCell(text = stringResource(Res.string.inv_view_col_qty), weight = 0.18f, title = true)
-                        TableCell(
-                            text = stringResource(Res.string.inv_view_col_total),
-                            weight = 0.3f,
-                            title = true,
-                            alignment = TextAlign.End
-                        )
-                    }
+                // ── the printable GST invoice paper itself ──
+                item {
+                    TaxInvoiceView(invoice = invoice, workspaceName = invoice.fromCustomer?.name ?: "")
                 }
-                HorizontalDivider()
+                item { Spacer(Modifier.height(80.dp)) }
             }
-
-            items(invoice.items.size) { index ->
-                val invoiceItem = invoice.items[index]
-                Column {
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        TableCell(
-                            text = invoiceItem.description,
-                            weight = 0.4f,
-                            alignment = TextAlign.Start
-                        )
-                        TableCell(text = invoiceItem.price.toDecimal(), weight = 0.22f)
-                        TableCell(text = invoiceItem.quantity.toDecimal(), weight = 0.18f)
-                        TableCell(
-                            text = invoiceItem.totalCost.toDecimal(),
-                            weight = 0.3f,
-                            alignment = TextAlign.End,
-                            title = true
-                        )
-                    }
-                    if (invoiceItem.discountPercent > 0.0) {
-                        Text(
-                            text = "${stringResource(Res.string.inv_view_discount)}: ${invoiceItem.discountPercent.toDecimal()}% · ${invoiceItem.discount.sumOf { it.value }.toDecimal()}",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color(9, 121, 105)
-                        )
-                    }
-                    HorizontalDivider()
-                }
-            }
-
-            item { Spacer(Modifier.height(80.dp)) }
         }
     }
+}
+
+@OptIn(kotlin.time.ExperimentalTime::class)
+private fun formatInvoiceInstantDate(instant: kotlin.time.Instant): String {
+    val date = instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val month = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+    return "${date.day.toString().padStart(2, '0')} $month ${date.year}"
 }

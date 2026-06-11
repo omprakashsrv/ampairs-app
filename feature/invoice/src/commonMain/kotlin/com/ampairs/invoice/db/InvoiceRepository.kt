@@ -119,6 +119,22 @@ class InvoiceRepository(
         return invoice
     }
 
+    /** Whether the row has reached the server (drives the invoice view's sync chip). */
+    suspend fun isInvoiceSynced(id: String): Boolean = invoiceDao.selectById(id)?.synced == 1L
+
+    /** Invoice list v2: search (number/buyer/seller) + status / from-order / offline filters. */
+    fun getInvoicesFiltered(
+        searchText: String,
+        status: String,
+        fromOrderOnly: Boolean,
+        unsyncedOnly: Boolean,
+    ): PagingSource<Int, InvoiceEntity> = invoiceDao.getInvoicesFilteredPagingSource(
+        searchText = searchText.trim(),
+        status = status,
+        fromOrderOnly = if (fromOrderOnly) 1 else 0,
+        unsyncedOnly = if (unsyncedOnly) 1 else 0,
+    )
+
     fun getInvoicePaging(searchText: String): PagingSource<Int, InvoiceEntity> {
         return if (searchText.isBlank()) {
             invoiceDao.getAllInvoicesPagingSource()
