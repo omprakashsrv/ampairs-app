@@ -2,9 +2,7 @@ package com.ampairs.business.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
@@ -22,6 +20,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.business.ui.BusinessOverviewViewModel
+import com.ampairs.business.ui.components.BusinessAction
+import com.ampairs.business.ui.components.BusinessActionGrid
+import com.ampairs.business.ui.components.BusinessScreenContent
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
@@ -59,13 +60,7 @@ fun BusinessOverviewScreen(
             }
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        BusinessScreenContent {
             Text(
                 text = "Business Overview",
                 style = MaterialTheme.typography.headlineMedium
@@ -190,68 +185,47 @@ fun BusinessOverviewScreen(
                         }
                     }
 
-                    // Quick Actions
+                    // Quick Actions — one column on phones, two on wider (tablet/desktop) windows.
                     Text("Quick Actions", style = MaterialTheme.typography.titleMedium)
 
-                    OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToProfile) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Business, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Column {
-                                Text("Profile & Registration", style = MaterialTheme.typography.titleMedium)
-                                Text("Company details and registration info", style = MaterialTheme.typography.bodySmall)
-                            }
+                    val actions = buildList {
+                        add(
+                            BusinessAction(
+                                icon = Icons.Default.Business,
+                                title = "Profile & Registration",
+                                subtitle = "Company details and registration info",
+                                onClick = onNavigateToProfile,
+                            )
+                        )
+                        add(
+                            BusinessAction(
+                                icon = Icons.Default.Settings,
+                                title = "Operations",
+                                subtitle = "Timezone, currency, business hours",
+                                onClick = onNavigateToOperations,
+                            )
+                        )
+                        add(
+                            BusinessAction(
+                                icon = Icons.Default.Image,
+                                title = "Logo & Gallery",
+                                subtitle = "Business logo and gallery images",
+                                onClick = onNavigateToImages,
+                            )
+                        )
+                        // Custom Attributes — only when some are defined.
+                        if (hasCustomAttributes) {
+                            add(
+                                BusinessAction(
+                                    icon = Icons.Default.Extension,
+                                    title = "Custom Attributes",
+                                    subtitle = "Additional business information and custom fields",
+                                    onClick = onNavigateToCustomAttributes,
+                                )
+                            )
                         }
                     }
-
-                    OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToOperations) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Column {
-                                Text("Operations", style = MaterialTheme.typography.titleMedium)
-                                Text("Timezone, currency, business hours", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-
-                    OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToImages) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Column {
-                                Text("Logo & Gallery", style = MaterialTheme.typography.titleMedium)
-                                Text("Business logo and gallery images", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-
-                    // Custom Attributes Section - Only show if custom attributes are defined
-                    if (hasCustomAttributes) {
-                        OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToCustomAttributes) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.Extension, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                Column {
-                                    Text("Custom Attributes", style = MaterialTheme.typography.titleMedium)
-                                    Text("Additional business information and custom fields", style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                        }
-                    }
-
+                    BusinessActionGrid(actions = actions)
                 }
             }
         }
