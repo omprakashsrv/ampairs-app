@@ -95,6 +95,7 @@ fun InvoicesScreen(
     onInvoiceSelected: (String) -> Unit,
     onCreateInvoice: () -> Unit = {},
     selectedInvoiceId: String? = null,
+    expanded: Boolean = false,
     viewModel: InvoicesViewModel = metroViewModel()
 ) {
     val lazyListState = rememberLazyListState()
@@ -110,11 +111,13 @@ fun InvoicesScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onCreateInvoice,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(Res.string.inv_list_new)) }
-            )
+            if (!expanded) {
+                ExtendedFloatingActionButton(
+                    onClick = onCreateInvoice,
+                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                    text = { Text(stringResource(Res.string.inv_list_new)) }
+                )
+            }
         }
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -124,18 +127,26 @@ fun InvoicesScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    Column {
-                        Text(
-                            text = stringResource(Res.string.inv_list_title),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (invoices.itemCount > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(Res.string.inv_list_count, invoices.itemCount),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = stringResource(Res.string.inv_list_title),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
                             )
+                            if (invoices.itemCount > 0) {
+                                Text(
+                                    text = stringResource(Res.string.inv_list_count, invoices.itemCount),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        if (expanded) {
+                            FilledTonalButton(onClick = onCreateInvoice) {
+                                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Text("  " + stringResource(Res.string.inv_list_new))
+                            }
                         }
                     }
                     Spacer(Modifier.height(8.dp))

@@ -92,4 +92,10 @@
     <string name="ord_view_grand">Grand total</string>
     <string name="ord_view_qty_caption">%1$d items · %2$s qty</string>
     <string name="ord_view_gstin">GSTIN %1$s</string>
+    <string name="ord_view_draft_hint">draft · number on save</string>
+    <string name="ord_view_unregistered">Unregistered</string>
+    <string name="ord_view_intra_foot">CGST + SGST (intra-state)</string>
+    <string name="ord_view_inter_foot">IGST (inter-state)</string>
+    <string name="ord_view_edit">Edit</string>
+    <string name="ord_view_line_meta">%1$s %2$s · HSN %3$s · GST %4$s</string>
 </resources>

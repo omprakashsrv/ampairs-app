@@ -19,6 +19,12 @@ import ampairsapp.feature.order.generated.resources.ord_view_col_total
 import ampairsapp.feature.order.generated.resources.ord_view_create_invoice
 import ampairsapp.feature.order.generated.resources.ord_view_discount
 import ampairsapp.feature.order.generated.resources.ord_view_draft
+import ampairsapp.feature.order.generated.resources.ord_view_draft_hint
+import ampairsapp.feature.order.generated.resources.ord_view_edit
+import ampairsapp.feature.order.generated.resources.ord_view_inter_foot
+import ampairsapp.feature.order.generated.resources.ord_view_intra_foot
+import ampairsapp.feature.order.generated.resources.ord_view_line_meta
+import ampairsapp.feature.order.generated.resources.ord_view_unregistered
 import ampairsapp.feature.order.generated.resources.ord_view_from_seller
 import ampairsapp.feature.order.generated.resources.ord_view_grand
 import ampairsapp.feature.order.generated.resources.ord_view_gstin
@@ -52,6 +58,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,6 +76,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +84,7 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
 import com.ampairs.common.format.toInr
 import com.ampairs.invoice.editor.DocSyncChip
+import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.viewmodel.OrderViewViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import kotlinx.datetime.TimeZone
@@ -150,6 +159,13 @@ fun OrderViewScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
+                OutlinedButton(
+                    onClick = { onEdit(order.id) },
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text("  " + stringResource(Res.string.ord_view_edit))
+                }
                 if (order.orderNumber.isNullOrEmpty()) {
                     Button(
                         onClick = { viewModel.saveOrder() },
@@ -209,9 +225,24 @@ fun OrderViewScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                     ) {
-                        StatusChip(order.status.name)
+                        StatusChip(order.status.name, invoiced = converted)
+                        if (!order.orderNumber.isNullOrBlank()) {
+                            Text(
+                                order.orderNumber ?: "",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontFamily = mono,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        } else {
+                            Text(
+                                stringResource(Res.string.ord_view_draft_hint),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = cs.onSurfaceVariant,
+                            )
+                        }
                         Text(
-                            formatInstantDate(order.orderDate),
+                            "· " + formatInstantDate(order.orderDate),
                             style = MaterialTheme.typography.labelMedium,
                             fontFamily = mono,
                             color = cs.onSurfaceVariant,
@@ -250,12 +281,17 @@ fun OrderViewScreen(
                             title = stringResource(Res.string.ord_view_from_seller),
                             name = order.fromCustomer?.name ?: "—",
                             gstin = order.fromCustomer?.gstNumber,
+                            meta = order.fromCustomer?.state,
                             modifier = Modifier.weight(1f),
                         )
                         PartyCard(
                             title = stringResource(Res.string.ord_view_bill_to),
                             name = order.toCustomer?.name ?: "—",
                             gstin = order.toCustomer?.gstNumber,
+                            meta = listOfNotNull(
+                                order.toCustomer?.phone?.takeIf { it.isNotBlank() },
+                                order.toCustomer?.state?.takeIf { it.isNotBlank() },
+                            ).joinToString(" · ").ifBlank { null },
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -281,6 +317,18 @@ fun OrderViewScreen(
                                 Text(
                                     item.description,
                                     style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    stringResource(
+                                        Res.string.ord_view_line_meta,
+                                        item.quantity.toDecimal(),
+                                        item.unitName.ifBlank { "—" },
+                                        item.product?.taxCode?.ifBlank { "—" } ?: "—",
+                                        "${item.taxInfos.sumOf { it.percentage }.toDecimal()}%",
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = cs.onSurfaceVariant,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 )
                                 if (item.discountPercent > 0.0 || item.discount.sumOf { it.value } > 0.0) {
                                     Text(
@@ -308,8 +356,19 @@ fun OrderViewScreen(
                     ) {
                         Column(modifier = Modifier.widthIn(min = 240.dp)) {
                             TotalsRow(stringResource(Res.string.ord_view_taxable), order.basePrice.toInr())
-                            order.taxInfos.orEmpty().forEach { ti ->
-                                TotalsRow(ti.name, (ti.value ?: 0.0).toInr())
+                            // per-rate component groups (orders.jsx vtotals): "CGST 2.5%  ₹195.75"
+                            val groups = order.items.flatMap { it.taxInfos }
+                                .groupBy { it.name to it.percentage }
+                                .map { (k, v) -> Triple(k.first, k.second, v.sumOf { ti -> ti.value ?: 0.0 }) }
+                                .sortedWith(compareBy({ taxNameOrder(it.first) }, { it.second }))
+                            if (groups.isNotEmpty()) {
+                                groups.forEach { (name, pct, amount) ->
+                                    TotalsRow("$name ${pct.toDecimal()}%", amount.toInr())
+                                }
+                            } else {
+                                order.taxInfos.orEmpty().forEach { ti ->
+                                    TotalsRow(ti.name, (ti.value ?: 0.0).toInr())
+                                }
                             }
                             order.discount?.sumOf { it.value }?.takeIf { it > 0 }?.let {
                                 TotalsRow(stringResource(Res.string.ord_view_discount), "− ${it.toInr()}")
@@ -332,6 +391,18 @@ fun OrderViewScreen(
                             }
                         }
                     }
+                }
+                item {
+                    Text(
+                        stringResource(Res.string.ord_view_qty_caption, order.totalItems, order.totalQuantity.toDecimal()) +
+                            " · " + stringResource(
+                                if (order.taxSpec == TaxSpec.INTRA) Res.string.ord_view_intra_foot
+                                else Res.string.ord_view_inter_foot
+                            ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cs.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
                 }
                 item { Spacer(Modifier.height(80.dp)) }
             }
@@ -384,7 +455,7 @@ fun OrderViewScreen(
 }
 
 @Composable
-private fun PartyCard(title: String, name: String, gstin: String?, modifier: Modifier = Modifier) {
+private fun PartyCard(title: String, name: String, gstin: String?, meta: String? = null, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -402,11 +473,18 @@ private fun PartyCard(title: String, name: String, gstin: String?, modifier: Mod
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
-            if (!gstin.isNullOrBlank()) {
+            Text(
+                if (!gstin.isNullOrBlank()) stringResource(Res.string.ord_view_gstin, gstin)
+                else stringResource(Res.string.ord_view_unregistered),
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            if (!meta.isNullOrBlank()) {
                 Text(
-                    stringResource(Res.string.ord_view_gstin, gstin),
+                    meta,
                     style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
@@ -467,4 +545,8 @@ private fun formatInstantDate(instant: kotlin.time.Instant): String {
     val date = instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
     val month = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
     return "${date.day.toString().padStart(2, '0')} $month ${date.year}"
+}
+
+private fun taxNameOrder(name: String): Int = when (name) {
+    "CGST" -> 0; "SGST" -> 1; "IGST" -> 2; else -> 3
 }

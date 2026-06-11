@@ -42,6 +42,7 @@ fun InvoicePaneScreen(
                     },
                     onCreateInvoice = { onInvoiceEdit(null) },
                     selectedInvoiceId = navigator.currentDestination?.contentKey,
+                    expanded = navigator.scaffoldDirective.maxHorizontalPartitions > 1,
                 )
             }
         },

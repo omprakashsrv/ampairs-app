@@ -95,6 +95,7 @@ fun OrdersScreen(
     onOrderSelected: (String) -> Unit,
     onCreateOrder: () -> Unit = {},
     selectedOrderId: String? = null,
+    expanded: Boolean = false,
     viewModel: OrdersViewModel = metroViewModel()
 ) {
     val lazyListState = rememberLazyListState()
@@ -110,11 +111,13 @@ fun OrdersScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onCreateOrder,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(Res.string.ord_list_new)) }
-            )
+            if (!expanded) {
+                ExtendedFloatingActionButton(
+                    onClick = onCreateOrder,
+                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                    text = { Text(stringResource(Res.string.ord_list_new)) }
+                )
+            }
         }
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -125,18 +128,26 @@ fun OrdersScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                    Column {
-                        Text(
-                            text = stringResource(Res.string.ord_list_title),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (orders.itemCount > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(Res.string.ord_list_count, orders.itemCount),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = stringResource(Res.string.ord_list_title),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
                             )
+                            if (orders.itemCount > 0) {
+                                Text(
+                                    text = stringResource(Res.string.ord_list_count, orders.itemCount),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        if (expanded) {
+                            FilledTonalButton(onClick = onCreateOrder) {
+                                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Text("  " + stringResource(Res.string.ord_list_new))
+                            }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -349,7 +360,7 @@ private fun OrderRow(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp),
                     )
-                    StatusChip(order.status)
+                    StatusChip(order.status, invoiced = !order.invoiceRefId.isNullOrBlank())
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                     Text(
@@ -387,18 +398,24 @@ private fun OrderRow(
     }
 }
 
-/** Status chip with the design's container mapping (Draft/New/Ordered). */
+/**
+ * Status chip with the design's container mapping (orders.jsx STATUS_META):
+ * Draft = secondary, New = tertiary, Ordered = primary; a converted order shows
+ * "Invoiced" (tertiary) in place of its status.
+ */
 @Composable
-internal fun StatusChip(status: String) {
+internal fun StatusChip(status: String, invoiced: Boolean = false) {
     val cs = MaterialTheme.colorScheme
-    val (container, content) = when (status.uppercase()) {
-        "DRAFT" -> cs.secondaryContainer to cs.onSecondaryContainer
-        "NEW" -> cs.tertiaryContainer to cs.onTertiaryContainer
+    val (container, content) = when {
+        invoiced -> cs.tertiaryContainer to cs.onTertiaryContainer
+        status.uppercase() == "DRAFT" -> cs.secondaryContainer to cs.onSecondaryContainer
+        status.uppercase() == "NEW" -> cs.tertiaryContainer to cs.onTertiaryContainer
         else -> cs.primaryContainer to cs.onPrimaryContainer
     }
     Surface(color = container, shape = RoundedCornerShape(50)) {
         Text(
-            text = status.lowercase().replaceFirstChar { it.uppercaseChar() },
+            text = if (invoiced) stringResource(Res.string.ord_list_filter_invoiced)
+            else status.lowercase().replaceFirstChar { it.uppercaseChar() },
             style = MaterialTheme.typography.labelSmall,
             color = content,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),

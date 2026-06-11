@@ -38,9 +38,16 @@ class OrderRepository(
 ) {
     @Transaction
     suspend fun saveOrder(orderEntity: OrderEntity, orderItems: List<OrderItemEntity>) {
-        orderDao.insert(orderEntity.copy(synced = 0))
+        val numbered = if (orderEntity.order_number.isBlank()) assignOrderNumber(orderEntity) else orderEntity
+        orderDao.insert(numbered.copy(synced = 0))
         orderItemDao.insertAll(orderItems)
         markPending()
+    }
+
+    /** Client-assigned sequential order number at save (design v2 flow): ORD-0001, ORD-0002, … */
+    private suspend fun assignOrderNumber(entity: OrderEntity): OrderEntity {
+        val seq = (orderDao.maxOrderSequence() ?: 0L) + 1L
+        return entity.copy(order_number = "ORD-" + seq.toString().padStart(4, '0'))
     }
 
     suspend fun saveOrder(order: Order?) {

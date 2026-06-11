@@ -41,6 +41,7 @@ fun OrderPaneScreen(
                     },
                     onCreateOrder = { onOrderEdit(null) },
                     selectedOrderId = navigator.currentDestination?.contentKey,
+                    expanded = navigator.scaffoldDirective.maxHorizontalPartitions > 1,
                     viewModel = ordersViewModel
                 )
             }
