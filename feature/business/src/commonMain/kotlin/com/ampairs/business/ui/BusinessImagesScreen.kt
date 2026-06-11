@@ -6,10 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,6 +26,7 @@ import com.ampairs.business.domain.BusinessImage
 import com.ampairs.business.domain.BusinessImageType
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.business.ui.BusinessImagesViewModel
+import com.ampairs.business.ui.components.BusinessScreenContent
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
@@ -91,13 +90,7 @@ fun BusinessImagesScreen(
                 }
             }
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
+            BusinessScreenContent(maxContentWidth = 720.dp, verticalSpacing = 24.dp) {
                 Text(
                     text = "Business Images",
                     style = MaterialTheme.typography.headlineMedium
