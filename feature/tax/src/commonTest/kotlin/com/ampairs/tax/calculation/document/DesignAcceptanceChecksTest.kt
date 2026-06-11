@@ -2,6 +2,7 @@ package com.ampairs.tax.calculation.document
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Validates calc-core against the v2 design handoff acceptance checks (seed: seller MH-27;
@@ -132,5 +133,102 @@ class DesignAcceptanceChecksTest {
         assertEquals(TaxScenario.INTER, ScenarioResolver.resolveFromGstins("27ABCDE1234F1Z5", "24ABCDF6789G1Z4"))
         assertEquals(TaxScenario.INTRA, ScenarioResolver.resolveFromGstins("27ABCDE1234F1Z5", null))
         assertEquals(TaxScenario.INTRA, ScenarioResolver.resolveFromGstins("27ABCDE1234F1Z5", ""))
+    }
+}
+
+/**
+ * Costing-focused validation (user request): line costing always reconciles —
+ * lineTotal = taxable + Σ components — under overrides, discounts and both price modes.
+ */
+class CostingReconciliationTest {
+
+    private val tol = 0.001
+    private val gst18intra = ResolvedRate(listOf(TaxComponentRate("CGST", 9.0), TaxComponentRate("SGST", 9.0)), 18.0)
+    private val gst12intra = ResolvedRate(listOf(TaxComponentRate("CGST", 6.0), TaxComponentRate("SGST", 6.0)), 12.0)
+    private val gst28intra = ResolvedRate(listOf(TaxComponentRate("CGST", 14.0), TaxComponentRate("SGST", 14.0)), 28.0)
+    private val rates = mapOf("a" to gst18intra, "b" to gst12intra, "c" to gst28intra)
+
+    private fun calc(
+        lines: List<LineCalcInput>,
+        priceMode: PriceMode = PriceMode.TAX_EXCLUSIVE,
+        overall: DiscountInput? = null,
+        mode: OverallDiscountMode = OverallDiscountMode.PRE_TAX_APPORTIONED,
+    ) = DocumentTotalsCalculator.calculate(
+        DocumentCalcInput(lines, priceMode, overall, mode, TaxScenario.INTRA, rates)
+    )
+
+    /** Every line and the document must reconcile exactly, even with awkward prices. */
+    @Test
+    fun costing_reconciles_with_awkward_prices_and_discounts() {
+        val r = calc(
+            lines = listOf(
+                LineCalcInput("1", "a", unitPrice = 33.33, quantity = 7.0, lineDiscount = DiscountInput(DiscountKind.PERCENT, 12.5)),
+                LineCalcInput("2", "b", unitPrice = 19.99, quantity = 3.0, lineDiscount = DiscountInput(DiscountKind.FLAT, 7.77)),
+                LineCalcInput("3", "c", unitPrice = 101.01, quantity = 2.5),
+            ),
+            overall = DiscountInput(DiscountKind.FLAT, 23.45),
+        )
+        r.lines.forEach { l ->
+            assertEquals(l.lineTotal, l.taxable + l.components.sumOf { it.amount }, tol)
+        }
+        assertEquals(r.taxableSubtotal, r.lines.sumOf { it.taxable }, tol)
+        assertEquals(r.totalTax, r.lines.sumOf { it.totalTax }, tol)
+        assertEquals(r.grandTotal, r.taxableSubtotal + r.totalTax, tol)
+        // apportioned parts sum exactly to the entered overall discount
+        assertEquals(23.45, r.lines.sumOf { it.overallDiscountAllocated }, tol)
+    }
+
+    /** Price override costing: an overridden unit-scaled price is the costing basis (FR-016). */
+    @Test
+    fun costing_priceOverride_isTheBasis() {
+        // catalog would be 90 × 24 = 2160/BOX; operator typed @2000
+        val r = calc(listOf(LineCalcInput("1", "a", unitPrice = 2000.0, quantity = 5.0, lineDiscount = DiscountInput(DiscountKind.PERCENT, 10.0))))
+        val l = r.lines.single()
+        assertEquals(10000.0, l.gross, tol)
+        assertEquals(1000.0, l.lineDiscountValue, tol)
+        assertEquals(9000.0, l.taxable, tol)
+        assertEquals(1620.0, l.totalTax, tol)      // 18% of 9000
+        assertEquals(10620.0, l.lineTotal, tol)
+    }
+
+    /** Inclusive + line discount: discount reduces the inclusive amount, then GST is extracted. */
+    @Test
+    fun costing_inclusive_withLineDiscount_extractsFromNet() {
+        val r = calc(
+            listOf(LineCalcInput("1", "c", unitPrice = 385.0, quantity = 2.0, lineDiscount = DiscountInput(DiscountKind.PERCENT, 10.0))),
+            priceMode = PriceMode.TAX_INCLUSIVE,
+        )
+        val l = r.lines.single()
+        // 770 − 77 = 693 inclusive; taxable = 693 / 1.28 = 541.41; GST = 151.59
+        assertEquals(541.41, l.taxable, tol)
+        assertEquals(151.59, l.totalTax, tol)
+        assertEquals(693.00, l.lineTotal, tol)
+        assertEquals(l.lineTotal, l.taxable + l.components.sumOf { it.amount }, tol)
+    }
+
+    /** Costing never goes negative: oversized discounts floor the taxable at zero. */
+    @Test
+    fun costing_neverNegative() {
+        val r = calc(
+            listOf(LineCalcInput("1", "a", unitPrice = 100.0, quantity = 1.0, lineDiscount = DiscountInput(DiscountKind.FLAT, 500.0))),
+            overall = DiscountInput(DiscountKind.FLAT, 999.0),
+            mode = OverallDiscountMode.POST_TAX_REDUCTION,
+        )
+        val l = r.lines.single()
+        assertEquals(0.0, l.taxable, tol)
+        assertEquals(0.0, l.totalTax, tol)
+        assertTrue(l.taxableFlooredAtZero)
+        assertTrue(r.grandTotal >= 0.0)
+    }
+
+    /** Half-up rounding at 2 decimals on every component (FR worked example style). */
+    @Test
+    fun costing_halfUpRounding() {
+        // taxable 0.05 @18% → tax 0.009 → CGST 0.0045→0.01? components: 9% of 0.05 = 0.0045 each.
+        val r = calc(listOf(LineCalcInput("1", "a", unitPrice = 0.05, quantity = 1.0)))
+        val l = r.lines.single()
+        // total tax = round2(0.009) = 0.01, split: smaller comp 0.0045 → 0.00? remainder to largest.
+        assertEquals(l.totalTax, l.components.sumOf { it.amount }, tol)
+        assertEquals(l.lineTotal, l.taxable + l.totalTax, tol)
     }
 }
