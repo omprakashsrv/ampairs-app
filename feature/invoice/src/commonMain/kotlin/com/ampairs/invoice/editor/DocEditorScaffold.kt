@@ -206,6 +206,7 @@ fun DocEditorScaffold(
                         onUnitPrice = actions.lineUnitPrice,
                         onDiscount = actions.lineDiscount,
                         onRemove = actions.lineRemove,
+                        onChangeProduct = { changingProductForLine = it },
                         modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 8.dp),
                     )
                 }

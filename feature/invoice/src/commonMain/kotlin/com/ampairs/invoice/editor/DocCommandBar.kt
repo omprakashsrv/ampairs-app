@@ -163,7 +163,7 @@ fun DocCommandBar(
                                     tint = cs.primary, modifier = Modifier.size(16.dp),
                                 )
                                 Text(
-                                    flash,
+                                    stringResource(Res.string.doc_cmd_added, flash),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = cs.primary,
                                     maxLines = 1,

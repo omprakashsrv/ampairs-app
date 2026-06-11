@@ -78,6 +78,7 @@ fun DocLineGrid(
     onUnitPrice: (String, Double) -> Unit,
     onDiscount: (String, DiscountKind, Double) -> Unit,
     onRemove: (String) -> Unit,
+    onChangeProduct: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val cs = MaterialTheme.colorScheme
@@ -112,6 +113,7 @@ fun DocLineGrid(
                     onUnitPrice = onUnitPrice,
                     onDiscount = onDiscount,
                     onRemove = onRemove,
+                    onChangeProduct = onChangeProduct,
                 )
             }
             item(key = "footer-hint") {
@@ -156,6 +158,7 @@ private fun GridRow(
     onUnitPrice: (String, Double) -> Unit,
     onDiscount: (String, DiscountKind, Double) -> Unit,
     onRemove: (String) -> Unit,
+    onChangeProduct: (String) -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
     var unitMenu by remember { mutableStateOf(false) }
@@ -166,8 +169,13 @@ private fun GridRow(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp).heightIn(min = 52.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Product
-            Column(Modifier.weight(1f).padding(horizontal = 4.dp)) {
+            // Product — tap to change via the product picker (prototype: product cell opens picker)
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clickable { onChangeProduct(line.id) }
+                    .padding(horizontal = 4.dp)
+            ) {
                 Text(
                     line.name,
                     style = MaterialTheme.typography.bodyMedium,

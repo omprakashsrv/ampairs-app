@@ -58,7 +58,7 @@
     <string name="doc_cmd_placeholder">Type to add — “parle 5 box 10%” · scan barcode · Enter adds</string>
     <string name="doc_cmd_placeholder_compact">Type or scan to add…</string>
     <string name="doc_cmd_a11y">Add line. Type product, quantity, unit and discount, then press Enter.</string>
-    <string name="doc_cmd_added">Added %1$s · %2$s %3$s</string>
+    <string name="doc_cmd_added">Added %1$s</string>
     <string name="doc_cmd_create">Create “%1$s”</string>
     <string name="doc_cmd_create_sub">Add a new product to the catalog</string>
     <string name="doc_cmd_hint_qty_unit">qty + unit</string>
