@@ -1,10 +1,8 @@
 package com.ampairs.business.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Business
@@ -20,6 +18,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.business.ui.BusinessProfileViewModel
+import com.ampairs.business.ui.components.BusinessScreenContent
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
@@ -80,13 +79,7 @@ fun BusinessProfileFormScreen(
                 }
             }
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            BusinessScreenContent(maxContentWidth = 720.dp) {
                 Text(
                     text = "Profile & Registration",
                     style = MaterialTheme.typography.headlineMedium

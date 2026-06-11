@@ -1,8 +1,6 @@
 package com.ampairs.business.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
@@ -14,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.form.render.ConfigAttributesSection
+import com.ampairs.business.ui.components.BusinessScreenContent
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
@@ -127,13 +126,7 @@ fun BusinessCustomAttributesScreen(
                 }
 
                 else -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                    BusinessScreenContent(maxContentWidth = 720.dp) {
                         // Header
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
