@@ -119,6 +119,7 @@ kotlin {
                 api(projects.feature.ecom)
                 api(projects.feature.agent)
                 api(projects.feature.form)
+                api(projects.feature.formwidgets)
                 api(projects.feature.unit)
                 api(projects.feature.store)
                 api(projects.feature.update)

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_cancel">Cancel</string>
+
+    <!-- Location picker widget -->
+    <string name="widget_location_dialog_title">Select Location</string>
+    <string name="widget_location_hint_desc">Select location to auto-populate address details</string>
+    <string name="widget_location_use_current">Use Current Location</string>
+    <string name="widget_location_select_map">Select from Map</string>
+    <string name="widget_location_getting">Getting your location…</string>
+    <string name="widget_location_resolving_address">Resolving address…</string>
+    <string name="widget_location_selected_title">Location Selected</string>
+    <string name="widget_location_use_only">Use Location Only</string>
+    <string name="widget_location_get_address">Get Address</string>
+    <string name="widget_location_select_different">Select Different Location</string>
+    <string name="widget_location_address_found">Address Found</string>
+    <string name="widget_location_only">Location Only</string>
+    <string name="widget_location_and_address">Location &amp; Address</string>
+    <string name="widget_location_error_title">Location Error</string>
+    <string name="widget_location_try_again">Try Again</string>
+
+    <!-- Location field widget (config-driven) -->
+    <string name="widget_location_set">Set Location</string>
+    <string name="widget_location_change">Change Location</string>
+
+    <!-- Contact import widget -->
+    <string name="widget_contact_import">Import from Contact</string>
+    <string name="widget_contact_importing">Importing…</string>
+
+    <!-- Address field widget -->
+    <string name="widget_address_street">Street</string>
+    <string name="widget_address_city">City</string>
+    <string name="widget_address_state">State</string>
+    <string name="widget_address_pincode">Pincode</string>
+    <string name="widget_address_country">Country</string>
+
+    <!-- Business hours widget -->
+    <string name="widget_hours_closed">Closed</string>
+    <string name="widget_hours_open_label">Open</string>
+    <string name="widget_hours_close_label">Close</string>
+</resources>

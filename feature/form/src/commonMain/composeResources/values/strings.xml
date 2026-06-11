@@ -1,6 +1,6 @@
 <resources>
     <!-- Form config screen -->
-    <string name="form_title_configure">Configure %s Form</string>
+    <string name="form_title_configure">Configure %1$s Form</string>
     <string name="form_back_cd">Back</string>
     <string name="form_save_changes">Save Changes</string>
     <string name="form_saving">Saving changes…</string>
@@ -8,7 +8,7 @@
 
     <!-- Empty state -->
     <string name="form_no_config_title">No Configuration Found</string>
-    <string name="form_no_config_desc">Please contact your administrator to seed the form configuration for %s</string>
+    <string name="form_no_config_desc">Please contact your administrator to seed the form configuration for %1$s</string>
 
     <!-- Section headers -->
     <string name="form_section_fields">Field Configurations</string>
@@ -42,4 +42,192 @@
     <string name="form_toggle_visible">Visible</string>
     <string name="form_toggle_mandatory">Mandatory</string>
     <string name="form_toggle_enabled">Enabled</string>
+
+    <!-- Unsaved-changes navigation guard -->
+    <string name="form_unsaved_title">Discard unsaved changes?</string>
+    <string name="form_unsaved_message">You have unsaved form changes. Save them, or discard and leave?</string>
+    <string name="form_unsaved_save_leave">Save &amp; leave</string>
+    <string name="form_unsaved_discard_leave">Discard &amp; leave</string>
+    <string name="form_unsaved_keep_editing">Keep editing</string>
+    <string name="form_field_unsupported">Unsupported field: %1$s</string>
+
+    <!-- Form configuration hub -->
+    <string name="form_hub_title">Form Configuration</string>
+    <string name="form_hub_subtitle">Choose which form to configure</string>
+    <string name="form_hub_back_cd">Back</string>
+    <string name="form_hub_entity_customer">Customer</string>
+    <string name="form_hub_entity_product">Product</string>
+    <string name="form_hub_entity_order">Order</string>
+    <string name="form_hub_entity_invoice">Invoice</string>
+    <string name="form_hub_entity_business">Business</string>
+    <string name="form_hub_entity_customer_desc">Fields on the customer entry form</string>
+    <string name="form_hub_entity_product_desc">Fields on the product entry form</string>
+    <string name="form_hub_entity_order_desc">Fields on the order form</string>
+    <string name="form_hub_entity_invoice_desc">Fields on the invoice form</string>
+    <string name="form_hub_entity_business_desc">Fields on the business profile</string>
+
+    <!-- Form editor — chrome -->
+    <string name="form_edit_loading">Loading form…</string>
+    <string name="form_edit_live_preview">Live preview</string>
+    <string name="form_edit_preview_form">Preview form</string>
+    <string name="form_edit_back_cd">Back</string>
+    <string name="form_edit_overline">FORM SETTINGS</string>
+    <string name="form_edit_title">Configure Form</string>
+    <string name="form_edit_discard">Discard</string>
+    <string name="form_edit_saving">Saving…</string>
+    <string name="form_edit_save">Save</string>
+    <string name="form_edit_saved">Saved</string>
+    <string name="form_edit_save_changes">Save changes</string>
+    <string name="form_edit_more_cd">More</string>
+    <string name="form_edit_manage_sections">Manage sections</string>
+    <string name="form_edit_expand_all">Expand all</string>
+    <string name="form_edit_collapse_all">Collapse all</string>
+    <string name="form_edit_unsaved_banner">Unsaved changes. Saved on this device — staff still see the last published form until you save.</string>
+    <string name="form_edit_summary">%1$d sections · %2$d fields · %3$d shown to staff</string>
+    <string name="form_edit_sections">Sections</string>
+    <string name="form_edit_add_field">Add field</string>
+    <string name="form_edit_add_a_section">Add a section</string>
+
+    <!-- Form editor — section card -->
+    <string name="form_edit_expand_cd">Expand</string>
+    <string name="form_edit_collapse_cd">Collapse</string>
+    <string name="form_edit_drag_section_cd">Drag section</string>
+    <string name="form_edit_chip_default">Default</string>
+    <string name="form_edit_chip_hidden">Hidden</string>
+    <string name="form_edit_shown_count">· %1$d/%2$d shown</string>
+    <string name="form_edit_toggle_section_cd">Toggle section visibility</string>
+    <string name="form_edit_section_options_cd">Section options</string>
+    <string name="form_edit_hide_section">Hide section</string>
+    <string name="form_edit_show_section">Show section</string>
+    <string name="form_edit_move_up">Move up</string>
+    <string name="form_edit_move_down">Move down</string>
+    <string name="form_edit_default_no_delete">Default section — can\'t delete</string>
+    <string name="form_edit_delete_section">Delete section</string>
+    <string name="form_edit_no_fields">No fields yet — add one or drag a field here.</string>
+    <string name="form_edit_add_field_to">Add field to %1$s</string>
+
+    <!-- Form editor — field row -->
+    <string name="form_edit_drag_field_cd">Drag to reorder</string>
+    <string name="form_edit_chip_custom">Custom</string>
+    <string name="form_edit_chip_standard">Standard</string>
+    <string name="form_edit_chip_readonly">Read-only</string>
+    <string name="form_edit_always">Always</string>
+    <string name="form_edit_shown">Shown</string>
+    <string name="form_edit_required">Required</string>
+    <string name="form_edit_field_options_cd">Field options</string>
+    <string name="form_edit_advanced">Advanced settings</string>
+    <string name="form_edit_edit_field">Edit field</string>
+    <string name="form_edit_make_readonly">Make read-only</string>
+    <string name="form_edit_allow_editing">Allow editing</string>
+    <string name="form_edit_duplicate">Duplicate</string>
+    <string name="form_edit_delete_field">Delete field</string>
+    <string name="form_edit_cant_delete_standard">Can\'t delete standard field</string>
+    <string name="form_edit_untitled">Untitled</string>
+
+    <!-- Form editor — toasts -->
+    <string name="form_edit_toast_saved">All changes saved</string>
+    <string name="form_edit_toast_discarded">Changes discarded</string>
+    <string name="form_edit_toast_save_failed">Couldn\'t save</string>
+
+    <!-- Form editor — live preview -->
+    <string name="form_preview_new_entity">New %1$s</string>
+    <string name="form_preview_save">Save</string>
+    <string name="form_preview_save_entity">Save %1$s</string>
+    <string name="form_preview_all_hidden">Every field is hidden. Turn some on to build the form.</string>
+    <string name="form_preview_select">Select…</string>
+    <string name="form_preview_type_here">Type here…</string>
+    <string name="form_preview_option_a">Option A</string>
+    <string name="form_preview_option_b">Option B</string>
+    <string name="form_preview_widget">Widget</string>
+
+    <!-- Form editor — sheets -->
+    <string name="form_sheet_close_cd">Close</string>
+    <string name="form_widget_address">Address</string>
+    <string name="form_widget_image_gallery">Image Gallery</string>
+    <string name="form_widget_location">Map Location</string>
+    <string name="form_widget_business_hours">Business Hours</string>
+    <string name="form_sheet_fixed_list">Fixed list</string>
+    <string name="form_sheet_from_data">From data</string>
+    <string name="form_sheet_no_options">No options yet. Add the choices staff can pick from.</string>
+    <string name="form_sheet_type_option">Type an option…</string>
+    <string name="form_sheet_remove_option_cd">Remove option</string>
+    <string name="form_sheet_add_option">Add option</string>
+    <string name="form_sheet_bind_live">Bind to a live list — it stays in sync as that data changes.</string>
+    <string name="form_sheet_no_sources">No data sources registered for this module yet.</string>
+    <string name="form_sheet_add_custom_field">Add custom field</string>
+    <string name="form_sheet_sub_new">Workspace field, fully editable</string>
+    <string name="form_sheet_sub_builtin">Built-in field — limited edits</string>
+    <string name="form_sheet_sub_custom">Custom field</string>
+    <string name="form_sheet_cancel">Cancel</string>
+    <string name="form_sheet_field_label">Field label</string>
+    <string name="form_sheet_field_label_hint">This is what your staff will see above the input.</string>
+    <string name="form_sheet_field_label_ph">e.g. Delivery Instructions</string>
+    <string name="form_sheet_data_type">Data type</string>
+    <string name="form_sheet_builtin_keep_type">Built-in fields keep their type.</string>
+    <string name="form_sheet_widget_control">Widget control</string>
+    <string name="form_sheet_options">Options</string>
+    <string name="form_sheet_section">Section</string>
+    <string name="form_sheet_placeholder_opt">Placeholder (optional)</string>
+    <string name="form_sheet_placeholder_hint">Hint shown inside the empty field</string>
+    <string name="form_sheet_help_opt">Help text (optional)</string>
+    <string name="form_sheet_help_hint">A short note under the field</string>
+    <string name="form_sheet_show_on_form">Show on form</string>
+    <string name="form_sheet_show_desc">Visible to staff entering data</string>
+    <string name="form_sheet_required_desc">Staff must fill this in</string>
+    <string name="form_sheet_readonly">Read-only</string>
+    <string name="form_sheet_readonly_desc">Shown but can\'t be edited</string>
+    <string name="form_sheet_advanced_title">Advanced</string>
+    <string name="form_sheet_apply">Apply</string>
+    <string name="form_sheet_builtin_type_fixed">Built-in fields are backed by a data column, so the type is fixed.</string>
+    <string name="form_sheet_validation_rules">Validation rules</string>
+    <string name="form_sheet_validation_hint">Pick the checks staff must pass. No formulas — just plain limits.</string>
+    <string name="form_sheet_required_empty">Can\'t be left empty</string>
+    <string name="form_sheet_no_checks">This type has no extra checks.</string>
+    <string name="form_sheet_options_source">Where options come from</string>
+    <string name="form_sheet_default_opt">Default value (optional)</string>
+    <string name="form_sheet_default_hint">Pre-filled when creating a new record</string>
+    <string name="form_sheet_length_limits">Length limits</string>
+    <string name="form_sheet_to">to</string>
+    <string name="form_sheet_characters">characters</string>
+    <string name="form_sheet_number_range">Number range</string>
+    <string name="form_sheet_format">Format</string>
+    <string name="form_sheet_format_none">None</string>
+    <string name="form_sheet_sections_sub">Group related fields. The form follows this order.</string>
+    <string name="form_sheet_done">Done</string>
+    <string name="form_sheet_toggle_visibility_cd">Toggle visibility</string>
+    <string name="form_sheet_delete_cd">Delete</string>
+    <string name="form_sheet_add_section">Add section</string>
+    <string name="form_sheet_delete_title">Delete \"%1$s\"?</string>
+    <string name="form_sheet_delete_empty">This section is empty. It will be removed from the form.</string>
+    <string name="form_sheet_move_fields">Move fields to another section</string>
+    <string name="form_sheet_delete_all">Delete the section and its custom fields</string>
+    <string name="form_sheet_std_move_to">Standard fields move to %1$s automatically.</string>
+    <plurals name="form_sheet_field_count">
+        <item quantity="one">%1$d field</item>
+        <item quantity="other">%1$d fields</item>
+    </plurals>
+    <plurals name="form_sheet_has_fields">
+        <item quantity="one">This section has %1$d field. Choose what happens to them first.</item>
+        <item quantity="other">This section has %1$d fields. Choose what happens to them first.</item>
+    </plurals>
+
+    <!-- Field data-type labels + summary fragments -->
+    <string name="form_type_text">Text</string>
+    <string name="form_type_paragraph">Paragraph</string>
+    <string name="form_type_number">Number</string>
+    <string name="form_type_yesno">Yes / No</string>
+    <string name="form_type_date">Date</string>
+    <string name="form_type_choice">Choice</string>
+    <string name="form_type_multi_choice">Multi-choice</string>
+    <string name="form_type_widget">Widget</string>
+    <string name="form_summary_format">%1$s format</string>
+    <string name="form_summary_chars">%1$d–%2$d chars</string>
+    <string name="form_summary_max">Max %1$d</string>
+    <string name="form_summary_min">Min %1$d</string>
+    <string name="form_summary_from">From %1$s</string>
+    <string name="form_summary_data">data</string>
+    <plurals name="form_summary_options">
+        <item quantity="one">%1$d option</item>
+        <item quantity="other">%1$d options</item>
+    </plurals>
 </resources>

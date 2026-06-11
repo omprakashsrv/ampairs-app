@@ -18,12 +18,17 @@ import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.util.CustomerConstants
-import com.ampairs.customer.ui.components.contact.ContactData
-import com.ampairs.customer.ui.components.contact.ContactPickerService
-import com.ampairs.customer.ui.components.location.LocationService
+import com.ampairs.formwidgets.contact.ContactData
+import com.ampairs.formwidgets.contact.ContactPickerService
+import com.ampairs.formwidgets.location.LocationService
 import com.ampairs.form.data.repository.ConfigLookup
 import com.ampairs.form.domain.EntityConfigSchema
 import com.ampairs.form.domain.EntityType
+import com.ampairs.form.domain.FormSchema
+import com.ampairs.form.render.CustomFieldWidgetRegistry
+import com.ampairs.form.render.DynamicOptionRegistry
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import com.ampairs.customer.util.CustomerConstants.DEFAULT_COUNTRY_CODE
 import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
 import com.ampairs.customer.util.CustomerConstants.ERROR_VALIDATION_FIX
@@ -192,7 +197,9 @@ data class CustomerFormUiState(
     val showCustomerImages: Boolean = true,
     val customerImagesReadOnly: Boolean = false,
     val isImportingContact: Boolean = false,
-    val contactImportError: String? = null
+    val contactImportError: String? = null,
+    /** Bumped on each successful contact import so config-driven fields re-seed (spec 011). */
+    val contactImportCount: Int = 0
 )
 
 @AssistedInject
@@ -206,6 +213,8 @@ class CustomerFormViewModel(
     val contactPickerService: ContactPickerService,
     val locationService: LocationService,
     private val syncService: CentralSyncService,
+    val optionRegistry: DynamicOptionRegistry,
+    val widgetRegistry: CustomFieldWidgetRegistry,
 ) : ViewModel() {
 
     val isContactPickerAvailable: Boolean get() = contactPickerService.isAvailable()
@@ -219,6 +228,14 @@ class CustomerFormViewModel(
 
     private val _uiState = MutableStateFlow(CustomerFormUiState())
     val uiState: StateFlow<CustomerFormUiState> = _uiState.asStateFlow()
+
+    /**
+     * Live unified schema for the customer form (spec 011, US1). The schema-driven renderer consumes
+     * this together with [optionRegistry] / [widgetRegistry] to produce the entry form from config.
+     */
+    val formSchema: StateFlow<FormSchema?> =
+        configRepository.observeSchema("customer")
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private var originalCustomer: Customer? = null
 
@@ -260,6 +277,13 @@ class CustomerFormViewModel(
         }
     }
 
+    /**
+     * Public entry point for the schema-driven contact import widget (form-widgets). The widget
+     * picks the contact itself and hands the resolved [ContactData] back here to fill the form's
+     * fields, reusing the same merge logic as the inline import button.
+     */
+    fun importContactData(contactData: ContactData) = importContact(contactData)
+
     private fun importContact(contactData: ContactData) {
         val current = _uiState.value.formState
         var updated = current
@@ -275,7 +299,7 @@ class CustomerFormViewModel(
         if (contactData.state.isNotBlank() && current.state.isBlank()) updated = updated.copy(state = contactData.state)
         if (contactData.pincode.isNotBlank() && current.pincode.isBlank()) updated = updated.copy(pincode = contactData.pincode)
         if (contactData.country.isNotBlank() && current.country.isBlank()) updated = updated.copy(country = contactData.country)
-        _uiState.update { it.copy(formState = validateForm(updated)) }
+        _uiState.update { it.copy(formState = validateForm(updated), contactImportCount = it.contactImportCount + 1) }
     }
 
     fun clearContactImportError() {
@@ -437,15 +461,9 @@ class CustomerFormViewModel(
             }
             .launchIn(viewModelScope)
 
-        // Sync all form configs from backend (will update database, triggering flow above)
-        viewModelScope.launch {
-            try {
-                configRepository.syncFormConfigs()
-            } catch (e: Exception) {
-                // Silently fail - form will work without config using default behavior
-                CustomerLogger.w("CustomerFormViewModel", "Failed to sync form configs: ${e.message}")
-            }
-        }
+        // Pull the form schema via CentralSyncService → FormSyncDelegate (first run is a full pull,
+        // which seeds standard fields server-side). The reactive flow above updates the UI when rows land.
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.FORM))
     }
 
     fun onCustomerTypeSelected(customerType: CustomerType) {

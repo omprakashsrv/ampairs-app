@@ -1,7 +1,7 @@
 <resources>
     <!-- Unit list screen -->
     <string name="unit_list_title">Units</string>
-    <string name="unit_list_count">%d units</string>
+    <string name="unit_list_count">%1$d units</string>
     <string name="unit_list_add_unit">Add Unit</string>
     <string name="unit_list_cd_add">Add Unit</string>
     <string name="unit_list_search_placeholder">Search units…</string>
@@ -10,8 +10,8 @@
     <string name="unit_list_empty_title">No units yet</string>
     <string name="unit_list_empty_search">No units found</string>
     <string name="unit_list_create_unit">Create Unit</string>
-    <string name="unit_list_decimal_places_format">Decimal places: %d</string>
-    <string name="unit_list_category_format">Category: %s</string>
+    <string name="unit_list_decimal_places_format">Decimal places: %1$d</string>
+    <string name="unit_list_category_format">Category: %1$s</string>
     <string name="unit_list_cd_edit">Edit</string>
     <string name="unit_list_cd_delete">Delete</string>
     <string name="unit_list_col_name">Name</string>

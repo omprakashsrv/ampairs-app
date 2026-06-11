@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
@@ -61,6 +62,7 @@ import ampairsapp.shared.generated.resources.nav_more_account
 import ampairsapp.shared.generated.resources.nav_more_all_modules
 import ampairsapp.shared.generated.resources.nav_more_business
 import ampairsapp.shared.generated.resources.nav_more_edit_profile
+import ampairsapp.shared.generated.resources.nav_more_form_config
 import ampairsapp.shared.generated.resources.nav_more_invitations
 import ampairsapp.shared.generated.resources.nav_more_members
 import ampairsapp.shared.generated.resources.nav_more_modules
@@ -331,6 +333,12 @@ fun MoreScreen(
                         Icons.Default.Store
                     ) {
                         if (workspaceId.isNotEmpty()) backStack.add(WorkspaceRoute.ModuleStore(workspaceId))
+                    },
+                    Triple(
+                        stringResource(Res.string.nav_more_form_config),
+                        Icons.Default.EditNote
+                    ) {
+                        backStack.add(Route.FormConfig())
                     },
                     Triple(
                         "Sync Status",

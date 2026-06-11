@@ -117,6 +117,7 @@ datastore = { group = "androidx.datastore", name = "datastore", version.ref = "d
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx" }
 
 # Compose Multiplatform libraries (explicit dependencies for 1.10.0+)
 compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "compose-plugin" }

@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -120,13 +121,15 @@ import com.ampairs.common.components.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
 import com.ampairs.customer.ui.components.StringAutocomplete
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
-import com.ampairs.customer.ui.components.location.LocationPickerDialog
-import com.ampairs.customer.ui.components.location.LocationData
-import com.ampairs.customer.ui.components.location.AddressData
+import com.ampairs.formwidgets.location.LocationPickerDialog
+import com.ampairs.formwidgets.location.LocationData
+import com.ampairs.formwidgets.location.AddressData
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.ui.components.images.CustomerImageViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
-import com.ampairs.customer.ui.components.location.LocationService
+import com.ampairs.formwidgets.location.LocationService
+import com.ampairs.formwidgets.widget.LocalContactImportHandler
+import com.ampairs.form.render.LocalFormEntityUid
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_GROUP
 import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
@@ -144,6 +147,7 @@ fun CustomerFormScreen(
     viewModel: CustomerFormViewModel = assistedMetroViewModel<CustomerFormViewModel, CustomerFormViewModel.Factory> { create(customerId) },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val formSchema by viewModel.formSchema.collectAsStateWithLifecycle()
 
     LaunchedEffect(customerId) {
         if (customerId != null) {
@@ -184,6 +188,10 @@ fun CustomerFormScreen(
             }
 
             else -> {
+                CompositionLocalProvider(
+                    LocalContactImportHandler provides { contactData -> viewModel.importContactData(contactData) },
+                    LocalFormEntityUid provides (customerId ?: ""),
+                ) {
                 CustomerForm(
                     customerId = customerId,
                     formState = uiState.formState,
@@ -201,6 +209,25 @@ fun CustomerFormScreen(
                     customerGroups = uiState.customerGroups,
                     onCustomerGroupSelected = viewModel::onCustomerGroupSelected,
                     entityConfig = uiState.entityConfig,
+                    customAttributesContent = { attrs, onChange ->
+                        CustomerCustomAttributes(
+                            schema = formSchema,
+                            optionRegistry = viewModel.optionRegistry,
+                            widgetRegistry = viewModel.widgetRegistry,
+                            attributes = attrs,
+                            onAttributesChange = onChange,
+                        )
+                    },
+                    standardFieldsContent = {
+                        CustomerStandardFields(
+                            schema = formSchema,
+                            optionRegistry = viewModel.optionRegistry,
+                            widgetRegistry = viewModel.widgetRegistry,
+                            formState = uiState.formState,
+                            onFormChange = viewModel::updateForm,
+                            reseedKey = uiState.contactImportCount,
+                        )
+                    },
                     showCustomerImages = uiState.showCustomerImages,
                     customerImagesReadOnly = uiState.customerImagesReadOnly,
                     isContactPickerAvailable = viewModel.isContactPickerAvailable,
@@ -210,6 +237,7 @@ fun CustomerFormScreen(
                     locationService = viewModel.locationService,
                     modifier = Modifier.fillMaxSize()
                 )
+                }
             }
         }
     }
@@ -234,6 +262,8 @@ private fun CustomerForm(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    customAttributesContent: (@Composable (Map<String, String>, (Map<String, String>) -> Unit) -> Unit)? = null,
+    standardFieldsContent: (@Composable () -> Unit)? = null,
     showCustomerImages: Boolean,
     customerImagesReadOnly: Boolean,
     isContactPickerAvailable: Boolean,
@@ -264,6 +294,8 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            customAttributesContent = customAttributesContent,
+            standardFieldsContent = standardFieldsContent,
             showCustomerImages = showCustomerImages,
             customerImagesReadOnly = customerImagesReadOnly,
             isContactPickerAvailable = isContactPickerAvailable,
@@ -291,6 +323,8 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            customAttributesContent = customAttributesContent,
+            standardFieldsContent = standardFieldsContent,
             showCustomerImages = showCustomerImages,
             customerImagesReadOnly = customerImagesReadOnly,
             isContactPickerAvailable = isContactPickerAvailable,
@@ -317,6 +351,8 @@ private fun CustomerForm(
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
             entityConfig = entityConfig,
+            customAttributesContent = customAttributesContent,
+            standardFieldsContent = standardFieldsContent,
             isContactPickerAvailable = isContactPickerAvailable,
             isImportingContact = isImportingContact,
             contactImportError = contactImportError,
@@ -345,6 +381,8 @@ private fun CustomerFormTabLayout(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    customAttributesContent: (@Composable (Map<String, String>, (Map<String, String>) -> Unit) -> Unit)? = null,
+    standardFieldsContent: (@Composable () -> Unit)? = null,
     showCustomerImages: Boolean,
     customerImagesReadOnly: Boolean,
     isContactPickerAvailable: Boolean,
@@ -393,6 +431,8 @@ private fun CustomerFormTabLayout(
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
                 entityConfig = entityConfig,
+                customAttributesContent = customAttributesContent,
+                standardFieldsContent = standardFieldsContent,
                 isContactPickerAvailable = isContactPickerAvailable,
                 isImportingContact = isImportingContact,
                 contactImportError = contactImportError,
@@ -432,6 +472,8 @@ private fun CustomerFormSideBySideLayout(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    customAttributesContent: (@Composable (Map<String, String>, (Map<String, String>) -> Unit) -> Unit)? = null,
+    standardFieldsContent: (@Composable () -> Unit)? = null,
     showCustomerImages: Boolean,
     customerImagesReadOnly: Boolean,
     isContactPickerAvailable: Boolean,
@@ -468,6 +510,8 @@ private fun CustomerFormSideBySideLayout(
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
                 entityConfig = entityConfig,
+                customAttributesContent = customAttributesContent,
+                standardFieldsContent = standardFieldsContent,
                 isContactPickerAvailable = isContactPickerAvailable,
                 isImportingContact = isImportingContact,
                 contactImportError = contactImportError,
@@ -514,6 +558,8 @@ private fun CustomerFormFields(
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
+    customAttributesContent: (@Composable (Map<String, String>, (Map<String, String>) -> Unit) -> Unit)? = null,
+    standardFieldsContent: (@Composable () -> Unit)? = null,
     isContactPickerAvailable: Boolean,
     isImportingContact: Boolean,
     contactImportError: String?,
@@ -592,6 +638,34 @@ private fun CustomerFormFields(
             }
         }
 
+        // Contact import (only on Android/iOS, only for new customers)
+        if (isContactPickerAvailable && formState.uid.isBlank()) {
+            OutlinedButton(
+                onClick = onPickContact,
+                enabled = !isImportingContact,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isImportingContact) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(Res.string.customer_importing))
+                } else {
+                    Icon(Icons.Default.ContactPhone, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(Res.string.customer_import_contact))
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Standard fields — config-driven via the unified FormSchema renderer (spec 011, US1).
+        // Sections, order, visibility, labels, required and validation all come from Form Config.
+        if (standardFieldsContent != null) {
+            standardFieldsContent()
+        } else {
         // Basic Information
         FormSection(title = stringResource(Res.string.customer_section_basic)) {
             // Import from Contact Button (only on Android/iOS, only for new customers)
@@ -961,6 +1035,8 @@ private fun CustomerFormFields(
             }
         }
 
+        }
+
         // Location Section
         FormSection(title = stringResource(Res.string.customer_section_location)) {
             LocationSection(
@@ -1156,20 +1232,28 @@ private fun CustomerFormFields(
             }
         }
 
-        // Custom Attributes - Only show configured attributes
-        val attributeDefinitions = entityConfig?.attributeDefinitions?.filter { it.visible } ?: emptyList()
-        if (attributeDefinitions.isNotEmpty()) {
-            FormSection(title = stringResource(Res.string.customer_section_attributes)) {
-                AttributesEditor(
-                    attributes = formState.attributes,
-                    attributeDefinitions = attributeDefinitions,
-                    onAttributesChange = { newAttributes ->
-                        onFormChange(formState.copy(attributes = newAttributes))
-                    }
-                )
+        // Custom Attributes — config-driven via the unified FormSchema renderer (spec 011, US1).
+        // Falls back to the legacy editor when no renderer slot is provided.
+        if (customAttributesContent != null) {
+            customAttributesContent(formState.attributes) { newAttributes ->
+                onFormChange(formState.copy(attributes = newAttributes))
+            }
+        } else {
+            val attributeDefinitions = entityConfig?.attributeDefinitions?.filter { it.visible } ?: emptyList()
+            if (attributeDefinitions.isNotEmpty()) {
+                FormSection(title = stringResource(Res.string.customer_section_attributes)) {
+                    AttributesEditor(
+                        attributes = formState.attributes,
+                        attributeDefinitions = attributeDefinitions,
+                        onAttributesChange = { newAttributes ->
+                            onFormChange(formState.copy(attributes = newAttributes))
+                        }
+                    )
+                }
             }
         }
 
+        if (standardFieldsContent == null) {
         // Status Information
         FormSection(title = stringResource(Res.string.customer_section_status)) {
             var statusExpanded by remember { mutableStateOf(false) }
@@ -1208,6 +1292,8 @@ private fun CustomerFormFields(
             }
         }
 
+
+        }
 
         // Save Button Section
         Column(

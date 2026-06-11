@@ -3,7 +3,7 @@ package com.ampairs.di
 import coil3.ImageLoader
 import com.ampairs.common.localization.LocaleManager
 import com.ampairs.common.theme.ThemeManager
-import com.ampairs.customer.ui.components.location.LocationService
+import com.ampairs.formwidgets.location.LocationService
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 
 /**

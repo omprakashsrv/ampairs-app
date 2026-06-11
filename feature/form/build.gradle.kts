@@ -28,6 +28,7 @@ kotlin {
                 api(projects.feature.formApi)
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
+                implementation(libs.kermit)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
@@ -44,6 +45,12 @@ kotlin {
                 implementation(libs.sqlite.bundled)
                 // Adaptive layout
                 implementation(libs.material3.adaptive)
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
         androidMain {

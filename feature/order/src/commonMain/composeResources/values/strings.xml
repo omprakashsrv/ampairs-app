@@ -1,7 +1,7 @@
 <resources>
     <!-- Order list screen -->
     <string name="ord_list_title">Orders</string>
-    <string name="ord_list_count">%d orders</string>
+    <string name="ord_list_count">%1$d orders</string>
     <string name="ord_list_search_placeholder">Search orders…</string>
     <string name="ord_list_cd_search_clear">Clear search</string>
     <string name="ord_list_empty_title">No orders yet</string>
@@ -18,7 +18,7 @@
     <string name="ord_view_cd_edit">Edit order</string>
     <string name="ord_view_from">From</string>
     <string name="ord_view_to">To</string>
-    <string name="ord_view_items">%d Items</string>
+    <string name="ord_view_items">%1$d Items</string>
     <string name="ord_view_discount">Discount</string>
     <string name="ord_view_save">Save</string>
     <string name="ord_view_create_invoice">Create Invoice</string>

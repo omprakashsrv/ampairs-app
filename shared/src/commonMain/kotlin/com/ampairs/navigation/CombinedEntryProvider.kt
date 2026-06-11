@@ -20,6 +20,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.CustomerListRoute
 import com.ampairs.form.ui.FormConfigScreen
+import com.ampairs.form.ui.FormConfigHubScreen
 import com.ampairs.navigation.providers.agentEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
@@ -140,12 +141,19 @@ private fun mainRouteEntryProvider(
         }
     }
 
-    // Route.FormConfig - Form configuration screen
+    // Route.FormConfig — blank entityType opens the hub (entity picker); a concrete type opens its editor.
     is Route.FormConfig -> NavEntry(key) {
-        FormConfigScreen(
-            entityType = key.entityType,
-            onNavigateBack = { backStack.removeLastOrNull() }
-        )
+        if (key.entityType.isBlank()) {
+            FormConfigHubScreen(
+                onSelectEntity = { entityType -> backStack.add(Route.FormConfig(entityType)) },
+                onNavigateBack = { backStack.removeLastOrNull() }
+            )
+        } else {
+            FormConfigScreen(
+                entityType = key.entityType,
+                onNavigateBack = { backStack.removeLastOrNull() }
+            )
+        }
     }
 
     // Route.Unit redirects to UnitListRoute

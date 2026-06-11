@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ampairs.form.render.ConfigAttributesSection
 import androidx.window.core.layout.WindowSizeClass
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import com.ampairs.product.domain.Group
@@ -607,6 +608,17 @@ private fun ProductDetailsForm(
             }
         }
 
+        // Config-driven custom attributes (spec 011, US5) — rendered from the product FormSchema.
+        val formSchema by viewModel.formSchema.collectAsStateWithLifecycle()
+        ConfigAttributesSection(
+            schema = formSchema,
+            optionRegistry = viewModel.optionRegistry,
+            widgetRegistry = viewModel.widgetRegistry,
+            attributes = formState.attributes,
+            onAttributesChange = { onFormChange(formState.copy(attributes = it)) },
+            title = stringResource(Res.string.prod_section_attributes),
+        )
+
         Column(modifier = Modifier.padding(16.dp)) {
             Button(onClick = onSave, enabled = canSave, modifier = Modifier.fillMaxWidth()) {
                 if (isSaving) {
@@ -751,6 +763,7 @@ data class ProductFormState(
     val subCategoryName: String = "",
     val baseUnitId: String = "",
     val baseUnitName: String = "",
+    val attributes: Map<String, String> = emptyMap(),
     val nameError: String? = null,
     val codeError: String? = null,
     val priceError: String? = null,
@@ -787,6 +800,7 @@ fun Product.toFormState(): ProductFormState {
         subCategoryName = "",
         baseUnitId = this.baseUnitId ?: "",
         baseUnitName = "",
+        attributes = this.attributes,
     )
 }
 
@@ -812,6 +826,7 @@ fun ProductFormState.toProduct(): Product {
         groupId = this.groupId,
         subCategoryId = this.subCategoryId,
         baseUnitId = this.baseUnitId.takeIf { it.isNotBlank() },
+        attributes = this.attributes,
     )
 }
 
