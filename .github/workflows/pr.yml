@@ -3,6 +3,11 @@ name: PR Checks
 # Validates every pull request BEFORE merge: compiles all three first-class KMP targets
 # (Android, iOS, Desktop) and runs the test suite. The repo's own rules require compiling all
 # targets after any commonMain change — this enforces it as a merge gate instead of by convention.
+#
+# Caching: gradle/actions/setup-gradle caches the Gradle home (downloaded deps, wrapper) and the
+# Gradle build cache (task outputs — only useful because org.gradle.caching=true). A dedicated
+# ~/.konan cache holds the Kotlin/Native compiler + platform libs, which is the slowest part of the
+# iOS build. cache-read-only=false so re-runs of the same PR reuse what earlier runs built.
 on:
   pull_request:
     branches: [ main ]
@@ -26,7 +31,16 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+      - name: Cache Kotlin/Native (~/.konan)
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-konan-
       - name: Write google-services.json
         # Untracked from VCS; injected from a secret. The google-services plugin runs during the
         # Android build, so the file must exist under androidApp/ even for a debug compile.
@@ -59,7 +73,16 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+      - name: Cache Kotlin/Native (~/.konan)
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-konan-
       - run: chmod +x ./gradlew
       - name: Compile iOS framework
         run: ./gradlew :shared:compileKotlinIosSimulatorArm64 --console=plain
