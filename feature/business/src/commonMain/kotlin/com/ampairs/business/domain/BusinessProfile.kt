@@ -32,10 +32,6 @@ data class BusinessProfile(
     val phone: String? = null,
     val email: String? = null,
     val website: String? = null,
-    @SerialName("tax_id")
-    val taxId: String? = null,
-    @SerialName("registration_number")
-    val registrationNumber: String? = null,
     val active: Boolean = true,
     @SerialName("custom_attributes")
     val customAttributes: Map<String, String>? = null,
@@ -70,10 +66,6 @@ data class BusinessProfileUpdateRequest(
     val phone: String? = null,
     val email: String? = null,
     val website: String? = null,
-    @SerialName("tax_id")
-    val taxId: String? = null,
-    @SerialName("registration_number")
-    val registrationNumber: String? = null,
     val active: Boolean = true,
     @SerialName("custom_attributes")
     val customAttributes: Map<String, String>? = null

@@ -60,13 +60,6 @@ data class BusinessCreateRequest(
     @SerialName("website")
     val website: String? = null,
 
-    // Tax/Regulatory
-    @SerialName("tax_id")
-    val taxId: String? = null,
-
-    @SerialName("registration_number")
-    val registrationNumber: String? = null,
-
     @SerialName("custom_attributes")
     val customAttributes: JsonObject? = null,
 

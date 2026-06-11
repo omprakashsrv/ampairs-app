@@ -124,7 +124,6 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(BusinessRoute.Overview::class)
                 subclass(BusinessRoute.Profile::class)
                 subclass(BusinessRoute.Operations::class)
-                subclass(BusinessRoute.TaxConfig::class)
                 subclass(BusinessRoute.CustomAttributes::class)
                 subclass(BusinessRoute.Images::class)
 

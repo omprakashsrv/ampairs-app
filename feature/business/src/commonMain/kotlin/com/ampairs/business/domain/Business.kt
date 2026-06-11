@@ -34,12 +34,6 @@ data class Business(
     val phone: String? = null,
     val email: String? = null,
     val website: String? = null,
-    @SerialName("tax_id")
-    val taxId: String? = null,
-    @SerialName("registration_number")
-    val registrationNumber: String? = null,
-    @SerialName("tax_settings")
-    val taxSettings: Map<String, String>? = null,
     val timezone: String = "UTC",
     val currency: String = "INR",
     val language: String = "en",
@@ -98,12 +92,6 @@ data class BusinessPayload(
     val phone: String? = null,
     val email: String? = null,
     val website: String? = null,
-    @SerialName("tax_id")
-    val taxId: String? = null,
-    @SerialName("registration_number")
-    val registrationNumber: String? = null,
-    @SerialName("tax_settings")
-    val taxSettings: Map<String, String>? = null,
     @EncodeDefault val timezone: String = "UTC",
     @EncodeDefault val currency: String = "INR",
     @EncodeDefault val language: String = "en",
@@ -138,9 +126,6 @@ fun Business.toPayload(): BusinessPayload = BusinessPayload(
     phone = phone,
     email = email,
     website = website,
-    taxId = taxId,
-    registrationNumber = registrationNumber,
-    taxSettings = taxSettings,
     timezone = timezone,
     currency = currency,
     language = language,

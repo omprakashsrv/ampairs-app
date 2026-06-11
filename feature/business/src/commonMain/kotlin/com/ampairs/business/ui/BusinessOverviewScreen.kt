@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -34,7 +33,6 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 fun BusinessOverviewScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToOperations: () -> Unit = {},
-    onNavigateToTax: () -> Unit = {},
     onNavigateToCustomAttributes: () -> Unit = {},
     onNavigateToFormConfig: () -> Unit = {},
     onNavigateToImages: () -> Unit = {},
@@ -221,20 +219,6 @@ fun BusinessOverviewScreen(
                             Column {
                                 Text("Operations", style = MaterialTheme.typography.titleMedium)
                                 Text("Timezone, currency, business hours", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-
-                    OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToTax) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Receipt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Column {
-                                Text("Tax Configuration", style = MaterialTheme.typography.titleMedium)
-                                Text("GST/VAT and tax compliance", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }

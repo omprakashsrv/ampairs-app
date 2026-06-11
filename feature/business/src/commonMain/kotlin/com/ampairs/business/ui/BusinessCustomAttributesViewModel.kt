@@ -121,8 +121,6 @@ class BusinessCustomAttributesViewModel(
                         phone = currentProfile.phone,
                         email = currentProfile.email,
                         website = currentProfile.website,
-                        taxId = currentProfile.taxId,
-                        registrationNumber = currentProfile.registrationNumber,
                         active = currentProfile.active,
                         customAttributes = customAttributesMap,
                     )

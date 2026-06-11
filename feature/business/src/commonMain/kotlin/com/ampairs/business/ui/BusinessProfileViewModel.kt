@@ -111,9 +111,7 @@ class BusinessProfileViewModel(
                     longitude = formState.longitude.toDoubleOrNull(),
                     phone = formState.phone.takeIf { it.isNotBlank() },
                     email = formState.email.takeIf { it.isNotBlank() },
-                    website = formState.website.takeIf { it.isNotBlank() },
-                    taxId = formState.taxId.takeIf { it.isNotBlank() },
-                    registrationNumber = formState.registrationNumber.takeIf { it.isNotBlank() }
+                    website = formState.website.takeIf { it.isNotBlank() }
                 )
 
                 repository.createBusinessProfile(createRequest)
@@ -151,8 +149,6 @@ class BusinessProfileViewModel(
                     phone = formState.phone.takeIf { it.isNotBlank() },
                     email = formState.email.takeIf { it.isNotBlank() },
                     website = formState.website.takeIf { it.isNotBlank() },
-                    taxId = formState.taxId.takeIf { it.isNotBlank() },
-                    registrationNumber = formState.registrationNumber.takeIf { it.isNotBlank() },
                     active = formState.active
                 )
 
@@ -212,8 +208,6 @@ data class BusinessProfileFormState(
     val phone: String = "",
     val email: String = "",
     val website: String = "",
-    val taxId: String = "",
-    val registrationNumber: String = "",
     val active: Boolean = true
 )
 
@@ -233,7 +227,5 @@ private fun BusinessProfile.toFormState() = BusinessProfileFormState(
     phone = phone ?: "",
     email = email ?: "",
     website = website ?: "",
-    taxId = taxId ?: "",
-    registrationNumber = registrationNumber ?: "",
     active = active
 )

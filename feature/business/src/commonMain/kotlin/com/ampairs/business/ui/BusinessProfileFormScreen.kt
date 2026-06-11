@@ -30,7 +30,6 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
  * - Owner information
  * - Address details
  * - Contact information
- * - Tax ID and registration number
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -328,30 +327,8 @@ fun BusinessProfileFormScreen(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Uri,
-                                imeAction = ImeAction.Next
+                                imeAction = ImeAction.Done
                             ),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
-                        )
-
-                        // Registration Section
-                        SectionHeader("Registration Details")
-                        OutlinedTextField(
-                            value = formState.taxId,
-                            onValueChange = { viewModel.updateFormState(formState.copy(taxId = it)) },
-                            label = { Text("Tax ID (GST/VAT)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
-                        )
-
-                        OutlinedTextField(
-                            value = formState.registrationNumber,
-                            onValueChange = { viewModel.updateFormState(formState.copy(registrationNumber = it)) },
-                            label = { Text("Registration Number") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                         )
 
