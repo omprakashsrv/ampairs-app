@@ -104,13 +104,6 @@ class BusinessImagesViewModel(
         }
     }
 
-    /**
-     * Refresh data (for pull-to-refresh)
-     */
-    fun refresh() {
-        loadData()
-    }
-
     // ==================== Logo Operations ====================
 
     @OptIn(ExperimentalTime::class)

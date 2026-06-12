@@ -331,9 +331,6 @@ sealed interface BusinessRoute : NavKey {
     data object Operations : BusinessRoute
 
     @Serializable
-    data object TaxConfig : BusinessRoute
-
-    @Serializable
     data object CustomAttributes : BusinessRoute
 
     @Serializable

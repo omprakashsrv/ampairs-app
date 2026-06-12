@@ -151,7 +151,6 @@ class AppNavigationViewModel(
         route.contains("BusinessRoute.Overview") -> "Business_Overview"
         route.contains("BusinessRoute.Profile") -> "Business_Profile"
         route.contains("BusinessRoute.Operations") -> "Business_Operations"
-        route.contains("BusinessRoute.TaxConfig") -> "Business_TaxConfig"
         route.contains("BusinessRoute.CustomAttributes") -> "Business_CustomAttributes"
         route.contains("BusinessRoute.Images") -> "Business_Images"
         route.contains("SubscriptionRoute.Root") -> "Subscription_Root"

@@ -1,19 +1,19 @@
 package com.ampairs.business.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.form.render.ConfigAttributesSection
+import com.ampairs.business.ui.components.BusinessFormSection
+import com.ampairs.business.ui.components.BusinessScreenContent
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
@@ -29,20 +29,12 @@ fun BusinessCustomAttributesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val formSchema by viewModel.formSchema.collectAsStateWithLifecycle()
-    val pullRefreshState = rememberPullToRefreshState()
-    var isRefreshing by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) {
             snackbarHostState.showSnackbar("Custom attributes saved successfully")
             viewModel.clearSaveSuccess()
-        }
-    }
-
-    LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading) {
-            isRefreshing = false
         }
     }
 
@@ -60,18 +52,10 @@ fun BusinessCustomAttributesScreen(
             }
         }
     ) { paddingValues ->
-        PullToRefreshBox(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            state = pullRefreshState,
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                if (!isRefreshing) {
-                    isRefreshing = true
-                    viewModel.refresh()
-                }
-            }
+                .padding(paddingValues)
         ) {
             when {
                 uiState.isLoading && formSchema == null -> {
@@ -127,36 +111,45 @@ fun BusinessCustomAttributesScreen(
                 }
 
                 else -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Header
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                text = "Custom Attributes",
-                                style = MaterialTheme.typography.headlineMedium
-                            )
-                            if (uiState.businessName.isNotBlank()) {
+                    BusinessScreenContent(maxContentWidth = 720.dp) {
+                        // Server-defined-fields note.
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    Icons.Filled.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.size(20.dp),
+                                )
                                 Text(
-                                    text = uiState.businessName,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "These fields are defined by your organisation. New fields may appear here after a sync.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 )
                             }
                         }
 
-                        // Config-driven custom attributes from the unified business FormSchema.
-                        ConfigAttributesSection(
-                            schema = formSchema,
-                            optionRegistry = viewModel.optionRegistry,
-                            widgetRegistry = viewModel.widgetRegistry,
-                            attributes = uiState.customAttributeValues,
-                            onAttributesChange = viewModel::updateAttributes,
-                        )
+                        BusinessFormSection(
+                            icon = Icons.Filled.Code,
+                            title = "Custom Attributes",
+                            subtitle = uiState.businessName.ifBlank { "Additional business information" },
+                        ) {
+                            // Config-driven custom attributes from the unified business FormSchema.
+                            ConfigAttributesSection(
+                                schema = formSchema,
+                                optionRegistry = viewModel.optionRegistry,
+                                widgetRegistry = viewModel.widgetRegistry,
+                                attributes = uiState.customAttributeValues,
+                                onAttributesChange = viewModel::updateAttributes,
+                            )
+                        }
 
                         // Bottom spacing for FAB
                         Spacer(modifier = Modifier.height(80.dp))

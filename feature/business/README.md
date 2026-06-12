@@ -1,12 +1,11 @@
 # feature:business
 
-Business profile management. Covers the company's identity, operational settings, tax configuration, images, and custom attributes within a workspace.
+Business profile management. Covers the company's identity, operational settings, images, and custom attributes within a workspace. (Tax identity/configuration lives in the tax module.)
 
 ## Responsibilities
 
-- View and edit the business profile (name, address, GSTIN, logo)
+- View and edit the business profile (name, address, logo)
 - Configure business operations (opening hours, delivery radius, etc.)
-- Set up tax configuration (GST rates, tax components)
 - Upload and manage business images
 - Define custom entity attributes for forms
 
@@ -19,13 +18,12 @@ Business profile management. Covers the company's identity, operational settings
 | `BusinessOverviewViewModel` | Dashboard summary |
 | `BusinessProfileViewModel` | Profile form state |
 | `BusinessOperationsViewModel` | Operations settings |
-| `BusinessTaxConfigViewModel` | Tax configuration |
 | `BusinessImagesViewModel` | Image upload/manage |
 | `BusinessCustomAttributesViewModel` | Custom form fields |
 
 ## Domain Models
 
-`Business`, `BusinessProfile`, `BusinessOverview`, `BusinessOperations`, `BusinessStore`, `BusinessImage`, `TaxConfiguration`, `BusinessType`
+`Business`, `BusinessProfile`, `BusinessOverview`, `BusinessOperations`, `BusinessStore`, `BusinessImage`, `BusinessType`
 
 ## Koin Module
 

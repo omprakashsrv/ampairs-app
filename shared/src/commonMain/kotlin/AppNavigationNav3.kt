@@ -235,7 +235,6 @@ fun navigateToMenuItemNav3(
                 "/business/overview", "/business" -> backStack.add(BusinessRoute.Overview)
                 "/business/profile" -> backStack.add(BusinessRoute.Profile)
                 "/business/operations" -> backStack.add(BusinessRoute.Operations)
-                "/business/tax" -> backStack.add(BusinessRoute.TaxConfig)
                 else -> backStack.add(BusinessRoute.Overview)
             }
         }
