@@ -10,7 +10,7 @@ data class Address(
     @SerialName("address") var address: String = "",
     @SerialName("city") var city: String = "",
     @SerialName("state") var state: String = "",
-    @SerialName("zip") var zip: String = "",
+    @SerialName("pincode") var zip: String = "", // backend Address calls this field pincode
     @SerialName("country") var country: String = "",
     @SerialName("attention") var attention: String = "",
     @SerialName("phone") var phone: String = "",

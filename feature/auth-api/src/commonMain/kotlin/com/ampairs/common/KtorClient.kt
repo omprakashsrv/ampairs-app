@@ -78,6 +78,10 @@ fun httpClient(
                 isLenient = true
                 encodeDefaults = sendDefaults
                 explicitNulls = false
+                // Server DTOs serialize nullable fields as explicit nulls (e.g.
+                // billing_address.street); coerce them to the client model's default
+                // instead of failing deserialization of the whole response.
+                coerceInputValues = true
             }
         )
     }
