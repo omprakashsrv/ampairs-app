@@ -1,22 +1,29 @@
 package com.ampairs.sequence.domain.model
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** Mirror of the server `SequenceDefinitionResponse`/`Request` (snake_case contract). */
+/**
+ * Mirror of the server `SequenceDefinitionResponse`/`Request` (snake_case contract).
+ * @EncodeDefault on defaulted fields: the shared Ktor Json uses encodeDefaults = false, but the
+ * backend fails on missing primitives (FAIL_ON_NULL_FOR_PRIMITIVES) — always send them.
+ */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class SequenceDefinition(
     val uid: String = "",
     @SerialName("entity_type") val entityType: String = "",
-    val scope: String = SequenceScope.WORKSPACE,
+    @EncodeDefault val scope: String = SequenceScope.WORKSPACE,
     @SerialName("user_id") val userId: String? = null,
     val prefix: String? = null,
     val suffix: String? = null,
-    @SerialName("padding_length") val paddingLength: Int = 0,
-    @SerialName("start_value") val startValue: Long = 1,
-    @SerialName("increment_step") val incrementStep: Int = 1,
-    @SerialName("current_value") val currentValue: Long = 0,
-    val active: Boolean = true,
+    @EncodeDefault @SerialName("padding_length") val paddingLength: Int = 0,
+    @EncodeDefault @SerialName("start_value") val startValue: Long = 1,
+    @EncodeDefault @SerialName("increment_step") val incrementStep: Int = 1,
+    @EncodeDefault @SerialName("current_value") val currentValue: Long = 0,
+    @EncodeDefault val active: Boolean = true,
     @SerialName("ref_id") val refId: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
@@ -52,17 +59,19 @@ data class SequenceAllocation(
     @SerialName("updated_at") val updatedAt: String? = null,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class SequenceAllocationRequest(
     @SerialName("entity_type") val entityType: String,
     @SerialName("device_id") val deviceId: String,
-    @SerialName("block_size") val blockSize: Int = 50,
+    @EncodeDefault @SerialName("block_size") val blockSize: Int = 50,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class SequenceAllocationReportRequest(
     val uid: String,
-    @SerialName("next_available") val nextAvailable: Long,
+    @EncodeDefault @SerialName("next_available") val nextAvailable: Long = 0,
 )
 
 /**

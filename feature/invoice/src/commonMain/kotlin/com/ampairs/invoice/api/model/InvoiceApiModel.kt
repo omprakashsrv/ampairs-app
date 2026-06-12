@@ -48,7 +48,7 @@ data class InvoiceApiModel(
 fun Invoice.toApiModel(): InvoiceApiModel {
     return InvoiceApiModel(
         id = this.id,
-        invoiceDate = DateTimeAdapter.toDateTimeString(this.invoiceDate),
+        invoiceDate = this.invoiceDate.toString(), // ISO-8601 — backend invoice_date is an Instant
         invoiceNumber = this.invoiceNumber ?: "",
         fromCustomerId = this.fromCustomer?.uid ?: "",
         fromCustomerName = this.fromCustomer?.name ?: "",
