@@ -121,6 +121,7 @@ kotlin {
                 api(projects.feature.form)
                 api(projects.feature.formwidgets)
                 api(projects.feature.unit)
+                api(projects.feature.sequence)
                 api(projects.feature.store)
                 api(projects.feature.update)
                 api(projects.data.event)

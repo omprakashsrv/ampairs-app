@@ -47,6 +47,7 @@ include(
     ":feature:form",
     ":feature:formwidgets",
     ":feature:unit",
+    ":feature:sequence",
     ":feature:store",
     ":feature:update",
     ":feature:tax",
