@@ -16,6 +16,7 @@ import com.ampairs.invoice.domain.TaxSpec as InvoiceTaxSpec
 import com.ampairs.invoice.editor.DocSyncUi
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.domain.Order
+import com.ampairs.unit.data.repository.UnitLookup
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -39,6 +40,7 @@ class OrderViewViewModel(
     @Assisted val orderId: String,
     val orderRepository: OrderRepository,
     val invoiceRepository: InvoiceRepository,
+    private val unitLookup: UnitLookup,
     private val syncService: CentralSyncService,
 ) : ViewModel() {
 
@@ -65,6 +67,7 @@ class OrderViewViewModel(
     init {
         viewModelScope.launch {
             order = orderRepository.getOrder(orderId)
+            resolveUnitNames()
             refreshLinkedInvoiceNumber()
             refreshSyncFlag()
         }
@@ -93,6 +96,17 @@ class OrderViewViewModel(
             ?.let { invoiceRepository.getInvoiceNumber(it) }
     }
 
+    /** unitName is transient (display-only) — resolve it from the unit catalog after load. */
+    private suspend fun resolveUnitNames() {
+        order.items.forEach { item ->
+            if (item.unitName.isBlank() && item.unitId.isNotBlank()) {
+                unitLookup.getUnitById(item.unitId)?.let { unit ->
+                    item.unitName = unit.shortName.ifBlank { unit.name }
+                }
+            }
+        }
+    }
+
     fun retrySync() {
         syncService.emit(SyncEvent.TriggerPush(SyncEntity.ORDER))
     }
@@ -102,6 +116,7 @@ class OrderViewViewModel(
         viewModelScope.launch(DispatcherProvider.io) {
             order.let { orderRepository.saveOrder(it) }
             order = orderRepository.getOrder(orderId)
+            resolveUnitNames()
             viewModelScope.launch(Dispatchers.Main) {
                 savingOrder = false
             }
@@ -125,6 +140,7 @@ class OrderViewViewModel(
                 orderRepository.saveOrder(current)            // local-only + marks ORDER pending
             }
             order = orderRepository.getOrder(orderId)
+            resolveUnitNames()
             refreshLinkedInvoiceNumber()
             viewModelScope.launch(Dispatchers.Main) {
                 savingOrder = false

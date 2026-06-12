@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.order.db.entity.OrderItemEntity
+import com.ampairs.order.db.model.TaxInfoEntity
+import com.ampairs.order.db.model.toDomainModel
 import com.ampairs.product.domain.ProductSummary
 import kotlinx.serialization.json.Json
 
@@ -138,8 +140,15 @@ fun List<OrderItemEntity>.asItemsDomainModel(): List<OrderItem> {
         orderItem1.totalTax = orderItem.total_tax
         orderItem1.active = orderItem.active == 1
         orderItem1.softDeleted = orderItem.soft_deleted == 1
-        orderItem1.taxInfos = Json.decodeFromString(orderItem.tax_info ?: "")
-        orderItem1.discount = Json.decodeFromString(orderItem.discount ?: "")
+        // tax_info is persisted as List<TaxInfoEntity> (domain TaxInfo is not @Serializable);
+        // both blobs are nullable — never decode a null/blank string.
+        orderItem1.taxInfos = orderItem.tax_info?.takeIf { it.isNotBlank() }
+            ?.let { Json.decodeFromString<List<TaxInfoEntity>>(it).toDomainModel() }
+            ?: emptyList()
+        orderItem.discount?.takeIf { it.isNotBlank() }
+            ?.let { Json.decodeFromString<List<Discount>>(it) }
+            ?.let { orderItem1.discount.addAll(it) }
+        orderItem1.discountPercent = orderItem1.discount.firstOrNull()?.percent ?: 0.0
         orderItem1.unitId = orderItem.unit_id
         orderItem1.baseQuantity = orderItem.base_quantity
         orderItem1.unitMultiplier =

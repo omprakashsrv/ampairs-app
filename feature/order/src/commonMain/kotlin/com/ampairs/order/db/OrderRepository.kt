@@ -73,7 +73,8 @@ class OrderRepository(
             throw Error("No order found with id $id")
         }
 
-        val orderDomain = orderWithItems.order.asDomainModel()
+        // Map the full aggregate (order + items) — the OrderEntity-only mapper sets items = empty.
+        val orderDomain = orderWithItems.asDomainModel()
         orderDomain.fromCustomer =
             orderDomain.fromCustomer?.uid?.let { customerDataService.getById(it) }
                 ?: orderDomain.fromCustomer
@@ -83,10 +84,14 @@ class OrderRepository(
 
         val products =
             productDataService.getByIds(orderWithItems.orderItems.map { it.product_id })
-        orderDomain.items.forEach {
-            val product = products.find { product -> product.id == it.product?.id }
-            it.product = product ?: it.product
+        orderDomain.items.forEach { item ->
+            // Loaded items carry only productId — re-attach the catalog product (name/HSN/variants).
+            item.product = products.find { product -> product.id == item.productId } ?: item.product
         }
+        // The customer assignments above fire the legacy toCustomer setter, which re-derives
+        // taxSpec incorrectly. The persisted tax data is authoritative — restore it last.
+        (orderDomain.taxInfos?.firstOrNull() ?: orderDomain.items.firstOrNull()?.taxInfos?.firstOrNull())
+            ?.let { orderDomain.taxSpec = it.taxSpec }
         return orderDomain
     }
 

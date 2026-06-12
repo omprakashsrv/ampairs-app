@@ -10,6 +10,7 @@ import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.editor.DocSyncUi
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.unit.data.repository.UnitLookup
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 class InvoiceViewViewModel(
     @Assisted val invoiceId: String,
     val invoiceRepository: InvoiceRepository,
+    private val unitLookup: UnitLookup,
     private val syncService: CentralSyncService,
 ) : ViewModel() {
 
@@ -51,6 +53,7 @@ class InvoiceViewViewModel(
     init {
         viewModelScope.launch(DispatcherProvider.io) {
             invoice = invoiceRepository.getInvoice(invoiceId)
+            resolveUnitNames()
             refreshSyncFlag()
         }
         syncService.observeEntity(SyncEntity.INVOICE)
@@ -72,6 +75,17 @@ class InvoiceViewViewModel(
         syncUi = if (invoiceRepository.isInvoiceSynced(invoiceId)) DocSyncUi.SYNCED else DocSyncUi.OFFLINE
     }
 
+    /** unitName is transient (display-only) — resolve it from the unit catalog after load. */
+    private suspend fun resolveUnitNames() {
+        invoice.items.forEach { item ->
+            if (item.unitName.isBlank() && item.unitId.isNotBlank()) {
+                unitLookup.getUnitById(item.unitId)?.let { unit ->
+                    item.unitName = unit.shortName.ifBlank { unit.name }
+                }
+            }
+        }
+    }
+
     fun retrySync() {
         syncService.emit(SyncEvent.TriggerPush(SyncEntity.INVOICE))
     }
@@ -81,6 +95,7 @@ class InvoiceViewViewModel(
         viewModelScope.launch(DispatcherProvider.io) {
             invoiceRepository.saveInvoice(invoice)
             invoice = invoiceRepository.getInvoice(invoiceId)
+            resolveUnitNames()
             viewModelScope.launch(Dispatchers.Main) {
                 savingInvoice = false
             }

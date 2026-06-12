@@ -7,6 +7,8 @@ import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
 import com.ampairs.invoice.db.entity.InvoiceEntity
 import com.ampairs.invoice.db.entity.InvoiceItemEntity
+import com.ampairs.invoice.db.model.TaxInfoEntity
+import com.ampairs.invoice.db.model.toDomainModel
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.domain.InvoiceItem
@@ -105,6 +107,10 @@ class InvoiceRepository(
                 }
             } ?: item.discount
             item.discountPercent = item.discount.firstOrNull()?.percent ?: 0.0
+            // restore the stored per-line GST breakdown — drives the tax-invoice columns/summary
+            item.taxInfos = itemEntity.tax_info?.takeIf { it.isNotBlank() }
+                ?.let { Json.decodeFromString<List<TaxInfoEntity>>(it).toDomainModel() }
+                ?: item.taxInfos
             // restore unit-of-measure state (spec 010 FR-014) + the price-override flag
             item.unitId = itemEntity.unit_id
             item.baseQuantity = itemEntity.base_quantity
@@ -116,6 +122,10 @@ class InvoiceRepository(
             item
         }.toMutableList()
 
+        // The customer assignments above fire the legacy toCustomer setter, which re-derives
+        // taxSpec incorrectly. The persisted tax data is authoritative — restore it last.
+        (invoice.taxInfos?.firstOrNull() ?: invoice.items.firstOrNull()?.taxInfos?.firstOrNull())
+            ?.let { invoice.taxSpec = it.taxSpec }
         return invoice
     }
 
