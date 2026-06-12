@@ -1,10 +1,21 @@
 package com.ampairs.product.data
 
 import com.ampairs.product.domain.ProductSummary
+import com.ampairs.product.domain.VariantOption
 
 interface ProductDataService {
     suspend fun getById(uid: String): ProductSummary?
     suspend fun getByIds(ids: List<String>): List<ProductSummary>
+
+    /**
+     * Catalog lookup for the fast-entry composer (spec 010 v2 design): [term] matches the product
+     * name or code as a substring, or the tax code (HSN) as a prefix — all case-insensitive.
+     * A blank [term] returns the first [limit] active products by name.
+     */
+    suspend fun searchSummaries(term: String, limit: Int = 50): List<ProductSummary>
+
+    /** Active variants of a product for the line variant picker (label + variant price). */
+    suspend fun variantsForProduct(productId: String): List<VariantOption>
 
     /**
      * Minimal "inline create" used by the order/invoice line editors: persists a new product

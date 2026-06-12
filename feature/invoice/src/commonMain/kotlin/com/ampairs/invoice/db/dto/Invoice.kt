@@ -28,7 +28,9 @@ data class Invoice(
     val shippingAddress: String?,
     val active: Boolean,
     val softDeleted: Boolean,
-    val discount: List<Discount>?
+    val discount: List<Discount>?,
+    val synced: Boolean = true,
+    val orderRefId: String? = null,
 )
 
 fun InvoiceEntity.asDomainModel(): Invoice {
@@ -53,7 +55,9 @@ fun InvoiceEntity.asDomainModel(): Invoice {
         taxInfo = this.tax_info,
         shippingAddress = this.shipping_address,
         billingAddress = this.billing_address,
-        discount = this.discount?.let { Json.decodeFromString(it) }
+        discount = this.discount?.let { Json.decodeFromString(it) },
+        synced = this.synced == 1L,
+        orderRefId = this.order_ref_id,
     )
 }
 

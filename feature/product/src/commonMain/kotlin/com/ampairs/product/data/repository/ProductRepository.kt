@@ -17,6 +17,7 @@ import com.ampairs.product.domain.ProductSummary
 import com.ampairs.product.domain.ProductType
 import com.ampairs.product.domain.ProductVariant
 import com.ampairs.product.domain.ServiceType
+import com.ampairs.product.domain.VariantOption
 import com.ampairs.product.domain.asDomainModel
 import com.ampairs.product.domain.toDomain
 import com.ampairs.product.domain.toDomainList
@@ -84,6 +85,26 @@ class ProductRepository(
 
     override suspend fun getByIds(ids: List<String>): List<ProductSummary> =
         productDao.productsByIds(ids).map { it.asDomainModel().toSummary() }
+
+    override suspend fun searchSummaries(term: String, limit: Int): List<ProductSummary> {
+        val entities = if (term.isBlank()) {
+            productDao.headProducts(limit.toLong())
+        } else {
+            productDao.searchForEntry(term.trim(), limit.toLong())
+        }
+        return entities.map { it.asDomainModel().toSummary() }
+    }
+
+    override suspend fun variantsForProduct(productId: String): List<VariantOption> =
+        variantDao.getProductVariants(productId)
+            .filter { it.active == 1 }
+            .map { v ->
+                VariantOption(
+                    sku = v.sku,
+                    label = v.variantName,
+                    sellingPrice = v.sellingPrice,
+                )
+            }
 
     override suspend fun clearCache() { productDao.deleteAll() }
 

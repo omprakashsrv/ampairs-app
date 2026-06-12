@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun OrderPaneScreen(
     onOrderEdit: (orderId: String?) -> Unit,
+    onOpenInvoice: (invoiceId: String) -> Unit = {},
     ordersViewModel: OrdersViewModel = metroViewModel(),
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
@@ -39,6 +40,8 @@ fun OrderPaneScreen(
                         }
                     },
                     onCreateOrder = { onOrderEdit(null) },
+                    selectedOrderId = navigator.currentDestination?.contentKey,
+                    expanded = navigator.scaffoldDirective.maxHorizontalPartitions > 1,
                     viewModel = ordersViewModel
                 )
             }
@@ -48,18 +51,16 @@ fun OrderPaneScreen(
                 val orderId = navigator.currentDestination?.contentKey ?: ""
                 OrderViewScreen(
                     orderId = orderId,
-                    onNavigateBack = { navigateBackOrderId ->
-                        if (!navigateBackOrderId.isNullOrEmpty()) {
-                            onOrderEdit(navigateBackOrderId)
-                        } else {
-                            if (navigator.canNavigateBack()) {
-                                scope.launch {
-                                    navigator.navigateBack()
-                                }
-                            }
+                    onOpenInvoice = onOpenInvoice,
+                    onEdit = { id -> onOrderEdit(id) },
+                    onNavigateBack = {
+                        if (navigator.canNavigateBack()) {
+                            scope.launch { navigator.navigateBack() }
                         }
                     },
-                    viewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory> { create(orderId) }
+                    // key by id — without it the pane reuses the first document's ViewModel
+                    // for every subsequent row selection
+                    viewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory>(key = orderId) { create(orderId) }
                 )
             }
         }

@@ -140,32 +140,68 @@ fun TaxInvoiceView(
 
             Spacer(Modifier.height(12.dp))
             HorizontalDivider()
-            // Header row
+            // Header row — split tax columns per scenario (spec 010 v2, invoice screen)
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                Cell("#", 0.08f)
-                Cell("Item", 0.32f, align = TextAlign.Start)
-                Cell("HSN", 0.14f)
-                Cell("Qty", 0.14f, align = TextAlign.End)
-                Cell("Taxable", 0.16f, align = TextAlign.End)
-                Cell("Amount", 0.16f, align = TextAlign.End)
+                Cell("#", 0.06f)
+                Cell("Item / HSN", 0.28f, align = TextAlign.Start)
+                Cell("Qty", 0.12f, align = TextAlign.End)
+                Cell("Taxable", 0.14f, align = TextAlign.End)
+                if (inter) {
+                    Cell("IGST", 0.20f, align = TextAlign.End)
+                } else {
+                    Cell("CGST", 0.10f, align = TextAlign.End)
+                    Cell("SGST", 0.10f, align = TextAlign.End)
+                }
+                Cell("Amount", 0.20f, align = TextAlign.End)
             }
             HorizontalDivider()
             invoice.items.forEachIndexed { index, item ->
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Cell("${index + 1}", 0.08f)
+                    Cell("${index + 1}", 0.06f)
                     Cell(
-                        item.description + (item.variantSku?.let { " ($it)" } ?: ""),
-                        0.32f, align = TextAlign.Start
+                        item.description + (item.variantSku?.let { " ($it)" } ?: "") +
+                            (item.product?.taxCode?.takeIf { it.isNotBlank() }?.let { "  $it" } ?: ""),
+                        0.28f, align = TextAlign.Start
                     )
-                    Cell(item.product?.taxCode ?: "", 0.14f)
-                    Cell("${item.quantity.toDecimal()} ${item.unitName}".trim(), 0.14f, align = TextAlign.End)
-                    Cell(item.basePrice.toDecimal(), 0.16f, align = TextAlign.End)
-                    Cell(item.totalCost.toDecimal(), 0.16f, align = TextAlign.End, bold = true)
+                    Cell("${item.quantity.toDecimal()} ${item.unitName}".trim(), 0.12f, align = TextAlign.End)
+                    Cell(item.basePrice.toDecimal(), 0.14f, align = TextAlign.End)
+                    if (inter) {
+                        Cell(item.totalTax.toDecimal(), 0.20f, align = TextAlign.End)
+                    } else {
+                        val half = item.totalTax / 2.0
+                        Cell(half.toDecimal(), 0.10f, align = TextAlign.End)
+                        Cell((item.totalTax - half).toDecimal(), 0.10f, align = TextAlign.End)
+                    }
+                    Cell(item.totalCost.toDecimal(), 0.20f, align = TextAlign.End, bold = true)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
 
             Spacer(Modifier.height(12.dp))
+            // Tax summary grouped by rate (spec 010 v2)
+            val byRate = invoice.items
+                .filter { it.taxInfos.isNotEmpty() }
+                .groupBy { it.taxInfos.sumOf { ti -> ti.percentage } }
+                .toList().sortedBy { it.first }
+            if (byRate.isNotEmpty()) {
+                Text(
+                    "TAX SUMMARY (BY RATE)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                byRate.forEach { (rate, items) ->
+                    val taxable = items.sumOf { it.basePrice }
+                    val tax = items.sumOf { it.totalTax }
+                    val label = if (inter) {
+                        "IGST ${rate.toDecimal()}% on ${taxable.toDecimal()}"
+                    } else {
+                        "CGST ${(rate / 2).toDecimal()}% + SGST ${(rate / 2).toDecimal()}% on ${taxable.toDecimal()}"
+                    }
+                    TotalRow(label, tax.toDecimal())
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             // Totals
             TotalRow("Taxable subtotal", invoice.basePrice.toDecimal())
             invoice.discount?.sumOf { it.value }?.takeIf { it > 0 }?.let {

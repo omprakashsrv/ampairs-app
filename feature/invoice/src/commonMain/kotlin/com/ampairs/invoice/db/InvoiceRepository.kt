@@ -7,6 +7,8 @@ import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
 import com.ampairs.invoice.db.entity.InvoiceEntity
 import com.ampairs.invoice.db.entity.InvoiceItemEntity
+import com.ampairs.invoice.db.model.TaxInfoEntity
+import com.ampairs.invoice.db.model.toDomainModel
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.domain.InvoiceItem
@@ -62,6 +64,16 @@ class InvoiceRepository(
     private suspend fun markPending() =
         syncStateDao.markPendingPush(SyncEntity.INVOICE, Clock.System.now().toEpochMilliseconds())
 
+    /**
+     * Live "number on save" preview for the editor header (spec 010 v2): the next strictly
+     * sequential number in [series] formatted exactly as [assignNumber] will assign it.
+     */
+    suspend fun nextNumberPreview(series: String?): String {
+        val s = series?.ifBlank { null } ?: DEFAULT_SERIES
+        val seq = (invoiceDao.maxSequenceForSeries(s) ?: 0L) + 1L
+        return "$s/" + seq.toString().padStart(4, '0')
+    }
+
     suspend fun getInvoice(id: String): Invoice {
         val entity = invoiceDao.selectById(id) ?: return Invoice()
         val itemEntities = invoiceItemDao.getInvoiceItems(id)
@@ -95,11 +107,47 @@ class InvoiceRepository(
                 }
             } ?: item.discount
             item.discountPercent = item.discount.firstOrNull()?.percent ?: 0.0
+            // restore the stored per-line GST breakdown — drives the tax-invoice columns/summary
+            item.taxInfos = itemEntity.tax_info?.takeIf { it.isNotBlank() }
+                ?.let { Json.decodeFromString<List<TaxInfoEntity>>(it).toDomainModel() }
+                ?: item.taxInfos
+            // restore unit-of-measure state (spec 010 FR-014) + the price-override flag
+            item.unitId = itemEntity.unit_id
+            item.baseQuantity = itemEntity.base_quantity
+            item.unitMultiplier =
+                if (itemEntity.quantity > 0.0 && itemEntity.base_quantity > 0.0) itemEntity.base_quantity / itemEntity.quantity else 1.0
+            item.variantSku = itemEntity.variant_sku
+            item.priceOverridden =
+                kotlin.math.abs(itemEntity.selling_price - itemEntity.product_price * item.unitMultiplier) > 0.005
             item
         }.toMutableList()
 
+        // The customer assignments above fire the legacy toCustomer setter, which re-derives
+        // taxSpec incorrectly. The persisted tax data is authoritative — restore it last.
+        (invoice.taxInfos?.firstOrNull() ?: invoice.items.firstOrNull()?.taxInfos?.firstOrNull())
+            ?.let { invoice.taxSpec = it.taxSpec }
         return invoice
     }
+
+    /** Whether the row has reached the server (drives the invoice view's sync chip). */
+    suspend fun isInvoiceSynced(id: String): Boolean = invoiceDao.selectById(id)?.synced == 1L
+
+    /** Lightweight number lookup for cross-links (e.g. the order view's linked-invoice chip). */
+    suspend fun getInvoiceNumber(id: String): String? =
+        invoiceDao.selectById(id)?.invoice_number?.ifBlank { null }
+
+    /** Invoice list v2: search (number/buyer/seller) + status / from-order / offline filters. */
+    fun getInvoicesFiltered(
+        searchText: String,
+        status: String,
+        fromOrderOnly: Boolean,
+        unsyncedOnly: Boolean,
+    ): PagingSource<Int, InvoiceEntity> = invoiceDao.getInvoicesFilteredPagingSource(
+        searchText = searchText.trim(),
+        status = status,
+        fromOrderOnly = if (fromOrderOnly) 1 else 0,
+        unsyncedOnly = if (unsyncedOnly) 1 else 0,
+    )
 
     fun getInvoicePaging(searchText: String): PagingSource<Int, InvoiceEntity> {
         return if (searchText.isBlank()) {

@@ -52,4 +52,154 @@
     <string name="inv_cust_select">Select</string>
     <string name="inv_cust_title">Select customer</string>
     <string name="inv_cust_search">Search customers…</string>
+
+    <!-- ─── Shared v2 fast-entry editor (spec 010, prototype-v2) — used by order AND invoice ─── -->
+    <!-- Command bar composer -->
+    <string name="doc_cmd_placeholder">Type to add — “parle 5 box 10%” · scan barcode · Enter adds</string>
+    <string name="doc_cmd_placeholder_compact">Type or scan to add…</string>
+    <string name="doc_cmd_a11y">Add line. Type product, quantity, unit and discount, then press Enter.</string>
+    <string name="doc_cmd_added">Added %1$s</string>
+    <string name="doc_cmd_create">Create “%1$s”</string>
+    <string name="doc_cmd_create_sub">Add a new product to the catalog</string>
+    <string name="doc_cmd_hint_qty_unit">qty + unit</string>
+    <string name="doc_cmd_hint_qty_unit_example">parle 5 box</string>
+    <string name="doc_cmd_hint_discount">line discount</string>
+    <string name="doc_cmd_hint_discount_example">10%</string>
+    <string name="doc_cmd_hint_price">price override</string>
+    <string name="doc_cmd_hint_price_example">@380</string>
+    <string name="doc_cmd_hint_scan">barcode adds · rescan +1</string>
+    <string name="doc_cmd_hint_scan_example">scan</string>
+    <string name="doc_cmd_hint_keys">↑↓ choose · Enter add</string>
+    <string name="doc_cmd_hsn_gst">HSN %1$s · GST %2$s</string>
+
+    <!-- Header band -->
+    <string name="doc_head_customer">Customer · place of supply</string>
+    <string name="doc_head_date">Date</string>
+    <string name="doc_head_pricing">Pricing · workspace</string>
+    <string name="doc_head_invoice_no">Invoice no. (on save)</string>
+    <string name="doc_head_select_customer">Select customer</string>
+    <string name="doc_head_walk_in">walk-in</string>
+    <string name="doc_price_exclusive">Tax-exclusive</string>
+    <string name="doc_price_inclusive">Tax-inclusive</string>
+    <string name="doc_scenario_intra_short">CGST+SGST</string>
+    <string name="doc_scenario_inter_short">IGST</string>
+    <string name="doc_open_settings_cd">Open business settings</string>
+
+    <!-- Line grid / cards -->
+    <string name="doc_col_product">Product</string>
+    <string name="doc_col_variant">Variant</string>
+    <string name="doc_col_unit">Unit</string>
+    <string name="doc_col_qty">Qty</string>
+    <string name="doc_col_price">Unit price</string>
+    <string name="doc_col_disc">Disc</string>
+    <string name="doc_col_taxable">Taxable</string>
+    <string name="doc_col_gst">GST</string>
+    <string name="doc_col_total">Line total</string>
+    <string name="doc_grid_footer_hint">Add lines from the bar above — Tab edits cells in place</string>
+    <string name="doc_line_exempt">exempt</string>
+    <string name="doc_line_remove_cd">Remove line</string>
+    <string name="doc_line_hsn">HSN %1$s</string>
+    <string name="doc_stepper_minus_cd">Decrease quantity</string>
+    <string name="doc_stepper_plus_cd">Increase quantity</string>
+    <string name="doc_line_none">—</string>
+
+    <!-- Per-line editor sheet -->
+    <string name="doc_sheet_title">Edit line</string>
+    <string name="doc_sheet_delete">Delete</string>
+    <string name="doc_sheet_done">Done</string>
+    <string name="doc_sheet_variant">Variant</string>
+    <string name="doc_sheet_variant_none">— none —</string>
+    <string name="doc_sheet_unit">Unit</string>
+    <string name="doc_sheet_quantity">Quantity</string>
+    <string name="doc_sheet_price">Unit price ✎</string>
+    <string name="doc_sheet_discount">Line discount</string>
+    <string name="doc_sheet_overridden">Price overridden — catalog was %1$s</string>
+    <string name="doc_sheet_conv_base">Base unit · %1$d decimals allowed</string>
+    <string name="doc_sheet_conv">1 %1$s = %2$s %3$s · %4$s/%1$s · %5$d decimals</string>
+    <string name="doc_sheet_base_qty">→ base qty %1$s %2$s</string>
+    <string name="doc_sheet_change_product_cd">Change product</string>
+
+    <!-- Totals / GST breakdown panel -->
+    <string name="doc_tot_subtotal">Subtotal · %1$d items</string>
+    <string name="doc_tot_line_discounts">Line discounts</string>
+    <string name="doc_tot_overall">Overall discount</string>
+    <string name="doc_tot_mode_pre">apportioned pre-tax</string>
+    <string name="doc_tot_mode_post">post-tax reduction</string>
+    <string name="doc_tot_apportioned">— apportioned across lines</string>
+    <string name="doc_tot_taxable">Taxable value</string>
+    <string name="doc_tot_gst">GST</string>
+    <string name="doc_tot_total_intra">Total CGST + SGST</string>
+    <string name="doc_tot_total_inter">Total IGST</string>
+    <string name="doc_tot_overall_post">Overall discount (post-tax)</string>
+    <string name="doc_tot_grand">Grand total</string>
+    <string name="doc_tot_reconciles">Reconciles · taxable + GST = grand total</string>
+    <string name="doc_tot_reconciles_post">Reconciles · taxable + GST − discount = grand total</string>
+    <string name="doc_tot_intra_chip">Intra-state (CGST + SGST)</string>
+    <string name="doc_tot_inter_chip">Inter-state (IGST)</string>
+    <string name="doc_tot_tax_row_a11y">%1$s at %2$s percent, %3$s</string>
+    <string name="doc_tot_grand_a11y">Grand total %1$s</string>
+    <string name="doc_tot_expand_cd">Show GST breakdown</string>
+
+    <!-- Customer picker + walk-in -->
+    <string name="doc_cust_title">Select customer</string>
+    <string name="doc_cust_search">Search name, phone, GSTIN…</string>
+    <string name="doc_cust_clear_cd">Clear search</string>
+    <string name="doc_cust_unregistered">unregistered</string>
+    <string name="doc_cust_walkin_new">New walk-in “%1$s”</string>
+    <string name="doc_cust_walkin_sub">Capture name + phone, GSTIN optional</string>
+    <string name="doc_cust_walkin_btn">New walk-in customer</string>
+    <string name="doc_cust_walkin_title">Walk-in customer</string>
+    <string name="doc_cust_walkin_name">Name</string>
+    <string name="doc_cust_walkin_phone">Phone</string>
+    <string name="doc_cust_walkin_gstin">GSTIN / state (optional)</string>
+    <string name="doc_cust_walkin_use">Use customer</string>
+    <string name="doc_cust_walkin_back">Back</string>
+    <string name="doc_cust_walkin_hint">No GSTIN → place-of-supply defaults to the seller state; GST is intra-state.</string>
+
+    <!-- Inline create product (4 fields) -->
+    <string name="doc_create_title">New product</string>
+    <string name="doc_create_name">Product name</string>
+    <string name="doc_create_price">Selling price ₹</string>
+    <string name="doc_create_unit">Base unit</string>
+    <string name="doc_create_hsn">HSN / tax code</string>
+    <string name="doc_create_gst_chip">→ GST %1$s</string>
+    <string name="doc_create_exempt_note">Blank tax code is allowed — the line will be flagged 0% / exempt, never silently untaxed.</string>
+    <string name="doc_create_offline_note">Saves to the catalog offline (PENDING_PUSH), then drops in as a line.</string>
+    <string name="doc_create_confirm">Create &amp; add</string>
+    <string name="doc_create_cancel">Cancel</string>
+
+    <!-- Save / sync -->
+    <string name="doc_save">Save</string>
+    <string name="doc_sync_offline">Saved offline</string>
+    <string name="doc_sync_syncing">Syncing…</string>
+    <string name="doc_sync_synced">Synced</string>
+    <string name="doc_sync_failed">Sync failed</string>
+    <string name="doc_sync_retry">Retry</string>
+
+    <!-- Product picker (line product change) -->
+    <string name="doc_pick_title">Select product</string>
+    <string name="doc_pick_search">Search product or HSN…</string>
+
+    <!-- Invoice list v2 (docs/design/order-list-and-view, mirrored) -->
+    <string name="inv_list_search_hint">Search number or customer…</string>
+    <string name="inv_list_filter_all">All</string>
+    <string name="inv_list_filter_draft">Draft</string>
+    <string name="inv_list_filter_new">New</string>
+    <string name="inv_list_filter_invoiced">Invoiced</string>
+    <string name="inv_list_filter_from_order">From order</string>
+    <string name="inv_list_filter_offline">Offline</string>
+    <string name="inv_list_empty_cta">Create your first invoice</string>
+    <string name="inv_list_no_match_title">No invoices match</string>
+    <string name="inv_list_no_match_desc">Try a different search or clear the filters</string>
+    <string name="inv_list_clear_filters">Clear filters</string>
+    <string name="inv_list_items">%1$d items</string>
+    <string name="inv_list_offline_cd">Saved offline</string>
+    <string name="inv_list_from_order_hint">← from order</string>
+    <string name="inv_list_retry">Retry</string>
+
+    <!-- Invoice view v2 (post-save landing) -->
+    <string name="inv_view_draft">draft</string>
+    <string name="inv_view_view_order">View order</string>
+    <string name="inv_view_print_cd">Print</string>
+    <string name="inv_view_qty_caption">%1$d items · %2$s qty</string>
 </resources>

@@ -13,6 +13,7 @@ import com.ampairs.common.model.UiState
 import com.ampairs.product.domain.Constants.Companion.PAGE_SIZE
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.db.dto.asDomainModel
+import com.ampairs.order.domain.OrderStatus
 import kotlinx.coroutines.flow.map
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
@@ -25,6 +26,19 @@ import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
+/**
+ * Single-select list filter (docs/design/order-list-and-view): status chips, plus the two
+ * cross-cutting views the order desk actually needs — converted orders and not-yet-pushed rows.
+ */
+enum class OrderListFilter(val status: OrderStatus? = null) {
+    ALL,
+    DRAFT(OrderStatus.DRAFT),
+    NEW(OrderStatus.NEW),
+    ORDERED(OrderStatus.ORDERED),
+    INVOICED,
+    OFFLINE,
+}
+
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
@@ -34,6 +48,7 @@ class OrdersViewModel(
 ) : ViewModel() {
 
     var searchText by mutableStateOf("")
+    var filter by mutableStateOf(OrderListFilter.ALL)
     val ordersState = mutableStateOf<UiState<Boolean>>(UiState.Empty)
 
     init {
@@ -50,12 +65,23 @@ class OrdersViewModel(
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.ORDER))
     }
 
+    fun retrySync() {
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.ORDER))
+    }
+
+    // The paging source factory reads the current search/filter on each invalidation —
+    // the screen calls orders.refresh() after changing either.
     val orders = Pager(config = PagingConfig(
         pageSize = PAGE_SIZE,
         prefetchDistance = 10,
         initialLoadSize = PAGE_SIZE,
     ), pagingSourceFactory = {
-        orderRepository.getOrders(searchText)
+        orderRepository.getOrdersFiltered(
+            searchText = searchText,
+            status = filter.status?.name ?: "",
+            invoicedOnly = filter == OrderListFilter.INVOICED,
+            unsyncedOnly = filter == OrderListFilter.OFFLINE,
+        )
     }).flow.map { pagingData -> pagingData.map { it.asDomainModel() } }
         .cachedIn(viewModelScope)
 }

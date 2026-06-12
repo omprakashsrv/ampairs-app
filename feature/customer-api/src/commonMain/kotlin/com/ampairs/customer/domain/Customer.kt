@@ -67,7 +67,10 @@ data class CustomerListItem(
     val phone: String?,
     val email: String?,
     val city: String?,
-    val primaryThumbnailUrl: String? = null
+    val primaryThumbnailUrl: String? = null,
+    // Picker rows in the order/invoice editor show the GST scenario vs the seller (spec 010 v2).
+    val gstin: String? = null,
+    val state: String? = null,
 )
 
 fun Customer.toListItem(primaryThumbnailUrl: String? = null): CustomerListItem = CustomerListItem(
@@ -76,5 +79,7 @@ fun Customer.toListItem(primaryThumbnailUrl: String? = null): CustomerListItem =
     phone = phone,
     email = email,
     city = city,
-    primaryThumbnailUrl = primaryThumbnailUrl
+    primaryThumbnailUrl = primaryThumbnailUrl,
+    gstin = gstNumber,
+    state = state,
 )

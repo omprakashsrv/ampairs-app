@@ -113,6 +113,28 @@ interface InvoiceDao {
     @Query("SELECT * FROM invoiceEntity WHERE invoice_number LIKE '%' || :searchText || '%' AND active = 1 ORDER BY invoice_date DESC")
     fun getInvoicesBySearchPagingSource(searchText: String): PagingSource<Int, InvoiceEntity>
 
+    // Invoice list v2 (docs/design/order-list-and-view, mirrored): one search box matches the
+    // number and the buyer/seller names; status / from-order / offline predicates compose on top.
+    @Query(
+        """
+        SELECT * FROM invoiceEntity
+        WHERE active = 1
+          AND (:searchText = '' OR invoice_number LIKE '%' || :searchText || '%'
+               OR to_customer_name LIKE '%' || :searchText || '%'
+               OR from_customer_name LIKE '%' || :searchText || '%')
+          AND (:status = '' OR status = :status)
+          AND (:fromOrderOnly = 0 OR (order_ref_id IS NOT NULL AND order_ref_id != ''))
+          AND (:unsyncedOnly = 0 OR synced = 0)
+        ORDER BY invoice_date DESC
+        """
+    )
+    fun getInvoicesFilteredPagingSource(
+        searchText: String,
+        status: String,
+        fromOrderOnly: Int,
+        unsyncedOnly: Int,
+    ): PagingSource<Int, InvoiceEntity>
+
     @Query("SELECT * FROM invoiceEntity WHERE status = :status AND active = 1 ORDER BY invoice_date DESC")
     fun getInvoicesByStatusPagingSource(status: String): PagingSource<Int, InvoiceEntity>
 

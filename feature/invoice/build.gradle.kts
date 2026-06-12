@@ -27,6 +27,7 @@ kotlin {
             dependencies {
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
+                implementation(libs.kotlinx.dateTime)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
@@ -53,6 +54,11 @@ kotlin {
                 implementation(libs.material3.adaptive)
                 implementation(libs.material3.adaptive.layout)
                 implementation(libs.material3.adaptive.navigation)
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
             }
         }
         androidMain {

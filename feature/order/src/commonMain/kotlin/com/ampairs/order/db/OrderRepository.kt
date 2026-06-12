@@ -38,9 +38,16 @@ class OrderRepository(
 ) {
     @Transaction
     suspend fun saveOrder(orderEntity: OrderEntity, orderItems: List<OrderItemEntity>) {
-        orderDao.insert(orderEntity.copy(synced = 0))
+        val numbered = if (orderEntity.order_number.isBlank()) assignOrderNumber(orderEntity) else orderEntity
+        orderDao.insert(numbered.copy(synced = 0))
         orderItemDao.insertAll(orderItems)
         markPending()
+    }
+
+    /** Client-assigned sequential order number at save (design v2 flow): ORD-0001, ORD-0002, … */
+    private suspend fun assignOrderNumber(entity: OrderEntity): OrderEntity {
+        val seq = (orderDao.maxOrderSequence() ?: 0L) + 1L
+        return entity.copy(order_number = "ORD-" + seq.toString().padStart(4, '0'))
     }
 
     suspend fun saveOrder(order: Order?) {
@@ -66,7 +73,8 @@ class OrderRepository(
             throw Error("No order found with id $id")
         }
 
-        val orderDomain = orderWithItems.order.asDomainModel()
+        // Map the full aggregate (order + items) — the OrderEntity-only mapper sets items = empty.
+        val orderDomain = orderWithItems.asDomainModel()
         orderDomain.fromCustomer =
             orderDomain.fromCustomer?.uid?.let { customerDataService.getById(it) }
                 ?: orderDomain.fromCustomer
@@ -76,14 +84,34 @@ class OrderRepository(
 
         val products =
             productDataService.getByIds(orderWithItems.orderItems.map { it.product_id })
-        orderDomain.items.forEach {
-            val product = products.find { product -> product.id == it.product?.id }
-            it.product = product ?: it.product
+        orderDomain.items.forEach { item ->
+            // Loaded items carry only productId — re-attach the catalog product (name/HSN/variants).
+            item.product = products.find { product -> product.id == item.productId } ?: item.product
         }
+        // The customer assignments above fire the legacy toCustomer setter, which re-derives
+        // taxSpec incorrectly. The persisted tax data is authoritative — restore it last.
+        (orderDomain.taxInfos?.firstOrNull() ?: orderDomain.items.firstOrNull()?.taxInfos?.firstOrNull())
+            ?.let { orderDomain.taxSpec = it.taxSpec }
         return orderDomain
     }
 
     fun getOrders(searchText: String): PagingSource<Int, OrderEntity> {
         return orderDao.getOrdersBySearchPagingSource(searchText)
     }
+
+    /** Whether the row has reached the server (drives the order view's sync chip). */
+    suspend fun isOrderSynced(id: String): Boolean = orderDao.selectById(id)?.synced == 1L
+
+    /** Order list v2: search (number/buyer/seller) + status / invoiced / offline filters. */
+    fun getOrdersFiltered(
+        searchText: String,
+        status: String,
+        invoicedOnly: Boolean,
+        unsyncedOnly: Boolean,
+    ): PagingSource<Int, OrderEntity> = orderDao.getOrdersFilteredPagingSource(
+        searchText = searchText.trim(),
+        status = status,
+        invoicedOnly = if (invoicedOnly) 1 else 0,
+        unsyncedOnly = if (unsyncedOnly) 1 else 0,
+    )
 }

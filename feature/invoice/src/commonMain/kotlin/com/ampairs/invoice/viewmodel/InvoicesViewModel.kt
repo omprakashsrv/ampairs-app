@@ -8,7 +8,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
+import androidx.paging.map
 import com.ampairs.common.model.UiState
+import com.ampairs.invoice.db.dto.asDomainModel
+import com.ampairs.invoice.domain.InvoiceStatus
+import kotlinx.coroutines.flow.map
 import com.ampairs.product.domain.Constants.Companion.PAGE_SIZE
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.common.di.WorkspaceScope
@@ -22,6 +26,19 @@ import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
+/**
+ * Single-select list filter (docs/design/order-list-and-view, mirrored for invoices): status
+ * chips, plus the two cross-cutting views — converted-from-order rows and not-yet-pushed rows.
+ */
+enum class InvoiceListFilter(val status: InvoiceStatus? = null) {
+    ALL,
+    DRAFT(InvoiceStatus.DRAFT),
+    NEW(InvoiceStatus.NEW),
+    INVOICED(InvoiceStatus.INVOICEED),
+    FROM_ORDER,
+    OFFLINE,
+}
+
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
@@ -31,6 +48,7 @@ class InvoicesViewModel(
 ) : ViewModel() {
 
     var searchText by mutableStateOf("")
+    var filter by mutableStateOf(InvoiceListFilter.ALL)
     val invoicesState = mutableStateOf<UiState<Boolean>>(UiState.Empty)
 
     init {
@@ -47,12 +65,23 @@ class InvoicesViewModel(
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.INVOICE))
     }
 
+    fun retrySync() {
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.INVOICE))
+    }
+
+    // The paging source factory reads the current search/filter on each invalidation —
+    // the screen calls invoices.refresh() after changing either.
     val invoices = Pager(config = PagingConfig(
         pageSize = PAGE_SIZE,
         prefetchDistance = 10,
         initialLoadSize = PAGE_SIZE,
     ), pagingSourceFactory = {
-        invoiceRepository.getInvoicePaging(searchText)
-    }).flow
+        invoiceRepository.getInvoicesFiltered(
+            searchText = searchText,
+            status = filter.status?.name ?: "",
+            fromOrderOnly = filter == InvoiceListFilter.FROM_ORDER,
+            unsyncedOnly = filter == InvoiceListFilter.OFFLINE,
+        )
+    }).flow.map { pagingData -> pagingData.map { it.asDomainModel() } }
         .cachedIn(viewModelScope)
 }

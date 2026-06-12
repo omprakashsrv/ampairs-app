@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun InvoicePaneScreen(
     onInvoiceEdit: (invoiceId: String?) -> Unit,
+    onOpenOrder: (orderId: String) -> Unit = {},
     invoicesViewModel: InvoicesViewModel = metroViewModel(),
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
@@ -39,7 +40,9 @@ fun InvoicePaneScreen(
                             navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, selectedInvoiceId)
                         }
                     },
-                    onCreateInvoice = { onInvoiceEdit(null) }
+                    onCreateInvoice = { onInvoiceEdit(null) },
+                    selectedInvoiceId = navigator.currentDestination?.contentKey,
+                    expanded = navigator.scaffoldDirective.maxHorizontalPartitions > 1,
                 )
             }
         },
@@ -48,16 +51,14 @@ fun InvoicePaneScreen(
                 val invoiceId = navigator.currentDestination?.contentKey ?: ""
                 InvoiceViewScreen(
                     invoiceId = invoiceId,
-                    viewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory> { create(invoiceId) },
-                    onNavigateBack = { navigatedInvoiceId ->
-                        if (!navigatedInvoiceId.isNullOrEmpty()) {
-                            onInvoiceEdit(navigatedInvoiceId)
-                        } else {
-                            if (navigator.canNavigateBack()) {
-                                scope.launch {
-                                    navigator.navigateBack()
-                                }
-                            }
+                    // key by id — without it the pane reuses the first document's ViewModel
+                    // for every subsequent row selection
+                    viewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory>(key = invoiceId) { create(invoiceId) },
+                    onOpenOrder = onOpenOrder,
+                    onEdit = { id -> onInvoiceEdit(id) },
+                    onNavigateBack = {
+                        if (navigator.canNavigateBack()) {
+                            scope.launch { navigator.navigateBack() }
                         }
                     }
                 )

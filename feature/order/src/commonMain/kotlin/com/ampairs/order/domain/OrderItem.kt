@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.order.db.entity.OrderItemEntity
+import com.ampairs.order.db.model.TaxInfoEntity
+import com.ampairs.order.db.model.toDomainModel
 import com.ampairs.product.domain.ProductSummary
 import kotlinx.serialization.json.Json
 
@@ -27,13 +29,24 @@ class OrderItem(var product: ProductSummary?) {
     var baseQuantity: Double by mutableStateOf(product?.quantity ?: 0.0)
     var variantSku: String? = null
 
+    /** True once the user manually edited the unit price (spec 010 FR-016/C3). */
+    var priceOverridden: Boolean = false
+
     /** Switch the line's unit of measure, rescaling the per-unit price and base quantity. */
     fun selectUnit(unitId: String, name: String, multiplier: Double) {
         this.unitId = unitId
         this.unitName = name
         this.unitMultiplier = if (multiplier > 0.0) multiplier else 1.0
-        this.price = productPrice * this.unitMultiplier
+        if (!priceOverridden) this.price = productPrice * this.unitMultiplier
         this.baseQuantity = quantity * this.unitMultiplier
+        updateTotal()
+    }
+
+    /** Apply a variant: re-bases the per-unit price on the variant price unless overridden. */
+    fun selectVariant(sku: String?, variantPrice: Double?) {
+        this.variantSku = sku
+        this.productPrice = variantPrice ?: product?.sellingPrice ?: productPrice
+        if (!priceOverridden) this.price = productPrice * unitMultiplier
         updateTotal()
     }
 
@@ -127,13 +140,23 @@ fun List<OrderItemEntity>.asItemsDomainModel(): List<OrderItem> {
         orderItem1.totalTax = orderItem.total_tax
         orderItem1.active = orderItem.active == 1
         orderItem1.softDeleted = orderItem.soft_deleted == 1
-        orderItem1.taxInfos = Json.decodeFromString(orderItem.tax_info ?: "")
-        orderItem1.discount = Json.decodeFromString(orderItem.discount ?: "")
+        // tax_info is persisted as List<TaxInfoEntity> (domain TaxInfo is not @Serializable);
+        // both blobs are nullable — never decode a null/blank string.
+        orderItem1.taxInfos = orderItem.tax_info?.takeIf { it.isNotBlank() }
+            ?.let { Json.decodeFromString<List<TaxInfoEntity>>(it).toDomainModel() }
+            ?: emptyList()
+        orderItem.discount?.takeIf { it.isNotBlank() }
+            ?.let { Json.decodeFromString<List<Discount>>(it) }
+            ?.let { orderItem1.discount.addAll(it) }
+        orderItem1.discountPercent = orderItem1.discount.firstOrNull()?.percent ?: 0.0
         orderItem1.unitId = orderItem.unit_id
         orderItem1.baseQuantity = orderItem.base_quantity
         orderItem1.unitMultiplier =
             if (orderItem.quantity > 0.0 && orderItem.base_quantity > 0.0) orderItem.base_quantity / orderItem.quantity else 1.0
         orderItem1.variantSku = orderItem.variant_sku
+        // derive the override flag: price differs from the unit-scaled catalog price
+        orderItem1.priceOverridden =
+            kotlin.math.abs(orderItem.selling_price - orderItem.product_price * orderItem1.unitMultiplier) > 0.005
         orderItem1
     }
 }

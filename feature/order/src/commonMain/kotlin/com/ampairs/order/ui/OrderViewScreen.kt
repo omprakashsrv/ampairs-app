@@ -1,59 +1,73 @@
 package com.ampairs.order.ui
 
 import ampairsapp.feature.order.generated.resources.Res
+import ampairsapp.feature.order.generated.resources.ord_conv_cancel
+import ampairsapp.feature.order.generated.resources.ord_conv_confirm
+import ampairsapp.feature.order.generated.resources.ord_conv_line1
+import ampairsapp.feature.order.generated.resources.ord_conv_line2
+import ampairsapp.feature.order.generated.resources.ord_conv_line3
+import ampairsapp.feature.order.generated.resources.ord_conv_line4
+import ampairsapp.feature.order.generated.resources.ord_conv_note
+import ampairsapp.feature.order.generated.resources.ord_conv_title
+import ampairsapp.feature.order.generated.resources.ord_view_bill_to
 import ampairsapp.feature.order.generated.resources.ord_view_cd_back
-import ampairsapp.feature.order.generated.resources.ord_view_title
 import ampairsapp.feature.order.generated.resources.ord_view_cd_edit
 import ampairsapp.feature.order.generated.resources.ord_view_col_particulars
 import ampairsapp.feature.order.generated.resources.ord_view_col_qty
 import ampairsapp.feature.order.generated.resources.ord_view_col_rate
 import ampairsapp.feature.order.generated.resources.ord_view_col_total
 import ampairsapp.feature.order.generated.resources.ord_view_create_invoice
-import ampairsapp.feature.order.generated.resources.ord_conv_title
-import ampairsapp.feature.order.generated.resources.ord_conv_line1
-import ampairsapp.feature.order.generated.resources.ord_conv_line2
-import ampairsapp.feature.order.generated.resources.ord_conv_line3
-import ampairsapp.feature.order.generated.resources.ord_conv_line4
-import ampairsapp.feature.order.generated.resources.ord_conv_note
-import ampairsapp.feature.order.generated.resources.ord_conv_confirm
-import ampairsapp.feature.order.generated.resources.ord_conv_cancel
 import ampairsapp.feature.order.generated.resources.ord_view_discount
-import ampairsapp.feature.order.generated.resources.ord_view_from
-import ampairsapp.feature.order.generated.resources.ord_view_items
+import ampairsapp.feature.order.generated.resources.ord_view_draft
+import ampairsapp.feature.order.generated.resources.ord_view_draft_hint
+import ampairsapp.feature.order.generated.resources.ord_view_edit
+import ampairsapp.feature.order.generated.resources.ord_view_inter_foot
+import ampairsapp.feature.order.generated.resources.ord_view_intra_foot
+import ampairsapp.feature.order.generated.resources.ord_view_line_meta
+import ampairsapp.feature.order.generated.resources.ord_view_unregistered
+import ampairsapp.feature.order.generated.resources.ord_view_from_seller
+import ampairsapp.feature.order.generated.resources.ord_view_grand
+import ampairsapp.feature.order.generated.resources.ord_view_gstin
+import ampairsapp.feature.order.generated.resources.ord_view_qty_caption
 import ampairsapp.feature.order.generated.resources.ord_view_save
-import ampairsapp.feature.order.generated.resources.ord_view_to
+import ampairsapp.feature.order.generated.resources.ord_view_taxable
+import ampairsapp.feature.order.generated.resources.ord_view_title
+import ampairsapp.feature.order.generated.resources.ord_view_view_invoice
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,40 +75,62 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
+import com.ampairs.common.format.toInr
+import com.ampairs.invoice.editor.DocSyncChip
+import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.viewmodel.OrderViewViewModel
-import com.ampairs.ui.components.TableCell
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Order view v2 (docs/design/order-list-and-view) — the post-save landing. Reads like a document:
+ * status band (+ linked-invoice chip), parties, calm line table, GST totals from the stored
+ * taxInfos, mono grand total. Actions: Edit, idempotent Create invoice → View invoice.
+ */
+@OptIn(ExperimentalMaterial3Api::class, kotlin.time.ExperimentalTime::class)
 @Composable
 fun OrderViewScreen(
     orderId: String,
-    onNavigateBack: (orderId: String?) -> Unit,
-    viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory> { create(orderId) }
+    onNavigateBack: () -> Unit,
+    onEdit: (orderId: String) -> Unit = {},
+    onOpenInvoice: (invoiceId: String) -> Unit = {},
+    viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory>(key = orderId) { create(orderId) }
 ) {
     val order = viewModel.order
+    val cs = MaterialTheme.colorScheme
+    val mono = FontFamily.Monospace
     var showConvertConfirm by remember { mutableStateOf(false) }
+    val converted = !order.invoiceRefId.isNullOrEmpty()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    val title = stringResource(Res.string.ord_view_title)
-                    Text(
-                        text = if (!order.orderNumber.isNullOrEmpty()) "$title ${order.orderNumber}" else title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(Res.string.ord_view_title) + " · ",
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = order.orderNumber?.ifBlank { null }
+                                ?: stringResource(Res.string.ord_view_draft),
+                            fontFamily = mono,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onNavigateBack(null) }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.ord_view_cd_back)
@@ -102,7 +138,8 @@ fun OrderViewScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onNavigateBack(order.id) }) {
+                    DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
+                    IconButton(onClick = { onEdit(order.id) }) {
                         Icon(
                             imageVector = Icons.Filled.Edit,
                             contentDescription = stringResource(Res.string.ord_view_cd_edit)
@@ -112,33 +149,22 @@ fun OrderViewScreen(
             )
         },
         bottomBar = {
-            BottomAppBar(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ) {
-                Text(
-                    stringResource(Res.string.ord_view_items, order.totalItems),
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                order.discount?.sumOf { it.value }?.let { discountTotal ->
-                    if (discountTotal > 0) {
-                        Text(
-                            "${stringResource(Res.string.ord_view_discount)}: ${discountTotal.toDecimal()}",
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+            BottomAppBar(containerColor = cs.surfaceContainer) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "₹${order.totalCost.toDecimal()}",
-                        modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        order.totalCost.toInr(),
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontFamily = mono,
+                        fontWeight = FontWeight.SemiBold,
                     )
+                }
+                OutlinedButton(
+                    onClick = { onEdit(order.id) },
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text("  " + stringResource(Res.string.ord_view_edit))
                 }
                 if (order.orderNumber.isNullOrEmpty()) {
                     Button(
@@ -150,14 +176,21 @@ fun OrderViewScreen(
                             CircularProgressIndicator(
                                 modifier = Modifier.progressSemantics().size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = cs.onPrimary
                             )
                         } else {
                             Text(stringResource(Res.string.ord_view_save))
                         }
                     }
-                }
-                if (!order.orderNumber.isNullOrEmpty() && order.invoiceRefId.isNullOrEmpty()) {
+                } else if (converted) {
+                    FilledTonalButton(
+                        onClick = { order.invoiceRefId?.let(onOpenInvoice) },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("  " + stringResource(Res.string.ord_view_view_invoice))
+                    }
+                } else {
                     Button(
                         onClick = { showConvertConfirm = true },
                         enabled = !viewModel.savingOrder,
@@ -167,7 +200,7 @@ fun OrderViewScreen(
                             CircularProgressIndicator(
                                 modifier = Modifier.progressSemantics().size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = cs.onPrimary
                             )
                         } else {
                             Text(stringResource(Res.string.ord_view_create_invoice))
@@ -177,128 +210,204 @@ fun OrderViewScreen(
             }
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+        Box(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
         ) {
-            item {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
+            LazyColumn(
+                modifier = Modifier.widthIn(max = 760.dp).fillMaxSize(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+            ) {
+                // ── status band ──
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                    ) {
+                        StatusChip(order.status.name, invoiced = converted)
+                        if (!order.orderNumber.isNullOrBlank()) {
+                            Text(
+                                order.orderNumber ?: "",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontFamily = mono,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        } else {
+                            Text(
+                                stringResource(Res.string.ord_view_draft_hint),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = cs.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            "· " + formatInstantDate(order.orderDate),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontFamily = mono,
+                            color = cs.onSurfaceVariant,
+                        )
+                        Text(
+                            stringResource(Res.string.ord_view_qty_caption, order.totalItems, order.totalQuantity.toDecimal()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                        if (converted) {
+                            val invoiceNumber = viewModel.linkedInvoiceNumber
+                            AssistChip(
+                                onClick = { order.invoiceRefId?.let(onOpenInvoice) },
+                                leadingIcon = {
+                                    Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null, modifier = Modifier.size(16.dp))
+                                },
+                                label = {
+                                    Text(
+                                        invoiceNumber ?: stringResource(Res.string.ord_view_view_invoice),
+                                        fontFamily = if (invoiceNumber != null) mono else null,
+                                        maxLines = 1,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+
+                // ── parties ──
+                item {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    ) {
+                        PartyCard(
+                            title = stringResource(Res.string.ord_view_from_seller),
+                            name = order.fromCustomer?.name ?: "—",
+                            gstin = order.fromCustomer?.gstNumber,
+                            meta = order.fromCustomer?.state,
+                            modifier = Modifier.weight(1f),
+                        )
+                        PartyCard(
+                            title = stringResource(Res.string.ord_view_bill_to),
+                            name = order.toCustomer?.name ?: "—",
+                            gstin = order.toCustomer?.gstNumber,
+                            meta = listOfNotNull(
+                                order.toCustomer?.phone?.takeIf { it.isNotBlank() },
+                                order.toCustomer?.state?.takeIf { it.isNotBlank() },
+                            ).joinToString(" · ").ifBlank { null },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+
+                // ── line table ──
+                item {
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                        HeaderCell("#", 0.07f)
+                        HeaderCell(stringResource(Res.string.ord_view_col_particulars), 0.43f, TextAlign.Start)
+                        HeaderCell(stringResource(Res.string.ord_view_col_qty), 0.14f, TextAlign.End)
+                        HeaderCell(stringResource(Res.string.ord_view_col_rate), 0.16f, TextAlign.End)
+                        HeaderCell(stringResource(Res.string.ord_view_col_total), 0.20f, TextAlign.End)
+                    }
+                    HorizontalDivider(color = cs.outline)
+                }
+                items(order.items.size) { index ->
+                    val item = order.items[index]
+                    Column {
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                            BodyCell("${index + 1}", 0.07f)
+                            Column(modifier = Modifier.weight(0.43f)) {
                                 Text(
-                                    text = stringResource(Res.string.ord_view_from),
+                                    item.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    stringResource(
+                                        Res.string.ord_view_line_meta,
+                                        item.quantity.toDecimal(),
+                                        item.unitName.ifBlank { "—" },
+                                        item.product?.taxCode?.ifBlank { "—" } ?: "—",
+                                        "${item.taxInfos.sumOf { it.percentage }.toDecimal()}%",
+                                    ),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    color = cs.onSurfaceVariant,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 )
-                                Text(
-                                    text = order.fromCustomer?.name ?: "—",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
+                                if (item.discountPercent > 0.0 || item.discount.sumOf { it.value } > 0.0) {
+                                    Text(
+                                        "${stringResource(Res.string.ord_view_discount)} " +
+                                            (if (item.discountPercent > 0.0) "−${item.discountPercent.toDecimal()}% · " else "−") +
+                                            item.discount.sumOf { it.value }.toInr(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = cs.secondary,
+                                    )
+                                }
                             }
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.End
+                            BodyCell("${item.quantity.toDecimal()} ${item.unitName}".trim(), 0.14f, TextAlign.End)
+                            BodyCell(item.price.toInr(), 0.16f, TextAlign.End, mono = true)
+                            BodyCell(item.totalCost.toInr(), 0.20f, TextAlign.End, mono = true, bold = true)
+                        }
+                        HorizontalDivider(color = cs.outlineVariant)
+                    }
+                }
+
+                // ── totals ──
+                item {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        modifier = Modifier.fillMaxWidth().padding(top = 14.dp)
+                    ) {
+                        Column(modifier = Modifier.widthIn(min = 240.dp)) {
+                            TotalsRow(stringResource(Res.string.ord_view_taxable), order.basePrice.toInr())
+                            // per-rate component groups (orders.jsx vtotals): "CGST 2.5%  ₹195.75"
+                            val groups = order.items.flatMap { it.taxInfos }
+                                .groupBy { it.name to it.percentage }
+                                .map { (k, v) -> Triple(k.first, k.second, v.sumOf { ti -> ti.value ?: 0.0 }) }
+                                .sortedWith(compareBy({ taxNameOrder(it.first) }, { it.second }))
+                            if (groups.isNotEmpty()) {
+                                groups.forEach { (name, pct, amount) ->
+                                    TotalsRow("$name ${pct.toDecimal()}%", amount.toInr())
+                                }
+                            } else {
+                                order.taxInfos.orEmpty().forEach { ti ->
+                                    TotalsRow(ti.name, (ti.value ?: 0.0).toInr())
+                                }
+                            }
+                            order.discount?.sumOf { it.value }?.takeIf { it > 0 }?.let {
+                                TotalsRow(stringResource(Res.string.ord_view_discount), "− ${it.toInr()}")
+                            }
+                            HorizontalDivider(Modifier.padding(vertical = 6.dp), color = cs.outlineVariant)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Bottom,
                             ) {
                                 Text(
-                                    text = stringResource(Res.string.ord_view_to),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    stringResource(Res.string.ord_view_grand),
+                                    style = MaterialTheme.typography.titleMedium,
                                 )
                                 Text(
-                                    text = order.toCustomer?.name ?: "—",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    order.totalCost.toInr(),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontFamily = mono,
                                 )
                             }
                         }
                     }
                 }
-            }
-
-            item {
-                Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min)
-                    ) {
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                        TableCell(
-                            text = stringResource(Res.string.ord_view_col_particulars),
-                            weight = 0.4f,
-                            title = true,
-                            alignment = TextAlign.Start
-                        )
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                        TableCell(text = stringResource(Res.string.ord_view_col_rate), weight = 0.22f, title = true)
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                        TableCell(text = stringResource(Res.string.ord_view_col_qty), weight = 0.18f, title = true)
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                        TableCell(
-                            text = stringResource(Res.string.ord_view_col_total),
-                            weight = 0.3f,
-                            title = true,
-                            alignment = TextAlign.End
-                        )
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                    }
+                item {
+                    Text(
+                        stringResource(Res.string.ord_view_qty_caption, order.totalItems, order.totalQuantity.toDecimal()) +
+                            " · " + stringResource(
+                                if (order.taxSpec == TaxSpec.INTRA) Res.string.ord_view_intra_foot
+                                else Res.string.ord_view_inter_foot
+                            ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cs.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
                 }
-                HorizontalDivider()
+                item { Spacer(Modifier.height(80.dp)) }
             }
-
-            items(order.items.size) { index ->
-                val orderItem = order.items[index]
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min)
-                    ) {
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                        Column(modifier = Modifier.weight(0.4f)) {
-                            Text(
-                                text = orderItem.description,
-                                modifier = Modifier.padding(10.dp),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            if (orderItem.discountPercent > 0.0) {
-                                Text(
-                                    text = "${stringResource(Res.string.ord_view_discount)}: ${orderItem.discountPercent.toDecimal()}% · ${orderItem.discount.sumOf { it.value }.toDecimal()}",
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(9, 121, 105)
-                                )
-                            }
-                        }
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                        TableCell(text = orderItem.price.toDecimal(), weight = 0.22f)
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                        TableCell(text = orderItem.quantity.toDecimal(), weight = 0.18f)
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                        TableCell(
-                            text = orderItem.totalCost.toDecimal(),
-                            weight = 0.3f,
-                            alignment = TextAlign.End,
-                            title = true
-                        )
-                        VerticalDivider(modifier = Modifier.fillMaxHeight())
-                    }
-                    HorizontalDivider()
-                }
-            }
-
-            item { Spacer(Modifier.height(80.dp)) }
         }
     }
 
@@ -318,19 +427,16 @@ fun OrderViewScreen(
                             Icon(
                                 Icons.Filled.Check,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = cs.primary,
                                 modifier = Modifier.size(18.dp)
                             )
-                            Text(
-                                "  $line",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Text("  $line", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     Text(
                         stringResource(Res.string.ord_conv_note),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = cs.onSurfaceVariant,
                         modifier = Modifier.padding(top = 6.dp)
                     )
                 }
@@ -348,4 +454,101 @@ fun OrderViewScreen(
             }
         )
     }
+}
+
+@Composable
+private fun PartyCard(title: String, name: String, gstin: String?, meta: String? = null, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                title,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                if (!gstin.isNullOrBlank()) stringResource(Res.string.ord_view_gstin, gstin)
+                else stringResource(Res.string.ord_view_unregistered),
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            if (!meta.isNullOrBlank()) {
+                Text(
+                    meta,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.HeaderCell(
+    text: String,
+    weight: Float,
+    align: TextAlign = TextAlign.Center,
+) {
+    Text(
+        text,
+        modifier = Modifier.weight(weight),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = align,
+        maxLines = 1, overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.BodyCell(
+    text: String,
+    weight: Float,
+    align: TextAlign = TextAlign.Center,
+    mono: Boolean = false,
+    bold: Boolean = false,
+) {
+    Text(
+        text,
+        modifier = Modifier.weight(weight),
+        style = MaterialTheme.typography.bodySmall,
+        fontFamily = if (mono) FontFamily.Monospace else null,
+        fontWeight = if (bold) FontWeight.SemiBold else null,
+        textAlign = align,
+        maxLines = 2, overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+private fun TotalsRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
+    }
+}
+
+@OptIn(kotlin.time.ExperimentalTime::class)
+private fun formatInstantDate(instant: kotlin.time.Instant): String {
+    val date = instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val month = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+    return "${date.day.toString().padStart(2, '0')} $month ${date.year}"
+}
+
+private fun taxNameOrder(name: String): Int = when (name) {
+    "CGST" -> 0; "SGST" -> 1; "IGST" -> 2; else -> 3
 }

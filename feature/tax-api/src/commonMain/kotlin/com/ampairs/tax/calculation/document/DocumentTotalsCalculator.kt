@@ -33,12 +33,14 @@ object DocumentTotalsCalculator {
 
         val sumNet = round2(stages.sumOf { it.netAfterLine })
 
-        // --- overall discount value ---
-        val overall = when (input.overallDiscount?.kind) {
-            DiscountKind.PERCENT -> round2(sumNet * (input.overallDiscount.amount / 100.0))
-            DiscountKind.FLAT -> input.overallDiscount.amount
-            null -> 0.0
-        }.coerceIn(0.0, sumNet)
+        // --- overall discount value (pre-tax basis; the post-tax basis is the grand, resolved below) ---
+        val overall = if (input.overallDiscountMode == OverallDiscountMode.PRE_TAX_APPORTIONED) {
+            when (input.overallDiscount?.kind) {
+                DiscountKind.PERCENT -> round2(sumNet * (input.overallDiscount.amount / 100.0))
+                DiscountKind.FLAT -> input.overallDiscount.amount
+                null -> 0.0
+            }.coerceIn(0.0, sumNet)
+        } else 0.0
 
         // --- step 3: apportion overall across lines (PRE_TAX only) ---
         val allocations = DoubleArray(stages.size)
@@ -98,17 +100,22 @@ object DocumentTotalsCalculator {
         val taxComponents = grouped.map { (name, amt) -> DocumentTaxComponent(name, amt) }
 
         val lineTotalSum = round2(lineResults.sumOf { it.lineTotal })
-        val grandTotal = if (input.overallDiscountMode == OverallDiscountMode.POST_TAX_REDUCTION) {
-            round2(lineTotalSum - overall)
-        } else {
-            lineTotalSum
-        }
+        // POST_TAX_REDUCTION subtracts from the grand total, so a percent discount resolves against
+        // the tax-inclusive grand (spec C2), not the pre-tax net.
+        val postTaxOverall = if (input.overallDiscountMode == OverallDiscountMode.POST_TAX_REDUCTION) {
+            when (input.overallDiscount?.kind) {
+                DiscountKind.PERCENT -> round2(lineTotalSum * (input.overallDiscount.amount / 100.0))
+                DiscountKind.FLAT -> input.overallDiscount.amount
+                null -> 0.0
+            }.coerceIn(0.0, lineTotalSum)
+        } else 0.0
+        val grandTotal = round2(lineTotalSum - postTaxOverall)
 
         return DocumentCalcResult(
             lines = lineResults,
             taxableSubtotal = taxableSubtotal,
             lineDiscountTotal = lineDiscountTotal,
-            overallDiscountValue = overall,
+            overallDiscountValue = if (input.overallDiscountMode == OverallDiscountMode.POST_TAX_REDUCTION) postTaxOverall else overall,
             taxComponents = taxComponents,
             totalTax = totalTax,
             grandTotal = grandTotal,
