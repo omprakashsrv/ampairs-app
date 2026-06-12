@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,6 +51,7 @@ import ampairsapp.feature.store.generated.resources.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreSettingsScreen(
+    onOpenNumbering: (() -> Unit)? = null,
     viewModel: StoreSettingsViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -80,6 +82,11 @@ fun StoreSettingsScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        }
+                        if (onOpenNumbering != null) {
+                            IconButton(onClick = onOpenNumbering) {
+                                Icon(Icons.Default.Numbers, contentDescription = stringResource(Res.string.store_settings_numbering_cd))
+                            }
                         }
                         IconButton(onClick = { viewModel.refresh() }, enabled = !uiState.isRefreshing) {
                             if (uiState.isRefreshing) {

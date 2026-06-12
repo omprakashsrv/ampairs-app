@@ -3,6 +3,7 @@ package com.ampairs.navigation.providers
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.sequence.ui.SequenceSettingsRoute
 import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.store.ui.StoreSettingsScreen
 
@@ -14,7 +15,10 @@ fun storeEntryProvider(
     backStack: MutableList<NavKey>,
 ): NavEntry<NavKey>? = when (key) {
     is StoreSettingsRoute -> NavEntry(key) {
-        StoreSettingsScreen(modifier = Modifier)
+        StoreSettingsScreen(
+            onOpenNumbering = { backStack.add(SequenceSettingsRoute) },
+            modifier = Modifier,
+        )
     }
 
     else -> null

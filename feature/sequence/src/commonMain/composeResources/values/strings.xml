@@ -1,0 +1,32 @@
+<resources>
+    <string name="sequence_settings_title">Document Numbering</string>
+    <string name="sequence_list_empty">No numbering schemes yet. New documents use auto-generated defaults until you add one.</string>
+    <string name="sequence_list_add">Add Scheme</string>
+    <string name="sequence_list_refresh">Refresh</string>
+    <string name="sequence_scope_workspace">Workspace</string>
+    <string name="sequence_scope_user">Per User</string>
+    <string name="sequence_inactive_badge">Inactive</string>
+
+    <string name="sequence_form_title_new">New Numbering Scheme</string>
+    <string name="sequence_form_title_edit">Edit Numbering Scheme</string>
+    <string name="sequence_form_save">Save</string>
+    <string name="sequence_form_section_scheme">Scheme</string>
+    <string name="sequence_form_section_format">Number Format</string>
+    <string name="sequence_form_entity_type">Document Type *</string>
+    <string name="sequence_form_entity_type_hint">e.g. invoice, order, customer, product</string>
+    <string name="sequence_form_scope_label">Numbering Scope</string>
+    <string name="sequence_form_scope_hint">Workspace: one shared counter. Per User: each user keeps an independent counter.</string>
+    <string name="sequence_form_user">User *</string>
+    <string name="sequence_form_user_placeholder">Select a workspace member</string>
+    <string name="sequence_form_prefix">Prefix</string>
+    <string name="sequence_form_prefix_hint">e.g. INV</string>
+    <string name="sequence_form_suffix">Suffix</string>
+    <string name="sequence_form_padding">Padding Length</string>
+    <string name="sequence_form_padding_hint">0 = no zero-padding; 6 → INV-000001</string>
+    <string name="sequence_form_start_value">Starting Number</string>
+    <string name="sequence_form_increment">Increment Step</string>
+    <string name="sequence_form_preview">Preview</string>
+    <string name="sequence_form_active">Active</string>
+    <string name="sequence_form_active_hint">Inactive schemes are skipped; numbering falls back to the workspace scheme or default</string>
+    <string name="sequence_form_saving">Saving…</string>
+</resources>

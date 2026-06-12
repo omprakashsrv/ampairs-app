@@ -30,6 +30,7 @@ import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
 import com.ampairs.navigation.providers.orderEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
+import com.ampairs.navigation.providers.sequenceEntryProvider
 import com.ampairs.navigation.providers.storeEntryProvider
 import com.ampairs.navigation.providers.subscriptionEntryProvider
 import com.ampairs.navigation.providers.taxEntryProvider
@@ -67,6 +68,7 @@ fun combinedEntryProvider(
         ?: subscriptionEntryProvider(key, backStack)
         ?: unitEntryProvider(key, backStack)
         ?: storeEntryProvider(key, backStack)
+        ?: sequenceEntryProvider(key, backStack)
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key)

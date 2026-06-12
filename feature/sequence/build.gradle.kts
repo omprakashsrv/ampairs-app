@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
@@ -14,6 +16,7 @@ kotlin {
         namespace = "com.ampairs.sequence"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
     jvm("desktop")
     iosArm64()
@@ -25,11 +28,25 @@ kotlin {
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
                 implementation(libs.metro.runtime)
+                implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
+                // Compose
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.animation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.material.icons.extended)
+                implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
+                // Workspace member picker for USER-scoped sequences
+                implementation(projects.feature.workspace)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 implementation(libs.kotlinx.coroutines.core)
+                // Navigation 3 for NavKey
+                implementation(libs.navigation3.ui)
+                implementation(libs.lifecycle.viewmodel.navigation3)
             }
         }
         androidMain {
@@ -66,4 +83,11 @@ dependencies {
     add("kspDesktop", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
+}
+
+tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
+    dependsOn(tasks.matching { it.name.startsWith("generateComposeResClass") })
+    dependsOn(tasks.matching { it.name.startsWith("generateResourceAccessorsFor") })
+    dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
+    dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
 }
