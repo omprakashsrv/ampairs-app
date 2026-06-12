@@ -29,7 +29,7 @@ fun OrderScreen(
         customer = viewModel.customerUi,
         dateLabel = viewModel.dateLabel,
         priceMode = viewModel.priceMode,
-        numberPreview = null,
+        numberPreview = viewModel.numberPreview,
         lines = viewModel.lineUis,
         totals = viewModel.totals,
         composer = viewModel.composer,

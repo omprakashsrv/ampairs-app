@@ -47,7 +47,7 @@ data class OrderApiModel(
 fun Order.toApiModel(): OrderApiModel {
     return OrderApiModel(
         id = this.id,
-        orderDate = DateTimeAdapter.toDateTimeString(this.orderDate),
+        orderDate = this.orderDate.toString(), // ISO-8601 — backend order_date is an Instant
         orderNumber = this.orderNumber ?: "",
         fromCustomerId = this.fromCustomer?.uid ?: "",
         fromCustomerName = this.fromCustomer?.name ?: "",

@@ -4,6 +4,7 @@
     <string name="store_settings_subtitle">Configure module display and business rules</string>
     <string name="store_settings_filter_all">All</string>
     <string name="store_settings_refresh_cd">Sync settings</string>
+    <string name="store_settings_numbering_cd">Document numbering</string>
     <string name="store_settings_save_cd">Save</string>
     <string name="store_settings_empty">No settings available</string>
     <string name="store_settings_error_title">Something went wrong</string>

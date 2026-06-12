@@ -33,9 +33,10 @@ class DateTimeAdapter {
         }
 
         fun fromDateTimeString(value: String?): Instant? {
-            return if (value.isNullOrEmpty()) null else Instant.fromEpochMilliseconds(
-                value.parseDate(DATE_TIME_FORMATTER)
-            )
+            if (value.isNullOrEmpty()) return null
+            // ISO-8601 with zone (backend sync format) first; legacy local "yyyy-MM-dd HH:mm:ss" second.
+            runCatching { return Instant.parse(value) }
+            return Instant.fromEpochMilliseconds(value.parseDate(DATE_TIME_FORMATTER))
         }
 
         fun fromDateString(value: String?): Instant? {

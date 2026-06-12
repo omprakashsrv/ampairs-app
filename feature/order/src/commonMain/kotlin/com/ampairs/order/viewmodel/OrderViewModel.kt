@@ -102,6 +102,9 @@ class OrderViewModel(
     var toCustomer: Customer? = null
     val orderItems = mutableStateListOf<OrderItem>()
     var savingOrder by mutableStateOf(false)
+
+    /** Number shown in the editor header: existing order's number, or the next this device would assign. */
+    var numberPreview by mutableStateOf<String?>(null)
     var order = Order()
 
     var priceMode by mutableStateOf(PriceMode.TAX_EXCLUSIVE)
@@ -761,6 +764,8 @@ class OrderViewModel(
             }
             fromCustomerName = fromCustomer?.name ?: ""
             toCustomerName = toCustomer?.name ?: ""
+            numberPreview = order.orderNumber?.takeIf { it.isNotBlank() }
+                ?: orderRepository.nextNumberPreview()
             dateLabel = formatDocDate()
             baseUnits = unitLookup.getActiveUnits().map { DocBaseUnitChoice(it.uid, it.shortName.ifBlank { it.name }) }
             computeTotals()

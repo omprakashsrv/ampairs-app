@@ -16,7 +16,9 @@ import io.ktor.client.engine.HttpClientEngine
 @Inject @ContributesBinding(AppScope::class)
 class OrderApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository) : OrderApi {
 
-    private val client = httpClient(engine, tokenRepository)
+    // sendDefaults: the /sync push is a full-row upsert; the backend rejects bodies with
+    // missing primitive fields, so defaulted values (0.0 totals, item_no 0, ...) must be sent.
+    private val client = httpClient(engine, tokenRepository, sendDefaults = true)
 
     override suspend fun createInvoice(order: OrderApiModel): Response<OrderApiModel> {
         return post(
