@@ -70,8 +70,6 @@ class BusinessRepository(
             phone = request.phone,
             email = request.email,
             website = request.website,
-            taxId = request.taxId,
-            registrationNumber = request.registrationNumber,
             timezone = request.timezone,
             currency = request.currency,
             language = request.language,
@@ -166,8 +164,6 @@ class BusinessRepository(
             phone = request.phone,
             email = request.email,
             website = request.website,
-            taxId = request.taxId,
-            registrationNumber = request.registrationNumber,
             active = request.active,
             customAttributes = request.customAttributes
         )
@@ -200,26 +196,6 @@ class BusinessRepository(
         return upsertBusiness(updated).map { business -> business.toOperations() }
     }
 
-    suspend fun fetchTaxConfiguration(): Result<TaxConfiguration> {
-        val cached = getCachedBusiness()
-        if (cached != null) return Result.success(cached.toTaxConfiguration())
-        return fetchFromRemote().map { business -> business.toTaxConfiguration() }
-    }
-
-    suspend fun updateTaxConfiguration(request: TaxConfigurationUpdateRequest): Result<TaxConfiguration> {
-        val base = getCachedBusiness()
-            ?: fetchFromRemote().getOrNull()
-            ?: return Result.failure(Exception("No business data available offline"))
-
-        val updated = base.copy(
-            taxId = request.taxId,
-            registrationNumber = request.registrationNumber,
-            taxSettings = request.taxSettings
-        )
-
-        return upsertBusiness(updated).map { business -> business.toTaxConfiguration() }
-    }
-
     suspend fun syncFromRemote(): Result<Business> = fetchFromRemote()
 }
 
@@ -233,13 +209,6 @@ private fun Business.toOperations() = BusinessOperations(
     openingHours = openingHours,
     closingHours = closingHours,
     operatingDays = operatingDays
-)
-
-private fun Business.toTaxConfiguration() = TaxConfiguration(
-    uid = id,
-    taxId = taxId,
-    registrationNumber = registrationNumber,
-    taxSettings = taxSettings ?: emptyMap()
 )
 
 private fun Business.toOverview() = BusinessOverview(
@@ -275,8 +244,6 @@ private fun Business.toProfile() = BusinessProfile(
     phone = phone,
     email = email,
     website = website,
-    taxId = taxId,
-    registrationNumber = registrationNumber,
     active = active,
     customAttributes = customAttributes,
     createdAt = createdAt,

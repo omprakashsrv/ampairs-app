@@ -11,6 +11,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.Dispatchers
 import com.ampairs.business.data.db.migrations.BUSINESS_MIGRATION_2_3
+import com.ampairs.business.data.db.migrations.BUSINESS_MIGRATION_3_4
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 
 @ContributesTo(WorkspaceScope::class)
@@ -29,7 +30,7 @@ interface BusinessAndroidModule {
                 queryDispatcher = Dispatchers.IO,
                 moduleName = "business",
                 workspaceSlug = config.workspaceSlug,
-                migrations = listOf(BUSINESS_MIGRATION_2_3),
+                migrations = listOf(BUSINESS_MIGRATION_2_3, BUSINESS_MIGRATION_3_4),
             ).also { closableRegistry.register { it.close() } }
         }
     }

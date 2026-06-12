@@ -1,7 +1,6 @@
 package com.ampairs.navigation.providers
 
 import BusinessRoute
-import Route
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -10,7 +9,6 @@ import com.ampairs.business.ui.BusinessImagesScreen
 import com.ampairs.business.ui.BusinessOperationsScreen
 import com.ampairs.business.ui.BusinessOverviewScreen
 import com.ampairs.business.ui.BusinessProfileFormScreen
-import com.ampairs.business.ui.BusinessTaxConfigScreen
 fun businessEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>
@@ -23,14 +21,8 @@ fun businessEntryProvider(
             onNavigateToOperations = {
                 backStack.add(BusinessRoute.Operations)
             },
-            onNavigateToTax = {
-                backStack.add(BusinessRoute.TaxConfig)
-            },
             onNavigateToCustomAttributes = {
                 backStack.add(BusinessRoute.CustomAttributes)
-            },
-            onNavigateToFormConfig = {
-                backStack.add(Route.FormConfig("business"))
             },
             onNavigateToImages = {
                 backStack.add(BusinessRoute.Images)
@@ -45,10 +37,6 @@ fun businessEntryProvider(
 
     is BusinessRoute.Operations -> NavEntry(key) {
         BusinessOperationsScreen(modifier = Modifier)
-    }
-
-    is BusinessRoute.TaxConfig -> NavEntry(key) {
-        BusinessTaxConfigScreen(modifier = Modifier)
     }
 
     is BusinessRoute.CustomAttributes -> NavEntry(key) {

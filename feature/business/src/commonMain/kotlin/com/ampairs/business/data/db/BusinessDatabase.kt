@@ -7,7 +7,7 @@ import androidx.room.RoomDatabaseConstructor
 
 @Database(
     entities = [BusinessEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @ConstructedBy(BusinessDatabaseConstructor::class)

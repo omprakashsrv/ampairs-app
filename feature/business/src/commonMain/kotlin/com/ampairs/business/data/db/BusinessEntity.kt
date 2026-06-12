@@ -48,12 +48,6 @@ data class BusinessEntity(
     val phone: String?,
     val email: String?,
     val website: String?,
-    @ColumnInfo(name = "tax_id")
-    val taxId: String?,
-    @ColumnInfo(name = "registration_number")
-    val registrationNumber: String?,
-    @ColumnInfo(name = "tax_settings_json")
-    val taxSettingsJson: String?,
     val timezone: String,
     val currency: String,
     val language: String,
@@ -117,9 +111,6 @@ fun Business.toEntity(markSynced: Boolean): BusinessEntity {
         phone = phone,
         email = email,
         website = website,
-        taxId = taxId,
-        registrationNumber = registrationNumber,
-        taxSettingsJson = taxSettings?.let { jsonFormatter.encodeToString(mapSerializer, it) },
         timezone = timezone,
         currency = currency,
         language = language,
@@ -148,10 +139,6 @@ fun BusinessEntity.toDomain(): Business {
         runCatching { jsonFormatter.decodeFromString(listSerializer, it) }.getOrNull()
     } ?: emptyList()
 
-    val taxSettings = taxSettingsJson?.let {
-        runCatching { jsonFormatter.decodeFromString(mapSerializer, it) }.getOrNull()
-    }
-
     val customAttributes = customAttributesJson?.let {
         runCatching { jsonFormatter.decodeFromString(mapSerializer, it) }.getOrNull()
     }
@@ -175,9 +162,6 @@ fun BusinessEntity.toDomain(): Business {
         phone = phone,
         email = email,
         website = website,
-        taxId = taxId,
-        registrationNumber = registrationNumber,
-        taxSettings = taxSettings,
         timezone = timezone,
         currency = currency,
         language = language,
