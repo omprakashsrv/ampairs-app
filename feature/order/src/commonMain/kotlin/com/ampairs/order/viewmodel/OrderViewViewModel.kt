@@ -58,9 +58,14 @@ class OrderViewViewModel(
     var syncUi by mutableStateOf(DocSyncUi.NONE)
         private set
 
+    /** Real number of the linked invoice (orders.jsx status-band chip); null until converted. */
+    var linkedInvoiceNumber by mutableStateOf<String?>(null)
+        private set
+
     init {
         viewModelScope.launch {
             order = orderRepository.getOrder(orderId)
+            refreshLinkedInvoiceNumber()
             refreshSyncFlag()
         }
         syncService.observeEntity(SyncEntity.ORDER)
@@ -80,6 +85,12 @@ class OrderViewViewModel(
     private suspend fun refreshSyncFlag() {
         if (orderId.isBlank()) return
         syncUi = if (orderRepository.isOrderSynced(orderId)) DocSyncUi.SYNCED else DocSyncUi.OFFLINE
+    }
+
+    private suspend fun refreshLinkedInvoiceNumber() {
+        linkedInvoiceNumber = order.invoiceRefId
+            ?.takeIf { it.isNotBlank() }
+            ?.let { invoiceRepository.getInvoiceNumber(it) }
     }
 
     fun retrySync() {
@@ -114,6 +125,7 @@ class OrderViewViewModel(
                 orderRepository.saveOrder(current)            // local-only + marks ORDER pending
             }
             order = orderRepository.getOrder(orderId)
+            refreshLinkedInvoiceNumber()
             viewModelScope.launch(Dispatchers.Main) {
                 savingOrder = false
             }

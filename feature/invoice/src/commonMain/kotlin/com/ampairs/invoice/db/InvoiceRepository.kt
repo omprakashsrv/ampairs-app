@@ -122,6 +122,10 @@ class InvoiceRepository(
     /** Whether the row has reached the server (drives the invoice view's sync chip). */
     suspend fun isInvoiceSynced(id: String): Boolean = invoiceDao.selectById(id)?.synced == 1L
 
+    /** Lightweight number lookup for cross-links (e.g. the order view's linked-invoice chip). */
+    suspend fun getInvoiceNumber(id: String): String? =
+        invoiceDao.selectById(id)?.invoice_number?.ifBlank { null }
+
     /** Invoice list v2: search (number/buyer/seller) + status / from-order / offline filters. */
     fun getInvoicesFiltered(
         searchText: String,

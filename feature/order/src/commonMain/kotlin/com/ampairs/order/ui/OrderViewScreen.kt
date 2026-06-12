@@ -255,6 +255,7 @@ fun OrderViewScreen(
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
                         if (converted) {
+                            val invoiceNumber = viewModel.linkedInvoiceNumber
                             AssistChip(
                                 onClick = { order.invoiceRefId?.let(onOpenInvoice) },
                                 leadingIcon = {
@@ -262,7 +263,8 @@ fun OrderViewScreen(
                                 },
                                 label = {
                                     Text(
-                                        stringResource(Res.string.ord_view_view_invoice),
+                                        invoiceNumber ?: stringResource(Res.string.ord_view_view_invoice),
+                                        fontFamily = if (invoiceNumber != null) mono else null,
                                         maxLines = 1,
                                     )
                                 },
