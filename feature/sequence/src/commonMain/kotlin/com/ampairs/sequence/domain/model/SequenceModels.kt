@@ -76,5 +76,7 @@ data class SequenceNumberResult(
     val entityType: String,
     val value: Long,
     val formatted: String,
+    /** Definition prefix snapshot (consumers that keep a separate series column use this). */
+    val prefix: String? = null,
     val provisional: Boolean = false,
 )

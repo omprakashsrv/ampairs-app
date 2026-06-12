@@ -54,23 +54,32 @@ class SequenceNumberProvider(
                     paddingLength = allocation.paddingLength,
                     value = value,
                 ),
+                prefix = allocation.prefix,
                 provisional = false,
             )
         }
 
-    /** Preview the next number this device would issue, without consuming it. */
-    suspend fun peek(entityType: String): SequenceNumberResult? {
-        val allocation = allocationRepository.getUsableAllocation(entityType, deviceService.getDeviceId())
-            ?: return null
-        return SequenceNumberResult(
-            entityType = entityType,
-            value = allocation.nextAvailable,
-            formatted = SequenceFormatter.format(
-                allocation.prefix, allocation.suffix, allocation.paddingLength, allocation.nextAvailable
-            ),
-            provisional = false,
-        )
-    }
+    /**
+     * Preview the next number this device would issue, without consuming it. Requests a block
+     * when the device has none (pre-warming the editor for the save that follows); returns null
+     * only when offline with no capacity.
+     */
+    suspend fun peek(entityType: String, blockSize: Int = DEFAULT_BLOCK_SIZE): SequenceNumberResult? =
+        mutex.withLock {
+            val deviceId = deviceService.getDeviceId()
+            val allocation = allocationRepository.getUsableAllocation(entityType, deviceId)
+                ?: allocationRepository.requestAllocation(entityType, deviceId, blockSize).getOrNull()
+                ?: return null
+            SequenceNumberResult(
+                entityType = entityType,
+                value = allocation.nextAvailable,
+                formatted = SequenceFormatter.format(
+                    allocation.prefix, allocation.suffix, allocation.paddingLength, allocation.nextAvailable
+                ),
+                prefix = allocation.prefix,
+                provisional = false,
+            )
+        }
 
     /**
      * Offline with no usable block: a placeholder marked with a `P` segment so it can never
@@ -85,6 +94,7 @@ class SequenceNumberProvider(
             entityType = entityType,
             value = stamp,
             formatted = "$prefix-P$stamp",
+            prefix = prefix,
             provisional = true,
         )
     }

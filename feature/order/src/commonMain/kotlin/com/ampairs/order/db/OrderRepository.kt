@@ -14,6 +14,7 @@ import com.ampairs.order.domain.Order
 import com.ampairs.order.domain.asDatabaseModel as orderAsEntity
 import com.ampairs.order.domain.asDomainModel
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.sequence.domain.SequenceNumberProvider
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
@@ -35,6 +36,7 @@ class OrderRepository(
     val customerDataService: CustomerDataService,
     val orderApi: OrderApi,
     val syncStateDao: SyncStateDao,
+    val sequenceNumberProvider: SequenceNumberProvider,
 ) {
     @Transaction
     suspend fun saveOrder(orderEntity: OrderEntity, orderItems: List<OrderItemEntity>) {
@@ -44,10 +46,26 @@ class OrderRepository(
         markPending()
     }
 
-    /** Client-assigned sequential order number at save (design v2 flow): ORD-0001, ORD-0002, … */
+    /**
+     * Client-assigned order number at save, issued from this device's server-granted sequence
+     * block (entity type "order" — configurable under Settings → Document Numbering). When the
+     * device is offline with no block capacity, falls back to the legacy local ORD-#### counter
+     * (same behavior as before; the backend remains the cross-device backstop).
+     */
     private suspend fun assignOrderNumber(entity: OrderEntity): OrderEntity {
+        val issued = sequenceNumberProvider.next("order")
+        if (!issued.provisional) {
+            return entity.copy(order_number = issued.formatted)
+        }
         val seq = (orderDao.maxOrderSequence() ?: 0L) + 1L
         return entity.copy(order_number = "ORD-" + seq.toString().padStart(4, '0'))
+    }
+
+    /** Next number this device would assign at save — shown in the editor header. */
+    suspend fun nextNumberPreview(): String {
+        sequenceNumberProvider.peek("order")?.let { return it.formatted }
+        val seq = (orderDao.maxOrderSequence() ?: 0L) + 1L
+        return "ORD-" + seq.toString().padStart(4, '0')
     }
 
     suspend fun saveOrder(order: Order?) {

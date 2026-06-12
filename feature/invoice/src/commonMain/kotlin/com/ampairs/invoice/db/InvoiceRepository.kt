@@ -15,6 +15,7 @@ import com.ampairs.invoice.domain.InvoiceItem
 import com.ampairs.invoice.domain.asDatabaseModel as invoiceAsEntity
 import com.ampairs.invoice.domain.asDomainModelSimple
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.sequence.domain.SequenceNumberProvider
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
@@ -34,6 +35,7 @@ class InvoiceRepository(
     val productDataService: ProductDataService,
     val customerDataService: CustomerDataService,
     val syncStateDao: SyncStateDao,
+    val sequenceNumberProvider: SequenceNumberProvider,
 ) {
     @Transaction
     suspend fun saveInvoice(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
@@ -55,6 +57,18 @@ class InvoiceRepository(
      * UNIQUE(owner, series, sequence_number) is the cross-device backstop.
      */
     private suspend fun assignNumber(entity: InvoiceEntity): InvoiceEntity {
+        // Sequence-module number first: issued from this device's server-granted block for
+        // entity type "invoice" (Settings → Document Numbering), conflict-free across devices.
+        val issued = sequenceNumberProvider.next("invoice")
+        if (!issued.provisional) {
+            return entity.copy(
+                series = issued.prefix ?: entity.series.ifBlank { DEFAULT_SERIES },
+                sequence_number = issued.value,
+                invoice_number = issued.formatted,
+            )
+        }
+        // Offline with no block capacity: legacy local series counter (pre-sequence behavior;
+        // backend UNIQUE(owner, series, sequence_number) remains the cross-device backstop).
         val series = entity.series.ifBlank { DEFAULT_SERIES }
         val seq = (invoiceDao.maxSequenceForSeries(series) ?: 0L) + 1L
         val number = "$series/" + seq.toString().padStart(4, '0')
@@ -69,6 +83,7 @@ class InvoiceRepository(
      * sequential number in [series] formatted exactly as [assignNumber] will assign it.
      */
     suspend fun nextNumberPreview(series: String?): String {
+        sequenceNumberProvider.peek("invoice")?.let { return it.formatted }
         val s = series?.ifBlank { null } ?: DEFAULT_SERIES
         val seq = (invoiceDao.maxSequenceForSeries(s) ?: 0L) + 1L
         return "$s/" + seq.toString().padStart(4, '0')

@@ -45,6 +45,7 @@ kotlin {
                 implementation(projects.feature.taxApi)
                 implementation(projects.feature.unitApi)
                 implementation(projects.feature.store)
+                implementation(projects.feature.sequence)
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
