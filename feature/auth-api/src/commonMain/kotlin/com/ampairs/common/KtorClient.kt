@@ -59,6 +59,14 @@ fun httpClient(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository,
     withTimeout: Boolean = true,
+    /**
+     * Always encode fields at their default value in request bodies. Use for full-row
+     * upsert contracts (order/invoice /sync): the backend deserializes non-nullable
+     * primitives and rejects bodies with missing fields (FAIL_ON_NULL_FOR_PRIMITIVES).
+     * Keep false for APIs with partial-update semantics, where an omitted field means
+     * "don't change".
+     */
+    sendDefaults: Boolean = false,
 ) = HttpClient(engine) {
 
     clientLog.d { ConfigurationManager.logCurrentConfig() }
@@ -68,7 +76,7 @@ fun httpClient(
             Json {
                 ignoreUnknownKeys = true
                 isLenient = true
-                encodeDefaults = false
+                encodeDefaults = sendDefaults
                 explicitNulls = false
             }
         )
