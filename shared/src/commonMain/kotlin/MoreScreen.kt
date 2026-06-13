@@ -54,13 +54,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.common.state.AppHeaderStateManager
-import com.ampairs.common.ui.navigateToModule
+import com.ampairs.common.ui.moduleCodeToDisplayName
 import com.ampairs.common.ui.moduleCodeToIcon
-import com.ampairs.workspace.navigation.ModuleCodes
+import com.ampairs.common.ui.navigateToModule
+import com.ampairs.workspace.navigation.GlobalNavigationManager
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import ampairsapp.shared.generated.resources.Res
+import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_more_account
 import ampairsapp.shared.generated.resources.nav_more_all_modules
-import ampairsapp.shared.generated.resources.nav_more_business
 import ampairsapp.shared.generated.resources.nav_more_edit_profile
 import ampairsapp.shared.generated.resources.nav_more_form_config
 import ampairsapp.shared.generated.resources.nav_more_invitations
@@ -70,7 +74,6 @@ import ampairsapp.shared.generated.resources.nav_more_screen_title
 import ampairsapp.shared.generated.resources.nav_more_section_workspace
 import ampairsapp.shared.generated.resources.nav_more_subscription
 import ampairsapp.shared.generated.resources.nav_more_switch_workspace
-import ampairsapp.shared.generated.resources.nav_more_tax_gst
 import ampairsapp.shared.generated.resources.nav_more_workspace_settings
 import org.jetbrains.compose.resources.stringResource
 
@@ -239,20 +242,27 @@ fun MoreScreen(
         }
 
         item {
-            val modules = listOf(
-                ModuleItem("Home"),
-                ModuleItem("Sales", ModuleCodes.INVOICE_BILLING),
-                ModuleItem("Parties", ModuleCodes.CUSTOMER_MANAGEMENT),
-                ModuleItem("Stock", ModuleCodes.PRODUCT_MANAGEMENT),
-                ModuleItem(stringResource(Res.string.nav_more_tax_gst), ModuleCodes.TAX_CODE_MANAGEMENT),
-                ModuleItem(stringResource(Res.string.nav_more_business), ModuleCodes.BUSINESS_PROFILE),
-            )
+            val globalNavManager = remember { GlobalNavigationManager.getInstance() }
+            @OptIn(ExperimentalCoroutinesApi::class)
+            val installedRoutes by remember {
+                globalNavManager.navigationService.flatMapLatest { service ->
+                    service?.navigationRoutes ?: flowOf(emptyList())
+                }
+            }.collectAsState(initial = emptyList())
+
+            val modules = buildList {
+                add(ModuleItem(stringResource(Res.string.nav_home)))
+                installedRoutes.forEach { route ->
+                    add(ModuleItem(moduleCodeToDisplayName(route.moduleCode), route.moduleCode))
+                }
+            }
+            val rowCount = (modules.size + 2) / 3
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .height((modules.size / 3 * 96 + 96).dp),
+                    .height((rowCount * 96).dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 userScrollEnabled = false
