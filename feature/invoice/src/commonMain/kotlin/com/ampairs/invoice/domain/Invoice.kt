@@ -22,14 +22,9 @@ class Invoice {
     var orderRefId: String? = null
     var id: String = ""
     var invoiceDate: Instant = Clock.System.now()
-    var fromCustomer: Customer? = null
-    var toCustomer: Customer? = null
-        set(value) {
-            field = value
-            taxSpec =
-                if (toCustomer?.state !== fromCustomer?.state) TaxSpec.INTRA else TaxSpec.INTER
-
-        }
+    // Single buyer; the seller is the implicit current workspace. taxSpec is resolved by the tax
+    // module (ScenarioResolver) from the buyer's GSTIN, not derived here.
+    var customer: Customer? = null
     var totalCost: Double by mutableStateOf(0.0)
     var basePrice: Double = 0.0
     var totalTax: Double = 0.0
@@ -117,17 +112,15 @@ fun Invoice.asDatabaseModel(): InvoiceEntity {
         id = this.id,
         invoice_number = this.invoiceNumber ?: "",
         invoice_date = DateTimeAdapter.toDateTimeString(this.invoiceDate),
-        from_customer_id = this.fromCustomer?.uid ?: "",
-        to_customer_id = this.toCustomer?.uid ?: "",
+        customer_id = this.customer?.uid ?: "",
+        customer_phone = this.customer?.phone,
         total_cost = this.totalCost,
         base_price = this.basePrice,
         total_items = this.totalItems.toLong(),
         total_quantity = this.totalQuantity,
         status = this.status.name,
-        from_customer_name = this.fromCustomer?.name ?: "",
-        to_customer_name = this.toCustomer?.name ?: "",
-        from_customer_gst = this.fromCustomer?.gstNumber ?: "",
-        to_customer_gst = this.toCustomer?.gstNumber ?: "",
+        customer_name = this.customer?.name ?: "",
+        customer_gst = this.customer?.gstNumber ?: "",
         billing_address = "",
         shipping_address = "",
         tax_info = if (this.taxInfos != null) Json.encodeToString(this.taxInfos?.toDatabaseEntity()) else null,
@@ -157,15 +150,11 @@ fun InvoiceEntity.asDomainModelSimple(): Invoice {
     invoice.basePrice = this.base_price
     invoice.totalTax = this.total_tax
     invoice.items = mutableListOf()
-    invoice.fromCustomer = Customer(
-        uid = this.from_customer_id,
-        name = this.from_customer_name,
-        gstNumber = this.from_customer_gst
-    )
-    invoice.toCustomer = Customer(
-        uid = this.to_customer_id,
-        name = this.to_customer_name,
-        gstNumber = this.to_customer_gst
+    invoice.customer = Customer(
+        uid = this.customer_id,
+        name = this.customer_name,
+        gstNumber = this.customer_gst,
+        phone = this.customer_phone,
     )
     invoice.totalCost = this.total_cost
     invoice.totalItems = this.total_items.toInt()
@@ -182,12 +171,12 @@ fun InvoiceEntity.asDomainModelSimple(): Invoice {
 fun Invoice.toWhatsAppMsg(workspaceName: String): String {
     val msg = StringBuilder()
     msg.append("*").append(workspaceName).append("*").append("\n")
-    msg.append("To : " + fromCustomer?.name)
-    if (!fromCustomer?.address.isNullOrEmpty()) {
-        msg.append("Address : " + fromCustomer?.address).append("\n")
+    msg.append("To : " + customer?.name)
+    if (!customer?.address.isNullOrEmpty()) {
+        msg.append("Address : " + customer?.address).append("\n")
     }
-    if (!fromCustomer?.phone.isNullOrEmpty()) {
-        msg.append("Phone : " + fromCustomer?.phone).append("\n")
+    if (!customer?.phone.isNullOrEmpty()) {
+        msg.append("Phone : " + customer?.phone).append("\n")
     }
     msg.append("\n")
     msg.append("*Particulars*").append("\n").append("*Price*   ").append("*Qty*   ")

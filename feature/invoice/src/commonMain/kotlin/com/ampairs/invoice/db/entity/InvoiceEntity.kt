@@ -15,12 +15,12 @@ data class InvoiceEntity(
     val invoice_number: String,
     val invoice_date: String,
     val status: String,
-    val from_customer_id: String,
-    val from_customer_name: String,
-    val to_customer_name: String,
-    val from_customer_gst: String,
-    val to_customer_gst: String,
-    val to_customer_id: String,
+    // Single buyer (the seller is the implicit current workspace). Name/GST are snapshotted on the
+    // tax invoice (frozen at issue time); phone is carried for the wire contract.
+    val customer_id: String,
+    val customer_name: String,
+    val customer_gst: String,
+    val customer_phone: String? = null,
     val total_cost: Double,
     val total_tax: Double,
     val total_items: Long,

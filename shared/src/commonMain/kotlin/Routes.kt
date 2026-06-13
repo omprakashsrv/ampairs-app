@@ -285,8 +285,7 @@ sealed interface InventoryRoute : NavKey {
 sealed interface OrderRoute : NavKey {
     @Serializable
     data class Root(
-        val fromCustomer: String = "",
-        val toCustomer: String = "",
+        val customer: String = "",
         val id: String = ""
     ) : OrderRoute
     
@@ -304,8 +303,7 @@ sealed interface OrderRoute : NavKey {
 sealed interface InvoiceRoute : NavKey {
     @Serializable
     data class Root(
-        val fromCustomer: String = "",
-        val toCustomer: String = "",
+        val customer: String = "",
         val id: String = ""
     ) : InvoiceRoute
 

@@ -76,7 +76,7 @@ import kotlinx.datetime.toLocalDateTime
  */
 @AssistedInject
 class OrderViewModel(
-    @Assisted fromCustomerId: String?, @Assisted toCustomerId: String?, @Assisted id: String?,
+    @Assisted customerId: String?, @Assisted id: String?,
     val customerDataService: CustomerDataService,
     val orderRepository: OrderRepository,
     val productDataService: ProductDataService,
@@ -93,13 +93,12 @@ class OrderViewModel(
     @ManualViewModelAssistedFactoryKey
     @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
-        fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): OrderViewModel
+        fun create(customerId: String?, id: String?): OrderViewModel
     }
 
     // ───────────────────────── core document state ─────────────────────────
 
-    var fromCustomer: Customer? = null
-    var toCustomer: Customer? = null
+    var customer: Customer? = null
     val orderItems = mutableStateListOf<OrderItem>()
     var savingOrder by mutableStateOf(false)
 
@@ -130,10 +129,12 @@ class OrderViewModel(
     var syncUi by mutableStateOf(DocSyncUi.NONE)
         private set
 
-    val sellerStateCode: Int?
-        get() = ScenarioResolver.stateCodeFromGstin(fromCustomer?.gstNumber)
+    // Supply-origin (seller) state is owned by the tax module, not the order/invoice flow, and is
+    // not stored on the document. Until the tax module supplies it, the editor treats the scenario
+    // as intra-state by default. The buyer's GSTIN (place of supply) still drives ScenarioResolver.
+    val sellerStateCode: Int? = null
 
-    private var toCustomerWalkIn = false
+    private var customerWalkIn = false
     private var savedOnce = false
     private var ratePercents: Map<String, Double?> = emptyMap()
     private val engine by lazy { ComposerEngine(productDataService, unitOptionsLookup, taxRateProvider) }
@@ -429,9 +430,7 @@ class OrderViewModel(
 
     // ───────────────────────── customer selection ─────────────────────────
 
-    var fromCustomerName by mutableStateOf("")
-        private set
-    var toCustomerName by mutableStateOf("")
+    var customerName by mutableStateOf("")
         private set
     var customerResults by mutableStateOf<List<com.ampairs.customer.domain.CustomerListItem>>(emptyList())
         private set
@@ -442,39 +441,29 @@ class OrderViewModel(
         }
     }
 
-    fun selectFromCustomer(customerId: String) {
+    fun selectCustomer(customerId: String) {
         viewModelScope.launch(DispatcherProvider.io) {
-            val customer = customerDataService.getById(customerId) ?: return@launch
-            fromCustomer = customer
-            order.fromCustomer = customer
-            fromCustomerName = customer.name
-            computeTotals()
-        }
-    }
-
-    fun selectToCustomer(customerId: String) {
-        viewModelScope.launch(DispatcherProvider.io) {
-            val customer = customerDataService.getById(customerId) ?: return@launch
-            toCustomer = customer
-            toCustomerWalkIn = false
-            order.toCustomer = customer
-            toCustomerName = customer.name
+            val selected = customerDataService.getById(customerId) ?: return@launch
+            customer = selected
+            customerWalkIn = false
+            order.customer = selected
+            customerName = selected.name
             computeTotals()
         }
     }
 
     /** Walk-in buyer (spec 010 v2): no customer record; no GSTIN ⇒ intra vs the seller state. */
     fun useWalkInCustomer(name: String, phone: String, gstin: String) {
-        val customer = Customer(
+        val walkIn = Customer(
             uid = "",
             name = name.ifBlank { "Walk-in" },
             phone = phone.trim().ifBlank { null },
             gstNumber = gstin.trim().ifBlank { null },
         )
-        toCustomer = customer
-        toCustomerWalkIn = true
-        order.toCustomer = customer
-        toCustomerName = customer.name
+        customer = walkIn
+        customerWalkIn = true
+        order.customer = walkIn
+        customerName = walkIn.name
         recalculate()
     }
 
@@ -495,9 +484,11 @@ class OrderViewModel(
     fun selectPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
 
     private suspend fun computeTotals() {
+        // Seller (supply origin) is owned by the tax module and not stored here; the buyer's GSTIN
+        // is the place of supply. With no seller state the scenario resolves intra-state by default.
         val scenario = ScenarioResolver.resolveFromGstins(
-            sellerGstin = order.fromCustomer?.gstNumber,
-            buyerGstin = order.toCustomer?.gstNumber,
+            sellerGstin = null,
+            buyerGstin = order.customer?.gstNumber,
         )
         val taxCodes = orderItems.mapNotNull { it.product?.taxCode }
         val rates = taxRateProvider.resolveAll(taxCodes, scenario)
@@ -619,7 +610,6 @@ class OrderViewModel(
     }
 
     private fun publishCustomerUi(scenario: TaxScenario) {
-        val customer = toCustomer
         customerUi = customer?.let {
             val stateCode = ScenarioResolver.stateCodeFromGstin(it.gstNumber)
             DocCustomerUi(
@@ -630,7 +620,7 @@ class OrderViewModel(
                 stateLabel = it.state?.takeIf { s -> s.isNotBlank() }?.let { s -> stateCode?.let { c -> "$s ($c)" } ?: s }
                     ?: stateCode?.toString(),
                 intra = scenario == TaxScenario.INTRA,
-                walkIn = toCustomerWalkIn,
+                walkIn = customerWalkIn,
             )
         }
     }
@@ -753,17 +743,13 @@ class OrderViewModel(
             showDiscount = storeSettings.getBoolean("order", "show_discount_options", default = true)
             if (!id.isNullOrEmpty()) {
                 order = orderRepository.getOrder(id)
-                fromCustomer = order.fromCustomer
-                toCustomer = order.toCustomer
+                customer = order.customer
                 orderItems.addAll(order.items)
             } else {
-                fromCustomer = fromCustomerId?.let { customerDataService.getById(it) }
-                toCustomer = toCustomerId?.let { customerDataService.getById(it) }
-                order.fromCustomer = fromCustomer
-                order.toCustomer = toCustomer
+                customer = customerId?.let { customerDataService.getById(it) }
+                order.customer = customer
             }
-            fromCustomerName = fromCustomer?.name ?: ""
-            toCustomerName = toCustomer?.name ?: ""
+            customerName = customer?.name ?: ""
             numberPreview = order.orderNumber?.takeIf { it.isNotBlank() }
                 ?: orderRepository.nextNumberPreview()
             dateLabel = formatDocDate()

@@ -152,9 +152,7 @@ class OrderViewViewModel(
         val src = this
         return Invoice().apply {
             orderRefId = src.id
-            fromCustomer = src.fromCustomer
-            toCustomer = src.toCustomer
-            // toCustomer setter derives taxSpec with legacy-inverted logic — override it explicitly.
+            customer = src.customer
             taxSpec = src.taxSpec.toInvoiceSpec()
             basePrice = src.basePrice
             totalTax = src.totalTax

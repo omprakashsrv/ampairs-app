@@ -93,12 +93,10 @@ class OrderRepository(
 
         // Map the full aggregate (order + items) — the OrderEntity-only mapper sets items = empty.
         val orderDomain = orderWithItems.asDomainModel()
-        orderDomain.fromCustomer =
-            orderDomain.fromCustomer?.uid?.let { customerDataService.getById(it) }
-                ?: orderDomain.fromCustomer
-        orderDomain.toCustomer =
-            orderDomain.toCustomer?.uid?.let { customerDataService.getById(it) }
-                ?: orderDomain.toCustomer
+        // Re-attach the buyer from the catalog (keeps the snapshot when the row is gone).
+        orderDomain.customer =
+            orderDomain.customer?.uid?.takeIf { it.isNotBlank() }?.let { customerDataService.getById(it) }
+                ?: orderDomain.customer
 
         val products =
             productDataService.getByIds(orderWithItems.orderItems.map { it.product_id })
@@ -106,8 +104,7 @@ class OrderRepository(
             // Loaded items carry only productId — re-attach the catalog product (name/HSN/variants).
             item.product = products.find { product -> product.id == item.productId } ?: item.product
         }
-        // The customer assignments above fire the legacy toCustomer setter, which re-derives
-        // taxSpec incorrectly. The persisted tax data is authoritative — restore it last.
+        // Restore taxSpec from the persisted tax data (authoritative for re-opened documents).
         (orderDomain.taxInfos?.firstOrNull() ?: orderDomain.items.firstOrNull()?.taxInfos?.firstOrNull())
             ?.let { orderDomain.taxSpec = it.taxSpec }
         return orderDomain

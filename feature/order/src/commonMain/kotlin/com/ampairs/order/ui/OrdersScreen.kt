@@ -316,7 +316,7 @@ private fun OrderRow(
 ) {
     val cs = MaterialTheme.colorScheme
     val offlineCd = stringResource(Res.string.ord_list_offline_cd)
-    val buyer = order.toCustomerName.ifBlank { order.fromCustomerName }.ifBlank { "—" }
+    val buyer = order.customerName.ifBlank { "—" }
     val number = order.orderNumber.ifBlank { "—" }
     val amount = order.totalCost.toInr()
     val rowCd = "$number, $buyer, $amount, ${order.status.lowercase()}" +

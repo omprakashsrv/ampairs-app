@@ -15,14 +15,13 @@ import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
  */
 @Composable
 fun OrderScreen(
-    fromCustomerId: String?,
-    toCustomerId: String?,
+    customerId: String?,
     id: String?,
     onOrderSaved: (String) -> Unit,
     onOpenSettings: () -> Unit = {},
     // Legacy slot kept for source compatibility; the composer replaced the embedded picker.
     productPickerSlot: @Composable (onProductClick: (String) -> Unit) -> Unit = {},
-    viewModel: OrderViewModel = assistedMetroViewModel<OrderViewModel, OrderViewModel.Factory> { create(fromCustomerId, toCustomerId, id) }
+    viewModel: OrderViewModel = assistedMetroViewModel<OrderViewModel, OrderViewModel.Factory> { create(customerId, id) }
 ) {
     val state = DocEditorState(
         isInvoice = false,
@@ -64,7 +63,7 @@ fun OrderScreen(
             changeLineProduct = viewModel::changeLineProduct,
             searchProducts = viewModel::searchProducts,
             searchCustomers = viewModel::searchCustomers,
-            selectCustomer = viewModel::selectToCustomer,
+            selectCustomer = viewModel::selectCustomer,
             useWalkIn = viewModel::useWalkInCustomer,
             overallDiscount = viewModel::setOverallDiscount,
             resolveCreateHsn = viewModel::resolveCreateHsn,

@@ -273,26 +273,19 @@ fun OrderViewScreen(
                     }
                 }
 
-                // ── parties ──
+                // ── customer (buyer; the seller is the implicit workspace) ──
                 item {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                     ) {
                         PartyCard(
-                            title = stringResource(Res.string.ord_view_from_seller),
-                            name = order.fromCustomer?.name ?: "—",
-                            gstin = order.fromCustomer?.gstNumber,
-                            meta = order.fromCustomer?.state,
-                            modifier = Modifier.weight(1f),
-                        )
-                        PartyCard(
                             title = stringResource(Res.string.ord_view_bill_to),
-                            name = order.toCustomer?.name ?: "—",
-                            gstin = order.toCustomer?.gstNumber,
+                            name = order.customer?.name ?: "—",
+                            gstin = order.customer?.gstNumber,
                             meta = listOfNotNull(
-                                order.toCustomer?.phone?.takeIf { it.isNotBlank() },
-                                order.toCustomer?.state?.takeIf { it.isNotBlank() },
+                                order.customer?.phone?.takeIf { it.isNotBlank() },
+                                order.customer?.state?.takeIf { it.isNotBlank() },
                             ).joinToString(" · ").ifBlank { null },
                             modifier = Modifier.weight(1f),
                         )
