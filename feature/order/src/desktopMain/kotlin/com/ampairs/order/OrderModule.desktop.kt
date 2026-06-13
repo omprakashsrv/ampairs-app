@@ -7,6 +7,7 @@ import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.order.db.OrderRoomDatabase
 import com.ampairs.order.db.migrations.ORDER_MIGRATION_1_2
 import com.ampairs.order.db.migrations.ORDER_MIGRATION_2_3
+import com.ampairs.order.db.migrations.ORDER_MIGRATION_3_4
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -24,7 +25,7 @@ interface OrderDesktopModule {
         ): OrderRoomDatabase = factory.createDatabase<OrderRoomDatabase>(
             moduleName = "order",
             workspaceSlug = config.workspaceSlug,
-            migrations = listOf(ORDER_MIGRATION_1_2, ORDER_MIGRATION_2_3),
+            migrations = listOf(ORDER_MIGRATION_1_2, ORDER_MIGRATION_2_3, ORDER_MIGRATION_3_4),
         ).also { closableRegistry.register { it.close() } }
     }
 }

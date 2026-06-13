@@ -21,6 +21,12 @@ data class OrderEntity(
     val customer_name: String,
     val customer_gst: String,
     val customer_phone: String? = null,
+    // Seller (issuing business) snapshot — self-contained + frozen at issue; no render-time fetch.
+    val seller_name: String? = null,
+    val seller_address: String? = null,
+    val seller_gst: String? = null,
+    // Place of supply (state) vs the seller state decides CGST+SGST (intra) vs IGST (inter).
+    val place_of_supply: String? = null,
     val total_cost: Double,
     val total_tax: Double,
     val total_items: Long,

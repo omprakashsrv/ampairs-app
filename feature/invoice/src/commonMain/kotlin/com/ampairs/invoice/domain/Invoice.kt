@@ -25,6 +25,12 @@ class Invoice {
     // Single buyer; the seller is the implicit current workspace. taxSpec is resolved by the tax
     // module (ScenarioResolver) from the buyer's GSTIN, not derived here.
     var customer: Customer? = null
+    // Seller (issuing business) identity snapshotted at issue time (frozen, self-contained).
+    var sellerName: String? = null
+    var sellerAddress: String? = null
+    var sellerGst: String? = null
+    // Place of supply (state) — defaults from the buyer; with sellerGst decides intra vs inter.
+    var placeOfSupply: String? = null
     var totalCost: Double by mutableStateOf(0.0)
     var basePrice: Double = 0.0
     var totalTax: Double = 0.0
@@ -114,6 +120,10 @@ fun Invoice.asDatabaseModel(): InvoiceEntity {
         invoice_date = DateTimeAdapter.toDateTimeString(this.invoiceDate),
         customer_id = this.customer?.uid ?: "",
         customer_phone = this.customer?.phone,
+        seller_name = this.sellerName,
+        seller_address = this.sellerAddress,
+        seller_gst = this.sellerGst,
+        place_of_supply = this.placeOfSupply,
         total_cost = this.totalCost,
         base_price = this.basePrice,
         total_items = this.totalItems.toLong(),
@@ -156,6 +166,10 @@ fun InvoiceEntity.asDomainModelSimple(): Invoice {
         gstNumber = this.customer_gst,
         phone = this.customer_phone,
     )
+    invoice.sellerName = this.seller_name
+    invoice.sellerAddress = this.seller_address
+    invoice.sellerGst = this.seller_gst
+    invoice.placeOfSupply = this.place_of_supply
     invoice.totalCost = this.total_cost
     invoice.totalItems = this.total_items.toInt()
     invoice.totalQuantity = this.total_quantity

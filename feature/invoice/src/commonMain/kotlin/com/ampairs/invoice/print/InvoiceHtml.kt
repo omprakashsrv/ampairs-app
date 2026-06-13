@@ -106,7 +106,9 @@ fun buildInvoiceHtml(invoice: Invoice, workspaceName: String): String {
       <div class="grid">
         <div class="box">
           <h3>Seller</h3>
-          <div><b>${esc(workspaceName)}</b></div>
+          <div><b>${esc(invoice.sellerName?.takeIf { it.isNotBlank() } ?: workspaceName)}</b></div>
+          <div>${esc(invoice.sellerAddress)}</div>
+          <div>GSTIN: ${esc(invoice.sellerGst)}</div>
         </div>
         <div class="box">
           <h3>Bill To</h3>

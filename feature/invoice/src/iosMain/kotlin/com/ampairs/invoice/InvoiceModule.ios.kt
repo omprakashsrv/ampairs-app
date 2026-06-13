@@ -7,6 +7,7 @@ import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.invoice.db.InvoiceRoomDatabase
 import com.ampairs.invoice.db.migrations.INVOICE_MIGRATION_1_2
 import com.ampairs.invoice.db.migrations.INVOICE_MIGRATION_2_3
+import com.ampairs.invoice.db.migrations.INVOICE_MIGRATION_3_4
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -24,7 +25,7 @@ interface InvoiceIosModule {
         ): InvoiceRoomDatabase = factory.createDatabase<InvoiceRoomDatabase>(
             moduleName = "invoice",
             workspaceSlug = config.workspaceSlug,
-            migrations = listOf(INVOICE_MIGRATION_1_2, INVOICE_MIGRATION_2_3),
+            migrations = listOf(INVOICE_MIGRATION_1_2, INVOICE_MIGRATION_2_3, INVOICE_MIGRATION_3_4),
         ).also { closableRegistry.register { it.close() } }
     }
 }

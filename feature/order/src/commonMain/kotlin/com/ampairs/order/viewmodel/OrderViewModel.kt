@@ -484,12 +484,13 @@ class OrderViewModel(
     fun selectPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
 
     private suspend fun computeTotals() {
-        // Seller (supply origin) is owned by the tax module and not stored here; the buyer's GSTIN
-        // is the place of supply. With no seller state the scenario resolves intra-state by default.
-        val scenario = ScenarioResolver.resolveFromGstins(
-            sellerGstin = null,
-            buyerGstin = order.customer?.gstNumber,
-        )
+        // Scenario = supplier state (seller GSTIN) vs place of supply. Place of supply defaults to
+        // the buyer's GSTIN state, else the persisted place_of_supply. Supplier state comes from the
+        // snapshotted seller GSTIN (stamped from the tax module); unknown → intra-state default.
+        val supplierState = ScenarioResolver.stateCodeFromGstin(order.sellerGst)
+        val posState = ScenarioResolver.stateCodeFromGstin(order.customer?.gstNumber)
+            ?: order.placeOfSupply?.toIntOrNull()
+        val scenario = ScenarioResolver.resolve(supplierState, posState)
         val taxCodes = orderItems.mapNotNull { it.product?.taxCode }
         val rates = taxRateProvider.resolveAll(taxCodes, scenario)
         ratePercents = rates.mapValues { (_, v) -> v.totalRate }
@@ -647,6 +648,11 @@ class OrderViewModel(
                 order.createdBy = userId
             }
             order.updatedBy = userId
+            // Default place of supply to the buyer's GSTIN state, else the buyer's address state.
+            if (order.placeOfSupply.isNullOrBlank()) {
+                order.placeOfSupply = ScenarioResolver.stateCodeFromGstin(order.customer?.gstNumber)?.toString()
+                    ?: order.customer?.state
+            }
             // snapshot the active modes onto the document (spec 010 C1/C2)
             val orderEntity = order.asDatabaseModel().copy(
                 price_mode = priceMode.name,

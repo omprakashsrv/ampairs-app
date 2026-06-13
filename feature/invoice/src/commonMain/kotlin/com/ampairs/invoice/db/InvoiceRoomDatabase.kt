@@ -14,7 +14,7 @@ import com.ampairs.invoice.db.entity.InvoiceItemEntity
         InvoiceEntity::class,
         InvoiceItemEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @ConstructedBy(InvoiceRoomDatabaseConstructor::class)

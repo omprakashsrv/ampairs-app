@@ -112,9 +112,10 @@ fun TaxInvoiceView(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PartyBlock(
                     title = "Seller",
-                    name = workspaceName,
-                    address = "",
-                    gst = null,
+                    // Seller identity is snapshotted on the invoice at issue time (self-contained).
+                    name = invoice.sellerName?.takeIf { it.isNotBlank() } ?: workspaceName,
+                    address = invoice.sellerAddress.orEmpty(),
+                    gst = invoice.sellerGst,
                     modifier = Modifier.weight(1f),
                 )
                 PartyBlock(

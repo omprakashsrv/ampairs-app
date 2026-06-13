@@ -25,6 +25,12 @@ class Order {
     // Single buyer; the seller is the implicit current workspace. taxSpec is resolved by the tax
     // module (ScenarioResolver) from the buyer's GSTIN, not derived here.
     var customer: Customer? = null
+    // Seller (issuing business) identity snapshotted at issue time (frozen, self-contained).
+    var sellerName: String? = null
+    var sellerAddress: String? = null
+    var sellerGst: String? = null
+    // Place of supply (state) — defaults from the buyer; with sellerGst decides intra vs inter.
+    var placeOfSupply: String? = null
     var totalCost: Double by mutableStateOf(0.0)
     var basePrice: Double = 0.0
     var totalTax: Double = 0.0
@@ -114,6 +120,10 @@ fun Order.asDatabaseModel(): OrderEntity {
         order_date = DateTimeAdapter.toDateTimeString(this.orderDate),
         customer_id = this.customer?.uid ?: "",
         customer_phone = this.customer?.phone,
+        seller_name = this.sellerName,
+        seller_address = this.sellerAddress,
+        seller_gst = this.sellerGst,
+        place_of_supply = this.placeOfSupply,
         invoice_ref_id = this.invoiceRefId,
         total_cost = this.totalCost,
         base_price = this.basePrice,
@@ -153,6 +163,10 @@ fun OrderEntity.asDomainModel(): Order {
         gstNumber = this.customer_gst,
         phone = this.customer_phone,
     )
+    order.sellerName = this.seller_name
+    order.sellerAddress = this.seller_address
+    order.sellerGst = this.seller_gst
+    order.placeOfSupply = this.place_of_supply
     order.totalCost = this.total_cost
     order.totalItems = this.total_items.toInt()
     order.totalQuantity = this.total_quantity
@@ -181,6 +195,10 @@ fun OrderModel.asDomainModel(): Order {
         gstNumber = this.order.customer_gst,
         phone = this.order.customer_phone,
     )
+    order.sellerName = this.order.seller_name
+    order.sellerAddress = this.order.seller_address
+    order.sellerGst = this.order.seller_gst
+    order.placeOfSupply = this.order.place_of_supply
     order.totalCost = this.order.total_cost
     order.totalItems = this.order.total_items.toInt()
     order.totalQuantity = this.order.total_quantity

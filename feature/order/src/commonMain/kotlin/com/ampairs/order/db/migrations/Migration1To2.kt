@@ -43,3 +43,13 @@ val ORDER_MIGRATION_2_3 = object : Migration(2, 3) {
         connection.execSQL("ALTER TABLE orderEntity DROP COLUMN to_customer_gst")
     }
 }
+
+/** Order schema v3 -> v4: snapshot the seller (issuing business) identity onto the document. */
+val ORDER_MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE orderEntity ADD COLUMN seller_name TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE orderEntity ADD COLUMN seller_address TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE orderEntity ADD COLUMN seller_gst TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE orderEntity ADD COLUMN place_of_supply TEXT DEFAULT NULL")
+    }
+}

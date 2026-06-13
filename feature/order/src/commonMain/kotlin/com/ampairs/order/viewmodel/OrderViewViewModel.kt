@@ -153,6 +153,9 @@ class OrderViewViewModel(
         return Invoice().apply {
             orderRefId = src.id
             customer = src.customer
+            sellerName = src.sellerName
+            sellerAddress = src.sellerAddress
+            sellerGst = src.sellerGst
             taxSpec = src.taxSpec.toInvoiceSpec()
             basePrice = src.basePrice
             totalTax = src.totalTax
