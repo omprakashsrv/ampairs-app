@@ -312,8 +312,12 @@ class CentralSyncService {
                 is SyncEvent.TriggerFullSync -> {
                     val targets = if (event.entity != null) listOf(event.entity) else delegates.keys.toList()
                     targets.forEach { entity ->
-                        scope?.launch { executePull(entity) }
-                        scope?.launch { executePush(entity) }
+                        // Push local changes first, then pull — so local edits reach the server
+                        // before the pull, and the pull never races ahead of an unpushed change.
+                        scope?.launch {
+                            executePush(entity)
+                            executePull(entity)
+                        }
                     }
                 }
                 is SyncEvent.BackendEventReceived -> {

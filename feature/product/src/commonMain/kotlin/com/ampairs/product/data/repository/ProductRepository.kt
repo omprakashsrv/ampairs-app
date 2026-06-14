@@ -290,7 +290,7 @@ class ProductRepository(
             sellingPrice = this.selling_price,
             categoryName = this.category_id?.let { categoryNames[it] },
             brandName = this.brand_id?.let { brandNames[it] },
-            stockQuantity = null, // TODO: Add stock management
+            stockQuantity = this.stock_quantity,
             imageUrl = null, // TODO: Join with image table
             active = this.active == 1
         )

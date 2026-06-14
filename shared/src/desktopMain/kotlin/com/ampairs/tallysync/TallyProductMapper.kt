@@ -42,19 +42,23 @@ internal object TallyProductMapper {
         id: String,
         groupIdByName: Map<String, String>,
         categoryIdByName: Map<String, String>,
+        unitIdByName: Map<String, String>,
     ): ProductEntity? {
         val productName = name ?: return null
         // standardPrice = selling/retail price (MRP in India); standardCost = purchase/cost price (→ dp proxy)
         val mrp = standardPrice?.rate?.parsePrice() ?: 0.0
         val buyingPrice = standardCost?.rate?.parsePrice() ?: 0.0
-        val hsnCode = gstDetailList?.firstOrNull()?.hsnCode?.trim()?.takeIf { it.isNotBlank() } ?: ""
+        val hsnCode = extractHsnCode() ?: ""
+        // base_unit stores the workspace unit ID (resolved by name); the detail screen looks the unit
+        // up by id, so storing the raw Tally name ("PCS") would leave the base unit unresolved.
+        val baseUnitId = baseUnits?.trim()?.takeIf { it.isNotBlank() }?.let { unitIdByName[it] }
         return ProductEntity(
             id = id,
             name = productName,
             code = "",
             group_id = parent?.let { groupIdByName[it] },
             category_id = category?.let { categoryIdByName[it] },
-            base_unit = baseUnits,
+            base_unit = baseUnitId,
             tax_code = hsnCode,
             mrp = mrp,
             dp = if (buyingPrice > 0.0) buyingPrice else mrp,
@@ -67,17 +71,37 @@ internal object TallyProductMapper {
     }
 
     fun TallyUnit.toUnitEntity(id: String): UnitEntity? {
-        val unitName = name ?: return null
+        // Tally returns the name either as the element's NAME attribute or as a <NAME> child.
+        val resolvedName = (name ?: unitName)?.trim()?.takeIf { it.isNotBlank() } ?: return null
         val decimals = decimalPlaces?.toIntOrNull() ?: 0
         return UnitEntity(
             id = id,
-            name = unitName,
-            shortName = unitName,
+            name = resolvedName,
+            shortName = resolvedName,
             decimalPlaces = decimals,
             active = true,
             synced = false,
             refId = guid?.takeIf { it.isNotBlank() }
         )
+    }
+
+    /**
+     * Extracts a usable HSN/SAC code from a Tally stock item. Tally exposes HSN in several places
+     * depending on version and how the item was configured: inside GST details (GSTDETAILS.LIST),
+     * inside HSN details (HSNDETAILS.LIST), or only as the HSN master name. Tries them in order of
+     * reliability, falling back to a numeric-looking master name (4–8 digits).
+     */
+    fun StockItem.extractHsnCode(): String? {
+        val directCode = (gstDetailList.orEmpty().mapNotNull { it.hsnCode } +
+            hsnDetailList.orEmpty().mapNotNull { it.hsnCode })
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() }
+        if (directCode != null) return directCode
+
+        return (gstDetailList.orEmpty().mapNotNull { it.hsnMasterName } +
+            hsnDetailList.orEmpty().mapNotNull { it.hsnMasterName })
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() && it.all(Char::isDigit) && it.length in 4..8 }
     }
 
     // Tally price strings: "15750.00/No", " 100.00 /Nos" — take everything before the "/"

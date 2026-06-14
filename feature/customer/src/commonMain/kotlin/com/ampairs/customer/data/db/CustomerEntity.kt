@@ -49,6 +49,7 @@ data class CustomerEntity(
 @OptIn(ExperimentalTime::class)
 fun Customer.toEntity(): CustomerEntity = CustomerEntity(
     id = uid,
+    ref_id = refId,
     name = name,
     email = email,
     phone = phone,
@@ -77,6 +78,7 @@ fun Customer.toEntity(): CustomerEntity = CustomerEntity(
 
 fun CustomerEntity.toDomain(): Customer = Customer(
     uid = id,
+    refId = ref_id,
     name = name,
     email = email,
     phone = phone,

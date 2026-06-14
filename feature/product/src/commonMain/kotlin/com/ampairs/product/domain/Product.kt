@@ -3,6 +3,7 @@ package com.ampairs.product.domain
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.ampairs.product.api.model.InventoryApiModel
 import com.ampairs.product.api.model.ProductApiModel
 import com.ampairs.product.db.entity.ProductEntity
 import kotlinx.serialization.json.Json
@@ -140,6 +141,7 @@ fun List<ProductEntity>.asProductApiModel(): List<ProductApiModel> {
 fun ProductEntity.asProductApiModel(): ProductApiModel {
     return ProductApiModel(
         id = this.id,
+        refId = this.ref_id,
         name = this.name,
         code = this.code,
         groupId = this.group_id ?: "",
@@ -151,7 +153,17 @@ fun ProductEntity.asProductApiModel(): ProductApiModel {
         mrp = this.mrp,
         dp = this.dp,
         baseUnit = null,
-        baseUnitId = null,
+        baseUnitId = this.base_unit,
+        inventory = InventoryApiModel(
+            productId = this.id,
+            baseUnitId = this.base_unit,
+            stock = this.stock_quantity ?: 0.0,
+            mrp = this.mrp,
+            dp = this.dp,
+            sellingPrice = this.selling_price,
+            taxCode = this.tax_code,
+            active = this.active == 1,
+        ),
         sellingPrice = this.selling_price,
         createdAt = this.created_at ?: "",
         updatedAt = this.updated_at ?: "",
@@ -177,6 +189,7 @@ fun List<ProductApiModel>.asDatabaseModel(): List<ProductEntity> {
         ProductEntity(
             seq_id = 0,
             id = it.id,
+            ref_id = it.refId,
             name = it.name,
             code = it.code,
             group_id = it.groupId,
@@ -190,7 +203,8 @@ fun List<ProductApiModel>.asDatabaseModel(): List<ProductEntity> {
             updated_at = it.updatedAt,
             mrp = it.mrp,
             dp = it.dp,
-            base_unit = it.baseUnit?.name,
+            base_unit = it.baseUnitId ?: it.inventory?.baseUnitId,
+            stock_quantity = it.inventory?.stock,
             selling_price = it.sellingPrice,
             soft_deleted = if (it.softDeleted) 1 else 0,
             synced = 1,
