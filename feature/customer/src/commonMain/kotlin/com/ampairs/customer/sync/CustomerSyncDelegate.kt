@@ -147,6 +147,9 @@ class CustomerSyncDelegate(
                                 customerDao.deleteCustomer(serverCustomer.uid)
                                 null
                             }
+                            // Synced rows: server is source of truth. ref_id round-trips (entity
+                            // mapping carries it, backend persists+returns it); unsynced local rows
+                            // are skipped above, so no local-field retention is needed here.
                             else -> serverCustomer.toEntity().copy(synced = true)
                         }
                     }
