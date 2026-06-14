@@ -103,7 +103,7 @@ class ProductSyncDelegate(
                 .forEach { productDao.deleteById(it.id) }
             // Upsert the rest.
             val toUpsert = batch.filter { it.status?.equals("DELETED", ignoreCase = true) != true }
-            if (toUpsert.isNotEmpty()) productDao.insertAll(preserveLocalStock(toUpsert.asDatabaseModel()))
+            if (toUpsert.isNotEmpty()) productDao.insertAll(preserveLocalFields(toUpsert.asDatabaseModel()))
             total += batch.size
             hasNext = pageResp.hasNext
             page++
@@ -112,22 +112,30 @@ class ProductSyncDelegate(
     }
 
     /**
-     * The product `/sync` contract does not carry stock (it lives in the inventory bounded context),
-     * so a server pull would otherwise null out stock written locally from Tally. Keep the local
-     * stock_quantity whenever the server copy doesn't provide one; the server value wins when present.
+     * Preserves locally-known fields the server round-trip may not carry, keyed by the stable
+     * product id:
+     *  - stock_quantity: stock lives in the inventory bounded context, absent from the product
+     *    /sync payload, so a pull would otherwise null out Tally-written stock.
+     *  - ref_id: the Tally GUID used to dedupe on re-sync; if a pull drops it, the next (reset)
+     *    Tally sync can't match the existing row and creates duplicates.
+     * The server value wins whenever it provides one; otherwise the local value is kept.
      */
-    private suspend fun preserveLocalStock(entities: List<ProductEntity>): List<ProductEntity> {
+    private suspend fun preserveLocalFields(entities: List<ProductEntity>): List<ProductEntity> {
         if (entities.isEmpty()) return entities
         val existing = productDao.productsByIds(entities.map { it.id }).associateBy { it.id }
         return entities.map { e ->
-            if (e.stock_quantity == null) e.copy(stock_quantity = existing[e.id]?.stock_quantity) else e
+            val local = existing[e.id] ?: return@map e
+            e.copy(
+                stock_quantity = e.stock_quantity ?: local.stock_quantity,
+                ref_id = e.ref_id?.takeIf { it.isNotBlank() } ?: local.ref_id,
+            )
         }
     }
 
     private suspend fun refreshProductFromServer(productId: String) {
         productApi.getProduct(productId)
             .onSuccess { model ->
-                productDao.insertAll(preserveLocalStock(listOf(model).asDatabaseModel()))
+                productDao.insertAll(preserveLocalFields(listOf(model).asDatabaseModel()))
                 ProductLogger.i("ProductSyncDelegate", "✅ Refreshed product from server: $productId")
             }
             .onFailure { error ->

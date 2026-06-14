@@ -141,6 +141,7 @@ fun List<ProductEntity>.asProductApiModel(): List<ProductApiModel> {
 fun ProductEntity.asProductApiModel(): ProductApiModel {
     return ProductApiModel(
         id = this.id,
+        refId = this.ref_id,
         name = this.name,
         code = this.code,
         groupId = this.group_id ?: "",
@@ -188,6 +189,7 @@ fun List<ProductApiModel>.asDatabaseModel(): List<ProductEntity> {
         ProductEntity(
             seq_id = 0,
             id = it.id,
+            ref_id = it.refId,
             name = it.name,
             code = it.code,
             group_id = it.groupId,
