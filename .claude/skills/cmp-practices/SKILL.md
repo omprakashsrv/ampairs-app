@@ -489,13 +489,29 @@ Text(amount.asRupee())   // legacy; ecom — do not call in UI
   string builder (e.g. print HTML) must take a `currencySymbol: String` parameter passed from the
   calling composable — see `buildInvoiceHtml(...)`.
 
-### Dates (forthcoming slice)
+### Dates — `com.ampairs.common.locale`
 
-`AppLocale.timeZoneId` / `dateFormat` / `timeFormat` exist but date formatters are still being
-migrated. Until then, prefer `DateTimeFormatter`; the timezone-aware variants will also read
-`LocalAppLocale`. Note the **computation** trap: bucketing an `Instant` to a calendar day/month with
-`TimeZone.currentSystemDefault()` is wrong when the business timezone differs — use the business
-`timeZoneId`.
+```kotlin
+// ✅ business timezone + date_format aware (Instant or ISO-string overloads)
+val locale = LocalAppLocale.current
+Text(formatDate(invoice.invoiceDate, locale))   // per AppLocale.dateFormat, in AppLocale.timeZoneId
+Text(formatDateTime(isoString, locale))          // date + time (12H/24H)
+
+// ❌ device-timezone / hardcoded pattern in UI
+Text(instant.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString())
+Text(DateTimeFormatter.formatTimestamp(iso))     // legacy: hardcoded pattern, device zone
+```
+
+`formatDate` / `formatTime` / `formatDateTime(instant|iso, locale)` convert a UTC `Instant` to
+`AppLocale.timeZoneId` and render per `dateFormat` (DD-MM-YYYY / MM-DD-YYYY / YYYY-MM-DD; friendly
+`dd MMM yyyy` fallback) and `timeFormat` (12H/24H).
+
+**The computation trap (not just display):** bucketing an `Instant` to a calendar day/month with
+`TimeZone.currentSystemDefault()` is wrong when the business timezone differs from the device — it
+can land on the wrong day/month. In non-composable code (ViewModel/repository/print) that can't read
+`LocalAppLocale`, inject the business timezone (via `BusinessLocaleProvider`) and convert with
+`TimeZone.of(locale.timeZoneId)`. Known remaining spots: `InvoiceViewModel.formatDocDate()`,
+`OrderViewModel` order-date, `SubscriptionRepository` monthly-usage bucketing.
 
 ---
 
