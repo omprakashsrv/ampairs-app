@@ -1,6 +1,7 @@
 package com.ampairs.tax.ui.calculator
 
 import androidx.compose.foundation.layout.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -40,8 +41,8 @@ fun TaxCalculatorScreen(
     viewModel: TaxCalculatorViewModel = metroViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val workspaceCodes by viewModel.workspaceCodes.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val workspaceCodes by viewModel.workspaceCodes.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

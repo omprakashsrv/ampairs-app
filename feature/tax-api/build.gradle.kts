@@ -20,6 +20,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
+                implementation(projects.data.common)
             }
         }
         val iosArm64Main by getting

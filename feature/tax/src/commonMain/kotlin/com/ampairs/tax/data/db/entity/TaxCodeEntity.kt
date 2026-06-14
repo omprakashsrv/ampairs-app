@@ -54,7 +54,7 @@ data class TaxCodeEntity(
     val usageCount: Int = 0,
 
     @ColumnInfo(name = "last_used_at")
-    val lastUsedAt: Long? = null,
+    val lastUsedAt: Instant? = null,
 
     @ColumnInfo(name = "is_favorite")
     val isFavorite: Boolean = false,
@@ -66,10 +66,10 @@ data class TaxCodeEntity(
     val isActive: Boolean = true,
 
     @ColumnInfo(name = "added_at")
-    val addedAt: Long,
+    val addedAt: Instant,
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long,
+    val updatedAt: Instant,
 
     @ColumnInfo(name = "sync_status")
     val syncStatus: String = "SYNCED"
@@ -91,8 +91,8 @@ fun TaxCodeEntity.toDomain(): TaxCode {
         isFavorite = isFavorite,
         notes = notes,
         isActive = isActive,
-        addedAt = Instant.fromEpochMilliseconds(addedAt).toString(),
-        updatedAt = Instant.fromEpochMilliseconds(updatedAt).toString(),
+        addedAt = addedAt,
+        updatedAt = updatedAt,
         syncStatus = syncStatus
     )
 }
@@ -112,8 +112,8 @@ fun TaxCode.toEntity(): TaxCodeEntity {
         isFavorite = isFavorite,
         notes = notes,
         isActive = isActive,
-        addedAt = Instant.parse(addedAt).toEpochMilliseconds(),
-        updatedAt = Instant.parse(updatedAt).toEpochMilliseconds(),
+        addedAt = addedAt,
+        updatedAt = updatedAt,
         syncStatus = syncStatus
     )
 }

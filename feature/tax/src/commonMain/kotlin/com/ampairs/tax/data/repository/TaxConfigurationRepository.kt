@@ -68,7 +68,7 @@ class TaxConfigurationRepository(
         autoSubscribeNewCodes: Boolean = false
     ): Result<TaxConfiguration> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             val config = TaxConfiguration(
                 id = "",  // Server will generate
                 countryCode = countryCode,
@@ -119,7 +119,7 @@ class TaxConfigurationRepository(
         autoSubscribeNewCodes: Boolean = false
     ): Result<TaxConfiguration> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             // Get existing config to preserve ID
             val existingConfig = taxConfigurationDao.getConfiguration()
             val config = TaxConfiguration(
@@ -190,7 +190,7 @@ class TaxConfigurationRepository(
      */
     suspend fun updateSyncTime() {
         try {
-            val timestamp = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val timestamp = kotlin.time.Clock.System.now()
             taxConfigurationDao.updateSyncTime(timestamp)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxConfigurationRepository.updateSyncTime")

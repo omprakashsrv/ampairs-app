@@ -1,7 +1,9 @@
 package com.ampairs.tax.domain.model
 
+import com.ampairs.common.serialization.InstantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * Workspace Tax Component - Workspace-specific component configuration
@@ -50,11 +52,13 @@ data class WorkspaceTaxComponent(
     val exemptions: List<String> = emptyList(),     // Exemption rules
 
     // Effective dates
+    @Serializable(with = InstantSerializer::class)
     @SerialName("effective_from")
-    val effectiveFrom: Long,
+    val effectiveFrom: Instant,
 
+    @Serializable(with = InstantSerializer::class)
     @SerialName("effective_to")
-    val effectiveTo: Long? = null,
+    val effectiveTo: Instant? = null,
 
     // Accounting
     @SerialName("gl_account_code")
@@ -66,11 +70,13 @@ data class WorkspaceTaxComponent(
     @SerialName("is_active")
     val isActive: Boolean = true,
 
+    @Serializable(with = InstantSerializer::class)
     @SerialName("created_at")
-    val createdAt: Long,
+    val createdAt: Instant,
 
+    @Serializable(with = InstantSerializer::class)
     @SerialName("updated_at")
-    val updatedAt: Long,
+    val updatedAt: Instant,
 
     @SerialName("sync_status")
     val syncStatus: String = "SYNCED"

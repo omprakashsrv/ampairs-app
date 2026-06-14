@@ -1,6 +1,7 @@
 package com.ampairs.tax.ui.list
 
 import androidx.compose.foundation.background
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -54,7 +55,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,9 +75,9 @@ fun MyTaxCodesScreen(
     viewModel: MyTaxCodesViewModel = metroViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val taxCodes by viewModel.taxCodes.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val taxCodes by viewModel.taxCodes.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isExpanded = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 

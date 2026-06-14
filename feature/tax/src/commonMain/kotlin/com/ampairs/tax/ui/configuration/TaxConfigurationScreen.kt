@@ -1,6 +1,7 @@
 package com.ampairs.tax.ui.configuration
 
 import androidx.compose.foundation.layout.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -34,7 +35,7 @@ fun TaxConfigurationScreen(
     viewModel: TaxConfigurationViewModel = metroViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val focusManager = LocalFocusManager.current
 

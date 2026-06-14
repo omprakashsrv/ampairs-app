@@ -1,6 +1,7 @@
 package com.ampairs.tax.ui.detail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,7 +47,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,7 +74,7 @@ fun TaxCodeDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: TaxCodeDetailViewModel = assistedMetroViewModel<TaxCodeDetailViewModel, TaxCodeDetailViewModel.Factory> { create(taxCodeId) }
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showUnsubscribeDialog by remember { mutableStateOf(false) }
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isExpanded = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
@@ -667,9 +667,8 @@ private fun TaxRuleItem(rule: com.ampairs.tax.domain.model.TaxRule, modifier: Mo
     }
 }
 
-private fun formatTimestamp(timestamp: String): String =
-    runCatching { formatTimestamp(Instant.parse(timestamp).toEpochMilliseconds()) }
-        .getOrDefault(timestamp)
+private fun formatTimestamp(timestamp: Instant): String =
+    formatTimestamp(timestamp.toEpochMilliseconds())
 
 private fun formatTimestamp(timestamp: Long): String {
     val seconds = timestamp / 1000

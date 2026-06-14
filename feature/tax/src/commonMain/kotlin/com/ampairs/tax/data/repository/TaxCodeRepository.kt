@@ -1,6 +1,9 @@
 package com.ampairs.tax.data.repository
 
 import com.ampairs.common.sentry.ErrorTracking
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
+import com.ampairs.tax.util.TaxLogger
 import com.ampairs.tax.data.api.TaxConfigurationApi
 import com.ampairs.tax.data.db.dao.TaxCodeDao
 import dev.zacsweers.metro.Inject
@@ -20,7 +23,17 @@ import kotlin.time.ExperimentalTime
 class TaxCodeRepository(
     private val taxConfigApi: TaxConfigurationApi,
     private val taxCodeDao: TaxCodeDao,
+    private val syncStateDao: SyncStateDao,
 ) : TaxCodeLookup {
+
+    private companion object {
+        // Backend caps master_tax_code_ids at 100 per bulk-subscribe request.
+        const val BULK_SUBSCRIBE_BATCH_SIZE = 100
+    }
+
+    /** Flag tax changes for the central push (handled by TaxSyncDelegate). */
+    private suspend fun markPending() =
+        syncStateDao.markPendingPush(SyncEntity.TAX, kotlin.time.Clock.System.now().toEpochMilliseconds())
 
     // ==================== Workspace Tax Codes (Offline Available) ====================
 
@@ -66,7 +79,7 @@ class TaxCodeRepository(
      * Increment usage count when tax code is used
      */
     override suspend fun incrementUsageCount(id: String) {
-        val timestamp = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val timestamp = kotlin.time.Clock.System.now()
         taxCodeDao.incrementUsageCount(id, timestamp)
     }
 
@@ -76,9 +89,32 @@ class TaxCodeRepository(
     suspend fun setFavorite(id: String, isFavorite: Boolean): Result<Unit> {
         return try {
             taxCodeDao.setFavorite(id, isFavorite)
+            taxCodeDao.updateSyncStatus(id, "PENDING")
+            markPending()
             Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.setFavorite")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Update the workspace-specific notes on a subscribed tax code.
+     *
+     * Writes locally first (so the edit is immediately reflected offline) then best-effort persists
+     * to the server via PATCH; the local write is the source of truth and is marked SYNCED only once
+     * the server confirms.
+     */
+    suspend fun updateNotes(id: String, notes: String?): Result<Unit> {
+        return try {
+            val existing = taxCodeDao.getById(id)
+                ?: return Result.failure(IllegalStateException("Tax code not found: $id"))
+            // Local write is the source of truth; TaxSyncDelegate persists it via PATCH on push.
+            taxCodeDao.update(existing.copy(notes = notes, syncStatus = "PENDING"))
+            markPending()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxCodeRepository.updateNotes")
             Result.failure(e)
         }
     }
@@ -171,32 +207,18 @@ class TaxCodeRepository(
     }
 
     /**
-     * Unsubscribe from tax code
+     * Unsubscribe from a tax code — offline-safe.
+     *
+     * Soft-deletes locally (inactive + queued for deletion) and flags the entity for the central
+     * push; TaxSyncDelegate confirms the unsubscribe on the server then hard-deletes the row. Works
+     * offline (the deletion propagates on reconnect) and is crash-safe (no out-of-band hard delete).
      */
     suspend fun unsubscribeFromTaxCode(workspaceTaxCodeId: String): Result<Unit> {
         return try {
-            // Deactivate locally first
             taxCodeDao.deactivate(workspaceTaxCodeId)
-
-            // Try to delete from server
-            try {
-                val result = taxConfigApi.unsubscribeFromTaxCode( workspaceTaxCodeId)
-
-                if (result.isSuccess) {
-                    // Permanently delete from local DB
-                    taxCodeDao.delete(workspaceTaxCodeId)
-                    Result.success(Unit)
-                } else {
-                    // Mark as pending deletion
-                    taxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
-                    Result.success(Unit)
-                }
-            } catch (e: Exception) {
-                // Network error - mark as pending deletion
-                ErrorTracking.captureException(e, "TaxCodeRepository.unsubscribeFromTaxCode.sync")
-                taxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
-                Result.success(Unit)
-            }
+            taxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
+            markPending()
+            Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.unsubscribeFromTaxCode")
             Result.failure(e)
@@ -204,29 +226,41 @@ class TaxCodeRepository(
     }
 
     /**
-     * Bulk subscribe to multiple tax codes
+     * Bulk subscribe to multiple tax codes.
+     *
+     * The backend caps `master_tax_code_ids` at 100 per request (`@field:Size(max = 100)`), so the
+     * ids are chunked into batches of [BULK_SUBSCRIBE_BATCH_SIZE]. Each batch's subscribed codes are
+     * persisted as they arrive; a failed batch aborts the remaining chunks and surfaces the error.
      */
     suspend fun bulkSubscribeTaxCodes(
         masterTaxCodeIds: List<String>,
         applyDefaultRules: Boolean = true
     ): Result<Int> {
         return try {
-            val result = taxConfigApi.bulkSubscribeTaxCodes(
-                masterTaxCodeIds = masterTaxCodeIds,
-                applyDefaultRules = applyDefaultRules
-            )
+            var totalSuccess = 0
 
-            if (result.isSuccess) {
-                val bulkResult = result.getOrThrow()
+            for (chunk in masterTaxCodeIds.chunked(BULK_SUBSCRIBE_BATCH_SIZE)) {
+                val result = taxConfigApi.bulkSubscribeTaxCodes(
+                    masterTaxCodeIds = chunk,
+                    applyDefaultRules = applyDefaultRules
+                )
 
-                // Save all subscribed codes to local database
-                val entities = bulkResult.subscribedCodes.map { it.toEntity() }
-                taxCodeDao.insertAll(entities)
+                if (result.isSuccess) {
+                    val bulkResult = result.getOrThrow()
 
-                Result.success(bulkResult.successCount)
-            } else {
-                Result.failure(result.exceptionOrNull() ?: Exception("Bulk subscription failed"))
+                    // Save this batch's subscribed codes to local database
+                    val entities = bulkResult.subscribedCodes.map { it.toEntity() }
+                    taxCodeDao.insertAll(entities)
+
+                    totalSuccess += bulkResult.successCount
+                } else {
+                    return Result.failure(
+                        result.exceptionOrNull() ?: Exception("Bulk subscription failed")
+                    )
+                }
             }
+
+            Result.success(totalSuccess)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.bulkSubscribeTaxCodes")
             Result.failure(e)
@@ -271,9 +305,9 @@ class TaxCodeRepository(
     /**
      * Get last sync time for incremental sync
      */
-    private suspend fun getLastSyncTime(): Long? {
-        val codes = taxCodeDao.getModifiedAfter(0L)
-        return codes.maxOfOrNull { it.updatedAt }   // entity stores epoch-millis Long
+    private suspend fun getLastSyncTime(): kotlin.time.Instant? {
+        val codes = taxCodeDao.getModifiedAfter(kotlin.time.Instant.fromEpochMilliseconds(0))
+        return codes.maxOfOrNull { it.updatedAt }   // newest updatedAt seen locally
     }
 
     /**

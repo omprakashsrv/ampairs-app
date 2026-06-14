@@ -1,5 +1,7 @@
 package com.ampairs.tax.data.repository
 
+import com.ampairs.tax.util.TaxLogger
+
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.tax.data.api.TaxConfigurationApi
 import com.ampairs.tax.data.db.dao.TaxComponentDao
@@ -88,7 +90,7 @@ class TaxComponentRepository(
      */
     suspend fun getComponentsByJurisdiction(
         jurisdiction: String,
-        effectiveDate: Long = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        effectiveDate: kotlin.time.Instant = kotlin.time.Clock.System.now()
     ): List<WorkspaceTaxComponent> {
 
         return taxComponentDao.getComponentsByJurisdiction(
@@ -101,12 +103,12 @@ class TaxComponentRepository(
      * Get workspace component by ID (offline)
      */
     suspend fun getWorkspaceComponentById(id: String): WorkspaceTaxComponent? {
-        println("🔍 [TaxComponentRepo] Looking up component by ID: $id")
+        TaxLogger.d("TaxComponentRepo", "🔍 [TaxComponentRepo] Looking up component by ID: $id")
         val entity = taxComponentDao.getById(id)
         if (entity != null) {
-            println("✅ [TaxComponentRepo] Found component: ID=${entity.id}, typeId=${entity.componentTypeId}")
+            TaxLogger.d("TaxComponentRepo", "✅ [TaxComponentRepo] Found component: ID=${entity.id}, typeId=${entity.componentTypeId}")
         } else {
-            println("❌ [TaxComponentRepo] Component not found in DB for ID: $id")
+            TaxLogger.d("TaxComponentRepo", "❌ [TaxComponentRepo] Component not found in DB for ID: $id")
         }
         return entity?.toDomain()
     }
@@ -130,7 +132,7 @@ class TaxComponentRepository(
      */
     suspend fun createWorkspaceComponent(component: WorkspaceTaxComponent): Result<WorkspaceTaxComponent> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             val componentWithTimestamp = component.copy(
                 createdAt = now,
                 updatedAt = now,
@@ -156,7 +158,7 @@ class TaxComponentRepository(
      */
     suspend fun updateWorkspaceComponent(component: WorkspaceTaxComponent): Result<WorkspaceTaxComponent> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             val updatedComponent = component.copy(
                 updatedAt = now,
                 syncStatus = "PENDING"
@@ -193,7 +195,7 @@ class TaxComponentRepository(
             // Get last sync time
             val lastSync = getLastSyncTime()
 
-            println("🔄 [TaxComponentRepo] Starting sync with lastSync: $lastSync")
+            TaxLogger.d("TaxComponentRepo", "🔄 [TaxComponentRepo] Starting sync with lastSync: $lastSync")
 
             // Fetch updated components from server (paginated)
             var totalSynced = 0
@@ -211,17 +213,17 @@ class TaxComponentRepository(
                     val response = result.getOrThrow()
                     val components = response.content
 
-                    println("📥 [TaxComponentRepo] Page $page: Received ${components.size} components")
+                    TaxLogger.d("TaxComponentRepo", "📥 [TaxComponentRepo] Page $page: Received ${components.size} components")
 
                     // Log first few components for debugging
                     components.take(3).forEach { comp ->
-                        println("  - Component: ID=${comp.id}, typeId=${comp.componentTypeId}, jurisdiction=${comp.jurisdiction}, rate=${comp.ratePercentage}")
+                        TaxLogger.d("TaxComponentRepo", "  - Component: ID=${comp.id}, typeId=${comp.componentTypeId}, jurisdiction=${comp.jurisdiction}, rate=${comp.ratePercentage}")
                     }
 
                     // Upsert to local database
                     val entities = components.map { it.toEntity() }
                     taxComponentDao.insertAll(entities)
-                    println("✅ [TaxComponentRepo] Successfully inserted ${entities.size} entities to DB")
+                    TaxLogger.d("TaxComponentRepo", "✅ [TaxComponentRepo] Successfully inserted ${entities.size} entities to DB")
 
                     totalSynced += components.size
 
@@ -232,15 +234,15 @@ class TaxComponentRepository(
 
                     page++
                 } else {
-                    println("❌ [TaxComponentRepo] Sync failed: ${result.exceptionOrNull()?.message}")
+                    TaxLogger.d("TaxComponentRepo", "❌ [TaxComponentRepo] Sync failed: ${result.exceptionOrNull()?.message}")
                     break
                 }
             } while (totalSynced < 10000) // Safety limit
 
-            println("✅ [TaxComponentRepo] Sync complete: $totalSynced components synced")
+            TaxLogger.d("TaxComponentRepo", "✅ [TaxComponentRepo] Sync complete: $totalSynced components synced")
             Result.success(totalSynced)
         } catch (e: Exception) {
-            println("❌ [TaxComponentRepo] Sync exception: ${e.message}")
+            TaxLogger.d("TaxComponentRepo", "❌ [TaxComponentRepo] Sync exception: ${e.message}")
             ErrorTracking.captureException(e, "TaxComponentRepository.syncWorkspaceComponents")
             Result.failure(e)
         }
@@ -249,7 +251,7 @@ class TaxComponentRepository(
     /**
      * Get last sync time for incremental sync
      */
-    private suspend fun getLastSyncTime(): Long? {
+    private suspend fun getLastSyncTime(): kotlin.time.Instant? {
         val components = taxComponentDao.getUnsyncedComponents()
         return components.maxOfOrNull { it.updatedAt }
     }

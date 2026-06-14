@@ -27,6 +27,7 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlin.time.Instant
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -133,13 +134,13 @@ class TaxConfigurationApiImpl(
     }
 
     override suspend fun getTaxCodes(
-        modifiedAfter: Long?,
+        modifiedAfter: Instant?,
         page: Int,
         size: Int
     ): Result<PageResponse<TaxCode>> {
         return try {
             val params = buildMap<String, String> {
-                if (modifiedAfter != null) put("modifiedAfter", modifiedAfter.toString())
+                if (modifiedAfter != null) put("modifiedAfter", modifiedAfter.toEpochMilliseconds().toString())
                 put("page", page.toString())
                 put("size", size.toString())
             }
@@ -224,15 +225,15 @@ class TaxConfigurationApiImpl(
         }
     }
 
-    // TODO: no backend endpoint yet — will return 404
+    // Backed by GET /tax/v1/components
     override suspend fun getWorkspaceComponents(
-        modifiedAfter: Long?,
+        modifiedAfter: Instant?,
         page: Int,
         size: Int
     ): Result<PageResponse<WorkspaceTaxComponent>> {
         return try {
             val params = buildMap<String, String> {
-                if (modifiedAfter != null) put("modifiedAfter", modifiedAfter.toString())
+                if (modifiedAfter != null) put("modifiedAfter", modifiedAfter.toEpochMilliseconds().toString())
                 put("page", page.toString())
                 put("size", size.toString())
             }
@@ -245,13 +246,13 @@ class TaxConfigurationApiImpl(
     }
 
     override suspend fun getTaxRules(
-        modifiedAfter: Long?,
+        modifiedAfter: Instant?,
         page: Int,
         size: Int
     ): Result<PageResponse<TaxRule>> {
         return try {
             val params = buildMap<String, String> {
-                if (modifiedAfter != null) put("modifiedAfter", modifiedAfter.toString())
+                if (modifiedAfter != null) put("modifiedAfter", modifiedAfter.toEpochMilliseconds().toString())
                 put("page", page.toString())
                 put("size", size.toString())
             }

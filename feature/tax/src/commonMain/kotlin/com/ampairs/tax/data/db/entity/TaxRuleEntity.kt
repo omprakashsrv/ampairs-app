@@ -8,6 +8,7 @@ import com.ampairs.tax.domain.model.ComponentComposition
 import com.ampairs.tax.domain.model.TaxRule
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Instant
 
 /**
  * Tax Rule Entity - Component composition for complete tax
@@ -57,10 +58,10 @@ data class TaxRuleEntity(
     val isActive: Boolean = true,
 
     @ColumnInfo(name = "created_at")
-    val createdAt: Long = 0,
+    val createdAt: Instant = Instant.fromEpochMilliseconds(0),
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long = 0,
+    val updatedAt: Instant = Instant.fromEpochMilliseconds(0),
 
     @ColumnInfo(name = "sync_status")
     val syncStatus: String = "SYNCED"

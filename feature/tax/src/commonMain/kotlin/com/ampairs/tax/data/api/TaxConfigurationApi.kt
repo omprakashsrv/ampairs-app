@@ -9,6 +9,7 @@ import com.ampairs.tax.domain.model.WorkspaceTaxComponent
 import com.ampairs.tax.domain.model.TaxConfiguration
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 interface TaxConfigurationApi {
 
@@ -38,7 +39,7 @@ interface TaxConfigurationApi {
 
     // Workspace Tax Codes
     suspend fun getTaxCodes(
-        modifiedAfter: Long? = null,
+        modifiedAfter: Instant? = null,
         page: Int = 0,
         size: Int = 100
     ): Result<PageResponse<TaxCode>>
@@ -68,16 +69,16 @@ interface TaxConfigurationApi {
     // Tax Component Types
     suspend fun getComponentTypes(countryCode: String): Result<List<TaxComponentType>>
 
-    // TODO: no backend endpoint yet for GET /tax/v1/components
+    // Backed by GET /tax/v1/components
     suspend fun getWorkspaceComponents(
-        modifiedAfter: Long? = null,
+        modifiedAfter: Instant? = null,
         page: Int = 0,
         size: Int = 100
     ): Result<PageResponse<WorkspaceTaxComponent>>
 
     // Tax Rules
     suspend fun getTaxRules(
-        modifiedAfter: Long? = null,
+        modifiedAfter: Instant? = null,
         page: Int = 0,
         size: Int = 100
     ): Result<PageResponse<TaxRule>>

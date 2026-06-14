@@ -10,6 +10,7 @@ import com.ampairs.tax.domain.model.RateType
 import com.ampairs.tax.domain.model.WorkspaceTaxComponent
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Instant
 
 /**
  * Tax Component Entity - Component configuration with rates and rules
@@ -67,10 +68,10 @@ data class TaxComponentEntity(
 
     // Effective dates
     @ColumnInfo(name = "effective_from")
-    val effectiveFrom: Long,
+    val effectiveFrom: Instant,
 
     @ColumnInfo(name = "effective_to")
-    val effectiveTo: Long? = null,
+    val effectiveTo: Instant? = null,
 
     // Accounting
     @ColumnInfo(name = "gl_account_code")
@@ -83,10 +84,10 @@ data class TaxComponentEntity(
     val isActive: Boolean = true,
 
     @ColumnInfo(name = "created_at")
-    val createdAt: Long,
+    val createdAt: Instant,
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long,
+    val updatedAt: Instant,
 
     @ColumnInfo(name = "sync_status")
     val syncStatus: String = "SYNCED"

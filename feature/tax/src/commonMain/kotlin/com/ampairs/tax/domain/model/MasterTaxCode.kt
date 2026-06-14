@@ -1,7 +1,9 @@
 package com.ampairs.tax.domain.model
 
+import com.ampairs.common.serialization.InstantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * Master Tax Code - Server-side registry of all available tax codes
@@ -55,9 +57,11 @@ data class MasterTaxCode(
     val metadata: Map<String, String> = emptyMap(), // Additional attributes
 
     // Backend serializes these as ISO 8601 strings (e.g. "2026-05-25T17:01:04.083622Z")
+    @Serializable(with = InstantSerializer::class)
     @SerialName("created_at")
-    val createdAt: String,
+    val createdAt: Instant,
 
+    @Serializable(with = InstantSerializer::class)
     @SerialName("updated_at")
-    val updatedAt: String,
+    val updatedAt: Instant,
 )

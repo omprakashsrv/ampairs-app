@@ -1,6 +1,7 @@
 package com.ampairs.tax.ui.search
 
 import androidx.compose.foundation.clickable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,9 +38,9 @@ fun TaxCodeSearchScreen(
     viewModel: TaxCodeSearchViewModel = metroViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val workspaceCodes by viewModel.workspaceCodes.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val workspaceCodes by viewModel.workspaceCodes.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

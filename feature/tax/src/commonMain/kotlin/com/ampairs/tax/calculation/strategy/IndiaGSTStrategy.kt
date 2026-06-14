@@ -1,5 +1,7 @@
 package com.ampairs.tax.calculation.strategy
 
+import com.ampairs.tax.util.TaxLogger
+
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.tax.util.formatDecimal
 import com.ampairs.tax.calculation.ITaxCalculationStrategy
@@ -74,10 +76,10 @@ class IndiaGSTStrategy(
             // Sort components by calculation order
             val sortedComponents = scenario.components.sortedBy { it.order }
 
-            println("🧮 [IndiaGST] Calculating tax for ${sortedComponents.size} components")
+            TaxLogger.d("IndiaGST", "🧮 [IndiaGST] Calculating tax for ${sortedComponents.size} components")
 
             for (componentConfig in sortedComponents) {
-                println("🧮 [IndiaGST] Processing component: id=${componentConfig.id}, name=${componentConfig.name}, rate=${componentConfig.rate}")
+                TaxLogger.d("IndiaGST", "🧮 [IndiaGST] Processing component: id=${componentConfig.id}, name=${componentConfig.name}, rate=${componentConfig.rate}")
 
                 // Calculate taxable amount (base amount only, no compound tax for GST)
                 val taxableAmount = baseAmount
@@ -103,10 +105,10 @@ class IndiaGSTStrategy(
                     )
                 )
 
-                println("✅ [IndiaGST] Added component: ${componentConfig.name}, taxAmount=$taxAmount, runningTotal=$totalTaxAmount")
+                TaxLogger.d("IndiaGST", "✅ [IndiaGST] Added component: ${componentConfig.name}, taxAmount=$taxAmount, runningTotal=$totalTaxAmount")
             }
 
-            println("🧮 [IndiaGST] Final calculation: baseAmount=$baseAmount, totalTax=$totalTaxAmount, components=${components.size}")
+            TaxLogger.d("IndiaGST", "🧮 [IndiaGST] Final calculation: baseAmount=$baseAmount, totalTax=$totalTaxAmount, components=${components.size}")
 
             // 7. Build result
             val result = TaxCalculationResult(

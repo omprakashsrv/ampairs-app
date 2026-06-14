@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.ampairs.tax.data.db.entity.TaxRuleEntity
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Instant
 
 /**
  * Tax Rule DAO
@@ -78,7 +79,7 @@ interface TaxRuleDao {
     suspend fun getUnsyncedRules(): List<TaxRuleEntity>
 
     @Query("SELECT * FROM tax_rules WHERE updated_at > :modifiedAfter")
-    suspend fun getModifiedAfter(modifiedAfter: Long): List<TaxRuleEntity>
+    suspend fun getModifiedAfter(modifiedAfter: Instant): List<TaxRuleEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(rule: TaxRuleEntity)
