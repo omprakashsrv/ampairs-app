@@ -224,7 +224,7 @@ class TaxConfigurationApiImpl(
         }
     }
 
-    // TODO: no backend endpoint yet — will return 404
+    // Backed by GET /tax/v1/components
     override suspend fun getWorkspaceComponents(
         modifiedAfter: Long?,
         page: Int,

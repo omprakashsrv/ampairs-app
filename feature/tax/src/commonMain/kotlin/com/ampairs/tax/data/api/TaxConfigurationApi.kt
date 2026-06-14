@@ -68,7 +68,7 @@ interface TaxConfigurationApi {
     // Tax Component Types
     suspend fun getComponentTypes(countryCode: String): Result<List<TaxComponentType>>
 
-    // TODO: no backend endpoint yet for GET /tax/v1/components
+    // Backed by GET /tax/v1/components
     suspend fun getWorkspaceComponents(
         modifiedAfter: Long? = null,
         page: Int = 0,

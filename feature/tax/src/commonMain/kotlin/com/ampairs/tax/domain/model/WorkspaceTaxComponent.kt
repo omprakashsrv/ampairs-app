@@ -1,5 +1,6 @@
 package com.ampairs.tax.domain.model
 
+import com.ampairs.common.serialization.EpochMillisSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -50,9 +51,11 @@ data class WorkspaceTaxComponent(
     val exemptions: List<String> = emptyList(),     // Exemption rules
 
     // Effective dates
+    @Serializable(with = EpochMillisSerializer::class)
     @SerialName("effective_from")
     val effectiveFrom: Long,
 
+    @Serializable(with = EpochMillisSerializer::class)
     @SerialName("effective_to")
     val effectiveTo: Long? = null,
 
@@ -66,9 +69,11 @@ data class WorkspaceTaxComponent(
     @SerialName("is_active")
     val isActive: Boolean = true,
 
+    @Serializable(with = EpochMillisSerializer::class)
     @SerialName("created_at")
     val createdAt: Long,
 
+    @Serializable(with = EpochMillisSerializer::class)
     @SerialName("updated_at")
     val updatedAt: Long,
 
