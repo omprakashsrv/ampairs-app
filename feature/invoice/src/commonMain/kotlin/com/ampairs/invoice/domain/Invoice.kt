@@ -29,8 +29,10 @@ class Invoice {
     var sellerName: String? = null
     var sellerAddress: String? = null
     var sellerGst: String? = null
-    // Place of supply (state) — defaults from the buyer; with sellerGst decides intra vs inter.
+    // Place of supply: buyer/destination state (defaults from the buyer) vs seller/origin state.
+    // IGST iff they differ — a pure compare, no GSTIN diff.
     var placeOfSupply: String? = null
+    var sellerPlaceOfSupply: String? = null
     var totalCost: Double by mutableStateOf(0.0)
     var basePrice: Double = 0.0
     var totalTax: Double = 0.0
@@ -124,6 +126,7 @@ fun Invoice.asDatabaseModel(): InvoiceEntity {
         seller_address = this.sellerAddress,
         seller_gst = this.sellerGst,
         place_of_supply = this.placeOfSupply,
+        seller_place_of_supply = this.sellerPlaceOfSupply,
         total_cost = this.totalCost,
         base_price = this.basePrice,
         total_items = this.totalItems.toLong(),
@@ -170,6 +173,7 @@ fun InvoiceEntity.asDomainModelSimple(): Invoice {
     invoice.sellerAddress = this.seller_address
     invoice.sellerGst = this.seller_gst
     invoice.placeOfSupply = this.place_of_supply
+    invoice.sellerPlaceOfSupply = this.seller_place_of_supply
     invoice.totalCost = this.total_cost
     invoice.totalItems = this.total_items.toInt()
     invoice.totalQuantity = this.total_quantity

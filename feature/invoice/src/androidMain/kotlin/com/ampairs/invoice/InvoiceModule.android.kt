@@ -9,6 +9,7 @@ import com.ampairs.invoice.db.InvoiceRoomDatabase
 import com.ampairs.invoice.db.migrations.INVOICE_MIGRATION_1_2
 import com.ampairs.invoice.db.migrations.INVOICE_MIGRATION_2_3
 import com.ampairs.invoice.db.migrations.INVOICE_MIGRATION_3_4
+import com.ampairs.invoice.db.migrations.INVOICE_MIGRATION_4_5
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -30,7 +31,7 @@ interface InvoiceAndroidModule {
             queryDispatcher = Dispatchers.IO,
             moduleName = "invoice",
             workspaceSlug = config.workspaceSlug,
-            migrations = listOf(INVOICE_MIGRATION_1_2, INVOICE_MIGRATION_2_3, INVOICE_MIGRATION_3_4),
+            migrations = listOf(INVOICE_MIGRATION_1_2, INVOICE_MIGRATION_2_3, INVOICE_MIGRATION_3_4, INVOICE_MIGRATION_4_5),
         ).also { closableRegistry.register { it.close() } }
     }
 }

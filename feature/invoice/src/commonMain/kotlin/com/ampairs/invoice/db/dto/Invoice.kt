@@ -72,6 +72,7 @@ fun List<InvoiceApiModel>.asDatabaseModel(): List<InvoiceEntity> {
             seller_address = invoiceApiModel.sellerAddress,
             seller_gst = invoiceApiModel.sellerGst,
             place_of_supply = invoiceApiModel.placeOfSupply,
+            seller_place_of_supply = invoiceApiModel.sellerPlaceOfSupply,
             total_cost = invoiceApiModel.totalCost,
             base_price = invoiceApiModel.basePrice,
             total_tax = invoiceApiModel.totalTax,

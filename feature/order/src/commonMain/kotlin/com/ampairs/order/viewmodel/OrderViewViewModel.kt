@@ -156,6 +156,8 @@ class OrderViewViewModel(
             sellerName = src.sellerName
             sellerAddress = src.sellerAddress
             sellerGst = src.sellerGst
+            placeOfSupply = src.placeOfSupply
+            sellerPlaceOfSupply = src.sellerPlaceOfSupply
             taxSpec = src.taxSpec.toInvoiceSpec()
             basePrice = src.basePrice
             totalTax = src.totalTax

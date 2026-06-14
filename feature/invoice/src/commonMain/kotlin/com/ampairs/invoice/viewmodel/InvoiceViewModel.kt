@@ -474,12 +474,13 @@ class InvoiceViewModel(
     fun selectPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
 
     private suspend fun computeTotals() {
-        // Scenario = supplier state (seller GSTIN) vs place of supply. Place of supply defaults to
-        // the buyer's GSTIN state, else the persisted place_of_supply. Supplier state comes from the
-        // snapshotted seller GSTIN (stamped from the tax module); unknown → intra-state default.
-        val supplierState = ScenarioResolver.stateCodeFromGstin(invoice.sellerGst)
-        val posState = ScenarioResolver.stateCodeFromGstin(invoice.customer?.gstNumber)
-            ?: invoice.placeOfSupply?.toIntOrNull()
+        // IGST vs CGST+SGST is purely the place-of-supply diff: seller (origin) state vs buyer
+        // (destination) state — both snapshotted on the document. Fall back to the GSTIN state only
+        // when an explicit place-of-supply is absent. Unknown → intra-state default.
+        val supplierState = invoice.sellerPlaceOfSupply?.toIntOrNull()
+            ?: ScenarioResolver.stateCodeFromGstin(invoice.sellerGst)
+        val posState = invoice.placeOfSupply?.toIntOrNull()
+            ?: ScenarioResolver.stateCodeFromGstin(invoice.customer?.gstNumber)
         val scenario = ScenarioResolver.resolve(supplierState, posState)
         val taxCodes = invoiceItems.mapNotNull { it.product?.taxCode }
         val rates = taxRateProvider.resolveAll(taxCodes, scenario)
@@ -656,6 +657,11 @@ class InvoiceViewModel(
             if (invoice.placeOfSupply.isNullOrBlank()) {
                 invoice.placeOfSupply = ScenarioResolver.stateCodeFromGstin(invoice.customer?.gstNumber)?.toString()
                     ?: invoice.customer?.state
+            }
+            // Seller (origin) place of supply: from the snapshotted seller GSTIN (stamped from the
+            // tax registration). Stored so the IGST decision is a pure compare on re-edit.
+            if (invoice.sellerPlaceOfSupply.isNullOrBlank()) {
+                invoice.sellerPlaceOfSupply = ScenarioResolver.stateCodeFromGstin(invoice.sellerGst)?.toString()
             }
             // snapshot the active modes + numbering series onto the document (spec 010 C1/C2/C4)
             val invoiceEntity = invoice.asDatabaseModel().copy(

@@ -73,6 +73,7 @@ fun List<OrderApiModel>.asDatabaseModel(): List<OrderEntity> {
             seller_address = orderApiModel.sellerAddress,
             seller_gst = orderApiModel.sellerGst,
             place_of_supply = orderApiModel.placeOfSupply,
+            seller_place_of_supply = orderApiModel.sellerPlaceOfSupply,
             total_cost = orderApiModel.totalCost,
             base_price = orderApiModel.basePrice,
             total_tax = orderApiModel.totalTax,

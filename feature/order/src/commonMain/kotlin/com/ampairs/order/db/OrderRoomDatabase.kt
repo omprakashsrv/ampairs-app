@@ -14,7 +14,7 @@ import com.ampairs.order.db.entity.OrderItemEntity
         OrderEntity::class,
         OrderItemEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @ConstructedBy(OrderRoomDatabaseConstructor::class)

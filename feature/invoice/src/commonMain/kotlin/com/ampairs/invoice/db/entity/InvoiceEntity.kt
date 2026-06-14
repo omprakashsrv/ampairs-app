@@ -25,8 +25,9 @@ data class InvoiceEntity(
     val seller_name: String? = null,
     val seller_address: String? = null,
     val seller_gst: String? = null,
-    // Place of supply (state) vs the seller state decides CGST+SGST (intra) vs IGST (inter).
+    // Place of supply: buyer/destination state vs seller/origin state. IGST iff they differ.
     val place_of_supply: String? = null,
+    val seller_place_of_supply: String? = null,
     val total_cost: Double,
     val total_tax: Double,
     val total_items: Long,
