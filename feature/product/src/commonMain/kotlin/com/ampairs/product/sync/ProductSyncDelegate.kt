@@ -3,6 +3,7 @@ package com.ampairs.product.sync
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.product.data.api.ProductApi
 import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.domain.asDatabaseModel
 import com.ampairs.product.domain.asProductApiModel
 import com.ampairs.product.util.ProductLogger
@@ -102,7 +103,7 @@ class ProductSyncDelegate(
                 .forEach { productDao.deleteById(it.id) }
             // Upsert the rest.
             val toUpsert = batch.filter { it.status?.equals("DELETED", ignoreCase = true) != true }
-            if (toUpsert.isNotEmpty()) productDao.insertAll(toUpsert.asDatabaseModel())
+            if (toUpsert.isNotEmpty()) productDao.insertAll(preserveLocalStock(toUpsert.asDatabaseModel()))
             total += batch.size
             hasNext = pageResp.hasNext
             page++
@@ -110,10 +111,23 @@ class ProductSyncDelegate(
         total
     }
 
+    /**
+     * The product `/sync` contract does not carry stock (it lives in the inventory bounded context),
+     * so a server pull would otherwise null out stock written locally from Tally. Keep the local
+     * stock_quantity whenever the server copy doesn't provide one; the server value wins when present.
+     */
+    private suspend fun preserveLocalStock(entities: List<ProductEntity>): List<ProductEntity> {
+        if (entities.isEmpty()) return entities
+        val existing = productDao.productsByIds(entities.map { it.id }).associateBy { it.id }
+        return entities.map { e ->
+            if (e.stock_quantity == null) e.copy(stock_quantity = existing[e.id]?.stock_quantity) else e
+        }
+    }
+
     private suspend fun refreshProductFromServer(productId: String) {
         productApi.getProduct(productId)
             .onSuccess { model ->
-                productDao.insertAll(listOf(model).asDatabaseModel())
+                productDao.insertAll(preserveLocalStock(listOf(model).asDatabaseModel()))
                 ProductLogger.i("ProductSyncDelegate", "✅ Refreshed product from server: $productId")
             }
             .onFailure { error ->
