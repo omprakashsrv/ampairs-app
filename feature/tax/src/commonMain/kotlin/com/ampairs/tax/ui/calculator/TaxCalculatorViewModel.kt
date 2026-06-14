@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.calculation.TaxCalculationEngine
 import com.ampairs.tax.calculation.model.*
 import com.ampairs.business.data.repository.BusinessRepository
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
 import com.ampairs.tax.data.repository.TaxCodeRepository
-import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
@@ -24,7 +26,7 @@ import kotlinx.coroutines.launch
 class TaxCalculatorViewModel(
     private val taxCalculationEngine: TaxCalculationEngine,
     private val taxCodeRepository: TaxCodeRepository,
-    private val taxRuleRepository: TaxRuleRepository,
+    private val syncService: CentralSyncService,
     private val businessRepository: BusinessRepository,
 ) : ViewModel() {
 
@@ -48,10 +50,8 @@ class TaxCalculatorViewModel(
             }
         }
 
-        // Sync tax rules in background for calculations
-        viewModelScope.launch {
-            taxRuleRepository.syncTaxRules()
-        }
+        // Ensure rules/components are present for calculations — pull via central sync.
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.TAX))
     }
 
     fun onTaxCodeSelected(taxCode: TaxCode) {

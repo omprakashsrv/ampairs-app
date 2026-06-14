@@ -3,6 +3,9 @@ package com.ampairs.tax.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.business.data.repository.BusinessRepository
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.domain.model.MasterTaxCode
 import com.ampairs.tax.domain.model.TaxCodeType
@@ -38,6 +41,7 @@ import kotlinx.coroutines.launch
 @Inject
 class TaxCodeSearchViewModel(
     private val taxCodeRepository: TaxCodeRepository,
+    private val syncService: CentralSyncService,
     private val businessRepository: BusinessRepository,
 ) : ViewModel() {
 
@@ -163,6 +167,8 @@ class TaxCodeSearchViewModel(
 
             result.fold(
                 onSuccess = { workspaceCode ->
+                    // Pull the new code's rules + components so calculation can resolve it.
+                    syncService.emit(SyncEvent.TriggerPull(SyncEntity.TAX))
                     _uiState.update {
                         it.copy(
                             isSubscribing = false,

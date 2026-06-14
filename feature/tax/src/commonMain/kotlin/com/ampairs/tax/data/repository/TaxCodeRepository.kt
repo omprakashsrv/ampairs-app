@@ -1,6 +1,8 @@
 package com.ampairs.tax.data.repository
 
 import com.ampairs.common.sentry.ErrorTracking
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.tax.util.TaxLogger
 import com.ampairs.tax.data.api.TaxConfigurationApi
 import com.ampairs.tax.data.db.dao.TaxCodeDao
@@ -21,12 +23,17 @@ import kotlin.time.ExperimentalTime
 class TaxCodeRepository(
     private val taxConfigApi: TaxConfigurationApi,
     private val taxCodeDao: TaxCodeDao,
+    private val syncStateDao: SyncStateDao,
 ) : TaxCodeLookup {
 
     private companion object {
         // Backend caps master_tax_code_ids at 100 per bulk-subscribe request.
         const val BULK_SUBSCRIBE_BATCH_SIZE = 100
     }
+
+    /** Flag tax changes for the central push (handled by TaxSyncDelegate). */
+    private suspend fun markPending() =
+        syncStateDao.markPendingPush(SyncEntity.TAX, kotlin.time.Clock.System.now().toEpochMilliseconds())
 
     // ==================== Workspace Tax Codes (Offline Available) ====================
 
@@ -82,6 +89,8 @@ class TaxCodeRepository(
     suspend fun setFavorite(id: String, isFavorite: Boolean): Result<Unit> {
         return try {
             taxCodeDao.setFavorite(id, isFavorite)
+            taxCodeDao.updateSyncStatus(id, "PENDING")
+            markPending()
             Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.setFavorite")
@@ -100,12 +109,9 @@ class TaxCodeRepository(
         return try {
             val existing = taxCodeDao.getById(id)
                 ?: return Result.failure(IllegalStateException("Tax code not found: $id"))
+            // Local write is the source of truth; TaxSyncDelegate persists it via PATCH on push.
             taxCodeDao.update(existing.copy(notes = notes, syncStatus = "PENDING"))
-
-            runCatching { taxConfigApi.updateTaxCodeConfig(taxCodeId = id, notes = notes) }
-                .onSuccess { result -> if (result.isSuccess) taxCodeDao.updateSyncStatus(id, "SYNCED") }
-                .onFailure { e -> TaxLogger.w("TaxCodeRepo", "Notes server sync deferred for $id", e) }
-
+            markPending()
             Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.updateNotes")
@@ -201,32 +207,18 @@ class TaxCodeRepository(
     }
 
     /**
-     * Unsubscribe from tax code
+     * Unsubscribe from a tax code — offline-safe.
+     *
+     * Soft-deletes locally (inactive + queued for deletion) and flags the entity for the central
+     * push; TaxSyncDelegate confirms the unsubscribe on the server then hard-deletes the row. Works
+     * offline (the deletion propagates on reconnect) and is crash-safe (no out-of-band hard delete).
      */
     suspend fun unsubscribeFromTaxCode(workspaceTaxCodeId: String): Result<Unit> {
         return try {
-            // Deactivate locally first
             taxCodeDao.deactivate(workspaceTaxCodeId)
-
-            // Try to delete from server
-            try {
-                val result = taxConfigApi.unsubscribeFromTaxCode( workspaceTaxCodeId)
-
-                if (result.isSuccess) {
-                    // Permanently delete from local DB
-                    taxCodeDao.delete(workspaceTaxCodeId)
-                    Result.success(Unit)
-                } else {
-                    // Mark as pending deletion
-                    taxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
-                    Result.success(Unit)
-                }
-            } catch (e: Exception) {
-                // Network error - mark as pending deletion
-                ErrorTracking.captureException(e, "TaxCodeRepository.unsubscribeFromTaxCode.sync")
-                taxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
-                Result.success(Unit)
-            }
+            taxCodeDao.updateSyncStatus(workspaceTaxCodeId, "DELETE_PENDING")
+            markPending()
+            Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.unsubscribeFromTaxCode")
             Result.failure(e)
