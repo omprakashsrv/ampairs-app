@@ -26,6 +26,9 @@ import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
 import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
 import com.ampairs.tally.model.master.StockItem
 import com.ampairs.tax.data.repository.TaxCodeRepository
+import com.ampairs.tax.data.repository.TaxComponentRepository
+import com.ampairs.tax.data.repository.TaxConfigurationRepository
+import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.unit.data.db.dao.UnitDao
 import dev.zacsweers.metro.Inject
 import io.ktor.client.engine.HttpClientEngine
@@ -64,6 +67,16 @@ data class TallyTaxCodeCandidate(
     val alreadySubscribed: Boolean,
 )
 
+/** Outcome of importing detected HSN codes into the workspace tax codes. */
+data class TallyTaxImportResult(
+    val matched: Int = 0,       // HSNs that matched a master tax code
+    val subscribed: Int = 0,    // workspace tax codes successfully subscribed
+    val unmatched: Int = 0,     // HSNs with no master in the catalogue
+    val error: String? = null,
+) {
+    val success get() = error == null
+}
+
 private val log = Logger.withTag("TallySyncService")
 private const val BATCH_SIZE = 100
 private const val MAX_LOG_LINES = 2000
@@ -78,6 +91,9 @@ class TallySyncService(
     private val customerDao: CustomerDao,
     private val customerGroupDao: CustomerGroupDao,
     private val taxCodeRepository: TaxCodeRepository,
+    private val taxRuleRepository: TaxRuleRepository,
+    private val taxComponentRepository: TaxComponentRepository,
+    private val taxConfigurationRepository: TaxConfigurationRepository,
     private val dataStore: AppPreferencesDataStore,
 ) {
     private val _logLines = MutableStateFlow<List<String>>(emptyList())
@@ -104,6 +120,77 @@ class TallySyncService(
         val ss = now.second.toString().padStart(2, '0')
         return "$hh:$mm:$ss"
     }
+
+    /** Imports every detected HSN that is not yet subscribed. */
+    suspend fun importDetectedTaxCodes(): TallyTaxImportResult =
+        importCandidates(_taxCodeCandidates.value.filter { !it.alreadySubscribed })
+
+    /** Imports a single detected HSN code (no-op if already subscribed or unknown). */
+    suspend fun importTaxCode(hsnCode: String): TallyTaxImportResult =
+        importCandidates(_taxCodeCandidates.value.filter { it.hsnCode == hsnCode && !it.alreadySubscribed })
+
+    /**
+     * Matches each pending HSN against the server master tax-code catalogue (exact code match),
+     * bulk-subscribes the matches, then pulls tax rules + components so tax calculation can resolve
+     * the new codes. The product's tax_code stays the HSN string — resolution is keyed by it.
+     */
+    private suspend fun importCandidates(pending: List<TallyTaxCodeCandidate>): TallyTaxImportResult {
+        if (pending.isEmpty()) {
+            emit("Tax import: nothing to import")
+            return TallyTaxImportResult()
+        }
+        val countryCode = resolveCountryCode()
+        emit("Tax import: matching ${pending.size} HSN code(s) against master catalogue (country=$countryCode)")
+
+        return try {
+            val matchedMasterIds = mutableListOf<String>()
+            var unmatched = 0
+            for (candidate in pending) {
+                val hsn = candidate.hsnCode
+                val master = taxCodeRepository
+                    .searchMasterTaxCodes(query = hsn, countryCode = countryCode)
+                    .getOrNull()
+                    ?.firstOrNull { it.code.trim() == hsn }
+                if (master != null) {
+                    matchedMasterIds += master.id
+                } else {
+                    unmatched++
+                    emit("  no master tax code found for HSN $hsn")
+                }
+            }
+
+            var subscribed = 0
+            if (matchedMasterIds.isNotEmpty()) {
+                val sub = taxCodeRepository.bulkSubscribeTaxCodes(matchedMasterIds)
+                subscribed = sub.getOrDefault(0)
+                if (sub.isFailure) emit("  bulk subscribe failed: ${sub.exceptionOrNull()?.message}")
+            }
+
+            if (subscribed > 0) {
+                // Pull rules + components so tax calculation can resolve the newly subscribed codes.
+                taxRuleRepository.syncTaxRules()
+                taxComponentRepository.syncWorkspaceComponents()
+            }
+
+            refreshCandidateSubscriptionStatus()
+            emit("Tax import complete — matched=${matchedMasterIds.size}, subscribed=$subscribed, no master=$unmatched")
+            TallyTaxImportResult(matched = matchedMasterIds.size, subscribed = subscribed, unmatched = unmatched)
+        } catch (e: Exception) {
+            emit("Tax import FAILED — ${e.message}")
+            log.e(e) { "Tax import failed" }
+            TallyTaxImportResult(error = e.message ?: "Unknown error")
+        }
+    }
+
+    private suspend fun refreshCandidateSubscriptionStatus() {
+        _taxCodeCandidates.value = _taxCodeCandidates.value.map {
+            it.copy(alreadySubscribed = taxCodeRepository.getByCode(it.hsnCode) != null)
+        }
+    }
+
+    private suspend fun resolveCountryCode(): String =
+        taxConfigurationRepository.getConfiguration().getOrNull()?.countryCode?.takeIf { it.isNotBlank() }
+            ?: "IN"
 
     suspend fun sync(workspaceSlug: String): TallySyncResult {
         val host = dataStore.getTallyHost(workspaceSlug).first()

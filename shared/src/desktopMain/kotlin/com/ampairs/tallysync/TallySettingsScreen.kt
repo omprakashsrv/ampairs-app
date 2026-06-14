@@ -3,6 +3,7 @@ package com.ampairs.tallysync
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,6 +53,7 @@ fun TallySettingsScreen(
     var port by remember { mutableStateOf("9008") }
     var statusText by remember { mutableStateOf("Not synced yet") }
     var isSyncing by remember { mutableStateOf(false) }
+    var isImporting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val logLines by scheduler.syncService.logLines.collectAsState()
@@ -211,12 +213,36 @@ fun TallySettingsScreen(
             // ----- Tax codes to import -----
             Spacer(Modifier.height(8.dp))
             val notSubscribed = taxCodeCandidates.count { !it.alreadySubscribed }
-            Text("Tax Codes to Import", style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = "$notSubscribed not subscribed · ${taxCodeCandidates.size} HSN code(s) found in Tally",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Tax Codes to Import", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = "$notSubscribed not subscribed · ${taxCodeCandidates.size} HSN code(s) found in Tally",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Button(
+                    enabled = !isImporting && notSubscribed > 0,
+                    onClick = {
+                        scope.launch {
+                            isImporting = true
+                            statusText = "Importing tax codes…"
+                            val result = scheduler.syncService.importDetectedTaxCodes()
+                            statusText = if (result.success)
+                                "Imported ${result.subscribed} tax code(s); ${result.unmatched} had no master match"
+                            else
+                                "Tax import error: ${result.error}"
+                            isImporting = false
+                        }
+                    }
+                ) {
+                    Text(if (isImporting) "Importing…" else "Import all")
+                }
+            }
             if (taxCodeCandidates.isNotEmpty()) {
                 Surface(
                     tonalElevation = 2.dp,
@@ -242,14 +268,27 @@ fun TallySettingsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(1f)
                                 )
-                                Text(
-                                    text = if (candidate.alreadySubscribed) "Subscribed" else "Not subscribed",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (candidate.alreadySubscribed)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.error
-                                )
+                                if (candidate.alreadySubscribed) {
+                                    Text(
+                                        text = "Subscribed",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                } else {
+                                    TextButton(
+                                        enabled = !isImporting,
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                        onClick = {
+                                            scope.launch {
+                                                isImporting = true
+                                                scheduler.syncService.importTaxCode(candidate.hsnCode)
+                                                isImporting = false
+                                            }
+                                        }
+                                    ) {
+                                        Text("Import")
+                                    }
+                                }
                             }
                         }
                     }
