@@ -33,6 +33,7 @@ These rules are enforced for all Claude Code interactions in this project.
 - Expose repositories, stores, or feature services in `AppGraph` — only `ThemeManager`, `LocaleManager`, `ImageLoader`, `LocationService` belong there
 - Add `fun create*ViewModel()` methods to `AppGraph` — Metro auto-wires ViewModels via `@ContributesIntoMap`
 - Put `java.*` or `android.*` imports in `commonMain` source sets
+- Hardcode a currency symbol (`₹`/`$`) or call `toInr()`/`asRupee()` in UI — they ignore the workspace's business currency. Use `formatMoney(...)` / `currencySymbol(...)` (`com.ampairs.common.locale`). For non-composable code (print/HTML/export) pass the symbol in as a `String` param from a composable that read `LocalAppLocale.current`
 - Create a new `DataStore<Preferences>` instance — always reuse the existing one from `data/common/`
 - Allow the repository to generate UIDs as a fallback
 - Add feature code directly to `shared/` or `androidApp/`/`desktopApp/` — use the appropriate `feature/` module
