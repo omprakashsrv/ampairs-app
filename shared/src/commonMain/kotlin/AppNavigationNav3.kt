@@ -18,6 +18,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.ampairs.common.locale.AppLocale
+import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.ui.GlobalAppLayoutNav3
 import com.ampairs.navigation.combinedEntryProvider
 import com.ampairs.navigation.createNav3SavedStateConfig
@@ -25,6 +27,7 @@ import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * Navigation 3 implementation of AppNavigation.
@@ -126,8 +129,18 @@ fun AppNavigationNav3(
         workspaceSession?.graph?.metroViewModelFactory ?: appFactory
     }
 
+    // Business localization (currency / timezone / date format) for the active workspace. Sourced
+    // from the workspace graph so it refreshes per workspace; defaults to INR outside a workspace.
+    val localeFlow = remember(workspaceSession) {
+        workspaceSession?.graph?.businessLocaleProvider?.locale ?: flowOf(AppLocale.Default)
+    }
+    val appLocale by localeFlow.collectAsStateWithLifecycle(initialValue = AppLocale.Default)
+
     // Global App Layout wraps NavDisplay - header is rendered ONCE here
-    CompositionLocalProvider(LocalMetroViewModelFactory provides effectiveFactory) {
+    CompositionLocalProvider(
+        LocalMetroViewModelFactory provides effectiveFactory,
+        LocalAppLocale provides appLocale,
+    ) {
         GlobalAppLayoutNav3(
             backStack = backStack
         ) { globalPaddingValues ->

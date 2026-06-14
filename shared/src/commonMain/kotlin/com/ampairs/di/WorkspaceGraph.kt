@@ -1,5 +1,6 @@
 package com.ampairs.di
 
+import com.ampairs.business.domain.BusinessLocaleProvider
 import com.ampairs.common.di.AppScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceConfig
@@ -19,6 +20,7 @@ interface WorkspaceGraph : ViewModelGraph {
     val syncDelegates: Map<SyncEntity, SyncDelegate>
     val syncStateDatabase: SyncStateDatabase
     val eventSyncBridge: EventSyncBridge
+    val businessLocaleProvider: BusinessLocaleProvider
 
     @GraphExtension.Factory
     @ContributesTo(AppScope::class)
