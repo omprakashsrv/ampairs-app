@@ -56,6 +56,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.util.DateTimeFormatter
 import com.ampairs.customer.domain.Customer
@@ -260,6 +262,7 @@ private fun CustomerDetailsExpanded(
     onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Row(modifier = modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         // Left panel: summary + edit button
         OutlinedCard(modifier = Modifier.width(280.dp).fillMaxHeight()) {
@@ -311,7 +314,7 @@ private fun CustomerDetailsExpanded(
                 ) {
                     StatCard(
                         label = stringResource(Res.string.customer_details_credit_limit_stat),
-                        value = customer.creditLimit?.let { "₹$it" } ?: stringResource(Res.string.customer_details_no_limit),
+                        value = customer.creditLimit?.let { formatMoney(it, locale) } ?: stringResource(Res.string.customer_details_no_limit),
                         modifier = Modifier.weight(1f)
                     )
                     StatCard(
@@ -364,6 +367,7 @@ private fun CustomerHeroSection(
     customer: Customer,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         modifier = modifier.fillMaxWidth()
@@ -420,7 +424,7 @@ private fun CustomerHeroSection(
                     customer.creditLimit?.let {
                         StatCard(
                             label = stringResource(Res.string.customer_details_credit_limit_stat),
-                            value = "₹$it",
+                            value = formatMoney(it, locale),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -503,6 +507,7 @@ private fun CustomerOverviewTab(
     attributeRows: List<Pair<String, String>>,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -545,7 +550,7 @@ private fun CustomerOverviewTab(
                     InfoRow(label = stringResource(Res.string.customer_label_pan), value = it)
                 }
                 customer.creditLimit?.let {
-                    InfoRow(label = stringResource(Res.string.customer_label_credit_limit), value = "₹$it")
+                    InfoRow(label = stringResource(Res.string.customer_label_credit_limit), value = formatMoney(it, locale))
                 }
                 customer.creditDays?.let {
                     InfoRow(label = stringResource(Res.string.customer_label_credit_days), value = stringResource(Res.string.customer_credit_days_value, it))

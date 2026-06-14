@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.customer.domain.CustomerType
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import ampairsapp.feature.customer.generated.resources.Res
@@ -211,6 +213,7 @@ private fun CustomerTypeCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     ElevatedCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth()
@@ -282,7 +285,7 @@ private fun CustomerTypeCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val creditInfo = buildString {
-                            customerType.defaultCreditLimit?.let { limit -> append("₹$limit") }
+                            customerType.defaultCreditLimit?.let { limit -> append(formatMoney(limit, locale)) }
                             if (customerType.defaultCreditLimit != null && customerType.defaultCreditDays != null) append(" / ")
                             customerType.defaultCreditDays?.let { days -> append("${days}d") }
                         }

@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
 import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.currencySymbol
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.ui.TotalsUi
 import com.ampairs.tax.calculation.document.DiscountKind
@@ -110,7 +111,7 @@ fun DocTotalsPanel(
                         )
                     }
                     SingleChoiceSegmentedButtonRow {
-                        listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to "₹").forEachIndexed { i, (k, l) ->
+                        listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to currencySymbol(locale.currencyCode)).forEachIndexed { i, (k, l) ->
                             SegmentedButton(
                                 selected = overallDiscountKind == k,
                                 onClick = { onOverallDiscount(k, overallDiscountAmount) },

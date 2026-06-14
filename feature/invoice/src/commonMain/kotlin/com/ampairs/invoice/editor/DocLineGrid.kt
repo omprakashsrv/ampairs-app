@@ -58,6 +58,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.graphics.SolidColor
 import com.ampairs.common.format.toDecimal
 import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.currencySymbol
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.tax.calculation.document.DiscountKind
@@ -281,7 +282,7 @@ private fun GridRow(
                     },
                 ) {
                     Text(
-                        if (line.discountKind == DiscountKind.PERCENT) "%" else "₹",
+                        if (line.discountKind == DiscountKind.PERCENT) "%" else currencySymbol(locale.currencyCode),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                     )

@@ -65,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
 import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.currencySymbol
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.tax.calculation.document.DiscountKind
@@ -222,7 +223,7 @@ fun DocLineSheet(
                     FieldLabel(stringResource(Res.string.doc_sheet_discount))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         SingleChoiceSegmentedButtonRow {
-                            listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to "₹").forEachIndexed { i, (k, l) ->
+                            listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to currencySymbol(locale.currencyCode)).forEachIndexed { i, (k, l) ->
                                 SegmentedButton(
                                     selected = line.discountKind == k,
                                     onClick = { onDiscount(line.id, k, line.discountAmount) },
