@@ -22,6 +22,11 @@ class TaxCodeRepository(
     private val taxCodeDao: TaxCodeDao,
 ) : TaxCodeLookup {
 
+    private companion object {
+        // Backend caps master_tax_code_ids at 100 per bulk-subscribe request.
+        const val BULK_SUBSCRIBE_BATCH_SIZE = 100
+    }
+
     // ==================== Workspace Tax Codes (Offline Available) ====================
 
     /**
@@ -204,29 +209,41 @@ class TaxCodeRepository(
     }
 
     /**
-     * Bulk subscribe to multiple tax codes
+     * Bulk subscribe to multiple tax codes.
+     *
+     * The backend caps `master_tax_code_ids` at 100 per request (`@field:Size(max = 100)`), so the
+     * ids are chunked into batches of [BULK_SUBSCRIBE_BATCH_SIZE]. Each batch's subscribed codes are
+     * persisted as they arrive; a failed batch aborts the remaining chunks and surfaces the error.
      */
     suspend fun bulkSubscribeTaxCodes(
         masterTaxCodeIds: List<String>,
         applyDefaultRules: Boolean = true
     ): Result<Int> {
         return try {
-            val result = taxConfigApi.bulkSubscribeTaxCodes(
-                masterTaxCodeIds = masterTaxCodeIds,
-                applyDefaultRules = applyDefaultRules
-            )
+            var totalSuccess = 0
 
-            if (result.isSuccess) {
-                val bulkResult = result.getOrThrow()
+            for (chunk in masterTaxCodeIds.chunked(BULK_SUBSCRIBE_BATCH_SIZE)) {
+                val result = taxConfigApi.bulkSubscribeTaxCodes(
+                    masterTaxCodeIds = chunk,
+                    applyDefaultRules = applyDefaultRules
+                )
 
-                // Save all subscribed codes to local database
-                val entities = bulkResult.subscribedCodes.map { it.toEntity() }
-                taxCodeDao.insertAll(entities)
+                if (result.isSuccess) {
+                    val bulkResult = result.getOrThrow()
 
-                Result.success(bulkResult.successCount)
-            } else {
-                Result.failure(result.exceptionOrNull() ?: Exception("Bulk subscription failed"))
+                    // Save this batch's subscribed codes to local database
+                    val entities = bulkResult.subscribedCodes.map { it.toEntity() }
+                    taxCodeDao.insertAll(entities)
+
+                    totalSuccess += bulkResult.successCount
+                } else {
+                    return Result.failure(
+                        result.exceptionOrNull() ?: Exception("Bulk subscription failed")
+                    )
+                }
             }
+
+            Result.success(totalSuccess)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.bulkSubscribeTaxCodes")
             Result.failure(e)
