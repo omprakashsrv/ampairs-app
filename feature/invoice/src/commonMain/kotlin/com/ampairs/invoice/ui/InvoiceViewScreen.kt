@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.format.toDecimal
 import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatDate
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.editor.DocSyncChip
 import kotlinx.datetime.TimeZone
@@ -182,7 +183,7 @@ fun InvoiceViewScreen(
                     ) {
                         InvoiceStatusChip(invoice.status.name)
                         Text(
-                            formatInvoiceInstantDate(invoice.invoiceDate),
+                            formatDate(invoice.invoiceDate, LocalAppLocale.current),
                             style = MaterialTheme.typography.labelMedium,
                             fontFamily = mono,
                             color = cs.onSurfaceVariant,
@@ -213,11 +214,4 @@ fun InvoiceViewScreen(
             }
         }
     }
-}
-
-@OptIn(kotlin.time.ExperimentalTime::class)
-private fun formatInvoiceInstantDate(instant: kotlin.time.Instant): String {
-    val date = instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val month = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
-    return "${date.day.toString().padStart(2, '0')} $month ${date.year}"
 }

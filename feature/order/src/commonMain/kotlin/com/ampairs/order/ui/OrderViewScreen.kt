@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.format.toDecimal
 import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatDate
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.editor.DocSyncChip
 import com.ampairs.order.domain.TaxSpec
@@ -240,7 +241,7 @@ fun OrderViewScreen(
                             )
                         }
                         Text(
-                            "· " + formatInstantDate(order.orderDate),
+                            "· " + formatDate(order.orderDate, LocalAppLocale.current),
                             style = MaterialTheme.typography.labelMedium,
                             fontFamily = mono,
                             color = cs.onSurfaceVariant,
@@ -531,13 +532,6 @@ private fun TotalsRow(label: String, value: String) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
     }
-}
-
-@OptIn(kotlin.time.ExperimentalTime::class)
-private fun formatInstantDate(instant: kotlin.time.Instant): String {
-    val date = instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val month = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
-    return "${date.day.toString().padStart(2, '0')} $month ${date.year}"
 }
 
 private fun taxNameOrder(name: String): Int = when (name) {

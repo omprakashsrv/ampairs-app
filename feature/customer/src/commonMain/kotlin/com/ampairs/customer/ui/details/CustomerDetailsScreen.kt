@@ -57,9 +57,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatDateTime
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.navigation.ScreenBackButton
-import com.ampairs.common.util.DateTimeFormatter
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
 import com.ampairs.customer.ui.components.images.CustomerImageViewModel
@@ -609,10 +609,10 @@ private fun CustomerOverviewTab(
         if (customer.createdAt != null || customer.updatedAt != null) {
             InfoSection(title = stringResource(Res.string.customer_section_system)) {
                 customer.createdAt?.let {
-                    InfoRow(label = stringResource(Res.string.customer_label_created), value = DateTimeFormatter.formatTimestamp(it))
+                    InfoRow(label = stringResource(Res.string.customer_label_created), value = formatDateTime(it, LocalAppLocale.current))
                 }
                 customer.updatedAt?.let {
-                    InfoRow(label = stringResource(Res.string.customer_label_updated), value = DateTimeFormatter.formatTimestamp(it))
+                    InfoRow(label = stringResource(Res.string.customer_label_updated), value = formatDateTime(it, LocalAppLocale.current))
                 }
             }
         }
