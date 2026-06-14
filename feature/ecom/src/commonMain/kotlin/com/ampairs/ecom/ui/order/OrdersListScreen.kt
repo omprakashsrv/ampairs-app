@@ -24,7 +24,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.ecom.generated.resources.Res
 import ampairsapp.feature.ecom.generated.resources.ecom_no_orders
 import ampairsapp.feature.ecom.generated.resources.ecom_orders_title
-import com.ampairs.ecom.domain.asRupee
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.ecom.ui.components.EcomDimens
 import com.ampairs.ecom.ui.components.OrderStatusChip
 import com.ampairs.ecom.ui.components.orderStatusLabel
@@ -67,6 +68,7 @@ fun OrdersListScreen(
 
 @Composable
 private fun OrderCard(ref: String, date: String, status: String, total: Double, onClick: () -> Unit) {
+    val locale = LocalAppLocale.current
     Column(
         Modifier.fillMaxWidth()
             .padding(bottom = 12.dp)
@@ -83,7 +85,7 @@ private fun OrderCard(ref: String, date: String, status: String, total: Double, 
         }
         HorizontalDivider(Modifier.padding(vertical = 12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            Text(total.asRupee(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(formatMoney(total, locale), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
         }
     }
 }

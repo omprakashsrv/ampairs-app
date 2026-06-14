@@ -39,9 +39,10 @@ import ampairsapp.feature.ecom.generated.resources.ecom_checkout_title
 import ampairsapp.feature.ecom.generated.resources.ecom_order_notes
 import ampairsapp.feature.ecom.generated.resources.ecom_place_order
 import ampairsapp.feature.ecom.generated.resources.ecom_select_address
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.data.db.entity.CustomerAddressEntity
-import com.ampairs.ecom.domain.asRupee
 import com.ampairs.ecom.ui.components.EcomDimens
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -55,6 +56,7 @@ fun CheckoutScreen(
     viewModel: CheckoutViewModel = metroViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val locale = LocalAppLocale.current
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -100,7 +102,7 @@ fun CheckoutScreen(
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text("${state.itemCount} items", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(state.subtotal.asRupee(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(formatMoney(state.subtotal, locale), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
                 Button(onClick = viewModel::placeOrder, enabled = !state.isPlacing && state.selectedAddressId != null) {
                     if (state.isPlacing) {

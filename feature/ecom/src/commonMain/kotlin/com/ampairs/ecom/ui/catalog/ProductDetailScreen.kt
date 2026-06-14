@@ -38,9 +38,10 @@ import ampairsapp.feature.ecom.generated.resources.ecom_out_of_stock
 import ampairsapp.feature.ecom.generated.resources.ecom_save_amount
 import ampairsapp.feature.ecom.generated.resources.ecom_view_cart
 import coil3.compose.AsyncImage
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.api.model.StockStatus
-import com.ampairs.ecom.domain.asRupee
 import com.ampairs.ecom.domain.firstImageUrl
 import com.ampairs.ecom.domain.savingsOrNull
 import com.ampairs.ecom.ui.components.QuickAddControl
@@ -57,6 +58,7 @@ fun ProductDetailScreen(
         assistedMetroViewModel<ProductDetailViewModel, ProductDetailViewModel.Factory>(key = productId) { create(productId) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val locale = LocalAppLocale.current
     LaunchedEffect(Unit) { viewModel.messages.collect { snackbar.showSnackbar(it) } }
 
     val product = state.product
@@ -93,13 +95,13 @@ fun ProductDetailScreen(
                 }
 
                 Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(product.price.asRupee(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(formatMoney(product.price, locale), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     if (product.mrp != null && product.mrp > product.price) {
-                        Text(product.mrp.asRupee(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textDecoration = TextDecoration.LineThrough)
+                        Text(formatMoney(product.mrp, locale), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textDecoration = TextDecoration.LineThrough)
                     }
                 }
                 savingsOrNull(product.price, product.mrp)?.let {
-                    Text(stringResource(Res.string.ecom_save_amount, it.asRupee()), style = MaterialTheme.typography.labelLarge, color = com.ampairs.ecom.ui.components.EcomColors.OnSuccessGreen, modifier = Modifier.padding(top = 4.dp))
+                    Text(stringResource(Res.string.ecom_save_amount, formatMoney(it, locale)), style = MaterialTheme.typography.labelLarge, color = com.ampairs.ecom.ui.components.EcomColors.OnSuccessGreen, modifier = Modifier.padding(top = 4.dp))
                 }
 
                 if (!product.description.isNullOrBlank()) {
@@ -117,7 +119,7 @@ fun ProductDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text(product.price.asRupee(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(formatMoney(product.price, locale), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     if (outOfStock) Text(stringResource(Res.string.ecom_out_of_stock), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
                 }
                 if (state.cartCount > 0) {
