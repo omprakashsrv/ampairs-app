@@ -44,7 +44,7 @@ import com.ampairs.invoice.print.rememberInvoicePrinter
 fun TaxInvoicePreviewScreen(
     invoice: Invoice,
     onClose: () -> Unit,
-    workspaceName: String = invoice.fromCustomer?.name ?: "",
+    workspaceName: String = "",
 ) {
     val print = rememberInvoicePrinter()
     Scaffold(
@@ -82,8 +82,8 @@ fun TaxInvoiceView(
     workspaceName: String,
     modifier: Modifier = Modifier,
 ) {
-    val seller = invoice.fromCustomer
-    val buyer = invoice.toCustomer
+    // Seller is the implicit current workspace (name passed in); only the buyer is stored.
+    val buyer = invoice.customer
     val inter = invoice.isInterState()
 
     Surface(
@@ -112,10 +112,10 @@ fun TaxInvoiceView(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PartyBlock(
                     title = "Seller",
-                    name = seller?.name ?: workspaceName,
-                    address = listOfNotNull(seller?.address, seller?.city, seller?.state, seller?.pincode)
-                        .filter { it.isNotBlank() }.joinToString(", "),
-                    gst = seller?.gstNumber,
+                    // Seller identity is snapshotted on the invoice at issue time (self-contained).
+                    name = invoice.sellerName?.takeIf { it.isNotBlank() } ?: workspaceName,
+                    address = invoice.sellerAddress.orEmpty(),
+                    gst = invoice.sellerGst,
                     modifier = Modifier.weight(1f),
                 )
                 PartyBlock(

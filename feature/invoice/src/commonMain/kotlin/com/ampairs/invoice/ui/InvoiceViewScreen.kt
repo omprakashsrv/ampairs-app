@@ -209,7 +209,7 @@ fun InvoiceViewScreen(
                 }
                 // ── the printable GST invoice paper itself ──
                 item {
-                    TaxInvoiceView(invoice = invoice, workspaceName = invoice.fromCustomer?.name ?: "")
+                    TaxInvoiceView(invoice = invoice, workspaceName = "")
                 }
                 item { Spacer(Modifier.height(80.dp)) }
             }

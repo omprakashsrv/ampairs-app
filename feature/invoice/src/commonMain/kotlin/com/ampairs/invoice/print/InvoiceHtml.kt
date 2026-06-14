@@ -37,8 +37,8 @@ private fun esc(s: String?): String = (s ?: "")
 
 /** Build a self-contained, print-ready HTML document for a GST tax invoice. */
 fun buildInvoiceHtml(invoice: Invoice, workspaceName: String): String {
-    val seller = invoice.fromCustomer
-    val buyer = invoice.toCustomer
+    // Seller is the implicit current workspace (name passed in); only the buyer is stored.
+    val buyer = invoice.customer
     val inter = invoice.isInterState()
     val date = DateTimeAdapter.toDateTimeString(invoice.invoiceDate)
 
@@ -106,10 +106,9 @@ fun buildInvoiceHtml(invoice: Invoice, workspaceName: String): String {
       <div class="grid">
         <div class="box">
           <h3>Seller</h3>
-          <div><b>${esc(seller?.name ?: workspaceName)}</b></div>
-          <div>${esc(seller?.address)}</div>
-          <div>${esc(listOfNotNull(seller?.city, seller?.state, seller?.pincode).joinToString(", "))}</div>
-          <div>GSTIN: ${esc(seller?.gstNumber)}</div>
+          <div><b>${esc(invoice.sellerName?.takeIf { it.isNotBlank() } ?: workspaceName)}</b></div>
+          <div>${esc(invoice.sellerAddress)}</div>
+          <div>GSTIN: ${esc(invoice.sellerGst)}</div>
         </div>
         <div class="box">
           <h3>Bill To</h3>

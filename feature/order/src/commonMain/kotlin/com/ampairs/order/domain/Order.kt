@@ -22,13 +22,17 @@ class Order {
     var orderDate: Instant = Clock.System.now()
     var orderNumber: String? = null
     var id: String = ""
-    var fromCustomer: Customer? = null
-    var toCustomer: Customer? = null
-        set(value) {
-            field = value
-            taxSpec =
-                if (toCustomer?.state !== fromCustomer?.state) TaxSpec.INTRA else TaxSpec.INTER
-        }
+    // Single buyer; the seller is the implicit current workspace. taxSpec is resolved by the tax
+    // module (ScenarioResolver) from the buyer's GSTIN, not derived here.
+    var customer: Customer? = null
+    // Seller (issuing business) identity snapshotted at issue time (frozen, self-contained).
+    var sellerName: String? = null
+    var sellerAddress: String? = null
+    var sellerGst: String? = null
+    // Place of supply: buyer/destination state (defaults from the buyer) vs seller/origin state.
+    // IGST iff they differ — a pure compare, no GSTIN diff.
+    var placeOfSupply: String? = null
+    var sellerPlaceOfSupply: String? = null
     var totalCost: Double by mutableStateOf(0.0)
     var basePrice: Double = 0.0
     var totalTax: Double = 0.0
@@ -116,18 +120,21 @@ fun Order.asDatabaseModel(): OrderEntity {
         id = this.id,
         order_number = this.orderNumber ?: "",
         order_date = DateTimeAdapter.toDateTimeString(this.orderDate),
-        from_customer_id = this.fromCustomer?.uid ?: "",
-        to_customer_id = this.toCustomer?.uid ?: "",
+        customer_id = this.customer?.uid ?: "",
+        customer_phone = this.customer?.phone,
+        seller_name = this.sellerName,
+        seller_address = this.sellerAddress,
+        seller_gst = this.sellerGst,
+        place_of_supply = this.placeOfSupply,
+        seller_place_of_supply = this.sellerPlaceOfSupply,
         invoice_ref_id = this.invoiceRefId,
         total_cost = this.totalCost,
         base_price = this.basePrice,
         total_items = this.totalItems.toLong(),
         total_quantity = this.totalQuantity,
         status = this.status.name,
-        from_customer_name = this.fromCustomer?.name ?: "",
-        to_customer_name = this.toCustomer?.name ?: "",
-        from_customer_gst = this.fromCustomer?.gstNumber ?: "",
-        to_customer_gst = this.toCustomer?.gstNumber ?: "",
+        customer_name = this.customer?.name ?: "",
+        customer_gst = this.customer?.gstNumber ?: "",
         billing_address = "",
         shipping_address = "",
         tax_info = if (this.taxInfos != null) Json.encodeToString(this.taxInfos?.toDatabaseEntity()) else null,
@@ -153,16 +160,17 @@ fun OrderEntity.asDomainModel(): Order {
     order.basePrice = this.base_price
     order.totalTax = this.total_tax
     order.items = mutableListOf()
-    order.fromCustomer = Customer(
-        uid = this.from_customer_id,
-        name = this.from_customer_name,
-        gstNumber = this.from_customer_gst
+    order.customer = Customer(
+        uid = this.customer_id,
+        name = this.customer_name,
+        gstNumber = this.customer_gst,
+        phone = this.customer_phone,
     )
-    order.toCustomer = Customer(
-        uid = this.to_customer_id,
-        name = this.to_customer_name,
-        gstNumber = this.to_customer_gst
-    )
+    order.sellerName = this.seller_name
+    order.sellerAddress = this.seller_address
+    order.sellerGst = this.seller_gst
+    order.placeOfSupply = this.place_of_supply
+    order.sellerPlaceOfSupply = this.seller_place_of_supply
     order.totalCost = this.total_cost
     order.totalItems = this.total_items.toInt()
     order.totalQuantity = this.total_quantity
@@ -185,16 +193,17 @@ fun OrderModel.asDomainModel(): Order {
     order.basePrice = this.order.base_price
     order.totalTax = this.order.total_tax
     order.items = this.orderItems.asItemsDomainModel().toMutableList()
-    order.fromCustomer = Customer(
-        uid = this.order.from_customer_id,
-        name = this.order.from_customer_name,
-        gstNumber = this.order.from_customer_gst
+    order.customer = Customer(
+        uid = this.order.customer_id,
+        name = this.order.customer_name,
+        gstNumber = this.order.customer_gst,
+        phone = this.order.customer_phone,
     )
-    order.toCustomer = Customer(
-        uid = this.order.to_customer_id,
-        name = this.order.to_customer_name,
-        gstNumber = this.order.to_customer_gst
-    )
+    order.sellerName = this.order.seller_name
+    order.sellerAddress = this.order.seller_address
+    order.sellerGst = this.order.seller_gst
+    order.placeOfSupply = this.order.place_of_supply
+    order.sellerPlaceOfSupply = this.order.seller_place_of_supply
     order.totalCost = this.order.total_cost
     order.totalItems = this.order.total_items.toInt()
     order.totalQuantity = this.order.total_quantity
@@ -210,12 +219,12 @@ fun OrderModel.asDomainModel(): Order {
 fun Order.toWhatsAppMsg(workspaceName: String): String {
     val msg = StringBuilder()
     msg.append("*").append(workspaceName).append("*").append("\n")
-    msg.append("To : " + fromCustomer?.name)
-    if (!fromCustomer?.address.isNullOrEmpty()) {
-        msg.append("Address : " + fromCustomer?.address).append("\n")
+    msg.append("To : " + customer?.name)
+    if (!customer?.address.isNullOrEmpty()) {
+        msg.append("Address : " + customer?.address).append("\n")
     }
-    if (!fromCustomer?.phone.isNullOrEmpty()) {
-        msg.append("Phone : " + fromCustomer?.phone).append("\n")
+    if (!customer?.phone.isNullOrEmpty()) {
+        msg.append("Phone : " + customer?.phone).append("\n")
     }
     msg.append("\n")
     msg.append("*Particulars*").append("\n").append("*Price*   ").append("*Qty*   ")

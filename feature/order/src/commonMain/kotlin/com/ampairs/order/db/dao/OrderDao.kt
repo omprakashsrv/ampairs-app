@@ -24,10 +24,10 @@ interface OrderDao {
     @Query("SELECT * FROM orderEntity WHERE active = 1 ORDER BY order_date DESC")
     suspend fun selectAll(): List<OrderEntity>
 
-    @Query("SELECT * FROM orderEntity WHERE from_customer_id = :customerId AND active = 1 ORDER BY order_date DESC")
+    @Query("SELECT * FROM orderEntity WHERE customer_id = :customerId AND active = 1 ORDER BY order_date DESC")
     suspend fun getOrdersByCustomer(customerId: String): List<OrderEntity>
 
-    @Query("SELECT * FROM orderEntity WHERE to_customer_id = :customerId AND active = 1 ORDER BY order_date DESC")
+    @Query("SELECT * FROM orderEntity WHERE customer_id = :customerId AND active = 1 ORDER BY order_date DESC")
     suspend fun getOrdersByToCustomer(customerId: String): List<OrderEntity>
 
     @Query("SELECT * FROM orderEntity WHERE status = :status AND active = 1 ORDER BY order_date DESC")
@@ -36,7 +36,7 @@ interface OrderDao {
     @Query("SELECT * FROM orderEntity WHERE order_number LIKE '%' || :searchText || '%' AND active = 1 ORDER BY order_date DESC")
     suspend fun getOrdersByNumber(searchText: String): List<OrderEntity>
 
-    @Query("SELECT * FROM orderEntity WHERE from_customer_name LIKE '%' || :searchText || '%' AND active = 1 ORDER BY order_date DESC")
+    @Query("SELECT * FROM orderEntity WHERE customer_name LIKE '%' || :searchText || '%' AND active = 1 ORDER BY order_date DESC")
     suspend fun getOrdersByCustomerName(searchText: String): List<OrderEntity>
 
     @Query("SELECT * FROM orderEntity WHERE order_date BETWEEN :startDate AND :endDate AND active = 1 ORDER BY order_date DESC")
@@ -52,7 +52,7 @@ interface OrderDao {
     @Query("SELECT count(*) FROM orderEntity WHERE active = 1")
     suspend fun countOrders(): Int
 
-    @Query("SELECT count(*) FROM orderEntity WHERE from_customer_id = :customerId AND active = 1")
+    @Query("SELECT count(*) FROM orderEntity WHERE customer_id = :customerId AND active = 1")
     suspend fun countOrdersByCustomer(customerId: String): Int
 
     @Query("SELECT count(*) FROM orderEntity WHERE status = :status AND active = 1")
@@ -67,7 +67,7 @@ interface OrderDao {
     @Query("SELECT SUM(total_cost) FROM orderEntity WHERE active = 1")
     suspend fun getTotalOrderValue(): Double?
 
-    @Query("SELECT SUM(total_cost) FROM orderEntity WHERE from_customer_id = :customerId AND active = 1")
+    @Query("SELECT SUM(total_cost) FROM orderEntity WHERE customer_id = :customerId AND active = 1")
     suspend fun getTotalOrderValueByCustomer(customerId: String): Double?
 
     @Query("SELECT SUM(total_cost) FROM orderEntity WHERE order_date BETWEEN :startDate AND :endDate AND active = 1")
@@ -104,7 +104,7 @@ interface OrderDao {
     @Query("SELECT * FROM orderEntity WHERE active = 1 ORDER BY order_date DESC")
     fun getAllOrdersPagingSource(): PagingSource<Int, OrderEntity>
 
-    @Query("SELECT * FROM orderEntity WHERE from_customer_id = :customerId AND active = 1 ORDER BY order_date DESC")
+    @Query("SELECT * FROM orderEntity WHERE customer_id = :customerId AND active = 1 ORDER BY order_date DESC")
     fun getOrdersByCustomerPagingSource(customerId: String): PagingSource<Int, OrderEntity>
 
     @Query("SELECT * FROM orderEntity WHERE order_number LIKE '%' || :searchText || '%' AND active = 1 ORDER BY order_date DESC")
@@ -117,8 +117,7 @@ interface OrderDao {
         SELECT * FROM orderEntity
         WHERE active = 1
           AND (:searchText = '' OR order_number LIKE '%' || :searchText || '%'
-               OR to_customer_name LIKE '%' || :searchText || '%'
-               OR from_customer_name LIKE '%' || :searchText || '%')
+               OR customer_name LIKE '%' || :searchText || '%')
           AND (:status = '' OR status = :status)
           AND (:invoicedOnly = 0 OR (invoice_ref_id IS NOT NULL AND invoice_ref_id != ''))
           AND (:unsyncedOnly = 0 OR synced = 0)

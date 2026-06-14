@@ -18,12 +18,10 @@ fun orderEntryProvider(
     backStack: MutableList<NavKey>
 ): NavEntry<NavKey>? = when (key) {
     is OrderRoute.Root -> NavEntry(key) {
-        val fromCustomerId = key.fromCustomer.ifEmpty { null }
-        val toCustomerId = key.toCustomer.ifEmpty { null }
+        val customerId = key.customer.ifEmpty { null }
         val id = key.id.ifEmpty { null }
         OrderScreen(
-            fromCustomerId = fromCustomerId,
-            toCustomerId = toCustomerId,
+            customerId = customerId,
             id = id,
             onOrderSaved = { orderId ->
                 // Land on the order view without stacking duplicates: pop the editor and,

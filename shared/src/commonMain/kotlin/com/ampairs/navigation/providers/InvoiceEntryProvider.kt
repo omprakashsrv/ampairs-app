@@ -19,8 +19,7 @@ fun invoiceEntryProvider(
 ): NavEntry<NavKey>? = when (key) {
     is InvoiceRoute.Root -> NavEntry(key) {
         InvoiceScreen(
-            fromCustomerId = key.fromCustomer.ifEmpty { null },
-            toCustomerId = key.toCustomer.ifEmpty { null },
+            customerId = key.customer.ifEmpty { null },
             id = key.id.ifEmpty { null },
             onInvoiceSaved = { invoiceId ->
                 // Land on the invoice view without stacking duplicates (see OrderEntryProvider).

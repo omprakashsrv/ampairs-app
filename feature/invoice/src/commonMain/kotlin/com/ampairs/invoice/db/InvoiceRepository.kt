@@ -94,10 +94,9 @@ class InvoiceRepository(
         val itemEntities = invoiceItemDao.getInvoiceItems(id)
 
         val invoice = entity.asDomainModelSimple()
-        invoice.fromCustomer = invoice.fromCustomer?.uid?.let { customerDataService.getById(it) }
-            ?: invoice.fromCustomer
-        invoice.toCustomer = invoice.toCustomer?.uid?.let { customerDataService.getById(it) }
-            ?: invoice.toCustomer
+        // Re-attach the buyer from the catalog (keeps the snapshot when the row is gone).
+        invoice.customer = invoice.customer?.uid?.takeIf { it.isNotBlank() }?.let { customerDataService.getById(it) }
+            ?: invoice.customer
 
         val products = productDataService.getByIds(itemEntities.map { it.product_id })
         invoice.items = itemEntities.map { itemEntity ->
@@ -137,8 +136,7 @@ class InvoiceRepository(
             item
         }.toMutableList()
 
-        // The customer assignments above fire the legacy toCustomer setter, which re-derives
-        // taxSpec incorrectly. The persisted tax data is authoritative — restore it last.
+        // Restore taxSpec from the persisted tax data (authoritative for re-opened documents).
         (invoice.taxInfos?.firstOrNull() ?: invoice.items.firstOrNull()?.taxInfos?.firstOrNull())
             ?.let { invoice.taxSpec = it.taxSpec }
         return invoice

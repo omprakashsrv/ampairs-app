@@ -18,10 +18,10 @@ interface InvoiceDao {
     @Query("SELECT * FROM invoiceEntity WHERE active = 1 ORDER BY invoice_date DESC")
     suspend fun selectAll(): List<InvoiceEntity>
 
-    @Query("SELECT * FROM invoiceEntity WHERE from_customer_id = :customerId AND active = 1 ORDER BY invoice_date DESC")
+    @Query("SELECT * FROM invoiceEntity WHERE customer_id = :customerId AND active = 1 ORDER BY invoice_date DESC")
     suspend fun getInvoicesByCustomer(customerId: String): List<InvoiceEntity>
 
-    @Query("SELECT * FROM invoiceEntity WHERE to_customer_id = :customerId AND active = 1 ORDER BY invoice_date DESC")
+    @Query("SELECT * FROM invoiceEntity WHERE customer_id = :customerId AND active = 1 ORDER BY invoice_date DESC")
     suspend fun getInvoicesByToCustomer(customerId: String): List<InvoiceEntity>
 
     @Query("SELECT * FROM invoiceEntity WHERE status = :status AND active = 1 ORDER BY invoice_date DESC")
@@ -30,7 +30,7 @@ interface InvoiceDao {
     @Query("SELECT * FROM invoiceEntity WHERE invoice_number LIKE '%' || :searchText || '%' AND active = 1 ORDER BY invoice_date DESC")
     suspend fun getInvoicesByNumber(searchText: String): List<InvoiceEntity>
 
-    @Query("SELECT * FROM invoiceEntity WHERE from_customer_name LIKE '%' || :searchText || '%' AND active = 1 ORDER BY invoice_date DESC")
+    @Query("SELECT * FROM invoiceEntity WHERE customer_name LIKE '%' || :searchText || '%' AND active = 1 ORDER BY invoice_date DESC")
     suspend fun getInvoicesByCustomerName(searchText: String): List<InvoiceEntity>
 
     @Query("SELECT * FROM invoiceEntity WHERE invoice_date BETWEEN :startDate AND :endDate AND active = 1 ORDER BY invoice_date DESC")
@@ -45,7 +45,7 @@ interface InvoiceDao {
     @Query("SELECT count(*) FROM invoiceEntity WHERE active = 1")
     suspend fun countInvoices(): Int
 
-    @Query("SELECT count(*) FROM invoiceEntity WHERE from_customer_id = :customerId AND active = 1")
+    @Query("SELECT count(*) FROM invoiceEntity WHERE customer_id = :customerId AND active = 1")
     suspend fun countInvoicesByCustomer(customerId: String): Int
 
     @Query("SELECT count(*) FROM invoiceEntity WHERE status = :status AND active = 1")
@@ -64,7 +64,7 @@ interface InvoiceDao {
     @Query("SELECT SUM(total_cost) FROM invoiceEntity WHERE active = 1")
     suspend fun getTotalInvoiceValue(): Double?
 
-    @Query("SELECT SUM(total_cost) FROM invoiceEntity WHERE from_customer_id = :customerId AND active = 1")
+    @Query("SELECT SUM(total_cost) FROM invoiceEntity WHERE customer_id = :customerId AND active = 1")
     suspend fun getTotalInvoiceValueByCustomer(customerId: String): Double?
 
     @Query("SELECT SUM(total_cost) FROM invoiceEntity WHERE invoice_date BETWEEN :startDate AND :endDate AND active = 1")
@@ -73,7 +73,7 @@ interface InvoiceDao {
     @Query("SELECT SUM(total_tax) FROM invoiceEntity WHERE active = 1")
     suspend fun getTotalTaxValue(): Double?
 
-    @Query("SELECT SUM(total_tax) FROM invoiceEntity WHERE from_customer_id = :customerId AND active = 1")
+    @Query("SELECT SUM(total_tax) FROM invoiceEntity WHERE customer_id = :customerId AND active = 1")
     suspend fun getTotalTaxValueByCustomer(customerId: String): Double?
 
     @Query("SELECT SUM(total_tax) FROM invoiceEntity WHERE invoice_date BETWEEN :startDate AND :endDate AND active = 1")
@@ -107,7 +107,7 @@ interface InvoiceDao {
     @Query("SELECT * FROM invoiceEntity WHERE active = 1 ORDER BY invoice_date DESC")
     fun getAllInvoicesPagingSource(): PagingSource<Int, InvoiceEntity>
 
-    @Query("SELECT * FROM invoiceEntity WHERE from_customer_id = :customerId AND active = 1 ORDER BY invoice_date DESC")
+    @Query("SELECT * FROM invoiceEntity WHERE customer_id = :customerId AND active = 1 ORDER BY invoice_date DESC")
     fun getInvoicesByCustomerPagingSource(customerId: String): PagingSource<Int, InvoiceEntity>
 
     @Query("SELECT * FROM invoiceEntity WHERE invoice_number LIKE '%' || :searchText || '%' AND active = 1 ORDER BY invoice_date DESC")
@@ -120,8 +120,7 @@ interface InvoiceDao {
         SELECT * FROM invoiceEntity
         WHERE active = 1
           AND (:searchText = '' OR invoice_number LIKE '%' || :searchText || '%'
-               OR to_customer_name LIKE '%' || :searchText || '%'
-               OR from_customer_name LIKE '%' || :searchText || '%')
+               OR customer_name LIKE '%' || :searchText || '%')
           AND (:status = '' OR status = :status)
           AND (:fromOrderOnly = 0 OR (order_ref_id IS NOT NULL AND order_ref_id != ''))
           AND (:unsyncedOnly = 0 OR synced = 0)

@@ -314,7 +314,7 @@ private fun InvoiceRow(
 ) {
     val cs = MaterialTheme.colorScheme
     val offlineCd = stringResource(Res.string.inv_list_offline_cd)
-    val buyer = invoice.toCustomerName.ifBlank { invoice.fromCustomerName }.ifBlank { "—" }
+    val buyer = invoice.customerName.ifBlank { "—" }
     val number = invoice.invoiceNumber.ifBlank { "—" }
     val amount = invoice.totalCost.toInr()
     val rowCd = "$number, $buyer, $amount, ${invoice.status.lowercase()}" +

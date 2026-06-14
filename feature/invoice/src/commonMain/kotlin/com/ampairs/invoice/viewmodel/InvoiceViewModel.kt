@@ -74,8 +74,7 @@ import kotlinx.datetime.toLocalDateTime
  */
 @AssistedInject
 class InvoiceViewModel(
-    @Assisted fromCustomerId: String?,
-    @Assisted toCustomerId: String?,
+    @Assisted customerId: String?,
     @Assisted id: String?,
     val customerDataService: CustomerDataService,
     val invoiceRepository: InvoiceRepository,
@@ -93,13 +92,12 @@ class InvoiceViewModel(
     @ManualViewModelAssistedFactoryKey
     @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
-        fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): InvoiceViewModel
+        fun create(customerId: String?, id: String?): InvoiceViewModel
     }
 
     // ───────────────────────── core document state ─────────────────────────
 
-    var fromCustomer: Customer? = null
-    var toCustomer: Customer? = null
+    var customer: Customer? = null
     val invoiceItems = mutableStateListOf<InvoiceItem>()
     var savingInvoice by mutableStateOf(false)
     var invoice = Invoice()
@@ -131,10 +129,12 @@ class InvoiceViewModel(
         private set
     private var series: String = ""
 
-    val sellerStateCode: Int?
-        get() = ScenarioResolver.stateCodeFromGstin(fromCustomer?.gstNumber)
+    // Supply-origin (seller) state is owned by the tax module, not stored on the invoice. Until the
+    // tax module supplies it, the editor treats the scenario as intra-state by default; the buyer's
+    // GSTIN (place of supply) still drives ScenarioResolver.
+    val sellerStateCode: Int? = null
 
-    private var toCustomerWalkIn = false
+    private var customerWalkIn = false
     private var savedOnce = false
     private var ratePercents: Map<String, Double?> = emptyMap()
     private val engine by lazy { ComposerEngine(productDataService, unitOptionsLookup, taxRateProvider) }
@@ -420,9 +420,7 @@ class InvoiceViewModel(
 
     // ───────────────────────── customer selection ─────────────────────────
 
-    var fromCustomerName by mutableStateOf("")
-        private set
-    var toCustomerName by mutableStateOf("")
+    var customerName by mutableStateOf("")
         private set
     var customerResults by mutableStateOf<List<com.ampairs.customer.domain.CustomerListItem>>(emptyList())
         private set
@@ -433,39 +431,29 @@ class InvoiceViewModel(
         }
     }
 
-    fun selectFromCustomer(customerId: String) {
+    fun selectCustomer(customerId: String) {
         viewModelScope.launch(DispatcherProvider.io) {
-            val customer = customerDataService.getById(customerId) ?: return@launch
-            fromCustomer = customer
-            invoice.fromCustomer = customer
-            fromCustomerName = customer.name
-            computeTotals()
-        }
-    }
-
-    fun selectToCustomer(customerId: String) {
-        viewModelScope.launch(DispatcherProvider.io) {
-            val customer = customerDataService.getById(customerId) ?: return@launch
-            toCustomer = customer
-            toCustomerWalkIn = false
-            invoice.toCustomer = customer
-            toCustomerName = customer.name
+            val selected = customerDataService.getById(customerId) ?: return@launch
+            customer = selected
+            customerWalkIn = false
+            invoice.customer = selected
+            customerName = selected.name
             computeTotals()
         }
     }
 
     /** Walk-in buyer (spec 010 v2): no customer record; no GSTIN ⇒ intra vs the seller state. */
     fun useWalkInCustomer(name: String, phone: String, gstin: String) {
-        val customer = Customer(
+        val walkIn = Customer(
             uid = "",
             name = name.ifBlank { "Walk-in" },
             phone = phone.trim().ifBlank { null },
             gstNumber = gstin.trim().ifBlank { null },
         )
-        toCustomer = customer
-        toCustomerWalkIn = true
-        invoice.toCustomer = customer
-        toCustomerName = customer.name
+        customer = walkIn
+        customerWalkIn = true
+        invoice.customer = walkIn
+        customerName = walkIn.name
         recalculate()
     }
 
@@ -486,10 +474,14 @@ class InvoiceViewModel(
     fun selectPriceMode(mode: PriceMode) { priceMode = mode; recalculate() }
 
     private suspend fun computeTotals() {
-        val scenario = ScenarioResolver.resolveFromGstins(
-            sellerGstin = invoice.fromCustomer?.gstNumber,
-            buyerGstin = invoice.toCustomer?.gstNumber,
-        )
+        // IGST vs CGST+SGST is purely the place-of-supply diff: seller (origin) state vs buyer
+        // (destination) state — both snapshotted on the document. Fall back to the GSTIN state only
+        // when an explicit place-of-supply is absent. Unknown → intra-state default.
+        val supplierState = invoice.sellerPlaceOfSupply?.toIntOrNull()
+            ?: ScenarioResolver.stateCodeFromGstin(invoice.sellerGst)
+        val posState = invoice.placeOfSupply?.toIntOrNull()
+            ?: ScenarioResolver.stateCodeFromGstin(invoice.customer?.gstNumber)
+        val scenario = ScenarioResolver.resolve(supplierState, posState)
         val taxCodes = invoiceItems.mapNotNull { it.product?.taxCode }
         val rates = taxRateProvider.resolveAll(taxCodes, scenario)
         ratePercents = rates.mapValues { (_, v) -> v.totalRate }
@@ -609,7 +601,6 @@ class InvoiceViewModel(
     }
 
     private fun publishCustomerUi(scenario: TaxScenario) {
-        val customer = toCustomer
         customerUi = customer?.let {
             val stateCode = ScenarioResolver.stateCodeFromGstin(it.gstNumber)
             DocCustomerUi(
@@ -620,7 +611,7 @@ class InvoiceViewModel(
                 stateLabel = it.state?.takeIf { s -> s.isNotBlank() }?.let { s -> stateCode?.let { c -> "$s ($c)" } ?: s }
                     ?: stateCode?.toString(),
                 intra = scenario == TaxScenario.INTRA,
-                walkIn = toCustomerWalkIn,
+                walkIn = customerWalkIn,
             )
         }
     }
@@ -662,6 +653,16 @@ class InvoiceViewModel(
                 invoice.createdBy = userId
             }
             invoice.updatedBy = userId
+            // Default place of supply to the buyer's GSTIN state, else the buyer's address state.
+            if (invoice.placeOfSupply.isNullOrBlank()) {
+                invoice.placeOfSupply = ScenarioResolver.stateCodeFromGstin(invoice.customer?.gstNumber)?.toString()
+                    ?: invoice.customer?.state
+            }
+            // Seller (origin) place of supply: from the snapshotted seller GSTIN (stamped from the
+            // tax registration). Stored so the IGST decision is a pure compare on re-edit.
+            if (invoice.sellerPlaceOfSupply.isNullOrBlank()) {
+                invoice.sellerPlaceOfSupply = ScenarioResolver.stateCodeFromGstin(invoice.sellerGst)?.toString()
+            }
             // snapshot the active modes + numbering series onto the document (spec 010 C1/C2/C4)
             val invoiceEntity = invoice.asDatabaseModel().copy(
                 price_mode = priceMode.name,
@@ -760,17 +761,13 @@ class InvoiceViewModel(
             showDiscount = storeSettings.getBoolean("invoice", "show_discount_options", default = true)
             if (!id.isNullOrEmpty()) {
                 invoice = invoiceRepository.getInvoice(id)
-                fromCustomer = invoice.fromCustomer
-                toCustomer = invoice.toCustomer
+                customer = invoice.customer
                 invoiceItems.addAll(invoice.items)
             } else {
-                fromCustomer = fromCustomerId?.let { customerDataService.getById(it) }
-                toCustomer = toCustomerId?.let { customerDataService.getById(it) }
-                invoice.fromCustomer = fromCustomer
-                invoice.toCustomer = toCustomer
+                customer = customerId?.let { customerDataService.getById(it) }
+                invoice.customer = customer
             }
-            fromCustomerName = fromCustomer?.name ?: ""
-            toCustomerName = toCustomer?.name ?: ""
+            customerName = customer?.name ?: ""
             dateLabel = formatDocDate()
             baseUnits = unitLookup.getActiveUnits().map { DocBaseUnitChoice(it.uid, it.shortName.ifBlank { it.name }) }
             refreshNumberPreview()
