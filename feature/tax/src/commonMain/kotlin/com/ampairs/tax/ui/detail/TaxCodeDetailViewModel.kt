@@ -145,17 +145,27 @@ class TaxCodeDetailViewModel(
             if (currentState is TaxCodeDetailUiState.Success) {
                 _uiState.update { currentState.copy(isSaving = true, saveError = null) }
 
-                // Note: This would require a repository method to update notes
-                // For now, we'll just update the local state
-                // TODO: Add repository.updateNotes(taxCodeId, notes) method
-
-                _uiState.update {
-                    currentState.copy(
-                        isSaving = false,
-                        isEditing = false,
-                        saveError = null
-                    )
-                }
+                val normalized = notes.ifBlank { null }
+                taxCodeRepository.updateNotes(taxCodeId, normalized).fold(
+                    onSuccess = {
+                        _uiState.update {
+                            currentState.copy(
+                                taxCode = currentState.taxCode.copy(notes = normalized),
+                                isSaving = false,
+                                isEditing = false,
+                                saveError = null
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update {
+                            currentState.copy(
+                                isSaving = false,
+                                saveError = error.message ?: "Failed to save notes"
+                            )
+                        }
+                    }
+                )
             }
         }
     }

@@ -79,14 +79,8 @@ class MyTaxCodesViewModel(
     }
 
     fun loadTaxCodes() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
-            // Codes are loaded reactively via Flow
-            kotlinx.coroutines.delay(500) // Small delay to show loading state
-
-            _uiState.update { it.copy(isLoading = false) }
-        }
+        // Codes are loaded reactively via the DAO Flow (see init); nothing to wait on here.
+        _uiState.update { it.copy(isLoading = false, errorMessage = null) }
     }
 
     fun onSearchQueryChange(query: String) {

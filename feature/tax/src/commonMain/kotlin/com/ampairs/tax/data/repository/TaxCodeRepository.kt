@@ -1,6 +1,7 @@
 package com.ampairs.tax.data.repository
 
 import com.ampairs.common.sentry.ErrorTracking
+import com.ampairs.tax.util.TaxLogger
 import com.ampairs.tax.data.api.TaxConfigurationApi
 import com.ampairs.tax.data.db.dao.TaxCodeDao
 import dev.zacsweers.metro.Inject
@@ -84,6 +85,30 @@ class TaxCodeRepository(
             Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "TaxCodeRepository.setFavorite")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Update the workspace-specific notes on a subscribed tax code.
+     *
+     * Writes locally first (so the edit is immediately reflected offline) then best-effort persists
+     * to the server via PATCH; the local write is the source of truth and is marked SYNCED only once
+     * the server confirms.
+     */
+    suspend fun updateNotes(id: String, notes: String?): Result<Unit> {
+        return try {
+            val existing = taxCodeDao.getById(id)
+                ?: return Result.failure(IllegalStateException("Tax code not found: $id"))
+            taxCodeDao.update(existing.copy(notes = notes, syncStatus = "PENDING"))
+
+            runCatching { taxConfigApi.updateTaxCodeConfig(taxCodeId = id, notes = notes) }
+                .onSuccess { result -> if (result.isSuccess) taxCodeDao.updateSyncStatus(id, "SYNCED") }
+                .onFailure { e -> TaxLogger.w("TaxCodeRepo", "Notes server sync deferred for $id", e) }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            ErrorTracking.captureException(e, "TaxCodeRepository.updateNotes")
             Result.failure(e)
         }
     }
