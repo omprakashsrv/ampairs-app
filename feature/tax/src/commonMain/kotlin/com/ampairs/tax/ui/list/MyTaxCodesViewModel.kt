@@ -64,6 +64,18 @@ class MyTaxCodesViewModel(
 
     init {
         loadTaxCodes()
+        // Auto-pull from server on open so subscribed/imported codes appear without a manual
+        // Refresh. Tax is off the central-sync pattern, so it pulls its own cluster here.
+        refreshFromServer()
+    }
+
+    /** Silent pull of codes + rules + components on screen open (errors don't surface as UI errors). */
+    private fun refreshFromServer() {
+        viewModelScope.launch {
+            taxCodeRepository.syncWorkspaceTaxCodes()
+            taxRuleRepository.syncTaxRules()
+            taxComponentRepository.syncWorkspaceComponents()
+        }
     }
 
     fun loadTaxCodes() {
