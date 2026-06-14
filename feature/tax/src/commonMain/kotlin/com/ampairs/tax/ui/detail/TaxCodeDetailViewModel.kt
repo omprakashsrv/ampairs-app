@@ -1,5 +1,7 @@
 package com.ampairs.tax.ui.detail
 
+import com.ampairs.tax.util.TaxLogger
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.tax.calculation.TaxCalculationEngine
@@ -59,7 +61,7 @@ class TaxCodeDetailViewModel(
         viewModelScope.launch {
             _uiState.value = TaxCodeDetailUiState.Loading
 
-            println("🔍 [TaxCodeDetailVM] Loading tax code and rules for ID: $taxCodeId")
+            TaxLogger.d("TaxCodeDetailVM", "🔍 [TaxCodeDetailVM] Loading tax code and rules for ID: $taxCodeId")
 
             // Observe tax code from database (reactive)
             launch {
@@ -93,9 +95,9 @@ class TaxCodeDetailViewModel(
                 taxCodeRepository.observeWorkspaceTaxCodes().collect { taxCodes ->
                     val taxCode = taxCodes.find { it.id == taxCodeId }
                     if (taxCode != null) {
-                        println("🔍 [TaxCodeDetailVM] Tax code found: ${taxCode.code}, querying rules by code string")
+                        TaxLogger.d("TaxCodeDetailVM", "🔍 [TaxCodeDetailVM] Tax code found: ${taxCode.code}, querying rules by code string")
                         taxRuleRepository.observeTaxRulesByCode(taxCode.code).collect { rules ->
-                            println("🔄 [TaxCodeDetailVM] Tax rules updated: ${rules.size} rules for code ${taxCode.code}")
+                            TaxLogger.d("TaxCodeDetailVM", "🔄 [TaxCodeDetailVM] Tax rules updated: ${rules.size} rules for code ${taxCode.code}")
                             val currentState = _uiState.value
                             if (currentState is TaxCodeDetailUiState.Success) {
                                 _uiState.update {

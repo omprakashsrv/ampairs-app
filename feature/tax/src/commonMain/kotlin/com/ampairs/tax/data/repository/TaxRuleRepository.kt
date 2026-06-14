@@ -1,5 +1,7 @@
 package com.ampairs.tax.data.repository
 
+import com.ampairs.tax.util.TaxLogger
+
 import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.tax.data.api.TaxConfigurationApi
 import com.ampairs.tax.data.db.dao.TaxRuleDao
@@ -45,21 +47,21 @@ class TaxRuleRepository(
         taxCode: String,
         jurisdiction: String
     ): TaxRule? {
-        println("🔍 [TaxRuleRepo] getEffectiveRule: taxCode=$taxCode, jurisdiction=$jurisdiction")
+        TaxLogger.d("TaxRuleRepo", "🔍 [TaxRuleRepo] getEffectiveRule: taxCode=$taxCode, jurisdiction=$jurisdiction")
         val entity = taxRuleDao.getEffectiveRule(
             taxCode = taxCode,
             jurisdiction = jurisdiction
         )
         if (entity != null) {
-            println("✅ [TaxRuleRepo] Found rule: ID=${entity.id}, jurisdiction=${entity.jurisdiction}")
+            TaxLogger.d("TaxRuleRepo", "✅ [TaxRuleRepo] Found rule: ID=${entity.id}, jurisdiction=${entity.jurisdiction}")
             val domainRule = entity.toDomain()
-            println("   Component composition keys: ${domainRule.componentComposition.keys}")
+            TaxLogger.d("TaxRuleRepo", "   Component composition keys: ${domainRule.componentComposition.keys}")
             domainRule.componentComposition.forEach { (key, comp) ->
-                println("   - Scenario: $key, components: ${comp.components.size}, total_rate: ${comp.totalRate}")
+                TaxLogger.d("TaxRuleRepo", "   - Scenario: $key, components: ${comp.components.size}, total_rate: ${comp.totalRate}")
             }
             return domainRule
         } else {
-            println("❌ [TaxRuleRepo] No rule found for taxCode=$taxCode, jurisdiction=$jurisdiction")
+            TaxLogger.d("TaxRuleRepo", "❌ [TaxRuleRepo] No rule found for taxCode=$taxCode, jurisdiction=$jurisdiction")
             return null
         }
     }
@@ -69,10 +71,10 @@ class TaxRuleRepository(
      * Use this when backend returns empty tax_code_id
      */
     fun observeTaxRulesByCode(taxCode: String): Flow<List<TaxRule>> {
-        println("👀 [TaxRuleRepo] Setting up observer for tax_code string: $taxCode")
+        TaxLogger.d("TaxRuleRepo", "👀 [TaxRuleRepo] Setting up observer for tax_code string: $taxCode")
         return taxRuleDao.observeRulesByCodeString(taxCode)
             .map { entities ->
-                println("👀 [TaxRuleRepo] Flow emitted ${entities.size} entities for tax_code: $taxCode")
+                TaxLogger.d("TaxRuleRepo", "👀 [TaxRuleRepo] Flow emitted ${entities.size} entities for tax_code: $taxCode")
                 entities.map { it.toDomain() }
             }
     }
@@ -82,10 +84,10 @@ class TaxRuleRepository(
      * Use this when backend returns proper tax_code_id
      */
     fun observeTaxRulesForTaxCode(workspaceTaxCodeId: String): Flow<List<TaxRule>> {
-        println("👀 [TaxRuleRepo] Setting up observer for tax_code_id: $workspaceTaxCodeId")
+        TaxLogger.d("TaxRuleRepo", "👀 [TaxRuleRepo] Setting up observer for tax_code_id: $workspaceTaxCodeId")
         return taxRuleDao.observeRulesByTaxCode(workspaceTaxCodeId)
             .map { entities ->
-                println("👀 [TaxRuleRepo] Flow emitted ${entities.size} entities for tax_code_id: $workspaceTaxCodeId")
+                TaxLogger.d("TaxRuleRepo", "👀 [TaxRuleRepo] Flow emitted ${entities.size} entities for tax_code_id: $workspaceTaxCodeId")
                 entities.map { it.toDomain() }
             }
     }
@@ -94,10 +96,10 @@ class TaxRuleRepository(
      * Get tax rules by workspace tax code (offline)
      */
     suspend fun getRulesByTaxCode(workspaceTaxCodeId: String): List<TaxRule> {
-        println("🔍 [TaxRuleRepo] getRulesByTaxCode for ID: $workspaceTaxCodeId")
+        TaxLogger.d("TaxRuleRepo", "🔍 [TaxRuleRepo] getRulesByTaxCode for ID: $workspaceTaxCodeId")
         val rules = taxRuleDao.getRulesByTaxCode(workspaceTaxCodeId)
             .map { it.toDomain() }
-        println("🔍 [TaxRuleRepo] Found ${rules.size} rules in local DB")
+        TaxLogger.d("TaxRuleRepo", "🔍 [TaxRuleRepo] Found ${rules.size} rules in local DB")
         return rules
     }
 
@@ -279,7 +281,7 @@ class TaxRuleRepository(
         return try {
             // Get last sync time
             val lastSync = getLastSyncTime()
-            println("🔄 [TaxRuleRepo] Starting sync with lastSync: $lastSync")
+            TaxLogger.d("TaxRuleRepo", "🔄 [TaxRuleRepo] Starting sync with lastSync: $lastSync")
 
             // Fetch updated rules from server (paginated)
             var totalSynced = 0
@@ -297,27 +299,27 @@ class TaxRuleRepository(
                     val response = result.getOrThrow()
                     val rules = response.content
 
-                    println("📥 [TaxRuleRepo] Page $page: Received ${rules.size} rules")
+                    TaxLogger.d("TaxRuleRepo", "📥 [TaxRuleRepo] Page $page: Received ${rules.size} rules")
 
                     // Log first few rules for debugging
                     rules.take(3).forEach { rule ->
-                        println("  - Rule: ID=${rule.id}, tax_code_id=${rule.taxCodeId}, tax_code=${rule.taxCode}, jurisdiction=${rule.jurisdiction}")
+                        TaxLogger.d("TaxRuleRepo", "  - Rule: ID=${rule.id}, tax_code_id=${rule.taxCodeId}, tax_code=${rule.taxCode}, jurisdiction=${rule.jurisdiction}")
                     }
 
                     // Upsert to local database
                     try {
                         val entities = rules.map { it.toEntity().copy(syncStatus = "SYNCED") }
-                        println("📥 [TaxRuleRepo] Converting ${entities.size} rules to entities...")
+                        TaxLogger.d("TaxRuleRepo", "📥 [TaxRuleRepo] Converting ${entities.size} rules to entities...")
 
                         // Log first entity details
                         entities.firstOrNull()?.let { entity ->
-                            println("  - First entity: ID=${entity.id}, taxCodeId=${entity.taxCodeId}, taxCode=${entity.taxCode}")
+                            TaxLogger.d("TaxRuleRepo", "  - First entity: ID=${entity.id}, taxCodeId=${entity.taxCodeId}, taxCode=${entity.taxCode}")
                         }
 
                         taxRuleDao.insertAll(entities)
-                        println("✅ [TaxRuleRepo] Successfully inserted ${entities.size} entities to DB")
+                        TaxLogger.d("TaxRuleRepo", "✅ [TaxRuleRepo] Successfully inserted ${entities.size} entities to DB")
                     } catch (e: Exception) {
-                        println("❌ [TaxRuleRepo] Failed to insert entities: ${e.message}")
+                        TaxLogger.d("TaxRuleRepo", "❌ [TaxRuleRepo] Failed to insert entities: ${e.message}")
                         e.printStackTrace()
                     }
 
@@ -330,15 +332,15 @@ class TaxRuleRepository(
 
                     page++
                 } else {
-                    println("❌ [TaxRuleRepo] Sync failed: ${result.exceptionOrNull()?.message}")
+                    TaxLogger.d("TaxRuleRepo", "❌ [TaxRuleRepo] Sync failed: ${result.exceptionOrNull()?.message}")
                     break
                 }
             } while (totalSynced < 10000) // Safety limit
 
-            println("✅ [TaxRuleRepo] Sync complete: $totalSynced rules synced")
+            TaxLogger.d("TaxRuleRepo", "✅ [TaxRuleRepo] Sync complete: $totalSynced rules synced")
             Result.success(totalSynced)
         } catch (e: Exception) {
-            println("❌ [TaxRuleRepo] Sync exception: ${e.message}")
+            TaxLogger.d("TaxRuleRepo", "❌ [TaxRuleRepo] Sync exception: ${e.message}")
             ErrorTracking.captureException(e, "TaxRuleRepository.syncTaxRules")
             Result.failure(e)
         }
