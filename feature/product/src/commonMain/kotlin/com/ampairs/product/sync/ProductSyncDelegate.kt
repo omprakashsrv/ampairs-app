@@ -11,6 +11,7 @@ import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
 import com.ampairs.sync.SyncResult
+import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
@@ -25,6 +26,7 @@ import dev.zacsweers.metro.Inject
 class ProductSyncDelegate(
     private val productApi: ProductApi,
     private val productDao: ProductDao,
+    private val syncStateDao: SyncStateDao,
 ) : SyncDelegate {
 
     override val entity: SyncEntity = SyncEntity.PRODUCT
@@ -86,12 +88,15 @@ class ProductSyncDelegate(
     }
 
     private suspend fun pull(): Result<Int> = runCatching {
+        // Incremental: only pull rows updated since the last successful pull checkpoint.
+        val lastSync = syncStateDao.getLastSyncedAtIso(SyncEntity.PRODUCT) ?: ""
         var page = 0
         var total = 0
+        var maxServerTime = ""
         var hasNext: Boolean
         do {
             val pageResp = productApi.getProductsSync(
-                lastSync = null,
+                lastSync = lastSync.ifBlank { null },
                 page = page,
                 size = 100,
                 sortBy = "updatedAt",
@@ -103,11 +108,15 @@ class ProductSyncDelegate(
                 .forEach { productDao.deleteById(it.id) }
             // Upsert the rest.
             val toUpsert = batch.filter { it.status?.equals("DELETED", ignoreCase = true) != true }
-            if (toUpsert.isNotEmpty()) productDao.insertAll(    reconcileWithLocal(toUpsert.asDatabaseModel()))
+            if (toUpsert.isNotEmpty()) productDao.insertAll(reconcileWithLocal(toUpsert.asDatabaseModel()))
+            val batchMaxTime = batch.mapNotNull { it.updatedAt?.takeIf { ts -> ts.isNotBlank() } }.maxOrNull() ?: ""
+            if (batchMaxTime > maxServerTime) maxServerTime = batchMaxTime
             total += batch.size
             hasNext = pageResp.hasNext
             page++
         } while (hasNext && total < 10000)
+        // Advance the checkpoint so the next pull is incremental.
+        if (maxServerTime.isNotBlank()) syncStateDao.setLastSyncedAtIso(SyncEntity.PRODUCT, maxServerTime)
         total
     }
 
