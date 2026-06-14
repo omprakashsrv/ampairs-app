@@ -44,7 +44,7 @@ compose.desktop {
             description = "Empowering Retail, One byte at a time"
             copyright = "Copyright 2025 Ampairs. All rights reserved."
             vendor = "Ampairs"
-            modules("java.sql")
+            modules("java.sql", "jdk.unsupported", "java.naming", "jdk.crypto.ec")
 
             windows {
                 dirChooser = true
