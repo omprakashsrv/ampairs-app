@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.print.amountInWords
@@ -52,9 +53,7 @@ fun TaxInvoicePreviewScreen(
             TopAppBar(
                 title = { Text("Tax invoice") },
                 navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close")
-                    }
+                    ScreenBackButton(onClick = onClose, contentDescription = "Close")
                 },
                 actions = {
                     IconButton(onClick = { print(buildInvoiceHtml(invoice, workspaceName)) }) {

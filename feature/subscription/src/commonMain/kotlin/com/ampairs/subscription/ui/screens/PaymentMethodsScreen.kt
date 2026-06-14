@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.PaymentMethod
 import com.ampairs.subscription.domain.model.PaymentMethodType
 import com.ampairs.subscription.viewmodel.SubscriptionEvent
@@ -66,9 +67,7 @@ fun PaymentMethodsScreen(
             TopAppBar(
                 title = { Text("Payment Methods") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = "Back")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface

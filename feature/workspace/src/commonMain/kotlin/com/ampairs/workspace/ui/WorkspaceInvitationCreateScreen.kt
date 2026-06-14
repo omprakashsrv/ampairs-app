@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -98,13 +99,11 @@ fun WorkspaceInvitationCreateScreen(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(Res.string.cd_back)
-                    )
-                }
-                
+                ScreenBackButton(
+                    onClick = onNavigateBack,
+                    contentDescription = stringResource(Res.string.cd_back)
+                )
+
                 Text(
                     text = stringResource(Res.string.workspace_invitation_create_title),
                     style = MaterialTheme.typography.headlineSmall,

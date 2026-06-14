@@ -39,6 +39,7 @@ import ampairsapp.feature.ecom.generated.resources.ecom_checkout_title
 import ampairsapp.feature.ecom.generated.resources.ecom_order_notes
 import ampairsapp.feature.ecom.generated.resources.ecom_place_order
 import ampairsapp.feature.ecom.generated.resources.ecom_select_address
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.data.db.entity.CustomerAddressEntity
 import com.ampairs.ecom.domain.asRupee
 import com.ampairs.ecom.ui.components.EcomDimens
@@ -66,7 +67,7 @@ fun CheckoutScreen(
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+            ScreenBackButton(onClick = onBack, contentDescription = "Back")
             Text(stringResource(Res.string.ecom_checkout_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
         }
 

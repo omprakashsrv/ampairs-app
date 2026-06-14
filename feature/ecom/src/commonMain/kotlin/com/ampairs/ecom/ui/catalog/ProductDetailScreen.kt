@@ -38,6 +38,7 @@ import ampairsapp.feature.ecom.generated.resources.ecom_out_of_stock
 import ampairsapp.feature.ecom.generated.resources.ecom_save_amount
 import ampairsapp.feature.ecom.generated.resources.ecom_view_cart
 import coil3.compose.AsyncImage
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.api.model.StockStatus
 import com.ampairs.ecom.domain.asRupee
 import com.ampairs.ecom.domain.firstImageUrl
@@ -61,7 +62,7 @@ fun ProductDetailScreen(
     val product = state.product
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+            ScreenBackButton(onClick = onBack, contentDescription = "Back")
             Text(product?.name.orEmpty(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f), maxLines = 1)
         }
 

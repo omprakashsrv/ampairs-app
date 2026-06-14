@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.viewmodel.SubscriptionEvent
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
@@ -67,9 +68,7 @@ fun PlanComparisonScreen(
             TopAppBar(
                 title = { Text("Compare Plans") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = "Back")
                 }
             )
         },

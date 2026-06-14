@@ -45,6 +45,7 @@ import ampairsapp.feature.ecom.generated.resources.ecom_address_state
 import ampairsapp.feature.ecom.generated.resources.ecom_addresses_title
 import ampairsapp.feature.ecom.generated.resources.ecom_no_addresses
 import ampairsapp.feature.ecom.generated.resources.ecom_save
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.data.db.entity.CustomerAddressEntity
 import com.ampairs.ecom.ui.components.EcomDimens
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -60,7 +61,7 @@ fun AddressesScreen(
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+            ScreenBackButton(onClick = onBack, contentDescription = "Back")
             Text(stringResource(Res.string.ecom_addresses_title), style = MaterialTheme.typography.titleLarge)
         }
 

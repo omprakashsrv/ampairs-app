@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.util.DateTimeFormatter
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
@@ -141,9 +142,7 @@ fun CustomerDetailsScreen(
         TopAppBar(
             title = { Text(uiState.customer?.name ?: TITLE_CUSTOMER_DETAILS) },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = null)
-                }
+                ScreenBackButton(onClick = onNavigateBack, contentDescription = null)
             },
             actions = {
                 if (uiState.customer != null) {

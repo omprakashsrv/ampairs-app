@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.util.formatDecimal
@@ -84,9 +85,7 @@ fun TaxCodeDetailScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.tax_detail_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.tax_detail_cd_back))
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = stringResource(Res.string.tax_detail_cd_back))
                 },
                 actions = {
                     if (uiState is TaxCodeDetailUiState.Success) {

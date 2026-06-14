@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.form.domain.FieldSource
 import com.ampairs.form.domain.FormField
 import com.ampairs.form.domain.FormSchema
@@ -322,7 +323,7 @@ private fun TopBar(
             Modifier.fillMaxWidth().height(64.dp).padding(start = 4.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.form_edit_back_cd)) }
+            ScreenBackButton(onClick = onBack, contentDescription = stringResource(Res.string.form_edit_back_cd))
             Spacer(Modifier.width(4.dp))
             Column {
                 Text(stringResource(Res.string.form_edit_overline), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)

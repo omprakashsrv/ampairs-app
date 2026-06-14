@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.product.domain.Product
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -139,9 +140,7 @@ fun ProductDetailsScreen(
         TopAppBar(
             title = { Text(uiState.product?.name ?: stringResource(Res.string.prod_details_title)) },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                }
+                ScreenBackButton(onClick = onNavigateBack, contentDescription = null)
             },
             actions = {
                 if (uiState.product != null) {

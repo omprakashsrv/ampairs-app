@@ -60,6 +60,7 @@ import ampairsapp.feature.product.generated.resources.prod_catalog_form_name_err
 import ampairsapp.feature.product.generated.resources.prod_catalog_form_name_label
 import ampairsapp.feature.product.generated.resources.prod_catalog_form_remove_image
 import ampairsapp.feature.product.generated.resources.prod_catalog_form_save
+import com.ampairs.common.navigation.ScreenBackButton
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
@@ -108,9 +109,7 @@ fun CatalogFormScreen(
             TopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
-                    IconButton(onClick = onSaveSuccess) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
+                    ScreenBackButton(onClick = onSaveSuccess, contentDescription = null)
                 },
             )
         },

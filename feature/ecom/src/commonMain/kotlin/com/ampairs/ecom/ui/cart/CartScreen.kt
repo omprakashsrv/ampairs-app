@@ -43,6 +43,7 @@ import ampairsapp.feature.ecom.generated.resources.ecom_product_discount
 import ampairsapp.feature.ecom.generated.resources.ecom_save_amount
 import ampairsapp.feature.ecom.generated.resources.ecom_to_pay
 import coil3.compose.AsyncImage
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.domain.asRupee
 import com.ampairs.ecom.ui.components.BillRow
 import com.ampairs.ecom.ui.components.DeliveryStrip
@@ -64,7 +65,7 @@ fun CartScreen(
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+            ScreenBackButton(onClick = onBack, contentDescription = "Back")
             Text(stringResource(Res.string.ecom_cart_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
         }
 

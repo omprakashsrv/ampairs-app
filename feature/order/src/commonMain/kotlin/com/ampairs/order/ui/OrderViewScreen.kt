@@ -81,6 +81,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.format.toDecimal
 import com.ampairs.common.format.toInr
 import com.ampairs.invoice.editor.DocSyncChip
@@ -130,12 +131,7 @@ fun OrderViewScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.ord_view_cd_back)
-                        )
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = stringResource(Res.string.ord_view_cd_back))
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)

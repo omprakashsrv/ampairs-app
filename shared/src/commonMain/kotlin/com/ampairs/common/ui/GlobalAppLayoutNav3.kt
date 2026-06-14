@@ -11,6 +11,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.common.navigation.LocalShowScreenBackButton
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.navigation.NavigationPattern
@@ -128,7 +130,10 @@ fun GlobalAppLayoutNav3(
                     )
                 },
             ) { paddingValues ->
-                content(paddingValues)
+                // No global header on mobile — screens render their own back button.
+                CompositionLocalProvider(LocalShowScreenBackButton provides true) {
+                    content(paddingValues)
+                }
             }
         }
 
@@ -159,7 +164,10 @@ fun GlobalAppLayoutNav3(
                         )
                     },
                 ) { paddingValues ->
-                    content(paddingValues)
+                    // Global header already shows the single back button — suppress per-screen ones.
+                    CompositionLocalProvider(LocalShowScreenBackButton provides false) {
+                        content(paddingValues)
+                    }
                 }
             }
         }
@@ -186,7 +194,10 @@ fun GlobalAppLayoutNav3(
                     )
                 },
             ) { paddingValues ->
-                content(paddingValues)
+                // Global header is shown here too — suppress per-screen back buttons.
+                CompositionLocalProvider(LocalShowScreenBackButton provides false) {
+                    content(paddingValues)
+                }
             }
         }
     }
