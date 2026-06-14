@@ -6,6 +6,8 @@ import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.product.util.ProductLogger
 import com.ampairs.common.cache.CacheCleanable
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.db.dao.BrandDao
+import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.VariantAttributeDao
@@ -26,6 +28,7 @@ import com.ampairs.product.domain.toSummary
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.db.SyncStateDao
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -44,6 +47,8 @@ class ProductRepository(
     private val productDao: ProductDao,
     private val variantDao: ProductVariantDao,
     private val attributeDao: VariantAttributeDao,
+    private val categoryDao: CategoryDao,
+    private val brandDao: BrandDao,
     private val syncStateDao: SyncStateDao,
 ) : ProductDataService, CacheCleanable {
 
@@ -52,14 +57,26 @@ class ProductRepository(
     }
 
     fun observeProducts(): Flow<List<ProductListItem>> =
-        productDao.observeAllProducts().map { entities -> entities.map { it.toProductListItem() } }
+        observeProductsJoined(productDao.observeAllProducts())
 
     fun searchProducts(query: String): Flow<List<ProductListItem>> =
         if (query.isBlank()) {
-            productDao.observeAllProducts().map { entities -> entities.map { it.toProductListItem() } }
+            observeProductsJoined(productDao.observeAllProducts())
         } else {
-            productDao.observeProductsByName(query).map { entities -> entities.map { it.toProductListItem() } }
+            observeProductsJoined(productDao.observeProductsByName(query))
         }
+
+    private fun observeProductsJoined(
+        productsFlow: Flow<List<ProductEntity>>,
+    ): Flow<List<ProductListItem>> = combine(
+        productsFlow,
+        categoryDao.observeCategories(),
+        brandDao.observeBrands(),
+    ) { products, categories, brands ->
+        val categoryNames = categories.associate { it.id to it.name }
+        val brandNames = brands.associate { it.id to it.name }
+        products.map { it.toProductListItem(categoryNames, brandNames) }
+    }
 
     fun observeProduct(productId: String): Flow<Product?> =
         productDao.observeProductById(productId).map { entity -> entity?.toDomainProduct() }
@@ -69,7 +86,11 @@ class ProductRepository(
      */
     suspend fun getProductsByCategory(categoryIds: List<String>): List<ProductListItem> {
         val products = productDao.productsByCategoryIds(categoryIds)
-        return products.map { it.toProductListItem() }
+        val categoryNames = categoryDao.getCategoriesByIds(categoryIds).associate { it.id to it.name }
+        val brandIds = products.mapNotNull { it.brand_id }.distinct()
+        val brandNames = if (brandIds.isEmpty()) emptyMap()
+        else brandDao.getBrands().filter { it.id in brandIds }.associate { it.id to it.name }
+        return products.map { it.toProductListItem(categoryNames, brandNames) }
     }
 
     /**
@@ -257,15 +278,18 @@ class ProductRepository(
         )
     }
 
-    private fun ProductEntity.toProductListItem(): ProductListItem {
+    private fun ProductEntity.toProductListItem(
+        categoryNames: Map<String, String>,
+        brandNames: Map<String, String>,
+    ): ProductListItem {
         return ProductListItem(
             id = this.id,
             name = this.name,
             code = this.code,
             mrp = this.mrp,
             sellingPrice = this.selling_price,
-            categoryName = this.category_id, // TODO: Join with category table for actual name
-            brandName = this.brand_id, // TODO: Join with brand table for actual name
+            categoryName = this.category_id?.let { categoryNames[it] },
+            brandName = this.brand_id?.let { brandNames[it] },
             stockQuantity = null, // TODO: Add stock management
             imageUrl = null, // TODO: Join with image table
             active = this.active == 1
