@@ -336,8 +336,10 @@ class TallySyncService(
      * denominator) before mapping them into product-scoped UnitConversion records.
      */
     private fun scanUnitConversions(stockItems: List<StockItem>) {
-        fun hasAlt(si: StockItem) =
-            !si.additionalUnits.isNullOrBlank() && si.additionalUnits.trim() != "Not Applicable"
+        fun hasAlt(si: StockItem): Boolean {
+            val au = si.additionalUnits?.trim()
+            return !au.isNullOrBlank() && au != "Not Applicable"
+        }
         val withAlt = stockItems.count(::hasAlt)
         emit("Unit conversions: $withAlt stock items have an alternate unit")
         if (withAlt > 0) {
