@@ -1,6 +1,6 @@
 package com.ampairs.update.domain
 
-import com.ampairs.common.config.ConfigurationManager
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.update.api.UpdateCheckResponse
 import com.ampairs.update.api.UpdateInfoApiModel
 
@@ -67,8 +67,9 @@ sealed class UpdateInstallState {
 // Extension functions for converting between API and domain models
 
 fun UpdateInfoApiModel.asDomainModel(): UpdateInfo {
-    // Construct download URL from API base URL and UID
-    val downloadUrl = "${ConfigurationManager.apiBaseUrl}/api/v1/app-updates/download/${this.uid}"
+    // Download endpoint lives under the same base path as /check: /api/core/v1/app-updates/...
+    // (the previous /api/v1/app-updates/download/{uid} was missing the "core" segment → 404).
+    val downloadUrl = ApiUrlBuilder.appUpdateUrl("download/${this.uid}")
 
     return UpdateInfo(
         version = this.version,

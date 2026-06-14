@@ -28,7 +28,10 @@ fun MainView(
 
     LaunchedEffect(Unit) {
         try {
-            val result = updateChecker.checkForUpdates(forceCheck = false)
+            // Force a server check on every launch — the 4h rate limit would otherwise silently
+            // skip the check (returning null) for hours after a prior check, hiding a freshly
+            // published update. Per-version dismissal below still prevents re-nagging.
+            val result = updateChecker.checkForUpdates(forceCheck = true)
             val updateInfo = result?.updateInfo
             if (result != null && result.updateAvailable && updateInfo != null) {
                 val isDismissed = if (!updateInfo.isMandatory) {
