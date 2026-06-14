@@ -147,10 +147,10 @@ class CustomerSyncDelegate(
                                 customerDao.deleteCustomer(serverCustomer.uid)
                                 null
                             }
-                            // Preserve the local Tally ref_id (GUID): the Customer domain/server
-                            // payload doesn't carry it, so without this a pull nulls ref_id and the
-                            // next reset Tally sync can't dedupe → duplicate customers.
-                            else -> serverCustomer.toEntity().copy(synced = true, ref_id = existing?.ref_id)
+                            // Synced rows: server is source of truth. ref_id round-trips (entity
+                            // mapping carries it, backend persists+returns it); unsynced local rows
+                            // are skipped above, so no local-field retention is needed here.
+                            else -> serverCustomer.toEntity().copy(synced = true)
                         }
                     }
                     if (entities.isNotEmpty()) customerDao.insertCustomers(entities)

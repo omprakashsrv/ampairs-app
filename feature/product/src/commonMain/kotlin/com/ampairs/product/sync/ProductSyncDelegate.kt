@@ -103,7 +103,7 @@ class ProductSyncDelegate(
                 .forEach { productDao.deleteById(it.id) }
             // Upsert the rest.
             val toUpsert = batch.filter { it.status?.equals("DELETED", ignoreCase = true) != true }
-            if (toUpsert.isNotEmpty()) productDao.insertAll(preserveLocalFields(toUpsert.asDatabaseModel()))
+            if (toUpsert.isNotEmpty()) productDao.insertAll(reconcileWithLocal(toUpsert.asDatabaseModel()))
             total += batch.size
             hasNext = pageResp.hasNext
             page++
@@ -112,30 +112,28 @@ class ProductSyncDelegate(
     }
 
     /**
-     * Preserves locally-known fields the server round-trip may not carry, keyed by the stable
-     * product id:
-     *  - stock_quantity: stock lives in the inventory bounded context, absent from the product
-     *    /sync payload, so a pull would otherwise null out Tally-written stock.
-     *  - ref_id: the Tally GUID used to dedupe on re-sync; if a pull drops it, the next (reset)
-     *    Tally sync can't match the existing row and creates duplicates.
-     * The server value wins whenever it provides one; otherwise the local value is kept.
+     * Reconciles server rows with local state before upsert, keyed by the stable product id:
+     *  - Drops any row whose local copy is unsynced (synced == 0) — local edits win until pushed
+     *    (full sync pushes first, so a still-unsynced row means the push hasn't completed).
+     *  - Preserves stock_quantity only: stock lives in the inventory bounded context and is NOT
+     *    part of the product /sync contract, so the server never round-trips it. (ref_id needs no
+     *    such retention — it round-trips via the product /sync payload.) Remove this once the
+     *    backend product sync carries stock.
      */
-    private suspend fun preserveLocalFields(entities: List<ProductEntity>): List<ProductEntity> {
+    private suspend fun reconcileWithLocal(entities: List<ProductEntity>): List<ProductEntity> {
         if (entities.isEmpty()) return entities
         val existing = productDao.productsByIds(entities.map { it.id }).associateBy { it.id }
-        return entities.map { e ->
-            val local = existing[e.id] ?: return@map e
-            e.copy(
-                stock_quantity = e.stock_quantity ?: local.stock_quantity,
-                ref_id = e.ref_id?.takeIf { it.isNotBlank() } ?: local.ref_id,
-            )
+        return entities.mapNotNull { e ->
+            val local = existing[e.id]
+            if (local != null && local.synced == 0) return@mapNotNull null   // unsynced local wins
+            e.copy(stock_quantity = e.stock_quantity ?: local?.stock_quantity)
         }
     }
 
     private suspend fun refreshProductFromServer(productId: String) {
         productApi.getProduct(productId)
             .onSuccess { model ->
-                productDao.insertAll(preserveLocalFields(listOf(model).asDatabaseModel()))
+                productDao.insertAll(reconcileWithLocal(listOf(model).asDatabaseModel()))
                 ProductLogger.i("ProductSyncDelegate", "✅ Refreshed product from server: $productId")
             }
             .onFailure { error ->
