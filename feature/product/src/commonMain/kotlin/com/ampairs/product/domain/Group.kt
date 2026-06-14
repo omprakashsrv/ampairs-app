@@ -78,6 +78,7 @@ fun List<ProductGroupApiModel>.asGroupDatabaseEntity(): List<GroupEntity> {
         GroupEntity(
             seq_id = 0, id = it.id ?: "", name = it.name, active = if (it.active) 1 else 0,
             soft_deleted = if (it.softDeleted) 1 else 0,
+            ref_id = it.refId,
             synced = 1
         )
     }
@@ -87,6 +88,7 @@ fun List<GroupEntity>.asGroupApiModel(): List<ProductGroupApiModel> {
     return map {
         ProductGroupApiModel(
             id = it.id,
+            refId = it.ref_id,
             name = it.name,
             active = it.active == 1,
             softDeleted = it.soft_deleted == 1,
@@ -98,6 +100,7 @@ fun List<CategoryEntity>.asCategoryApiModel(): List<ProductGroupApiModel> {
     return map {
         ProductGroupApiModel(
             id = it.id,
+            refId = it.ref_id,
             name = it.name,
             active = it.active == 1,
             softDeleted = it.soft_deleted == 1,
@@ -142,6 +145,7 @@ fun List<ProductGroupApiModel>.asCategoryDatabaseEntity(): List<CategoryEntity> 
         CategoryEntity(
             seq_id = 0, id = it.id ?: "", name = it.name, active = if (it.active) 1 else 0,
             soft_deleted = if (it.softDeleted) 1 else 0,
+            ref_id = it.refId,
             synced = 1
         )
     }
