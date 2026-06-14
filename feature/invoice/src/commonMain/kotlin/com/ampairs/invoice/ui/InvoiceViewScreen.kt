@@ -52,7 +52,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.format.toDecimal
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.editor.DocSyncChip
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -76,6 +77,7 @@ fun InvoiceViewScreen(
     viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory>(key = invoiceId) { create(invoiceId) }
 ) {
     val invoice = viewModel.invoice
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
     var showPreview by remember { mutableStateOf(false) }
@@ -128,7 +130,7 @@ fun InvoiceViewScreen(
             BottomAppBar(containerColor = cs.surfaceContainer) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        invoice.totalCost.toInr(),
+                        formatMoney(invoice.totalCost, locale),
                         modifier = Modifier.padding(horizontal = 12.dp),
                         style = MaterialTheme.typography.titleLarge,
                         fontFamily = mono,

@@ -25,7 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.editor.entry.EntryMatcher
 import com.ampairs.tax.calculation.document.DiscountKind
 import org.jetbrains.compose.resources.stringResource
@@ -58,6 +59,7 @@ private fun LineCard(
     onQuantity: (String, Double) -> Unit,
     onEdit: (String) -> Unit,
 ) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -84,7 +86,7 @@ private fun LineCard(
                     }
                 }
                 Text(
-                    line.lineTotal.toInr(),
+                    formatMoney(line.lineTotal, locale),
                     style = MaterialTheme.typography.titleSmall,
                     fontFamily = FontFamily.Monospace,
                     maxLines = 1,
@@ -97,11 +99,11 @@ private fun LineCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 QuantityStepper(line, onQuantity)
-                CardChip("${line.unitPrice.toInr()}/${line.unitName}")
+                CardChip("${formatMoney(line.unitPrice, locale)}/${line.unitName}")
                 if (line.discountAmount > 0.0) {
                     CardChip(
                         if (line.discountKind == DiscountKind.PERCENT) "−${line.discountAmount.toDecimal()}%"
-                        else "−${line.discountAmount.toInr()}",
+                        else "−${formatMoney(line.discountAmount, locale)}",
                         emphasized = true,
                     )
                 }

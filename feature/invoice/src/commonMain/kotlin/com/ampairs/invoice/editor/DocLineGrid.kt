@@ -57,8 +57,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.graphics.SolidColor
 import com.ampairs.common.format.toDecimal
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.product.domain.ProductSummary
-import com.ampairs.common.format.toInr
 import com.ampairs.tax.calculation.document.DiscountKind
 import org.jetbrains.compose.resources.stringResource
 
@@ -173,6 +174,7 @@ private fun GridRow(
     onPickProduct: (lineId: String, productId: String) -> Unit,
     onCreateProduct: (String) -> Unit,
 ) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     var unitMenu by remember { mutableStateOf(false) }
     var variantMenu by remember { mutableStateOf(false) }
@@ -292,7 +294,7 @@ private fun GridRow(
                 )
             }
             // Taxable
-            MonoCell(line.taxable.toInr(), Modifier.width(92.dp))
+            MonoCell(formatMoney(line.taxable, locale), Modifier.width(92.dp))
             // GST chip
             Box(Modifier.width(60.dp), contentAlignment = Alignment.Center) {
                 Surface(color = cs.surfaceContainerHigh, shape = RoundedCornerShape(50)) {
@@ -305,7 +307,7 @@ private fun GridRow(
                 }
             }
             // Line total
-            MonoCell(line.lineTotal.toInr(), Modifier.width(100.dp), bold = true)
+            MonoCell(formatMoney(line.lineTotal, locale), Modifier.width(100.dp), bold = true)
             // Remove
             IconButton(onClick = { onRemove(line.id) }, modifier = Modifier.size(40.dp)) {
                 Icon(
@@ -324,6 +326,7 @@ private fun lineUnitKey(line: DocLineUi): String = line.unitName
 
 @Composable
 internal fun UnitMenuRow(u: DocUnitChoiceUi, selected: Boolean) {
+    val locale = LocalAppLocale.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             u.name + if (u.isBase) "  (base)" else "",
@@ -332,7 +335,7 @@ internal fun UnitMenuRow(u: DocUnitChoiceUi, selected: Boolean) {
             modifier = Modifier.weight(1f),
         )
         Text(
-            "×${u.multiplier.toDecimal()} · ${u.priceAtUnit.toInr()}",
+            "×${u.multiplier.toDecimal()} · ${formatMoney(u.priceAtUnit, locale)}",
             style = MaterialTheme.typography.labelSmall,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -343,6 +346,7 @@ internal fun UnitMenuRow(u: DocUnitChoiceUi, selected: Boolean) {
 
 @Composable
 internal fun VariantMenuRow(v: DocVariantChoiceUi, selected: Boolean) {
+    val locale = LocalAppLocale.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             v.label,
@@ -351,7 +355,7 @@ internal fun VariantMenuRow(v: DocVariantChoiceUi, selected: Boolean) {
             modifier = Modifier.weight(1f),
         )
         Text(
-            v.price.toInr(),
+            formatMoney(v.price, locale),
             style = MaterialTheme.typography.labelSmall,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

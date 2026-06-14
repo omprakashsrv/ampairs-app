@@ -68,7 +68,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.platform.LocalDensity
 import com.ampairs.common.format.toDecimal
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -214,14 +215,15 @@ fun DocCommandBar(
 
 @Composable
 private fun ParseChips(p: ComposerResultUi, compact: Boolean) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
         Chip("${p.quantity.toDecimal()} ${p.unitName}", cs.primary, cs.onPrimary)
         if (!compact) {
-            Chip(p.unitPrice.toInr() + if (p.priceOverridden) " ✎" else "", cs.surfaceContainerHighest, cs.onSurface)
+            Chip(formatMoney(p.unitPrice, locale) + if (p.priceOverridden) " ✎" else "", cs.surfaceContainerHighest, cs.onSurface)
             if (p.discountPercent > 0.0) Chip("−${p.discountPercent.toDecimal()}%", cs.secondaryContainer, cs.onSecondaryContainer)
         }
-        Chip("= ${p.amount.toInr()}", cs.surfaceContainerHighest, cs.onSurface, mono = true, bold = true)
+        Chip("= ${formatMoney(p.amount, locale)}", cs.surfaceContainerHighest, cs.onSurface, mono = true, bold = true)
     }
 }
 
@@ -253,6 +255,7 @@ private fun ResultRow(
     compact: Boolean,
     onClick: () -> Unit,
 ) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     val gstLabel = result.gstRatePercent?.let { ratePctLabel(it) } ?: "0%"
     Row(
@@ -284,7 +287,7 @@ private fun ResultRow(
         }
         if (!compact) {
             Text(
-                "${result.quantity.toDecimal()} ${result.unitName} × ${result.unitPrice.toInr()}" +
+                "${result.quantity.toDecimal()} ${result.unitName} × ${formatMoney(result.unitPrice, locale)}" +
                     (if (result.discountPercent > 0.0) " −${result.discountPercent.toDecimal()}%" else ""),
                 style = MaterialTheme.typography.labelMedium,
                 fontFamily = FontFamily.Monospace,
@@ -293,7 +296,7 @@ private fun ResultRow(
             )
         }
         Text(
-            result.amount.toInr(),
+            formatMoney(result.amount, locale),
             style = MaterialTheme.typography.bodyMedium,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.SemiBold,

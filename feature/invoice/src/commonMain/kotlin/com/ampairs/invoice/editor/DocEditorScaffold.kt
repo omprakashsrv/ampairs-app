@@ -45,7 +45,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.invoice.ui.TotalsUi
 import com.ampairs.product.domain.ProductSummary
@@ -310,6 +311,7 @@ private fun CompactTotalsBar(
     onSave: () -> Unit,
     onRetry: () -> Unit,
 ) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     Surface(color = cs.surfaceContainer, tonalElevation = 3.dp) {
         Row(
@@ -321,7 +323,7 @@ private fun CompactTotalsBar(
             }
             Column(Modifier.weight(1f).clickable(onClick = onExpand)) {
                 Text(
-                    state.totals.grandTotal.toInr(),
+                    formatMoney(state.totals.grandTotal, locale),
                     style = MaterialTheme.typography.titleLarge,
                     fontFamily = FontFamily.Monospace,
                     maxLines = 1,
