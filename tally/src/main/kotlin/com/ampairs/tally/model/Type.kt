@@ -23,6 +23,7 @@ enum class Type(var type: String, var id: String, var nativeMethods: List<String
             "STANDARDCOSTLIST.LIST",
             "STANDARDPRICELIST.LIST",
             "GSTDETAILS.LIST",
+            "HSNDETAILS.LIST",
         ),
     ),
     LEDGER(

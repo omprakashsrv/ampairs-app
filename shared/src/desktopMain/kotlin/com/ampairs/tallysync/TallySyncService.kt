@@ -23,6 +23,7 @@ import com.ampairs.tallysync.TallyProductMapper.toCategoryEntity
 import com.ampairs.tallysync.TallyProductMapper.toGroupEntity
 import com.ampairs.tallysync.TallyProductMapper.toProductEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
+import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
 import com.ampairs.tally.model.master.StockItem
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.unit.data.db.dao.UnitDao
@@ -271,8 +272,12 @@ class TallySyncService(
      * imported (manually or, later, automatically).
      */
     private suspend fun scanTaxCodeCandidates(stockItems: List<StockItem>) {
+        val withGst = stockItems.count { !it.gstDetailList.isNullOrEmpty() }
+        val withHsn = stockItems.count { !it.hsnDetailList.isNullOrEmpty() }
+        emit("Tax scan: ${stockItems.size} stock items — $withGst with GST details, $withHsn with HSN details")
+
         val hsnCounts = stockItems
-            .mapNotNull { it.gstDetailList?.firstOrNull()?.hsnCode?.trim()?.takeIf { hsn -> hsn.isNotBlank() } }
+            .mapNotNull { it.extractHsnCode() }
             .groupingBy { it }
             .eachCount()
         val candidates = hsnCounts.entries
@@ -286,6 +291,20 @@ class TallySyncService(
             }
         _taxCodeCandidates.value = candidates
         emit("Tax codes: ${candidates.size} distinct HSN found, ${candidates.count { !it.alreadySubscribed }} not yet subscribed")
+
+        // Diagnostics: if nothing was detected, dump a sample item's raw GST/HSN fields so we can
+        // see exactly what Tally returned and adjust extraction/request accordingly.
+        if (candidates.isEmpty() && stockItems.isNotEmpty()) {
+            val sample = stockItems.firstOrNull { !it.gstDetailList.isNullOrEmpty() || !it.hsnDetailList.isNullOrEmpty() }
+                ?: stockItems.first()
+            emit("Tax scan: no HSN detected. Sample '${sample.name}' gstApplicable=${sample.gstApplicable}")
+            sample.gstDetailList?.firstOrNull()?.let {
+                emit("  GST detail → hsnCode='${it.hsnCode}', hsnMasterName='${it.hsnMasterName}', taxability='${it.taxability}'")
+            }
+            sample.hsnDetailList?.firstOrNull()?.let {
+                emit("  HSN detail → hsnCode='${it.hsnCode}', hsnMasterName='${it.hsnMasterName}'")
+            }
+        }
     }
 
     private suspend fun syncStockBalances(repo: TallyRepository): Int {

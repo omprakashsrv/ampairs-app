@@ -47,7 +47,7 @@ internal object TallyProductMapper {
         // standardPrice = selling/retail price (MRP in India); standardCost = purchase/cost price (→ dp proxy)
         val mrp = standardPrice?.rate?.parsePrice() ?: 0.0
         val buyingPrice = standardCost?.rate?.parsePrice() ?: 0.0
-        val hsnCode = gstDetailList?.firstOrNull()?.hsnCode?.trim()?.takeIf { it.isNotBlank() } ?: ""
+        val hsnCode = extractHsnCode() ?: ""
         return ProductEntity(
             id = id,
             name = productName,
@@ -78,6 +78,25 @@ internal object TallyProductMapper {
             synced = false,
             refId = guid?.takeIf { it.isNotBlank() }
         )
+    }
+
+    /**
+     * Extracts a usable HSN/SAC code from a Tally stock item. Tally exposes HSN in several places
+     * depending on version and how the item was configured: inside GST details (GSTDETAILS.LIST),
+     * inside HSN details (HSNDETAILS.LIST), or only as the HSN master name. Tries them in order of
+     * reliability, falling back to a numeric-looking master name (4–8 digits).
+     */
+    fun StockItem.extractHsnCode(): String? {
+        val directCode = (gstDetailList.orEmpty().mapNotNull { it.hsnCode } +
+            hsnDetailList.orEmpty().mapNotNull { it.hsnCode })
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() }
+        if (directCode != null) return directCode
+
+        return (gstDetailList.orEmpty().mapNotNull { it.hsnMasterName } +
+            hsnDetailList.orEmpty().mapNotNull { it.hsnMasterName })
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() && it.all(Char::isDigit) && it.length in 4..8 }
     }
 
     // Tally price strings: "15750.00/No", " 100.00 /Nos" — take everything before the "/"

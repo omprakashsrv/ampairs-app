@@ -34,6 +34,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.config.AppPreferencesDataStore
@@ -54,6 +56,7 @@ fun TallySettingsScreen(
 
     val logLines by scheduler.syncService.logLines.collectAsState()
     val taxCodeCandidates by scheduler.syncService.taxCodeCandidates.collectAsState()
+    val clipboard = LocalClipboardManager.current
 
     LaunchedEffect(workspaceSlug) {
         host = dataStore.getTallyHost(workspaceSlug).first()
@@ -162,6 +165,10 @@ fun TallySettingsScreen(
             ) {
                 Text("Sync Log", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.weight(1f))
+                TextButton(
+                    enabled = logLines.isNotEmpty(),
+                    onClick = { clipboard.setText(AnnotatedString(logLines.joinToString("\n"))) }
+                ) { Text("Copy") }
                 TextButton(onClick = { scheduler.syncService.clearLog() }) { Text("Clear") }
             }
 
