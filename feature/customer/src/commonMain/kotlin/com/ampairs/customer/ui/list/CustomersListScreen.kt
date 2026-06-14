@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
@@ -61,7 +60,6 @@ import com.ampairs.customer.domain.CustomerListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import ampairsapp.feature.customer.generated.resources.Res
 import ampairsapp.feature.customer.generated.resources.customer_form_settings_cd
-import ampairsapp.feature.customer.generated.resources.customer_list_refresh_cd
 import ampairsapp.feature.customer.generated.resources.customer_list_add_cd
 import ampairsapp.feature.customer.generated.resources.customer_list_add_btn
 import ampairsapp.feature.customer.generated.resources.customer_list_refreshing
@@ -155,16 +153,6 @@ fun CustomersListScreen(
                         }
                         IconButton(onClick = onFormConfig) {
                             Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.customer_form_settings_cd))
-                        }
-                        IconButton(
-                            onClick = viewModel::syncCustomers,
-                            enabled = !uiState.isRefreshing
-                        ) {
-                            if (uiState.isRefreshing) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.customer_list_refresh_cd))
-                            }
                         }
                     }
 

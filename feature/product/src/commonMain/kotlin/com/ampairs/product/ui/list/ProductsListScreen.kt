@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
@@ -63,7 +62,6 @@ import ampairsapp.feature.product.generated.resources.prod_list_title
 import ampairsapp.feature.product.generated.resources.prod_list_count
 import ampairsapp.feature.product.generated.resources.prod_list_new_product
 import ampairsapp.feature.product.generated.resources.prod_list_cd_form_settings
-import ampairsapp.feature.product.generated.resources.prod_list_cd_refresh
 import ampairsapp.feature.product.generated.resources.prod_list_cd_add
 import ampairsapp.feature.product.generated.resources.prod_list_search_placeholder
 import ampairsapp.feature.product.generated.resources.prod_list_cd_product_image
@@ -157,16 +155,6 @@ fun ProductsListScreen(
                         }
                         IconButton(onClick = onFormConfig) {
                             Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.prod_list_cd_form_settings))
-                        }
-                        IconButton(
-                            onClick = viewModel::syncProducts,
-                            enabled = !uiState.isRefreshing
-                        ) {
-                            if (uiState.isRefreshing) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.prod_list_cd_refresh))
-                            }
                         }
                     }
 

@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -112,24 +111,11 @@ fun UnitListScreen(
                                 )
                             }
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            if (isExpanded) {
-                                Button(onClick = onAddUnit) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(stringResource(Res.string.unit_list_add_unit))
-                                }
-                                Spacer(Modifier.width(4.dp))
-                            }
-                            IconButton(
-                                onClick = { viewModel.syncUnits() },
-                                enabled = !uiState.isRefreshing
-                            ) {
-                                if (uiState.isRefreshing) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                } else {
-                                    Icon(Icons.Default.Refresh, contentDescription = "Sync")
-                                }
+                        if (isExpanded) {
+                            Button(onClick = onAddUnit) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(stringResource(Res.string.unit_list_add_unit))
                             }
                         }
                     }
