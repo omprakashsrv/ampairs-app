@@ -23,10 +23,19 @@ import com.ampairs.tallysync.TallyProductMapper.toCategoryEntity
 import com.ampairs.tallysync.TallyProductMapper.toGroupEntity
 import com.ampairs.tallysync.TallyProductMapper.toProductEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
+import com.ampairs.tally.model.master.StockItem
+import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.unit.data.db.dao.UnitDao
 import dev.zacsweers.metro.Inject
 import io.ktor.client.engine.HttpClientEngine
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 data class TallySyncResult(
     val groupsSynced: Int = 0,
@@ -36,14 +45,27 @@ data class TallySyncResult(
     val stockBalancesUpdated: Int = 0,
     val customerGroupsSynced: Int = 0,
     val customersSynced: Int = 0,
+    val taxCodesFound: Int = 0,
+    val taxCodesToImport: Int = 0,
     val error: String? = null,
 ) {
     val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + unitsSynced + stockBalancesUpdated + customerGroupsSynced + customersSynced
     val success get() = error == null
 }
 
+/**
+ * A distinct HSN/SAC code discovered on Tally stock items, with whether the workspace already has a
+ * matching tax code subscribed locally. Surfaces tax codes that still need to be imported.
+ */
+data class TallyTaxCodeCandidate(
+    val hsnCode: String,
+    val productCount: Int,
+    val alreadySubscribed: Boolean,
+)
+
 private val log = Logger.withTag("TallySyncService")
 private const val BATCH_SIZE = 100
+private const val MAX_LOG_LINES = 2000
 
 @Inject
 class TallySyncService(
@@ -54,39 +76,87 @@ class TallySyncService(
     private val unitDao: UnitDao,
     private val customerDao: CustomerDao,
     private val customerGroupDao: CustomerGroupDao,
+    private val taxCodeRepository: TaxCodeRepository,
     private val dataStore: AppPreferencesDataStore,
 ) {
+    private val _logLines = MutableStateFlow<List<String>>(emptyList())
+    /** Reactive, human-readable log of recent sync activity (capped to the last [MAX_LOG_LINES] lines). */
+    val logLines: StateFlow<List<String>> = _logLines.asStateFlow()
+
+    private val _taxCodeCandidates = MutableStateFlow<List<TallyTaxCodeCandidate>>(emptyList())
+    /** Distinct HSN/SAC codes found on Tally stock items, flagged with local subscription status. */
+    val taxCodeCandidates: StateFlow<List<TallyTaxCodeCandidate>> = _taxCodeCandidates.asStateFlow()
+
+    fun clearLog() {
+        _logLines.value = emptyList()
+    }
+
+    private fun emit(line: String) {
+        log.i { line }
+        _logLines.update { (it + "${timestamp()} $line").takeLast(MAX_LOG_LINES) }
+    }
+
+    private fun timestamp(): String {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val hh = now.hour.toString().padStart(2, '0')
+        val mm = now.minute.toString().padStart(2, '0')
+        val ss = now.second.toString().padStart(2, '0')
+        return "$hh:$mm:$ss"
+    }
+
     suspend fun sync(workspaceSlug: String): TallySyncResult {
         val host = dataStore.getTallyHost(workspaceSlug).first()
         if (host.isBlank()) {
+            emit("Tally host not configured")
             return TallySyncResult(error = "Tally host not configured")
         }
         val port = dataStore.getTallyPort(workspaceSlug).first()
         val baseUrl = "http://$host:$port"
-        log.i { "Starting Tally sync from $baseUrl" }
+        emit("Tally sync started — $baseUrl")
 
         val repo = TallyRepository(TallyApiImpl(engine, baseUrl))
 
         return try {
             val groupsSynced = syncGroups(repo, workspaceSlug)
+            emit("Stock groups: $groupsSynced new")
             val categoriesSynced = syncCategories(repo, workspaceSlug)
+            emit("Stock categories: $categoriesSynced new")
             val unitsSynced = syncUnits(repo, workspaceSlug)
+            emit("Units: $unitsSynced new")
             val groupIdByName = buildGroupNameIndex()
             val categoryIdByName = buildCategoryNameIndex()
             val productsSynced = syncProducts(repo, workspaceSlug, groupIdByName, categoryIdByName)
+            emit("Products: $productsSynced new")
             val stockBalancesUpdated = syncStockBalances(repo)
+            emit("Stock balances: $stockBalancesUpdated updated")
 
             val customerGroupsSynced = syncCustomerGroups(repo, workspaceSlug)
+            emit("Customer groups: $customerGroupsSynced upserted")
             val customerGroupIdByName = buildCustomerGroupNameIndex()
             val customersSynced = syncCustomers(repo, workspaceSlug, customerGroupIdByName)
+            emit("Customers: $customersSynced upserted")
 
             // Clean up any previously stored invalid values (pre-sanitizer data)
             customerDao.nullifyInvalidPhones()
             customerDao.nullifyInvalidPincodes()
 
-            log.i { "Tally sync complete — groups=$groupsSynced categories=$categoriesSynced units=$unitsSynced products=$productsSynced stockBalances=$stockBalancesUpdated customerGroups=$customerGroupsSynced customers=$customersSynced" }
-            TallySyncResult(groupsSynced, categoriesSynced, productsSynced, unitsSynced, stockBalancesUpdated, customerGroupsSynced, customersSynced)
+            val candidates = _taxCodeCandidates.value
+            val toImport = candidates.count { !it.alreadySubscribed }
+            val result = TallySyncResult(
+                groupsSynced = groupsSynced,
+                categoriesSynced = categoriesSynced,
+                productsSynced = productsSynced,
+                unitsSynced = unitsSynced,
+                stockBalancesUpdated = stockBalancesUpdated,
+                customerGroupsSynced = customerGroupsSynced,
+                customersSynced = customersSynced,
+                taxCodesFound = candidates.size,
+                taxCodesToImport = toImport,
+            )
+            emit("Tally sync complete — total=${result.totalSynced}, tax codes to import=$toImport")
+            result
         } catch (e: Exception) {
+            emit("Tally sync FAILED — ${e.message}")
             log.e(e) { "Tally sync failed" }
             TallySyncResult(error = e.message ?: "Unknown error")
         }
@@ -184,10 +254,38 @@ class TallySyncService(
             batchNum++
             log.d { "syncProducts batch $batchNum: inserted ${batch.size}" }
         }
+        // Scan the full catalogue (not just alterId-filtered items) so the tax-code panel always
+        // reflects every HSN in Tally, even when no products are newly changed this cycle.
+        scanTaxCodeCandidates(stockItems)
+
         val maxAlterId = stockItems.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_ITEM, maxAlterId)
         log.d { "syncProducts: ${entities.size} new across $batchNum batches" }
         return entities.size
+    }
+
+    /**
+     * Builds the list of distinct HSN/SAC codes present on Tally stock items, marking each with
+     * whether the workspace already has a matching tax code subscribed (local DB check only — no
+     * network). Surfaced via [taxCodeCandidates] so the UI can show which tax codes still need to be
+     * imported (manually or, later, automatically).
+     */
+    private suspend fun scanTaxCodeCandidates(stockItems: List<StockItem>) {
+        val hsnCounts = stockItems
+            .mapNotNull { it.gstDetailList?.firstOrNull()?.hsnCode?.trim()?.takeIf { hsn -> hsn.isNotBlank() } }
+            .groupingBy { it }
+            .eachCount()
+        val candidates = hsnCounts.entries
+            .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+            .map { (hsn, count) ->
+                TallyTaxCodeCandidate(
+                    hsnCode = hsn,
+                    productCount = count,
+                    alreadySubscribed = taxCodeRepository.getByCode(hsn) != null,
+                )
+            }
+        _taxCodeCandidates.value = candidates
+        emit("Tax codes: ${candidates.size} distinct HSN found, ${candidates.count { !it.alreadySubscribed }} not yet subscribed")
     }
 
     private suspend fun syncStockBalances(repo: TallyRepository): Int {
