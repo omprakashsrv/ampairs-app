@@ -7,8 +7,8 @@ import com.ampairs.update.domain.DesktopPlatform
  * This should be updated when building releases
  */
 object AppVersion {
-    const val VERSION_NAME = "1.0.12"
-    const val VERSION_CODE = 100012
+    const val VERSION_NAME = "1.0.14"
+    const val VERSION_CODE = 100014
 }
 
 /**
