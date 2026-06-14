@@ -42,19 +42,23 @@ internal object TallyProductMapper {
         id: String,
         groupIdByName: Map<String, String>,
         categoryIdByName: Map<String, String>,
+        unitIdByName: Map<String, String>,
     ): ProductEntity? {
         val productName = name ?: return null
         // standardPrice = selling/retail price (MRP in India); standardCost = purchase/cost price (→ dp proxy)
         val mrp = standardPrice?.rate?.parsePrice() ?: 0.0
         val buyingPrice = standardCost?.rate?.parsePrice() ?: 0.0
         val hsnCode = extractHsnCode() ?: ""
+        // base_unit stores the workspace unit ID (resolved by name); the detail screen looks the unit
+        // up by id, so storing the raw Tally name ("PCS") would leave the base unit unresolved.
+        val baseUnitId = baseUnits?.trim()?.takeIf { it.isNotBlank() }?.let { unitIdByName[it] }
         return ProductEntity(
             id = id,
             name = productName,
             code = "",
             group_id = parent?.let { groupIdByName[it] },
             category_id = category?.let { categoryIdByName[it] },
-            base_unit = baseUnits,
+            base_unit = baseUnitId,
             tax_code = hsnCode,
             mrp = mrp,
             dp = if (buyingPrice > 0.0) buyingPrice else mrp,

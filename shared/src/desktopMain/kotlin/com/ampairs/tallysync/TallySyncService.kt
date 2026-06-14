@@ -213,7 +213,8 @@ class TallySyncService(
             emit("Units: $unitsSynced new")
             val groupIdByName = buildGroupNameIndex()
             val categoryIdByName = buildCategoryNameIndex()
-            val productsSynced = syncProducts(repo, workspaceSlug, groupIdByName, categoryIdByName)
+            val unitIdByName = buildUnitNameIndex()
+            val productsSynced = syncProducts(repo, workspaceSlug, groupIdByName, categoryIdByName, unitIdByName)
             emit("Products: $productsSynced new")
             val stockBalancesUpdated = syncStockBalances(repo)
             emit("Stock balances: $stockBalancesUpdated updated")
@@ -354,6 +355,7 @@ class TallySyncService(
         workspaceSlug: String,
         groupIdByName: Map<String, String>,
         categoryIdByName: Map<String, String>,
+        unitIdByName: Map<String, String>,
     ): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_STOCK_ITEM).first()
         val stockItems = repo.getStockItems().body?.data?.collection?.stockItems ?: return 0
@@ -368,7 +370,7 @@ class TallySyncService(
         var batchNum = 0
         val entities = filtered.mapNotNull { si ->
             val id = si.guid?.takeIf { it.isNotBlank() }?.let { existingIdByGuid[it] } ?: UidGenerator.generateUid("PRD")
-            si.toProductEntity(id, groupIdByName, categoryIdByName)
+            si.toProductEntity(id, groupIdByName, categoryIdByName, unitIdByName)
         }
         entities.chunked(BATCH_SIZE).forEach { batch ->
             productDao.insertAll(batch)
@@ -505,6 +507,9 @@ class TallySyncService(
 
     private suspend fun buildCategoryNameIndex(): Map<String, String> =
         categoryDao.getCategories().associate { it.name to it.id }
+
+    private suspend fun buildUnitNameIndex(): Map<String, String> =
+        unitDao.getAllUnits().first().associate { it.name.trim() to it.id }
 
     private suspend fun buildCustomerGroupNameIndex(): Map<String, String> =
         customerGroupDao.getAllCustomerGroups().first().associate { it.name to it.id }
