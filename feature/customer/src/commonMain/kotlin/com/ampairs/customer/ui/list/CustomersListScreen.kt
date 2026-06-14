@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -59,7 +58,6 @@ import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.customer.domain.CustomerListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import ampairsapp.feature.customer.generated.resources.Res
-import ampairsapp.feature.customer.generated.resources.customer_form_settings_cd
 import ampairsapp.feature.customer.generated.resources.customer_list_add_cd
 import ampairsapp.feature.customer.generated.resources.customer_list_add_btn
 import ampairsapp.feature.customer.generated.resources.customer_list_refreshing
@@ -86,7 +84,6 @@ import org.jetbrains.compose.resources.stringResource
 fun CustomersListScreen(
     onCustomerClick: (String) -> Unit,
     onCreateCustomer: () -> Unit,
-    onFormConfig: () -> Unit = {},
     onNavigateToGroups: () -> Unit = {},
     onNavigateToTypes: () -> Unit = {},
     onNavigateToStates: () -> Unit = {},
@@ -150,9 +147,6 @@ fun CustomersListScreen(
                             IconButton(onClick = onCreateCustomer) {
                                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_list_add_cd))
                             }
-                        }
-                        IconButton(onClick = onFormConfig) {
-                            Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.customer_form_settings_cd))
                         }
                     }
 

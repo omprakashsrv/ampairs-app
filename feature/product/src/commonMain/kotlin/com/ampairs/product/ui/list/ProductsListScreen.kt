@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -61,7 +60,6 @@ import ampairsapp.feature.product.generated.resources.Res
 import ampairsapp.feature.product.generated.resources.prod_list_title
 import ampairsapp.feature.product.generated.resources.prod_list_count
 import ampairsapp.feature.product.generated.resources.prod_list_new_product
-import ampairsapp.feature.product.generated.resources.prod_list_cd_form_settings
 import ampairsapp.feature.product.generated.resources.prod_list_cd_add
 import ampairsapp.feature.product.generated.resources.prod_list_search_placeholder
 import ampairsapp.feature.product.generated.resources.prod_list_cd_product_image
@@ -91,7 +89,6 @@ import ampairsapp.feature.product.generated.resources.prod_master_data
 fun ProductsListScreen(
     onProductClick: (String) -> Unit,
     onCreateProduct: () -> Unit,
-    onFormConfig: () -> Unit = {},
     onNavigateToBrands: () -> Unit = {},
     onNavigateToCategories: () -> Unit = {},
     onNavigateToSubCategories: () -> Unit = {},
@@ -152,9 +149,6 @@ fun ProductsListScreen(
                             IconButton(onClick = onCreateProduct) {
                                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.prod_list_cd_add))
                             }
-                        }
-                        IconButton(onClick = onFormConfig) {
-                            Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.prod_list_cd_form_settings))
                         }
                     }
 
