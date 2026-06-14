@@ -451,6 +451,54 @@ LocalAppGraph.current.themeManager   // NEVER — use CompositionLocal or inject
 
 ---
 
+## 12. Currency & Locale Formatting (workspace business locale)
+
+Money and (soon) dates render using the **active workspace's business locale** — currency, timezone,
+date/time format from the business profile — never hardcoded. Storage/sync stay UTC; this is a
+*display-only* concern.
+
+### How it flows
+
+```
+business profile (timezone/date_format/time_format/currency)
+  → BusinessLocaleProvider (@SingleIn(WorkspaceScope::class), feature/business) : Flow<AppLocale>
+  → exposed on WorkspaceGraph.businessLocaleProvider
+  → AppNavigationNav3 collects it from the ACTIVE workspace graph and provides LocalAppLocale
+  → any @Composable reads LocalAppLocale.current  (defaults to AppLocale.Default = INR/UTC)
+```
+
+Sourcing from `workspaceSession.graph` (recreated per workspace) means the locale is never stale
+after a workspace switch — do **not** resolve it via a root-level ViewModel.
+
+### Money — `com.ampairs.common.locale`
+
+```kotlin
+// ✅ business-currency aware (INR keeps Indian grouping identical to the old toInr())
+val locale = LocalAppLocale.current
+Text(formatMoney(amount, locale))            // "₹9,20,710.50" / "$1,234.00" / ...
+Text(currencySymbol(locale.currencyCode))    // just the symbol, for toggle labels etc.
+
+// ❌ hardcoded currency — banned in UI
+Text("₹$amount")
+Text(amount.toInr())     // legacy; data/common — do not call in UI
+Text(amount.asRupee())   // legacy; ecom — do not call in UI
+```
+
+- `formatMoney(amount: Double?, locale)` / `formatMoney(amount, currencyCode)` — symbol + grouping, 2 dp, null → "".
+- Read `LocalAppLocale.current` only in `@Composable` scope (it's a CompositionLocal). A non-composable
+  string builder (e.g. print HTML) must take a `currencySymbol: String` parameter passed from the
+  calling composable — see `buildInvoiceHtml(...)`.
+
+### Dates (forthcoming slice)
+
+`AppLocale.timeZoneId` / `dateFormat` / `timeFormat` exist but date formatters are still being
+migrated. Until then, prefer `DateTimeFormatter`; the timezone-aware variants will also read
+`LocalAppLocale`. Note the **computation** trap: bucketing an `Instant` to a calendar day/month with
+`TimeZone.currentSystemDefault()` is wrong when the business timezone differs — use the business
+`timeZoneId`.
+
+---
+
 ## Quick Anti-Pattern Reference
 
 | Anti-pattern | Fix |
@@ -471,4 +519,5 @@ LocalAppGraph.current.themeManager   // NEVER — use CompositionLocal or inject
 | `LaunchedEffect(Unit)` for key-dependent work | `LaunchedEffect(theKey)` |
 | Padding before clickable | `clickable { }.padding(...)` |
 | New object allocation in composition | `remember { }` |
+| Hardcoded `₹` / `toInr()` / `asRupee()` in UI | `formatMoney(amount, LocalAppLocale.current)` (see §12) |
 | `maven-publish` added, resource imports broken | Add `compose.resources { packageOfResClass = "ampairsapp.{module.path}.generated.resources" }` |

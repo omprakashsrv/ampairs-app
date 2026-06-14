@@ -19,6 +19,7 @@ These rules are enforced for all Claude Code interactions in this project.
 - Use `Kermit` or the domain-specific logger (`CustomerLogger`, etc.) — never `println()` or `Log.d()`
 - Add new Gradle dependencies via `gradle/libs.versions.toml` version catalog only — no hardcoded versions
 - Use `ApiUrlBuilder.{domain}Url("v1/path")` for all API URLs — never hardcoded strings
+- Format money with `formatMoney(amount, LocalAppLocale.current)` (or `currencySymbol(locale.currencyCode)` for the bare symbol) from `com.ampairs.common.locale` — never hardcode `₹`/`$` or call `toInr()`/`asRupee()` in UI. The symbol/grouping comes from the workspace's business currency. See `/cmp-practices` §12.
 - Load all user-visible strings from Compose resources — never hardcode UI text in Kotlin source files:
   - **Composable context**: `stringResource(Res.string.xxx)`
   - **Non-composable suspend context** (e.g. `androidMain` service/enforcer): `getString(Res.string.xxx)` (suspend, call before `suspendCancellableCoroutine`)
