@@ -3,7 +3,7 @@ package com.ampairs.tally.model
 enum class Type(var type: String, var id: String, var nativeMethods: List<String> = listOf("*")) {
     UNIT(
         "UNIT", "CUSTOMUNITCOL",
-        listOf("GUID", "DECIMALPLACES", "ALTERID"),
+        listOf("NAME", "GUID", "DECIMALPLACES", "ISSIMPLEUNIT", "ALTERID"),
     ),
     STOCK_GROUP(
         "STOCKGROUP", "CUSTOMSTOCKGROUPCOL",
@@ -17,7 +17,7 @@ enum class Type(var type: String, var id: String, var nativeMethods: List<String
         "STOCKITEM", "CUSTOMSTOCKITEMCOL",
         listOf(
             "GUID", "PARENT", "CATEGORY",
-            "BASEUNITS", "ADDITIONALUNITS",
+            "BASEUNITS", "ADDITIONALUNITS", "CONVERSION", "DENOMINATOR",
             "GSTAPPLICABLE", "GSTTYPEOFSUPPLY",
             "ALTERID",
             "STANDARDCOSTLIST.LIST",

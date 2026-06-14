@@ -296,8 +296,18 @@ class TallySyncService(
 
     private suspend fun syncUnits(repo: TallyRepository, workspaceSlug: String): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_UNIT).first()
-        val units = repo.getUnits().body?.data?.collection?.units ?: return 0
-        val filtered = units.filter { it.alterId.toAlterLong() > lastAlterId }
+        val units = repo.getUnits().body?.data?.collection?.units
+        if (units.isNullOrEmpty()) {
+            emit("Units: API returned none")
+            return 0
+        }
+        emit("Units: API returned ${units.size} total, lastAlterId=$lastAlterId")
+        // Simple units often have alterId 0/blank — include them (== 0L), like customers/groups.
+        val filtered = units.filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
+        if (filtered.isEmpty()) {
+            val s = units.first()
+            emit("  no new units after filter. sample: name='${s.name}', unitName='${s.unitName}', alterId='${s.alterId}', simple='${s.isSimpleUnit}'")
+        }
 
         val guids = filtered.mapNotNull { it.guid?.takeIf { it.isNotBlank() } }
         val existingIdByGuid = mutableMapOf<String, String>()
@@ -306,14 +316,35 @@ class TallySyncService(
         }
 
         val entities = filtered.mapNotNull { u ->
-            val id = u.guid?.takeIf { it.isNotBlank() }?.let { existingIdByGuid[it] } ?: UidGenerator.generateUid("UNT")
+            val guid = u.guid?.takeIf { it.isNotBlank() }
+            val name = (u.name ?: u.unitName)?.trim()?.takeIf { it.isNotBlank() }
+            // Reuse existing id by GUID, else by name (simple units have no GUID — avoids duplicates).
+            val existingId = guid?.let { existingIdByGuid[it] } ?: name?.let { unitDao.getUnitByName(it)?.id }
+            val id = existingId ?: UidGenerator.generateUid("UNT")
             u.toUnitEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { unitDao.insertUnits(it) }
         val maxAlterId = units.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_UNIT, maxAlterId)
-        log.d { "syncUnits: ${entities.size} new" }
+        log.d { "syncUnits: ${entities.size} upserted" }
         return entities.size
+    }
+
+    /**
+     * Diagnostic only (for now): reports how many stock items carry an alternate/compound unit and
+     * dumps a sample so we can confirm the conversion semantics (base ↔ additional, conversion,
+     * denominator) before mapping them into product-scoped UnitConversion records.
+     */
+    private fun scanUnitConversions(stockItems: List<StockItem>) {
+        fun hasAlt(si: StockItem) =
+            !si.additionalUnits.isNullOrBlank() && si.additionalUnits.trim() != "Not Applicable"
+        val withAlt = stockItems.count(::hasAlt)
+        emit("Unit conversions: $withAlt stock items have an alternate unit")
+        if (withAlt > 0) {
+            stockItems.firstOrNull(::hasAlt)?.let { s ->
+                emit("  sample '${s.name}': base='${s.baseUnits}', additional='${s.additionalUnits}', conversion='${s.conversion}', denominator='${s.denominator}'")
+            }
+        }
     }
 
     private suspend fun syncProducts(
@@ -345,6 +376,7 @@ class TallySyncService(
         // Scan the full catalogue (not just alterId-filtered items) so the tax-code panel always
         // reflects every HSN in Tally, even when no products are newly changed this cycle.
         scanTaxCodeCandidates(stockItems)
+        scanUnitConversions(stockItems)
 
         val maxAlterId = stockItems.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_ITEM, maxAlterId)

@@ -67,12 +67,13 @@ internal object TallyProductMapper {
     }
 
     fun TallyUnit.toUnitEntity(id: String): UnitEntity? {
-        val unitName = name ?: return null
+        // Tally returns the name either as the element's NAME attribute or as a <NAME> child.
+        val resolvedName = (name ?: unitName)?.trim()?.takeIf { it.isNotBlank() } ?: return null
         val decimals = decimalPlaces?.toIntOrNull() ?: 0
         return UnitEntity(
             id = id,
-            name = unitName,
-            shortName = unitName,
+            name = resolvedName,
+            shortName = resolvedName,
             decimalPlaces = decimals,
             active = true,
             synced = false,
