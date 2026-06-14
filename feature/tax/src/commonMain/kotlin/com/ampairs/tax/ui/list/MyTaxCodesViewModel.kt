@@ -58,7 +58,7 @@ class MyTaxCodesViewModel(
             TaxCodeSortBy.CODE -> filteredCodes.sortedBy { it.code }
             TaxCodeSortBy.USAGE_COUNT -> filteredCodes.sortedByDescending { it.usageCount }
             TaxCodeSortBy.RECENTLY_ADDED -> filteredCodes.sortedByDescending { it.addedAt }
-            TaxCodeSortBy.LAST_USED -> filteredCodes.sortedByDescending { it.lastUsedAt ?: 0L }
+            TaxCodeSortBy.LAST_USED -> filteredCodes.sortedByDescending { it.lastUsedAt ?: kotlin.time.Instant.fromEpochMilliseconds(0) }
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 

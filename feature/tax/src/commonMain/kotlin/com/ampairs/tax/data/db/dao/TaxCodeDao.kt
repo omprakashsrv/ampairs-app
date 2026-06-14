@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.ampairs.tax.data.db.entity.TaxCodeEntity
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Instant
 
 /**
  * Tax Code DAO
@@ -42,7 +43,7 @@ interface TaxCodeDao {
     suspend fun getUnsyncedCodes(): List<TaxCodeEntity>
 
     @Query("SELECT * FROM tax_codes WHERE updated_at > :modifiedAfter")
-    suspend fun getModifiedAfter(modifiedAfter: Long): List<TaxCodeEntity>
+    suspend fun getModifiedAfter(modifiedAfter: Instant): List<TaxCodeEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(code: TaxCodeEntity)
@@ -54,7 +55,7 @@ interface TaxCodeDao {
     suspend fun update(code: TaxCodeEntity)
 
     @Query("UPDATE tax_codes SET usage_count = usage_count + 1, last_used_at = :timestamp WHERE id = :id")
-    suspend fun incrementUsageCount(id: String, timestamp: Long)
+    suspend fun incrementUsageCount(id: String, timestamp: Instant)
 
     @Query("UPDATE tax_codes SET is_favorite = :isFavorite WHERE id = :id")
     suspend fun setFavorite(id: String, isFavorite: Boolean)

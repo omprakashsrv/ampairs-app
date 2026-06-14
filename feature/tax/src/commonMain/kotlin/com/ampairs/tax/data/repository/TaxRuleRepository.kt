@@ -140,7 +140,7 @@ class TaxRuleRepository(
      */
     suspend fun createTaxRule(rule: TaxRule): Result<TaxRule> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             val ruleWithTimestamp = rule.copy(
                 createdAt = now,
                 updatedAt = now,
@@ -178,7 +178,7 @@ class TaxRuleRepository(
      */
     suspend fun updateTaxRule(rule: TaxRule): Result<TaxRule> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             val updatedRule = rule.copy(
                 updatedAt = now,
                 syncStatus = "PENDING"
@@ -230,7 +230,7 @@ class TaxRuleRepository(
     suspend fun bulkImportTaxRules(rules: List<TaxRule>): Result<Int> {
         return try {
             // Save all rules to local database first
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             val rulesWithTimestamp = rules.map { rule ->
                 rule.copy(
                     createdAt = now,
@@ -347,8 +347,8 @@ class TaxRuleRepository(
     /**
      * Get last sync time for incremental sync
      */
-    private suspend fun getLastSyncTime(): Long? {
-        val rules = taxRuleDao.getModifiedAfter(0L)
+    private suspend fun getLastSyncTime(): kotlin.time.Instant? {
+        val rules = taxRuleDao.getModifiedAfter(kotlin.time.Instant.fromEpochMilliseconds(0))
         return rules.maxOfOrNull { it.updatedAt }
     }
 

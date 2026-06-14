@@ -88,7 +88,7 @@ class TaxComponentRepository(
      */
     suspend fun getComponentsByJurisdiction(
         jurisdiction: String,
-        effectiveDate: Long = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        effectiveDate: kotlin.time.Instant = kotlin.time.Clock.System.now()
     ): List<WorkspaceTaxComponent> {
 
         return taxComponentDao.getComponentsByJurisdiction(
@@ -130,7 +130,7 @@ class TaxComponentRepository(
      */
     suspend fun createWorkspaceComponent(component: WorkspaceTaxComponent): Result<WorkspaceTaxComponent> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             val componentWithTimestamp = component.copy(
                 createdAt = now,
                 updatedAt = now,
@@ -156,7 +156,7 @@ class TaxComponentRepository(
      */
     suspend fun updateWorkspaceComponent(component: WorkspaceTaxComponent): Result<WorkspaceTaxComponent> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now()
             val updatedComponent = component.copy(
                 updatedAt = now,
                 syncStatus = "PENDING"
@@ -249,7 +249,7 @@ class TaxComponentRepository(
     /**
      * Get last sync time for incremental sync
      */
-    private suspend fun getLastSyncTime(): Long? {
+    private suspend fun getLastSyncTime(): kotlin.time.Instant? {
         val components = taxComponentDao.getUnsyncedComponents()
         return components.maxOfOrNull { it.updatedAt }
     }

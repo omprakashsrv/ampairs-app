@@ -7,6 +7,7 @@ import com.ampairs.tax.domain.model.TaxCodeType
 import com.ampairs.tax.domain.model.TaxStrategy
 import com.ampairs.tax.domain.model.TaxConfiguration
 import kotlinx.serialization.json.Json
+import kotlin.time.Instant
 
 /**
  * Tax Configuration Entity - Workspace tax settings
@@ -37,7 +38,7 @@ data class TaxConfigurationEntity(
     val autoSubscribeNewCodes: Boolean = false,
 
     @ColumnInfo(name = "synced_at")
-    val syncedAt: Long,
+    val syncedAt: Instant,
 
     @ColumnInfo(name = "metadata")
     val metadata: String = "{}"                     // JSON

@@ -667,9 +667,8 @@ private fun TaxRuleItem(rule: com.ampairs.tax.domain.model.TaxRule, modifier: Mo
     }
 }
 
-private fun formatTimestamp(timestamp: String): String =
-    runCatching { formatTimestamp(Instant.parse(timestamp).toEpochMilliseconds()) }
-        .getOrDefault(timestamp)
+private fun formatTimestamp(timestamp: Instant): String =
+    formatTimestamp(timestamp.toEpochMilliseconds())
 
 private fun formatTimestamp(timestamp: Long): String {
     val seconds = timestamp / 1000

@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.ampairs.tax.data.db.entity.TaxComponentEntity
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Instant
 
 /**
  * Tax Component DAO
@@ -33,7 +34,7 @@ interface TaxComponentDao {
     """)
     suspend fun getComponentsByJurisdiction(
         jurisdiction: String,
-        effectiveDate: Long
+        effectiveDate: Instant
     ): List<TaxComponentEntity>
 
     @Query("SELECT * FROM tax_components WHERE id = :id")

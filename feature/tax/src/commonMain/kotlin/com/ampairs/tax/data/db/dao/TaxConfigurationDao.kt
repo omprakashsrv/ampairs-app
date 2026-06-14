@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.ampairs.tax.data.db.entity.TaxConfigurationEntity
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Instant
 
 /**
  * Tax Configuration DAO
@@ -30,7 +31,7 @@ interface TaxConfigurationDao {
     suspend fun update(config: TaxConfigurationEntity)
 
     @Query("UPDATE tax_configuration SET synced_at = :timestamp")
-    suspend fun updateSyncTime(timestamp: Long)
+    suspend fun updateSyncTime(timestamp: Instant)
 
     @Query("DELETE FROM tax_configuration")
     suspend fun delete()

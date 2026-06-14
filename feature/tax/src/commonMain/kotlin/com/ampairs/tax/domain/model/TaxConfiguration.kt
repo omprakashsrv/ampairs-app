@@ -1,7 +1,9 @@
 package com.ampairs.tax.domain.model
 
+import com.ampairs.common.serialization.InstantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * Workspace Tax Configuration - Top-level tax settings for workspace
@@ -29,8 +31,9 @@ data class TaxConfiguration(
     @SerialName("auto_subscribe_new_codes")
     val autoSubscribeNewCodes: Boolean = false,     // Auto-add popular codes
 
+    @Serializable(with = InstantSerializer::class)
     @SerialName("synced_at")
-    val syncedAt: Long,
+    val syncedAt: Instant,
 
     @SerialName("metadata")
     val metadata: Map<String, String> = emptyMap()

@@ -71,7 +71,7 @@ class TaxCodeRepository(
      * Increment usage count when tax code is used
      */
     override suspend fun incrementUsageCount(id: String) {
-        val timestamp = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val timestamp = kotlin.time.Clock.System.now()
         taxCodeDao.incrementUsageCount(id, timestamp)
     }
 
@@ -288,9 +288,9 @@ class TaxCodeRepository(
     /**
      * Get last sync time for incremental sync
      */
-    private suspend fun getLastSyncTime(): Long? {
-        val codes = taxCodeDao.getModifiedAfter(0L)
-        return codes.maxOfOrNull { it.updatedAt }   // entity stores epoch-millis Long
+    private suspend fun getLastSyncTime(): kotlin.time.Instant? {
+        val codes = taxCodeDao.getModifiedAfter(kotlin.time.Instant.fromEpochMilliseconds(0))
+        return codes.maxOfOrNull { it.updatedAt }   // newest updatedAt seen locally
     }
 
     /**

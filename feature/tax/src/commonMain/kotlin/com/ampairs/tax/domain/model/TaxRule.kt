@@ -1,8 +1,9 @@
 package com.ampairs.tax.domain.model
 
-import com.ampairs.common.serialization.EpochMillisSerializer
+import com.ampairs.common.serialization.InstantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 /**
  * Tax Rule - Defines how multiple components combine to form complete tax
@@ -43,13 +44,13 @@ data class TaxRule(
     @SerialName("is_active")
     val isActive: Boolean = true,
 
-    @Serializable(with = EpochMillisSerializer::class)
+    @Serializable(with = InstantSerializer::class)
     @SerialName("created_at")
-    val createdAt: Long = 0,
+    val createdAt: Instant = Instant.fromEpochMilliseconds(0),
 
-    @Serializable(with = EpochMillisSerializer::class)
+    @Serializable(with = InstantSerializer::class)
     @SerialName("updated_at")
-    val updatedAt: Long = 0,
+    val updatedAt: Instant = Instant.fromEpochMilliseconds(0),
 
     @SerialName("sync_status")
     val syncStatus: String = "SYNCED"
