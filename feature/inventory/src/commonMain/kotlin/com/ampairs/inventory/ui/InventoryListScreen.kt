@@ -54,6 +54,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.inventory.domain.Inventory
 import com.ampairs.inventory.viewmodel.InventoryListViewModel
 import kotlinx.coroutines.launch
@@ -258,6 +260,7 @@ private fun InventoryRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Column(modifier = modifier) {
         Row(
             modifier = Modifier
@@ -285,12 +288,12 @@ private fun InventoryRow(
                 }
             }
             Text(
-                text = if (inventory.mrp > 0) "₹${inventory.mrp.toInt()}" else "—",
+                text = if (inventory.mrp > 0) formatMoney(inventory.mrp, locale) else "—",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = if (inventory.sellingPrice > 0) "₹${inventory.sellingPrice.toInt()}" else "—",
+                text = if (inventory.sellingPrice > 0) formatMoney(inventory.sellingPrice, locale) else "—",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,

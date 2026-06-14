@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.product.domain.ProductListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -291,6 +293,7 @@ private fun ProductCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -356,14 +359,14 @@ private fun ProductCard(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "₹${product.sellingPrice}",
+                    text = formatMoney(product.sellingPrice, locale),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 if (product.mrp != product.sellingPrice && product.mrp > 0) {
                     Text(
-                        text = "₹${product.mrp}",
+                        text = formatMoney(product.mrp, locale),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                         textDecoration = TextDecoration.LineThrough
@@ -412,6 +415,7 @@ private fun ProductTable(
     isRefreshing: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     LazyColumn(modifier = modifier) {
         item {
             Surface(
@@ -470,7 +474,7 @@ private fun ProductTable(
                     }
                     Text(text = product.code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(text = product.categoryName ?: "—", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(text = "₹${product.sellingPrice}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                    Text(text = formatMoney(product.sellingPrice, locale), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
                     Text(
                         text = product.stockQuantity?.let { "${it.toInt()}" } ?: "—",
                         style = MaterialTheme.typography.bodySmall,
