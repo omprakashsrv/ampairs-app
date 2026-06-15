@@ -84,7 +84,7 @@ fun main() = application {
     // focused app — it must be explicitly de-iconified, brought to front and focused.
     var mainComposeWindow by remember { mutableStateOf<ComposeWindow?>(null) }
 
-    val showMainWindow = {
+    val showMainWindow: () -> Unit = {
         mainWindowVisible = true
         mainComposeWindow?.let { window ->
             // Make it visible synchronously (don't wait for recomposition) so the
