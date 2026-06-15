@@ -96,12 +96,16 @@ fun authEntryProvider(
                         backStack.clear()
                         backStack.add(Route.Workspace)
                     }
+                    // Match the mobile OTP flow: route through the profile-update / account-restore
+                    // step after auth instead of jumping straight to the workspace.
+                    LoginNavEvent.NavigateToUserUpdate -> backStack.add(AuthRoute.UserUpdate)
+                    LoginNavEvent.NavigateToAccountRestore -> backStack.add(AuthRoute.AccountRestore)
                     else -> {}
                 }
             }
         }
         DesktopBrowserAuthScreen {
-            viewModel.handleExistingUserWorkspaceCheck()
+            viewModel.handleOtpSuccess()
         }
     }
 
