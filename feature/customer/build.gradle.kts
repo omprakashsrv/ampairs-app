@@ -62,6 +62,11 @@ kotlin {
                 implementation(libs.material3.adaptive)
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
         androidMain {
             dependencies {
                 implementation(libs.ktor.client.okHttp)

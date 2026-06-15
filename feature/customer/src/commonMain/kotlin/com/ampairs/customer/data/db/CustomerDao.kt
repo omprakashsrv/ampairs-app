@@ -67,6 +67,60 @@ interface CustomerDao {
         hasGroups: Int,
     ): Flow<List<CustomerEntity>>
 
+    /**
+     * Browse path (no search term) — multi-select filtered, name-ordered, bounded by [limit].
+     * Each filter dimension is bypassed when its `hasX` flag is 0.
+     */
+    @Query(
+        """
+        SELECT * FROM customers
+        WHERE active = 1
+        AND (:hasStates = 0 OR state IN (:states))
+        AND (:hasTypes = 0 OR customer_type IN (:types))
+        AND (:hasGroups = 0 OR customer_group IN (:groups))
+        ORDER BY name ASC
+        LIMIT :limit
+    """
+    )
+    fun browse(
+        states: List<String>,
+        hasStates: Int,
+        types: List<String>,
+        hasTypes: Int,
+        groups: List<String>,
+        hasGroups: Int,
+        limit: Int,
+    ): Flow<List<CustomerEntity>>
+
+    /**
+     * Full-text search path — joins the `customer_fts` index and applies the same multi-select
+     * filters, name-ordered, bounded by [limit]. [ftsQuery] is a pre-built FTS MATCH expression
+     * (see `buildCustomerFtsQuery`). Backed by the FTS4 index → no full-table scan.
+     */
+    @Query(
+        """
+        SELECT c.* FROM customers c
+        JOIN customer_fts f ON c.rowid = f.docid
+        WHERE f MATCH :ftsQuery
+        AND c.active = 1
+        AND (:hasStates = 0 OR c.state IN (:states))
+        AND (:hasTypes = 0 OR c.customer_type IN (:types))
+        AND (:hasGroups = 0 OR c.customer_group IN (:groups))
+        ORDER BY c.name ASC
+        LIMIT :limit
+    """
+    )
+    fun searchByFts(
+        ftsQuery: String,
+        states: List<String>,
+        hasStates: Int,
+        types: List<String>,
+        hasTypes: Int,
+        groups: List<String>,
+        hasGroups: Int,
+        limit: Int,
+    ): Flow<List<CustomerEntity>>
+
     @Query(
         "SELECT DISTINCT state FROM customers WHERE active = 1 AND state IS NOT NULL AND state != '' ORDER BY state ASC"
     )

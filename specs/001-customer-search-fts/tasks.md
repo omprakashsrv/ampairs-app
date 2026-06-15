@@ -4,7 +4,33 @@
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 **Dev branch**: `claude/trusting-fermi-7fvvpa`
 
-**Tests**: Included only where the spec explicitly asks (quickstart §6 — `buildFtsQuery` unit test). No broader test scaffolding is generated.
+**Tests**: Included only where the spec explicitly asks (quickstart §6 — `buildCustomerFtsQuery` unit test). No broader test scaffolding is generated.
+
+---
+
+## ⚠️ Implementation status (2026-06-15)
+
+Code was written in a sandbox that **cannot build** (no Android SDK, Room deps not cached,
+Gradle toolchain download blocked, and Linux can't compile the iOS target). So all build / schema /
+runtime / test tasks are **unverified** and must be completed in CI or a local/macOS dev env.
+
+Two deliberate deviations from the original plan, made because they're unsafe to author blind:
+- **F1 resolution simplified**: `searchAndFilter(query, filters): Flow<List<CustomerListItem>>` —
+  ONE return type, capped at 200, blank→`browse`, else→`searchByFts`. No Paging3 (avoids new deps +
+  a `LazyPagingItems` screen rewrite). Fits the existing ViewModel pipeline with a one-line swap.
+- **US4 (Paging3 browse) deferred** to the build env (T019/T020) — needs paging-dependency wiring
+  and a screen rewrite. Current browse path is the capped Flow (bounded, name-ordered, filtered).
+
+`[X]` = code written (unverified)  ·  `[~]` = deferred  ·  `[ ]` = needs a build env
+
+- `[X]` T003 CustomerFts, `[X]` T004 DB v11, `[X]` T006 Migration10To11 (DDL needs 11.json diff),
+  `[X]` T007 register migration (3 platforms), `[X]` T009 searchByFts, `[X]` T010/T015 buildCustomerFtsQuery
+  (incl. phone collapse + F3 degenerate guard), `[X]` T011 searchAndFilter router, `[X]` T012 store,
+  `[X]` T013 ViewModel swap, `[X]` T014/T016 BuildCustomerFtsQueryTest, `[X]` T001 commonTest sourceSet.
+- `[ ]` T002/T005/T008 schema export + 11.json (needs build), `[ ]` T017/T018 retire legacy filter path
+  (kept for order/invoice pickers), `[ ]` T023 compile, `[ ]` T024 runtime smoke, `[ ]` T025 run tests.
+- `[~]` T019/T020 Paging3 browse + LazyPagingItems screen, `[~]` T021 retire LIKE methods (still used
+  by pickers), `[~]` T022 first-sync batch tuning.
 
 ## Format: `[ID] [P?] [Story] Description`
 - **[P]**: Can run in parallel (different files, no dependencies)

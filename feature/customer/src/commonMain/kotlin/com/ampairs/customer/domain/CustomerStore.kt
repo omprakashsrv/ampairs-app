@@ -24,6 +24,14 @@ class CustomerStore(
         groups: List<String>,
     ) = repository.filterCustomers(query, states, types, groups)
 
+    /** Scalable (FTS-backed, capped) search + filter — preferred path for the customer list screen. */
+    fun searchAndFilter(
+        query: String,
+        states: List<String>,
+        types: List<String>,
+        groups: List<String>,
+    ) = repository.searchAndFilter(query, states, types, groups)
+
     suspend fun getDistinctStates(): List<String> = repository.getDistinctStates()
 
     suspend fun getDistinctCustomerTypes(): List<String> = repository.getDistinctCustomerTypes()
