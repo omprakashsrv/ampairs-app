@@ -8,7 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.awt.ComposeWindow
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Tray
@@ -30,6 +32,7 @@ import com.ampairs.di.DesktopWorkspaceModule
 import com.ampairs.tallysync.TallySettingsScreen
 import com.ampairs.tallysync.TallySyncScheduler
 import dev.zacsweers.metro.createGraphFactory
+import org.jetbrains.skia.Image
 import java.awt.Frame
 
 fun main() = application {
@@ -102,8 +105,9 @@ fun main() = application {
 
     if (isTraySupported) {
         val trayState = rememberTrayState()
+        val trayIcon = remember { loadClasspathPainter("tray_icon.png") }
         Tray(
-            icon = painterResource("tray_icon.png"),
+            icon = trayIcon,
             state = trayState,
             tooltip = "Ampairs",
             onAction = showMainWindow, // double-click restores the window
@@ -263,6 +267,18 @@ private class AppWindowState(
     private val close: (AppWindowState) -> Unit,
 ) {
     fun close() = close(this)
+}
+
+/**
+ * Loads an image bundled on the JVM classpath (desktopApp/src/main/resources) into a [Painter].
+ * Replaces the deprecated `androidx.compose.ui.res.painterResource(String)` per the Compose
+ * resources migration guidance for classpath-loaded images.
+ */
+private fun loadClasspathPainter(resourcePath: String): Painter {
+    val bytes = checkNotNull(object {}.javaClass.classLoader.getResourceAsStream(resourcePath)) {
+        "Resource not found on classpath: $resourcePath"
+    }.use { it.readBytes() }
+    return BitmapPainter(Image.makeFromEncoded(bytes).toComposeImageBitmap())
 }
 
 private fun initializeSentry() {
