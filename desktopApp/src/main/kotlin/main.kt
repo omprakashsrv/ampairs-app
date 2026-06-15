@@ -94,12 +94,11 @@ fun main() = application {
             // toFront/requestFocus below act on an already-shown, de-iconified window.
             window.extendedState = window.extendedState and Frame.ICONIFIED.inv()
             window.isVisible = true
-            window.toFront()
-            window.requestFocus()
             // Force the window manager to raise it above the previously focused app
             // (notably required on Windows, which otherwise blocks focus stealing).
             window.isAlwaysOnTop = true
-            window.isAlwaysOnTop = false
+            window.toFront()
+            window.requestFocus()
         }
     }
 
