@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuBar
@@ -29,6 +30,7 @@ import com.ampairs.di.DesktopWorkspaceModule
 import com.ampairs.tallysync.TallySettingsScreen
 import com.ampairs.tallysync.TallySyncScheduler
 import dev.zacsweers.metro.createGraphFactory
+import java.awt.Frame
 
 fun main() = application {
     // Check if data directory is set before initializing the graph
@@ -77,15 +79,36 @@ fun main() = application {
     // The app is only fully exited from the tray menu's "Exit" item.
     var mainWindowVisible by remember { mutableStateOf(true) }
 
+    // Reference to the underlying AWT window so the tray actions can raise it to the
+    // foreground. Just flipping `visible = true` shows the window behind the currently
+    // focused app — it must be explicitly de-iconified, brought to front and focused.
+    var mainComposeWindow by remember { mutableStateOf<ComposeWindow?>(null) }
+
+    val showMainWindow = {
+        mainWindowVisible = true
+        mainComposeWindow?.let { window ->
+            // Make it visible synchronously (don't wait for recomposition) so the
+            // toFront/requestFocus below act on an already-shown, de-iconified window.
+            window.extendedState = window.extendedState and Frame.ICONIFIED.inv()
+            window.isVisible = true
+            window.toFront()
+            window.requestFocus()
+            // Force the window manager to raise it above the previously focused app
+            // (notably required on Windows, which otherwise blocks focus stealing).
+            window.isAlwaysOnTop = true
+            window.isAlwaysOnTop = false
+        }
+    }
+
     if (isTraySupported) {
         val trayState = rememberTrayState()
         Tray(
             icon = painterResource("tray_icon.png"),
             state = trayState,
             tooltip = "Ampairs",
-            onAction = { mainWindowVisible = true }, // double-click restores the window
+            onAction = showMainWindow, // double-click restores the window
             menu = {
-                Item("Open Ampairs", onClick = { mainWindowVisible = true })
+                Item("Open Ampairs", onClick = showMainWindow)
                 Item("Exit", onClick = ::exitApplication)
             }
         )
@@ -98,6 +121,7 @@ fun main() = application {
                     state = window,
                     appGraph = appGraph,
                     visible = mainWindowVisible,
+                    onWindowReady = { mainComposeWindow = it },
                     // Closing the main window only hides it to the tray when the tray is
                     // available; otherwise fall back to exiting so the user is never stuck.
                     onCloseRequest = {
@@ -139,6 +163,7 @@ private fun ApplicationScope.MainWindow(
     appGraph: DesktopAppGraph,
     visible: Boolean = true,
     onCloseRequest: () -> Unit = { exitApplication() },
+    onWindowReady: (ComposeWindow) -> Unit = {},
     onWorkspaceSlugChanged: (String) -> Unit = {},
     onOpenTallyWindow: () -> Unit = state.openNewWindow,
 ) =
@@ -148,6 +173,9 @@ private fun ApplicationScope.MainWindow(
         state = rememberWindowState(placement = WindowPlacement.Maximized),
         title = "Ampairs"
     ) {
+
+        // Expose the underlying AWT window so the tray "Open" action can raise it to front.
+        LaunchedEffect(window) { onWindowReady(window) }
 
         var loggedIn by remember { mutableStateOf(false) }
 
