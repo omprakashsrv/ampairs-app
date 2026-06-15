@@ -64,11 +64,6 @@ kotlin {
                 implementation(libs.filekit.dialogs)
             }
         }
-        commonTest {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
         androidMain {
             dependencies {
                 implementation(libs.ktor.client.okHttp)

@@ -44,24 +44,6 @@ import kotlin.time.ExperimentalTime
  * Writes (create/update/delete) persist to Room as unsynced and mark PRODUCT as PENDING_PUSH;
  * CentralSyncService's reactive observer then runs the automatic bulk push.
  */
-/** Max rows returned by [ProductRepository.searchAndFilter] (browse and search). Keeps the list
- *  bounded at scale; a search returning this many should be narrowed further by the user. */
-private const val PRODUCT_SEARCH_LIMIT = 200
-
-/**
- * Build an FTS4 MATCH expression from raw user input, or `null` when the input has no usable tokens
- * (caller then falls back to the browse path). Per-token prefix terms, each quoted (neutralises FTS
- * operators) with `"` escaped — so "wid blue" matches a product named "Widget" with code "BLUE-1".
- * Top-level (not a member) so it is unit-testable without constructing the repository.
- */
-internal fun buildProductFtsQuery(input: String): String? {
-    val trimmed = input.trim()
-    if (trimmed.isEmpty() || trimmed.none { it.isLetterOrDigit() }) return null
-    val tokens = trimmed.split(Regex("\\s+")).filter { token -> token.any { it.isLetterOrDigit() } }
-    if (tokens.isEmpty()) return null
-    return tokens.joinToString(" ") { token -> "\"" + token.replace("\"", "\"\"") + "\"*" }
-}
-
 @OptIn(ExperimentalTime::class)
 @Inject
 class ProductRepository(
@@ -109,37 +91,6 @@ class ProductRepository(
             hasGroups = if (groups.isEmpty()) 0 else 1,
         )
     )
-
-    /**
-     * Scalable search + multi-select filter, capped at [PRODUCT_SEARCH_LIMIT]. Routes a blank /
-     * non-textual query to the browse path and any real query to the FTS index (name/code/
-     * description). Empty filter sets mean "no filter". Preferred path for the product list screen.
-     */
-    fun searchAndFilter(
-        query: String,
-        brands: List<String>,
-        categories: List<String>,
-        subCategories: List<String>,
-        groups: List<String>,
-    ): Flow<List<ProductListItem>> {
-        val hasBrands = if (brands.isEmpty()) 0 else 1
-        val hasCategories = if (categories.isEmpty()) 0 else 1
-        val hasSubCategories = if (subCategories.isEmpty()) 0 else 1
-        val hasGroups = if (groups.isEmpty()) 0 else 1
-        val match = buildProductFtsQuery(query)
-        val rows = if (match == null) {
-            productDao.browseProducts(
-                brands, hasBrands, categories, hasCategories,
-                subCategories, hasSubCategories, groups, hasGroups, PRODUCT_SEARCH_LIMIT,
-            )
-        } else {
-            productDao.searchProductsByFts(
-                match, brands, hasBrands, categories, hasCategories,
-                subCategories, hasSubCategories, groups, hasGroups, PRODUCT_SEARCH_LIMIT,
-            )
-        }
-        return observeProductsJoined(rows)
-    }
 
     /** Filter options derived from values actually present among active products; labels resolved to names. */
     suspend fun getBrandFilterOptions(): List<FilterOption> {

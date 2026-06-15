@@ -28,34 +28,6 @@ import com.ampairs.customer.util.CustomerLogger
  * PENDING_PUSH via [SyncStateDao]. CentralSyncService's reactive observer picks that up and runs
  * the bulk push automatically. Pulls and pushes live in the delegate, not here.
  */
-/** Max rows returned by [CustomerRepository.searchAndFilter] (browse and search). Keeps the list
- *  bounded at scale; a search returning this many should be narrowed further by the user. */
-private const val CUSTOMER_SEARCH_LIMIT = 200
-
-/**
- * Build an FTS4 MATCH expression from raw user input, or `null` when the input has no usable tokens
- * (caller then falls back to the browse path).
- * - digits / spaces only → one space-stripped prefix token (so "98765 43210" matches "9876543210")
- * - otherwise → per-token prefix terms, each quoted (neutralises FTS operators) with `"` escaped.
- *
- * Top-level (not a member) so it is unit-testable without constructing the repository.
- */
-internal fun buildCustomerFtsQuery(input: String): String? {
-    val trimmed = input.trim()
-    // Pure punctuation / empty → nothing to match → browse.
-    if (trimmed.isEmpty() || trimmed.none { it.isLetterOrDigit() }) return null
-
-    val digitsOnly = trimmed.all { it.isDigit() || it.isWhitespace() }
-    if (digitsOnly) {
-        val digits = trimmed.filter { it.isDigit() }
-        return if (digits.isEmpty()) null else "\"$digits\"*"
-    }
-
-    val tokens = trimmed.split(Regex("\\s+")).filter { token -> token.any { it.isLetterOrDigit() } }
-    if (tokens.isEmpty()) return null
-    return tokens.joinToString(" ") { token -> "\"" + token.replace("\"", "\"\"") + "\"*" }
-}
-
 @OptIn(ExperimentalTime::class)
 @Inject
 class CustomerRepository(
@@ -94,29 +66,6 @@ class CustomerRepository(
             groups = groups,
             hasGroups = if (groups.isEmpty()) 0 else 1,
         ).map { entities -> entities.map { it.toDomain().toListItem() } }
-    }
-
-    /**
-     * Scalable search + multi-select filter, capped at [CUSTOMER_SEARCH_LIMIT]. Routes a blank /
-     * non-textual query to the browse path and any real query to the FTS index. Empty filter sets
-     * mean "no filter". This is the path the customer list screen should use.
-     */
-    fun searchAndFilter(
-        query: String,
-        states: List<String>,
-        types: List<String>,
-        groups: List<String>,
-    ): Flow<List<CustomerListItem>> {
-        val hasStates = if (states.isEmpty()) 0 else 1
-        val hasTypes = if (types.isEmpty()) 0 else 1
-        val hasGroups = if (groups.isEmpty()) 0 else 1
-        val match = buildCustomerFtsQuery(query)
-        val rows = if (match == null) {
-            customerDao.browse(states, hasStates, types, hasTypes, groups, hasGroups, CUSTOMER_SEARCH_LIMIT)
-        } else {
-            customerDao.searchByFts(match, states, hasStates, types, hasTypes, groups, hasGroups, CUSTOMER_SEARCH_LIMIT)
-        }
-        return rows.map { entities -> entities.map { it.toDomain().toListItem() } }
     }
 
     /** Distinct stored filter values present among active customers — drives the filter options. */

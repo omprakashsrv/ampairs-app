@@ -113,8 +113,7 @@ class CustomersListViewModel(
             _filter,
         ) { query, filter -> query to filter }
             .flatMapLatest { (query, filter) ->
-                // FTS-backed, capped search/browse — scales to 100k+ customers per workspace.
-                customerStore.searchAndFilter(
+                customerStore.filterCustomers(
                     query = query,
                     states = filter.states.toList(),
                     types = filter.types.toList(),

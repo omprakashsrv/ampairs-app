@@ -9,7 +9,6 @@ import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_6_7
 import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_7_8
 import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_8_9
 import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_9_10
-import com.ampairs.customer.data.db.migrations.CUSTOMER_MIGRATION_10_11
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -27,7 +26,7 @@ interface CustomerDesktopModule {
         ): CustomerDatabase = factory.createDatabase<CustomerDatabase>(
             moduleName = "customer",
             workspaceSlug = config.workspaceSlug,
-            migrations = listOf(CUSTOMER_MIGRATION_6_7, CUSTOMER_MIGRATION_7_8, CUSTOMER_MIGRATION_8_9, CUSTOMER_MIGRATION_9_10, CUSTOMER_MIGRATION_10_11),
+            migrations = listOf(CUSTOMER_MIGRATION_6_7, CUSTOMER_MIGRATION_7_8, CUSTOMER_MIGRATION_8_9, CUSTOMER_MIGRATION_9_10),
         ).also { closableRegistry.register { it.close() } }
     }
 }
