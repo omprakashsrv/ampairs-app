@@ -1,21 +1,34 @@
 <!--
 Sync Impact Report
 ===================
-Version Change: N/A → 1.0.0
-Type: MAJOR (Initial constitution establishment)
-Modified Principles: N/A (new document)
-Added Sections:
-  - Project Topology
-  - Core Principles (I-X)
-  - Architecture Standards
-  - Platform-Specific Guidelines
-  - Testing & Quality Gates
-  - Development Workflow
-  - Governance
+Version Change: 1.0.0 → 2.0.0
+Type: MAJOR (principle redefinitions — DI framework, data layer, and module
+      topology changed; several principles rewritten or replaced)
+
+Modified Principles:
+  - III. Workspace-Scoped Database Isolation → now Metro WorkspaceScope child
+    graphs (was Koin DatabaseScopeManager + factory scope)
+  - V. Backend API Alignment → Response<T> nullable-data contract (no .success)
+  - VI. Store5 Integration Pattern → REPLACED by "Offline-First via
+    CentralSyncService" (Store5 removed from the project)
+  - X. Time/Date Handling → adds business-timezone bucketing guidance
+
+Added Sections / Principles:
+  - Principle IV. Metro Dependency Injection & MVI Boundary (new)
+  - Principle XI. Compose Resources & Workspace-Locale Formatting (new)
+  - Replaced the "Speckit Project Principles" prose block with the modern
+    Core Principles set
+
+Removed Sections:
+  - Koin dependency-injection guidance (project fully migrated to Metro)
+  - Store5 caching guidance (replaced by CentralSyncService / SyncDelegate)
+  - composeApp/ single-module topology (replaced by multi-module layout)
+
 Templates Requiring Updates:
-  ✅ plan-template.md - Constitution Check references KMP patterns
-  ✅ spec-template.md - Capture offline-first and M3 requirements
-  ✅ tasks-template.md - Reflect KMP and offline-first workflows
+  ✅ plan-template.md  — generic, constitution-driven Constitution Check gate (no edit needed)
+  ✅ spec-template.md  — no constitution coupling (no edit needed)
+  ✅ tasks-template.md — no constitution coupling (no edit needed)
+
 Follow-up TODOs: None
 -->
 
@@ -23,285 +36,300 @@ Follow-up TODOs: None
 
 ## Project Topology
 
-- Ampairs Mobile is a **Kotlin Multiplatform (KMP)** business management client targeting **Android, iOS, and Desktop (JVM)** platforms using **Compose Multiplatform**.
-- Backend integration with Spring Boot REST APIs (see `ampairs-backend/`) using JWT authentication and multi-tenant workspace architecture.
-- Module structure: `composeApp/` contains shared UI (`commonMain`), platform launchers (`androidMain`, `iosMain`, `desktopMain`), and domain modules (auth, workspace, customer, product, order, invoice, tally).
-- Offline-first architecture using **Store5** for caching/sync and **Room Database** for local persistence across all platforms.
-- Material Design 3 design system applied consistently via Compose Multiplatform with light/dark theme support.
-
-## Speckit Project Principles
-
-### Purpose
-
-- Deliver a cohesive Ampairs experience across web, mobile, and desktop by sharing Compose-first, offline-ready UX and tenants-aware data flows.
-- Treat Speckit as the canonical reference for offline-first MVI design, setting expectations for future modules and platform extensions.
-
-### Guiding Tenets
-
-1. **Domain-led architecture** — Keep business logic in shared modules, exposing platform code only for shell integrations or hardware access; respect module boundaries (`composeApp`, `shared`, `core`, `tallyModule`, `tasks`, `thirdparty`) and add new scope-aware code beneath the closest `com/ampairs` domain package.
-2. **Parity through shared flows** — Implement features once in shared code; platform launchers supply UI chrome, navigation, and background triggers (WorkManager, Background App Refresh, timers) while Store5 contracts surface `StateFlow` state to the UI.
-3. **Quality at every layer** — Adhere to Kotlin 2.2.20 conventions, trailing commas on multiline constructs, and constructor injection through Koin scopes; guard regressions with `./gradlew :composeApp:check` plus targeted `commonTest` suites, adding platform tests when behavior diverges.
-4. **Security and tenant safety** — Persist secrets in `local.properties`, use encrypted DataStore/Room helpers for tenant context, and enforce JWT-authenticated REST/WebSocket calls with tenant headers at repository boundaries.
-5. **Collaborative delivery** — Follow Conventional Commits with scoped modules, link AMP issues, and open PRs that capture motivation, module impact, validation commands, and screenshots or payload diffs when UI shifts.
-
-### Implementation Pillars
-
-- **Offline-first lifecycle**: Compose presentation → Store5 cache/invalidation → data sources (Room, Ktor); keep sync jobs inside shared code and orchestrate them per launcher.
-- **Dependency discipline**: Add libraries via `gradle/libs.versions.toml`, wire them through Koin modules, and document environment impacts in `ENVIRONMENT_CONFIG.md`.
-- **UI consistency**: House shared composables in `composeApp/src/commonMain`, use PascalCase naming, and limit overrides to `androidMain`, `iosMain`, or `desktopMain` when platform constraints require divergence.
-- **Tooling readiness**: Run `sdk use java 25` before Gradle tasks, prefer `./gradlew :composeApp:run` for previews, and clean via `./cleanup.sh` when switching branches.
-
-### Working Agreements
-
-- Run relevant Gradle/MVI checks before requesting review and attach logs when failures occur.
-- Update feature briefs, environment notes, and impacted specs alongside code changes to keep knowledge centralized.
-- Extend existing automation under `tasks/` or `.specify/templates/` rather than introducing isolated tooling.
-
-### Decision Process
-
-- Prefer small, incremental PRs and escalate architectural shifts with written proposals to the owning squad.
-- Resolve disagreements by referencing this constitution, project guidelines, and measurable user impact; defer to the feature owner when decisions are evenly balanced.
-
-### Amendments
-
-- Amend Speckit principles via PRs that outline motivation, affected modules, and validation strategy; require approval from the owning squad and at least one cross-platform reviewer.
+- Ampairs Mobile is a **Kotlin Multiplatform (KMP)** business management client targeting
+  **Android, iOS, Desktop (JVM), and WebAssembly** (WASM experimental) using **Compose
+  Multiplatform** with an **offline-first** architecture.
+- Part of a three-tier ecosystem: Spring Boot backend (`/ampairs_service` + domain modules),
+  Angular web (`/ampairs-web`), and this KMP app (`/ampairs-app`). Backend integration is over
+  REST with JWT auth, multi-tenant workspace headers, and offline-first synchronization.
+- **Multi-module Gradle layout** (the project migrated off the old single `composeApp/`):
+  - `shared/` — Compose Multiplatform UI, app navigation (Navigation3), DI root, Firebase
+  - `androidApp/`, `desktopApp/`, `iosApp/` — thin platform entry points
+  - `data/common/` — DB factories, path providers, DataStore, `ApiUrlBuilder`, sync infrastructure
+  - `tallyModule/` — Tally ERP integration (JVM-only)
+  - `feature/{name}/` — isolated feature modules (auth, agent, aws, business, customer, event,
+    form, inventory, invoice, order, product, store, subscription, tax, unit, update, workspace)
+- Material Design 3 (with Material Kolor dynamic color) applied consistently across all platforms
+  with light/dark/system theme support.
 
 ## Core Principles
 
 ### I. KMP Platform Compatibility (NON-NEGOTIABLE)
 
-All shared code MUST use KMP-compatible APIs in `commonMain`. Platform-specific code MUST use expect/actual pattern.
+All shared code MUST use KMP-compatible APIs in `commonMain`. Platform-specific behavior MUST use
+the expect/actual pattern in the appropriate platform source set.
 
-**Rationale**: Platform-specific APIs (java.*, android.*, iOS-specific) leak into shared code causing compilation failures on other targets, breaking cross-platform guarantees.
-
-**Rules**:
-- NEVER import `java.*`, `android.*`, or iOS-specific APIs in `commonMain` code
-- Use `kotlinx.datetime.Clock.System.now()` for time operations (not `System.currentTimeMillis()`)
-- Use `kotlinx.coroutines.*` for concurrency (not `Thread`, `synchronized`, or platform-specific threading)
-- Use string interpolation or KMP libraries for formatting (not `String.format()`, `DecimalFormat`)
-- File operations MUST use expect/actual pattern with platform-specific implementations
-- Compile and test on ALL targets (Android, iOS, Desktop) during development
-- Store5 `Fetcher.ofFlow` MUST use KMP-compatible data sources only
-
-### II. Offline-First Architecture (NON-NEGOTIABLE)
-
-All CRUD operations MUST save to local Room database first with `synced = false`, then sync to server asynchronously.
-
-**Rationale**: Ensures immediate UI response, guaranteed data persistence, and seamless operation during network interruptions or poor connectivity.
+**Rationale**: Platform-only APIs (`java.*`, `android.*`, iOS Foundation) leak into shared code and
+break compilation on other targets, defeating the cross-platform guarantee.
 
 **Rules**:
-- Database writes happen BEFORE network requests
-- Client-side UID generation via `UidGenerator.generateUid(prefix)` for deterministic identifiers
-- Server sync operations run in background with graceful failure handling
-- Unsynced local changes MUST be preserved over server data during conflict resolution
-- Batch synchronization using paginated requests (default: 100 records per batch, max 10,000 per sync)
-- String-based ISO 8601 timestamp comparison for incremental sync tracking
-- Server UID conflicts MUST be corrected to maintain local UID consistency
+- NEVER import `java.*` or `android.*` in `commonMain`.
+- Use `kotlinx.datetime.Clock.System.now()` for time (not `System.currentTimeMillis()`).
+- Use `kotlinx.coroutines.*` and `@Volatile` for concurrency (not `Thread`/`synchronized`).
+- Use string interpolation for formatting (not `String.format()`/`DecimalFormat`).
+- File/path/UUID/logging operations MUST use expect/actual or KMP libraries (Kermit for logging).
+- `Dispatchers.IO` is safe in `commonMain` (expect), but in `iosMain` actuals use
+  `Dispatchers.Default` — the Native `Dispatchers.IO` backing value is internal.
+- Validate every commonMain change on all targets:
+  `./gradlew shared:compileKotlinIosSimulatorArm64 androidApp:compileDebugKotlinAndroid desktopApp:compileKotlin`.
 
-### III. Workspace-Scoped Database Isolation (NON-NEGOTIABLE)
+### II. Offline-First via CentralSyncService (NON-NEGOTIABLE)
 
-Each workspace MUST maintain isolated database instances managed by `DatabaseScopeManager`.
+All CRUD MUST write to the local Room database first (`synced = false`) and flag the entity
+`PENDING_PUSH`; the network is reached only asynchronously, never from the repository.
 
-**Rationale**: Prevents data leakage between workspaces and ensures proper data isolation when switching workspace contexts.
-
-**Rules**:
-- Database instances cached by `{workspaceSlug}:{moduleName}` key
-- All workspace-aware Koin dependencies MUST use `factory` (not `single`) scope
-- Dependency chain: Database (factory) → DAOs (factory) → Repositories (factory) → Stores (factory) → ViewModels (viewModel)
-- `DatabaseScopeManager.clearDatabases()` MUST be called on workspace switch
-- Platform-specific path parsing: Android (`workspace_{slug}_{module}.db`), iOS/Desktop (`workspace_{slug}/module.db`)
-- ViewModels MUST use `viewModel` or `viewModelOf` (never `single`)
-- Non-workspace databases (AuthRoomDatabase, WorkspaceRoomDatabase) may remain as `single`
-
-### IV. Material Design 3 Exclusivity
-
-UI components MUST use Compose Multiplatform with Material 3 design system exclusively.
-
-**Rationale**: Single design system ensures consistent UX, accessibility, and maintainability across all platforms.
+**Rationale**: Guarantees immediate UI response and durable local data, and makes every write
+offline-safe by construction (one path: write + flag).
 
 **Rules**:
-- Import only from `androidx.compose.material3` for Material components
-- No other UI frameworks (PrimeNG, Bootstrap, custom CSS frameworks)
-- Theme management via `ThemeManager` with Light/Dark/System preferences (default: System)
-- Icons from Material Design Icons only
-- Reactive theme switching with `StateFlow<ThemePreference>`
-- Platform-specific Material 3 adaptations documented when necessary
+- The **repository is local-only**: it writes Room and calls
+  `syncStateDao.markPendingPush(SyncEntity.X, Clock.System.now().toEpochMilliseconds())`. It MUST
+  NOT inject or call the feature `Api` in the create/update/delete path.
+- All entity↔server traffic (bulk push, batched pull, backend-event refresh) lives in the
+  `{Name}SyncDelegate` (`@ContributesIntoMap(WorkspaceScope::class)` + `@SyncEntityKey`), the single
+  place that injects the `Api` + `Dao`. `CentralSyncService` is the only coordinator.
+- Canonical contract: `GET`/`POST {domain}Url("v1/{resource}/sync")` with snake_case params
+  (`last_sync`, `page`, `size`, `sort_by`, `sort_dir`); pull includes soft-deleted rows; delete is
+  in-band (push carries `active = false` rows). Batch 100/cycle, cap 10,000, honor `hasNext`.
+- Delete is a **soft-delete** (`active = false, synced = false`) — never just `active = false`, or
+  the push (which reads `synced = 0`) will never send it.
+- Conflict resolution: local unsynced edits always win on pull; server `updatedAt` (ISO 8601) is the
+  sync-tracking authority; rows the server reports `DELETED`/inactive are hard-deleted locally.
+- Allowed exception: a repository may keep the `Api` only for a non-sync, UI-invoked feature
+  (import-from-master / available-for-import; file entity-scoped pull / set-primary).
+
+### III. Workspace-Scoped Isolation via Metro Child Graphs (NON-NEGOTIABLE)
+
+Every workspace gets its own Metro child graph (`WorkspaceScope`); all workspace-aware databases
+are scoped to it and torn down on workspace switch.
+
+**Rationale**: Prevents cross-workspace data leakage and stale-DB bugs. This replaced the prior
+Koin `factory {}` approach, which was error-prone.
+
+**Rules**:
+- Workspace-aware databases: `@Provides @SingleIn(WorkspaceScope::class)` inside a per-platform
+  `@ContributesTo(WorkspaceScope::class)` module, registered via
+  `.also { closableRegistry.register { it.close() } }`, with an explicit reified type param
+  (`createDatabase<MyDatabase>(...)` / `createAndroidDatabase<MyDatabase>(...)`).
+- DAOs and repositories are **unscoped** `@Inject` classes (fresh instance per injection site).
+- ViewModels in the workspace scope use `@ContributesIntoMap(WorkspaceScope::class)`.
+- DB paths: Android flat `workspace_{slug}_{module}.db`; iOS/Desktop directory
+  `workspace_{slug}/{module}.db`.
+- Exceptions living in `AppScope`: `AuthRoomDatabase` and `WorkspaceRoomDatabase` (they predate
+  workspace selection).
+- On workspace switch, refresh the Ktor `X-Workspace-ID` cache (`tokenRepository.getWorkspaceId()`)
+  before `activateWorkspace()`, and remount Nav via `key(generation)`.
+
+### IV. Metro Dependency Injection & MVI Boundary (NON-NEGOTIABLE)
+
+Dependencies flow only through Metro-injected ViewModels. The project has fully migrated from Koin
+— do not write Koin code.
+
+**Rationale**: A strict UI/ViewModel boundary keeps screens free of repositories and graph access,
+preserving testability and the workspace-switch guarantees.
+
+**Rules**:
+- Plain ViewModel: `@ContributesIntoMap(AppScope::class)` + `@ViewModelKey` + `@Inject`. Runtime-param
+  ViewModel: `@AssistedInject` + inner `fun interface Factory` (`@AssistedFactory` +
+  `@ManualViewModelAssistedFactoryKey` + `@ContributesIntoMap`).
+- Screens declare the ViewModel as a trailing default param via `metroViewModel()` /
+  `assistedMetroViewModel<VM, VM.Factory>(key = id) { create(id) }`; never passed from entry providers.
+- Screens collect state with `collectAsStateWithLifecycle()`; state is `StateFlow<UiState>` and
+  one-off effects use a buffered `SharedFlow`/`Channel`. No business logic in composables.
+- NEVER read `LocalAppGraph.current` inside a `@Composable`; only platform entry points
+  (`MainView`, `MainViewController`, `main.kt`) may touch the graph.
+- `AppGraph` exposes exactly four cross-cutting deps — `themeManager`, `localeManager`,
+  `imageLoader`, `locationService` — plus the ViewModel factory. No repositories/services/factories.
 
 ### V. Backend API Alignment
 
-Mobile DTOs MUST align with backend contracts using snake_case serialization and standard response wrappers.
+Mobile DTOs MUST match backend contracts: snake_case JSON, `Response<T>` wrapper, `Instant`
+timestamps, and multi-tenant headers.
 
-**Rationale**: Ensures API compatibility with Spring Boot backend and reduces integration friction.
-
-**Rules**:
-- Use `@SerialName` annotations for snake_case JSON properties (e.g., `@SerialName("created_at") val createdAt: Instant`)
-- All API responses wrapped in `Response<T>` (mobile) matching backend `ApiResponse<T>` structure
-- Response shape: `{"success": Boolean, "data": T?, "error": ErrorDetails?, "timestamp": String}`
-- Use `java.time.Instant` for timestamps matching backend UTC timestamp standard
-- HTTP client (Ktor) includes `X-Workspace-ID` header for multi-tenant requests
-- JWT tokens with automatic refresh and bearer authentication
-
-### VI. Store5 Integration Pattern
-
-Data layer MUST use Store5 with Fetcher (network) + SourceOfTruth (Room DB) for offline-first caching.
-
-**Rationale**: Store5 provides robust caching, synchronization, and conflict resolution for offline-first architecture.
+**Rationale**: Keeps the client wire-compatible with the Spring Boot backend and avoids runtime
+serialization failures.
 
 **Rules**:
-- Fetcher reads from local database (not network) - sync handled separately in repositories
-- SourceOfTruth observes Room database via `Flow<T>`
-- Writer operations handled through repository layer, not Store5 directly
-- Use `store.stream(StoreReadRequest.cached(key, refresh = false))` for reads
-- Clear Store5 cache after successful sync operations
-- Repository layer coordinates: local write → background sync → cache invalidation
+- Use `@SerialName("snake_case")` for fields; the backend serializes camelCase as snake_case globally.
+- Responses use `com.ampairs.common.model.Response<T>` whose `data` is **nullable** — check
+  `response.data != null && response.error == null`. There is NO `.success` property.
+- Timestamps are `kotlinx.datetime.Instant` (backend `java.time.Instant`, UTC).
+- Build URLs with `ApiUrlBuilder.{domain}Url("v1/{resource}")` — never hardcoded strings.
+- Ktor sends the JWT bearer token (auto-refresh) and the `X-Workspace-ID` header on tenant requests.
+- DTO migration order on backend changes: Backend Analysis → Domain Models → Entities →
+  Repositories → ViewModels → UI; fix imports before logic; compile after each layer.
 
-### VII. DTO Migration & Backend Synchronization
+### VI. Client-Side UID Generation
 
-Mobile DTOs MUST stay synchronized with backend schema changes following systematic migration patterns.
+Entity UIDs MUST be generated in the ViewModel layer before calling the repository, via
+`UidGenerator.generateUid(prefix)` (import `com.ampairs.common.id_generator.UidGenerator`).
 
-**Rationale**: Prevents runtime serialization failures and API integration issues when backend contracts evolve.
-
-**Rules**:
-- Migration order: Backend Analysis → Domain Models → Entities → Repositories → ViewModels → UI
-- Reference backend response DTOs for field names and types
-- Import paths: `com.ampairs.common.id_generator.UidGenerator`, `com.ampairs.common.model.Response`
-- API patterns: `ApiUrlBuilder.{module}Url("v1/{resource}")`
-- Dynamic form data: Store IDs as strings, separate display names from values
-- Test layer-by-layer after structural changes, not in batches
-
-### VIII. Form UI Standards
-
-Form screens MUST implement keyboard navigation, proper focus management, and consistent TopAppBar patterns.
-
-**Rationale**: Ensures excellent UX with keyboard accessibility and consistent navigation patterns.
+**Rationale**: A fully-formed entity reaching the repository keeps the create→sync→update lifecycle
+consistent; a repository fallback would diverge the local UID from the tracked UID.
 
 **Rules**:
-- Use `LocalFocusManager.current` with proper `KeyboardActions`
-- Field navigation: `ImeAction.Next` for fields, `ImeAction.Done` for last field
-- `singleLine = true` to ensure Enter moves to next field
-- Include keyboard-accessible save button at bottom of form
-- Remove redundant `navigationIcon` when global navigation exists
-- Use `AppScreenWithHeader` pattern consistently
-- No redundant `onNavigateBack` parameters in form screens
+- Format `{PREFIX}{YYYYMMDDHHMMSS}{RANDOM}` (32 chars); examples `CUS`, `PRD`, `ORD`, `INV`.
+- Repository create methods assert `require(entity.uid.isNotBlank())`; repositories MUST NOT
+  generate UIDs as a fallback.
 
-### IX. Dynamic Module Navigation System
+### VII. Material Design 3 Exclusivity
 
-Module navigation MUST integrate backend-installed modules with local implementations via `ModuleRegistry`.
+UI MUST use Compose Multiplatform with Material 3 exclusively.
 
-**Rationale**: Enables backend-driven feature discovery with type-safe local routing and graceful degradation.
+**Rationale**: A single design system ensures consistent UX, accessibility, and maintainability.
 
 **Rules**:
-- `ModuleRegistry` maps module codes to local `Route.*` destinations
-- Module providers implement `IModuleNavigationProvider` interface
-- Direct navigation via `tryNavigateToModule()` with registry lookup
-- "Update App" dialog for modules without local implementation
-- Workspace context synchronized: business context (`WorkspaceContextManager`) + database context (`WorkspaceContext`)
-- Module code mappings: `"customer-management"` → `Route.Customer`, etc.
+- Import only from `androidx.compose.material3`; no other UI frameworks.
+- Use `MaterialTheme.colorScheme.*` tokens — never hardcoded color literals. Material Kolor provides
+  dynamic color generation.
+- Theme via `ThemeManager` (`StateFlow<ThemePreference>`, options SYSTEM/LIGHT/DARK), applied through
+  `PlatformAmpairsTheme`; provided as a `CompositionLocal` in `App.kt`.
+- Icon-only/interactive elements MUST set `contentDescription`. Lazy lists MUST supply stable `key`s.
+
+### VIII. Navigation3 Routing
+
+Navigation MUST use Navigation3 with `@Serializable` `NavKey` routes and entry providers.
+
+**Rationale**: Type-safe, multiplatform navigation; the old `navController.navigate()` /
+`backStackEntry.toRoute()` API is removed.
+
+**Rules**:
+- Top-level routes in `shared/.../navigation/Routes.kt`; per-feature sub-routes as
+  `@Serializable sealed interface ...Route : NavKey`.
+- Wire screens via entry providers under `navigation/providers/`, combined through
+  `CombinedEntryProvider` → `AppNavigationNav3`. Entry providers wire only callbacks and route
+  params — they never read the graph or pass ViewModels.
+- Dynamic module navigation resolves backend module codes to local routes via `ModuleRegistry`;
+  unmapped modules show an "Update App" dialog.
+
+### IX. Form UI Standards
+
+Form screens MUST implement keyboard navigation, focus management, and consistent headers.
+
+**Rationale**: Consistent, accessible data entry across platforms.
+
+**Rules**:
+- Use `LocalFocusManager.current` with `KeyboardActions`; `ImeAction.Next` for non-last fields and
+  `ImeAction.Done` for the last; `singleLine = true` for proper IME handling.
+- Use the `AppScreenWithHeader` pattern; no redundant `navigationIcon`/`onNavigateBack` when a global
+  nav drawer exists.
+- Form state stores backend IDs as `String` with a separate display name — never full domain object
+  references; dropdowns load from repositories, never hardcoded enums.
 
 ### X. Time/Date Handling
 
-All timestamps MUST use `kotlinx.datetime.Instant` for KMP compatibility and UTC consistency.
+All timestamps MUST use `kotlinx.datetime.Instant`, stored/synced in UTC.
 
-**Rationale**: Aligns with backend `java.time.Instant` standard and ensures timezone correctness across platforms.
+**Rationale**: Aligns with the backend UTC `Instant` standard and avoids timezone/DST bugs.
 
 **Rules**:
-- Use `Clock.System.now()` for current time (not `System.currentTimeMillis()`)
-- Database columns store timestamps as ISO 8601 strings or Unix epoch milliseconds
-- JSON serialization via `@Serializable` with `kotlinx.datetime.Instant`
-- Display timestamps in user's local timezone via platform-specific formatters
-- Sync comparisons use ISO 8601 string natural ordering
+- `Clock.System.now()` for current time; ISO 8601 string ordering for sync comparison.
+- **Display and bucketing use the workspace business timezone, not the device timezone.** Bucketing
+  an `Instant` to a calendar day/month with `TimeZone.currentSystemDefault()` is a bug when the
+  business timezone differs. In composables read `LocalAppLocale.current`; in non-composable code
+  inject the business timezone (`BusinessLocaleProvider`) and convert with `TimeZone.of(...)`.
+
+### XI. Compose Resources & Workspace-Locale Formatting
+
+User-visible text, money, and dates MUST be localized — never hardcoded.
+
+**Rationale**: Strings must be translatable and amounts/dates must reflect the active workspace's
+business locale (currency, timezone, date/time format), while storage stays UTC.
+
+**Rules**:
+- All UI strings come from Compose resources: `stringResource(Res.string.x)` in composables,
+  `getString(Res.string.x)` in suspend non-composable code. Strings live in each module's
+  `commonMain/composeResources/values/strings.xml`. Do NOT use Android `R.string`.
+- Money: `formatMoney(amount, LocalAppLocale.current)` / `currencySymbol(locale.currencyCode)` from
+  `com.ampairs.common.locale` — never hardcode `₹`/`$` or call `toInr()`/`asRupee()` in UI.
+- Dates: `formatDate`/`formatDateTime(..., LocalAppLocale.current)` — never device-timezone or
+  hardcoded patterns. Non-composable builders (print/HTML/export) take the symbol/timezone as params.
+- When adding `maven-publish` to a module with `composeResources/`, pin
+  `compose.resources { packageOfResClass = "ampairsapp.{module.path}.generated.resources" }`.
 
 ## Architecture Standards
 
-### Module Structure
+### Module Placement
 
-- **Main Module**: `composeApp/` with `commonMain/`, `androidMain/`, `iosMain/`, `desktopMain/`
-- **Domain Modules**: Separate packages for auth, workspace, customer, product, order, invoice, tally
-- **Shared Resources**: Strings, colors, themes in `commonMain/resources`
-- **Platform Launchers**: Thin platform-specific entry points delegating to shared code
+- Feature logic → `feature/{name}/src/commonMain/`; platform DB factories →
+  `feature/{name}/src/{android|ios|desktop}Main/`.
+- Shared infrastructure (DB paths, DataStore, factories, sync) → `data/common/`.
+- Navigation wiring and top-level DI aggregation → `shared/`.
+- New feature module → create under `feature/` and register in `settings.gradle.kts`.
+- NEVER add feature code directly to `shared/`, `androidApp/`, or `desktopApp/`.
 
-### Dependency Injection (Koin)
+### Dependency Injection (Metro)
 
-- **Modular Setup**: Feature-based modules per domain
-- **Platform-Specific**: Separate Android/iOS/Desktop implementations
-- **ViewModel Pattern**: `koinInject { parametersOf(id) }` for parameterized injection
-- **Workspace-Aware**: Use `factory` scope for workspace-scoped components
-- **Layers**: API → Repository → Store5 → ViewModel
+- Layers: `@Inject` DAO → `@Inject` Repository (local-only) → `{Name}SyncDelegate` (holds `Api`) →
+  `@ContributesIntoMap` ViewModel. App-scoped singletons use `@SingleIn(AppScope::class)` in
+  `@ContributesTo` platform modules; workspace-aware DBs use `@SingleIn(WorkspaceScope::class)`.
+- New dependencies are added via the `gradle/libs.versions.toml` version catalog only — no hardcoded
+  versions; verify KMP support before adding.
 
-### Navigation
+### Data Layer
 
-- **Type-Safe Routes**: `@Serializable sealed interface Route` with data class implementations
-- **Navigation**: `navController.navigate(Route.CustomerDetails(customerId))`
-- **Type Extraction**: `backStackEntry.toRoute<Route.CustomerDetails>()`
-- **Side Drawer**: Primary navigation pattern (no hardware back button on iOS)
+- Room is the single source of truth; reactive DAO `Flow`s drive the UI. UI refresh uses
+  `syncService.emit(TriggerPull/TriggerFullSync(X))`; ViewModels never call `repository.syncXxx()`.
+- A single configured `DataStore<Preferences>` exists in `data/common/` — reuse it; never create a
+  second instance.
 
 ### Background Sync
 
-- **Android**: WorkManager for periodic/constraint-based sync
-- **iOS**: Background App Refresh with proper entitlements
-- **Desktop**: Timer-based coordination for scheduled sync
-- **Retry Logic**: Exponential backoff for failed sync attempts
+- Android: WorkManager; iOS: Background App Refresh; Desktop: timer-based coordination. Failed
+  pushes/pulls persist `PENDING_*` state and retry on reconnect (process-death safe).
 
 ## Platform-Specific Guidelines
 
 ### Android
 
-- **Min SDK**: 24, **Target SDK**: 35
-- **Database**: Room SQLite with native drivers
-- **Background**: WorkManager for sync tasks
-- **Notifications**: Local notifications via NotificationCompat
+- minSdk 24 / targetSdk 36 / compileSdk 36; Java 21+. Room with native SQLite drivers; WorkManager
+  for sync; full Firebase (Crashlytics/Analytics/Performance/FCM).
 
 ### iOS
 
-- **Requirements**: Xcode 15+, iOS 15+ deployment target
-- **Database**: Room with Core Data bridge
-- **Dispatchers**: Use `Dispatchers.Default` for IO operations (no `Dispatchers.IO`)
-- **File Paths**: Documents directory for writable storage via `getIosDatabasePath()`
-- **Koin**: Initialize in `MainViewController` before app launch
-- **APIs**: `@OptIn(ExperimentalForeignApi::class)` for Foundation APIs
+- Use `Dispatchers.Default` for IO in `iosMain` actuals. Writable storage via `getIosDatabasePath()`
+  (Documents). Metro app graph created in `MainViewController` before launch. Foundation APIs need
+  `@OptIn(ExperimentalForeignApi::class)`. Side-drawer navigation (no hardware back).
 
 ### Desktop (JVM)
 
-- **Database**: Room with JDBC drivers
-- **Sync**: Timer-based background coordination
-- **Window**: Native window controls and theming parity
+- Room with bundled SQLite; timer-based sync; native window controls and theme parity. Firebase is
+  stubbed (no JVM SDK).
+
+### WebAssembly
+
+- `wasmJsMain` target is experimental/minimal; do not assume parity.
 
 ## Testing & Quality Gates
 
-- **Build Commands**: `./gradlew compileDebugKotlinAndroid compileKotlinIosSimulatorArm64 compileKotlinDesktop`
-- **Android Tests**: `./gradlew composeApp:testDebugUnitTest`
-- **Multiplatform**: `./gradlew check` for cross-platform validation
-- **Platform Tests**: Add `desktopTest`, `iosTest` when touching native bridges
-- **Coverage**: Critical flows ≥80%, integration tests for offline-first sync
-- **CI**: All targets must compile and test before merge
+- Compile all three primary targets before marking a shared-module change complete:
+  ```bash
+  ./gradlew androidApp:compileDebugKotlinAndroid
+  ./gradlew shared:compileKotlinIosSimulatorArm64
+  ./gradlew desktopApp:compileKotlin
+  ```
+- Run `./gradlew check` / targeted `commonTest` for cross-platform validation; add `iosTest`/
+  `desktopTest` when touching native bridges. Critical offline-first sync flows MUST be covered.
+- CI: all targets MUST compile and tests MUST pass before merge.
 
 ## Development Workflow
 
 ### Code Organization
 
-- **Package Pattern**: `com.ampairs.{domain}.{layer}` (e.g., `com.ampairs.customer.repository`)
-- **Naming**: `@SerialName` for snake_case API compatibility
-- **DTOs**: Separate request/response DTOs aligned with backend contracts
-- **Entities**: Room entities with `@Entity`, `@PrimaryKey`, workspace isolation
+- Package pattern `com.ampairs.{feature}.{layer}` (e.g. `com.ampairs.customer.data.api`).
+- Use the domain logger (`CustomerLogger.w/e/i/d(tag, message, throwable)`) or Kermit — never
+  `println()` / `Log.d()`.
 
 ### Branching & Commits
 
-- **Feature Branches**: `###-feature-name` matching backend convention
-- **Commits**: Conventional Commits (`feat:`, `fix:`, `refactor:`)
-- **Scope**: Per logical unit, reference backend issues when applicable
+- Feature branches `###-feature-name`; Conventional Commits (`feat:`, `fix:`, `refactor:`,
+  `chore:`); reference AMP/backend issues when applicable.
 
 ### Review & CI Expectations
 
-- **PRs**: Describe scope, affected modules, validation commands
-- **Compilation**: All platforms MUST compile before requesting review
-- **Screenshots**: Attach UI changes for Android/iOS/Desktop
-- **Testing**: Demonstrate offline-first sync behavior
-
-### Documentation Requirements
-
-- **CLAUDE.md**: Update when introducing new architectural patterns
-- **Platform Docs**: Document platform-specific workarounds or limitations
-- **Migration Notes**: Record DTO alignment changes with backend versions
+- PRs describe scope, affected modules, and validation commands; attach screenshots for UI changes
+  across platforms; demonstrate offline-first behavior where relevant.
+- Update `CLAUDE.md` and `.claude/memory/` when introducing new architectural patterns.
 
 ## Governance
 
@@ -309,28 +337,29 @@ All timestamps MUST use `kotlinx.datetime.Instant` for KMP compatibility and UTC
 
 This constitution supersedes other practice guides. Amendments require:
 
-1. Documentation of proposed changes with rationale
-2. Impact analysis across platforms and modules
-3. Architect approval
-4. Migration plan for breaking changes
-5. Updates to dependent templates (plan, spec, tasks)
+1. Documentation of the proposed change with rationale.
+2. Impact analysis across platforms and modules.
+3. Architect approval.
+4. A migration plan for breaking changes.
+5. Updates to dependent templates (plan, spec, tasks) where coupling exists.
 
 ### Versioning Policy
 
-- Uses semantic versioning (`MAJOR.MINOR.PATCH`)
-- **MAJOR**: Breaking governance changes or principle redefinitions
-- **MINOR**: New principles or materially expanded guidance
-- **PATCH**: Clarifications, wording fixes, or typo corrections
+Semantic versioning (`MAJOR.MINOR.PATCH`):
+- **MAJOR**: Backward-incompatible governance changes or principle removals/redefinitions.
+- **MINOR**: New principle/section or materially expanded guidance.
+- **PATCH**: Clarifications, wording, or factual corrections.
 
 ### Compliance Review
 
-- All pull requests MUST verify compliance with constitution principles
-- Deviations require documented justification in `plan.md` under Complexity Tracking
-- Templates MUST stay aligned with constitution
-- Review constitution quarterly to confirm ongoing relevance
+- Every PR MUST verify compliance with these principles; deviations require documented justification
+  in `plan.md` under Complexity Tracking.
+- Templates MUST stay aligned with the constitution. Review the constitution quarterly.
 
 ### Living Document
 
-The constitution evolves with real-world lessons. When new patterns emerge (Store5 optimizations, KMP best practices), encode them through the amendment procedure and document knowledge in CLAUDE.md.
+The constitution evolves with real-world lessons. Encode new patterns (Metro DI refinements,
+CentralSyncService changes, KMP best practices) through the amendment procedure and mirror durable
+knowledge into `CLAUDE.md` and `.claude/memory/`.
 
-**Version**: 1.0.0 | **Ratified**: 2025-01-11 | **Last Amended**: 2025-01-11
+**Version**: 2.0.0 | **Ratified**: 2025-01-11 | **Last Amended**: 2026-06-15
