@@ -279,4 +279,8 @@
     <string name="customer_shortcut_groups">Groups</string>
     <string name="customer_shortcut_types">Types</string>
     <string name="customer_shortcut_states">States</string>
+    <string name="customer_filter_cd">Filter customers</string>
+    <string name="customer_filter_state">State</string>
+    <string name="customer_filter_type">Type</string>
+    <string name="customer_filter_group">Group</string>
 </resources>

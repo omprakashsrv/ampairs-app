@@ -17,6 +17,19 @@ class CustomerStore(
 
     fun searchCustomers(query: String) = repository.searchCustomers(query)
 
+    fun filterCustomers(
+        query: String,
+        states: List<String>,
+        types: List<String>,
+        groups: List<String>,
+    ) = repository.filterCustomers(query, states, types, groups)
+
+    suspend fun getDistinctStates(): List<String> = repository.getDistinctStates()
+
+    suspend fun getDistinctCustomerTypes(): List<String> = repository.getDistinctCustomerTypes()
+
+    suspend fun getDistinctCustomerGroups(): List<String> = repository.getDistinctCustomerGroups()
+
     fun observeCustomer(customerId: String) = repository.observeCustomer(customerId)
 
     suspend fun createCustomer(customer: Customer): Result<Customer> = repository.createCustomer(customer)

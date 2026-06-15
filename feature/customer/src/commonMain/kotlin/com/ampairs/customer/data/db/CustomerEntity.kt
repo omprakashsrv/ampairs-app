@@ -14,7 +14,10 @@ import kotlin.time.ExperimentalTime
     indices = [
         Index(value = ["id"], unique = true),
         Index(value = ["name"]),
-        Index(value = ["ref_id"], name = "customer_ref_idx")
+        Index(value = ["ref_id"], name = "customer_ref_idx"),
+        Index(value = ["state"], name = "customer_state_idx"),
+        Index(value = ["customer_type"], name = "customer_type_idx"),
+        Index(value = ["customer_group"], name = "customer_group_idx")
     ]
 )
 data class CustomerEntity(

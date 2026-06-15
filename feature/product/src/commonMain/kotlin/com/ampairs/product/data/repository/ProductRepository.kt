@@ -6,10 +6,13 @@ import com.ampairs.common.sentry.ErrorTracking
 import com.ampairs.product.util.ProductLogger
 import com.ampairs.common.cache.CacheCleanable
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.common.components.FilterOption
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
+import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductVariantDao
+import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.dao.VariantAttributeDao
 import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.db.entity.VariantAttributeEntity
@@ -49,6 +52,8 @@ class ProductRepository(
     private val attributeDao: VariantAttributeDao,
     private val categoryDao: CategoryDao,
     private val brandDao: BrandDao,
+    private val subCategoryDao: SubCategoryDao,
+    private val groupDao: GroupDao,
     private val syncStateDao: SyncStateDao,
 ) : ProductDataService, CacheCleanable {
 
@@ -65,6 +70,52 @@ class ProductRepository(
         } else {
             observeProductsJoined(productDao.observeProductsByName(query))
         }
+
+    /** Combined search + multi-select filter (brand / category / sub-category / group). Empty list = no filter. */
+    fun filterProducts(
+        query: String,
+        brands: List<String>,
+        categories: List<String>,
+        subCategories: List<String>,
+        groups: List<String>,
+    ): Flow<List<ProductListItem>> = observeProductsJoined(
+        productDao.filterProducts(
+            query = query,
+            brands = brands,
+            hasBrands = if (brands.isEmpty()) 0 else 1,
+            categories = categories,
+            hasCategories = if (categories.isEmpty()) 0 else 1,
+            subCategories = subCategories,
+            hasSubCategories = if (subCategories.isEmpty()) 0 else 1,
+            groups = groups,
+            hasGroups = if (groups.isEmpty()) 0 else 1,
+        )
+    )
+
+    /** Filter options derived from values actually present among active products; labels resolved to names. */
+    suspend fun getBrandFilterOptions(): List<FilterOption> {
+        val ids = productDao.getDistinctBrandIds()
+        val names = brandDao.getBrands().associate { it.id to it.name }
+        return ids.map { FilterOption(it, names[it] ?: it) }
+    }
+
+    suspend fun getCategoryFilterOptions(): List<FilterOption> {
+        val ids = productDao.getDistinctCategoryIds()
+        val names = categoryDao.getCategories().associate { it.id to it.name }
+        return ids.map { FilterOption(it, names[it] ?: it) }
+    }
+
+    suspend fun getSubCategoryFilterOptions(): List<FilterOption> {
+        val ids = productDao.getDistinctSubCategoryIds()
+        val names = subCategoryDao.getSubCategories().associate { it.id to it.name }
+        return ids.map { FilterOption(it, names[it] ?: it) }
+    }
+
+    suspend fun getGroupFilterOptions(): List<FilterOption> {
+        val ids = productDao.getDistinctGroupIds()
+        val names = groupDao.getGroups().associate { it.id to it.name }
+        return ids.map { FilterOption(it, names[it] ?: it) }
+    }
 
     private fun observeProductsJoined(
         productsFlow: Flow<List<ProductEntity>>,

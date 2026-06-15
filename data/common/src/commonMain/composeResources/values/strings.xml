@@ -11,4 +11,8 @@
     <string name="cart_item_decrease_quantity">Decrease Quantity</string>
     <string name="cart_item_increase_quantity">Increase Quantity</string>
     <string name="no_network_message">Please check your network connection</string>
+    <string name="filter_sheet_title">Filters</string>
+    <string name="filter_apply">Apply</string>
+    <string name="filter_clear_all">Clear all</string>
+    <string name="filter_no_options">No options available</string>
 </resources>
