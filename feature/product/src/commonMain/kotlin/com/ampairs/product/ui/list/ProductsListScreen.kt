@@ -22,8 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -56,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
+import com.ampairs.common.components.FilterCategory
+import com.ampairs.common.components.MultiSelectFilterSheet
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.product.domain.ProductListItem
@@ -86,6 +91,14 @@ import ampairsapp.feature.product.generated.resources.prod_catalog_categories
 import ampairsapp.feature.product.generated.resources.prod_catalog_sub_categories
 import ampairsapp.feature.product.generated.resources.prod_catalog_groups
 import ampairsapp.feature.product.generated.resources.prod_master_data
+import ampairsapp.feature.product.generated.resources.prod_filter_cd
+import ampairsapp.feature.product.generated.resources.prod_filter_brand
+import ampairsapp.feature.product.generated.resources.prod_filter_category
+import ampairsapp.feature.product.generated.resources.prod_filter_sub_category
+
+private const val KEY_BRAND = "brand"
+private const val KEY_CATEGORY = "category"
+private const val KEY_SUB_CATEGORY = "sub_category"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,8 +117,38 @@ fun ProductsListScreen(
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isExpanded = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
+    var showFilter by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         viewModel.syncProducts()
+    }
+
+    if (showFilter) {
+        val brandLabel = stringResource(Res.string.prod_filter_brand)
+        val categoryLabel = stringResource(Res.string.prod_filter_category)
+        val subCategoryLabel = stringResource(Res.string.prod_filter_sub_category)
+        MultiSelectFilterSheet(
+            categories = listOf(
+                FilterCategory(KEY_BRAND, brandLabel, uiState.brandOptions),
+                FilterCategory(KEY_CATEGORY, categoryLabel, uiState.categoryOptions),
+                FilterCategory(KEY_SUB_CATEGORY, subCategoryLabel, uiState.subCategoryOptions),
+            ),
+            selected = mapOf(
+                KEY_BRAND to uiState.filter.brands,
+                KEY_CATEGORY to uiState.filter.categories,
+                KEY_SUB_CATEGORY to uiState.filter.subCategories,
+            ),
+            onApply = { selection ->
+                viewModel.applyFilter(
+                    ProductFilter(
+                        brands = selection[KEY_BRAND].orEmpty(),
+                        categories = selection[KEY_CATEGORY].orEmpty(),
+                        subCategories = selection[KEY_SUB_CATEGORY].orEmpty(),
+                    )
+                )
+            },
+            onDismiss = { showFilter = false },
+        )
     }
 
     Scaffold(
@@ -151,6 +194,20 @@ fun ProductsListScreen(
                         if (isExpanded) {
                             IconButton(onClick = onCreateProduct) {
                                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.prod_list_cd_add))
+                            }
+                        }
+                        IconButton(onClick = {
+                            viewModel.onFilterOpened()
+                            showFilter = true
+                        }) {
+                            BadgedBox(
+                                badge = {
+                                    if (uiState.filter.activeCount > 0) {
+                                        Badge { Text("${uiState.filter.activeCount}") }
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.FilterList, contentDescription = stringResource(Res.string.prod_filter_cd))
                             }
                         }
                         // Catalog master-data shortcuts collapsed into an overflow menu to keep the

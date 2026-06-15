@@ -2,10 +2,11 @@ package com.ampairs.customer.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.components.FilterOption
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.CustomerStore
-import com.ampairs.common.viewmodel.handleCancellation
-import com.ampairs.common.viewmodel.shouldShowAsError
+import com.ampairs.customer.data.repository.CustomerGroupRepository
+import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
@@ -14,16 +15,40 @@ import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/** Applied customer-list filter selection. Empty sets mean the dimension is not filtered. */
+data class CustomerFilter(
+    val states: Set<String> = emptySet(),
+    val types: Set<String> = emptySet(),
+    val groups: Set<String> = emptySet(),
+) {
+    val activeCount: Int get() = states.size + types.size + groups.size
+}
 
 data class CustomersListUiState(
     val customers: List<CustomerListItem> = emptyList(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val filter: CustomerFilter = CustomerFilter(),
+    val stateOptions: List<FilterOption> = emptyList(),
+    val typeOptions: List<FilterOption> = emptyList(),
+    val groupOptions: List<FilterOption> = emptyList(),
 )
 
 @ContributesIntoMap(WorkspaceScope::class)
@@ -31,105 +56,91 @@ data class CustomersListUiState(
 @Inject
 class CustomersListViewModel(
     private val customerStore: CustomerStore,
+    private val customerTypeRepository: CustomerTypeRepository,
+    private val customerGroupRepository: CustomerGroupRepository,
     private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomersListUiState())
     val uiState: StateFlow<CustomersListUiState> = _uiState.asStateFlow()
 
-    private var searchJob: Job? = null
+    private val _searchQuery = MutableStateFlow("")
+    private val _filter = MutableStateFlow(CustomerFilter())
 
     init {
-        observeSearchQuery()
+        observeCustomers()
         syncService.observeEntity(SyncEntity.CUSTOMER)
             .onEach { state -> _uiState.update { it.copy(isRefreshing = state?.status is SyncStatus.Syncing) } }
             .launchIn(viewModelScope)
-    }
-
-    fun loadCustomers() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            handleCancellation(
-                onError = { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error) }
-                }
-            ) {
-                val query = _uiState.value.searchQuery
-                val flow = if (query.isBlank()) {
-                    customerStore.observeCustomers()
-                } else {
-                    customerStore.searchCustomers(query)
-                }
-
-                flow.catch { throwable ->
-                    if (throwable.shouldShowAsError()) {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = throwable.message ?: "Unknown error"
-                            )
-                        }
-                    }
-                }.collect { customers ->
-                    _uiState.update {
-                        it.copy(
-                            customers = customers,
-                            isLoading = false,
-                            error = null
-                        )
-                    }
-                }
-            }
-        }
+        loadFilterOptions()
     }
 
     fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
         _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    /** Reload available filter options — call when opening the filter sheet so they reflect latest data. */
+    fun onFilterOpened() {
+        loadFilterOptions()
+    }
+
+    fun applyFilter(filter: CustomerFilter) {
+        _filter.value = filter
+        _uiState.update { it.copy(filter = filter) }
+    }
+
+    fun clearFilter() {
+        applyFilter(CustomerFilter())
+    }
+
+    fun loadCustomers() {
+        // Retry hook: re-run a full sync; the reactive flow re-emits once data lands locally.
+        syncCustomers()
     }
 
     fun syncCustomers() {
         syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CUSTOMER))
     }
 
-    private fun observeSearchQuery() {
-        uiState
-            .map { it.searchQuery }
-            .distinctUntilChanged()
-            .onEach { query ->
-                searchJob?.cancel()
-                searchJob = viewModelScope.launch {
-                    performSearch(query)
-                }
+    @OptIn(FlowPreview::class)
+    private fun observeCustomers() {
+        _uiState.update { it.copy(isLoading = true) }
+        combine(
+            _searchQuery.debounce(300).distinctUntilChanged(),
+            _filter,
+        ) { query, filter -> query to filter }
+            .flatMapLatest { (query, filter) ->
+                customerStore.filterCustomers(
+                    query = query,
+                    states = filter.states.toList(),
+                    types = filter.types.toList(),
+                    groups = filter.groups.toList(),
+                )
+            }
+            .onEach { customers ->
+                _uiState.update { it.copy(customers = customers, isLoading = false, error = null) }
+            }
+            .catch { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Unknown error") }
             }
             .launchIn(viewModelScope)
     }
 
-    private suspend fun performSearch(query: String) {
-        handleCancellation(
-            onError = { error ->
-                _uiState.update { it.copy(error = error) }
-            }
-        ) {
-            val flow = if (query.isBlank()) {
-                customerStore.observeCustomers()
-            } else {
-                customerStore.searchCustomers(query)
-            }
-
-            flow.catch { throwable ->
-                if (throwable.shouldShowAsError()) {
-                    _uiState.update {
-                        it.copy(error = throwable.message ?: "Search failed")
-                    }
-                }
-            }.collect { customers ->
-                _uiState.update {
-                    it.copy(
-                        customers = customers,
-                        error = null
-                    )
-                }
+    private fun loadFilterOptions() {
+        viewModelScope.launch {
+            val stateValues = customerStore.getDistinctStates()
+            val typeValues = customerStore.getDistinctCustomerTypes()
+            val groupValues = customerStore.getDistinctCustomerGroups()
+            // Map stored type/group identifiers to human-readable names; fall back to the raw value.
+            val typeNames = customerTypeRepository.observeCustomerTypes().first().associate { it.uid to it.name }
+            val groupNames = customerGroupRepository.observeCustomerGroups().first().associate { it.uid to it.name }
+            _uiState.update {
+                it.copy(
+                    stateOptions = stateValues.map { v -> FilterOption(v, v) },
+                    typeOptions = typeValues.map { v -> FilterOption(v, typeNames[v] ?: v) },
+                    groupOptions = groupValues.map { v -> FilterOption(v, groupNames[v] ?: v) },
+                )
             }
         }
     }

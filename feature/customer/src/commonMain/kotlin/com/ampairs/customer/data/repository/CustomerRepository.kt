@@ -50,6 +50,31 @@ class CustomerRepository(
             .map { entities -> entities.map { entity -> entity.toDomain().toListItem() } }
     }
 
+    /** Combined search + multi-select filter (state / type / group). An empty set means "no filter". */
+    fun filterCustomers(
+        query: String,
+        states: List<String>,
+        types: List<String>,
+        groups: List<String>,
+    ): Flow<List<CustomerListItem>> {
+        return customerDao.filterCustomers(
+            searchQuery = query,
+            states = states,
+            hasStates = if (states.isEmpty()) 0 else 1,
+            types = types,
+            hasTypes = if (types.isEmpty()) 0 else 1,
+            groups = groups,
+            hasGroups = if (groups.isEmpty()) 0 else 1,
+        ).map { entities -> entities.map { it.toDomain().toListItem() } }
+    }
+
+    /** Distinct stored filter values present among active customers — drives the filter options. */
+    suspend fun getDistinctStates(): List<String> = customerDao.getDistinctStates()
+
+    suspend fun getDistinctCustomerTypes(): List<String> = customerDao.getDistinctCustomerTypes()
+
+    suspend fun getDistinctCustomerGroups(): List<String> = customerDao.getDistinctCustomerGroups()
+
     suspend fun getCustomer(customerId: String): Customer? {
         return customerDao.getCustomerById(customerId)?.toDomain()
     }

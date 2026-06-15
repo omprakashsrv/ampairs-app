@@ -23,9 +23,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -58,6 +61,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.components.FilterCategory
+import com.ampairs.common.components.MultiSelectFilterSheet
 import com.ampairs.customer.domain.CustomerListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import ampairsapp.feature.customer.generated.resources.Res
@@ -80,7 +85,15 @@ import ampairsapp.feature.customer.generated.resources.customer_master_data
 import ampairsapp.feature.customer.generated.resources.customer_shortcut_groups
 import ampairsapp.feature.customer.generated.resources.customer_shortcut_types
 import ampairsapp.feature.customer.generated.resources.customer_shortcut_states
+import ampairsapp.feature.customer.generated.resources.customer_filter_cd
+import ampairsapp.feature.customer.generated.resources.customer_filter_state
+import ampairsapp.feature.customer.generated.resources.customer_filter_type
+import ampairsapp.feature.customer.generated.resources.customer_filter_group
 import org.jetbrains.compose.resources.stringResource
+
+private const val KEY_STATE = "state"
+private const val KEY_TYPE = "type"
+private const val KEY_GROUP = "group"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,8 +111,38 @@ fun CustomersListScreen(
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isExpanded = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
+    var showFilter by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         viewModel.syncCustomers()
+    }
+
+    if (showFilter) {
+        val stateLabel = stringResource(Res.string.customer_filter_state)
+        val typeLabel = stringResource(Res.string.customer_filter_type)
+        val groupLabel = stringResource(Res.string.customer_filter_group)
+        MultiSelectFilterSheet(
+            categories = listOf(
+                FilterCategory(KEY_STATE, stateLabel, uiState.stateOptions),
+                FilterCategory(KEY_TYPE, typeLabel, uiState.typeOptions),
+                FilterCategory(KEY_GROUP, groupLabel, uiState.groupOptions),
+            ),
+            selected = mapOf(
+                KEY_STATE to uiState.filter.states,
+                KEY_TYPE to uiState.filter.types,
+                KEY_GROUP to uiState.filter.groups,
+            ),
+            onApply = { selection ->
+                viewModel.applyFilter(
+                    CustomerFilter(
+                        states = selection[KEY_STATE].orEmpty(),
+                        types = selection[KEY_TYPE].orEmpty(),
+                        groups = selection[KEY_GROUP].orEmpty(),
+                    )
+                )
+            },
+            onDismiss = { showFilter = false },
+        )
     }
 
     Scaffold(
@@ -149,6 +192,20 @@ fun CustomersListScreen(
                         if (isExpanded) {
                             IconButton(onClick = onCreateCustomer) {
                                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_list_add_cd))
+                            }
+                        }
+                        IconButton(onClick = {
+                            viewModel.onFilterOpened()
+                            showFilter = true
+                        }) {
+                            BadgedBox(
+                                badge = {
+                                    if (uiState.filter.activeCount > 0) {
+                                        Badge { Text("${uiState.filter.activeCount}") }
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.FilterList, contentDescription = stringResource(Res.string.customer_filter_cd))
                             }
                         }
                         // Master-data shortcuts collapsed into an overflow menu to keep the

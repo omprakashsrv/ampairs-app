@@ -2,6 +2,7 @@ package com.ampairs.product.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.components.FilterOption
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.domain.ProductListItem
 import com.ampairs.common.di.WorkspaceScope
@@ -17,19 +18,34 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+/** Applied product-list filter selection. Empty sets mean the dimension is not filtered. */
+data class ProductFilter(
+    val brands: Set<String> = emptySet(),
+    val categories: Set<String> = emptySet(),
+    val subCategories: Set<String> = emptySet(),
+) {
+    val activeCount: Int get() = brands.size + categories.size + subCategories.size
+}
 
 data class ProductsListUiState(
     val products: List<ProductListItem> = emptyList(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val filter: ProductFilter = ProductFilter(),
+    val brandOptions: List<FilterOption> = emptyList(),
+    val categoryOptions: List<FilterOption> = emptyList(),
+    val subCategoryOptions: List<FilterOption> = emptyList(),
 )
 
 @ContributesIntoMap(WorkspaceScope::class)
@@ -44,17 +60,33 @@ class ProductsListViewModel(
     val uiState: StateFlow<ProductsListUiState> = _uiState.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
+    private val _filter = MutableStateFlow(ProductFilter())
 
     init {
         observeProducts()
         syncService.observeEntity(SyncEntity.PRODUCT)
             .onEach { state -> _uiState.update { it.copy(isRefreshing = state?.status is SyncStatus.Syncing) } }
             .launchIn(viewModelScope)
+        loadFilterOptions()
     }
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
         _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    /** Reload available filter options — call when opening the filter sheet so they reflect latest data. */
+    fun onFilterOpened() {
+        loadFilterOptions()
+    }
+
+    fun applyFilter(filter: ProductFilter) {
+        _filter.value = filter
+        _uiState.update { it.copy(filter = filter) }
+    }
+
+    fun clearFilter() {
+        applyFilter(ProductFilter())
     }
 
     fun syncProducts() {
@@ -64,10 +96,18 @@ class ProductsListViewModel(
     @OptIn(FlowPreview::class)
     private fun observeProducts() {
         _uiState.update { it.copy(isLoading = true) }
-        _searchQuery
-            .debounce(300)
-            .distinctUntilChanged()
-            .flatMapLatest { query -> productRepository.searchProducts(query) }
+        combine(
+            _searchQuery.debounce(300).distinctUntilChanged(),
+            _filter,
+        ) { query, filter -> query to filter }
+            .flatMapLatest { (query, filter) ->
+                productRepository.filterProducts(
+                    query = query,
+                    brands = filter.brands.toList(),
+                    categories = filter.categories.toList(),
+                    subCategories = filter.subCategories.toList(),
+                )
+            }
             .onEach { products ->
                 _uiState.update { it.copy(products = products, isLoading = false, error = null) }
             }
@@ -75,5 +115,20 @@ class ProductsListViewModel(
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun loadFilterOptions() {
+        viewModelScope.launch {
+            val brands = productRepository.getBrandFilterOptions()
+            val categories = productRepository.getCategoryFilterOptions()
+            val subCategories = productRepository.getSubCategoryFilterOptions()
+            _uiState.update {
+                it.copy(
+                    brandOptions = brands,
+                    categoryOptions = categories,
+                    subCategoryOptions = subCategories,
+                )
+            }
+        }
     }
 }
