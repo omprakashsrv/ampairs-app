@@ -1,6 +1,5 @@
 package com.ampairs.navigation.providers
 
-import Route
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -36,9 +35,6 @@ fun customerEntryProvider(
             },
             onCreateCustomer = {
                 backStack.add(CustomerCreateRoute())
-            },
-            onFormConfig = {
-                backStack.add(Route.FormConfig("customer"))
             },
             onNavigateToGroups = {
                 backStack.add(CustomerGroupListRoute)

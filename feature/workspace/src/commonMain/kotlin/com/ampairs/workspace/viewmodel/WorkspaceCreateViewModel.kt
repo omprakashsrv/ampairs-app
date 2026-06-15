@@ -7,11 +7,15 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.common.workspace.WorkspaceActivator
 import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.db.WorkspaceRepository
+import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.ui.WorkspaceCreateState
 import com.ampairs.file.picker.FilePicker
 import kotlinx.coroutines.Job
@@ -27,6 +31,8 @@ import kotlin.random.Random
 sealed interface WorkspaceCreateEvent {
     data object ArchiveSuccess : WorkspaceCreateEvent
     data object RestoreSuccess : WorkspaceCreateEvent
+    // Emitted after a brand-new workspace is created AND activated — the UI should enter it.
+    data class EnterCreatedWorkspace(val workspaceId: String, val workspaceSlug: String) : WorkspaceCreateEvent
 }
 
 @ContributesIntoMap(AppScope::class)
@@ -36,6 +42,10 @@ class WorkspaceCreateViewModel(
     private val workspaceRepository: WorkspaceRepository,
     private val workspaceApi: WorkspaceApi,
     private val filePicker: FilePicker,
+    private val tokenRepository: TokenRepository,
+    private val userWorkspaceRepository: UserWorkspaceRepository,
+    private val workspaceActivator: WorkspaceActivator,
+    private val appPreferences: AppPreferencesDataStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceCreateState())
@@ -143,13 +153,29 @@ class WorkspaceCreateViewModel(
             try {
                 val workspace = workspaceRepository.createWorkspace(request)
 
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = null,
-                    createdWorkspaceId = workspace.id
-                )
-
-                // Navigation will be handled in the UI
+                // Activate and ENTER the new workspace immediately (mirror
+                // WorkspaceListViewModel.selectWorkSpace): refresh the Ktor X-Workspace-ID header
+                // and build the new workspace's Metro graph BEFORE navigating, so the first
+                // workspace a user creates is entered directly instead of bouncing back to the
+                // (possibly empty) workspace list.
+                val currentUserId = tokenRepository.getCurrentUserId()
+                if (currentUserId != null) {
+                    userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspace.id)
+                    appPreferences.setLastWorkspaceId(workspace.id)
+                    tokenRepository.getWorkspaceId()
+                    workspaceActivator.activateWorkspace(workspace.id, workspace.slug, currentUserId)
+                    GlobalNavigationManager.getInstance().onWorkspaceSelected()
+                    _state.value = _state.value.copy(isLoading = false, error = null)
+                    _events.send(WorkspaceCreateEvent.EnterCreatedWorkspace(workspace.id, workspace.slug))
+                } else {
+                    // No authenticated user (shouldn't happen post-login) — fall back to the old
+                    // behavior of returning to the workspace list.
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = null,
+                        createdWorkspaceId = workspace.id
+                    )
+                }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,

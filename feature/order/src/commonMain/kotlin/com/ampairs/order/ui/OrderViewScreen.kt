@@ -81,8 +81,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.format.toDecimal
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatDate
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.editor.DocSyncChip
 import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.viewmodel.OrderViewViewModel
@@ -105,6 +108,7 @@ fun OrderViewScreen(
     onOpenInvoice: (invoiceId: String) -> Unit = {},
     viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory>(key = orderId) { create(orderId) }
 ) {
+    val locale = LocalAppLocale.current
     val order = viewModel.order
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
@@ -130,12 +134,7 @@ fun OrderViewScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.ord_view_cd_back)
-                        )
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = stringResource(Res.string.ord_view_cd_back))
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
@@ -152,7 +151,7 @@ fun OrderViewScreen(
             BottomAppBar(containerColor = cs.surfaceContainer) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        order.totalCost.toInr(),
+                        formatMoney(order.totalCost, locale),
                         modifier = Modifier.padding(horizontal = 12.dp),
                         style = MaterialTheme.typography.titleLarge,
                         fontFamily = mono,
@@ -242,7 +241,7 @@ fun OrderViewScreen(
                             )
                         }
                         Text(
-                            "· " + formatInstantDate(order.orderDate),
+                            "· " + formatDate(order.orderDate, LocalAppLocale.current),
                             style = MaterialTheme.typography.labelMedium,
                             fontFamily = mono,
                             color = cs.onSurfaceVariant,
@@ -329,15 +328,15 @@ fun OrderViewScreen(
                                     Text(
                                         "${stringResource(Res.string.ord_view_discount)} " +
                                             (if (item.discountPercent > 0.0) "−${item.discountPercent.toDecimal()}% · " else "−") +
-                                            item.discount.sumOf { it.value }.toInr(),
+                                            formatMoney(item.discount.sumOf { it.value }, locale),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = cs.secondary,
                                     )
                                 }
                             }
                             BodyCell("${item.quantity.toDecimal()} ${item.unitName}".trim(), 0.14f, TextAlign.End)
-                            BodyCell(item.price.toInr(), 0.16f, TextAlign.End, mono = true)
-                            BodyCell(item.totalCost.toInr(), 0.20f, TextAlign.End, mono = true, bold = true)
+                            BodyCell(formatMoney(item.price, locale), 0.16f, TextAlign.End, mono = true)
+                            BodyCell(formatMoney(item.totalCost, locale), 0.20f, TextAlign.End, mono = true, bold = true)
                         }
                         HorizontalDivider(color = cs.outlineVariant)
                     }
@@ -350,7 +349,7 @@ fun OrderViewScreen(
                         modifier = Modifier.fillMaxWidth().padding(top = 14.dp)
                     ) {
                         Column(modifier = Modifier.widthIn(min = 240.dp)) {
-                            TotalsRow(stringResource(Res.string.ord_view_taxable), order.basePrice.toInr())
+                            TotalsRow(stringResource(Res.string.ord_view_taxable), formatMoney(order.basePrice, locale))
                             // per-rate component groups (orders.jsx vtotals): "CGST 2.5%  ₹195.75"
                             val groups = order.items.flatMap { it.taxInfos }
                                 .groupBy { it.name to it.percentage }
@@ -358,15 +357,15 @@ fun OrderViewScreen(
                                 .sortedWith(compareBy({ taxNameOrder(it.first) }, { it.second }))
                             if (groups.isNotEmpty()) {
                                 groups.forEach { (name, pct, amount) ->
-                                    TotalsRow("$name ${pct.toDecimal()}%", amount.toInr())
+                                    TotalsRow("$name ${pct.toDecimal()}%", formatMoney(amount, locale))
                                 }
                             } else {
                                 order.taxInfos.orEmpty().forEach { ti ->
-                                    TotalsRow(ti.name, (ti.value ?: 0.0).toInr())
+                                    TotalsRow(ti.name, formatMoney(ti.value ?: 0.0, locale))
                                 }
                             }
                             order.discount?.sumOf { it.value }?.takeIf { it > 0 }?.let {
-                                TotalsRow(stringResource(Res.string.ord_view_discount), "− ${it.toInr()}")
+                                TotalsRow(stringResource(Res.string.ord_view_discount), "− ${formatMoney(it, locale)}")
                             }
                             HorizontalDivider(Modifier.padding(vertical = 6.dp), color = cs.outlineVariant)
                             Row(
@@ -379,7 +378,7 @@ fun OrderViewScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                 )
                                 Text(
-                                    order.totalCost.toInr(),
+                                    formatMoney(order.totalCost, locale),
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontFamily = mono,
                                 )
@@ -533,13 +532,6 @@ private fun TotalsRow(label: String, value: String) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
     }
-}
-
-@OptIn(kotlin.time.ExperimentalTime::class)
-private fun formatInstantDate(instant: kotlin.time.Instant): String {
-    val date = instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val month = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
-    return "${date.day.toString().padStart(2, '0')} $month ${date.year}"
 }
 
 private fun taxNameOrder(name: String): Int = when (name) {

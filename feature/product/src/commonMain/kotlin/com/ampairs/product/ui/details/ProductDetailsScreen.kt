@@ -61,6 +61,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.product.domain.Product
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -139,9 +142,7 @@ fun ProductDetailsScreen(
         TopAppBar(
             title = { Text(uiState.product?.name ?: stringResource(Res.string.prod_details_title)) },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                }
+                ScreenBackButton(onClick = onNavigateBack, contentDescription = null)
             },
             actions = {
                 if (uiState.product != null) {
@@ -243,6 +244,7 @@ private fun ProductDetailsExpanded(
     onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Row(modifier = modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         // Left panel
         OutlinedCard(modifier = Modifier.width(260.dp).fillMaxHeight()) {
@@ -282,12 +284,12 @@ private fun ProductDetailsExpanded(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PriceStatCard(
                         label = stringResource(Res.string.prod_label_selling_price),
-                        value = "₹${product.sellingPrice}",
+                        value = formatMoney(product.sellingPrice, locale),
                         modifier = Modifier.weight(1f)
                     )
                     PriceStatCard(
                         label = stringResource(Res.string.prod_label_mrp),
-                        value = "₹${product.mrp}",
+                        value = formatMoney(product.mrp, locale),
                         modifier = Modifier.weight(1f),
                         strikethrough = product.mrp != product.sellingPrice
                     )
@@ -360,6 +362,7 @@ private fun ProductDetailsExpanded(
 
 @Composable
 private fun ProductHeroSection(product: Product, primaryImageUrl: String?, modifier: Modifier = Modifier) {
+    val locale = LocalAppLocale.current
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         modifier = modifier.fillMaxWidth()
@@ -397,9 +400,9 @@ private fun ProductHeroSection(product: Product, primaryImageUrl: String?, modif
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "₹${product.sellingPrice}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(text = formatMoney(product.sellingPrice, locale), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     if (product.mrp != product.sellingPrice && product.mrp > 0) {
-                        Text(text = "₹${product.mrp}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, textDecoration = TextDecoration.LineThrough)
+                        Text(text = formatMoney(product.mrp, locale), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, textDecoration = TextDecoration.LineThrough)
                     }
                 }
 
@@ -451,6 +454,7 @@ private fun ProductInfoContent(
     onManageVariants: ((String, String) -> Unit)?,
     showInlineImages: Boolean = true,
 ) {
+    val locale = LocalAppLocale.current
     if (showInlineImages && !uiState.primaryImageUrl.isNullOrBlank()) {
         ProductImagesSection(primaryImageUrl = uiState.primaryImageUrl!!)
     }
@@ -468,9 +472,9 @@ private fun ProductInfoContent(
     }
 
     InfoSection(title = stringResource(Res.string.prod_section_pricing)) {
-        InfoRow(label = stringResource(Res.string.prod_label_mrp), value = "₹${product.mrp}")
-        InfoRow(label = stringResource(Res.string.prod_label_dealer_price), value = "₹${product.dp}")
-        InfoRow(label = stringResource(Res.string.prod_label_selling_price), value = "₹${product.sellingPrice}")
+        InfoRow(label = stringResource(Res.string.prod_label_mrp), value = formatMoney(product.mrp, locale))
+        InfoRow(label = stringResource(Res.string.prod_label_dealer_price), value = formatMoney(product.dp, locale))
+        InfoRow(label = stringResource(Res.string.prod_label_selling_price), value = formatMoney(product.sellingPrice, locale))
         if (product.mrp > product.sellingPrice) {
             val discount = ((product.mrp - product.sellingPrice) / product.mrp) * 100
             InfoRow(label = stringResource(Res.string.prod_label_discount), value = "${discount.toInt()}%")

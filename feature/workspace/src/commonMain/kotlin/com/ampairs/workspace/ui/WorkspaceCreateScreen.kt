@@ -76,6 +76,7 @@ import ampairsapp.feature.workspace.generated.resources.delete
 fun WorkspaceCreateScreen(
     onNavigateBack: () -> Unit,
     onWorkspaceCreated: (String) -> Unit,
+    onEnterWorkspace: (workspaceId: String, workspaceSlug: String) -> Unit = { _, _ -> },
     workspaceId: String? = null,
     modifier: Modifier = Modifier,
     viewModel: WorkspaceCreateViewModel = metroViewModel(),
@@ -104,6 +105,8 @@ fun WorkspaceCreateScreen(
             when (event) {
                 is WorkspaceCreateEvent.ArchiveSuccess,
                 is WorkspaceCreateEvent.RestoreSuccess -> onNavigateBack()
+                is WorkspaceCreateEvent.EnterCreatedWorkspace ->
+                    onEnterWorkspace(event.workspaceId, event.workspaceSlug)
             }
         }
     }

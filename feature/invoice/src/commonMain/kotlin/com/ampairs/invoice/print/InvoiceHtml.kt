@@ -36,7 +36,7 @@ private fun esc(s: String?): String = (s ?: "")
     .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 /** Build a self-contained, print-ready HTML document for a GST tax invoice. */
-fun buildInvoiceHtml(invoice: Invoice, workspaceName: String): String {
+fun buildInvoiceHtml(invoice: Invoice, workspaceName: String, currencySymbol: String = "₹"): String {
     // Seller is the implicit current workspace (name passed in); only the buyer is stored.
     val buyer = invoice.customer
     val inter = invoice.isInterState()
@@ -141,7 +141,7 @@ fun buildInvoiceHtml(invoice: Invoice, workspaceName: String): String {
         <tr><td>Taxable subtotal</td><td class="r">${invoice.basePrice.toDecimal()}</td></tr>
         ${if (discountTotal > 0) "<tr><td>Discount</td><td class=\"r\">- ${discountTotal.toDecimal()}</td></tr>" else ""}
         <tr><td>Total tax</td><td class="r">${invoice.totalTax.toDecimal()}</td></tr>
-        <tr class="grand"><td>Grand total</td><td class="r">₹ ${invoice.totalCost.toDecimal()}</td></tr>
+        <tr class="grand"><td>Grand total</td><td class="r">${currencySymbol} ${invoice.totalCost.toDecimal()}</td></tr>
       </table>
       <div class="words">Amount in words: ${esc(amountInWords(invoice.totalCost))}</div>
       <p class="muted" style="margin-top:18px;">This is a computer-generated invoice.</p>

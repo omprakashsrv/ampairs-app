@@ -65,8 +65,8 @@ data class AvailableModule(
 
 @Serializable
 data class ModuleReorderItem(
-    @SerialName("moduleCode") val moduleCode: String,
-    @SerialName("displayOrder") val displayOrder: Int,
+    @SerialName("module_code") val moduleCode: String,
+    @SerialName("display_order") val displayOrder: Int,
 )
 
 @Serializable

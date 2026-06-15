@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
 
@@ -48,9 +49,7 @@ fun PaymentHistoryScreen(
             TopAppBar(
                 title = { Text("Billing History") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = "Back")
                 },
                 actions = {
                     IconButton(

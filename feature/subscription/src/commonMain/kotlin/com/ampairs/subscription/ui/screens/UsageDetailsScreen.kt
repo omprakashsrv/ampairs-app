@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.SubscriptionLimits
 import com.ampairs.subscription.domain.model.SubscriptionPlan
 import com.ampairs.subscription.feature.ResourceStatus
@@ -40,9 +41,7 @@ fun UsageDetailsScreen(
             TopAppBar(
                 title = { Text("Usage Details") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = "Back")
                 },
                 actions = {
                     IconButton(onClick = { viewModel.refresh() }) {

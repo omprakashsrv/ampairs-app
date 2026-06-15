@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.ecom.generated.resources.Res
 import ampairsapp.feature.ecom.generated.resources.ecom_result_count
 import ampairsapp.feature.ecom.generated.resources.ecom_view_cart
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.domain.firstImageUrl
 import com.ampairs.ecom.ui.components.ProductGridCard
 import com.ampairs.ecom.ui.components.StickyCartBar
@@ -56,9 +57,7 @@ fun DrillDownScreen(
             modifier = Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
+            ScreenBackButton(onClick = onBack, contentDescription = "Back")
             Text(state.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
         }
 

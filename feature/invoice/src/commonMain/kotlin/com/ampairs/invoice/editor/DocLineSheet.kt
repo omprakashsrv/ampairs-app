@@ -64,8 +64,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.currencySymbol
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.product.domain.ProductSummary
-import com.ampairs.common.format.toInr
 import com.ampairs.tax.calculation.document.DiscountKind
 import org.jetbrains.compose.resources.stringResource
 
@@ -94,6 +96,7 @@ fun DocLineSheet(
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     var productMenu by remember { mutableStateOf(false) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -220,7 +223,7 @@ fun DocLineSheet(
                     FieldLabel(stringResource(Res.string.doc_sheet_discount))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         SingleChoiceSegmentedButtonRow {
-                            listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to "₹").forEachIndexed { i, (k, l) ->
+                            listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to currencySymbol(locale.currencyCode)).forEachIndexed { i, (k, l) ->
                                 SegmentedButton(
                                     selected = line.discountKind == k,
                                     onClick = { onDiscount(line.id, k, line.discountAmount) },
@@ -239,7 +242,7 @@ fun DocLineSheet(
             }
             if (line.priceOverridden) {
                 Text(
-                    stringResource(Res.string.doc_sheet_overridden, line.catalogUnitPrice.toInr()),
+                    stringResource(Res.string.doc_sheet_overridden, formatMoney(line.catalogUnitPrice, locale)),
                     style = MaterialTheme.typography.labelSmall,
                     color = cs.secondary,
                 )
@@ -248,16 +251,16 @@ fun DocLineSheet(
             // Mini breakdown
             Surface(color = cs.surfaceContainerLow, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
-                    BreakdownRow(stringResource(Res.string.doc_col_taxable), line.taxable.toInr())
+                    BreakdownRow(stringResource(Res.string.doc_col_taxable), formatMoney(line.taxable, locale))
                     BreakdownRow(
                         stringResource(Res.string.doc_tot_gst) + " " + ratePctLabel(line.gstRatePercent ?: 0.0),
-                        line.totalTax.toInr(),
+                        formatMoney(line.totalTax, locale),
                     )
                     HorizontalDivider(Modifier.padding(vertical = 6.dp), color = cs.outlineVariant)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(Res.string.doc_col_total), style = MaterialTheme.typography.titleSmall)
                         Text(
-                            line.lineTotal.toInr(),
+                            formatMoney(line.lineTotal, locale),
                             style = MaterialTheme.typography.titleMedium,
                             fontFamily = FontFamily.Monospace,
                         )
@@ -282,8 +285,9 @@ fun DocLineSheet(
 }
 
 @Composable
-private fun conversionHint(line: DocLineUi): String =
-    if (line.unitMultiplier == 1.0) {
+private fun conversionHint(line: DocLineUi): String {
+    val locale = LocalAppLocale.current
+    return if (line.unitMultiplier == 1.0) {
         stringResource(Res.string.doc_sheet_conv_base, line.decimalPlaces)
     } else {
         stringResource(
@@ -291,10 +295,11 @@ private fun conversionHint(line: DocLineUi): String =
             line.unitName,
             line.unitMultiplier.toDecimal(),
             line.baseUnitName.ifBlank { "×1" },
-            line.unitPrice.toInr(),
+            formatMoney(line.unitPrice, locale),
             line.decimalPlaces,
         )
     }
+}
 
 @Composable
 private fun FieldLabel(text: String) {

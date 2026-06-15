@@ -19,6 +19,7 @@ These rules are enforced for all Claude Code interactions in this project.
 - Use `Kermit` or the domain-specific logger (`CustomerLogger`, etc.) — never `println()` or `Log.d()`
 - Add new Gradle dependencies via `gradle/libs.versions.toml` version catalog only — no hardcoded versions
 - Use `ApiUrlBuilder.{domain}Url("v1/path")` for all API URLs — never hardcoded strings
+- Format money with `formatMoney(amount, LocalAppLocale.current)` (or `currencySymbol(locale.currencyCode)` for the bare symbol) from `com.ampairs.common.locale` — never hardcode `₹`/`$` or call `toInr()`/`asRupee()` in UI. The symbol/grouping comes from the workspace's business currency. See `/cmp-practices` §12.
 - Load all user-visible strings from Compose resources — never hardcode UI text in Kotlin source files:
   - **Composable context**: `stringResource(Res.string.xxx)`
   - **Non-composable suspend context** (e.g. `androidMain` service/enforcer): `getString(Res.string.xxx)` (suspend, call before `suspendCancellableCoroutine`)
@@ -32,6 +33,7 @@ These rules are enforced for all Claude Code interactions in this project.
 - Expose repositories, stores, or feature services in `AppGraph` — only `ThemeManager`, `LocaleManager`, `ImageLoader`, `LocationService` belong there
 - Add `fun create*ViewModel()` methods to `AppGraph` — Metro auto-wires ViewModels via `@ContributesIntoMap`
 - Put `java.*` or `android.*` imports in `commonMain` source sets
+- Hardcode a currency symbol (`₹`/`$`) or call `toInr()`/`asRupee()` in UI — they ignore the workspace's business currency. Use `formatMoney(...)` / `currencySymbol(...)` (`com.ampairs.common.locale`). For non-composable code (print/HTML/export) pass the symbol in as a `String` param from a composable that read `LocalAppLocale.current`
 - Create a new `DataStore<Preferences>` instance — always reuse the existing one from `data/common/`
 - Allow the repository to generate UIDs as a fallback
 - Add feature code directly to `shared/` or `androidApp/`/`desktopApp/` — use the appropriate `feature/` module

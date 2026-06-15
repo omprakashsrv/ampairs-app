@@ -56,7 +56,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
-import com.ampairs.common.util.DateTimeFormatter
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatDateTime
+import com.ampairs.common.locale.formatMoney
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
 import com.ampairs.customer.ui.components.images.CustomerImageViewModel
@@ -141,9 +144,7 @@ fun CustomerDetailsScreen(
         TopAppBar(
             title = { Text(uiState.customer?.name ?: TITLE_CUSTOMER_DETAILS) },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = null)
-                }
+                ScreenBackButton(onClick = onNavigateBack, contentDescription = null)
             },
             actions = {
                 if (uiState.customer != null) {
@@ -261,6 +262,7 @@ private fun CustomerDetailsExpanded(
     onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Row(modifier = modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         // Left panel: summary + edit button
         OutlinedCard(modifier = Modifier.width(280.dp).fillMaxHeight()) {
@@ -312,7 +314,7 @@ private fun CustomerDetailsExpanded(
                 ) {
                     StatCard(
                         label = stringResource(Res.string.customer_details_credit_limit_stat),
-                        value = customer.creditLimit?.let { "₹$it" } ?: stringResource(Res.string.customer_details_no_limit),
+                        value = customer.creditLimit?.let { formatMoney(it, locale) } ?: stringResource(Res.string.customer_details_no_limit),
                         modifier = Modifier.weight(1f)
                     )
                     StatCard(
@@ -365,6 +367,7 @@ private fun CustomerHeroSection(
     customer: Customer,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         modifier = modifier.fillMaxWidth()
@@ -421,7 +424,7 @@ private fun CustomerHeroSection(
                     customer.creditLimit?.let {
                         StatCard(
                             label = stringResource(Res.string.customer_details_credit_limit_stat),
-                            value = "₹$it",
+                            value = formatMoney(it, locale),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -504,6 +507,7 @@ private fun CustomerOverviewTab(
     attributeRows: List<Pair<String, String>>,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -546,7 +550,7 @@ private fun CustomerOverviewTab(
                     InfoRow(label = stringResource(Res.string.customer_label_pan), value = it)
                 }
                 customer.creditLimit?.let {
-                    InfoRow(label = stringResource(Res.string.customer_label_credit_limit), value = "₹$it")
+                    InfoRow(label = stringResource(Res.string.customer_label_credit_limit), value = formatMoney(it, locale))
                 }
                 customer.creditDays?.let {
                     InfoRow(label = stringResource(Res.string.customer_label_credit_days), value = stringResource(Res.string.customer_credit_days_value, it))
@@ -605,10 +609,10 @@ private fun CustomerOverviewTab(
         if (customer.createdAt != null || customer.updatedAt != null) {
             InfoSection(title = stringResource(Res.string.customer_section_system)) {
                 customer.createdAt?.let {
-                    InfoRow(label = stringResource(Res.string.customer_label_created), value = DateTimeFormatter.formatTimestamp(it))
+                    InfoRow(label = stringResource(Res.string.customer_label_created), value = formatDateTime(it, LocalAppLocale.current))
                 }
                 customer.updatedAt?.let {
-                    InfoRow(label = stringResource(Res.string.customer_label_updated), value = DateTimeFormatter.formatTimestamp(it))
+                    InfoRow(label = stringResource(Res.string.customer_label_updated), value = formatDateTime(it, LocalAppLocale.current))
                 }
             }
         }

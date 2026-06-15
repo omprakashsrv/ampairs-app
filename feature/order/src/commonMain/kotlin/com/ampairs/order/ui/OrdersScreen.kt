@@ -74,7 +74,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.model.UiState
 import com.ampairs.order.db.dto.Order
 import com.ampairs.order.viewmodel.OrderListFilter
@@ -314,11 +315,12 @@ private fun OrderRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     val offlineCd = stringResource(Res.string.ord_list_offline_cd)
     val buyer = order.customerName.ifBlank { "—" }
     val number = order.orderNumber.ifBlank { "—" }
-    val amount = order.totalCost.toInr()
+    val amount = formatMoney(order.totalCost, locale)
     val rowCd = "$number, $buyer, $amount, ${order.status.lowercase()}" +
         if (!order.synced) ", $offlineCd" else ""
 

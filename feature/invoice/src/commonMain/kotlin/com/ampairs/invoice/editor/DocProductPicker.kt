@@ -37,7 +37,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.product.domain.ProductSummary
 import org.jetbrains.compose.resources.stringResource
 
@@ -57,6 +58,7 @@ fun DocProductPickerPopover(
     onCreate: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val locale = LocalAppLocale.current
     var query by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(expanded) {
@@ -106,7 +108,7 @@ fun DocProductPickerPopover(
                             )
                         }
                         Text(
-                            p.sellingPrice.toInr(),
+                            formatMoney(p.sellingPrice, locale),
                             style = MaterialTheme.typography.labelMedium,
                             fontFamily = FontFamily.Monospace,
                             maxLines = 1,

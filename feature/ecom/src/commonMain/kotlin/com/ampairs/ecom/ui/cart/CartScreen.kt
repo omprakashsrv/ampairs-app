@@ -43,7 +43,9 @@ import ampairsapp.feature.ecom.generated.resources.ecom_product_discount
 import ampairsapp.feature.ecom.generated.resources.ecom_save_amount
 import ampairsapp.feature.ecom.generated.resources.ecom_to_pay
 import coil3.compose.AsyncImage
-import com.ampairs.ecom.domain.asRupee
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.ui.components.BillRow
 import com.ampairs.ecom.ui.components.DeliveryStrip
 import com.ampairs.ecom.ui.components.EcomDimens
@@ -60,11 +62,12 @@ fun CartScreen(
     viewModel: CartViewModel = metroViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val locale = LocalAppLocale.current
     LaunchedEffect(Unit) { viewModel.messages.collect { snackbar.showSnackbar(it) } }
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+            ScreenBackButton(onClick = onBack, contentDescription = "Back")
             Text(stringResource(Res.string.ecom_cart_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
         }
 
@@ -97,7 +100,7 @@ fun CartScreen(
             if (state.savings > 0) {
                 item {
                     SavingsBanner(
-                        stringResource(Res.string.ecom_save_amount, state.savings.asRupee()),
+                        stringResource(Res.string.ecom_save_amount, formatMoney(state.savings, locale)),
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     )
                 }
@@ -110,10 +113,10 @@ fun CartScreen(
                         .padding(16.dp),
                 ) {
                     Text(stringResource(Res.string.ecom_bill_details), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(bottom = 8.dp))
-                    BillRow(stringResource(Res.string.ecom_item_total_mrp), state.itemTotalMrp.asRupee())
-                    if (state.savings > 0) BillRow(stringResource(Res.string.ecom_product_discount), "- ${state.savings.asRupee()}", discount = true)
+                    BillRow(stringResource(Res.string.ecom_item_total_mrp), formatMoney(state.itemTotalMrp, locale))
+                    if (state.savings > 0) BillRow(stringResource(Res.string.ecom_product_discount), "- ${formatMoney(state.savings, locale)}", discount = true)
                     BillRow(stringResource(Res.string.ecom_delivery), stringResource(Res.string.ecom_free))
-                    BillRow(stringResource(Res.string.ecom_to_pay), state.subtotal.asRupee(), emphasize = true)
+                    BillRow(stringResource(Res.string.ecom_to_pay), formatMoney(state.subtotal, locale), emphasize = true)
                 }
             }
         }
@@ -122,7 +125,7 @@ fun CartScreen(
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(Res.string.ecom_to_pay), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(state.subtotal.asRupee(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(formatMoney(state.subtotal, locale), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
                 Button(onClick = onCheckout) { Text(stringResource(Res.string.ecom_checkout)) }
             }
@@ -141,6 +144,7 @@ private fun CartLineRow(
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
 ) {
+    val locale = LocalAppLocale.current
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -156,7 +160,7 @@ private fun CartLineRow(
             if (!brand.isNullOrBlank()) Text(brand.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             if (!unit.isNullOrBlank()) Text(unit, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text((unitPrice * quantity).asRupee(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
+            Text(formatMoney(unitPrice * quantity, locale), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
         }
         QuickAddControl(quantity = quantity, enabled = true, onAdd = onIncrement, onIncrement = onIncrement, onDecrement = onDecrement)
     }

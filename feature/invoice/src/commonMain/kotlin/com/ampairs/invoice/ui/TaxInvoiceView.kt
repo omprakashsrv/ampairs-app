@@ -28,6 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.currencySymbol
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.print.amountInWords
@@ -47,17 +50,16 @@ fun TaxInvoicePreviewScreen(
     workspaceName: String = "",
 ) {
     val print = rememberInvoicePrinter()
+    val locale = LocalAppLocale.current
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Tax invoice") },
                 navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close")
-                    }
+                    ScreenBackButton(onClick = onClose, contentDescription = "Close")
                 },
                 actions = {
-                    IconButton(onClick = { print(buildInvoiceHtml(invoice, workspaceName)) }) {
+                    IconButton(onClick = { print(buildInvoiceHtml(invoice, workspaceName, currencySymbol(locale.currencyCode))) }) {
                         Icon(Icons.Filled.Print, contentDescription = "Print")
                     }
                 }
@@ -83,6 +85,7 @@ fun TaxInvoiceView(
     modifier: Modifier = Modifier,
 ) {
     // Seller is the implicit current workspace (name passed in); only the buyer is stored.
+    val locale = LocalAppLocale.current
     val buyer = invoice.customer
     val inter = invoice.isInterState()
 
@@ -209,7 +212,7 @@ fun TaxInvoiceView(
             }
             TotalRow("Total tax", invoice.totalTax.toDecimal())
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
-            TotalRow("Grand total", "₹ ${invoice.totalCost.toDecimal()}", bold = true)
+            TotalRow("Grand total", "${currencySymbol(locale.currencyCode)} ${invoice.totalCost.toDecimal()}", bold = true)
             Spacer(Modifier.height(8.dp))
             Text(
                 "Amount in words: ${amountInWords(invoice.totalCost)}",

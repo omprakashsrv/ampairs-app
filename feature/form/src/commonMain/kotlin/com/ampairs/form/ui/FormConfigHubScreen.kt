@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.form.generated.resources.Res
@@ -80,9 +81,7 @@ fun FormConfigHubScreen(
         TopAppBar(
             title = { Text(stringResource(Res.string.form_hub_title)) },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.form_hub_back_cd))
-                }
+                ScreenBackButton(onClick = onNavigateBack, contentDescription = stringResource(Res.string.form_hub_back_cd))
             },
         )
 

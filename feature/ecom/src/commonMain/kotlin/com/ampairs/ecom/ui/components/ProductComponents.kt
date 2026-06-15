@@ -31,8 +31,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.ecom.api.model.StockStatus
-import com.ampairs.ecom.domain.asRupee
 
 /**
  * Direction-A catalog grid card: square thumb, brand/name, mono price + strikethrough MRP,
@@ -54,6 +55,7 @@ fun ProductGridCard(
     onDecrement: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val locale = LocalAppLocale.current
     val outOfStock = stockStatus == StockStatus.OUT_OF_STOCK.name
     Column(
         modifier = modifier
@@ -101,10 +103,10 @@ fun ProductGridCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
-                    Text(price.asRupee(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(formatMoney(price, locale), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     if (mrp != null && mrp > price) {
                         Text(
-                            mrp.asRupee(),
+                            formatMoney(mrp, locale),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textDecoration = TextDecoration.LineThrough,
@@ -169,6 +171,7 @@ private fun StepBtn(icon: androidx.compose.ui.graphics.vector.ImageVector, desc:
 /** Floating "N items · ₹total → View Cart" bar shown once the cart has items. */
 @Composable
 fun StickyCartBar(itemCount: Int, total: Double, viewCartLabel: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val locale = LocalAppLocale.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -184,7 +187,7 @@ fun StickyCartBar(itemCount: Int, total: Double, viewCartLabel: String, onClick:
             Icon(Icons.Filled.ShoppingCart, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
             Column {
                 Text("$itemCount item${if (itemCount == 1) "" else "s"}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimary)
-                Text(total.asRupee(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimary)
+                Text(formatMoney(total, locale), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimary)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

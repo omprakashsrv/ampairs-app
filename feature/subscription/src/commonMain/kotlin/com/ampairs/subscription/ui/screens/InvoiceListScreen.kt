@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.viewmodel.InvoiceViewModel
@@ -47,9 +48,7 @@ fun InvoiceListScreen(
             TopAppBar(
                 title = { Text("Invoices") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = "Back")
                 },
                 actions = {
                     // Filter button

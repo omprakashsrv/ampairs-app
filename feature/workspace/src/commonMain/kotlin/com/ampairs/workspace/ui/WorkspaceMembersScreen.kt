@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,9 +56,7 @@ fun WorkspaceMembersScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
-                }
+                ScreenBackButton(onClick = onNavigateBack, contentDescription = stringResource(Res.string.cd_back))
                 Text(
                     text = stringResource(Res.string.workspace_team_members_title),
                     style = MaterialTheme.typography.headlineSmall,

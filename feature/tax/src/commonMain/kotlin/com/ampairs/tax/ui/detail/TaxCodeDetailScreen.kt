@@ -57,9 +57,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.tax.calculation.model.TaxCalculationResult
 import com.ampairs.tax.domain.model.TaxCode
-import com.ampairs.tax.util.formatDecimal
 import kotlin.time.Instant
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -84,9 +86,7 @@ fun TaxCodeDetailScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.tax_detail_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.tax_detail_cd_back))
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = stringResource(Res.string.tax_detail_cd_back))
                 },
                 actions = {
                     if (uiState is TaxCodeDetailUiState.Success) {
@@ -370,6 +370,7 @@ private fun TaxCalculationCard(
     onCalculatePreview: (Double, Int, String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     var previewAmount by remember { mutableStateOf("1000.00") }
     var previewQuantity by remember { mutableStateOf("1") }
     var previewSourceState by remember { mutableStateOf("MH") }
@@ -443,21 +444,21 @@ private fun TaxCalculationCard(
             }
             if (calculationResult != null) {
                 HorizontalDivider()
-                DetailRow(label = stringResource(Res.string.tax_detail_base_amount), value = "₹${calculationResult.baseAmount.formatDecimal()}")
+                DetailRow(label = stringResource(Res.string.tax_detail_base_amount), value = formatMoney(calculationResult.baseAmount, locale))
                 calculationResult.taxComponents.forEach { component ->
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text(text = "${component.componentName} (${component.ratePercentage}%):", style = MaterialTheme.typography.bodySmall)
-                        Text(text = "₹${component.taxAmount.formatDecimal()}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
+                        Text(text = formatMoney(component.taxAmount, locale), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 HorizontalDivider()
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(text = stringResource(Res.string.tax_detail_total_tax), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text(text = "₹${calculationResult.totalTaxAmount.formatDecimal()}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(text = formatMoney(calculationResult.totalTaxAmount, locale), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(text = stringResource(Res.string.tax_detail_grand_total), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(text = "₹${calculationResult.totalAmount.formatDecimal()}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(text = formatMoney(calculationResult.totalAmount, locale), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
         }

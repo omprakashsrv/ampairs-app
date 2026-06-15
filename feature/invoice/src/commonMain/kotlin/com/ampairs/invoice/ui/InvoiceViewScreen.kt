@@ -50,8 +50,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.common.format.toDecimal
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatDate
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.editor.DocSyncChip
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -75,6 +78,7 @@ fun InvoiceViewScreen(
     viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory>(key = invoiceId) { create(invoiceId) }
 ) {
     val invoice = viewModel.invoice
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
     var showPreview by remember { mutableStateOf(false) }
@@ -104,12 +108,7 @@ fun InvoiceViewScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.inv_view_cd_back)
-                        )
-                    }
+                    ScreenBackButton(onClick = onNavigateBack, contentDescription = stringResource(Res.string.inv_view_cd_back))
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
@@ -132,7 +131,7 @@ fun InvoiceViewScreen(
             BottomAppBar(containerColor = cs.surfaceContainer) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        invoice.totalCost.toInr(),
+                        formatMoney(invoice.totalCost, locale),
                         modifier = Modifier.padding(horizontal = 12.dp),
                         style = MaterialTheme.typography.titleLarge,
                         fontFamily = mono,
@@ -184,7 +183,7 @@ fun InvoiceViewScreen(
                     ) {
                         InvoiceStatusChip(invoice.status.name)
                         Text(
-                            formatInvoiceInstantDate(invoice.invoiceDate),
+                            formatDate(invoice.invoiceDate, LocalAppLocale.current),
                             style = MaterialTheme.typography.labelMedium,
                             fontFamily = mono,
                             color = cs.onSurfaceVariant,
@@ -215,11 +214,4 @@ fun InvoiceViewScreen(
             }
         }
     }
-}
-
-@OptIn(kotlin.time.ExperimentalTime::class)
-private fun formatInvoiceInstantDate(instant: kotlin.time.Instant): String {
-    val date = instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val month = date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
-    return "${date.day.toString().padStart(2, '0')} $month ${date.year}"
 }

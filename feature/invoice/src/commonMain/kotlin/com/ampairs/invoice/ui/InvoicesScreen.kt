@@ -74,7 +74,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.model.UiState
 import com.ampairs.invoice.db.dto.Invoice
 import com.ampairs.invoice.viewmodel.InvoiceListFilter
@@ -312,11 +313,12 @@ private fun InvoiceRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     val offlineCd = stringResource(Res.string.inv_list_offline_cd)
     val buyer = invoice.customerName.ifBlank { "—" }
     val number = invoice.invoiceNumber.ifBlank { "—" }
-    val amount = invoice.totalCost.toInr()
+    val amount = formatMoney(invoice.totalCost, locale)
     val rowCd = "$number, $buyer, $amount, ${invoice.status.lowercase()}" +
         if (!invoice.synced) ", $offlineCd" else ""
 

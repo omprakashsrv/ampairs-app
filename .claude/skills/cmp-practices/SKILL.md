@@ -451,6 +451,70 @@ LocalAppGraph.current.themeManager   // NEVER — use CompositionLocal or inject
 
 ---
 
+## 12. Currency & Locale Formatting (workspace business locale)
+
+Money and (soon) dates render using the **active workspace's business locale** — currency, timezone,
+date/time format from the business profile — never hardcoded. Storage/sync stay UTC; this is a
+*display-only* concern.
+
+### How it flows
+
+```
+business profile (timezone/date_format/time_format/currency)
+  → BusinessLocaleProvider (@SingleIn(WorkspaceScope::class), feature/business) : Flow<AppLocale>
+  → exposed on WorkspaceGraph.businessLocaleProvider
+  → AppNavigationNav3 collects it from the ACTIVE workspace graph and provides LocalAppLocale
+  → any @Composable reads LocalAppLocale.current  (defaults to AppLocale.Default = INR/UTC)
+```
+
+Sourcing from `workspaceSession.graph` (recreated per workspace) means the locale is never stale
+after a workspace switch — do **not** resolve it via a root-level ViewModel.
+
+### Money — `com.ampairs.common.locale`
+
+```kotlin
+// ✅ business-currency aware (INR keeps Indian grouping identical to the old toInr())
+val locale = LocalAppLocale.current
+Text(formatMoney(amount, locale))            // "₹9,20,710.50" / "$1,234.00" / ...
+Text(currencySymbol(locale.currencyCode))    // just the symbol, for toggle labels etc.
+
+// ❌ hardcoded currency — banned in UI
+Text("₹$amount")
+Text(amount.toInr())     // legacy; data/common — do not call in UI
+Text(amount.asRupee())   // legacy; ecom — do not call in UI
+```
+
+- `formatMoney(amount: Double?, locale)` / `formatMoney(amount, currencyCode)` — symbol + grouping, 2 dp, null → "".
+- Read `LocalAppLocale.current` only in `@Composable` scope (it's a CompositionLocal). A non-composable
+  string builder (e.g. print HTML) must take a `currencySymbol: String` parameter passed from the
+  calling composable — see `buildInvoiceHtml(...)`.
+
+### Dates — `com.ampairs.common.locale`
+
+```kotlin
+// ✅ business timezone + date_format aware (Instant or ISO-string overloads)
+val locale = LocalAppLocale.current
+Text(formatDate(invoice.invoiceDate, locale))   // per AppLocale.dateFormat, in AppLocale.timeZoneId
+Text(formatDateTime(isoString, locale))          // date + time (12H/24H)
+
+// ❌ device-timezone / hardcoded pattern in UI
+Text(instant.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString())
+Text(DateTimeFormatter.formatTimestamp(iso))     // legacy: hardcoded pattern, device zone
+```
+
+`formatDate` / `formatTime` / `formatDateTime(instant|iso, locale)` convert a UTC `Instant` to
+`AppLocale.timeZoneId` and render per `dateFormat` (DD-MM-YYYY / MM-DD-YYYY / YYYY-MM-DD; friendly
+`dd MMM yyyy` fallback) and `timeFormat` (12H/24H).
+
+**The computation trap (not just display):** bucketing an `Instant` to a calendar day/month with
+`TimeZone.currentSystemDefault()` is wrong when the business timezone differs from the device — it
+can land on the wrong day/month. In non-composable code (ViewModel/repository/print) that can't read
+`LocalAppLocale`, inject the business timezone (via `BusinessLocaleProvider`) and convert with
+`TimeZone.of(locale.timeZoneId)`. Known remaining spots: `InvoiceViewModel.formatDocDate()`,
+`OrderViewModel` order-date, `SubscriptionRepository` monthly-usage bucketing.
+
+---
+
 ## Quick Anti-Pattern Reference
 
 | Anti-pattern | Fix |
@@ -471,4 +535,5 @@ LocalAppGraph.current.themeManager   // NEVER — use CompositionLocal or inject
 | `LaunchedEffect(Unit)` for key-dependent work | `LaunchedEffect(theKey)` |
 | Padding before clickable | `clickable { }.padding(...)` |
 | New object allocation in composition | `remember { }` |
+| Hardcoded `₹` / `toInr()` / `asRupee()` in UI | `formatMoney(amount, LocalAppLocale.current)` (see §12) |
 | `maven-publish` added, resource imports broken | Add `compose.resources { packageOfResClass = "ampairsapp.{module.path}.generated.resources" }` |

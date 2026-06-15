@@ -22,12 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -43,7 +42,9 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.product.domain.ProductListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -62,16 +65,12 @@ import ampairsapp.feature.product.generated.resources.Res
 import ampairsapp.feature.product.generated.resources.prod_list_title
 import ampairsapp.feature.product.generated.resources.prod_list_count
 import ampairsapp.feature.product.generated.resources.prod_list_new_product
-import ampairsapp.feature.product.generated.resources.prod_list_cd_form_settings
-import ampairsapp.feature.product.generated.resources.prod_list_cd_refresh
 import ampairsapp.feature.product.generated.resources.prod_list_cd_add
 import ampairsapp.feature.product.generated.resources.prod_list_search_placeholder
 import ampairsapp.feature.product.generated.resources.prod_list_cd_product_image
 import ampairsapp.feature.product.generated.resources.prod_list_refreshing
 import ampairsapp.feature.product.generated.resources.prod_list_empty_title
 import ampairsapp.feature.product.generated.resources.prod_list_empty_desc
-import ampairsapp.feature.product.generated.resources.prod_list_code_format
-import ampairsapp.feature.product.generated.resources.prod_list_brand_format
 import ampairsapp.feature.product.generated.resources.prod_list_in_stock_format
 import ampairsapp.feature.product.generated.resources.prod_list_col_name
 import ampairsapp.feature.product.generated.resources.prod_list_col_code
@@ -93,7 +92,6 @@ import ampairsapp.feature.product.generated.resources.prod_master_data
 fun ProductsListScreen(
     onProductClick: (String) -> Unit,
     onCreateProduct: () -> Unit,
-    onFormConfig: () -> Unit = {},
     onNavigateToBrands: () -> Unit = {},
     onNavigateToCategories: () -> Unit = {},
     onNavigateToSubCategories: () -> Unit = {},
@@ -133,39 +131,55 @@ fun ProductsListScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(Res.string.prod_list_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (uiState.products.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = stringResource(Res.string.prod_list_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
+                                text = stringResource(Res.string.prod_list_count, uiState.products.size),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if (uiState.products.isNotEmpty()) {
-                                Text(
-                                    text = stringResource(Res.string.prod_list_count, uiState.products.size),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
+                        Spacer(modifier = Modifier.weight(1f))
                         if (isExpanded) {
                             IconButton(onClick = onCreateProduct) {
                                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.prod_list_cd_add))
                             }
                         }
-                        IconButton(onClick = onFormConfig) {
-                            Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.prod_list_cd_form_settings))
-                        }
-                        IconButton(
-                            onClick = viewModel::syncProducts,
-                            enabled = !uiState.isRefreshing
-                        ) {
-                            if (uiState.isRefreshing) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.prod_list_cd_refresh))
+                        // Catalog master-data shortcuts collapsed into an overflow menu to keep the
+                        // header compact so the list can use the maximum vertical space.
+                        Box {
+                            var masterMenuOpen by remember { mutableStateOf(false) }
+                            IconButton(onClick = { masterMenuOpen = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.prod_master_data))
+                            }
+                            DropdownMenu(
+                                expanded = masterMenuOpen,
+                                onDismissRequest = { masterMenuOpen = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_catalog_brands)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToBrands() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_catalog_categories)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToCategories() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_catalog_sub_categories)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToSubCategories() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_catalog_groups)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToGroups() }
+                                )
                             }
                         }
                     }
@@ -187,43 +201,6 @@ fun ProductsListScreen(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                         )
                     )
-
-                    // Catalog master data shortcuts
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.prod_master_data),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        AssistChip(
-                            onClick = onNavigateToBrands,
-                            label = { Text(stringResource(Res.string.prod_catalog_brands), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                        AssistChip(
-                            onClick = onNavigateToCategories,
-                            label = { Text(stringResource(Res.string.prod_catalog_categories), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                        AssistChip(
-                            onClick = onNavigateToSubCategories,
-                            label = { Text(stringResource(Res.string.prod_catalog_sub_categories), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                        AssistChip(
-                            onClick = onNavigateToGroups,
-                            label = { Text(stringResource(Res.string.prod_catalog_groups), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                    }
                 }
             }
 
@@ -309,6 +286,7 @@ private fun ProductCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -357,36 +335,38 @@ private fun ProductCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 val subtitle = listOfNotNull(
-                    stringResource(Res.string.prod_list_code_format, product.code),
+                    product.code.takeIf { it.isNotBlank() },
                     product.categoryName,
-                    product.brandName?.let { stringResource(Res.string.prod_list_brand_format, it) }
-                ).firstOrNull() ?: stringResource(Res.string.prod_list_code_format, product.code)
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                    product.brandName
+                ).firstOrNull()
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
             Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "₹${product.sellingPrice}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
                 if (product.mrp != product.sellingPrice && product.mrp > 0) {
                     Text(
-                        text = "₹${product.mrp}",
+                        text = formatMoney(product.mrp, locale),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                         textDecoration = TextDecoration.LineThrough
                     )
                 }
+                Text(
+                    text = formatMoney(product.sellingPrice, locale),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
                 product.stockQuantity?.let { stock ->
                     Surface(
                         shape = RoundedCornerShape(10.dp),
@@ -430,6 +410,7 @@ private fun ProductTable(
     isRefreshing: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     LazyColumn(modifier = modifier) {
         item {
             Surface(
@@ -488,7 +469,26 @@ private fun ProductTable(
                     }
                     Text(text = product.code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(text = product.categoryName ?: "—", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(text = "₹${product.sellingPrice}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                    Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (product.mrp != product.sellingPrice && product.mrp > 0) {
+                            Text(
+                                text = formatMoney(product.mrp, locale),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                textDecoration = TextDecoration.LineThrough,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Text(
+                            text = formatMoney(product.sellingPrice, locale),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     Text(
                         text = product.stockQuantity?.let { "${it.toInt()}" } ?: "—",
                         style = MaterialTheme.typography.bodySmall,

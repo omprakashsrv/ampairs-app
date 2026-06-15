@@ -535,3 +535,4 @@ Files in `shared/src/`:
 - **Compile all targets frequently**: Don't wait until end of feature to test iOS/Desktop
 - **KMP libraries only in version catalog**: Verify KMP support before adding dependency
 - **WorkspaceScope vs AppScope**: Workspace-aware DBs = `@SingleIn(WorkspaceScope::class)`; cross-workspace singletons = `@SingleIn(AppScope::class)`
+- **Money/locale formatting**: Render amounts with `formatMoney(amount, LocalAppLocale.current)` from `com.ampairs.common.locale` — never hardcode `₹`/`$` or call `toInr()`/`asRupee()` in UI. `LocalAppLocale` carries the workspace business currency (and timezone/date format), sourced per-workspace from `BusinessLocaleProvider` on `WorkspaceGraph` and provided in `AppNavigationNav3`. Storage/sync stay UTC; this is display-only. See `/cmp-practices` §12.

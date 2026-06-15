@@ -1,7 +1,6 @@
 package com.ampairs.navigation.providers
 
 import ProductRoute
-import Route
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,9 +49,6 @@ fun productEntryProvider(
             onCreateProduct = {
                 backStack.add(ProductRoute.ProductForm())
             },
-            onFormConfig = {
-                backStack.add(Route.FormConfig("product"))
-            },
             onNavigateToBrands = { backStack.add(ProductRoute.Brands) },
             onNavigateToCategories = { backStack.add(ProductRoute.Categories) },
             onNavigateToSubCategories = { backStack.add(ProductRoute.SubCategories) },
@@ -87,9 +83,6 @@ fun productEntryProvider(
             },
             onCreateProduct = {
                 backStack.add(ProductRoute.ProductForm())
-            },
-            onFormConfig = {
-                backStack.add(Route.FormConfig("product"))
             },
             onNavigateToBrands = { backStack.add(ProductRoute.Brands) },
             onNavigateToCategories = { backStack.add(ProductRoute.Categories) },

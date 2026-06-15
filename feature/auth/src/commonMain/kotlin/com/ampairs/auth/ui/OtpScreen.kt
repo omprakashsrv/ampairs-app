@@ -83,6 +83,11 @@ fun OtpScreen(
     var resendTimer by remember { mutableStateOf(60) }
     var canResend by remember { mutableStateOf(false) }
 
+    // True from the moment Firebase auto-verification fires until the token-completion call ends.
+    // While this is set we show a "verifying" overlay and must NOT fall back to the manual OTP
+    // input (otherwise it flashes visible during the final verification request).
+    var autoVerifying by remember { mutableStateOf(false) }
+
     LaunchedEffect(sessionId, verificationId, phoneNumber) {
         viewModel.initOtpScreen(sessionId, verificationId, phoneNumber)
     }
@@ -104,16 +109,29 @@ fun OtpScreen(
         }
     }
 
+    // The completion call has ended. On success the VM emits AuthComplete and navigates away
+    // (this screen unmounts before manual input could draw); on failure it surfaces a snackbar
+    // and stays — so clear the overlay to let the user retry with manual entry.
+    LaunchedEffect(state.loading) {
+        if (!state.loading && autoVerifying) {
+            autoVerifying = false
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.firebaseVerificationState.collect { verificationState ->
             when (verificationState) {
                 is PhoneVerificationState.VerificationCompleted -> {
                     if (state.authMethod == AuthMethod.FIREBASE) {
                         waitingForAutoVerification = false
+                        autoVerifying = true
                         viewModel.completeFirebaseAuthenticationWithToken(verificationState.userId)
                     }
                 }
-                is PhoneVerificationState.VerificationFailed -> waitingForAutoVerification = false
+                is PhoneVerificationState.VerificationFailed -> {
+                    waitingForAutoVerification = false
+                    autoVerifying = false
+                }
                 is PhoneVerificationState.CodeSent -> Unit
                 PhoneVerificationState.Idle -> Unit
             }
@@ -207,7 +225,7 @@ fun OtpScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (waitingForAutoVerification) {
+                if (waitingForAutoVerification || autoVerifying) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -217,20 +235,30 @@ fun OtpScreen(
                             strokeWidth = 4.dp
                         )
                         Text(
-                            text = stringResource(Res.string.otp_waiting_for_auto_verification),
+                            text = if (autoVerifying) {
+                                state.progressMessage.ifEmpty {
+                                    stringResource(Res.string.otp_waiting_for_auto_verification)
+                                }
+                            } else {
+                                stringResource(Res.string.otp_waiting_for_auto_verification)
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center
                         )
-                        Text(
-                            text = stringResource(Res.string.otp_auto_verification_desc),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(onClick = { waitingForAutoVerification = false }) {
-                            Text(stringResource(Res.string.otp_enter_manually))
+                        // Once auto-verification has succeeded and we're completing sign-in, drop the
+                        // "enter manually" escape hatch — the OTP is already verified.
+                        if (!autoVerifying) {
+                            Text(
+                                text = stringResource(Res.string.otp_auto_verification_desc),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(onClick = { waitingForAutoVerification = false }) {
+                                Text(stringResource(Res.string.otp_enter_manually))
+                            }
                         }
                     }
                 } else {
@@ -292,7 +320,7 @@ fun OtpScreen(
                 }
             }
 
-            if (!waitingForAutoVerification) {
+            if (!waitingForAutoVerification && !autoVerifying) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)

@@ -56,7 +56,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.common.format.toDecimal
-import com.ampairs.common.format.toInr
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.currencySymbol
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.ui.TotalsUi
 import com.ampairs.tax.calculation.document.DiscountKind
 import com.ampairs.tax.calculation.document.OverallDiscountMode
@@ -77,6 +79,7 @@ fun DocTotalsPanel(
     onOverallDiscount: (DiscountKind, Double) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
     val preTax = totals.overallDiscountMode == OverallDiscountMode.PRE_TAX_APPORTIONED
@@ -89,9 +92,9 @@ fun DocTotalsPanel(
         tonalElevation = 1.dp,
     ) {
         Column(Modifier.padding(16.dp)) {
-            TotRow(stringResource(Res.string.doc_tot_subtotal, totals.itemCount), totals.subtotalGross.toInr(), cs.onSurfaceVariant)
+            TotRow(stringResource(Res.string.doc_tot_subtotal, totals.itemCount), formatMoney(totals.subtotalGross, locale), cs.onSurfaceVariant)
             if (totals.lineDiscountTotal > 0.0) {
-                TotRow(stringResource(Res.string.doc_tot_line_discounts), "− ${totals.lineDiscountTotal.toInr()}", cs.secondary)
+                TotRow(stringResource(Res.string.doc_tot_line_discounts), "− ${formatMoney(totals.lineDiscountTotal, locale)}", cs.secondary)
             }
 
             if (showOverallDiscount) {
@@ -108,7 +111,7 @@ fun DocTotalsPanel(
                         )
                     }
                     SingleChoiceSegmentedButtonRow {
-                        listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to "₹").forEachIndexed { i, (k, l) ->
+                        listOf(DiscountKind.PERCENT to "%", DiscountKind.FLAT to currencySymbol(locale.currencyCode)).forEachIndexed { i, (k, l) ->
                             SegmentedButton(
                                 selected = overallDiscountKind == k,
                                 onClick = { onOverallDiscount(k, overallDiscountAmount) },
@@ -123,18 +126,18 @@ fun DocTotalsPanel(
                     )
                 }
                 if (preTax && totals.overallDiscountValue > 0.0) {
-                    TotRow(stringResource(Res.string.doc_tot_apportioned), "− ${totals.overallDiscountValue.toInr()}", cs.secondary)
+                    TotRow(stringResource(Res.string.doc_tot_apportioned), "− ${formatMoney(totals.overallDiscountValue, locale)}", cs.secondary)
                 }
             }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp), color = cs.outlineVariant)
-            TotRow(stringResource(Res.string.doc_tot_taxable), totals.taxableSubtotal.toInr(), cs.onSurface)
+            TotRow(stringResource(Res.string.doc_tot_taxable), formatMoney(totals.taxableSubtotal, locale), cs.onSurface)
 
             if (totals.taxGroups.isEmpty()) {
-                TotRow(stringResource(Res.string.doc_tot_gst), 0.0.toInr(), cs.onSurface)
+                TotRow(stringResource(Res.string.doc_tot_gst), formatMoney(0.0, locale), cs.onSurface)
             }
             totals.taxGroups.forEach { g ->
-                val a11y = stringResource(Res.string.doc_tot_tax_row_a11y, g.name, g.percentage.toDecimal(), g.amount.toInr())
+                val a11y = stringResource(Res.string.doc_tot_tax_row_a11y, g.name, g.percentage.toDecimal(), formatMoney(g.amount, locale))
                 Row(
                     Modifier.fillMaxWidth().padding(vertical = 5.dp).semantics { contentDescription = a11y },
                     verticalAlignment = Alignment.CenterVertically,
@@ -154,7 +157,7 @@ fun DocTotalsPanel(
                         )
                     }
                     Text(
-                        g.amount.toInr(),
+                        formatMoney(g.amount, locale),
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.End,
                         fontFamily = mono,
@@ -165,15 +168,15 @@ fun DocTotalsPanel(
             }
             TotRow(
                 stringResource(if (intra) Res.string.doc_tot_total_intra else Res.string.doc_tot_total_inter),
-                totals.totalTax.toInr(), cs.onSurface,
+                formatMoney(totals.totalTax, locale), cs.onSurface,
             )
 
             if (!preTax && totals.overallDiscountValue > 0.0) {
-                TotRow(stringResource(Res.string.doc_tot_overall_post), "− ${totals.overallDiscountValue.toInr()}", cs.secondary)
+                TotRow(stringResource(Res.string.doc_tot_overall_post), "− ${formatMoney(totals.overallDiscountValue, locale)}", cs.secondary)
             }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp), color = cs.outlineVariant)
-            val grandA11y = stringResource(Res.string.doc_tot_grand_a11y, totals.grandTotal.toInr())
+            val grandA11y = stringResource(Res.string.doc_tot_grand_a11y, formatMoney(totals.grandTotal, locale))
             Row(
                 Modifier.fillMaxWidth().padding(top = 2.dp).semantics { contentDescription = grandA11y },
                 verticalAlignment = Alignment.Bottom,
@@ -185,7 +188,7 @@ fun DocTotalsPanel(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    totals.grandTotal.toInr(),
+                    formatMoney(totals.grandTotal, locale),
                     style = MaterialTheme.typography.headlineSmall,
                     fontFamily = mono,
                     color = cs.onSurface,

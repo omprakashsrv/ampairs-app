@@ -17,9 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
 import com.ampairs.tax.calculation.model.*
 import com.ampairs.tax.domain.model.TaxCode
-import com.ampairs.tax.util.formatDecimal
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -344,6 +345,7 @@ private fun TaxCalculationResultCard(
     result: TaxCalculationResult,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -393,7 +395,7 @@ private fun TaxCalculationResultCard(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "₹${result.baseAmount.formatDecimal()}",
+                    text = formatMoney(result.baseAmount, locale),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -425,7 +427,7 @@ private fun TaxCalculationResultCard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "₹${result.totalTaxAmount.formatDecimal()}",
+                    text = formatMoney(result.totalTaxAmount, locale),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -444,7 +446,7 @@ private fun TaxCalculationResultCard(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    text = "₹${result.totalAmount.formatDecimal()}",
+                    text = formatMoney(result.totalAmount, locale),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -459,6 +461,7 @@ private fun TaxComponentRow(
     component: TaxComponentResult,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalAppLocale.current
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -493,12 +496,12 @@ private fun TaxComponentRow(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "on ₹${component.taxableAmount.formatDecimal()}",
+                    text = "on ${formatMoney(component.taxableAmount, locale)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "₹${component.taxAmount.formatDecimal()}",
+                    text = formatMoney(component.taxAmount, locale),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
