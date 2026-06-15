@@ -103,7 +103,8 @@ class ProductsListViewModel(
             _filter,
         ) { query, filter -> query to filter }
             .flatMapLatest { (query, filter) ->
-                productRepository.filterProducts(
+                // FTS-backed, capped search/browse (name / code / description) — scales to large catalogs.
+                productRepository.searchAndFilter(
                     query = query,
                     brands = filter.brands.toList(),
                     categories = filter.categories.toList(),

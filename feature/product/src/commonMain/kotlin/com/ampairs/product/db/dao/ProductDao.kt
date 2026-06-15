@@ -48,6 +48,67 @@ interface ProductDao {
         hasGroups: Int,
     ): Flow<List<ProductEntity>>
 
+    /**
+     * Browse path (no search term) — multi-select filtered, name-ordered, bounded by [limit].
+     * Each filter dimension is bypassed when its `hasX` flag is 0.
+     */
+    @Query(
+        """
+        SELECT * FROM productEntity
+        WHERE active = 1
+        AND (:hasBrands = 0 OR brand_id IN (:brands))
+        AND (:hasCategories = 0 OR category_id IN (:categories))
+        AND (:hasSubCategories = 0 OR sub_category_id IN (:subCategories))
+        AND (:hasGroups = 0 OR group_id IN (:groups))
+        ORDER BY name ASC
+        LIMIT :limit
+        """
+    )
+    fun browseProducts(
+        brands: List<String>,
+        hasBrands: Int,
+        categories: List<String>,
+        hasCategories: Int,
+        subCategories: List<String>,
+        hasSubCategories: Int,
+        groups: List<String>,
+        hasGroups: Int,
+        limit: Int,
+    ): Flow<List<ProductEntity>>
+
+    /**
+     * Full-text search path — joins the `product_fts` index (name/code/description) and applies the
+     * same multi-select filters, name-ordered, bounded by [limit]. [ftsQuery] is a pre-built FTS
+     * MATCH expression. The FTS table is referenced by name in MATCH (an alias is rejected by Room's
+     * query verifier). Backed by the FTS4 index → no full-table scan.
+     */
+    @Query(
+        """
+        SELECT productEntity.* FROM productEntity
+        JOIN product_fts ON productEntity.rowid = product_fts.rowid
+        WHERE product_fts MATCH :ftsQuery
+        AND productEntity.active = 1
+        AND (:hasBrands = 0 OR productEntity.brand_id IN (:brands))
+        AND (:hasCategories = 0 OR productEntity.category_id IN (:categories))
+        AND (:hasSubCategories = 0 OR productEntity.sub_category_id IN (:subCategories))
+        AND (:hasGroups = 0 OR productEntity.group_id IN (:groups))
+        ORDER BY productEntity.name ASC
+        LIMIT :limit
+        """
+    )
+    fun searchProductsByFts(
+        ftsQuery: String,
+        brands: List<String>,
+        hasBrands: Int,
+        categories: List<String>,
+        hasCategories: Int,
+        subCategories: List<String>,
+        hasSubCategories: Int,
+        groups: List<String>,
+        hasGroups: Int,
+        limit: Int,
+    ): Flow<List<ProductEntity>>
+
     @Query(
         "SELECT DISTINCT brand_id FROM productEntity WHERE active = 1 AND brand_id IS NOT NULL AND brand_id != '' ORDER BY brand_id ASC"
     )

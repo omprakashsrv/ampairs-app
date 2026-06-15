@@ -17,6 +17,7 @@ import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
 import com.ampairs.product.db.entity.ProductEntity
+import com.ampairs.product.db.entity.ProductFts
 import com.ampairs.product.db.entity.ProductVariantEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import com.ampairs.product.db.entity.TaxCodeEntity
@@ -26,6 +27,7 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
 @Database(
     entities = [
         ProductEntity::class,
+        ProductFts::class,
         TaxCodeEntity::class,
         TaxInfoEntity::class,
         GroupEntity::class,
@@ -35,7 +37,7 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
         ProductVariantEntity::class,
         VariantAttributeEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 @ConstructedBy(ProductRoomDatabaseConstructor::class)
