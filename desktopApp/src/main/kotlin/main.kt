@@ -7,15 +7,19 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.isTraySupported
 import androidx.compose.ui.window.rememberTrayState
@@ -87,6 +91,9 @@ fun main() = application {
     // focused app — it must be explicitly de-iconified, brought to front and focused.
     var mainComposeWindow by remember { mutableStateOf<ComposeWindow?>(null) }
 
+    // About window (app name, logo, current version, check-for-updates) — opened from the tray.
+    var showAboutWindow by remember { mutableStateOf(false) }
+
     val showMainWindow: () -> Unit = {
         mainWindowVisible = true
         mainComposeWindow?.let { window ->
@@ -112,9 +119,14 @@ fun main() = application {
             onAction = showMainWindow, // double-click restores the window
             menu = {
                 Item("Open Ampairs", onClick = showMainWindow)
+                Item("About Ampairs", onClick = { showAboutWindow = true })
                 Item("Exit", onClick = ::exitApplication)
             }
         )
+    }
+
+    if (showAboutWindow) {
+        AboutWindow(appGraph = appGraph, onCloseRequest = { showAboutWindow = false })
     }
 
     for (window in applicationState.windows) {
@@ -139,6 +151,22 @@ fun main() = application {
     }
 }
 
+
+@Composable
+private fun ApplicationScope.AboutWindow(
+    appGraph: DesktopAppGraph,
+    onCloseRequest: () -> Unit,
+) = Window(
+    onCloseRequest = onCloseRequest,
+    state = rememberWindowState(
+        size = DpSize(420.dp, 480.dp),
+        position = WindowPosition(Alignment.Center),
+    ),
+    resizable = false,
+    title = "About Ampairs",
+) {
+    AboutView(appGraph)
+}
 
 @Composable
 private fun ApplicationScope.TallyWindow(

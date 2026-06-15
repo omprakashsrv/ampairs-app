@@ -168,6 +168,7 @@ kotlin {
                 implementation(libs.material3.adaptive.navigation)
                 implementation(libs.navigation3.ui)
                 implementation(libs.lifecycle.viewmodel)
+                implementation(libs.lifecycle.viewmodel.compose)
                 implementation(libs.lifecycle.viewmodel.navigation3)
                 implementation(libs.savedstate)
                 implementation(libs.savedstate.compose)
