@@ -71,8 +71,6 @@ import ampairsapp.feature.product.generated.resources.prod_list_cd_product_image
 import ampairsapp.feature.product.generated.resources.prod_list_refreshing
 import ampairsapp.feature.product.generated.resources.prod_list_empty_title
 import ampairsapp.feature.product.generated.resources.prod_list_empty_desc
-import ampairsapp.feature.product.generated.resources.prod_list_code_format
-import ampairsapp.feature.product.generated.resources.prod_list_brand_format
 import ampairsapp.feature.product.generated.resources.prod_list_in_stock_format
 import ampairsapp.feature.product.generated.resources.prod_list_col_name
 import ampairsapp.feature.product.generated.resources.prod_list_col_code
@@ -337,28 +335,24 @@ private fun ProductCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 val subtitle = listOfNotNull(
-                    stringResource(Res.string.prod_list_code_format, product.code),
+                    product.code.takeIf { it.isNotBlank() },
                     product.categoryName,
-                    product.brandName?.let { stringResource(Res.string.prod_list_brand_format, it) }
-                ).firstOrNull() ?: stringResource(Res.string.prod_list_code_format, product.code)
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                    product.brandName
+                ).firstOrNull()
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
             Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = formatMoney(product.sellingPrice, locale),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
                 if (product.mrp != product.sellingPrice && product.mrp > 0) {
                     Text(
                         text = formatMoney(product.mrp, locale),
@@ -367,6 +361,12 @@ private fun ProductCard(
                         textDecoration = TextDecoration.LineThrough
                     )
                 }
+                Text(
+                    text = formatMoney(product.sellingPrice, locale),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
                 product.stockQuantity?.let { stock ->
                     Surface(
                         shape = RoundedCornerShape(10.dp),
@@ -469,7 +469,26 @@ private fun ProductTable(
                     }
                     Text(text = product.code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(text = product.categoryName ?: "—", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(text = formatMoney(product.sellingPrice, locale), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
+                    Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (product.mrp != product.sellingPrice && product.mrp > 0) {
+                            Text(
+                                text = formatMoney(product.mrp, locale),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                textDecoration = TextDecoration.LineThrough,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Text(
+                            text = formatMoney(product.sellingPrice, locale),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     Text(
                         text = product.stockQuantity?.let { "${it.toInt()}" } ?: "—",
                         style = MaterialTheme.typography.bodySmall,
