@@ -12,7 +12,8 @@ import androidx.room.PrimaryKey
         Index(value = ["ref_id"], name = "product_ref_idx"),
         Index(value = ["brand_id"], name = "product_brand_idx"),
         Index(value = ["category_id"], name = "product_category_idx"),
-        Index(value = ["sub_category_id"], name = "product_sub_category_idx")
+        Index(value = ["sub_category_id"], name = "product_sub_category_idx"),
+        Index(value = ["group_id"], name = "product_group_idx")
     ]
 )
 data class ProductEntity(

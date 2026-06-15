@@ -95,10 +95,12 @@ import ampairsapp.feature.product.generated.resources.prod_filter_cd
 import ampairsapp.feature.product.generated.resources.prod_filter_brand
 import ampairsapp.feature.product.generated.resources.prod_filter_category
 import ampairsapp.feature.product.generated.resources.prod_filter_sub_category
+import ampairsapp.feature.product.generated.resources.prod_filter_group
 
 private const val KEY_BRAND = "brand"
 private const val KEY_CATEGORY = "category"
 private const val KEY_SUB_CATEGORY = "sub_category"
+private const val KEY_GROUP = "group"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,16 +129,19 @@ fun ProductsListScreen(
         val brandLabel = stringResource(Res.string.prod_filter_brand)
         val categoryLabel = stringResource(Res.string.prod_filter_category)
         val subCategoryLabel = stringResource(Res.string.prod_filter_sub_category)
+        val groupLabel = stringResource(Res.string.prod_filter_group)
         MultiSelectFilterSheet(
             categories = listOf(
                 FilterCategory(KEY_BRAND, brandLabel, uiState.brandOptions),
                 FilterCategory(KEY_CATEGORY, categoryLabel, uiState.categoryOptions),
                 FilterCategory(KEY_SUB_CATEGORY, subCategoryLabel, uiState.subCategoryOptions),
+                FilterCategory(KEY_GROUP, groupLabel, uiState.groupOptions),
             ),
             selected = mapOf(
                 KEY_BRAND to uiState.filter.brands,
                 KEY_CATEGORY to uiState.filter.categories,
                 KEY_SUB_CATEGORY to uiState.filter.subCategories,
+                KEY_GROUP to uiState.filter.groups,
             ),
             onApply = { selection ->
                 viewModel.applyFilter(
@@ -144,6 +149,7 @@ fun ProductsListScreen(
                         brands = selection[KEY_BRAND].orEmpty(),
                         categories = selection[KEY_CATEGORY].orEmpty(),
                         subCategories = selection[KEY_SUB_CATEGORY].orEmpty(),
+                        groups = selection[KEY_GROUP].orEmpty(),
                     )
                 )
             },

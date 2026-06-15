@@ -190,6 +190,7 @@
     <string name="prod_filter_brand">Brand</string>
     <string name="prod_filter_category">Category</string>
     <string name="prod_filter_sub_category">Sub-category</string>
+    <string name="prod_filter_group">Group</string>
     <string name="prod_catalog_search_hint">Search…</string>
     <string name="prod_catalog_empty">No items found</string>
     <string name="prod_catalog_active">Active</string>

@@ -9,6 +9,7 @@ import com.ampairs.product.data.ProductDataService
 import com.ampairs.common.components.FilterOption
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
+import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.SubCategoryDao
@@ -52,6 +53,7 @@ class ProductRepository(
     private val categoryDao: CategoryDao,
     private val brandDao: BrandDao,
     private val subCategoryDao: SubCategoryDao,
+    private val groupDao: GroupDao,
     private val syncStateDao: SyncStateDao,
 ) : ProductDataService, CacheCleanable {
 
@@ -69,12 +71,13 @@ class ProductRepository(
             observeProductsJoined(productDao.observeProductsByName(query))
         }
 
-    /** Combined search + multi-select filter (brand / category / sub-category). Empty list = no filter. */
+    /** Combined search + multi-select filter (brand / category / sub-category / group). Empty list = no filter. */
     fun filterProducts(
         query: String,
         brands: List<String>,
         categories: List<String>,
         subCategories: List<String>,
+        groups: List<String>,
     ): Flow<List<ProductListItem>> = observeProductsJoined(
         productDao.filterProducts(
             query = query,
@@ -84,6 +87,8 @@ class ProductRepository(
             hasCategories = if (categories.isEmpty()) 0 else 1,
             subCategories = subCategories,
             hasSubCategories = if (subCategories.isEmpty()) 0 else 1,
+            groups = groups,
+            hasGroups = if (groups.isEmpty()) 0 else 1,
         )
     )
 
@@ -103,6 +108,12 @@ class ProductRepository(
     suspend fun getSubCategoryFilterOptions(): List<FilterOption> {
         val ids = productDao.getDistinctSubCategoryIds()
         val names = subCategoryDao.getSubCategories().associate { it.id to it.name }
+        return ids.map { FilterOption(it, names[it] ?: it) }
+    }
+
+    suspend fun getGroupFilterOptions(): List<FilterOption> {
+        val ids = productDao.getDistinctGroupIds()
+        val names = groupDao.getGroups().associate { it.id to it.name }
         return ids.map { FilterOption(it, names[it] ?: it) }
     }
 

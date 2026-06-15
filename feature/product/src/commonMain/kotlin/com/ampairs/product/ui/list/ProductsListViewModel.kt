@@ -32,8 +32,9 @@ data class ProductFilter(
     val brands: Set<String> = emptySet(),
     val categories: Set<String> = emptySet(),
     val subCategories: Set<String> = emptySet(),
+    val groups: Set<String> = emptySet(),
 ) {
-    val activeCount: Int get() = brands.size + categories.size + subCategories.size
+    val activeCount: Int get() = brands.size + categories.size + subCategories.size + groups.size
 }
 
 data class ProductsListUiState(
@@ -46,6 +47,7 @@ data class ProductsListUiState(
     val brandOptions: List<FilterOption> = emptyList(),
     val categoryOptions: List<FilterOption> = emptyList(),
     val subCategoryOptions: List<FilterOption> = emptyList(),
+    val groupOptions: List<FilterOption> = emptyList(),
 )
 
 @ContributesIntoMap(WorkspaceScope::class)
@@ -106,6 +108,7 @@ class ProductsListViewModel(
                     brands = filter.brands.toList(),
                     categories = filter.categories.toList(),
                     subCategories = filter.subCategories.toList(),
+                    groups = filter.groups.toList(),
                 )
             }
             .onEach { products ->
@@ -122,11 +125,13 @@ class ProductsListViewModel(
             val brands = productRepository.getBrandFilterOptions()
             val categories = productRepository.getCategoryFilterOptions()
             val subCategories = productRepository.getSubCategoryFilterOptions()
+            val groups = productRepository.getGroupFilterOptions()
             _uiState.update {
                 it.copy(
                     brandOptions = brands,
                     categoryOptions = categories,
                     subCategoryOptions = subCategories,
+                    groupOptions = groups,
                 )
             }
         }

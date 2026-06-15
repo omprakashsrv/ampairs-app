@@ -20,9 +20,9 @@ interface ProductDao {
     fun observeProductsByName(query: String): Flow<List<ProductEntity>>
 
     /**
-     * Search + multi-select filter (brand / category / sub-category) in a single query. Each filter
-     * dimension is bypassed when its `hasX` flag is 0. Backed by the `product_brand_idx` /
-     * `product_category_idx` / `product_sub_category_idx` indexes for fast filtering.
+     * Search + multi-select filter (brand / category / sub-category / group) in a single query. Each
+     * filter dimension is bypassed when its `hasX` flag is 0. Backed by the `product_brand_idx` /
+     * `product_category_idx` / `product_sub_category_idx` / `product_group_idx` indexes.
      */
     @Query(
         """
@@ -31,6 +31,7 @@ interface ProductDao {
         AND (:hasBrands = 0 OR brand_id IN (:brands))
         AND (:hasCategories = 0 OR category_id IN (:categories))
         AND (:hasSubCategories = 0 OR sub_category_id IN (:subCategories))
+        AND (:hasGroups = 0 OR group_id IN (:groups))
         AND (:query = '' OR name LIKE '%' || :query || '%')
         ORDER BY name ASC
         """
@@ -43,6 +44,8 @@ interface ProductDao {
         hasCategories: Int,
         subCategories: List<String>,
         hasSubCategories: Int,
+        groups: List<String>,
+        hasGroups: Int,
     ): Flow<List<ProductEntity>>
 
     @Query(
@@ -59,6 +62,11 @@ interface ProductDao {
         "SELECT DISTINCT sub_category_id FROM productEntity WHERE active = 1 AND sub_category_id IS NOT NULL AND sub_category_id != '' ORDER BY sub_category_id ASC"
     )
     suspend fun getDistinctSubCategoryIds(): List<String>
+
+    @Query(
+        "SELECT DISTINCT group_id FROM productEntity WHERE active = 1 AND group_id IS NOT NULL AND group_id != '' ORDER BY group_id ASC"
+    )
+    suspend fun getDistinctGroupIds(): List<String>
 
     // Fast-entry composer lookup (spec 010 v2): name/code substring or tax-code (HSN) prefix.
     @Query(
