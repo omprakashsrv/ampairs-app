@@ -7,12 +7,23 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuBar
+import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
-import androidx.compose.ui.window.WindowState
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.isTraySupported
+import androidx.compose.ui.window.rememberTrayState
+import androidx.compose.ui.window.rememberWindowState
 import com.ampairs.auth.deeplink.DeepLinkHandler
 import com.ampairs.common.desktop.DataDirectoryManager
 import com.ampairs.common.desktop.DataDirectoryPickerDialog
@@ -25,6 +36,8 @@ import com.ampairs.di.DesktopWorkspaceModule
 import com.ampairs.tallysync.TallySettingsScreen
 import com.ampairs.tallysync.TallySyncScheduler
 import dev.zacsweers.metro.createGraphFactory
+import org.jetbrains.skia.Image
+import java.awt.Frame
 
 fun main() = application {
     // Check if data directory is set before initializing the graph
@@ -67,12 +80,68 @@ fun main() = application {
     applicationState.windows
     setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
     var activeWorkspaceSlug by remember { mutableStateOf("") }
+
+    // The main window is hidden (minimized to the system tray) on close instead of
+    // terminating the process, so background work (sync service, deep links) keeps running.
+    // The app is only fully exited from the tray menu's "Exit" item.
+    var mainWindowVisible by remember { mutableStateOf(true) }
+
+    // Reference to the underlying AWT window so the tray actions can raise it to the
+    // foreground. Just flipping `visible = true` shows the window behind the currently
+    // focused app — it must be explicitly de-iconified, brought to front and focused.
+    var mainComposeWindow by remember { mutableStateOf<ComposeWindow?>(null) }
+
+    // About window (app name, logo, current version, check-for-updates) — opened from the tray.
+    var showAboutWindow by remember { mutableStateOf(false) }
+
+    val showMainWindow: () -> Unit = {
+        mainWindowVisible = true
+        mainComposeWindow?.let { window ->
+            // Make it visible synchronously (don't wait for recomposition) so the
+            // toFront/requestFocus below act on an already-shown, de-iconified window.
+            window.extendedState = window.extendedState and Frame.ICONIFIED.inv()
+            window.isVisible = true
+            // Force the window manager to raise it above the previously focused app
+            // (notably required on Windows, which otherwise blocks focus stealing).
+            window.isAlwaysOnTop = true
+            window.toFront()
+            window.requestFocus()
+        }
+    }
+
+    if (isTraySupported) {
+        val trayState = rememberTrayState()
+        val trayIcon = remember { loadClasspathPainter("tray_icon.png") }
+        Tray(
+            icon = trayIcon,
+            state = trayState,
+            tooltip = "Ampairs",
+            onAction = showMainWindow, // double-click restores the window
+            menu = {
+                Item("Open Ampairs", onClick = showMainWindow)
+                Item("About Ampairs", onClick = { showAboutWindow = true })
+                Item("Exit", onClick = ::exitApplication)
+            }
+        )
+    }
+
+    if (showAboutWindow) {
+        AboutWindow(appGraph = appGraph, onCloseRequest = { showAboutWindow = false })
+    }
+
     for (window in applicationState.windows) {
         key(window) {
             if (window.title == "Main") {
                 MainWindow(
                     state = window,
                     appGraph = appGraph,
+                    visible = mainWindowVisible,
+                    onWindowReady = { mainComposeWindow = it },
+                    // Closing the main window only hides it to the tray when the tray is
+                    // available; otherwise fall back to exiting so the user is never stuck.
+                    onCloseRequest = {
+                        if (isTraySupported) mainWindowVisible = false else exitApplication()
+                    },
                     onWorkspaceSlugChanged = { activeWorkspaceSlug = it }
                 )
             } else if (window.title == "Tally") {
@@ -82,6 +151,22 @@ fun main() = application {
     }
 }
 
+
+@Composable
+private fun ApplicationScope.AboutWindow(
+    appGraph: DesktopAppGraph,
+    onCloseRequest: () -> Unit,
+) = Window(
+    onCloseRequest = onCloseRequest,
+    state = rememberWindowState(
+        size = DpSize(420.dp, 480.dp),
+        position = WindowPosition(Alignment.Center),
+    ),
+    resizable = false,
+    title = "About Ampairs",
+) {
+    AboutView(appGraph)
+}
 
 @Composable
 private fun ApplicationScope.TallyWindow(
@@ -107,14 +192,21 @@ private fun ApplicationScope.TallyWindow(
 private fun ApplicationScope.MainWindow(
     state: AppWindowState,
     appGraph: DesktopAppGraph,
+    visible: Boolean = true,
+    onCloseRequest: () -> Unit = { exitApplication() },
+    onWindowReady: (ComposeWindow) -> Unit = {},
     onWorkspaceSlugChanged: (String) -> Unit = {},
     onOpenTallyWindow: () -> Unit = state.openNewWindow,
 ) =
     Window(
-        onCloseRequest = ::exitApplication,
-        state = WindowState(placement = WindowPlacement.Maximized),
+        onCloseRequest = onCloseRequest,
+        visible = visible,
+        state = rememberWindowState(placement = WindowPlacement.Maximized),
         title = "Ampairs"
     ) {
+
+        // Expose the underlying AWT window so the tray "Open" action can raise it to front.
+        LaunchedEffect(window) { onWindowReady(window) }
 
         var loggedIn by remember { mutableStateOf(false) }
 
@@ -202,6 +294,18 @@ private class AppWindowState(
     private val close: (AppWindowState) -> Unit,
 ) {
     fun close() = close(this)
+}
+
+/**
+ * Loads an image bundled on the JVM classpath (desktopApp/src/main/resources) into a [Painter].
+ * Replaces the deprecated `androidx.compose.ui.res.painterResource(String)` per the Compose
+ * resources migration guidance for classpath-loaded images.
+ */
+private fun loadClasspathPainter(resourcePath: String): Painter {
+    val bytes = checkNotNull(object {}.javaClass.classLoader.getResourceAsStream(resourcePath)) {
+        "Resource not found on classpath: $resourcePath"
+    }.use { it.readBytes() }
+    return BitmapPainter(Image.makeFromEncoded(bytes).toComposeImageBitmap())
 }
 
 private fun initializeSentry() {
