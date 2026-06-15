@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.components.FilterOption
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.CustomerStore
+import com.ampairs.customer.domain.StateStore
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.common.di.WorkspaceScope
@@ -58,6 +59,7 @@ class CustomersListViewModel(
     private val customerStore: CustomerStore,
     private val customerTypeRepository: CustomerTypeRepository,
     private val customerGroupRepository: CustomerGroupRepository,
+    private val stateStore: StateStore,
     private val syncService: CentralSyncService,
 ) : ViewModel() {
 
@@ -129,12 +131,21 @@ class CustomersListViewModel(
 
     private fun loadFilterOptions() {
         viewModelScope.launch {
-            val stateValues = customerStore.getDistinctStates()
-            val typeValues = customerStore.getDistinctCustomerTypes()
-            val groupValues = customerStore.getDistinctCustomerGroups()
-            // Map stored type/group identifiers to human-readable names; fall back to the raw value.
-            val typeNames = customerTypeRepository.observeCustomerTypes().first().associate { it.uid to it.name }
-            val groupNames = customerGroupRepository.observeCustomerGroups().first().associate { it.uid to it.name }
+            // States: the primary `state` column is free-text and often empty, so the master states
+            // list (StateStore) is the source of options, unioned with any value actually present on
+            // customers. Filter matches by name, so value == label == state name.
+            val masterStates = runCatching { stateStore.observeStates().first().map { it.name } }.getOrDefault(emptyList())
+            val customerStates = runCatching { customerStore.getDistinctStates() }.getOrDefault(emptyList())
+            val stateValues = (masterStates + customerStates).filter { it.isNotBlank() }.distinct().sortedBy { it.lowercase() }
+
+            // Types/groups are stored as identifiers; map to names, falling back to the raw value.
+            val typeValues = runCatching { customerStore.getDistinctCustomerTypes() }.getOrDefault(emptyList())
+            val groupValues = runCatching { customerStore.getDistinctCustomerGroups() }.getOrDefault(emptyList())
+            val typeNames = runCatching { customerTypeRepository.observeCustomerTypes().first() }.getOrDefault(emptyList())
+                .associate { it.uid to it.name }
+            val groupNames = runCatching { customerGroupRepository.observeCustomerGroups().first() }.getOrDefault(emptyList())
+                .associate { it.uid to it.name }
+
             _uiState.update {
                 it.copy(
                     stateOptions = stateValues.map { v -> FilterOption(v, v) },
