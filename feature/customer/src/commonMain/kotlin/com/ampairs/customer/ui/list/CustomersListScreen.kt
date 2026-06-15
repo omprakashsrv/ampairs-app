@@ -23,11 +23,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -43,7 +44,9 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -126,26 +129,51 @@ fun CustomersListScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(Res.string.customer_list_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (uiState.customers.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = stringResource(Res.string.customer_list_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
+                                text = stringResource(Res.string.customer_list_count, uiState.customers.size),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if (uiState.customers.isNotEmpty()) {
-                                Text(
-                                    text = stringResource(Res.string.customer_list_count, uiState.customers.size),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
+                        Spacer(modifier = Modifier.weight(1f))
                         if (isExpanded) {
                             IconButton(onClick = onCreateCustomer) {
                                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.customer_list_add_cd))
+                            }
+                        }
+                        // Master-data shortcuts collapsed into an overflow menu to keep the
+                        // header compact so the list can use the maximum vertical space.
+                        Box {
+                            var masterMenuOpen by remember { mutableStateOf(false) }
+                            IconButton(onClick = { masterMenuOpen = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.customer_master_data))
+                            }
+                            DropdownMenu(
+                                expanded = masterMenuOpen,
+                                onDismissRequest = { masterMenuOpen = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.customer_shortcut_groups)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToGroups() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.customer_shortcut_types)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToTypes() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.customer_shortcut_states)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToStates() }
+                                )
                             }
                         }
                     }
@@ -168,38 +196,6 @@ fun CustomersListScreen(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                         )
                     )
-
-                    // Master data shortcuts
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.customer_master_data),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        AssistChip(
-                            onClick = onNavigateToGroups,
-                            label = { Text(stringResource(Res.string.customer_shortcut_groups), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                        AssistChip(
-                            onClick = onNavigateToTypes,
-                            label = { Text(stringResource(Res.string.customer_shortcut_types), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                        AssistChip(
-                            onClick = onNavigateToStates,
-                            label = { Text(stringResource(Res.string.customer_shortcut_states), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                    }
                 }
             }
 

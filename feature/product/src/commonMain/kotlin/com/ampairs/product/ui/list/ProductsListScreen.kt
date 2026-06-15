@@ -22,10 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -41,7 +42,9 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -130,26 +133,55 @@ fun ProductsListScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(Res.string.prod_list_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (uiState.products.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = stringResource(Res.string.prod_list_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
+                                text = stringResource(Res.string.prod_list_count, uiState.products.size),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if (uiState.products.isNotEmpty()) {
-                                Text(
-                                    text = stringResource(Res.string.prod_list_count, uiState.products.size),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
+                        Spacer(modifier = Modifier.weight(1f))
                         if (isExpanded) {
                             IconButton(onClick = onCreateProduct) {
                                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.prod_list_cd_add))
+                            }
+                        }
+                        // Catalog master-data shortcuts collapsed into an overflow menu to keep the
+                        // header compact so the list can use the maximum vertical space.
+                        Box {
+                            var masterMenuOpen by remember { mutableStateOf(false) }
+                            IconButton(onClick = { masterMenuOpen = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.prod_master_data))
+                            }
+                            DropdownMenu(
+                                expanded = masterMenuOpen,
+                                onDismissRequest = { masterMenuOpen = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_catalog_brands)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToBrands() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_catalog_categories)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToCategories() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_catalog_sub_categories)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToSubCategories() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_catalog_groups)) },
+                                    onClick = { masterMenuOpen = false; onNavigateToGroups() }
+                                )
                             }
                         }
                     }
@@ -171,43 +203,6 @@ fun ProductsListScreen(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                         )
                     )
-
-                    // Catalog master data shortcuts
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.prod_master_data),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        AssistChip(
-                            onClick = onNavigateToBrands,
-                            label = { Text(stringResource(Res.string.prod_catalog_brands), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                        AssistChip(
-                            onClick = onNavigateToCategories,
-                            label = { Text(stringResource(Res.string.prod_catalog_categories), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                        AssistChip(
-                            onClick = onNavigateToSubCategories,
-                            label = { Text(stringResource(Res.string.prod_catalog_sub_categories), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                        AssistChip(
-                            onClick = onNavigateToGroups,
-                            label = { Text(stringResource(Res.string.prod_catalog_groups), style = MaterialTheme.typography.labelSmall) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        )
-                    }
                 }
             }
 
