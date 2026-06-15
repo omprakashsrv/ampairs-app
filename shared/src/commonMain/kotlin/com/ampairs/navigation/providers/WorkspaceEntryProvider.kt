@@ -54,6 +54,12 @@ fun workspaceEntryProvider(
             onWorkspaceCreated = { workspaceId ->
                 backStack.removeLastOrNull()
             },
+            // A newly created workspace is already activated by the ViewModel — enter it directly
+            // (like selecting an existing workspace) instead of popping back to the list.
+            onEnterWorkspace = { workspaceId, workspaceSlug ->
+                backStack.clear()
+                backStack.add(WorkspaceRoute.Modules(workspaceId, workspaceSlug))
+            },
             modifier = Modifier
         )
     }
