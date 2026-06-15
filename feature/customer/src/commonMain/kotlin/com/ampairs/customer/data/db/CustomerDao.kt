@@ -99,14 +99,14 @@ interface CustomerDao {
      */
     @Query(
         """
-        SELECT c.* FROM customers c
-        JOIN customer_fts f ON c.rowid = f.docid
-        WHERE f MATCH :ftsQuery
-        AND c.active = 1
-        AND (:hasStates = 0 OR c.state IN (:states))
-        AND (:hasTypes = 0 OR c.customer_type IN (:types))
-        AND (:hasGroups = 0 OR c.customer_group IN (:groups))
-        ORDER BY c.name ASC
+        SELECT customers.* FROM customers
+        JOIN customer_fts ON customers.rowid = customer_fts.rowid
+        WHERE customer_fts MATCH :ftsQuery
+        AND customers.active = 1
+        AND (:hasStates = 0 OR customers.state IN (:states))
+        AND (:hasTypes = 0 OR customers.customer_type IN (:types))
+        AND (:hasGroups = 0 OR customers.customer_group IN (:groups))
+        ORDER BY customers.name ASC
         LIMIT :limit
     """
     )
