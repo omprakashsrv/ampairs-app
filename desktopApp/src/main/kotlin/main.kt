@@ -7,12 +7,16 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuBar
+import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
-import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.isTraySupported
+import androidx.compose.ui.window.rememberTrayState
+import androidx.compose.ui.window.rememberWindowState
 import com.ampairs.auth.deeplink.DeepLinkHandler
 import com.ampairs.common.desktop.DataDirectoryManager
 import com.ampairs.common.desktop.DataDirectoryPickerDialog
@@ -67,12 +71,38 @@ fun main() = application {
     applicationState.windows
     setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
     var activeWorkspaceSlug by remember { mutableStateOf("") }
+
+    // The main window is hidden (minimized to the system tray) on close instead of
+    // terminating the process, so background work (sync service, deep links) keeps running.
+    // The app is only fully exited from the tray menu's "Exit" item.
+    var mainWindowVisible by remember { mutableStateOf(true) }
+
+    if (isTraySupported) {
+        val trayState = rememberTrayState()
+        Tray(
+            icon = painterResource("tray_icon.png"),
+            state = trayState,
+            tooltip = "Ampairs",
+            onAction = { mainWindowVisible = true }, // double-click restores the window
+            menu = {
+                Item("Open Ampairs", onClick = { mainWindowVisible = true })
+                Item("Exit", onClick = ::exitApplication)
+            }
+        )
+    }
+
     for (window in applicationState.windows) {
         key(window) {
             if (window.title == "Main") {
                 MainWindow(
                     state = window,
                     appGraph = appGraph,
+                    visible = mainWindowVisible,
+                    // Closing the main window only hides it to the tray when the tray is
+                    // available; otherwise fall back to exiting so the user is never stuck.
+                    onCloseRequest = {
+                        if (isTraySupported) mainWindowVisible = false else exitApplication()
+                    },
                     onWorkspaceSlugChanged = { activeWorkspaceSlug = it }
                 )
             } else if (window.title == "Tally") {
@@ -107,12 +137,15 @@ private fun ApplicationScope.TallyWindow(
 private fun ApplicationScope.MainWindow(
     state: AppWindowState,
     appGraph: DesktopAppGraph,
+    visible: Boolean = true,
+    onCloseRequest: () -> Unit = { exitApplication() },
     onWorkspaceSlugChanged: (String) -> Unit = {},
     onOpenTallyWindow: () -> Unit = state.openNewWindow,
 ) =
     Window(
-        onCloseRequest = ::exitApplication,
-        state = WindowState(placement = WindowPlacement.Maximized),
+        onCloseRequest = onCloseRequest,
+        visible = visible,
+        state = rememberWindowState(placement = WindowPlacement.Maximized),
         title = "Ampairs"
     ) {
 
