@@ -15,6 +15,7 @@ enum class SyncEntity(val entityType: String) {
     UNIT("unit"),
     SEQUENCE("sequence"),
     STORE("setting"),
+    CONNECTOR("connector"),
     INVENTORY("inventory"),
     FORM("form"),
     FILE("file"),
