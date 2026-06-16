@@ -2,6 +2,9 @@ package com.ampairs.tallysync
 
 import co.touchlab.kermit.Logger
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.connector.data.api.ConnectorApi
+import com.ampairs.connector.domain.ConnectorConfigProvider
+import com.ampairs.connector.domain.SyncRunDto
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import dev.zacsweers.metro.Inject
@@ -24,6 +27,8 @@ private val log = Logger.withTag("TallySyncScheduler")
 class TallySyncScheduler(
     val syncService: TallySyncService,
     val centralSyncService: CentralSyncService,
+    private val connectorConfigProvider: ConnectorConfigProvider,
+    private val connectorApi: ConnectorApi,
 ) {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -62,7 +67,32 @@ class TallySyncScheduler(
                 centralSyncService.markPendingPush(SyncEntity.PRODUCT_CATALOG)
         }
 
+        // Report the cycle to the backend connector platform (run history). Non-fatal.
+        // TODO(spec 013): also read host/port from the backend connector config (FR-H03) and push the
+        //  mapped rows via connectorApi.upsert (sparse upsert) + advance per-entity checkpoints,
+        //  replacing the markPendingPush path above.
+        runCatching { reportRunToConnector(result) }
+            .onFailure { log.w(it) { "Connector run report failed (non-fatal)" } }
+
         return result
+    }
+
+    /** Records this Tally cycle as a connector sync-run on the backend, if Tally is installed there. */
+    private suspend fun reportRunToConnector(result: TallySyncResult) {
+        val installation = connectorConfigProvider.installation() ?: return // not installed on backend
+        val total = result.customersSynced + result.customerGroupsSynced + result.productsSynced +
+            result.groupsSynced + result.categoriesSynced
+        connectorApi.recordRun(
+            installation.uid,
+            SyncRunDto(
+                installationUid = installation.uid,
+                trigger = "SCHEDULED",
+                status = if (result.success) "SUCCESS" else "FAILED",
+                processed = total,
+                updated = total,
+                errorDetail = result.error,
+            ),
+        )
     }
 
     fun stop() {

@@ -190,6 +190,7 @@ kotlin {
                 implementation(libs.kermit)
 
                 implementation(project(":tally"))
+                implementation(projects.feature.connector)
             }
         }
 
