@@ -219,20 +219,28 @@ class TallySyncService(
             ?: "IN"
 
     suspend fun sync(workspaceSlug: String): TallySyncResult {
-        val host = dataStore.getTallyHost(workspaceSlug).first()
+        // Resolve the backend Tally connector installation (if installed). Rows are then pushed to it
+        // via the sparse-upsert endpoint instead of the legacy full-upsert /sync path, and the
+        // backend connector config becomes the source of truth for host/port (FR-H03) — falling back
+        // to local DataStore only when the backend has no value.
+        val installationUid = runCatching { connectorConfigProvider.installation()?.uid }.getOrNull()
+        connectorInstallationUid = installationUid
+        val backendConfig = installationUid?.let {
+            runCatching { connectorConfigProvider.config(it) }.getOrNull()
+        }
+
+        val host = backendConfig?.nonSecretValues?.get("host")?.takeIf { it.isNotBlank() }
+            ?: dataStore.getTallyHost(workspaceSlug).first()
         if (host.isBlank()) {
             emit("Tally host not configured")
             return TallySyncResult(error = "Tally host not configured")
         }
-        val port = dataStore.getTallyPort(workspaceSlug).first()
+        val port = backendConfig?.nonSecretValues?.get("port")?.trim()?.toIntOrNull()
+            ?: dataStore.getTallyPort(workspaceSlug).first()
         val baseUrl = "http://$host:$port"
         emit("Tally sync started — $baseUrl")
 
         val repo = TallyRepository(TallyApiImpl(engine, baseUrl))
-
-        // Resolve the backend Tally connector installation (if installed); rows are then pushed to it
-        // via the sparse-upsert endpoint instead of the legacy full-upsert /sync path.
-        connectorInstallationUid = runCatching { connectorConfigProvider.installation()?.uid }.getOrNull()
 
         return try {
             val groupsSynced = syncGroups(repo, workspaceSlug)
