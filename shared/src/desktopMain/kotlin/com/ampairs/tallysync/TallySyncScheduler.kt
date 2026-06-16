@@ -56,7 +56,10 @@ class TallySyncScheduler(
             .getOrElse { TallySyncResult(error = it.message) }
         lastResult = result
 
-        if (result.success) {
+        // When the rows were pushed to the backend connector (sparse upsert, non-destructive), do NOT
+        // also markPendingPush — that would re-push the full entity via the legacy /sync path and
+        // re-introduce the data loss the connector push avoids.
+        if (result.success && !result.pushedViaConnector) {
             if (result.customerGroupsSynced > 0)
                 centralSyncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)
             if (result.customersSynced > 0)

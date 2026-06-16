@@ -24,6 +24,11 @@ import com.ampairs.tallysync.TallyProductMapper.toGroupEntity
 import com.ampairs.tallysync.TallyProductMapper.toProductEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
 import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
+import com.ampairs.connector.data.api.ConnectorApi
+import com.ampairs.connector.domain.ConnectorConfigProvider
+import com.ampairs.connector.domain.SparseUpsertRow
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import com.ampairs.tally.model.master.StockItem
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
@@ -51,6 +56,8 @@ data class TallySyncResult(
     val customersSynced: Int = 0,
     val taxCodesFound: Int = 0,
     val taxCodesToImport: Int = 0,
+    /** True when the rows were pushed to the backend connector (sparse upsert) this cycle. */
+    val pushedViaConnector: Boolean = false,
     val error: String? = null,
 ) {
     val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + unitsSynced + stockBalancesUpdated + customerGroupsSynced + customersSynced
@@ -95,7 +102,26 @@ class TallySyncService(
     private val taxComponentRepository: TaxComponentRepository,
     private val taxConfigurationRepository: TaxConfigurationRepository,
     private val dataStore: AppPreferencesDataStore,
+    private val connectorConfigProvider: ConnectorConfigProvider,
+    private val connectorApi: ConnectorApi,
 ) {
+    /** Set per [sync] cycle: the backend Tally connector installation uid, or null if not installed. */
+    private var connectorInstallationUid: String? = null
+
+    /**
+     * When a Tally connector is installed on the backend, push the just-mapped rows to it via the
+     * sparse-upsert endpoint (mapped-fields-only, non-destructive) instead of the legacy full-upsert
+     * `/sync` path. Non-fatal: failures are logged and the local DB write still stands.
+     */
+    private suspend fun pushToConnector(entityType: String, rows: List<SparseUpsertRow>) {
+        val uid = connectorInstallationUid ?: return
+        if (rows.isEmpty()) return
+        runCatching {
+            rows.chunked(BATCH_SIZE).forEach { connectorApi.upsert(uid, entityType, it) }
+            log.d { "Connector: pushed ${rows.size} '$entityType' rows" }
+        }.onFailure { log.w(it) { "Connector push failed for '$entityType' (non-fatal)" } }
+    }
+
     private val _logLines = MutableStateFlow<List<String>>(emptyList())
     /** Reactive, human-readable log of recent sync activity (capped to the last [MAX_LOG_LINES] lines). */
     val logLines: StateFlow<List<String>> = _logLines.asStateFlow()
@@ -204,6 +230,10 @@ class TallySyncService(
 
         val repo = TallyRepository(TallyApiImpl(engine, baseUrl))
 
+        // Resolve the backend Tally connector installation (if installed); rows are then pushed to it
+        // via the sparse-upsert endpoint instead of the legacy full-upsert /sync path.
+        connectorInstallationUid = runCatching { connectorConfigProvider.installation()?.uid }.getOrNull()
+
         return try {
             val groupsSynced = syncGroups(repo, workspaceSlug)
             emit("Stock groups: $groupsSynced new")
@@ -239,6 +269,7 @@ class TallySyncService(
                 stockBalancesUpdated = stockBalancesUpdated,
                 customerGroupsSynced = customerGroupsSynced,
                 customersSynced = customersSynced,
+                pushedViaConnector = connectorInstallationUid != null,
                 taxCodesFound = candidates.size,
                 taxCodesToImport = toImport,
             )
@@ -267,6 +298,9 @@ class TallySyncService(
             sg.toGroupEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { groupDao.insertAll(it) }
+        pushToConnector("product_group", entities.map { g ->
+            SparseUpsertRow(refId = g.ref_id, uid = g.id, values = buildJsonObject { put("name", g.name) })
+        })
         val maxAlterId = stockGroups.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_GROUP, maxAlterId)
         log.d { "syncGroups: ${entities.size} new (batches=${entities.size / BATCH_SIZE + 1})" }
@@ -289,6 +323,9 @@ class TallySyncService(
             sc.toCategoryEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { categoryDao.insertAll(it) }
+        pushToConnector("product_category", entities.map { c ->
+            SparseUpsertRow(refId = c.ref_id, uid = c.id, values = buildJsonObject { put("name", c.name) })
+        })
         val maxAlterId = stockCategories.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_CATEGORY, maxAlterId)
         log.d { "syncCategories: ${entities.size} new" }
@@ -377,6 +414,21 @@ class TallySyncService(
             batchNum++
             log.d { "syncProducts batch $batchNum: inserted ${batch.size}" }
         }
+        pushToConnector("product", entities.map { p ->
+            SparseUpsertRow(
+                refId = p.ref_id,
+                uid = p.id,
+                values = buildJsonObject {
+                    put("name", p.name)
+                    put("sellingPrice", p.selling_price)
+                    put("mrp", p.mrp)
+                    put("costPrice", p.dp)
+                    put("taxCode", p.tax_code)
+                    p.category_id?.let { put("categoryId", it) }
+                    p.group_id?.let { put("groupId", it) }
+                },
+            )
+        })
         // Scan the full catalogue (not just alterId-filtered items) so the tax-code panel always
         // reflects every HSN in Tally, even when no products are newly changed this cycle.
         scanTaxCodeCandidates(stockItems)
@@ -463,6 +515,16 @@ class TallySyncService(
             g.toCustomerGroupEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { customerGroupDao.insertCustomerGroups(it) }
+        pushToConnector("customer_group", entities.map { g ->
+            SparseUpsertRow(
+                refId = g.ref_id,
+                uid = g.id,
+                values = buildJsonObject {
+                    put("name", g.name)
+                    g.description?.let { put("description", it) }
+                },
+            )
+        })
         if (entities.isNotEmpty()) {
             val maxAlterId = groups.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
             if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_ACCOUNT_GROUP, maxAlterId)
@@ -494,6 +556,24 @@ class TallySyncService(
             l.toCustomerEntity(id, customerGroupIdByName)
         }
         entities.chunked(BATCH_SIZE).forEach { customerDao.insertCustomers(it) }
+        pushToConnector("customer", entities.map { c ->
+            SparseUpsertRow(
+                refId = c.ref_id,
+                uid = c.id,
+                values = buildJsonObject {
+                    put("name", c.name)
+                    c.phone?.let { put("phone", it) }
+                    c.landline?.let { put("landline", it) }
+                    c.gstNumber?.let { put("gstNumber", it) }
+                    c.address?.let { put("address", it) }
+                    c.street?.let { put("street", it) }
+                    c.city?.let { put("city", it) }
+                    c.state?.let { put("state", it) }
+                    c.pincode?.let { put("pincode", it) }
+                    c.customer_group?.let { put("customerGroup", it) }
+                },
+            )
+        })
         if (entities.isNotEmpty()) {
             val maxAlterId = ledgers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
             if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_LEDGER, maxAlterId)
