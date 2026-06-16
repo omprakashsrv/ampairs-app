@@ -71,13 +71,32 @@ class TallySyncScheduler(
         }
 
         // Report the cycle to the backend connector platform (run history). Non-fatal.
-        // TODO(spec 013): also read host/port from the backend connector config (FR-H03) and push the
-        //  mapped rows via connectorApi.upsert (sparse upsert) + advance per-entity checkpoints,
-        //  replacing the markPendingPush path above.
+        // Host/port-from-config (FR-H03) and the mapped sparse-upsert push both live in
+        // TallySyncService.sync() now; remaining follow-up is advancing per-entity checkpoints.
         runCatching { reportRunToConnector(result) }
             .onFailure { log.w(it) { "Connector run report failed (non-fatal)" } }
 
         return result
+    }
+
+    /**
+     * Backend connector status for the Tally settings screen — whether Tally is installed on the
+     * platform and, if so, the connection details the backend config supplies (FR-H03). All lookups
+     * are best-effort: a backend error yields [ConnectorStatus.installed] = false rather than throwing.
+     */
+    suspend fun connectorStatus(): ConnectorStatus {
+        val installation = runCatching { connectorConfigProvider.installation() }.getOrNull()
+            ?: return ConnectorStatus(installed = false)
+        val config = runCatching { connectorConfigProvider.config(installation.uid) }.getOrNull()
+        return ConnectorStatus(
+            installed = true,
+            connectorType = installation.connectorType,
+            status = installation.status,
+            host = config?.nonSecretValues?.get("host")?.takeIf { it.isNotBlank() },
+            port = config?.nonSecretValues?.get("port")?.trim()?.toIntOrNull(),
+            lastValidatedAt = config?.lastValidatedAt,
+            lastErrorMessage = installation.lastErrorMessage,
+        )
     }
 
     /** Records this Tally cycle as a connector sync-run on the backend, if Tally is installed there. */
@@ -108,3 +127,14 @@ class TallySyncScheduler(
         scope.cancel()
     }
 }
+
+/** Snapshot of the backend Tally connector for display in the desktop settings screen. */
+data class ConnectorStatus(
+    val installed: Boolean,
+    val connectorType: String? = null,
+    val status: String? = null,
+    val host: String? = null,
+    val port: Int? = null,
+    val lastValidatedAt: String? = null,
+    val lastErrorMessage: String? = null,
+)
