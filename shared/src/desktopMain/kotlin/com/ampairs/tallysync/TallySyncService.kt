@@ -370,6 +370,17 @@ class TallySyncService(
             u.toUnitEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { unitDao.insertUnits(it) }
+        // Units have no ref_id column locally; the connector sparse-upsert matches by uid instead
+        // (AbstractRefIdEntityWriter falls back to uid → creates/updates the backend unit with it).
+        pushToConnector("unit", entities.map { u ->
+            SparseUpsertRow(
+                uid = u.id,
+                values = buildJsonObject {
+                    put("name", u.name)
+                    put("shortName", u.shortName)
+                },
+            )
+        })
         val maxAlterId = units.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_UNIT, maxAlterId)
         log.d { "syncUnits: ${entities.size} upserted" }
@@ -493,14 +504,22 @@ class TallySyncService(
     private suspend fun syncStockBalances(repo: TallyRepository): Int {
         val items = repo.getStockBalances().body?.data?.collection?.stockItems ?: return 0
         var updated = 0
+        val connectorRows = mutableListOf<SparseUpsertRow>()
         items.chunked(BATCH_SIZE).forEach { batch ->
             batch.forEach { item ->
                 val qty = item.closingBalance?.parseClosingQty() ?: return@forEach
                 val guid = item.guid?.takeIf { it.isNotBlank() } ?: return@forEach
                 productDao.updateStockQuantityByTallyRef(guid, qty)
                 updated++
+                // Match the product on the backend by its Tally GUID (ref_id); the DSL stock writer
+                // applies stockQuantity onto the product's Inventory child row.
+                connectorRows += SparseUpsertRow(
+                    refId = guid,
+                    values = buildJsonObject { put("stockQuantity", qty) },
+                )
             }
         }
+        pushToConnector("stock_balance", connectorRows)
         log.d { "syncStockBalances: $updated updated" }
         return updated
     }
