@@ -25,6 +25,7 @@ kotlin {
                 implementation(projects.feature.authApi)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.metro.runtime)
+                implementation(libs.kermit)
                 implementation(libs.bundles.ktor.common)
             }
         }

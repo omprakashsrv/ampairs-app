@@ -5,6 +5,7 @@ import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.di.AppScope
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
+import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
 import com.ampairs.common.postList
@@ -35,6 +36,17 @@ class ConnectorApiImpl(
 
     override suspend fun installations(): Response<List<ConnectorInstallationDto>> =
         get(client, ApiUrlBuilder.connectorUrl("v1/installations"))
+
+    override suspend fun sync(lastSync: String?, page: Int, size: Int): Response<PageResponse<ConnectorInstallationDto>> {
+        val params = mutableMapOf(
+            "page" to page.toString(),
+            "size" to size.toString(),
+            "sort_by" to "updatedAt",
+            "sort_dir" to "ASC",
+        )
+        lastSync?.takeIf { it.isNotBlank() }?.let { params["last_sync"] = it }
+        return get(client, ApiUrlBuilder.connectorUrl("v1/sync"), params)
+    }
 
     override suspend fun config(installationUid: String): Response<ConnectorConfigDto> =
         get(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/config"))

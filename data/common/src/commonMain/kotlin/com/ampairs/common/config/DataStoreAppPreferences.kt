@@ -53,6 +53,12 @@ class DataStoreAppPreferences(
         private fun getTallyPortKey(ws: String) = intPreferencesKey("tally_port_$ws")
         private fun getTallyAlterIdKey(ws: String, entity: String) =
             longPreferencesKey("tally_alter_id_${entity}_$ws")
+
+        // Connector mirror cache (offline-first): raw JSON blobs of the backend connector metadata
+        private fun getConnectorInstallationsKey(ws: String) =
+            stringPreferencesKey("connector_installations_$ws")
+        private fun getConnectorConfigKey(uid: String) =
+            stringPreferencesKey("connector_config_$uid")
     }
 
     override fun getThemePreference(): Flow<ThemePreference> {
@@ -258,6 +264,30 @@ class DataStoreAppPreferences(
     override suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long) {
         dataStore.edit { preferences ->
             preferences[getTallyAlterIdKey(workspaceSlug, entityType)] = alterId
+        }
+    }
+
+    override fun getConnectorInstallationsJson(workspaceSlug: String): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[getConnectorInstallationsKey(workspaceSlug)]
+        }
+    }
+
+    override suspend fun setConnectorInstallationsJson(workspaceSlug: String, json: String) {
+        dataStore.edit { preferences ->
+            preferences[getConnectorInstallationsKey(workspaceSlug)] = json
+        }
+    }
+
+    override fun getConnectorConfigJson(installationUid: String): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[getConnectorConfigKey(installationUid)]
+        }
+    }
+
+    override suspend fun setConnectorConfigJson(installationUid: String, json: String) {
+        dataStore.edit { preferences ->
+            preferences[getConnectorConfigKey(installationUid)] = json
         }
     }
 }

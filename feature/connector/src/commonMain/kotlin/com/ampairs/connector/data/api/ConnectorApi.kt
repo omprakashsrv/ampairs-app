@@ -1,5 +1,6 @@
 package com.ampairs.connector.data.api
 
+import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.connector.domain.ConnectionTestRequest
 import com.ampairs.connector.domain.ConnectionTestResult
@@ -18,6 +19,13 @@ import com.ampairs.connector.domain.SyncRunDto
  */
 interface ConnectorApi {
     suspend fun installations(): Response<List<ConnectorInstallationDto>>
+
+    /**
+     * Metadata pull feed for client mirroring (`GET /connector/v1/sync`) — installations changed
+     * since [lastSync], including uninstalled rows so removals propagate. Config/mappings are
+     * fetched per installation.
+     */
+    suspend fun sync(lastSync: String?, page: Int, size: Int): Response<PageResponse<ConnectorInstallationDto>>
     suspend fun config(installationUid: String): Response<ConnectorConfigDto>
     suspend fun mappings(installationUid: String): Response<List<FieldMappingDto>>
     suspend fun upsert(

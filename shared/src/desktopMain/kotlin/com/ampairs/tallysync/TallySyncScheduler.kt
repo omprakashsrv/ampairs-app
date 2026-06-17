@@ -7,6 +7,7 @@ import com.ampairs.connector.domain.ConnectorConfigProvider
 import com.ampairs.connector.domain.SyncRunDto
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,8 @@ class TallySyncScheduler(
     fun start(workspaceSlug: String, interval: Duration = 15.minutes) {
         if (job?.isActive == true) return
         log.i { "Starting Tally sync scheduler (interval=${interval})" }
+        // Hydrate the offline connector mirror (installation list) via the ConnectorSyncDelegate.
+        centralSyncService.emit(SyncEvent.TriggerPull(SyncEntity.CONNECTOR))
         job = scope.launch {
             while (isActive) {
                 runOnce(workspaceSlug)
