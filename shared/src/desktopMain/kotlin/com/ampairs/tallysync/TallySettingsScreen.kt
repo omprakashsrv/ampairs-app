@@ -110,6 +110,24 @@ fun TallySettingsScreen(
 
                 Spacer(Modifier.width(8.dp))
 
+                OutlinedButton(
+                    enabled = !isSyncing && host.isNotBlank(),
+                    onClick = {
+                        scope.launch {
+                            statusText = "Testing connection…"
+                            val result = scheduler.syncService.testConnection(workspaceSlug)
+                            statusText = if (result.ok)
+                                "Connection OK — ${result.message}"
+                            else
+                                "Connection failed — ${result.message}"
+                        }
+                    }
+                ) {
+                    Text("Test Connection")
+                }
+
+                Spacer(Modifier.width(8.dp))
+
                 Button(
                     enabled = !isSyncing && host.isNotBlank(),
                     onClick = {

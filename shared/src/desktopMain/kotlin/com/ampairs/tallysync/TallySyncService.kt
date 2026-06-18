@@ -25,6 +25,8 @@ import com.ampairs.tallysync.TallyProductMapper.toProductEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
 import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
 import com.ampairs.connector.data.api.ConnectorApi
+import com.ampairs.connector.domain.ConnectionTestRequest
+import com.ampairs.connector.domain.ConnectionTestResult
 import com.ampairs.connector.domain.ConnectorConfigProvider
 import com.ampairs.connector.domain.SparseUpsertRow
 import kotlinx.serialization.json.buildJsonObject
@@ -37,11 +39,13 @@ import com.ampairs.tax.data.repository.TaxRuleRepository
 import com.ampairs.unit.data.db.dao.UnitDao
 import dev.zacsweers.metro.Inject
 import io.ktor.client.engine.HttpClientEngine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -121,6 +125,49 @@ class TallySyncService(
             log.d { "Connector: pushed ${rows.size} '$entityType' rows" }
         }.onFailure { log.w(it) { "Connector push failed for '$entityType' (non-fatal)" } }
     }
+
+    /**
+     * Tests reachability of the local Tally instance (host:port) and reports the result to the
+     * backend connector platform (FR-009, G2). The server never reaches a client-side connector's
+     * external system, so the client computes reachability and POSTs it; the backend records
+     * `last_validated_at`.
+     */
+    suspend fun testConnection(workspaceSlug: String): ConnectionTestResult {
+        val installationUid = runCatching { connectorConfigProvider.installation()?.uid }.getOrNull()
+        val backendConfig = installationUid?.let {
+            runCatching { connectorConfigProvider.config(it) }.getOrNull()
+        }
+        val host = backendConfig?.nonSecretValues?.get("host")?.takeIf { it.isNotBlank() }
+            ?: dataStore.getTallyHost(workspaceSlug).first()
+        val port = backendConfig?.nonSecretValues?.get("port")?.trim()?.toIntOrNull()
+            ?: dataStore.getTallyPort(workspaceSlug).first()
+        if (host.isBlank()) {
+            emit("Connection test — Tally host not configured")
+            return ConnectionTestResult(ok = false, message = "Tally host not configured")
+        }
+
+        val (reachable, message) = checkReachable(host, port)
+        emit("Connection test — $host:$port → ${if (reachable) "reachable" else "unreachable"} ($message)")
+
+        // Report to the backend (records last_validated_at). Non-fatal if the backend is unreachable.
+        installationUid?.let { uid ->
+            runCatching { connectorApi.testConnection(uid, ConnectionTestRequest(ok = reachable, message = message)) }
+                .onFailure { log.w(it) { "Connection test report failed (non-fatal)" } }
+        }
+        return ConnectionTestResult(ok = reachable, message = message)
+    }
+
+    private suspend fun checkReachable(host: String, port: Int): Pair<Boolean, String> =
+        withContext(Dispatchers.IO) {
+            try {
+                java.net.Socket().use { socket ->
+                    socket.connect(java.net.InetSocketAddress(host, port), 5000)
+                }
+                true to "Connected to $host:$port"
+            } catch (e: Exception) {
+                false to (e.message ?: "Unreachable")
+            }
+        }
 
     private val _logLines = MutableStateFlow<List<String>>(emptyList())
     /** Reactive, human-readable log of recent sync activity (capped to the last [MAX_LOG_LINES] lines). */
