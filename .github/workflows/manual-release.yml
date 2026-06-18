@@ -188,7 +188,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           cmdline-tools-version: 11076708
 
