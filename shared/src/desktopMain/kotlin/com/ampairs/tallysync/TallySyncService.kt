@@ -29,6 +29,7 @@ import com.ampairs.connector.domain.ConnectionTestRequest
 import com.ampairs.connector.domain.ConnectionTestResult
 import com.ampairs.connector.domain.ConnectorConfigProvider
 import com.ampairs.connector.domain.SparseUpsertRow
+import com.ampairs.connector.domain.SyncCheckpointDto
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.ampairs.tally.model.master.StockItem
@@ -155,6 +156,37 @@ class TallySyncService(
                 .onFailure { log.w(it) { "Connection test report failed (non-fatal)" } }
         }
         return ConnectionTestResult(ok = reachable, message = message)
+    }
+
+    /**
+     * Reports per-entity incremental watermarks (Tally ALTERIDs) to the backend connector platform
+     * after a cycle, so multi-device / resumed syncs know where the client left off (FR-024). The
+     * connector entity_type is keyed to the corresponding Tally entity's stored ALTERID. Non-fatal.
+     */
+    private suspend fun reportCheckpoints(workspaceSlug: String) {
+        val uid = connectorInstallationUid ?: return
+        val mapping = listOf(
+            "product_group" to ENTITY_STOCK_GROUP,
+            "product_category" to ENTITY_STOCK_CATEGORY,
+            "unit" to ENTITY_UNIT,
+            "product" to ENTITY_STOCK_ITEM,
+            "customer_group" to ENTITY_ACCOUNT_GROUP,
+            "customer" to ENTITY_LEDGER,
+        )
+        runCatching {
+            mapping.forEach { (entityType, tallyEntity) ->
+                val watermark = dataStore.getTallyLastAlterId(workspaceSlug, tallyEntity).first()
+                connectorApi.putCheckpoint(
+                    uid,
+                    SyncCheckpointDto(
+                        installationUid = uid,
+                        entityType = entityType,
+                        direction = "INBOUND",
+                        watermark = watermark.toString(),
+                    ),
+                )
+            }
+        }.onFailure { log.w(it) { "Checkpoint report failed (non-fatal)" } }
     }
 
     private suspend fun checkReachable(host: String, port: Int): Pair<Boolean, String> =
@@ -328,6 +360,7 @@ class TallySyncService(
                 taxCodesFound = candidates.size,
                 taxCodesToImport = toImport,
             )
+            if (connectorInstallationUid != null) reportCheckpoints(workspaceSlug)
             emit("Tally sync complete — total=${result.totalSynced}, tax codes to import=$toImport")
             result
         } catch (e: Exception) {
