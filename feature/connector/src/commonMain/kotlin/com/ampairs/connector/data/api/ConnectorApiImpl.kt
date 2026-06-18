@@ -10,6 +10,7 @@ import com.ampairs.common.model.Response
 import com.ampairs.common.post
 import com.ampairs.common.postList
 import com.ampairs.common.put
+import com.ampairs.connector.domain.ConfigUpdateRequest
 import com.ampairs.connector.domain.ConnectionTestRequest
 import com.ampairs.connector.domain.ConnectionTestResult
 import com.ampairs.connector.domain.ConnectorConfigDto
@@ -50,6 +51,9 @@ class ConnectorApiImpl(
 
     override suspend fun config(installationUid: String): Response<ConnectorConfigDto> =
         get(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/config"))
+
+    override suspend fun updateConfig(installationUid: String, request: ConfigUpdateRequest): Response<ConnectorConfigDto> =
+        put(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/config"), request)
 
     override suspend fun mappings(installationUid: String): Response<List<FieldMappingDto>> =
         get(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/mappings"))

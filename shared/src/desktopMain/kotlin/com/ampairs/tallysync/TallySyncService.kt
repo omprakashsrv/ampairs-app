@@ -25,6 +25,7 @@ import com.ampairs.tallysync.TallyProductMapper.toProductEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
 import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
 import com.ampairs.connector.data.api.ConnectorApi
+import com.ampairs.connector.domain.ConfigUpdateRequest
 import com.ampairs.connector.domain.ConnectionTestRequest
 import com.ampairs.connector.domain.ConnectionTestResult
 import com.ampairs.connector.domain.ConnectorConfigProvider
@@ -316,6 +317,19 @@ class TallySyncService(
         }
         val port = backendConfig?.nonSecretValues?.get("port")?.trim()?.toIntOrNull()
             ?: dataStore.getTallyPort(workspaceSlug).first()
+
+        // First-run seed (FR-027): hydrate the backend connector config from local DataStore
+        // settings when the backend has no host yet, so existing Tally users don't reconfigure.
+        if (installationUid != null && backendConfig?.nonSecretValues?.get("host").isNullOrBlank()) {
+            runCatching {
+                connectorApi.updateConfig(
+                    installationUid,
+                    ConfigUpdateRequest(nonSecretValues = mapOf("host" to host, "port" to port.toString())),
+                )
+                emit("Seeded backend connector config from local settings ($host:$port)")
+            }.onFailure { log.w(it) { "Connector config seed failed (non-fatal)" } }
+        }
+
         val baseUrl = "http://$host:$port"
         emit("Tally sync started — $baseUrl")
 

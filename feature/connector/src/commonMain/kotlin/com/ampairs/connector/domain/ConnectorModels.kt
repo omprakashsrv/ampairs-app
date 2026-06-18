@@ -24,6 +24,13 @@ data class ConnectorConfigDto(
     @SerialName("last_validated_at") val lastValidatedAt: String? = null,
 )
 
+/** Write connection config (PUT). `secretValues` is write-only and never echoed back. */
+@Serializable
+data class ConfigUpdateRequest(
+    @SerialName("non_secret_values") val nonSecretValues: Map<String, String> = emptyMap(),
+    @SerialName("secret_values") val secretValues: Map<String, String> = emptyMap(),
+)
+
 @Serializable
 data class FieldMappingRuleDto(
     @SerialName("external_field") val externalField: String = "",

@@ -2,6 +2,7 @@ package com.ampairs.connector.data.api
 
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
+import com.ampairs.connector.domain.ConfigUpdateRequest
 import com.ampairs.connector.domain.ConnectionTestRequest
 import com.ampairs.connector.domain.ConnectionTestResult
 import com.ampairs.connector.domain.ConnectorConfigDto
@@ -27,6 +28,7 @@ interface ConnectorApi {
      */
     suspend fun sync(lastSync: String?, page: Int, size: Int): Response<PageResponse<ConnectorInstallationDto>>
     suspend fun config(installationUid: String): Response<ConnectorConfigDto>
+    suspend fun updateConfig(installationUid: String, request: ConfigUpdateRequest): Response<ConnectorConfigDto>
     suspend fun mappings(installationUid: String): Response<List<FieldMappingDto>>
     suspend fun upsert(
         installationUid: String,
