@@ -29,6 +29,8 @@ interface ConnectorApi {
     suspend fun sync(lastSync: String?, page: Int, size: Int): Response<PageResponse<ConnectorInstallationDto>>
     suspend fun config(installationUid: String): Response<ConnectorConfigDto>
     suspend fun updateConfig(installationUid: String, request: ConfigUpdateRequest): Response<ConnectorConfigDto>
+    suspend fun pause(installationUid: String): Response<ConnectorInstallationDto>
+    suspend fun resume(installationUid: String): Response<ConnectorInstallationDto>
     suspend fun mappings(installationUid: String): Response<List<FieldMappingDto>>
     suspend fun upsert(
         installationUid: String,

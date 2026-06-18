@@ -78,6 +78,26 @@ fun TallySettingsScreen(
 
             ConnectorStatusCard(connectorStatus)
 
+            connectorStatus?.takeIf { it.installed }?.let { cs ->
+                val isPaused = cs.status.equals("PAUSED", ignoreCase = true)
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            statusText = if (isPaused) "Resuming connector…" else "Pausing connector…"
+                            val ok = if (isPaused) scheduler.resumeConnector() else scheduler.pauseConnector()
+                            connectorStatus = runCatching { scheduler.connectorStatus() }.getOrNull()
+                            statusText = if (ok) {
+                                if (isPaused) "Connector resumed" else "Connector paused — scheduled syncs will skip"
+                            } else {
+                                "Pause/resume failed"
+                            }
+                        }
+                    }
+                ) {
+                    Text(if (isPaused) "Resume Connector" else "Pause Connector")
+                }
+            }
+
             OutlinedTextField(
                 value = host,
                 onValueChange = { host = it },

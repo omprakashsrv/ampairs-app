@@ -45,7 +45,12 @@ class TallySyncScheduler(
         centralSyncService.emit(SyncEvent.TriggerPull(SyncEntity.CONNECTOR))
         job = scope.launch {
             while (isActive) {
-                runOnce(workspaceSlug)
+                // Respect a backend-paused connector (FR-023/FR-025): skip the scheduled cycle while
+                // PAUSED. Manual "Sync Now" (runOnce) still works regardless.
+                val paused = runCatching { connectorConfigProvider.installation()?.status }
+                    .getOrNull()?.equals("PAUSED", ignoreCase = true) == true
+                if (paused) log.i { "Tally connector PAUSED — skipping scheduled cycle" }
+                else runOnce(workspaceSlug)
                 delay(interval)
             }
         }
@@ -118,6 +123,23 @@ class TallySyncScheduler(
                 errorDetail = result.error,
             ),
         )
+    }
+
+    /** Pause the backend connector (FR-025); the scheduled loop then skips cycles until resumed. */
+    suspend fun pauseConnector(): Boolean = setPaused(pause = true)
+
+    /** Resume the backend connector so scheduled cycles run again. */
+    suspend fun resumeConnector(): Boolean = setPaused(pause = false)
+
+    private suspend fun setPaused(pause: Boolean): Boolean {
+        val uid = runCatching { connectorConfigProvider.installation()?.uid }.getOrNull() ?: return false
+        return runCatching {
+            if (pause) connectorApi.pause(uid) else connectorApi.resume(uid)
+            true
+        }.getOrElse {
+            log.w(it) { "Connector ${if (pause) "pause" else "resume"} failed" }
+            false
+        }
     }
 
     fun stop() {

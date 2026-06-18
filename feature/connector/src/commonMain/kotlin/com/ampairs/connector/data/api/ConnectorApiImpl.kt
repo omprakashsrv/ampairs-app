@@ -55,6 +55,12 @@ class ConnectorApiImpl(
     override suspend fun updateConfig(installationUid: String, request: ConfigUpdateRequest): Response<ConnectorConfigDto> =
         put(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/config"), request)
 
+    override suspend fun pause(installationUid: String): Response<ConnectorInstallationDto> =
+        post(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/pause"), null)
+
+    override suspend fun resume(installationUid: String): Response<ConnectorInstallationDto> =
+        post(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/resume"), null)
+
     override suspend fun mappings(installationUid: String): Response<List<FieldMappingDto>> =
         get(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/mappings"))
 
