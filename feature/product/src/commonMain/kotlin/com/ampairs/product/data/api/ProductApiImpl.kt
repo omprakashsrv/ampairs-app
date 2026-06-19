@@ -7,6 +7,7 @@ import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.postList
+import com.ampairs.common.put
 import com.ampairs.product.api.model.ProductApiModel
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -78,6 +79,23 @@ class ProductApiImpl(
                 mapOf("q" to query)
             )
             Result.success(response.data ?: emptyList())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun setEcomListing(productId: String, listed: Boolean): Result<ProductApiModel> {
+        return try {
+            val response: Response<ProductApiModel> = put(
+                client,
+                ApiUrlBuilder.productUrl("v1/products/$productId/ecom-listing?listed=$listed"),
+                null,
+            )
+            if (response.data != null && response.error == null) {
+                Result.success(response.data!!)
+            } else {
+                Result.failure(Exception(response.error?.message?.ifBlank { "Failed to update listing" } ?: "Failed to update listing"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

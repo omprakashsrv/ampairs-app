@@ -67,6 +67,9 @@
     <string name="prod_section_category_brand">Category &amp; Brand</string>
     <string name="prod_section_unit">Unit Information</string>
     <string name="prod_section_stock_mgmt">Stock Management</string>
+    <string name="prod_section_storefront">Online store</string>
+    <string name="prod_storefront_listed">List on storefront</string>
+    <string name="prod_storefront_hint">Show this product in your online store for customers to browse and order.</string>
     <string name="prod_section_attributes">Attributes</string>
     <string name="prod_section_images">Product Images</string>
     <string name="prod_section_variants">Product Variants</string>
