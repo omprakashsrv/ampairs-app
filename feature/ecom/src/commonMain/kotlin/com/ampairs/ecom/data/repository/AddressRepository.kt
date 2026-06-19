@@ -36,6 +36,10 @@ class AddressRepository(
         return result.fold(
             onSuccess = { list ->
                 addressDao.upsertAll(list.map { it.toEntity(synced = 1) })
+                // Server is authoritative: drop synced rows it no longer returns (heals stale
+                // duplicates from older client-uid divergence). Only prune when the server
+                // actually returned addresses, to avoid wiping on a transient empty response.
+                if (list.isNotEmpty()) addressDao.deleteSyncedNotIn(list.map { it.uid })
                 Result.success(list.size)
             },
             onFailure = {
@@ -58,7 +62,17 @@ class AddressRepository(
                 // Try update first, fall back to create — mirrors the standard push pattern.
                 api.updateAddress(row.uid, request)
                     .recoverCatching { api.createAddress(request).getOrThrow() }
-                    .onSuccess { addressDao.upsert(row.copy(synced = 1)) }
+                    .onSuccess { resp ->
+                        if (resp.uid.isNotBlank() && resp.uid != row.uid) {
+                            // Server assigned a different uid (legacy data created before the server
+                            // honored client uids). Adopt it so the next pull upserts the same row
+                            // instead of inserting a duplicate.
+                            addressDao.hardDelete(row.uid)
+                            addressDao.upsert(row.copy(uid = resp.uid, synced = 1))
+                        } else {
+                            addressDao.upsert(row.copy(synced = 1))
+                        }
+                    }
                     .map { }
             }
             outcome.onSuccess { pushed++ }.onFailure { failures++ }

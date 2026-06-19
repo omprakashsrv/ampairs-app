@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -45,9 +46,16 @@ import ampairsapp.feature.ecom.generated.resources.ecom_address_state
 import ampairsapp.feature.ecom.generated.resources.ecom_addresses_title
 import ampairsapp.feature.ecom.generated.resources.ecom_no_addresses
 import ampairsapp.feature.ecom.generated.resources.ecom_save
+import ampairsapp.feature.ecom.generated.resources.ecom_address_use_location
+import ampairsapp.feature.ecom.generated.resources.ecom_address_location_hint
+import ampairsapp.feature.ecom.generated.resources.ecom_address_details
+import ampairsapp.feature.ecom.generated.resources.ecom_cancel
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.data.db.entity.CustomerAddressEntity
 import com.ampairs.ecom.ui.components.EcomDimens
+import com.ampairs.formwidgets.location.AddressData
+import com.ampairs.formwidgets.location.LocationPickerDialog
+import com.ampairs.formwidgets.location.LocationService
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -69,8 +77,9 @@ fun AddressesScreen(
         if (draft != null) {
             AddressForm(
                 draft = draft,
+                locationService = viewModel.locationService,
                 onChange = { editing = it },
-                onSave = { viewModel.save(draft); editing = null },
+                onSave = { saved -> viewModel.save(saved); editing = null },
                 onCancel = { editing = null },
             )
             return
@@ -114,8 +123,33 @@ private fun AddressItem(address: CustomerAddressEntity, onEdit: () -> Unit, onDe
 }
 
 @Composable
-private fun AddressForm(draft: AddressDraft, onChange: (AddressDraft) -> Unit, onSave: () -> Unit, onCancel: () -> Unit) {
+private fun AddressForm(
+    draft: AddressDraft,
+    locationService: LocationService,
+    onChange: (AddressDraft) -> Unit,
+    onSave: (AddressDraft) -> Unit,
+    onCancel: () -> Unit,
+) {
+    var showLocationPicker by remember { mutableStateOf(false) }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        // Quick-fill: current location or map pick → reverse-geocode → autofill (fields stay editable).
+        Button(onClick = { showLocationPicker = true }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Filled.MyLocation, contentDescription = null)
+            Text(stringResource(Res.string.ecom_address_use_location), modifier = Modifier.padding(start = 8.dp))
+        }
+        Text(
+            stringResource(Res.string.ecom_address_location_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp, bottom = 12.dp),
+        )
+
+        Text(
+            stringResource(Res.string.ecom_address_details),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
         Field(draft.label, stringResource(Res.string.ecom_address_label)) { onChange(draft.copy(label = it)) }
         Field(draft.line1, stringResource(Res.string.ecom_address_line1)) { onChange(draft.copy(line1 = it)) }
         Field(draft.line2, stringResource(Res.string.ecom_address_line2)) { onChange(draft.copy(line2 = it)) }
@@ -128,12 +162,34 @@ private fun AddressForm(draft: AddressDraft, onChange: (AddressDraft) -> Unit, o
             Text(stringResource(Res.string.ecom_address_default))
         }
         Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Cancel") }
-            Button(onClick = onSave, enabled = draft.line1.isNotBlank() && draft.city.isNotBlank() && draft.state.isNotBlank() && draft.pinCode.isNotBlank(), modifier = Modifier.weight(1f)) {
+            OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text(stringResource(Res.string.ecom_cancel)) }
+            Button(onClick = { onSave(draft) }, enabled = draft.line1.isNotBlank() && draft.city.isNotBlank() && draft.state.isNotBlank() && draft.pinCode.isNotBlank(), modifier = Modifier.weight(1f)) {
                 Text(stringResource(Res.string.ecom_save))
             }
         }
     }
+
+    LocationPickerDialog(
+        showDialog = showLocationPicker,
+        onLocationSelected = { _, address ->
+            if (address != null) onChange(draft.applyResolved(address))
+            showLocationPicker = false
+        },
+        onDismiss = { showLocationPicker = false },
+        locationService = locationService,
+    )
+}
+
+/** Map reverse-geocoded [AddressData] onto editable address fields. Only fills non-blank parts. */
+private fun AddressDraft.applyResolved(a: AddressData): AddressDraft {
+    val street = listOfNotNull(a.streetNumber, a.street).joinToString(" ").trim()
+    return copy(
+        line1 = street.ifBlank { a.subLocality ?: a.formattedAddress },
+        line2 = a.subLocality?.takeIf { it.isNotBlank() && it != street } ?: line2,
+        city = (a.city ?: a.locality)?.takeIf { it.isNotBlank() } ?: city,
+        state = a.state?.takeIf { it.isNotBlank() } ?: state,
+        pinCode = a.pincode?.takeIf { it.isNotBlank() } ?: pinCode,
+    )
 }
 
 @Composable

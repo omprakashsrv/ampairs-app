@@ -6,6 +6,7 @@ import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.ecom.data.db.entity.CustomerAddressEntity
 import com.ampairs.ecom.data.repository.AddressRepository
+import com.ampairs.formwidgets.location.LocationService
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -38,6 +39,8 @@ data class AddressDraft(
 class AddressesViewModel(
     private val addressRepository: AddressRepository,
     private val syncService: CentralSyncService,
+    // Exposed for the address form's location picker (current location / map → autofill).
+    val locationService: LocationService,
 ) : ViewModel() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
