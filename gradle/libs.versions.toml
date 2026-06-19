@@ -81,6 +81,7 @@ ktor-client-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json"
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-websockets = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
+ktor-network = { module = "io.ktor:ktor-network", version.ref = "ktor" }
 ktor-serialization-kotlinx-xml = { module = "io.ktor:ktor-serialization-kotlinx-xml", version.ref = "ktor" }
 
 krossbow-stomp-core = { module = "org.hildan.krossbow:krossbow-stomp-core", version.ref = "krossbow" }

@@ -32,6 +32,7 @@ include(":data:event")
 include(":tally")
 include(":printing:core")
 include(":printing:render")
+include(":printing:transport")
 include(
     ":feature:file-api",
     ":feature:file",
