@@ -673,3 +673,34 @@ Printing cannot be validated by compilation — this is the highest-leverage rob
 - **Zero-config onboarding**: auto-discover → one-tap set default → seeded template → test print;
   track time-to-first-successful-print for a new merchant.
 - **Crash-free print sessions**; spool fully drains within a bounded time after reconnect.
+
+---
+
+## 24. Graphics: Store Logo, Barcodes & Payment (UPI) QR
+
+Logos and codes use the same IR elements across every printer class (`Image`, `Barcode`, `Qr` — §5);
+only the rasterization differs by class. This reuses the raster path from §8.
+
+### Store logo
+- **Source**: the **business-profile logo** already in the app, resolved once and cached per device.
+- **Thermal**: convert to a **monochrome 1-bit raster** (scale to the head's dot width, Floyd–Steinberg
+  dither / threshold) and emit as an ESC/POS raster image (`GS v 0`); optionally store it as an **NV
+  logo** in printer memory (`FS q` / `FS p`) for fast repeated prints.
+- **Inkjet / Laser (HTML/PDF)**: a normal full-resolution `<img>`.
+- Placed as a header block in both layout engines — sized in dots (thermal) or mm/% (page).
+
+### Barcodes & QR — native first, raster fallback
+- Thermal printers with native code support use `GS ( k` (QR) / `GS k` (1-D: Code128/EAN/UPC).
+  Printers that lack it (declared on `PrinterProfile`) get a **code rasterized in `commonMain`** and
+  printed as an image. Inkjet/Laser always render codes as images in HTML/PDF. **One `Barcode`/`Qr`
+  IR element → three output paths.**
+
+### Payment (UPI) QR — scan-to-pay on the bill
+- It is a **dynamic QR, not a 1-D barcode**, carrying the UPI deep link
+  `upi://pay?pa={VPA}&pn={payee}&am={amount}&tn={ref}&cu={currency}`.
+- **Dynamic per document**: payee VPA + name from the **business/payment profile**; `am` = the
+  document's **stored grand total** (never recomputed — §20); `tn` = invoice/order number for
+  reconciliation. Exposed as the computed field **`upi_qr`** (§7) so it drops into any template.
+- Renders on **thermal, inkjet, and laser** via the native/raster QR path above — the printed
+  receipt/invoice is scannable to pay on every printer class. A **static counter QR** (fixed VPA, no
+  amount) is also supported.
