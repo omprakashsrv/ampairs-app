@@ -71,6 +71,7 @@ class AddressRepository(
     }
 
     private fun CustomerAddressEntity.toRequest() = AddressRequest(
+        uid = uid,
         label = label,
         addressLine1 = address_line1,
         addressLine2 = address_line2,
