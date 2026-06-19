@@ -39,3 +39,8 @@
   Assumptions.
 - Validation passed on first iteration. Ready for `/speckit.plan` (a detailed design already exists)
   or directly for `/speckit.tasks`.
+- `/speckit.analyze` remediation applied (2026-06-19): added FR-029 (security/privacy); clarified
+  FR-008 device+workspace scoping; split FR-020 (live queue) vs FR-024 (audit log); scoped US3 to the
+  thermal editor and moved the page-mode editor to US4 (T049a); added Letter/Legal paper (T008),
+  copies selector (T024), and tasks T066–T068 (perf, onboarding, security). plan.md now has a
+  Complexity Tracking section justifying device-local non-synced Room tables (Principle II deviation).

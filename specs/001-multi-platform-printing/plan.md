@@ -57,3 +57,32 @@ per-feature adapters ── PrintValueProvider + DocumentMapper inside invoice/o
 6. US5 (P2) reprint integrity + GST compliance.
 7. US6 (P3) additional document types + labels.
 8. Polish — telemetry, feature flag, strangler migration, hardware QA, SLO instrumentation.
+
+## Complexity Tracking (constitution deviations)
+
+Per Governance, deviations from a constitution principle are documented here with justification.
+
+- **Device-local, non-synced Room tables (Printer config, Print routing, Print spool/history)** —
+  *Deviation from Principle II (Offline-First via CentralSyncService)*, which states all CRUD writes
+  Room with `synced = false` and flags `PENDING_PUSH` for server sync.
+  - **Why**: these entities describe **physical, device-specific** resources (the printer attached to
+    this counter, the jobs this device issued). They are intentionally **not server-synced** — a
+    printer/job on one device is meaningless (and often unreachable) on another. This is the same
+    category as device-local `DataStore` preferences, which the constitution already sanctions.
+  - **Bounds**: they are scoped **per device + per workspace** (FR-008); they do **not** call the
+    feature `Api` and do **not** register a `SyncDelegate`. Only **templates** follow the full
+    offline-first `/sync` contract (Principle II) via `TemplateSyncDelegate`.
+  - **Alternative rejected**: syncing printers/jobs across devices would surface unreachable printers
+    and risk cross-device duplicate prints — worse, not better.
+
+## Governance / cross-cutting notes
+
+- **UID generation (Principle VI)**: new `Printer`, `Template`, and `PrintJob` entities generate UIDs
+  in the ViewModel via `UidGenerator.generateUid(prefix)` (e.g. `PRN`, `TPL`, `PJB`); repositories
+  assert `require(uid.isNotBlank())`.
+- **Compose Resources publishing (Principle XI)**: `printing/render` and `feature/printing` carry
+  `composeResources`. They are **not** published today; if `maven-publish` is added later, pin
+  `compose.resources { packageOfResClass = "ampairsapp.{module.path}.generated.resources" }`.
+- **Backend cross-repo dependency**: workspace template `/sync` and e-invoice IRN/QR are owned by the
+  `ampairs` backend repo and are **not** tasks in this repo's `tasks.md`; they are tracked as an
+  external dependency (T036/T054 coordinate, do not implement, the backend).

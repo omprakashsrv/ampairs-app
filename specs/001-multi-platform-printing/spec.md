@@ -73,8 +73,10 @@ across the workspace.
 **Why this priority**: Branding and field control are important for a professional, compliant
 document, but the app must already print (P1) before formatting is customizable.
 
-**Independent Test**: Edit the invoice template (add logo + a custom field + UPI QR), save, and confirm
-the change appears when any device in the workspace prints that document type.
+**Independent Test**: Edit a thermal invoice/receipt template (add logo + a custom field + UPI QR),
+save, and confirm the change appears when any device in the workspace prints that document type. (Scope
+note: this story delivers the **thermal/label-mode** editor, which is independently testable; the
+**page-mode (A4) editor** ships with User Story 4 because it requires the page renderer for preview.)
 
 **Acceptance Scenarios**:
 
@@ -98,6 +100,7 @@ who want a digital copy, but come after the core thermal path.
 
 **Independent Test**: Print a long invoice on A4 and confirm header/column-header/footer repeat
 correctly across pages; then share the same invoice as a PDF and confirm a faithful file is produced.
+This story also delivers the **page-mode visual editor** (the page half of User Story 3).
 
 **Acceptance Scenarios**:
 
@@ -105,6 +108,8 @@ correctly across pages; then share the same invoice as a PDF and confirm a faith
    table column headers, and page numbers repeat on every page and the final total appears once.
 2. **Given** an invoice, **When** the user chooses Share, **Then** a PDF is produced and can be sent via
    the device's share options or saved to a file.
+3. **Given** the page-mode editor, **When** an admin arranges header/column-header/body/footer regions,
+   **Then** a live preview reflects the layout and the saved template prints accordingly.
 
 ---
 
@@ -192,8 +197,9 @@ confirm correct output on the routed printer.
 
 - **FR-006**: Users MUST be able to discover, add, test-print, and remove printers per connection type.
 - **FR-007**: Users MUST be able to set a default printer per document type (routing).
-- **FR-008**: Printer configuration and routing MUST be device-local (not shared across devices), while
-  templates MUST be shared across the workspace.
+- **FR-008**: Printer configuration and routing MUST be scoped **per device and per workspace** (a
+  device used for multiple workspaces keeps an independent printer set per workspace) and MUST NOT sync
+  across devices, while templates MUST be shared and synced across the workspace.
 
 **Templates & fields**
 
@@ -220,7 +226,7 @@ confirm correct output on the routed printer.
 - **FR-018**: System MUST queue print jobs when a printer/network is unavailable and retry on recovery,
   with bounded retries, a dead-letter state for un-printable jobs, and a time-to-live for stale jobs.
 - **FR-019**: System MUST serialize concurrent jobs to the same printer (no interleaved output).
-- **FR-020**: Users MUST be able to view, cancel, and reprint jobs from a print queue/history.
+- **FR-020**: Users MUST be able to view, cancel, and reprint jobs from a live **print queue**.
 
 **Reprint & compliance**
 
@@ -235,7 +241,8 @@ confirm correct output on the routed printer.
 - **FR-023**: Template editing MUST be restricted by role (admin/owner); printing MUST be available to
   all staff.
 - **FR-024**: System MUST record print outcomes (success/failure, error reason, timing, printer, and
-  template used) for diagnostics, and keep a local print history.
+  template used) for diagnostics, and keep a local **print-job audit log** (distinct from the live
+  print queue in FR-020).
 - **FR-025**: Printing (and individual transports) MUST be controllable by a per-workspace feature flag
   so it can be disabled without an app update.
 - **FR-026**: The new module MUST coexist with the existing invoice print path during rollout so
@@ -243,6 +250,9 @@ confirm correct output on the routed printer.
 - **FR-027**: System MUST support operational actions: test print, open cash drawer (no-sale), reprint,
   and selectable number of copies.
 - **FR-028**: System MUST print regional/non-Latin-script content correctly on thermal printers.
+- **FR-029**: System MUST restrict network printing to local-network (LAN) printer addresses, and MUST
+  protect customer data in the print spool/history and in exported PDFs — bounded retention, no leakage
+  beyond the user-initiated share, and no print artifacts persisted longer than needed.
 
 ### Key Entities *(include if feature involves data)*
 

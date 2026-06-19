@@ -54,7 +54,8 @@ testable, and demoable. KMP paths use the new modules from plan.md.
 - [ ] T007 [P] [FOUND] Define `PrintDocument` IR + `PrintElement` (TextLine, KeyValueRow, Table,
       Divider, Spacer, Image, Barcode, Qr, Feed, Cut, CashDrawerKick) in `printing/core/.../model/`.
 - [ ] T008 [P] [FOUND] Define `Template`, `ThermalLayout`/`PageLayout`, `TemplateBlock`, `FieldBinding`,
-      `PrinterProfile`, `PaperSpec`, `ConnectionType`, `PrinterClass` in `printing/core/.../model/`.
+      `PrinterProfile`, `PaperSpec` (thermal 58/80mm; page A4–A7 **and US Letter/Legal**; label W×H),
+      `ConnectionType`, `PrinterClass` in `printing/core/.../model/`.
 - [ ] T009 [P] [FOUND] Define interfaces `Renderer`, `PrinterTransport`, `PrintValueProvider`,
       `DocumentMapper`, `ComputedFieldCatalog` in `printing/core/.../`.
 - [ ] T010 [FOUND] Implement the generic template-walk engine (resolve bindings → build
@@ -104,8 +105,8 @@ correct receipt; simulate paper-out and offline and confirm actionable status + 
       fields; locale formatting) in `feature/invoice/.../print/`.
 - [ ] T023 [P] [US1] Seed default 80mm/58mm invoice + receipt templates in
       `printing/render/.../composeResources/`.
-- [ ] T024 [US1] Print preview + Print action on the invoice detail screen; print queue UI (view/
-      cancel/reprint); "unconfirmed" + "out of paper" prompts.
+- [ ] T024 [US1] Print preview + Print action on the invoice detail screen (incl. a **copies**
+      selector, FR-027); print queue UI (view/cancel/reprint); "unconfirmed" + "out of paper" prompts.
 - [ ] T025 [US1] Capability negotiation: validate template `paperSpec`/`printerClass` vs the selected
       `PrinterProfile`; reflow or reject (FR-015).
 
@@ -128,8 +129,9 @@ confirm a second device does not inherit them.
 
 ### Implementation for US2
 
-- [ ] T027 [US2] Device-local `PrinterEntity` + `PrintRoutingEntity` + DAOs + repository (NOT synced)
-      in `feature/printing/.../data/`.
+- [ ] T027 [US2] Device-local `PrinterEntity` + `PrintRoutingEntity` + DAOs + repository (NOT synced),
+      scoped **per device + per workspace** (keyed by workspace; new instance per workspace graph) in
+      `feature/printing/.../data/` (FR-008).
 - [ ] T028 [P] [US2] `BluetoothTransport` actuals: Android `BluetoothSocket` SPP/BLE; iOS
       ExternalAccessory/CoreBluetooth; Desktop limited — in `printing/transport/src/{android,ios,desktop}Main/`.
 - [ ] T029 [P] [US2] `UsbTransport` actuals: Android `UsbManager`; Desktop usb4java/serial; iOS n/a.
@@ -166,10 +168,8 @@ another device's print.
       `@SyncEntityKey(PRINT_TEMPLATE)`); backend `GET/POST /printing/v1/templates/sync` (coordinate).
 - [ ] T037 [US3] Field-binding picker sourced from `ConfigLookup.observeSchema(documentType)`
       (standard + custom) + computed-field catalog; broken-binding surfacing.
-- [ ] T038 [US3] Visual editor — thermal mode (vertical block list + live `EscPosRenderer` bitmap
-      preview) in `feature/printing/.../editor/`.
-- [ ] T039 [US3] Visual editor — page mode (region-aware 2-D canvas: header/column-header/body/footer)
-      (depends on US4 page renderer for preview; stub until then).
+- [ ] T038 [US3] Visual editor — **thermal/label mode** (vertical block list + live `EscPosRenderer`
+      bitmap preview) in `feature/printing/.../editor/`. (Page-mode editor moved to US4 → T049a.)
 - [ ] T040 [P] [US3] Logo support: source from business profile; thermal 1-bit raster (`GS v 0`/NV
       logo) in `EscPosRenderer`; `<img>` for page (`printing/render`).
 - [ ] T041 [P] [US3] Barcode/QR + dynamic UPI scan-to-pay QR computed field (`upi_qr`: VPA + stored
@@ -200,6 +200,9 @@ final-page total); share the same invoice as a PDF.
       `<thead>` repeat, break control in `printing/render/.../html/`.
 - [ ] T046 [US4] Page band model + pagination computed fields (`page_number`/`page_count`/`continued`/
       carry-forward subtotals) in `printing/core` + engine.
+- [ ] T049a [US4] Visual editor — **page mode** (region-aware 2-D canvas: header/column-header/body/
+      footer) with live `HtmlRenderer` preview (moved from US3; depends on T045/T046) in
+      `feature/printing/.../editor/`.
 - [ ] T047 [P] [US4] `PdfRenderer` expect/actual (Android `PdfDocument`; iOS `UIGraphicsPDFRenderer`;
       Desktop HTML→PDF lib) + explicit band-pagination for PDF.
 - [ ] T048 [US4] `OsPrintTransport` expect/actual (move/generalize existing `InvoicePrinter` actuals:
@@ -264,9 +267,14 @@ mark and correct copy label.
 - [ ] T061 [P] [POLISH] Built-in printer-profile database (vendor/model → capabilities) + auto-detect.
 - [ ] T062 [P] [POLISH] Hardware compatibility matrix + beta checklist in `docs/features/`.
 - [ ] T063 [POLISH] SLO instrumentation + dashboards for SC-001/002/003/005/008.
-- [ ] T064 [P] [POLISH] WASM stance (no-op transports / OS-print only) + security notes (LAN-only IP
-      validation, PII-at-rest, share-sheet caution).
+- [ ] T064 [P] [POLISH] WASM stance (no-op transports / OS-print-only) documented and enforced.
 - [ ] T065 [POLISH] Full 3-target compile + golden-test CI gate; update plan/docs.
+- [ ] T066 [P] [POLISH] Performance validation for tap-to-print: instrument and assert SC-003
+      (< 3s thermal/LAN, < 8s Bluetooth) on the hardware matrix.
+- [ ] T067 [P] [POLISH] Zero-config onboarding flow (auto-discover → set default → test print) and
+      measurement of time-to-first-successful-print against SC-004 (< 5 min).
+- [ ] T068 [P] [POLISH] Security/privacy: LAN-only printer-address validation, spool/history + exported
+      PDF retention limits and cleanup (FR-029).
 
 ---
 
@@ -274,7 +282,8 @@ mark and correct copy label.
 
 - **Setup (P1)** → **Foundational (P2)** blocks everything.
 - **US1, US2 (P1)** can proceed in parallel after Foundational (US2 transports reuse US1 `PrintService`).
-- **US3 (P2)** needs Foundational + US1 renderer for preview; page-mode editor (T039) waits on US4.
+- **US3 (P2)** needs Foundational + US1 renderer for preview; delivers the **thermal/label-mode**
+  editor only. The **page-mode editor** moved to US4 (T049a) since it needs the page renderer.
 - **US4 (P2)** needs Foundational; independent of US3 except shared seeded templates.
 - **US5 (P2)** needs US1 (issue/print) and US3 (templates) for version pinning.
 - **US6 (P3)** needs Foundational + the relevant renderer (EscPos/Label/Html).
