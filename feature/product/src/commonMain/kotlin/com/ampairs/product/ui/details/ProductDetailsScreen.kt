@@ -89,6 +89,9 @@ import ampairsapp.feature.product.generated.resources.prod_section_classificatio
 import ampairsapp.feature.product.generated.resources.prod_section_stock_info
 import ampairsapp.feature.product.generated.resources.prod_section_category_brand
 import ampairsapp.feature.product.generated.resources.prod_section_unit
+import ampairsapp.feature.product.generated.resources.prod_section_storefront
+import ampairsapp.feature.product.generated.resources.prod_storefront_listed
+import ampairsapp.feature.product.generated.resources.prod_storefront_hint
 import ampairsapp.feature.product.generated.resources.prod_section_variants
 import ampairsapp.feature.product.generated.resources.prod_section_images
 import ampairsapp.feature.product.generated.resources.prod_label_name
