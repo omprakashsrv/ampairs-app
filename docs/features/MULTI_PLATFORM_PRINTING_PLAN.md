@@ -68,13 +68,17 @@ Business doc (Invoice/Order/Receipt/CreditNote/DebitNote/Label)
         ├─► EscPosRenderer  → ByteArray   (thermal 58/80 mm)
         ├─► LabelRenderer   → ByteArray   (TSPL/ZPL labels & barcodes)         [phase 5]
         └─► HtmlRenderer (→ PdfRenderer)  → HTML/PDF (inkjet A4–A7)
-        │  Transport (selected by connection type)
+        │  Transport (selected by connection type / output target)
         ▼
-   PrinterTransport (raw bytes)            │   OsPrintTransport (HTML/PDF)
-   ├─ NetworkTransport (commonMain :9100)  │   ├─ Android PrintManager
-   ├─ BluetoothTransport (platform)        │   ├─ iOS UIPrintInteractionController
-   └─ UsbTransport (platform)              │   └─ Desktop PrinterJob / browser
+   PrinterTransport (raw bytes)            │ OsPrintTransport (HTML/PDF) │ ShareTransport (PDF)
+   ├─ NetworkTransport (commonMain :9100)  │ ├─ Android PrintManager     │ ├─ WhatsApp / email / SMS
+   ├─ BluetoothTransport (platform)        │ ├─ iOS UIPrintInteraction…  │ ├─ Save to file (FileKit)
+   └─ UsbTransport (platform)              │ └─ Desktop PrinterJob/brws  │ └─ (future) cloud upload
 ```
+
+A **third output target — Share/Export** — is first-class for SMBs: the same `PdfRenderer` output is
+sent over WhatsApp / email / SMS or saved to a file (FileKit, currently unused in the repo). For many
+small merchants this is used more than physical printing.
 
 **Single most important decision:** an **intermediate representation (`PrintDocument`)** decouples
 *what to print* (business logic, workspace-consistent) from *how to print* (device/printer-specific).
@@ -339,6 +343,15 @@ Numeric columns right-aligned → decimals line up. Totals = `Row([label weight 
 The thermal editor preview renders through the real `EscPosRenderer` to a monospace bitmap so output
 is non-WYSIWYG-accurate.
 
+### Multi-language / non-Latin scripts on thermal
+
+Thermal heads print from a fixed **codepage** (CP437/CP1252/etc.) — they cannot natively render
+Devanagari/Tamil/Bengali/Arabic and other complex scripts. The `EscPosRenderer` therefore supports a
+**raster fallback**: when a line contains glyphs outside the printer's codepage capability (declared
+on the `PrinterProfile`), that line is rendered to a monochrome bitmap (Compose/skia text → raster)
+and sent as an ESC/POS image (`GS v 0`). Latin/numeric content stays in fast native text mode; only
+complex-script lines go raster. This matters for regional-language receipts common in Indian retail.
+
 ---
 
 ## 9. Inkjet / Page Pipeline
@@ -423,6 +436,13 @@ settings).
 - **Print orchestration service** (`PrintService`): discover → connect → render → send → cut → close;
   emits status via `SharedFlow`; persistent connections implement `WorkspaceClosable` and register
   with `WorkspaceClosableRegistry`.
+- **Print spool + retry** (device-local, offline-first): a `PrintJobEntity` queue (status
+  QUEUED/PRINTING/DONE/FAILED, copies, target printer, retry count). When a printer/network is
+  unavailable the job stays QUEUED and a `PrintSpooler` retries on reconnect/printer-online — the same
+  offline-first philosophy the app applies to data writes, applied to printing. This is **device-local
+  and NOT synced** (a job belongs to the device that issued it). Note: this is a separate concern from
+  `CentralSyncService` (which syncs *data*); spool retry is local and event-driven (printer/network
+  availability), not server push/pull.
 
 All workspace-aware DBs use `@SingleIn(WorkspaceScope::class)` + `closableRegistry.register { it.close() }`
 with explicit reified type params, per `/metro-di`.
@@ -457,18 +477,25 @@ with explicit reified type params, per `/metro-di`.
 
 1. **Phase 1 — Core + network thermal.** `printing/core` IR + template model + engine;
    `EscPosRenderer`; `NetworkTransport` (commonMain); `feature/printing` skeleton with device-local
-   printer config + routing; invoice/receipt `PrintValueProvider`s; basic print preview. Works on all
-   3 platforms with zero per-platform code. *(Highest value, lowest risk.)*
+   printer config + routing; invoice/receipt `PrintValueProvider`s; basic print preview; the
+   **print spool + retry** queue (§12); operational actions (test print, open cash drawer, reprint,
+   copies). Works on all 3 platforms with zero per-platform code. *(Highest value, lowest risk.)*
 2. **Phase 2 — Bluetooth + USB transports** with platform discovery + permission flows (manifest/plist
    deltas). Same ESC/POS bytes, new channels.
 3. **Phase 3 — Visual template editor + sync.** Template DB + `TemplateSyncDelegate`; thermal
    vertical-block editor + live bitmap preview; field-binding picker from `ConfigLookup`.
-4. **Phase 4 — Page mode + inkjet.** Generalize `HtmlRenderer` + `OsPrintTransport`; orders/credit/
-   debit notes through the pipeline; A4–A7; 2-D canvas editor mode; `PdfRenderer`; add Order/Invoice
-   `attributes` carrier (prerequisite §7).
-5. **Phase 5 — Label / barcode printer.** `LabelRenderer` (TSPL/ZPL); batch label printing.
-6. **Phase 6 — Cloud printing.** `CloudTransport` POSTs the render job to a backend print service;
-   reuses the same IR + renderers.
+4. **Phase 4 — Page mode + inkjet + share/export.** Generalize `HtmlRenderer` + `OsPrintTransport`;
+   orders/credit/debit notes through the pipeline; A4–A7; 2-D canvas editor mode; `PdfRenderer`;
+   **`ShareTransport`** (WhatsApp/email/SMS + save-to-file); add Order/Invoice `attributes` carrier
+   (prerequisite §7); **GST compliance computed fields** (Original/Duplicate/Triplicate copies,
+   e-invoice IRN QR, round-off, MRP/savings, HSN summary, Bill of Supply variant).
+5. **Phase 5 — Additional document types + label/barcode.** Seeded templates + providers for
+   **quotation/estimate/proforma, delivery challan/packing slip, payment receipt/voucher,
+   purchase order/GRN, returns, account statement, day-end X/Z report, gift receipt, price/shelf
+   tags** (each = a `DocumentType` + provider + template, no engine changes); `LabelRenderer`
+   (TSPL/ZPL) + batch label printing.
+6. **Phase 6 — Cloud + advanced.** `CloudTransport` POSTs the render job to a backend print service;
+   silent/direct page printing (IPP :631) for high-volume back office; reuses the same IR + renderers.
 
 ---
 
@@ -483,6 +510,13 @@ with explicit reified type params, per `/metro-di`.
 - **Visual editor is the largest UI effort** — Phases 1–2 deliver real thermal printing with seeded
   templates before the editor lands in Phase 3.
 - **Backend work** required for template sync (`/printing/v1/templates/sync`) and, later, cloud print.
+- **E-invoice IRN + signed QR** depend on backend/GSP integration (IRP registration) — the printing
+  module only renders the QR/IRN once the data exists; it does not generate them.
+- **Non-Latin thermal printing** uses raster fallback (§8) — slower and lower-resolution than native
+  text; acceptable for receipts, validate on target hardware.
+- **Document-type breadth** (Phase 5) depends on the corresponding data existing in the app
+  (e.g. quotations/challans/GRN may need their own feature modules first) — printing renders what the
+  domain provides.
 
 ---
 
@@ -498,3 +532,57 @@ For `printing/core`, `printing/render`, `printing/transport`, `feature/printing`
       `compose.resources { packageOfResClass = "ampairsapp.{module.path}.generated.resources" }`
 - [ ] Compile all targets after commonMain changes:
       `./gradlew shared:compileKotlinIosSimulatorArm64 androidApp:compileDebugKotlinAndroid desktopApp:compileKotlin`
+
+---
+
+## 18. Retail / Wholesale / SMB Use-Case Coverage
+
+A deliberate enumeration so no merchant workflow is forgotten. The architecture (§3–§7) supports every
+row below with **no engine changes** — each is a `DocumentType` + a `PrintValueProvider` (in the
+relevant feature) + a seeded `Template`. Phase indicates when it is planned.
+
+### Document types
+
+| Document | Typical printer | Notes | Phase |
+|---|---|---|---|
+| Tax Invoice | thermal / A4 | GST; Original/Duplicate/Triplicate copies; IRN+QR (B2B) | 1 / 4 |
+| Bill of Supply | thermal / A4 | composition dealers / exempt goods (not a Tax Invoice) | 4 |
+| Sale receipt | thermal | round-off, MRP/"you saved", UPI QR footer | 1 |
+| Order confirmation | thermal / A4 | from order detail | 1 |
+| Quotation / Estimate / Proforma | A4 | pre-sale; wholesale | 5 |
+| Delivery challan / Packing slip / Dispatch | thermal / A4 | goods movement; e-way bill ref | 5 |
+| Purchase order / GRN | A4 | buying side (needs domain data) | 5 |
+| Payment receipt / voucher | thermal | advance & partial payments | 5 |
+| Credit / Debit note (sales/purchase return) | thermal / A4 | reason + original-doc ref | 4 |
+| Customer account statement / ledger | A4 | outstanding for credit customers (wholesale) | 5 |
+| Day-end X / Z sales report + cash-drawer/shift | thermal | retail POS shift close | 5 |
+| Gift receipt | thermal | no prices | 5 |
+| Product/barcode label & price/shelf tag | label / thermal | batch printing | 5 |
+
+### Cross-cutting operational features
+
+| Feature | Covered by | Phase |
+|---|---|---|
+| Offline print spool + auto-retry | `PrintSpooler` / `PrintJobEntity` (§12) | 1 |
+| Multiple copies + labeled copies (Original/Duplicate/Triplicate) | template `copies` + computed copy-label | 1 / 4 |
+| Reprint with DUPLICATE/REPRINT mark | computed field + spool history | 1 |
+| Test print / printer diagnostics | `PrintService` action | 1 |
+| Open cash drawer (no-sale) | `CashDrawerKick` element + standalone action | 1 |
+| Batch / bulk print (e.g. all of today's invoices) | spool enqueues N jobs | 4 |
+| Share/export as PDF (WhatsApp / email / SMS / file) | `ShareTransport` + `PdfRenderer` | 4 |
+| Silent / direct page printing (high volume) | IPP / default-printer, no dialog | 6 |
+| Branding header (logo, GSTIN/FSSAI/license, contact) | template header + business profile | 3 |
+| Footer (T&C, return policy, UPI-pay QR, thank-you) | template footer blocks | 3 |
+| Multi-language / non-Latin receipts | `EscPosRenderer` raster fallback (§8) | 2–3 |
+
+### GST / compliance specifics (India-centric, SMB-critical)
+
+- **Original/Duplicate/Triplicate** copy labels on tax invoices.
+- **E-invoice IRN + signed QR** for B2B above turnover threshold (backend mints IRN; we render).
+- **E-way bill** number on delivery challans for goods movement.
+- **HSN summary** block (mandatory above threshold) and **tax breakup** (CGST/SGST/IGST by rate).
+- **Round-off** line; **MRP vs selling price / amount saved** on retail receipts.
+- **Bill of Supply** variant (composition / exempt) distinct from Tax Invoice.
+
+All of the above are **computed fields or template options** — they do not change the core engine,
+renderers, or transports.
