@@ -31,6 +31,7 @@ include(":data:sync")
 include(":data:event")
 include(":tally")
 include(":printing:core")
+include(":printing:render")
 include(
     ":feature:file-api",
     ":feature:file",
