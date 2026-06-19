@@ -171,8 +171,11 @@ private fun AddressForm(
 
     LocationPickerDialog(
         showDialog = showLocationPicker,
-        onLocationSelected = { _, address ->
-            if (address != null) onChange(draft.applyResolved(address))
+        onLocationSelected = { location, address ->
+            // Always capture the picked coordinates; autofill text fields when an address resolved.
+            var updated = draft.copy(latitude = location.latitude, longitude = location.longitude)
+            if (address != null) updated = updated.applyResolved(address)
+            onChange(updated)
             showLocationPicker = false
         },
         onDismiss = { showLocationPicker = false },
@@ -213,4 +216,6 @@ private fun CustomerAddressEntity.toDraft() = AddressDraft(
     pinCode = pin_code,
     phone = phone.orEmpty(),
     isDefault = is_default == 1,
+    latitude = latitude,
+    longitude = longitude,
 )

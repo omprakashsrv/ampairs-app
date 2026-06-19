@@ -38,4 +38,8 @@
     <string name="widget_hours_closed">Closed</string>
     <string name="widget_hours_open_label">Open</string>
     <string name="widget_hours_close_label">Close</string>
+
+    <!-- Delivery location map -->
+    <string name="widget_delivery_location">Delivery location</string>
+    <string name="widget_open_in_maps">Open in Maps</string>
 </resources>

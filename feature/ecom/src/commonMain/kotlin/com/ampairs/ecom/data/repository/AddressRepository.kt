@@ -95,5 +95,7 @@ class AddressRepository(
         country = country,
         phone = phone,
         isDefault = is_default == 1,
+        latitude = latitude,
+        longitude = longitude,
     )
 }

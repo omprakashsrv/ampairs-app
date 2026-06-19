@@ -31,6 +31,8 @@ data class AddressDraft(
     val pinCode: String = "",
     val phone: String = "",
     val isDefault: Boolean = false,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 @Inject
@@ -68,6 +70,8 @@ class AddressesViewModel(
             is_default = if (draft.isDefault) 1 else 0,
             active = 1,
             synced = 0,
+            latitude = draft.latitude,
+            longitude = draft.longitude,
         )
         viewModelScope.launch {
             addressRepository.saveLocally(entity)

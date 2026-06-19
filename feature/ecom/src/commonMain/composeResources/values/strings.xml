@@ -132,4 +132,5 @@
     <string name="ecom_address_location_hint">Use your current location or pick on the map to fill the address automatically. You can edit any field afterwards.</string>
     <string name="ecom_address_details">Address details</string>
     <string name="ecom_cancel">Cancel</string>
+    <string name="ecom_delivery_address">Delivery address</string>
 </resources>

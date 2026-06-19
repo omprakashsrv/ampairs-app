@@ -33,7 +33,7 @@ import com.ampairs.ecom.data.db.entity.TaxonomyImageEntity
         EcomOrderEntity::class,
         EcomOrderLineItemEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @ConstructedBy(EcomRoomDatabaseConstructor::class)

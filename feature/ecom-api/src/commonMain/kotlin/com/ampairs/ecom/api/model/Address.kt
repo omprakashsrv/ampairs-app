@@ -18,6 +18,8 @@ data class AddressResponse(
     @SerialName("country") val country: String = "IN",
     @SerialName("phone") val phone: String? = null,
     @SerialName("is_default") val isDefault: Boolean = false,
+    @SerialName("latitude") val latitude: Double? = null,
+    @SerialName("longitude") val longitude: Double? = null,
 )
 
 /**
@@ -37,4 +39,7 @@ data class AddressRequest(
     @SerialName("country") val country: String = "IN",
     @SerialName("phone") val phone: String? = null,
     @SerialName("is_default") val isDefault: Boolean = false,
+    // Optional geolocation, when the address was picked on the map.
+    @SerialName("latitude") val latitude: Double? = null,
+    @SerialName("longitude") val longitude: Double? = null,
 )
