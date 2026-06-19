@@ -149,6 +149,9 @@ fun ProductEntity.asProductApiModel(): ProductApiModel {
         brandId = this.brand_id ?: "",
         subCategoryId = this.sub_category_id ?: "",
         active = this.active == 1,
+        // The backend keys deletions on status; a soft-deleted row must push as DELETED so the
+        // server soft-deletes it (and unlists it from the storefront). Otherwise it stays ACTIVE.
+        status = if (this.soft_deleted == 1) "DELETED" else "ACTIVE",
         taxCode = this.tax_code,
         mrp = this.mrp,
         dp = this.dp,
