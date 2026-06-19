@@ -17,6 +17,9 @@ interface CartDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertItems(items: List<CartItemEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertItem(item: CartItemEntity)
+
     @Query("SELECT * FROM cart WHERE storefront_id = :storefrontId LIMIT 1")
     suspend fun cartForStorefront(storefrontId: String): CartEntity?
 
@@ -25,6 +28,18 @@ interface CartDao {
 
     @Query("SELECT * FROM cart_item WHERE cart_id = :cartId")
     fun observeItems(cartId: String): Flow<List<CartItemEntity>>
+
+    @Query("SELECT * FROM cart_item WHERE cart_id = :cartId")
+    suspend fun itemsForCart(cartId: String): List<CartItemEntity>
+
+    @Query("SELECT * FROM cart_item WHERE cart_id = :cartId AND listed_product_id = :listedProductId LIMIT 1")
+    suspend fun itemForProduct(cartId: String, listedProductId: String): CartItemEntity?
+
+    @Query("DELETE FROM cart_item WHERE cart_id = :cartId AND listed_product_id = :listedProductId")
+    suspend fun deleteItemByProduct(cartId: String, listedProductId: String)
+
+    @Query("DELETE FROM cart_item WHERE uid = :uid")
+    suspend fun deleteItemByUid(uid: String)
 
     @Query("DELETE FROM cart_item WHERE cart_id = :cartId")
     suspend fun clearItems(cartId: String)

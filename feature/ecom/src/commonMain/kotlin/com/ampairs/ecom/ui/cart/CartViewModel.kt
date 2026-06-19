@@ -57,19 +57,17 @@ class CartViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CartUiState())
 
     fun setQuantity(listedProductId: String, quantity: Int) {
-        val slug = session.activeSlug ?: return
         val storefrontId = session.activeStorefrontId ?: return
         viewModelScope.launch {
-            cartRepository.setItem(slug, storefrontId, listedProductId, quantity)
+            cartRepository.setItem(storefrontId, listedProductId, quantity)
                 .onFailure { _messages.tryEmit(it.message ?: "Couldn't update cart") }
         }
     }
 
     fun removeItem(itemId: String) {
-        val slug = session.activeSlug ?: return
         val storefrontId = session.activeStorefrontId ?: return
         viewModelScope.launch {
-            cartRepository.removeItem(slug, storefrontId, itemId)
+            cartRepository.removeItem(storefrontId, itemId)
                 .onFailure { _messages.tryEmit(it.message ?: "Couldn't remove item") }
         }
     }

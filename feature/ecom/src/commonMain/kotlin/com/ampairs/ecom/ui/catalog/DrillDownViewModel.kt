@@ -109,10 +109,9 @@ class DrillDownViewModel(
     }
 
     fun setQuantity(productId: String, quantity: Int) {
-        val slug = session.activeSlug ?: return
         val storefrontId = session.activeStorefrontId ?: return
         viewModelScope.launch {
-            cartRepository.setItem(slug, storefrontId, productId, quantity)
+            cartRepository.setItem(storefrontId, productId, quantity)
                 .onFailure { _messages.tryEmit(it.message ?: "Couldn't update cart") }
         }
     }
