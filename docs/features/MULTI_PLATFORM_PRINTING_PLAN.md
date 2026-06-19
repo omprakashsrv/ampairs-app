@@ -479,9 +479,13 @@ with explicit reified type params, per `/metro-di`.
    `EscPosRenderer`; `NetworkTransport` (commonMain); `feature/printing` skeleton with device-local
    printer config + routing; invoice/receipt `PrintValueProvider`s; basic print preview; the
    **print spool + retry** queue (§12); operational actions (test print, open cash drawer, reprint,
-   copies). Works on all 3 platforms with zero per-platform code. *(Highest value, lowest risk.)*
+   copies). **Reliability spine from §19 ships here**: idempotent jobs, printer-status pre-flight,
+   per-printer single-writer lock, capability validation. **Plus the test harness from §21**
+   (pure renderers + golden-file tests + `MockTransport`). Works on all 3 platforms with zero
+   per-platform code. *(Highest value, lowest risk.)*
 2. **Phase 2 — Bluetooth + USB transports** with platform discovery + permission flows (manifest/plist
-   deltas). Same ESC/POS bytes, new channels.
+   deltas). Same ESC/POS bytes, new channels. **Connection keep-alive + reconnect/backoff (§19)** and
+   **post-print status poll** on bidirectional transports land here.
 3. **Phase 3 — Visual template editor + sync.** Template DB + `TemplateSyncDelegate`; thermal
    vertical-block editor + live bitmap preview; field-binding picker from `ConfigLookup`.
 4. **Phase 4 — Page mode + inkjet + share/export.** Generalize `HtmlRenderer` + `OsPrintTransport`;
@@ -586,3 +590,86 @@ relevant feature) + a seeded `Template`. Phase indicates when it is planned.
 
 All of the above are **computed fields or template options** — they do not change the core engine,
 renderers, or transports.
+
+---
+
+## 19. Reliability & Idempotency (the spine)
+
+Printing's hardest question is *"did it actually print?"* Most thermal printers are **fire-and-forget
+over a raw socket — there is no application-level ack**, so *sent ≠ printed*. The module is built
+around this, not in spite of it.
+
+- **Print-once guarantee.** Every job carries an **idempotency key** and runs a state machine:
+  `QUEUED → SENDING → SENT → CONFIRMED | FAILED | UNKNOWN`. `UNKNOWN` (sent but unconfirmed) **never
+  auto-retries** — it asks the user ("Did it print? Reprint / Mark printed"). This prevents the
+  classic duplicate GST invoice / double receipt.
+- **Spool hardening** (extends §12): max retries + exponential backoff, **dead-letter for poison
+  jobs** (a malformed job must not retry forever — same trap as the offline-sync "PENDING with null
+  path" bug), **TTL/expiry** (don't print yesterday's queued receipt today), **FIFO per printer**,
+  process-death recovery (queue persisted), and user-visible/cancelable jobs.
+- **Printer status / health.** Read ESC/POS real-time status (`DLE EOT n`) / ASB (`GS a`) for
+  **paper-out, paper-near-end, cover-open, cutter jam, over-temp, offline**. Do a **pre-flight status
+  check** and a **post-print poll** on bidirectional transports (USB/BT/network). A `PrinterStatus`
+  model is surfaced in the UI — tell the cashier "out of paper" *before* they assume the bill printed.
+- **Connection lifecycle.** **Reuse/keep-alive** connections with health checks + reconnect with
+  backoff (do not open a Bluetooth socket per receipt). A **per-printer single-writer `Mutex`**
+  (mirror `CentralSyncService.pushMutexes`) serializes concurrent jobs; `:9100` is single-session, so
+  this lock is mandatory. Per-transport **timeouts + cancellation**, all off-main-thread (iOS
+  `Dispatchers.Default`).
+- **Capability negotiation.** Validate `Template.paperSpec/printerClass` against the resolved
+  `PrinterProfile` at routing/preview — **reflow or reject**, never silently mangle (80 mm template to
+  a 58 mm head, page template to thermal).
+
+---
+
+## 20. Reprint Integrity & Snapshotting
+
+Templates are editable and workspace-synced, so a later template edit must **not** silently re-lay-out
+a past document — a reprinted GST invoice must match the original.
+
+- **Pin the template version** on the document (or snapshot the resolved `PrintDocument`/PDF) so
+  reprints are faithful and auditable. This mirrors the app already snapshotting
+  `sellerName/address/GST` on the invoice.
+- **Reprints carry a DUPLICATE/REPRINT mark**; e-invoice output is immutable once generated.
+- **Never recompute totals in the renderer** — render the document's stored amounts so paper matches
+  the on-screen invoice exactly (only locale formatting is applied).
+
+---
+
+## 21. Testing & Hardware QA
+
+Printing cannot be validated by compilation — this is the highest-leverage robustness investment.
+
+- **Renderers are pure functions** (`IR → bytes/HTML`); add **golden-file tests** per `PrinterProfile`
+  (byte-exact) so any regression in command output is caught in CI.
+- **`MockTransport`** captures bytes to a file/preview, making the whole pipeline testable with **zero
+  hardware**.
+- A **hardware compatibility matrix** (Epson, Star, Xprinter, Rongta, TVS, Zebra + common 58/80 mm
+  clones) and a **beta program** — "support as many printers as possible" is only real if it's tested.
+- A built-in **printer-profile database** (vendor/model → capabilities: chars-per-line, codepage, cut,
+  QR, status protocol) with auto-detect where possible + manual override, so merchants aren't
+  hand-entering capability flags.
+
+---
+
+## 22. Operability — Telemetry, RBAC, Flags, Migration
+
+- **Telemetry** (reuse the app's Sentry + Firebase): structured **print events** (success/fail,
+  time-to-print, error code, printer model, template id) + an **on-device print history** for support.
+  Without this, field "it didn't print" tickets are undebuggable.
+- **Authorization (RBAC).** The **template editor is gated to admin/owner roles** (workspace RBAC) —
+  a cashier must not redesign the company invoice. Printing itself is open to all staff.
+- **Feature flags / kill switch** via the existing `store` toggles — disable printing (or a specific
+  transport/vendor) **per workspace without an app update** if a regression appears.
+- **Migration / coexistence (strangler pattern).** The existing `InvoicePrinter` path stays live
+  behind a flag until the new module reaches parity — no rip-out, no printing outage during build-out.
+
+---
+
+## 23. Success Metrics / SLOs (acceptance bar)
+
+- **≥ 99% print success** on supported hardware; **< 1% duplicate-print rate**.
+- **Tap-to-print < 3 s** on thermal/LAN, **< 8 s** on Bluetooth.
+- **Zero-config onboarding**: auto-discover → one-tap set default → seeded template → test print;
+  track time-to-first-successful-print for a new merchant.
+- **Crash-free print sessions**; spool fully drains within a bounded time after reconnect.
