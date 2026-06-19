@@ -2,7 +2,7 @@ package com.ampairs.ecom.ui.management
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.api.model.ManagedStorefront
 import com.ampairs.ecom.api.model.StorefrontAccessMode
 import com.ampairs.ecom.api.model.StorefrontCreateRequest
@@ -59,7 +59,7 @@ sealed interface StorefrontManagementEvent {
 }
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 class StorefrontManagementViewModel(
     private val repository: StorefrontManagementRepository,
