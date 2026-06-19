@@ -704,3 +704,40 @@ only the rasterization differs by class. This reuses the raster path from §8.
 - Renders on **thermal, inkjet, and laser** via the native/raster QR path above — the printed
   receipt/invoice is scannable to pay on every printer class. A **static counter QR** (fixed VPA, no
   amount) is also supported.
+
+---
+
+## 25. Page Bands & Pagination (repeating headers/footers)
+
+A page document (A4–A7) can span multiple pages, so a `PageLayout` template is organized into
+**bands**, not a flat block list. Thermal/label stay continuous (one roll, no pagination) — this is a
+page-mode concern (§8). All bands use the same elements + `FieldBinding`s as everywhere else, now
+**page-aware**.
+
+### Band model
+- **Page header** — repeats across pages; variants: *first-page-only*, *every-page*, *except-first*.
+- **Column header** — a table's header row, **repeated at the top of every page the table spans**.
+- **Body** — the flowing content (line items / statement rows) that breaks across pages.
+- **Page footer** — repeats across pages; variants: *every-page* or *last-page-only* (e.g. grand total
+  + signature only on the final page).
+
+### Repeating static & dynamic content
+- **Static** (logo, seller address/GSTIN, terms, "computer-generated" note): placed once in a band,
+  printed on every page it's assigned to.
+- **Dynamic**: bound fields re-resolved per page — **`page_number`, `page_count`, "Page X of Y"**, a
+  **`continued`** marker on non-final pages, and **carry-forward subtotals** (`brought_forward` /
+  `carried_forward`) for long itemized invoices and account statements. These are computed fields
+  (§7), so they drop into any band.
+
+### How it renders
+- **HtmlRenderer**: lean on **CSS print primitives** — `@page` margin-boxes for running header/footer,
+  `position: fixed` running elements, `<thead>` auto-repeat per printed page, and
+  `break-inside: avoid` / `break-after` to control row/section breaks. The browser/OS engine paginates.
+- **PdfRenderer**: an explicit **band-pagination engine** measures the body, breaks it into pages, and
+  draws the assigned header/column-header/footer bands on each page (native PDF has no CSS);
+  carry-forward subtotals accumulate at each break.
+- Both consume the same banded `Template`; the page-mode visual editor (§6/§8) edits the
+  header / column-header / body / footer regions directly (the free 2-D canvas becomes region-aware).
+
+This keeps one template + binding model while giving full control over **what repeats, where, and on
+which pages**.
