@@ -30,6 +30,7 @@ include(":data:common")
 include(":data:sync")
 include(":data:event")
 include(":tally")
+include(":printing:core")
 include(
     ":feature:file-api",
     ":feature:file",

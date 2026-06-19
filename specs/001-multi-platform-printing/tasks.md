@@ -30,6 +30,30 @@ testable, and demoable. KMP paths use the new modules from plan.md.
 
 ---
 
+## Implementation progress (2026-06-19)
+
+**Foundation landed** — `printing/core` module created (pure `commonMain`, no platform deps) and
+registered in `settings.gradle.kts`; `SyncEntity.PRINT_TEMPLATE` added.
+
+- Done: **T005, T007, T008, T009, T010** — the `PrintDocument` IR, `Template`/`FieldBinding` model,
+  `PaperSpec`/`PrinterProfile` (incl. Letter/Legal), the `Renderer`/`PrinterTransport`/
+  `PrintValueProvider`/`ComputedFieldCatalog` interfaces, the pure `BindingResolver`, and the generic
+  `PrintEngine`, plus a `BindingResolverTest` (T011 seed).
+- Partial: **T001/T002** (only `printing/core` of the four modules created); **T011** (resolver unit
+  test added; `MockTransport`/golden files await `printing/render`).
+- Not started: T003, T004, T006, T012, T013 and all user-story phases (need the render/transport/
+  feature modules and platform code).
+
+> **Build verification blocked by the sandbox, not the code.** This environment cannot build any KMP
+> module in the repo: the Android KMP Gradle plugin requires a **JetBrains-vendor JDK 21**, which is
+> not installed and cannot be auto-provisioned (foojay returns HTTP 403). Confirmed by running the
+> same compile on the pre-existing `:feature:form-api`, which fails identically. The `printing/core`
+> sources are plain Kotlin + kotlinx.serialization/coroutines and follow the `feature/form-api`
+> module template; compile them on a machine with a JetBrains JDK (or CI) via
+> `./gradlew :printing:core:compileKotlinDesktop`.
+
+---
+
 ## Phase 1: Setup (shared infrastructure)
 
 - [ ] T001 [SETUP] Create the four modules and register them in `settings.gradle.kts`
@@ -41,7 +65,7 @@ testable, and demoable. KMP paths use the new modules from plan.md.
       `gradle/libs.versions.toml`; wire into `printing/transport` and `printing/render`.
 - [ ] T004 [SETUP] Add `api(projects.printing.*)` wiring: `shared/build.gradle.kts` →
       `api(projects.feature.printing)`; document features add `api(projects.printing.core)`.
-- [ ] T005 [P] [SETUP] Add `SyncEntity.PRINT_TEMPLATE` to `data/sync` and a `DocumentType` enum to
+- [x] T005 [P] [SETUP] Add `SyncEntity.PRINT_TEMPLATE` to `data/sync` and a `DocumentType` enum to
       `printing/core`.
 - [ ] T006 [SETUP] Compile-gate: `./gradlew shared:compileKotlinIosSimulatorArm64 androidApp:compileDebugKotlinAndroid desktopApp:compileKotlin`.
 
@@ -51,14 +75,14 @@ testable, and demoable. KMP paths use the new modules from plan.md.
 
 **⚠️ No user-story work begins until this phase is complete.**
 
-- [ ] T007 [P] [FOUND] Define `PrintDocument` IR + `PrintElement` (TextLine, KeyValueRow, Table,
+- [x] T007 [P] [FOUND] Define `PrintDocument` IR + `PrintElement` (TextLine, KeyValueRow, Table,
       Divider, Spacer, Image, Barcode, Qr, Feed, Cut, CashDrawerKick) in `printing/core/.../model/`.
-- [ ] T008 [P] [FOUND] Define `Template`, `ThermalLayout`/`PageLayout`, `TemplateBlock`, `FieldBinding`,
+- [x] T008 [P] [FOUND] Define `Template`, `ThermalLayout`/`PageLayout`, `TemplateBlock`, `FieldBinding`,
       `PrinterProfile`, `PaperSpec` (thermal 58/80mm; page A4–A7 **and US Letter/Legal**; label W×H),
       `ConnectionType`, `PrinterClass` in `printing/core/.../model/`.
-- [ ] T009 [P] [FOUND] Define interfaces `Renderer`, `PrinterTransport`, `PrintValueProvider`,
+- [x] T009 [P] [FOUND] Define interfaces `Renderer`, `PrinterTransport`, `PrintValueProvider`,
       `DocumentMapper`, `ComputedFieldCatalog` in `printing/core/.../`.
-- [ ] T010 [FOUND] Implement the generic template-walk engine (resolve bindings → build
+- [x] T010 [FOUND] Implement the generic template-walk engine (resolve bindings → build
       `PrintDocument`; iterate line-scope bindings for tables) in `printing/core/.../engine/`
       (depends T007–T009).
 - [ ] T011 [P] [FOUND] Implement `MockTransport` (captures bytes to file/preview) and the golden-file
