@@ -8,10 +8,13 @@ import com.ampairs.ecom.api.model.CatalogMeta
 import com.ampairs.ecom.api.model.CheckoutRequest
 import com.ampairs.ecom.api.model.EcomOrderResponse
 import com.ampairs.ecom.api.model.ListedProduct
+import com.ampairs.ecom.api.model.ManagedStorefront
 import com.ampairs.ecom.api.model.PageResponse
 import com.ampairs.ecom.api.model.ProductSyncPage
 import com.ampairs.ecom.api.model.StoreAccessResponse
 import com.ampairs.ecom.api.model.Storefront
+import com.ampairs.ecom.api.model.StorefrontCreateRequest
+import com.ampairs.ecom.api.model.StorefrontUpdateRequest
 
 /**
  * Network surface for the ecom storefront. Public storefront endpoints are slug-scoped;
@@ -60,4 +63,12 @@ interface EcomApi {
     // ── Store access gate (auth, future API — see plan §11.1) ──
     suspend fun requestStoreAccess(slug: String): Result<StoreAccessResponse>
     suspend fun getStoreAccess(slug: String): Result<StoreAccessResponse>
+
+    // ── Merchant storefront management (auth, workspace-scoped via X-Workspace-ID) ──
+    /** The workspace's storefront, or `null` when none has been created yet (server 404 NOT_FOUND). */
+    suspend fun getMyStorefront(): Result<ManagedStorefront?>
+    suspend fun createStorefront(request: StorefrontCreateRequest): Result<ManagedStorefront>
+    suspend fun updateStorefront(request: StorefrontUpdateRequest): Result<ManagedStorefront>
+    suspend fun publishStorefront(): Result<ManagedStorefront>
+    suspend fun unpublishStorefront(): Result<ManagedStorefront>
 }

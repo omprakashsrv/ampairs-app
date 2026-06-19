@@ -32,6 +32,7 @@ import com.ampairs.navigation.providers.orderEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
 import com.ampairs.navigation.providers.sequenceEntryProvider
 import com.ampairs.navigation.providers.storeEntryProvider
+import com.ampairs.navigation.providers.storefrontEntryProvider
 import com.ampairs.navigation.providers.subscriptionEntryProvider
 import com.ampairs.navigation.providers.taxEntryProvider
 import com.ampairs.navigation.providers.unitEntryProvider
@@ -61,6 +62,7 @@ fun combinedEntryProvider(
     return authEntryProvider(key, backStack, onLoginSuccess, sharedViewModelStoreOwner)
         ?: workspaceEntryProvider(key, backStack, onNavigationServiceReady)
         ?: customerEntryProvider(key, backStack)
+        ?: storefrontEntryProvider(key, backStack)
         ?: ecomEntryProvider(key, backStack)
         ?: productEntryProvider(key, backStack)
         ?: taxEntryProvider(key, backStack)

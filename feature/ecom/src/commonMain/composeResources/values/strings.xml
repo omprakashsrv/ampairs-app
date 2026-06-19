@@ -97,4 +97,36 @@
     <string name="ecom_address_default">Set as default</string>
     <string name="ecom_save">Save</string>
     <string name="ecom_delete">Delete</string>
+
+    <!-- Merchant storefront management -->
+    <string name="storefront_mgmt_title">Online Store</string>
+    <string name="storefront_mgmt_intro">Set up your customer-facing storefront. Configure branding and access, then publish to go live.</string>
+    <string name="storefront_mgmt_create_intro">Create your online store. Pick a store name and a permanent store URL — customers will browse and order here.</string>
+    <string name="storefront_mgmt_section_details">Store details</string>
+    <string name="storefront_mgmt_section_branding">Branding</string>
+    <string name="storefront_mgmt_section_access">Access</string>
+    <string name="storefront_mgmt_name">Store name</string>
+    <string name="storefront_mgmt_slug">Store URL (slug)</string>
+    <string name="storefront_mgmt_slug_helper">Lowercase letters, digits and hyphens. Permanent once created.</string>
+    <string name="storefront_mgmt_description">Description</string>
+    <string name="storefront_mgmt_logo_url">Logo URL</string>
+    <string name="storefront_mgmt_banner_url">Banner URL</string>
+    <string name="storefront_mgmt_access_mode">Who can access</string>
+    <string name="storefront_mgmt_access_public">Public</string>
+    <string name="storefront_mgmt_access_public_desc">Anyone can browse and order</string>
+    <string name="storefront_mgmt_access_restricted">Restricted</string>
+    <string name="storefront_mgmt_access_restricted_desc">Customers must be granted access</string>
+    <string name="storefront_mgmt_status">Status</string>
+    <string name="storefront_mgmt_status_draft">Draft</string>
+    <string name="storefront_mgmt_status_published">Published</string>
+    <string name="storefront_mgmt_status_unpublished">Unpublished</string>
+    <string name="storefront_mgmt_status_unknown">Unknown</string>
+    <string name="storefront_mgmt_create">Create storefront</string>
+    <string name="storefront_mgmt_save">Save changes</string>
+    <string name="storefront_mgmt_publish">Publish</string>
+    <string name="storefront_mgmt_unpublish">Unpublish</string>
+    <string name="storefront_mgmt_preview">Preview store</string>
+    <string name="storefront_mgmt_retry">Retry</string>
+    <string name="storefront_mgmt_logo_preview">Storefront logo preview</string>
+    <string name="storefront_mgmt_banner_preview">Storefront banner preview</string>
 </resources>
