@@ -7,4 +7,6 @@ enum class FileEntityType(val backendValue: String) {
     CATEGORY("CATEGORY"),
     SUB_CATEGORY("SUB_CATEGORY"),
     GROUP("GROUP"),
+    STOREFRONT_LOGO("STOREFRONT_LOGO"),
+    STOREFRONT_BANNER("STOREFRONT_BANNER"),
 }

@@ -6,14 +6,13 @@ import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_access_public
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_access_public_desc
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_access_restricted
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_access_restricted_desc
-import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_banner_preview
-import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_banner_url
+import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_banner
+import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_branding_after_create
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_create
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_create_intro
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_description
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_intro
-import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_logo_preview
-import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_logo_url
+import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_logo
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_name
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_preview
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_publish
@@ -36,14 +35,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -69,13 +65,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import com.ampairs.ecom.api.model.StorefrontAccessMode
 import com.ampairs.ecom.api.model.StorefrontStatus
+import com.ampairs.file.api.FileUploadStatus
+import com.ampairs.file.ui.FileImageDisplay
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -199,33 +195,33 @@ private fun StorefrontForm(
 
         SectionLabel(Res.string.storefront_mgmt_section_branding)
 
-        OutlinedTextField(
-            value = state.logoUrl,
-            onValueChange = viewModel::onLogoUrlChange,
-            label = { Text(stringResource(Res.string.storefront_mgmt_logo_url)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (state.logoUrl.isNotBlank()) {
-            AsyncImage(
-                model = state.logoUrl,
-                contentDescription = stringResource(Res.string.storefront_mgmt_logo_preview),
-                modifier = Modifier.size(96.dp),
+        if (state.exists) {
+            // Logo
+            Text(stringResource(Res.string.storefront_mgmt_logo), style = MaterialTheme.typography.bodyMedium)
+            FileImageDisplay(
+                imageUrl = state.logoFile?.imageUrl,
+                localPath = state.logoFile?.localPath,
+                uploadStatus = state.logoFile?.uploadStatus ?: FileUploadStatus.PENDING,
+                size = 110.dp,
+                onPickImage = viewModel::pickLogo,
+                onRemoveImage = state.logoFile?.let { { viewModel.removeLogo() } },
             )
-        }
 
-        OutlinedTextField(
-            value = state.bannerUrl,
-            onValueChange = viewModel::onBannerUrlChange,
-            label = { Text(stringResource(Res.string.storefront_mgmt_banner_url)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (state.bannerUrl.isNotBlank()) {
-            AsyncImage(
-                model = state.bannerUrl,
-                contentDescription = stringResource(Res.string.storefront_mgmt_banner_preview),
-                modifier = Modifier.fillMaxWidth().aspectRatio(3f).clip(RoundedCornerShape(12.dp)),
+            // Banner
+            Text(stringResource(Res.string.storefront_mgmt_banner), style = MaterialTheme.typography.bodyMedium)
+            FileImageDisplay(
+                imageUrl = state.bannerFile?.imageUrl,
+                localPath = state.bannerFile?.localPath,
+                uploadStatus = state.bannerFile?.uploadStatus ?: FileUploadStatus.PENDING,
+                size = 110.dp,
+                onPickImage = viewModel::pickBanner,
+                onRemoveImage = state.bannerFile?.let { { viewModel.removeBanner() } },
+            )
+        } else {
+            Text(
+                text = stringResource(Res.string.storefront_mgmt_branding_after_create),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 

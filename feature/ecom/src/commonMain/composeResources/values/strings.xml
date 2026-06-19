@@ -109,8 +109,9 @@
     <string name="storefront_mgmt_slug">Store URL (slug)</string>
     <string name="storefront_mgmt_slug_helper">Lowercase letters, digits and hyphens. Permanent once created.</string>
     <string name="storefront_mgmt_description">Description</string>
-    <string name="storefront_mgmt_logo_url">Logo URL</string>
-    <string name="storefront_mgmt_banner_url">Banner URL</string>
+    <string name="storefront_mgmt_logo">Logo</string>
+    <string name="storefront_mgmt_banner">Banner</string>
+    <string name="storefront_mgmt_branding_after_create">Save your store first, then add a logo and banner.</string>
     <string name="storefront_mgmt_access_mode">Who can access</string>
     <string name="storefront_mgmt_access_public">Public</string>
     <string name="storefront_mgmt_access_public_desc">Anyone can browse and order</string>
@@ -127,6 +128,4 @@
     <string name="storefront_mgmt_unpublish">Unpublish</string>
     <string name="storefront_mgmt_preview">Preview store</string>
     <string name="storefront_mgmt_retry">Retry</string>
-    <string name="storefront_mgmt_logo_preview">Storefront logo preview</string>
-    <string name="storefront_mgmt_banner_preview">Storefront banner preview</string>
 </resources>

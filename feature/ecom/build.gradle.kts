@@ -29,6 +29,8 @@ kotlin {
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
                 implementation(projects.feature.authApi)
+                api(projects.feature.fileApi)
+                implementation(projects.feature.file)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
