@@ -131,6 +131,6 @@ class RenderPipelineTest {
         assertTrue(html.contains("INV-001"))
         assertTrue(html.contains("240.00"))
         // Columns are sized by weight (3/1/2 → 50/16/33%) so numeric columns stay visible.
-        assertTrue(html.contains("width:50%"), "item column width should be weight-proportional")
+        assertTrue(html.contains("width=\"50%\""), "item column width should be weight-proportional")
     }
 }

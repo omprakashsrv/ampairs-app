@@ -4,7 +4,6 @@ import com.ampairs.printing.core.model.Align
 import com.ampairs.printing.core.model.Orientation
 import com.ampairs.printing.core.model.PageSize
 import com.ampairs.printing.core.model.PaperSpec
-import com.ampairs.printing.core.model.PlainValueFormatter
 import com.ampairs.printing.core.model.PrintDocument
 import com.ampairs.printing.core.model.PrintElement
 import com.ampairs.printing.core.model.PrinterClass
@@ -39,35 +38,42 @@ class HtmlRenderer : Renderer {
     private fun renderElement(element: PrintElement, formatter: ValueFormatter, sb: StringBuilder) {
         when (element) {
             is PrintElement.TextLine -> {
-                val cls = styleClass(element.style.bold, element.style.align)
-                sb.append("<p class=\"$cls\">").append(esc(formatter.format(element.content))).append("</p>")
+                // Legacy align attr + <b>/<font> tags — desktop JEditorPane (HTML 3.2) ignores
+                // CSS class selectors, so style must travel as attributes/tags to render everywhere.
+                sb.append("<p align=\"").append(htmlAlign(element.style.align)).append("\">")
+                appendStyled(sb, formatter.format(element.content), element.style.bold, scaleOf(element.style))
+                sb.append("</p>")
             }
 
             is PrintElement.KeyValueRow -> {
-                sb.append("<div class=\"kv\"><span>").append(esc(formatter.format(element.label)))
-                    .append("</span><span>").append(esc(formatter.format(element.value))).append("</span></div>")
+                // Label-left / value-right via a 2-cell table (JEditorPane has no flexbox).
+                val scale = scaleOf(element.style)
+                sb.append("<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr><td align=\"left\">")
+                appendStyled(sb, formatter.format(element.label), element.style.bold, scale)
+                sb.append("</td><td align=\"right\">")
+                appendStyled(sb, formatter.format(element.value), element.style.bold, scale)
+                sb.append("</td></tr></table>")
             }
 
             is PrintElement.Table -> {
-                // Size columns by their weight so narrow numeric columns (Qty/Rate/Amount) stay
-                // visible instead of being squeezed out by a long item description (table-layout:fixed).
+                // Size columns by weight (width attr, supported in JEditorPane + WebViews) so narrow
+                // numeric columns (Qty/Rate/Amount) stay visible instead of being squeezed out.
                 val total = element.columns.sumOf { it.style.weight }.coerceAtLeast(1)
-                sb.append("<table class=\"items\"><colgroup>")
+                sb.append("<table width=\"100%\" border=\"1\" cellspacing=\"0\" cellpadding=\"3\"><thead><tr>")
                 for (c in element.columns) {
-                    sb.append("<col style=\"width:").append(c.style.weight * 100 / total).append("%\">")
-                }
-                sb.append("</colgroup><thead><tr>")
-                for (c in element.columns) {
-                    // width attr too — desktop JEditorPane (HTML 3.2) ignores <colgroup>/table-layout.
                     sb.append("<th width=\"").append(c.style.weight * 100 / total)
-                        .append("%\" class=\"${alignClass(c.style.align)}\">").append(esc(c.title)).append("</th>")
+                        .append("%\" align=\"").append(htmlAlign(c.style.align)).append("\">")
+                        .append(esc(c.title)).append("</th>")
                 }
                 sb.append("</tr></thead><tbody>")
                 for (row in element.rows) {
                     sb.append("<tr>")
                     row.forEachIndexed { i, v ->
-                        val a = element.columns.getOrNull(i)?.style?.align ?: Align.LEFT
-                        sb.append("<td class=\"${alignClass(a)}\">").append(esc(formatter.format(v))).append("</td>")
+                        val c = element.columns.getOrNull(i)
+                        val w = if (c != null) c.style.weight * 100 / total else 0
+                        val a = c?.style?.align ?: Align.LEFT
+                        sb.append("<td width=\"").append(w).append("%\" align=\"").append(htmlAlign(a))
+                            .append("\">").append(esc(formatter.format(v))).append("</td>")
                     }
                     sb.append("</tr>")
                 }
@@ -76,13 +82,14 @@ class HtmlRenderer : Renderer {
 
             is PrintElement.Grid -> {
                 val cols = element.columns.coerceAtLeast(1)
-                sb.append("<table class=\"grid\"><tbody>")
+                val w = 100 / cols
+                sb.append("<table width=\"100%\" cellspacing=\"0\" cellpadding=\"2\"><tbody>")
                 element.cells.chunked(cols).forEach { rowCells ->
                     sb.append("<tr>")
                     for (cell in rowCells) {
-                        sb.append("<td>")
+                        sb.append("<td width=\"").append(w).append("%\" valign=\"top\">")
                         if (cell.label.isNotBlank()) {
-                            sb.append("<span class=\"gl\">").append(esc(cell.label)).append("</span> ")
+                            sb.append("<b>").append(esc(cell.label)).append("</b> ")
                         }
                         sb.append(esc(formatter.format(cell.value))).append("</td>")
                     }
@@ -102,23 +109,33 @@ class HtmlRenderer : Renderer {
                 if (ref.startsWith("http://") || ref.startsWith("https://") ||
                     ref.startsWith("data:") || ref.startsWith("file:")
                 ) {
-                    sb.append("<img class=\"logo\" src=\"").append(esc(ref)).append("\">")
+                    sb.append("<img src=\"").append(esc(ref)).append("\" height=\"60\">")
                 }
             }
-            is PrintElement.Barcode -> sb.append("<div class=\"code\">").append(esc(element.value)).append("</div>")
-            is PrintElement.Qr -> sb.append("<div class=\"qr\">").append(esc(element.value)).append("</div>")
+            is PrintElement.Barcode -> sb.append("<p align=\"center\">").append(esc(element.value)).append("</p>")
+            is PrintElement.Qr -> sb.append("<p align=\"center\">").append(esc(element.value)).append("</p>")
             is PrintElement.Cut -> Unit          // page printers do not cut
             is PrintElement.CashDrawerKick -> Unit
         }
     }
 
-    private fun styleClass(bold: Boolean, align: Align): String =
-        (if (bold) "b " else "") + alignClass(align)
+    /** Wrap [text] in `<font size>`/`<b>` so size + bold render in JEditorPane and WebViews alike. */
+    private fun appendStyled(sb: StringBuilder, text: String, bold: Boolean, scale: Int) {
+        if (scale > 1) sb.append("<font size=\"6\">")
+        if (bold) sb.append("<b>")
+        sb.append(esc(text))
+        if (bold) sb.append("</b>")
+        if (scale > 1) sb.append("</font>")
+    }
 
-    private fun alignClass(align: Align): String = when (align) {
-        Align.LEFT -> "l"
-        Align.CENTER -> "c"
-        Align.RIGHT -> "r"
+    /** Print scale (1 = normal, >1 = "Large") from the block style's width/height multipliers. */
+    private fun scaleOf(style: com.ampairs.printing.core.model.TextStyle): Int =
+        maxOf(style.widthScale, style.heightScale)
+
+    private fun htmlAlign(align: Align): String = when (align) {
+        Align.LEFT -> "left"
+        Align.CENTER -> "center"
+        Align.RIGHT -> "right"
     }
 
     private fun css(paper: PaperSpec): String {
@@ -132,24 +149,19 @@ class HtmlRenderer : Renderer {
             }
             else -> "A4"
         }
+        // Styling travels as HTML attributes/tags (align=, <b>, <font>, td width=) so it renders in
+        // JEditorPane too; this CSS only carries print page setup + a few enhancements WebViews honor.
         return """
             @page { size: $pageSize; margin: 12mm; }
             html, body { margin: 0; padding: 0; }
-            body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
-            .doc { width: 100%; box-sizing: border-box; }
-            p { margin: 2px 0; } .b { font-weight: bold; }
-            .l { text-align: left; } .c { text-align: center; } .r { text-align: right; }
-            .kv { display: flex; justify-content: space-between; }
-            table { width: 100%; border-collapse: collapse; margin: 6px 0; }
-            table.items { table-layout: fixed; }
-            th, td { border-bottom: 1px solid #999; padding: 3px 4px; word-wrap: break-word; overflow-wrap: break-word; }
+            body { font-family: Arial, sans-serif; font-size: 12px; color: #000; }
+            p { margin: 2px 0; }
+            table { border-collapse: collapse; }
+            td, th { word-wrap: break-word; overflow-wrap: break-word; vertical-align: top; }
             thead { display: table-header-group; }
             tr { break-inside: avoid; }
-            table.grid { table-layout: auto; }
-            table.grid td { border: none; padding: 2px 8px; vertical-align: top; }
-            .gl { font-weight: bold; }
-            .logo { max-height: 60px; }
-            hr { border: none; border-top: 1px dashed #666; }
+            img { max-height: 60px; }
+            hr { border: none; border-top: 1px solid #666; }
         """.trimIndent()
     }
 
