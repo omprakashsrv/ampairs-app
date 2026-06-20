@@ -3,17 +3,26 @@ package com.ampairs.printing.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.printing.core.engine.PrintEngine
 import com.ampairs.printing.core.model.Align
+import com.ampairs.printing.core.model.ConnectionType
+import com.ampairs.printing.core.model.PrintElement
+import com.ampairs.printing.core.model.PrinterClass
+import com.ampairs.printing.core.model.PrinterProfile
 import com.ampairs.printing.core.model.Template
 import com.ampairs.printing.core.model.TemplateBlock
 import com.ampairs.printing.core.model.TemplateStyle
+import com.ampairs.printing.core.render.RenderedOutput
 import com.ampairs.printing.data.repository.TemplateRepository
+import com.ampairs.printing.preview.SampleValueProvider
+import com.ampairs.printing.render.html.HtmlRenderer
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,6 +36,10 @@ data class TemplateEditUiState(
     val loading: Boolean = true,
     val template: Template? = null,
     val saving: Boolean = false,
+    /** Resolved elements for the thermal/label receipt preview. */
+    val previewElements: List<PrintElement> = emptyList(),
+    /** Rendered HTML for the page (inkjet/laser) preview; null for non-page templates. */
+    val previewHtml: String? = null,
 )
 
 /**
@@ -46,10 +59,18 @@ class TemplateEditViewModel(
     private val _savedEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val savedEvent: SharedFlow<Unit> = _savedEvent.asSharedFlow()
 
+    // Real renderer + sample data so the live preview matches the actual printout (page → HTML,
+    // thermal/label → resolved elements). Instantiated directly — both are pure, dependency-free.
+    private val engine = PrintEngine()
+    private val htmlRenderer = HtmlRenderer()
+    private val sampleProvider = SampleValueProvider()
+    private var previewJob: Job? = null
+
     init {
         viewModelScope.launch {
             val template = repository.getTemplate(templateId)
             _uiState.update { it.copy(loading = false, template = template) }
+            refreshPreview()
         }
     }
 
@@ -124,9 +145,33 @@ class TemplateEditViewModel(
         }
     }
 
-    private inline fun mutate(transform: (Template) -> Template) {
+    private fun mutate(transform: (Template) -> Template) {
         _uiState.update { state -> state.template?.let { state.copy(template = transform(it)) } ?: state }
+        refreshPreview()
     }
+
+    /** Re-resolve the working template against sample data through the real renderer. */
+    private fun refreshPreview() {
+        val template = _uiState.value.template ?: return
+        previewJob?.cancel()
+        previewJob = viewModelScope.launch {
+            val document = engine.build(template, "preview", sampleProvider)
+            if (template.printerClass == PrinterClass.PAGE) {
+                val html = (htmlRenderer.render(document, previewProfile(template)) as? RenderedOutput.Markup)?.html
+                _uiState.update { it.copy(previewHtml = html, previewElements = emptyList()) }
+            } else {
+                _uiState.update { it.copy(previewElements = document.blocks, previewHtml = null) }
+            }
+        }
+    }
+
+    private fun previewProfile(template: Template) = PrinterProfile(
+        id = "preview",
+        name = "Preview",
+        printerClass = template.printerClass,
+        connectionType = ConnectionType.OS_PRINT,
+        paper = template.paper,
+    )
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
