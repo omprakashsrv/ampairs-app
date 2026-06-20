@@ -21,4 +21,7 @@ class PrintJobRepository(
     suspend fun pending(): List<PrintJob> = jobDao.pending().map { it.toJob() }
 
     suspend fun save(job: PrintJob) = jobDao.upsert(job.toEntity())
+
+    /** Remove a job from the local spool (device-local; nothing to sync). */
+    suspend fun delete(id: String) = jobDao.delete(id)
 }

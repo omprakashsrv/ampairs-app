@@ -55,6 +55,9 @@ interface PrintJobDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: PrintJobEntity)
+
+    @Query("DELETE FROM print_jobs WHERE id = :id")
+    suspend fun delete(id: String)
 }
 
 @Dao

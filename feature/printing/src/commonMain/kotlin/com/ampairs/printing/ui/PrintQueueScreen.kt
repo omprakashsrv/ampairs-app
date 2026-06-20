@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.printing.generated.resources.Res
+import ampairsapp.feature.printing.generated.resources.printing_delete
 import ampairsapp.feature.printing.generated.resources.printing_mark_printed
 import ampairsapp.feature.printing.generated.resources.printing_no_jobs
 import ampairsapp.feature.printing.generated.resources.printing_queue_title
@@ -88,6 +89,9 @@ fun PrintQueueScreen(
                                     TextButton(onClick = { viewModel.retry(job.id) }) {
                                         Text(stringResource(Res.string.printing_retry))
                                     }
+                                }
+                                TextButton(onClick = { viewModel.delete(job.id) }) {
+                                    Text(stringResource(Res.string.printing_delete))
                                 }
                             }
                         }

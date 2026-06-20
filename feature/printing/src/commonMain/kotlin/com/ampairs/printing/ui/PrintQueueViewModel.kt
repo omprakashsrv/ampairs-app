@@ -52,6 +52,11 @@ class PrintQueueViewModel(
         viewModelScope.launch { coordinator.markPrinted(jobId) }
     }
 
+    /** Remove a job from the queue (device-local spool). */
+    fun delete(jobId: String) {
+        viewModelScope.launch { jobRepository.delete(jobId) }
+    }
+
     fun clearMessage() {
         _uiState.update { it.copy(message = null) }
     }
