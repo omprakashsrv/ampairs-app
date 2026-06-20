@@ -61,6 +61,9 @@ kotlin {
         androidMain {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
+                // Runtime permissions (Bluetooth) — Android only; iOS/Desktop need no app-level grant.
+                implementation(libs.grant.core)
+                implementation(libs.grant.bluetooth)
             }
         }
         val desktopMain by getting {

@@ -6,6 +6,7 @@ import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.printing.core.model.ConnectionType
+import com.ampairs.printing.core.transport.PrintPermissions
 import com.ampairs.printing.core.transport.PrinterDiscoverer
 import com.ampairs.printing.core.transport.PrinterTransportFactory
 import com.ampairs.printing.data.db.PrintingDatabase
@@ -49,5 +50,10 @@ interface PrintingDesktopModule {
         @SingleIn(WorkspaceScope::class)
         fun providePrinterDiscoverer(): PrinterDiscoverer =
             PrinterDiscoverer { createOsPrintTransport()?.discover().orEmpty() }
+
+        /** Desktop printing (TCP / javax.print) needs no app-level runtime grant. */
+        @Provides
+        @SingleIn(WorkspaceScope::class)
+        fun providePrintPermissions(): PrintPermissions = PrintPermissions { true }
     }
 }

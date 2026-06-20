@@ -11,6 +11,7 @@ import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.PrinterProfile
 import com.ampairs.printing.core.spool.SendOutcome
 import com.ampairs.printing.core.transport.DiscoveredPrinter
+import com.ampairs.printing.core.transport.PrintPermissions
 import com.ampairs.printing.core.transport.PrinterDiscoverer
 import com.ampairs.printing.data.repository.PrinterRepository
 import com.ampairs.printing.service.PrintService
@@ -39,6 +40,7 @@ class PrinterListViewModel(
     private val repository: PrinterRepository,
     private val discoverer: PrinterDiscoverer,
     private val printService: PrintService,
+    private val permissions: PrintPermissions,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PrinterListUiState())
@@ -54,6 +56,8 @@ class PrinterListViewModel(
     fun discover() {
         viewModelScope.launch {
             _uiState.update { it.copy(discovering = true) }
+            // Request Bluetooth up front so bonded BT printers can be listed on API 31+.
+            permissions.ensure(ConnectionType.BLUETOOTH)
             val found = runCatching { discoverer.discover() }.getOrDefault(emptyList())
             _uiState.update { it.copy(discovering = false, discovered = found) }
         }
@@ -113,6 +117,10 @@ class PrinterListViewModel(
     fun testPrint(printerId: String) {
         viewModelScope.launch {
             val profile = repository.getProfile(printerId) ?: return@launch
+            if (!permissions.ensure(profile.connectionType)) {
+                _uiState.update { it.copy(message = "Permission required for ${profile.connectionType.name}") }
+                return@launch
+            }
             val outcome = printService.testPrint(profile)
             val ok = outcome == SendOutcome.SENT_UNCONFIRMED || outcome == SendOutcome.CONFIRMED
             _uiState.update { it.copy(message = if (ok) "Test sent to ${profile.name}" else "Test failed: ${outcome.name}") }

@@ -8,10 +8,12 @@ import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.printing.core.model.ConnectionType
 import com.ampairs.printing.core.transport.DiscoveredPrinter
+import com.ampairs.printing.core.transport.PrintPermissions
 import com.ampairs.printing.core.transport.PrinterDiscoverer
 import com.ampairs.printing.core.transport.PrinterTransportFactory
 import com.ampairs.printing.data.db.PrintingDatabase
 import com.ampairs.printing.osprint.AndroidOsPrintTransport
+import com.ampairs.printing.permissions.AndroidPrintPermissions
 import com.ampairs.printing.transport.bluetooth.BluetoothThermalTransport
 import com.ampairs.printing.transport.network.NetworkTransport
 import com.ampairs.printing.transport.usb.UsbThermalTransport
@@ -65,5 +67,9 @@ interface PrintingAndroidModule {
                     .getOrDefault(emptyList<DiscoveredPrinter>())
                 usb + bluetooth
             }
+
+        @Provides
+        @SingleIn(WorkspaceScope::class)
+        fun providePrintPermissions(context: Context): PrintPermissions = AndroidPrintPermissions(context)
     }
 }

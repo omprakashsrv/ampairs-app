@@ -27,6 +27,7 @@ paging-common = "3.5.0"
 image-loader = "1.10.0"
 splash-screen = "1.2.0"
 uuid = "0.8.4"
+grant = "2.2.0"
 adaptive = "1.2.0"
 kermit = "2.1.0"
 # Navigation 3 (new paradigm with user-owned back stack)
@@ -106,6 +107,8 @@ google-firebase-perf = { group = "com.google.firebase", name = "firebase-perf-kt
 google-firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx", version.ref = "firebase-messaging" }
 
 uuid = { group = "com.benasher44", name = "uuid", version.ref = "uuid" }
+grant-core = { module = "dev.brewkits:grant-core", version.ref = "grant" }
+grant-bluetooth = { module = "dev.brewkits:grant-bluetooth", version.ref = "grant" }
 material3-adaptive = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive", version.ref = "adaptive" }
 material3-adaptive-layout = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-layout", version.ref = "adaptive" }
 material3-adaptive-navigation = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-navigation", version.ref = "adaptive" }

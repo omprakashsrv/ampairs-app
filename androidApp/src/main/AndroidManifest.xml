@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Network thermal printers (raw TCP :9100) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Classic Bluetooth (SPP/RFCOMM) thermal printers -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+
+    <!-- USB thermal printers (per-device permission granted at runtime via PendingIntent) -->
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+
     <application
         android:name="com.ampairs.app.MainApp"
         android:allowBackup="false"
