@@ -8,19 +8,15 @@ import javafx.application.Platform
 import javafx.concurrent.Worker
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
-import javafx.scene.input.ScrollEvent
-import javafx.scene.input.ZoomEvent
+import javafx.scene.control.ScrollPane
 import javafx.scene.web.WebView
-import java.awt.event.ComponentAdapter
-import java.awt.event.ComponentEvent
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Desktop preview via a JavaFX [WebView] (WebKit) embedded in a [JFXPanel] — a real browser engine,
- * so the page template renders with full CSS/fonts/tables and supports zoom, unlike the legacy
- * `JEditorPane` (HTML 3.2). Matches the desktop printout, which also prints through a JavaFX WebView.
- *
- * Zoom: ⌘/Ctrl + scroll, or trackpad pinch. Vertical scrolling is native to the WebView.
+ * Desktop preview via a JavaFX [WebView] (WebKit) inside a [ScrollPane] embedded in a [JFXPanel].
+ * WebKit renders the page with full CSS/fonts/tables (unlike the legacy `JEditorPane`); the WebView is
+ * sized to its rendered content so the surrounding [ScrollPane] provides real horizontal + vertical
+ * scrollbars over the full-size page. Matches the desktop printout (also printed via a JavaFX WebView).
  */
 @Composable
 actual fun HtmlPreview(html: String, modifier: Modifier) {
@@ -33,29 +29,22 @@ actual fun HtmlPreview(html: String, modifier: Modifier) {
             Platform.setImplicitExit(false)
             Platform.runLater {
                 val webView = WebView()
-                // JS enabled only so we can measure the laid-out page width for fit-to-width.
+                // JS enabled only so we can measure the laid-out content size for the ScrollPane.
                 webView.engine.isJavaScriptEnabled = true
-                installZoom(webView)
-                // After each load, shrink the zoom so the whole page width fits the pane — this is
-                // engine-independent and fixes content that WebKit lays out wider than the node.
                 webView.engine.loadWorker.stateProperty().addListener { _, _, state ->
-                    if (state == Worker.State.SUCCEEDED) fitWidth(webView, panel)
+                    if (state == Worker.State.SUCCEEDED) sizeToContent(webView)
                 }
                 webViewRef.set(webView)
-                sizeToPanel(webView, panel)
-                webView.engine.loadContent(html, "text/html")
-                panel.scene = Scene(webView)
-            }
-            // Keep the WebView the panel's size and re-fit when the split pane is resized.
-            panel.addComponentListener(object : ComponentAdapter() {
-                override fun componentResized(e: ComponentEvent) {
-                    val view = webViewRef.get() ?: return
-                    Platform.runLater {
-                        sizeToPanel(view, panel)
-                        fitWidth(view, panel)
-                    }
+                val scroll = ScrollPane(webView).apply {
+                    hbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+                    vbarPolicy = ScrollPane.ScrollBarPolicy.AS_NEEDED
+                    isPannable = true // drag-to-pan in addition to the scrollbars
+                    isFitToWidth = false
+                    isFitToHeight = false
                 }
-            })
+                webView.engine.loadContent(html, "text/html")
+                panel.scene = Scene(scroll)
+            }
             panel
         },
         update = {
@@ -66,49 +55,25 @@ actual fun HtmlPreview(html: String, modifier: Modifier) {
     )
 }
 
-/** Constrain the WebView to exactly the host panel's size. */
-private fun sizeToPanel(webView: WebView, panel: JFXPanel) {
-    val w = panel.width.toDouble().coerceAtLeast(1.0)
-    val h = panel.height.toDouble().coerceAtLeast(1.0)
-    webView.minWidth = w
-    webView.prefWidth = w
-    webView.maxWidth = w
-    webView.minHeight = h
-    webView.prefHeight = h
-    webView.maxHeight = h
-}
-
-/** Zoom the WebView down so the page's full laid-out width fits the pane width (never enlarges). */
-private fun fitWidth(webView: WebView, panel: JFXPanel) {
+/**
+ * Size the WebView to its full rendered content (not the viewport) so the WebView itself never scrolls
+ * internally — the surrounding [ScrollPane] does, giving both horizontal and vertical scrollbars.
+ */
+private fun sizeToContent(webView: WebView) {
     try {
-        // Measure at zoom 1 so scrollWidth is the true layout width, then scale to fit.
-        webView.zoom = 1.0
-        val contentWidth = (
-            webView.engine.executeScript(
-                "Math.max(document.documentElement.scrollWidth, " +
-                    "document.body ? document.body.scrollWidth : 0)",
-            ) as? Number
-            )?.toDouble() ?: return
-        val paneWidth = panel.width.toDouble()
-        if (contentWidth > 1.0 && paneWidth > 1.0) {
-            webView.zoom = (paneWidth / contentWidth).coerceIn(0.2, 1.0)
+        val width = (webView.engine.executeScript("document.documentElement.scrollWidth") as? Number)?.toDouble()
+        val height = (webView.engine.executeScript("document.documentElement.scrollHeight") as? Number)?.toDouble()
+        if (width != null && width > 1.0) {
+            webView.minWidth = width
+            webView.prefWidth = width
+            webView.maxWidth = width
+        }
+        if (height != null && height > 1.0) {
+            webView.minHeight = height
+            webView.prefHeight = height
+            webView.maxHeight = height
         }
     } catch (_: Throwable) {
-        // Measurement failed (page not ready) — leave zoom unchanged.
-    }
-}
-
-/** Wire ⌘/Ctrl+scroll and trackpad-pinch to the WebView's zoom factor. */
-private fun installZoom(webView: WebView) {
-    webView.addEventFilter(ScrollEvent.SCROLL) { e ->
-        if (e.isShortcutDown || e.isControlDown) {
-            val factor = if (e.deltaY >= 0) 1.1 else 1.0 / 1.1
-            webView.zoom = (webView.zoom * factor).coerceIn(0.2, 5.0)
-            e.consume()
-        }
-    }
-    webView.addEventFilter(ZoomEvent.ZOOM) { e ->
-        webView.zoom = (webView.zoom * e.zoomFactor).coerceIn(0.2, 5.0)
-        e.consume()
+        // Page not ready / measurement failed — leave the WebView's default sizing.
     }
 }
