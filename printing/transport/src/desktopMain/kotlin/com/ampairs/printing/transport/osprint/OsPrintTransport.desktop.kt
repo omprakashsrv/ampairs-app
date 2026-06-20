@@ -7,9 +7,17 @@ import com.ampairs.printing.core.transport.DiscoveredPrinter
 import com.ampairs.printing.core.transport.PrinterStatus
 import com.ampairs.printing.core.transport.PrinterTransport
 import co.touchlab.kermit.Logger
+import javafx.application.Platform
+import javafx.concurrent.Worker
+import javafx.print.Printer
+import javafx.print.PrinterJob as FxPrinterJob
+import javafx.scene.web.WebView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.print.PrinterJob
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import javax.print.DocFlavor
 import javax.print.PrintService
@@ -88,8 +96,74 @@ internal class JavaPrintServiceTransport : PrinterTransport {
         }.onFailure { log.e(it) { "send failed: ${it.message}" } }
     }
 
-    /** Inkjet/laser path — render the HTML page and print it to [svc] with no dialog. */
+    /**
+     * Inkjet/laser path — render the HTML with a JavaFX [WebView] (WebKit) so the printout matches
+     * the high-fidelity preview, then print to [svc] with no dialog. Falls back to the legacy
+     * [JEditorPane] path if JavaFX can't render/print (so printing never regresses).
+     */
     private fun printHtmlPage(svc: PrintService, html: String) {
+        val printed = runCatching { printViaJavaFx(svc, html) }.getOrElse {
+            log.w(it) { "JavaFX print failed; falling back to JEditorPane: ${it.message}" }
+            false
+        }
+        if (!printed) printHtmlPageSwing(svc, html)
+    }
+
+    /** Render + print through a JavaFX WebView. Returns true if a page was submitted to the printer. */
+    private fun printViaJavaFx(svc: PrintService, html: String): Boolean {
+        ensureFxStarted()
+        val latch = CountDownLatch(1)
+        val error = AtomicReference<Throwable?>(null)
+        val printed = AtomicBoolean(false)
+        Platform.runLater {
+            try {
+                val webView = WebView()
+                val engine = webView.engine
+                engine.loadWorker.stateProperty().addListener { _, _, state ->
+                    when (state) {
+                        Worker.State.SUCCEEDED -> {
+                            try {
+                                val printer = Printer.getAllPrinters()
+                                    .firstOrNull { it.name.equals(svc.name, ignoreCase = true) }
+                                val job = if (printer != null) {
+                                    FxPrinterJob.createPrinterJob(printer)
+                                } else {
+                                    FxPrinterJob.createPrinterJob()
+                                }
+                                if (job != null) {
+                                    engine.print(job)
+                                    job.endJob()
+                                    printed.set(true)
+                                    log.i { "printViaJavaFx: printed to '${svc.name}'" }
+                                } else {
+                                    log.w { "printViaJavaFx: no JavaFX PrinterJob for '${svc.name}'" }
+                                }
+                            } catch (t: Throwable) {
+                                error.set(t)
+                            } finally {
+                                latch.countDown()
+                            }
+                        }
+                        Worker.State.FAILED, Worker.State.CANCELLED -> {
+                            error.set(engine.loadWorker.exception ?: RuntimeException("WebView load $state"))
+                            latch.countDown()
+                        }
+                        else -> Unit // RUNNING / SCHEDULED / READY — keep waiting
+                    }
+                }
+                engine.loadContent(html, "text/html")
+            } catch (t: Throwable) {
+                error.set(t)
+                latch.countDown()
+            }
+        }
+        if (!latch.await(30, TimeUnit.SECONDS)) error("JavaFX print timed out")
+        error.get()?.let { throw it }
+        return printed.get()
+    }
+
+    /** Legacy fallback — Swing JEditorPane (HTML 3.2). Lower fidelity but always available. */
+    private fun printHtmlPageSwing(svc: PrintService, html: String) {
         val paneRef = AtomicReference<JEditorPane>()
         // Swing components must be built on the EDT; the blocking job.print() then runs off-EDT.
         SwingUtilities.invokeAndWait {
@@ -104,9 +178,21 @@ internal class JavaPrintServiceTransport : PrinterTransport {
         job.printService = svc
         // JTextComponent.getPrintable wraps content to the printer page width and paginates.
         job.setPrintable(paneRef.get().getPrintable(null, null))
-        log.i { "printHtmlPage: submitting job to '${svc.name}' (html=${html.length} chars)" }
+        log.i { "printHtmlPageSwing: submitting job to '${svc.name}' (html=${html.length} chars)" }
         job.print()
-        log.i { "printHtmlPage: job.print() returned for '${svc.name}'" }
+        log.i { "printHtmlPageSwing: job.print() returned for '${svc.name}'" }
+    }
+
+    /** Boot the JavaFX runtime once per process; safe if the preview already started it. */
+    private fun ensureFxStarted() {
+        if (fxStarted.compareAndSet(false, true)) {
+            try {
+                Platform.startup { Platform.setImplicitExit(false) }
+            } catch (e: IllegalStateException) {
+                // Toolkit already initialized (e.g. by the preview's JFXPanel) — fine.
+                Platform.setImplicitExit(false)
+            }
+        }
     }
 
     /** Print a pre-rendered PDF straight to the queue (inkjet/laser). */
@@ -123,5 +209,10 @@ internal class JavaPrintServiceTransport : PrinterTransport {
 
     override suspend fun close() {
         service = null
+    }
+
+    private companion object {
+        /** JavaFX toolkit is a process singleton — start it at most once. */
+        private val fxStarted = AtomicBoolean(false)
     }
 }

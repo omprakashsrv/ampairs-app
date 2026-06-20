@@ -9,6 +9,19 @@ plugins {
     alias(libs.plugins.metro)
 }
 
+// OpenJFX ships per-OS native jars; pick the classifier for the machine doing the build/run
+// (each dev + CI builds for its own OS — Mac dev gets mac-aarch64, CI/Linux gets linux).
+fun javafxClassifier(): String {
+    val os = System.getProperty("os.name").lowercase()
+    val arch = System.getProperty("os.arch").lowercase()
+    val arm = arch.contains("aarch64") || arch.contains("arm")
+    return when {
+        os.contains("mac") -> if (arm) "mac-aarch64" else "mac"
+        os.contains("win") -> "win"
+        else -> if (arm) "linux-aarch64" else "linux"
+    }
+}
+
 kotlin {
     jvmToolchain(21)
 
@@ -70,6 +83,12 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
+                // JavaFX WebView (WebKit) renders the page-template preview with real CSS + zoom.
+                val fxVersion = libs.versions.openjfx.get()
+                val fxClassifier = javafxClassifier()
+                listOf("base", "graphics", "controls", "media", "web", "swing").forEach { mod ->
+                    implementation("org.openjfx:javafx-$mod:$fxVersion:$fxClassifier")
+                }
             }
         }
         val iosArm64Main by getting
