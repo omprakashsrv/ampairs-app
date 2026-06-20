@@ -63,6 +63,7 @@ import ampairsapp.feature.printing.generated.resources.printing_queue
 import ampairsapp.feature.printing.generated.resources.printing_save
 import ampairsapp.feature.printing.generated.resources.printing_set_default
 import ampairsapp.feature.printing.generated.resources.printing_setup_guide
+import ampairsapp.feature.printing.generated.resources.printing_templates
 import ampairsapp.feature.printing.generated.resources.printing_test
 import ampairsapp.feature.printing.generated.resources.printing_type
 import ampairsapp.feature.printing.generated.resources.printing_type_label
@@ -79,6 +80,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun PrinterListScreen(
     onOpenQueue: () -> Unit = {},
+    onOpenTemplates: () -> Unit = {},
     viewModel: PrinterListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -91,6 +93,7 @@ fun PrinterListScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.printing_printers_title)) },
                 actions = {
+                    TextButton(onClick = onOpenTemplates) { Text(stringResource(Res.string.printing_templates)) }
                     TextButton(onClick = onOpenQueue) { Text(stringResource(Res.string.printing_queue)) }
                     IconButton(onClick = { viewModel.discover() }) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.printing_discover))

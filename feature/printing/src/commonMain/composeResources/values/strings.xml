@@ -32,5 +32,9 @@
     <string name="printing_label_width">Label width (mm)</string>
     <string name="printing_label_height">Label height (mm)</string>
     <string name="printing_page_note">Inkjet / laser printers are added from the system. Close this and tap Scan to pick an installed printer.</string>
+    <string name="printing_templates">Templates</string>
+    <string name="printing_templates_title">Print templates</string>
+    <string name="printing_no_templates">No templates yet</string>
+    <string name="printing_restore_defaults">Restore defaults</string>
     <string name="printing_setup_guide">No printers found.\n\nInkjet / laser (desktop): add the printer in your OS first, then tap Scan again.\n• Windows: Settings → Bluetooth &amp; devices → Printers &amp; scanners → Add device\n• macOS: System Settings → Printers &amp; Scanners → Add Printer\n• Linux: Settings → Printers (or CUPS at http://localhost:631)\n\nThermal printers:\n• Bluetooth: pair the printer in your device\'s Bluetooth settings, then Scan again\n• USB: connect the printer and approve the permission prompt\n• Network: tap Add printer and enter the IP (host:port)</string>
 </resources>

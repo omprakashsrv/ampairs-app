@@ -7,6 +7,8 @@ import com.ampairs.printing.ui.PrintQueueRoute
 import com.ampairs.printing.ui.PrintQueueScreen
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.printing.ui.PrinterListScreen
+import com.ampairs.printing.ui.TemplateListRoute
+import com.ampairs.printing.ui.TemplateListScreen
 
 /**
  * Entry provider for Printing module routes in Navigation 3.
@@ -19,12 +21,17 @@ fun printingEntryProvider(
     is PrinterListRoute -> NavEntry(key) {
         PrinterListScreen(
             onOpenQueue = { backStack.add(PrintQueueRoute) },
+            onOpenTemplates = { backStack.add(TemplateListRoute) },
             modifier = Modifier,
         )
     }
 
     is PrintQueueRoute -> NavEntry(key) {
         PrintQueueScreen(modifier = Modifier)
+    }
+
+    is TemplateListRoute -> NavEntry(key) {
+        TemplateListScreen(modifier = Modifier)
     }
 
     else -> null

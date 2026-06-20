@@ -148,6 +148,33 @@ object DefaultTemplates {
         ),
     )
 
+    /** An A4 order template for page printers. */
+    fun pageOrder(): Template = Template(
+        id = "default_order_a4",
+        name = "Order (A4)",
+        documentType = DocumentType.ORDER,
+        printerClass = PrinterClass.PAGE,
+        paper = PaperSpec.Page(),
+        blocks = listOf(
+            TemplateBlock.BoundText(std("seller_name"), TemplateStyle(bold = true, align = Align.CENTER)),
+            TemplateBlock.StaticText("ORDER", TemplateStyle(bold = true, align = Align.CENTER)),
+            TemplateBlock.KeyValue("Order No:", std("order_number")),
+            TemplateBlock.KeyValue("Date:", std("order_date")),
+            TemplateBlock.KeyValue("Customer:", std("customer_name", EntityRef.CUSTOMER)),
+            TemplateBlock.LineTable(
+                columns = listOf(
+                    TemplateColumn("Item", line("description"), weight = 6, align = Align.LEFT),
+                    TemplateColumn("Qty", line("quantity"), weight = 1, align = Align.RIGHT),
+                    TemplateColumn("Rate", line("price"), weight = 2, align = Align.RIGHT),
+                    TemplateColumn("Amount", line("total_cost"), weight = 2, align = Align.RIGHT),
+                ),
+            ),
+            TemplateBlock.KeyValue("Sub Total", std("base_price"), TemplateStyle(align = Align.RIGHT)),
+            TemplateBlock.KeyValue("Tax", std("total_tax"), TemplateStyle(align = Align.RIGHT)),
+            TemplateBlock.KeyValue("Grand Total", std("total_cost"), TemplateStyle(bold = true, align = Align.RIGHT)),
+        ),
+    )
+
     /** All seeded templates, for first-run seeding into the template store. */
     fun all(): List<Template> = listOf(
         thermalInvoice(PaperSpec.THERMAL_80),
@@ -155,6 +182,7 @@ object DefaultTemplates {
         thermalOrder(PaperSpec.THERMAL_80),
         thermalReceipt(PaperSpec.THERMAL_58),
         pageInvoice(),
+        pageOrder(),
     )
 
     private fun std(key: String, entityRef: EntityRef = EntityRef.SELF) =

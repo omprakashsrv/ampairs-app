@@ -62,11 +62,20 @@ interface PrintTemplateDao {
     @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType")
     fun observeByType(documentType: String): Flow<List<PrintTemplateEntity>>
 
+    @Query("SELECT * FROM print_templates WHERE active = 1 ORDER BY document_type, printer_class")
+    fun observeAllActive(): Flow<List<PrintTemplateEntity>>
+
+    @Query("SELECT COUNT(*) FROM print_templates")
+    suspend fun count(): Int
+
     @Query("SELECT * FROM print_templates WHERE id = :id")
     suspend fun getById(id: String): PrintTemplateEntity?
 
     @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType LIMIT 1")
     suspend fun firstByType(documentType: String): PrintTemplateEntity?
+
+    @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType AND printer_class = :printerClass LIMIT 1")
+    suspend fun firstByTypeAndClass(documentType: String, printerClass: String): PrintTemplateEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: PrintTemplateEntity)

@@ -109,7 +109,10 @@ class PrintCoordinator(
             }
         log.i { "send: resolved printer name=${profile.name} class=${profile.printerClass} conn=${profile.connectionType} addr=${profile.address}" }
 
-        val template: Template = templateRepository.firstTemplate(documentType.key)
+        // Ensure the built-in templates exist locally (and get pushed to the backend) on first use.
+        templateRepository.seedDefaultsIfEmpty()
+        // Pick the template matching the printer's class (thermal vs page) for this document type.
+        val template: Template = templateRepository.firstTemplate(documentType.key, profile.printerClass)
             ?: defaultTemplate(documentType, profile.printerClass)
             ?: return Result.failure(IllegalStateException("No template for ${documentType.key}"))
         log.i { "send: using template=${template.id} (class=${template.printerClass})" }
