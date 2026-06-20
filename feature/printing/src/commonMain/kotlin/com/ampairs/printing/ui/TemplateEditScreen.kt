@@ -2,14 +2,17 @@ package com.ampairs.printing.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -117,60 +121,92 @@ fun TemplateEditScreen(
             return@Scaffold
         }
 
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            TemplatePreviewPane(
-                template = template,
-                previewHtml = state.previewHtml,
-                previewElements = state.previewElements,
-            )
-            HorizontalDivider()
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-            item {
-                OutlinedTextField(
-                    value = template.name,
-                    onValueChange = viewModel::updateName,
-                    label = { Text(stringResource(Res.string.printing_template_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            itemsIndexed(template.blocks, key = { index, _ -> index }) { index, block ->
-                BlockCard(
-                    index = index,
-                    block = block,
-                    isFirst = index == 0,
-                    isLast = index == template.blocks.lastIndex,
-                    onTextChange = { viewModel.updateBlockText(index, it) },
-                    onToggleBold = { viewModel.toggleBold(index) },
-                    onSetAlign = { viewModel.setAlign(index, it) },
-                    onToggleLarge = { viewModel.toggleLarge(index) },
-                    onMoveUp = { viewModel.moveUp(index) },
-                    onMoveDown = { viewModel.moveDown(index) },
-                    onRemove = { viewModel.removeBlock(index) },
-                )
-            }
-
-            item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { viewModel.addText() }) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Text(stringResource(Res.string.printing_add_text))
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+            if (maxWidth >= 700.dp) {
+                // Wide (tablet / desktop): settings and live preview side by side.
+                Row(Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        contentPadding = PaddingValues(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        templateEditorItems(template, viewModel)
                     }
-                    TextButton(onClick = { viewModel.addDivider() }) {
-                        Icon(Icons.Default.HorizontalRule, contentDescription = null)
-                        Text(stringResource(Res.string.printing_add_divider))
-                    }
-                    TextButton(onClick = { viewModel.addSpacer() }) {
-                        Icon(Icons.Default.SpaceBar, contentDescription = null)
-                        Text(stringResource(Res.string.printing_add_space))
+                    VerticalDivider()
+                    TemplatePreviewPane(
+                        template = template,
+                        previewHtml = state.previewHtml,
+                        previewElements = state.previewElements,
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                    )
+                }
+            } else {
+                // Narrow (phone): preview on top, settings below.
+                Column(Modifier.fillMaxSize()) {
+                    TemplatePreviewPane(
+                        template = template,
+                        previewHtml = state.previewHtml,
+                        previewElements = state.previewElements,
+                        modifier = Modifier.fillMaxWidth().height(280.dp),
+                    )
+                    HorizontalDivider()
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        contentPadding = PaddingValues(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        templateEditorItems(template, viewModel)
                     }
                 }
             }
+        }
+    }
+}
+
+/** The scrollable editor controls (name + block list + add buttons), reused in both layouts. */
+private fun LazyListScope.templateEditorItems(
+    template: Template,
+    viewModel: TemplateEditViewModel,
+) {
+    item {
+        OutlinedTextField(
+            value = template.name,
+            onValueChange = viewModel::updateName,
+            label = { Text(stringResource(Res.string.printing_template_name)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+
+    itemsIndexed(template.blocks, key = { index, _ -> index }) { index, block ->
+        BlockCard(
+            index = index,
+            block = block,
+            isFirst = index == 0,
+            isLast = index == template.blocks.lastIndex,
+            onTextChange = { viewModel.updateBlockText(index, it) },
+            onToggleBold = { viewModel.toggleBold(index) },
+            onSetAlign = { viewModel.setAlign(index, it) },
+            onToggleLarge = { viewModel.toggleLarge(index) },
+            onMoveUp = { viewModel.moveUp(index) },
+            onMoveDown = { viewModel.moveDown(index) },
+            onRemove = { viewModel.removeBlock(index) },
+        )
+    }
+
+    item {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { viewModel.addText() }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Text(stringResource(Res.string.printing_add_text))
+            }
+            TextButton(onClick = { viewModel.addDivider() }) {
+                Icon(Icons.Default.HorizontalRule, contentDescription = null)
+                Text(stringResource(Res.string.printing_add_divider))
+            }
+            TextButton(onClick = { viewModel.addSpacer() }) {
+                Icon(Icons.Default.SpaceBar, contentDescription = null)
+                Text(stringResource(Res.string.printing_add_space))
             }
         }
     }
@@ -181,8 +217,9 @@ private fun TemplatePreviewPane(
     template: Template,
     previewHtml: String?,
     previewElements: List<PrintElement>,
+    modifier: Modifier = Modifier,
 ) {
-    Box(Modifier.fillMaxWidth().height(280.dp)) {
+    Box(modifier) {
         if (template.printerClass == PrinterClass.PAGE) {
             previewHtml?.let { HtmlPreview(it, Modifier.fillMaxSize()) }
         } else {
