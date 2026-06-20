@@ -48,6 +48,8 @@ data class DrillDownUiState(
     val activeRefine: String? = null,
     val cartCount: Int = 0,
     val cartTotal: Double = 0.0,
+    val isSearch: Boolean = false,
+    val query: String = "",
 )
 
 @AssistedInject
@@ -64,18 +66,30 @@ class DrillDownViewModel(
 
     private val refine = MutableStateFlow(args.subcategory)
 
+    // Search mode is entered when the screen is opened via the search bar (query != null, possibly
+    // blank). The term is then edited live in the screen, so it must be observable state — not the
+    // fixed args.query.
+    private val isSearch = args.query != null
+    private val searchQuery = MutableStateFlow(args.query.orEmpty())
+
+    fun setQuery(value: String) {
+        searchQuery.value = value
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<DrillDownUiState> =
-        combine(session.active, refine) { active, r -> active to r }
-            .flatMapLatest { (active, activeRefine) ->
+        combine(session.active, refine, searchQuery) { active, r, q -> Triple(active, r, q) }
+            .flatMapLatest { (active, activeRefine, query) ->
                 if (active == null) {
-                    flowOf(DrillDownUiState(title = args.title))
+                    flowOf(DrillDownUiState(title = args.title, isSearch = isSearch, query = query))
                 } else {
                     val id = active.storefrontId
-                    val productsFlow = if (args.query != null) {
+                    val productsFlow = if (isSearch) {
                         catalogRepository.observeVisible(id).map { list ->
-                            val q = args.query.trim().lowercase()
-                            list.filter { it.name.lowercase().contains(q) || (it.brand?.lowercase()?.contains(q) == true) }
+                            val q = query.trim().lowercase()
+                            // Blank term → show nothing (prompt to type), not the whole catalog.
+                            if (q.isEmpty()) emptyList()
+                            else list.filter { it.name.lowercase().contains(q) || (it.brand?.lowercase()?.contains(q) == true) }
                         }
                     } else {
                         catalogRepository.observeFiltered(id, args.category, args.brand, activeRefine)
@@ -99,10 +113,12 @@ class DrillDownViewModel(
                             activeRefine = activeRefine,
                             cartCount = cartItems.sumOf { it.quantity },
                             cartTotal = cartItems.sumOf { it.unit_price * it.quantity },
+                            isSearch = isSearch,
+                            query = query,
                         )
                     }
                 }
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DrillDownUiState(title = args.title))
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DrillDownUiState(title = args.title, isSearch = isSearch, query = args.query.orEmpty()))
 
     fun toggleRefine(value: String) {
         refine.value = if (refine.value == value) null else value
