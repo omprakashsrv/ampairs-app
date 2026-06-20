@@ -67,7 +67,16 @@ class HtmlRenderer : Renderer {
             is PrintElement.Divider -> sb.append("<hr>")
             is PrintElement.Spacer -> repeat(element.lines) { sb.append("<br>") }
             is PrintElement.Feed -> repeat(element.lines) { sb.append("<br>") }
-            is PrintElement.Image -> sb.append("<img class=\"logo\" src=\"").append(esc(element.ref)).append("\">")
+            is PrintElement.Image -> {
+                // Only emit a real URL; an unresolved cache-key ref (e.g. "business_logo") would make
+                // the OS HTML printer (JEditorPane) throw trying to resolve it, failing the whole job.
+                val ref = element.ref
+                if (ref.startsWith("http://") || ref.startsWith("https://") ||
+                    ref.startsWith("data:") || ref.startsWith("file:")
+                ) {
+                    sb.append("<img class=\"logo\" src=\"").append(esc(ref)).append("\">")
+                }
+            }
             is PrintElement.Barcode -> sb.append("<div class=\"code\">").append(esc(element.value)).append("</div>")
             is PrintElement.Qr -> sb.append("<div class=\"qr\">").append(esc(element.value)).append("</div>")
             is PrintElement.Cut -> Unit          // page printers do not cut

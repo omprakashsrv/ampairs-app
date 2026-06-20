@@ -54,17 +54,24 @@ class PrintService(
             val opened = transport.open(profile)
             if (opened.isFailure) {
                 transport.close()
-                return@withLock SendOutcome.TRANSIENT_FAILURE
+                // Surface the real reason (don't swallow it as a generic transient failure) so the
+                // job's lastError and the UI message say WHY it didn't print.
+                throw IllegalStateException(
+                    "Could not connect to ${profile.name}: ${opened.exceptionOrNull()?.message ?: "open failed"}",
+                    opened.exceptionOrNull(),
+                )
             }
             val sent = transport.send(output)
             transport.close()
-            when {
-                sent.isFailure -> SendOutcome.TRANSIENT_FAILURE
-                // OS print service accepted the job → confirmed. Raw thermal is fire-and-forget:
-                // "sent" but not confirmed (no back-channel), so it stays for the user to verify (§19).
-                profile.connectionType == ConnectionType.OS_PRINT -> SendOutcome.CONFIRMED
-                else -> SendOutcome.SENT_UNCONFIRMED
+            if (sent.isFailure) {
+                throw IllegalStateException(
+                    "Printing failed on ${profile.name}: ${sent.exceptionOrNull()?.message ?: "send failed"}",
+                    sent.exceptionOrNull(),
+                )
             }
+            // OS print service accepted the job → confirmed. Raw thermal is fire-and-forget:
+            // "sent" but not confirmed (no back-channel), so it stays for the user to verify (§19).
+            if (profile.connectionType == ConnectionType.OS_PRINT) SendOutcome.CONFIRMED else SendOutcome.SENT_UNCONFIRMED
         }
     }
 

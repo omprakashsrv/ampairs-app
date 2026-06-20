@@ -86,14 +86,8 @@ fun InvoiceViewScreen(
     val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
-    var showPreview by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val fromOrder = !invoice.orderRefId.isNullOrBlank()
-
-    if (showPreview) {
-        TaxInvoicePreviewScreen(invoice = invoice, onClose = { showPreview = false })
-        return
-    }
 
     viewModel.printMessage?.let { msg ->
         AlertDialog(

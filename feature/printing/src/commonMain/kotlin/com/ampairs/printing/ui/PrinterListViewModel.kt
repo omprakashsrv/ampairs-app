@@ -122,9 +122,17 @@ class PrinterListViewModel(
                 _uiState.update { it.copy(message = "Permission required for ${profile.connectionType.name}") }
                 return@launch
             }
-            val outcome = printService.testPrint(profile)
-            val ok = outcome == SendOutcome.SENT_UNCONFIRMED || outcome == SendOutcome.CONFIRMED
-            _uiState.update { it.copy(message = if (ok) "Test sent to ${profile.name}" else "Test failed: ${outcome.name}") }
+            val message = runCatching { printService.testPrint(profile) }.fold(
+                onSuccess = { outcome ->
+                    if (outcome == SendOutcome.SENT_UNCONFIRMED || outcome == SendOutcome.CONFIRMED) {
+                        "Test sent to ${profile.name}"
+                    } else {
+                        "Test failed: ${outcome.name}"
+                    }
+                },
+                onFailure = { it.message ?: "Test failed" },
+            )
+            _uiState.update { it.copy(message = message) }
         }
     }
 
