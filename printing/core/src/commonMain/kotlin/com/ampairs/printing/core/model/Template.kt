@@ -50,6 +50,13 @@ data class TemplateColumn(
     val align: Align = Align.LEFT,
 )
 
+/** One cell of a [TemplateBlock.InfoGrid]: a static [label] plus an optional bound value. */
+@Serializable
+data class GridCell(
+    val label: String = "",
+    val binding: FieldBinding? = null,
+)
+
 /** The authored blocks; the engine turns these into [PrintElement]s by resolving bindings. */
 @Serializable
 sealed interface TemplateBlock {
@@ -84,6 +91,18 @@ sealed interface TemplateBlock {
     @Serializable
     data class LineTable(
         val columns: List<TemplateColumn>,
+        override val region: BandRegion = BandRegion.BODY,
+    ) : TemplateBlock
+
+    /**
+     * A fixed grid of labelled cells (not line-scoped), laid out [columns] per row — e.g. a
+     * seller/GSTIN box or a "Bill To | Ship To" header. Each cell shows a static label plus an
+     * optional bound value. Renders as an HTML `<table>` on page printers (desktop-safe).
+     */
+    @Serializable
+    data class InfoGrid(
+        val cells: List<GridCell>,
+        val columns: Int = 2,
         override val region: BandRegion = BandRegion.BODY,
     ) : TemplateBlock
 

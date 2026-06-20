@@ -54,6 +54,16 @@
     <string name="printing_add_text">Add text</string>
     <string name="printing_add_divider">Add divider</string>
     <string name="printing_add_space">Add space</string>
+    <string name="printing_add_table">Add table</string>
+    <string name="printing_add_grid">Add grid</string>
+    <string name="printing_add_column">Add column</string>
+    <string name="printing_add_cell">Add cell</string>
+    <string name="printing_column_header">Header</string>
+    <string name="printing_field_key">Field key</string>
+    <string name="printing_weight">Weight</string>
+    <string name="printing_grid_columns">Columns per row</string>
+    <string name="printing_cell_label">Label</string>
+    <string name="printing_block_grid">Info grid</string>
     <string name="printing_template_saved">Template saved</string>
     <string name="printing_block_logo">Store logo</string>
     <string name="printing_block_line_table">Item table</string>

@@ -88,6 +88,18 @@ class EscPosRenderer : Renderer {
                 }
             }
 
+            is PrintElement.Grid -> {
+                // Thermal is narrow — flow each grid cell as its own "label: value" line.
+                for (cell in element.cells) {
+                    val text = if (cell.label.isNotBlank()) {
+                        "${cell.label}: ${formatter.format(cell.value)}"
+                    } else {
+                        formatter.format(cell.value)
+                    }
+                    emitStyledLines(ThermalLineComposer.line(text, width, Align.LEFT), false, 1, 1, out)
+                }
+            }
+
             is PrintElement.Divider -> {
                 out += EscPos.text(element.char.toString().repeat(width)); out += EscPos.NEWLINE
             }

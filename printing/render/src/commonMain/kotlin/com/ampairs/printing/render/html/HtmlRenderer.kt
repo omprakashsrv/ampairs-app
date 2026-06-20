@@ -64,6 +64,24 @@ class HtmlRenderer : Renderer {
                 sb.append("</tbody></table>")
             }
 
+            is PrintElement.Grid -> {
+                val cols = element.columns.coerceAtLeast(1)
+                sb.append("<table class=\"grid\"><tbody>")
+                element.cells.chunked(cols).forEach { rowCells ->
+                    sb.append("<tr>")
+                    for (cell in rowCells) {
+                        sb.append("<td>")
+                        if (cell.label.isNotBlank()) {
+                            sb.append("<span class=\"gl\">").append(esc(cell.label)).append("</span> ")
+                        }
+                        sb.append(esc(formatter.format(cell.value))).append("</td>")
+                    }
+                    repeat(cols - rowCells.size) { sb.append("<td></td>") }
+                    sb.append("</tr>")
+                }
+                sb.append("</tbody></table>")
+            }
+
             is PrintElement.Divider -> sb.append("<hr>")
             is PrintElement.Spacer -> repeat(element.lines) { sb.append("<br>") }
             is PrintElement.Feed -> repeat(element.lines) { sb.append("<br>") }
@@ -115,6 +133,8 @@ class HtmlRenderer : Renderer {
             th, td { border-bottom: 1px solid #999; padding: 3px 4px; }
             thead { display: table-header-group; }
             tr { break-inside: avoid; }
+            table.grid td { border: none; padding: 2px 8px; vertical-align: top; }
+            .gl { font-weight: bold; }
             .logo { max-height: 60px; }
             hr { border: none; border-top: 1px dashed #666; }
         """.trimIndent()

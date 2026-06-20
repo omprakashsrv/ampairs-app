@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -44,9 +45,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.printing.generated.resources.Res
+import ampairsapp.feature.printing.generated.resources.printing_add_cell
+import ampairsapp.feature.printing.generated.resources.printing_add_column
 import ampairsapp.feature.printing.generated.resources.printing_add_divider
+import ampairsapp.feature.printing.generated.resources.printing_add_grid
 import ampairsapp.feature.printing.generated.resources.printing_add_space
+import ampairsapp.feature.printing.generated.resources.printing_add_table
 import ampairsapp.feature.printing.generated.resources.printing_add_text
+import ampairsapp.feature.printing.generated.resources.printing_block_grid
+import ampairsapp.feature.printing.generated.resources.printing_cell_label
+import ampairsapp.feature.printing.generated.resources.printing_column_header
+import ampairsapp.feature.printing.generated.resources.printing_field_key
+import ampairsapp.feature.printing.generated.resources.printing_grid_columns
+import ampairsapp.feature.printing.generated.resources.printing_weight
 import ampairsapp.feature.printing.generated.resources.printing_align_center
 import ampairsapp.feature.printing.generated.resources.printing_align_left
 import ampairsapp.feature.printing.generated.resources.printing_align_right
@@ -184,6 +195,7 @@ private fun LazyListScope.templateEditorItems(
             block = block,
             isFirst = index == 0,
             isLast = index == template.blocks.lastIndex,
+            viewModel = viewModel,
             onTextChange = { viewModel.updateBlockText(index, it) },
             onToggleBold = { viewModel.toggleBold(index) },
             onSetAlign = { viewModel.setAlign(index, it) },
@@ -207,6 +219,14 @@ private fun LazyListScope.templateEditorItems(
             TextButton(onClick = { viewModel.addSpacer() }) {
                 Icon(Icons.Default.SpaceBar, contentDescription = null)
                 Text(stringResource(Res.string.printing_add_space))
+            }
+            TextButton(onClick = { viewModel.addTable() }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Text(stringResource(Res.string.printing_add_table))
+            }
+            TextButton(onClick = { viewModel.addGrid() }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Text(stringResource(Res.string.printing_add_grid))
             }
         }
     }
@@ -234,6 +254,7 @@ private fun BlockCard(
     block: TemplateBlock,
     isFirst: Boolean,
     isLast: Boolean,
+    viewModel: TemplateEditViewModel,
     onTextChange: (String) -> Unit,
     onToggleBold: () -> Unit,
     onSetAlign: (Align) -> Unit,
@@ -271,12 +292,18 @@ private fun BlockCard(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-            } else if (!hasStyle(block)) {
+            } else if (!hasStyle(block) && block !is TemplateBlock.LineTable && block !is TemplateBlock.InfoGrid) {
                 Text(
                     stringResource(Res.string.printing_not_editable),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            when (block) {
+                is TemplateBlock.LineTable -> LineTableEditor(index, block, viewModel)
+                is TemplateBlock.InfoGrid -> InfoGridEditor(index, block, viewModel)
+                else -> Unit
             }
 
             val style = styleOf(block)
@@ -315,6 +342,100 @@ private fun BlockCard(
     }
 }
 
+@Composable
+private fun LineTableEditor(index: Int, block: TemplateBlock.LineTable, viewModel: TemplateEditViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        block.columns.forEachIndexed { col, column ->
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = column.header,
+                        onValueChange = { viewModel.updateColumnHeader(index, col, it) },
+                        label = { Text(stringResource(Res.string.printing_column_header)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { viewModel.removeColumn(index, col) }) {
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.printing_remove))
+                    }
+                }
+                OutlinedTextField(
+                    value = column.binding.fieldKey,
+                    onValueChange = { viewModel.updateColumnField(index, col, it) },
+                    label = { Text(stringResource(Res.string.printing_field_key)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = column.weight.toString(),
+                        onValueChange = { viewModel.updateColumnWeight(index, col, it.toIntOrNull() ?: column.weight) },
+                        label = { Text(stringResource(Res.string.printing_weight)) },
+                        singleLine = true,
+                        modifier = Modifier.width(96.dp),
+                    )
+                    AlignChips(column.align) { viewModel.setColumnAlign(index, col, it) }
+                }
+                HorizontalDivider()
+            }
+        }
+        TextButton(onClick = { viewModel.addColumn(index) }) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Text(stringResource(Res.string.printing_add_column))
+        }
+    }
+}
+
+@Composable
+private fun InfoGridEditor(index: Int, block: TemplateBlock.InfoGrid, viewModel: TemplateEditViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = block.columns.toString(),
+            onValueChange = { viewModel.setGridColumns(index, it.toIntOrNull() ?: block.columns) },
+            label = { Text(stringResource(Res.string.printing_grid_columns)) },
+            singleLine = true,
+            modifier = Modifier.width(160.dp),
+        )
+        block.cells.forEachIndexed { cell, gridCell ->
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = gridCell.label,
+                        onValueChange = { viewModel.updateCellLabel(index, cell, it) },
+                        label = { Text(stringResource(Res.string.printing_cell_label)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { viewModel.removeCell(index, cell) }) {
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.printing_remove))
+                    }
+                }
+                OutlinedTextField(
+                    value = gridCell.binding?.fieldKey ?: "",
+                    onValueChange = { viewModel.updateCellField(index, cell, it) },
+                    label = { Text(stringResource(Res.string.printing_field_key)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                HorizontalDivider()
+            }
+        }
+        TextButton(onClick = { viewModel.addCell(index) }) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Text(stringResource(Res.string.printing_add_cell))
+        }
+    }
+}
+
+@Composable
+private fun AlignChips(selected: Align, onSelect: (Align) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FilterChip(selected == Align.LEFT, { onSelect(Align.LEFT) }, label = { Text(stringResource(Res.string.printing_align_left)) })
+        FilterChip(selected == Align.CENTER, { onSelect(Align.CENTER) }, label = { Text(stringResource(Res.string.printing_align_center)) })
+        FilterChip(selected == Align.RIGHT, { onSelect(Align.RIGHT) }, label = { Text(stringResource(Res.string.printing_align_right)) })
+    }
+}
+
 private fun styleOf(block: TemplateBlock): TemplateStyle? = when (block) {
     is TemplateBlock.StaticText -> block.style
     is TemplateBlock.BoundText -> block.style
@@ -330,6 +451,7 @@ private fun blockTitle(block: TemplateBlock): String = when (block) {
     is TemplateBlock.BoundText -> stringResource(Res.string.printing_block_bound, block.binding.fieldKey)
     is TemplateBlock.KeyValue -> stringResource(Res.string.printing_block_bound, block.binding.fieldKey)
     is TemplateBlock.LineTable -> stringResource(Res.string.printing_block_line_table)
+    is TemplateBlock.InfoGrid -> stringResource(Res.string.printing_block_grid)
     is TemplateBlock.Divider -> stringResource(Res.string.printing_divider_char)
     is TemplateBlock.Spacer -> stringResource(Res.string.printing_spacer_lines)
     is TemplateBlock.Logo -> stringResource(Res.string.printing_block_logo)

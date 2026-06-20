@@ -5,6 +5,7 @@ import com.ampairs.printing.core.model.EntityRef
 import com.ampairs.printing.core.model.FieldBinding
 import com.ampairs.printing.core.model.FieldSource
 import com.ampairs.printing.core.model.FieldValue
+import com.ampairs.printing.core.model.GridCellValue
 import com.ampairs.printing.core.model.PlainValueFormatter
 import com.ampairs.printing.core.model.PrintDocument
 import com.ampairs.printing.core.model.PrintElement
@@ -85,6 +86,15 @@ class PrintEngine(
             listOf(PrintElement.Table(headers, rows, block.region))
         }
 
+        is TemplateBlock.InfoGrid -> {
+            val cells = block.cells.map { cell ->
+                val v = cell.binding?.let { resolveDoc(it, template, documentId, standard, custom, nested) }
+                    ?: FieldValue.Empty
+                GridCellValue(cell.label, v)
+            }
+            listOf(PrintElement.Grid(cells, block.columns.coerceAtLeast(1), block.region))
+        }
+
         is TemplateBlock.Divider -> listOf(PrintElement.Divider(block.char, block.region))
         is TemplateBlock.Spacer -> listOf(PrintElement.Spacer(block.lines, block.region))
         is TemplateBlock.Logo -> listOf(PrintElement.Image(block.ref, block.region))
@@ -123,6 +133,7 @@ class PrintEngine(
         is TemplateBlock.BoundText -> listOf(block.binding)
         is TemplateBlock.KeyValue -> listOf(block.binding)
         is TemplateBlock.LineTable -> block.columns.map { it.binding }
+        is TemplateBlock.InfoGrid -> block.cells.mapNotNull { it.binding }
         is TemplateBlock.BarcodeField -> listOf(block.binding)
         is TemplateBlock.QrField -> listOf(block.binding)
         else -> emptyList()

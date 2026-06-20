@@ -5,12 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.printing.core.engine.PrintEngine
 import com.ampairs.printing.core.model.Align
+import com.ampairs.printing.core.model.BindingScope
 import com.ampairs.printing.core.model.ConnectionType
+import com.ampairs.printing.core.model.EntityRef
+import com.ampairs.printing.core.model.FieldBinding
+import com.ampairs.printing.core.model.FieldSource
+import com.ampairs.printing.core.model.GridCell
 import com.ampairs.printing.core.model.PrintElement
 import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.PrinterProfile
 import com.ampairs.printing.core.model.Template
 import com.ampairs.printing.core.model.TemplateBlock
+import com.ampairs.printing.core.model.TemplateColumn
 import com.ampairs.printing.core.model.TemplateStyle
 import com.ampairs.printing.core.render.RenderedOutput
 import com.ampairs.printing.data.repository.TemplateRepository
@@ -112,6 +118,59 @@ class TemplateEditViewModel(
 
     fun addSpacer() = appendBlock(TemplateBlock.Spacer(lines = 1))
 
+    fun addTable() = appendBlock(
+        TemplateBlock.LineTable(
+            columns = listOf(
+                TemplateColumn("Item", lineBinding("description"), weight = 5, align = Align.LEFT),
+                TemplateColumn("Amount", lineBinding("total_cost"), weight = 3, align = Align.RIGHT),
+            ),
+        ),
+    )
+
+    fun addGrid() = appendBlock(
+        TemplateBlock.InfoGrid(
+            cells = listOf(GridCell(label = "Label", binding = docBinding(""))),
+            columns = 2,
+        ),
+    )
+
+    // ── line-table column editing ────────────────────────────────────────────────
+
+    fun addColumn(index: Int) =
+        updateColumns(index) { it + TemplateColumn("Column", lineBinding(""), weight = 1, align = Align.LEFT) }
+
+    fun removeColumn(index: Int, col: Int) =
+        updateColumns(index) { cols -> cols.toMutableList().apply { if (col in indices) removeAt(col) } }
+
+    fun updateColumnHeader(index: Int, col: Int, header: String) =
+        updateColumn(index, col) { it.copy(header = header) }
+
+    fun updateColumnField(index: Int, col: Int, fieldKey: String) =
+        updateColumn(index, col) { it.copy(binding = it.binding.copy(fieldKey = fieldKey)) }
+
+    fun updateColumnWeight(index: Int, col: Int, weight: Int) =
+        updateColumn(index, col) { it.copy(weight = weight.coerceIn(1, 12)) }
+
+    fun setColumnAlign(index: Int, col: Int, align: Align) =
+        updateColumn(index, col) { it.copy(align = align) }
+
+    // ── grid cell editing ────────────────────────────────────────────────────────
+
+    fun setGridColumns(index: Int, columns: Int) = updateBlock(index) { block ->
+        if (block is TemplateBlock.InfoGrid) block.copy(columns = columns.coerceIn(1, 4)) else block
+    }
+
+    fun addCell(index: Int) = updateCells(index) { it + GridCell(label = "Label", binding = docBinding("")) }
+
+    fun removeCell(index: Int, cell: Int) =
+        updateCells(index) { cells -> cells.toMutableList().apply { if (cell in indices) removeAt(cell) } }
+
+    fun updateCellLabel(index: Int, cell: Int, label: String) =
+        updateCell(index, cell) { it.copy(label = label) }
+
+    fun updateCellField(index: Int, cell: Int, fieldKey: String) =
+        updateCell(index, cell) { it.copy(binding = (it.binding ?: docBinding("")).copy(fieldKey = fieldKey)) }
+
     fun save() {
         val template = _uiState.value.template ?: return
         _uiState.update { it.copy(saving = true) }
@@ -144,6 +203,28 @@ class TemplateEditViewModel(
             else -> block
         }
     }
+
+    private fun updateColumns(index: Int, transform: (List<TemplateColumn>) -> List<TemplateColumn>) =
+        updateBlock(index) { block ->
+            if (block is TemplateBlock.LineTable) block.copy(columns = transform(block.columns)) else block
+        }
+
+    private fun updateColumn(index: Int, col: Int, transform: (TemplateColumn) -> TemplateColumn) =
+        updateColumns(index) { cols -> cols.toMutableList().apply { if (col in indices) this[col] = transform(this[col]) } }
+
+    private fun updateCells(index: Int, transform: (List<GridCell>) -> List<GridCell>) =
+        updateBlock(index) { block ->
+            if (block is TemplateBlock.InfoGrid) block.copy(cells = transform(block.cells)) else block
+        }
+
+    private fun updateCell(index: Int, cell: Int, transform: (GridCell) -> GridCell) =
+        updateCells(index) { cells -> cells.toMutableList().apply { if (cell in indices) this[cell] = transform(this[cell]) } }
+
+    private fun lineBinding(key: String) =
+        FieldBinding(fieldKey = key, scope = BindingScope.LINE, entityRef = EntityRef.SELF, source = FieldSource.STANDARD)
+
+    private fun docBinding(key: String) =
+        FieldBinding(fieldKey = key, scope = BindingScope.DOCUMENT, entityRef = EntityRef.SELF, source = FieldSource.STANDARD)
 
     private fun mutate(transform: (Template) -> Template) {
         _uiState.update { state -> state.template?.let { state.copy(template = transform(it)) } ?: state }

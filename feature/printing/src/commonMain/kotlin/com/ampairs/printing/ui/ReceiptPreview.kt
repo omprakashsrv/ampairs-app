@@ -74,6 +74,11 @@ private fun ReceiptElement(element: PrintElement) {
             }
         }
 
+        is PrintElement.Grid -> element.cells.forEach { cell ->
+            val text = if (cell.label.isNotBlank()) "${cell.label}: ${fmt.format(cell.value)}" else fmt.format(cell.value)
+            MonoText(text)
+        }
+
         is PrintElement.Divider -> MonoText(element.char.toString().repeat(32))
         is PrintElement.Spacer -> Spacer(Modifier.height((element.lines * 8).dp))
         is PrintElement.Feed -> Spacer(Modifier.height((element.lines * 8).dp))

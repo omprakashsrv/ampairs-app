@@ -54,6 +54,17 @@ sealed interface PrintElement {
         override val region: BandRegion = BandRegion.BODY,
     ) : PrintElement
 
+    /**
+     * A fixed (non-line) grid of labelled values laid out in [columns] cells per row — e.g. a
+     * seller/GSTIN box or a "Bill To | Ship To" two-panel header. Page renderers lay it out as an
+     * HTML `<table>` (desktop JEditorPane has no CSS grid); thermal flows it as label/value lines.
+     */
+    data class Grid(
+        val cells: List<GridCellValue>,
+        val columns: Int = 2,
+        override val region: BandRegion = BandRegion.BODY,
+    ) : PrintElement
+
     data class Divider(
         val char: Char = '-',
         override val region: BandRegion = BandRegion.BODY,
@@ -101,4 +112,10 @@ sealed interface PrintElement {
 data class TableHeader(
     val title: String,
     val style: ColumnStyle = ColumnStyle(),
+)
+
+/** One resolved cell of a [PrintElement.Grid]: a static [label] plus its resolved [value]. */
+data class GridCellValue(
+    val label: String,
+    val value: FieldValue,
 )
