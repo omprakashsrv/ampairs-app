@@ -15,7 +15,6 @@
     <string name="ecom_search_placeholder">Search products…</string>
     <string name="ecom_search_prompt">Search products by name or brand</string>
     <string name="ecom_search_no_results">No products found</string>
-    <string name="ecom_out_of_stock">Out of stock</string>
     <string name="ecom_add">ADD</string>
     <string name="ecom_shop_by_category">Shop by category</string>
     <string name="ecom_shop_by_brand">Shop by brand</string>
