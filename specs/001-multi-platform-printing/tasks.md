@@ -30,27 +30,40 @@ testable, and demoable. KMP paths use the new modules from plan.md.
 
 ---
 
-## Implementation progress (2026-06-19)
+## Implementation progress (2026-06-20)
 
-**Foundation landed** — `printing/core` module created (pure `commonMain`, no platform deps) and
-registered in `settings.gradle.kts`; `SyncEntity.PRINT_TEMPLATE` added.
+**End-to-end thermal-over-network printing is implemented and CI-green on Android, Desktop, and iOS**
+(PR #82). Full vertical: add a network printer in the UI → tap Print on an invoice → engine renders
+ESC/POS → idempotent spool → network transport; plus workspace template sync.
 
-- Done: **T005, T007, T008, T009, T010** — the `PrintDocument` IR, `Template`/`FieldBinding` model,
-  `PaperSpec`/`PrinterProfile` (incl. Letter/Legal), the `Renderer`/`PrinterTransport`/
-  `PrintValueProvider`/`ComputedFieldCatalog` interfaces, the pure `BindingResolver`, and the generic
-  `PrintEngine`, plus a `BindingResolverTest` (T011 seed).
-- Partial: **T001/T002** (only `printing/core` of the four modules created); **T011** (resolver unit
-  test added; `MockTransport`/golden files await `printing/render`).
-- Not started: T003, T004, T006, T012, T013 and all user-story phases (need the render/transport/
-  feature modules and platform code).
+**Done & CI-verified (all 3 platforms):**
+- **Modules**: `printing/core`, `printing/render`, `printing/transport`, `feature/printing` created,
+  wired into `shared`; `ktor-network` added; `SyncEntity.PRINT_TEMPLATE` (T001–T005).
+- **Core** (T007–T010): `PrintDocument` IR, `Template`/`FieldBinding` model, `PaperSpec`
+  (thermal/page incl. Letter-Legal/label) + `PrinterProfile`, interfaces, `BindingResolver`,
+  `PrintEngine`, `SpoolPolicy`.
+- **Render** (T017, T045, T056): `EscPosRenderer` + `ThermalLineComposer`, `HtmlRenderer`,
+  `LabelRenderer`; golden/pipeline tests (T014–T016).
+- **Transport** (T018, T011): `NetworkTransport` (commonMain ktor-network :9100), `MockTransport`.
+- **feature/printing** (T019, T020, T023, T027, T036): Room DB (printers/routing/spool/templates),
+  repositories, `PrintService` + `PrintCoordinator` (per-printer mutex, idempotent), seeded
+  `DefaultTemplates`, `TemplateApi` + `TemplateSyncDelegate`, Metro DI.
+- **UI & nav** (T013, T033): `PrinterListScreen` + VM (add/delete/set-default), `Route.Printing`,
+  entry provider, Nav3 registration.
+- **Invoice path** (T022, T024): `InvoicePrintValueProvider` + `InvoiceViewViewModel.printThermal()`
+  wired to a Print action.
 
-> **Build verification blocked by the sandbox, not the code.** This environment cannot build any KMP
-> module in the repo: the Android KMP Gradle plugin requires a **JetBrains-vendor JDK 21**, which is
-> not installed and cannot be auto-provisioned (foojay returns HTTP 403). Confirmed by running the
-> same compile on the pre-existing `:feature:form-api`, which fails identically. The `printing/core`
-> sources are plain Kotlin + kotlinx.serialization/coroutines and follow the `feature/form-api`
-> module template; compile them on a machine with a JetBrains JDK (or CI) via
-> `./gradlew :printing:core:compileKotlinDesktop`.
+**Not yet done (well-defined follow-ups):**
+- Platform transports: Bluetooth (T028), USB (T029), OS-print/inkjet + Share/PDF (T047–T049),
+  discovery (T030), printer status reads (T021).
+- Visual template editor (T038, T039) + binding picker from `FormSchema` (T037); page bands (T046).
+- More document providers + labels/batch (T050, T055–T057); reprint/GST compliance (T051–T054).
+- Print preview/queue UI, test print, ModuleRegistry menu entry; telemetry/RBAC/flags (T058–T068).
+- Order/Invoice `attributes` carrier (custom-field printing prerequisite); localize print-status strings.
+
+> Note: this sandbox cannot build KMP modules (the Android KMP plugin needs a JetBrains-vendor JDK 21,
+> not provisionable here — foojay 403). All verification was done via the PR's CI (Android+Desktop+iOS
+> compile + tests), which is green through commit `8bb1f34`.
 
 ---
 
