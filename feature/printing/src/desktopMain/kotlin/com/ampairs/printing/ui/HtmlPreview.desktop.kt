@@ -10,6 +10,8 @@ import javafx.scene.Scene
 import javafx.scene.input.ScrollEvent
 import javafx.scene.input.ZoomEvent
 import javafx.scene.web.WebView
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -32,10 +34,20 @@ actual fun HtmlPreview(html: String, modifier: Modifier) {
                 val webView = WebView()
                 webView.engine.isJavaScriptEnabled = false
                 installZoom(webView)
-                webView.engine.loadContent(html, "text/html")
                 webViewRef.set(webView)
+                sizeToPanel(webView, panel)
+                webView.engine.loadContent(html, "text/html")
                 panel.scene = Scene(webView)
             }
+            // Pin the WebView to the panel's size: desktop WebKit lays the page out at the node's
+            // width, so without this the page renders wider than the pane and right-hand content
+            // (key-value values, the Rate/Amount columns) is pushed off-screen.
+            panel.addComponentListener(object : ComponentAdapter() {
+                override fun componentResized(e: ComponentEvent) {
+                    val view = webViewRef.get() ?: return
+                    Platform.runLater { sizeToPanel(view, panel) }
+                }
+            })
             panel
         },
         update = {
@@ -44,6 +56,18 @@ actual fun HtmlPreview(html: String, modifier: Modifier) {
             }
         },
     )
+}
+
+/** Constrain the WebView to exactly the host panel's size so the web page lays out at the pane width. */
+private fun sizeToPanel(webView: WebView, panel: JFXPanel) {
+    val w = panel.width.toDouble().coerceAtLeast(1.0)
+    val h = panel.height.toDouble().coerceAtLeast(1.0)
+    webView.minWidth = w
+    webView.prefWidth = w
+    webView.maxWidth = w
+    webView.minHeight = h
+    webView.prefHeight = h
+    webView.maxHeight = h
 }
 
 /** Wire ⌘/Ctrl+scroll and trackpad-pinch to the WebView's zoom factor. */
