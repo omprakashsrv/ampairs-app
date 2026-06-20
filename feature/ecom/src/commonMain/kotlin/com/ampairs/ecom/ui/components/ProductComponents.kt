@@ -31,9 +31,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import ampairsapp.feature.ecom.generated.resources.Res
+import ampairsapp.feature.ecom.generated.resources.ecom_out_of_stock
+import ampairsapp.feature.ecom.generated.resources.ecom_add
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.ecom.api.model.StockStatus
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Direction-A catalog grid card: square thumb, brand/name, mono price + strikethrough MRP,
@@ -74,7 +78,7 @@ fun ProductGridCard(
             }
             if (outOfStock) {
                 Text(
-                    text = "Out of stock",
+                    text = stringResource(Res.string.ecom_out_of_stock),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
@@ -136,7 +140,7 @@ fun QuickAddControl(
 ) {
     if (quantity <= 0) {
         Text(
-            text = "ADD",
+            text = stringResource(Res.string.ecom_add),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,

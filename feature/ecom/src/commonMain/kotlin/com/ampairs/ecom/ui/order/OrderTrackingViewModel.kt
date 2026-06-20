@@ -7,6 +7,7 @@ import com.ampairs.ecom.api.model.DeliveryAddress
 import com.ampairs.ecom.data.db.entity.EcomOrderEntity
 import com.ampairs.ecom.data.db.entity.EcomOrderLineItemEntity
 import com.ampairs.ecom.data.repository.EcomOrderRepository
+import com.ampairs.ecom.domain.EcomLogger
 import com.ampairs.ecom.domain.EcomSession
 import kotlinx.serialization.json.Json
 import dev.zacsweers.metro.Assisted
@@ -33,7 +34,11 @@ data class OrderTrackingUiState(
 private val deliveryAddressJson = Json { ignoreUnknownKeys = true }
 
 private fun EcomOrderEntity.parseDeliveryAddress(): DeliveryAddress? =
-    delivery_address?.let { runCatching { deliveryAddressJson.decodeFromString(DeliveryAddress.serializer(), it) }.getOrNull() }
+    delivery_address?.let { raw ->
+        runCatching { deliveryAddressJson.decodeFromString(DeliveryAddress.serializer(), raw) }
+            .onFailure { EcomLogger.w("Order", "Failed to parse delivery address for $ecom_order_ref", it) }
+            .getOrNull()
+    }
 
 @AssistedInject
 class OrderTrackingViewModel(
