@@ -14,6 +14,9 @@ interface PrinterDao {
     @Query("SELECT * FROM printers WHERE id = :id")
     suspend fun getById(id: String): PrinterEntity?
 
+    @Query("SELECT * FROM printers WHERE id = :id AND active = 1")
+    suspend fun getActiveById(id: String): PrinterEntity?
+
     @Query("SELECT * FROM printers WHERE active = 1 ORDER BY name LIMIT 1")
     suspend fun firstActive(): PrinterEntity?
 
@@ -31,6 +34,9 @@ interface PrintRoutingDao {
 
     @Query("SELECT * FROM print_routing WHERE document_type = :documentType")
     suspend fun getForType(documentType: String): PrintRoutingEntity?
+
+    @Query("DELETE FROM print_routing")
+    suspend fun clearAll()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: PrintRoutingEntity)

@@ -182,10 +182,12 @@ class PrinterListViewModel(
     }
 
     /** Route the common document types to this printer. */
-    /** Route every document type to this printer (a single-printer "default for everything"). */
+    /** Make this the single default printer: wipe any old/stale routes, then route everything here. */
     fun setAsDefault(printerId: String) {
         viewModelScope.launch {
+            repository.clearRoutes()
             DocumentType.entries.forEach { repository.setRoute(it.key, printerId) }
+            _uiState.update { it.copy(message = "Set as default printer for all documents") }
         }
     }
 }

@@ -35,9 +35,12 @@ class PrinterRepository(
     suspend fun setRoute(documentType: String, printerId: String) =
         routingDao.upsert(PrintRoutingEntity(documentType, printerId))
 
-    /** Resolve the printer configured for a document type, if any. */
+    /** Drop all document routes — used before re-pointing everything at a new default printer. */
+    suspend fun clearRoutes() = routingDao.clearAll()
+
+    /** Resolve the printer configured for a document type — only if still active (else null). */
     suspend fun resolvePrinter(documentType: String): PrinterProfile? {
         val printerId = routingDao.getForType(documentType)?.printerId ?: return null
-        return printerDao.getById(printerId)?.toProfile()
+        return printerDao.getActiveById(printerId)?.toProfile()
     }
 }
