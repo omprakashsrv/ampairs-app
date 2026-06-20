@@ -56,14 +56,14 @@ registered in `settings.gradle.kts`; `SyncEntity.PRINT_TEMPLATE` added.
 
 ## Phase 1: Setup (shared infrastructure)
 
-- [ ] T001 [SETUP] Create the four modules and register them in `settings.gradle.kts`
+- [x] T001 [SETUP] Create the four modules and register them in `settings.gradle.kts`
       (`:printing:core`, `:printing:render`, `:printing:transport`, `:feature:printing`).
-- [ ] T002 [P] [SETUP] Add `build.gradle.kts` per module (copy `feature/form-api` for core,
+- [x] T002 [P] [SETUP] Add `build.gradle.kts` per module (copy `feature/form-api` for core,
       `feature/unit` for the feature); add `composeResources` only to `feature/printing` and
       `printing/render` (seeded templates).
-- [ ] T003 [P] [SETUP] Add `ktor-network` (raw sockets) and any QR/barcode-gen + image-raster libs to
+- [x] T003 [P] [SETUP] Add `ktor-network` (raw sockets) and any QR/barcode-gen + image-raster libs to
       `gradle/libs.versions.toml`; wire into `printing/transport` and `printing/render`.
-- [ ] T004 [SETUP] Add `api(projects.printing.*)` wiring: `shared/build.gradle.kts` →
+- [x] T004 [SETUP] Add `api(projects.printing.*)` wiring: `shared/build.gradle.kts` →
       `api(projects.feature.printing)`; document features add `api(projects.printing.core)`.
 - [x] T005 [P] [SETUP] Add `SyncEntity.PRINT_TEMPLATE` to `data/sync` and a `DocumentType` enum to
       `printing/core`.
@@ -85,7 +85,7 @@ registered in `settings.gradle.kts`; `SyncEntity.PRINT_TEMPLATE` added.
 - [x] T010 [FOUND] Implement the generic template-walk engine (resolve bindings → build
       `PrintDocument`; iterate line-scope bindings for tables) in `printing/core/.../engine/`
       (depends T007–T009).
-- [ ] T011 [P] [FOUND] Implement `MockTransport` (captures bytes to file/preview) and the golden-file
+- [x] T011 [P] [FOUND] Implement `MockTransport` (captures bytes to file/preview) and the golden-file
       test harness in `printing/render/src/commonTest/` and `printing/transport/src/commonTest/`.
 - [ ] T012 [P] [FOUND] Metro DI skeleton: contribute `Map<DocumentType, PrintValueProvider>` and
       `Map<PrinterClass, Renderer>`; `feature/printing` platform `@ContributesTo(WorkspaceScope)` stubs.
@@ -115,9 +115,9 @@ correct receipt; simulate paper-out and offline and confirm actionable status + 
 
 ### Implementation for US1
 
-- [ ] T017 [P] [US1] `EscPosRenderer`: char-grid line composition (capability-driven `columnsPerLine`,
+- [x] T017 [P] [US1] `EscPosRenderer`: char-grid line composition (capability-driven `columnsPerLine`,
       weighted columns, word-wrap, right-align, cut) in `printing/render/.../escpos/`.
-- [ ] T018 [P] [US1] `NetworkTransport` (raw socket :9100) in `printing/transport/src/commonMain/`
+- [x] T018 [P] [US1] `NetworkTransport` (raw socket :9100) in `printing/transport/src/commonMain/`
       (ktor-network) with timeout/cancellation.
 - [ ] T019 [US1] Idempotent `PrintJobEntity` + DAO + `PrintSpooler` (retry/backoff, dead-letter, TTL,
       FIFO per printer, process-death recovery) — device-local DB in `feature/printing/.../spool/`.
@@ -220,7 +220,7 @@ final-page total); share the same invoice as a PDF.
 
 ### Implementation for US4
 
-- [ ] T045 [US4] `HtmlRenderer` (generalize `buildInvoiceHtml`): CSS `@page`, running header/footer,
+- [x] T045 [US4] `HtmlRenderer` (generalize `buildInvoiceHtml`): CSS `@page`, running header/footer,
       `<thead>` repeat, break control in `printing/render/.../html/`.
 - [ ] T046 [US4] Page band model + pagination computed fields (`page_number`/`page_count`/`continued`/
       carry-forward subtotals) in `printing/core` + engine.
@@ -273,7 +273,7 @@ mark and correct copy label.
 - [ ] T055 [P] [US6] `PrintValueProvider`s + seeded templates for quotation/estimate/proforma,
       delivery challan/packing slip, payment receipt/voucher, account statement, day-end X/Z report,
       gift receipt (each in its owning feature's `.print` package).
-- [ ] T056 [P] [US6] `LabelRenderer` (TSPL/ZPL) + label `PaperSpec`s in `printing/render/.../label/`.
+- [x] T056 [P] [US6] `LabelRenderer` (TSPL/ZPL) + label `PaperSpec`s in `printing/render/.../label/`.
 - [ ] T057 [US6] Batch label printing (N labels per product/quantity) + price/shelf tag templates.
 
 **Checkpoint**: All stories independently functional.

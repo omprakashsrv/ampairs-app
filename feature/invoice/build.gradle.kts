@@ -27,6 +27,7 @@ kotlin {
             dependencies {
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
+                implementation(projects.printing.core)
                 implementation(libs.kotlinx.dateTime)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
