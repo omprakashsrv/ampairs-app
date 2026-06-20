@@ -3,6 +3,7 @@ package com.ampairs.payment.data.repository
 import com.ampairs.payment.data.db.dao.LedgerEntryDao
 import com.ampairs.payment.data.db.dao.PartyBalanceDao
 import com.ampairs.payment.data.db.toDomain
+import com.ampairs.payment.data.db.toEntity
 import com.ampairs.payment.domain.BalanceMath
 import com.ampairs.payment.domain.Direction
 import com.ampairs.payment.domain.Money
@@ -53,7 +54,7 @@ class PartyBalanceRepository(
             lastComputedAt = now,
         )
         partyBalanceDao.insert(
-            com.ampairs.payment.data.db.run { balance.toEntity(synced = true) },
+            balance.toEntity(synced = true),
         )
         return balance
     }
@@ -86,7 +87,7 @@ class PartyBalanceRepository(
             lastComputedAt = now,
             active = true,
         )
-        partyBalanceDao.insert(com.ampairs.payment.data.db.run { balance.toEntity(synced = false) })
+        partyBalanceDao.insert(balance.toEntity(synced = false))
         markPending()
         return Result.success(balance)
     }
