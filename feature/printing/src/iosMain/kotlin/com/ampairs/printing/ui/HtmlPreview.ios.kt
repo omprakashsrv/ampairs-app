@@ -22,7 +22,13 @@ actual fun HtmlPreview(html: String, modifier: Modifier) {
         },
         modifier = modifier,
         update = { webView ->
-            webView.loadHTMLString(html, baseURL = null)
+            // WKWebView defaults to a ~980px layout and shrinks the page; the viewport meta makes it
+            // lay out at the device width. (Other platforms fit at the view width without it.)
+            val withViewport = html.replaceFirst(
+                "<head>",
+                "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+            )
+            webView.loadHTMLString(withViewport, baseURL = null)
         },
     )
 }

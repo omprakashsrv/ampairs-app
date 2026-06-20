@@ -12,10 +12,10 @@ actual fun HtmlPreview(html: String, modifier: Modifier) {
         factory = { context ->
             WebView(context).apply {
                 with(settings) {
-                    // Lay the page out at the WebView's own width (matches the viewport meta) and
-                    // zoom-to-fit on load, then allow pinch-zoom so overflowing detail is reachable.
-                    useWideViewPort = true
-                    loadWithOverviewMode = true
+                    // Lay the page out at the WebView's own width (no <meta viewport> is emitted) so
+                    // it fits the pane, then allow pinch-zoom so overflowing detail is reachable.
+                    useWideViewPort = false
+                    loadWithOverviewMode = false
                     setSupportZoom(true)
                     builtInZoomControls = true
                     displayZoomControls = false

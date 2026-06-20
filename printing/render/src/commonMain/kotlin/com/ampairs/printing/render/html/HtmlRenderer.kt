@@ -27,8 +27,9 @@ class HtmlRenderer : Renderer {
         formatter: ValueFormatter,
     ): RenderedOutput {
         val sb = StringBuilder()
+        // No <meta viewport> here: desktop (JavaFX WebKit) and Android lay the page out at the view
+        // width, which is what we want. iOS WKWebView needs the meta and injects it in its preview.
         sb.append("<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">")
-        sb.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
         sb.append("<style>").append(css(profile.paper)).append("</style></head><body><div class=\"doc\">")
         for (element in document.blocks) renderElement(element, formatter, sb)
         sb.append("</div></body></html>")
