@@ -45,7 +45,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -84,6 +86,7 @@ fun InvoiceViewScreen(
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
     var showPreview by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val fromOrder = !invoice.orderRefId.isNullOrBlank()
 
     if (showPreview) {
@@ -124,13 +127,16 @@ fun InvoiceViewScreen(
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
-                    IconButton(onClick = { showPreview = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.Print,
-                            contentDescription = stringResource(Res.string.inv_view_print_cd)
-                        )
-                    }
-                    IconButton(onClick = { viewModel.printThermal() }, enabled = !viewModel.printing) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                // Use the configured printer (spool) when one is routed; otherwise
+                                // fall back to the OS print preview so printing always works.
+                                if (viewModel.hasInvoicePrinter()) viewModel.printThermal() else showPreview = true
+                            }
+                        },
+                        enabled = !viewModel.printing,
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Print,
                             contentDescription = stringResource(Res.string.inv_view_print_cd)

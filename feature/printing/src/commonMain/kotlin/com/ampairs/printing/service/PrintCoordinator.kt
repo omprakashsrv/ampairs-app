@@ -70,6 +70,10 @@ class PrintCoordinator(
         return send(provider, job.documentId, job.idempotencyKey, job.copies, formatter, printerId = job.printerId)
     }
 
+    /** Whether a printer is routed for [documentType] (so the new-module print path can be used). */
+    suspend fun hasRoutedPrinter(documentType: DocumentType): Boolean =
+        printerRepository.resolvePrinter(documentType.key) != null
+
     /** User confirms a SENT_UNCONFIRMED job actually printed — moves it to CONFIRMED. */
     suspend fun markPrinted(jobId: String) {
         val job = jobRepository.get(jobId) ?: return

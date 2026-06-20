@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.printing.core.model.ConnectionType
+import com.ampairs.printing.core.model.DocumentType
 import com.ampairs.printing.core.model.PaperSpec
 import com.ampairs.printing.core.model.PrinterCapabilities
 import com.ampairs.printing.core.model.PrinterClass
@@ -136,10 +137,10 @@ class PrinterListViewModel(
     }
 
     /** Route the common document types to this printer. */
+    /** Route every document type to this printer (a single-printer "default for everything"). */
     fun setAsDefault(printerId: String) {
         viewModelScope.launch {
-            repository.setRoute("invoice", printerId)
-            repository.setRoute("receipt", printerId)
+            DocumentType.entries.forEach { repository.setRoute(it.key, printerId) }
         }
     }
 }

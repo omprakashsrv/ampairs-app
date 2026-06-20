@@ -130,6 +130,10 @@ class InvoiceViewViewModel(
         }
     }
 
+    /** True if a printer is routed for invoices (so we use the spool); else the UI opens OS preview. */
+    suspend fun hasInvoicePrinter(): Boolean =
+        printCoordinator.hasRoutedPrinter(com.ampairs.printing.core.model.DocumentType.INVOICE)
+
     fun clearPrintMessage() {
         printMessage = null
     }
