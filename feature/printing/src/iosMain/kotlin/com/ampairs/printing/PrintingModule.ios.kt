@@ -8,6 +8,7 @@ import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.printing.core.model.ConnectionType
 import com.ampairs.printing.core.transport.PrinterTransportFactory
 import com.ampairs.printing.data.db.PrintingDatabase
+import com.ampairs.printing.osprint.IosOsPrintTransport
 import com.ampairs.printing.transport.network.NetworkTransport
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -28,9 +29,9 @@ interface PrintingIosModule {
         ).also { closableRegistry.register { it.close() } }
 
         /**
-         * iOS transport map: raw ESC/POS over TCP. USB / classic Bluetooth need MFi-certified
-         * hardware (ExternalAccessory); OS_PRINT via AirPrint (UIPrintInteractionController) is a
-         * follow-up that needs a UIViewController handle from the UI layer.
+         * iOS transport map: thermal ESC/POS over raw TCP, and inkjet/laser pages via AirPrint
+         * (UIPrintInteractionController) under OS_PRINT. USB / classic Bluetooth need MFi-certified
+         * hardware (ExternalAccessory) and are not supported.
          */
         @Provides
         @SingleIn(WorkspaceScope::class)
@@ -38,6 +39,7 @@ interface PrintingIosModule {
             PrinterTransportFactory { profile ->
                 when (profile.connectionType) {
                     ConnectionType.NETWORK -> NetworkTransport()
+                    ConnectionType.OS_PRINT -> IosOsPrintTransport()
                     else -> null
                 }
             }

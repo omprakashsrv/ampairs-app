@@ -9,6 +9,7 @@ import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.printing.core.model.ConnectionType
 import com.ampairs.printing.core.transport.PrinterTransportFactory
 import com.ampairs.printing.data.db.PrintingDatabase
+import com.ampairs.printing.osprint.AndroidOsPrintTransport
 import com.ampairs.printing.transport.bluetooth.BluetoothThermalTransport
 import com.ampairs.printing.transport.network.NetworkTransport
 import com.ampairs.printing.transport.usb.UsbThermalTransport
@@ -35,9 +36,9 @@ interface PrintingAndroidModule {
         ).also { closableRegistry.register { it.close() } }
 
         /**
-         * Android transport map: raw ESC/POS over TCP (:9100), USB (UsbManager) and classic
-         * Bluetooth SPP (BluetoothAdapter/RFCOMM). OS_PRINT (inkjet/laser via PrintManager) is wired
-         * separately once the print-adapter transport lands.
+         * Android transport map: thermal ESC/POS over raw TCP (:9100), USB (UsbManager) and classic
+         * Bluetooth SPP (BluetoothAdapter/RFCOMM); inkjet/laser pages via the system print framework
+         * (PrintManager) under OS_PRINT.
          */
         @Provides
         @SingleIn(WorkspaceScope::class)
@@ -47,6 +48,7 @@ interface PrintingAndroidModule {
                     ConnectionType.NETWORK -> NetworkTransport()
                     ConnectionType.USB -> UsbThermalTransport(context, profile.address)
                     ConnectionType.BLUETOOTH -> BluetoothThermalTransport(context, profile.address)
+                    ConnectionType.OS_PRINT -> AndroidOsPrintTransport(context)
                     else -> null
                 }
             }
