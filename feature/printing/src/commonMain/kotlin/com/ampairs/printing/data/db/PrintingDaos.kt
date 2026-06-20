@@ -58,6 +58,9 @@ interface PrintJobDao {
 
     @Query("DELETE FROM print_jobs WHERE id = :id")
     suspend fun delete(id: String)
+
+    @Query("DELETE FROM print_jobs")
+    suspend fun clearAll()
 }
 
 @Dao

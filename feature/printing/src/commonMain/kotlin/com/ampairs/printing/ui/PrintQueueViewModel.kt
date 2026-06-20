@@ -57,6 +57,11 @@ class PrintQueueViewModel(
         viewModelScope.launch { jobRepository.delete(jobId) }
     }
 
+    /** Clear all jobs from the queue. */
+    fun clearAll() {
+        viewModelScope.launch { jobRepository.deleteAll() }
+    }
+
     fun clearMessage() {
         _uiState.update { it.copy(message = null) }
     }

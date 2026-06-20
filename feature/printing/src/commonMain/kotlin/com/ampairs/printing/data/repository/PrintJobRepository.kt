@@ -24,4 +24,7 @@ class PrintJobRepository(
 
     /** Remove a job from the local spool (device-local; nothing to sync). */
     suspend fun delete(id: String) = jobDao.delete(id)
+
+    /** Clear the entire local spool. */
+    suspend fun deleteAll() = jobDao.clearAll()
 }

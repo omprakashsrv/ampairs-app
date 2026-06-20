@@ -10,9 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.printing.generated.resources.Res
+import ampairsapp.feature.printing.generated.resources.printing_clear_all
 import ampairsapp.feature.printing.generated.resources.printing_delete
 import ampairsapp.feature.printing.generated.resources.printing_mark_printed
 import ampairsapp.feature.printing.generated.resources.printing_no_jobs
@@ -45,7 +51,21 @@ fun PrintQueueScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text(stringResource(Res.string.printing_queue_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(Res.string.printing_queue_title)) },
+                actions = {
+                    if (state.jobs.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.clearAll() }) {
+                            Icon(
+                                Icons.Filled.DeleteSweep,
+                                contentDescription = stringResource(Res.string.printing_clear_all),
+                            )
+                        }
+                    }
+                },
+            )
+        },
     ) { padding ->
         if (state.jobs.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
@@ -78,6 +98,12 @@ fun PrintQueueScreen(
                                     }
                                 }
                                 AssistChip(onClick = {}, label = { Text(job.state.shortLabel()) })
+                                IconButton(onClick = { viewModel.delete(job.id) }) {
+                                    Icon(
+                                        Icons.Filled.Delete,
+                                        contentDescription = stringResource(Res.string.printing_delete),
+                                    )
+                                }
                             }
                             Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                                 if (job.state == PrintJobState.UNCONFIRMED) {
@@ -89,9 +115,6 @@ fun PrintQueueScreen(
                                     TextButton(onClick = { viewModel.retry(job.id) }) {
                                         Text(stringResource(Res.string.printing_retry))
                                     }
-                                }
-                                TextButton(onClick = { viewModel.delete(job.id) }) {
-                                    Text(stringResource(Res.string.printing_delete))
                                 }
                             }
                         }

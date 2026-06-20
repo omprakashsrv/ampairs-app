@@ -23,6 +23,7 @@
     <string name="printing_no_jobs">No print jobs yet</string>
     <string name="printing_retry">Retry</string>
     <string name="printing_mark_printed">Mark printed</string>
+    <string name="printing_clear_all">Clear all</string>
     <string name="printing_test">Test print</string>
     <string name="printing_ok">OK</string>
     <string name="printing_type">Printer type</string>
