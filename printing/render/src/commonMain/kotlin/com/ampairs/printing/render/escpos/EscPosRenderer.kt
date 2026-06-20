@@ -105,7 +105,24 @@ class EscPosRenderer : Renderer {
             }
 
             is PrintElement.Barcode -> {
-                emitStyledLines(ThermalLineComposer.line("[BARCODE] ${element.value}", width, Align.CENTER), false, 1, 1, out)
+                val cmd = if (profile.capabilities.supportsNativeBarcode) {
+                    EscPos.barcode(element.value, element.symbology)
+                } else {
+                    null
+                }
+                if (cmd != null) {
+                    // Center the symbol, print HRI digits below, then restore left alignment.
+                    out += EscPos.align(Align.CENTER)
+                    out += EscPos.barcodeHeight(element.heightDots)
+                    out += EscPos.barcodeWidth(2)
+                    out += EscPos.barcodeHriBelow()
+                    out += cmd
+                    out += EscPos.NEWLINE
+                    out += EscPos.align(Align.LEFT)
+                } else {
+                    // No native 1D barcode (or non-1D symbology) — readable text so the value is never lost.
+                    emitStyledLines(ThermalLineComposer.line("[BARCODE] ${element.value}", width, Align.CENTER), false, 1, 1, out)
+                }
             }
 
             is PrintElement.Image -> {

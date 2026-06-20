@@ -64,6 +64,16 @@ private val profile = PrinterProfile(
     connectionType = ConnectionType.NETWORK, paper = PaperSpec.THERMAL_80,
 )
 
+/** Returns the index of the first occurrence of [sub] in this array, or -1. */
+private fun ByteArray.indexOfSub(sub: ByteArray): Int {
+    if (sub.isEmpty() || sub.size > size) return -1
+    outer@ for (i in 0..size - sub.size) {
+        for (j in sub.indices) if (this[i + j] != sub[j]) continue@outer
+        return i
+    }
+    return -1
+}
+
 class RenderPipelineTest {
 
     @Test
@@ -77,6 +87,38 @@ class RenderPipelineTest {
         assertTrue(text.contains("Widget"))
         // Total uses the document's stored amount (240.00) — never recomputed.
         assertTrue(text.contains("240.00"), "printed total must equal the stored amount")
+    }
+
+    @Test
+    fun nativeBarcodeEmitsGsKCommandAndHriDigits() = runTest {
+        val doc = com.ampairs.printing.core.model.PrintDocument(
+            meta = com.ampairs.printing.core.model.PrintMeta(DocumentType.INVOICE),
+            blocks = listOf(
+                com.ampairs.printing.core.model.PrintElement.Barcode(
+                    value = "INV-001",
+                    symbology = com.ampairs.printing.core.model.Symbology.CODE128,
+                ),
+            ),
+        )
+        val capable = profile.copy(capabilities = profile.capabilities.copy(supportsNativeBarcode = true))
+        val bytes = (EscPosRenderer().render(doc, capable, PlainValueFormatter) as RenderedOutput.Bytes).data
+        // GS k m=73 (CODE128) followed by the {B-prefixed payload.
+        val gsKCode128 = byteArrayOf(0x1D, 'k'.code.toByte(), 73)
+        assertTrue(bytes.indexOfSub(gsKCode128) >= 0, "must emit GS k CODE128 command")
+        assertTrue(bytes.decodeToString().contains("{BINV-001"), "payload must carry the {B code-set prefix")
+    }
+
+    @Test
+    fun missingBarcodeSupportFallsBackToText() = runTest {
+        val doc = com.ampairs.printing.core.model.PrintDocument(
+            meta = com.ampairs.printing.core.model.PrintMeta(DocumentType.INVOICE),
+            blocks = listOf(
+                com.ampairs.printing.core.model.PrintElement.Barcode(value = "INV-001"),
+            ),
+        )
+        // Default profile has supportsNativeBarcode = false.
+        val bytes = (EscPosRenderer().render(doc, profile, PlainValueFormatter) as RenderedOutput.Bytes).data
+        assertTrue(bytes.decodeToString().contains("[BARCODE] INV-001"))
     }
 
     @Test
