@@ -35,9 +35,15 @@ class PrintCoordinator(
     private val templateRepository: TemplateRepository,
     private val jobRepository: PrintJobRepository,
     private val printService: PrintService,
+    /** All document providers, keyed by type — lets [retry] rebuild any spooled job. */
+    private val providers: Map<DocumentType, PrintValueProvider>,
 ) {
     private val engine = PrintEngine()
 
+    /**
+     * Print a document once. If a job already exists for [idempotencyKey] and is in-flight or done,
+     * this is a no-op that reports the existing outcome — a retry can never double-print (§19).
+     */
     suspend fun print(
         provider: PrintValueProvider,
         documentId: String,
@@ -45,14 +51,51 @@ class PrintCoordinator(
         copies: Int = 1,
         formatter: ValueFormatter = PlainValueFormatter,
     ): Result<SendOutcome> {
+        jobRepository.get(idempotencyKey)?.let { existing ->
+            if (SpoolPolicy.blocksReprint(existing.state)) {
+                return Result.success(SpoolPolicy.outcomeFor(existing.state))
+            }
+        }
+        return send(provider, documentId, idempotencyKey, copies, formatter, printerId = null)
+    }
+
+    /** Manually retry a FAILED/DEAD/UNCONFIRMED job — rebuilds the document on its original printer. */
+    suspend fun retry(jobId: String, formatter: ValueFormatter = PlainValueFormatter): Result<SendOutcome> {
+        val job = jobRepository.get(jobId)
+            ?: return Result.failure(IllegalStateException("Print job not found: $jobId"))
+        val documentType = DocumentType.entries.firstOrNull { it.key == job.documentType }
+            ?: return Result.failure(IllegalStateException("Unknown document type ${job.documentType}"))
+        val provider = providers[documentType]
+            ?: return Result.failure(IllegalStateException("No provider for ${documentType.key}"))
+        return send(provider, job.documentId, job.idempotencyKey, job.copies, formatter, printerId = job.printerId)
+    }
+
+    /** User confirms a SENT_UNCONFIRMED job actually printed — moves it to CONFIRMED. */
+    suspend fun markPrinted(jobId: String) {
+        val job = jobRepository.get(jobId) ?: return
+        jobRepository.save(
+            job.copy(state = PrintJobState.CONFIRMED, updatedAtMillis = Clock.System.now().toEpochMilliseconds()),
+        )
+    }
+
+    private suspend fun send(
+        provider: PrintValueProvider,
+        documentId: String,
+        idempotencyKey: String,
+        copies: Int,
+        formatter: ValueFormatter,
+        printerId: String?,
+    ): Result<SendOutcome> {
         val documentType = provider.documentType
-        val profile = printerRepository.resolvePrinter(documentType.key)
+        val profile = (if (printerId != null) printerRepository.getProfile(printerId) else null)
+            ?: printerRepository.resolvePrinter(documentType.key)
             ?: return Result.failure(IllegalStateException("No printer routed for ${documentType.key}"))
 
         val template: Template = templateRepository.firstTemplate(documentType.key)
             ?: defaultTemplate(documentType)
             ?: return Result.failure(IllegalStateException("No template for ${documentType.key}"))
 
+        val existing = jobRepository.get(idempotencyKey)
         val now = Clock.System.now().toEpochMilliseconds()
         var job = PrintJob(
             id = idempotencyKey,
@@ -63,8 +106,8 @@ class PrintCoordinator(
             printerId = profile.id,
             copies = copies,
             state = PrintJobState.SENDING,
-            attempts = 0,
-            createdAtMillis = now,
+            attempts = existing?.attempts ?: 0,
+            createdAtMillis = existing?.createdAtMillis ?: now,
             updatedAtMillis = now,
         )
         jobRepository.save(job)

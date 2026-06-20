@@ -1,19 +1,25 @@
 package com.ampairs.invoice.print
 
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.printing.core.model.DocumentType
 import com.ampairs.printing.core.model.EntityRef
 import com.ampairs.printing.core.model.FieldValue
 import com.ampairs.printing.core.provider.LineValues
 import com.ampairs.printing.core.provider.PrintValueProvider
+import com.ampairs.printing.di.DocumentTypeKey
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
 /**
  * Maps an [com.ampairs.invoice.domain.Invoice] to printable field values (§7). The only code that
  * knows the invoice shape; the printing engine consumes this generically. Money/date stay typed —
- * the renderer applies the workspace locale (totals are never recomputed).
+ * the renderer applies the workspace locale (totals are never recomputed). Contributed to the
+ * provider registry so [com.ampairs.printing.service.PrintCoordinator] can rebuild it for retries.
  */
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@DocumentTypeKey(DocumentType.INVOICE)
 class InvoicePrintValueProvider(
     private val invoiceRepository: InvoiceRepository,
 ) : PrintValueProvider {

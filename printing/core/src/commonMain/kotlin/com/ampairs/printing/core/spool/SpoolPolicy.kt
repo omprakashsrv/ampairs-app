@@ -66,4 +66,21 @@ object SpoolPolicy {
 
     /** Sent-but-unconfirmed jobs require an explicit user decision (reprint / mark printed). */
     fun needsUserDecision(job: PrintJob): Boolean = job.state == PrintJobState.UNCONFIRMED
+
+    /**
+     * A job already in-flight or finished must NOT be re-sent for the same idempotency key — this is
+     * what makes "print once" hold across retries/reconnects. Only QUEUED / FAILED / DEAD jobs may be
+     * (re)started, and DEAD/FAILED only via an explicit user retry.
+     */
+    fun blocksReprint(state: PrintJobState): Boolean =
+        state == PrintJobState.SENDING ||
+            state == PrintJobState.SENT ||
+            state == PrintJobState.CONFIRMED ||
+            state == PrintJobState.UNCONFIRMED
+
+    /** Best-effort outcome to report for an already-handled job, without touching the device again. */
+    fun outcomeFor(state: PrintJobState): SendOutcome = when (state) {
+        PrintJobState.CONFIRMED -> SendOutcome.CONFIRMED
+        else -> SendOutcome.SENT_UNCONFIRMED
+    }
 }
