@@ -153,7 +153,7 @@ class HtmlRenderer : Renderer {
         // Styling travels as HTML attributes/tags (align=, <b>, <font>, td width=) so it renders in
         // JEditorPane too; this CSS only carries print page setup + a few enhancements WebViews honor.
         return """
-            @page { size: $pageSize; margin: 12mm; }
+            @media print { @page { size: $pageSize; margin: 12mm; } }
             html, body { margin: 0; padding: 0; }
             body { font-family: Arial, sans-serif; font-size: 12px; color: #000; }
             p { margin: 2px 0; }
