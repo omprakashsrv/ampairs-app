@@ -13,6 +13,7 @@ import com.ampairs.printing.render.escpos.EscPosRenderer
 import com.ampairs.printing.render.html.HtmlRenderer
 import com.ampairs.printing.render.label.LabelRenderer
 import com.ampairs.printing.transport.network.NetworkTransport
+import com.ampairs.printing.transport.osprint.createOsPrintTransport
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.sync.Mutex
@@ -61,7 +62,9 @@ class PrintService {
 
     private fun transportFor(profile: PrinterProfile): PrinterTransport? = when (profile.connectionType) {
         com.ampairs.printing.core.model.ConnectionType.NETWORK -> NetworkTransport()
-        else -> null // Bluetooth/USB/OS-print/Share land in the connectivity phase
+        // Desktop drives system/USB printers through the Java Print Service; null on Android/iOS.
+        com.ampairs.printing.core.model.ConnectionType.OS_PRINT -> createOsPrintTransport()
+        else -> null // Bluetooth/USB(native)/Share land in the connectivity phase
     }
 
     private suspend fun mutexFor(printerId: String): Mutex =
