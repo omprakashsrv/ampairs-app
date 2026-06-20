@@ -39,7 +39,7 @@ actual fun HtmlPreview(html: String, modifier: Modifier) {
                 // After each load, shrink the zoom so the whole page width fits the pane — this is
                 // engine-independent and fixes content that WebKit lays out wider than the node.
                 webView.engine.loadWorker.stateProperty().addListener { _, _, state ->
-                    if (state == Worker.State.SUCCEEDED) fitWidth(webView)
+                    if (state == Worker.State.SUCCEEDED) fitWidth(webView, panel)
                 }
                 webViewRef.set(webView)
                 sizeToPanel(webView, panel)
@@ -52,7 +52,7 @@ actual fun HtmlPreview(html: String, modifier: Modifier) {
                     val view = webViewRef.get() ?: return
                     Platform.runLater {
                         sizeToPanel(view, panel)
-                        fitWidth(view)
+                        fitWidth(view, panel)
                     }
                 }
             })
@@ -78,18 +78,20 @@ private fun sizeToPanel(webView: WebView, panel: JFXPanel) {
     webView.maxHeight = h
 }
 
-/** Zoom the WebView down so the page's full laid-out width fits the node width (never enlarges). */
-private fun fitWidth(webView: WebView) {
+/** Zoom the WebView down so the page's full laid-out width fits the pane width (never enlarges). */
+private fun fitWidth(webView: WebView, panel: JFXPanel) {
     try {
+        // Measure at zoom 1 so scrollWidth is the true layout width, then scale to fit.
+        webView.zoom = 1.0
         val contentWidth = (
             webView.engine.executeScript(
                 "Math.max(document.documentElement.scrollWidth, " +
                     "document.body ? document.body.scrollWidth : 0)",
             ) as? Number
             )?.toDouble() ?: return
-        val nodeWidth = webView.width
-        if (contentWidth > 1.0 && nodeWidth > 1.0) {
-            webView.zoom = (nodeWidth / contentWidth).coerceIn(0.2, 1.0)
+        val paneWidth = panel.width.toDouble()
+        if (contentWidth > 1.0 && paneWidth > 1.0) {
+            webView.zoom = (paneWidth / contentWidth).coerceIn(0.2, 1.0)
         }
     } catch (_: Throwable) {
         // Measurement failed (page not ready) — leave zoom unchanged.
