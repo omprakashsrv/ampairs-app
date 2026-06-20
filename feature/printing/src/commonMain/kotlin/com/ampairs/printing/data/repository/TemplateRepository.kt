@@ -9,7 +9,7 @@ import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Local-only template store (offline-first). Writes Room with `synced = false` and flags
@@ -25,6 +25,10 @@ class TemplateRepository(
         templateDao.observeByType(documentType).map { rows -> rows.map { it.toTemplate() } }
 
     suspend fun getTemplate(id: String): Template? = templateDao.getById(id)?.toTemplate()
+
+    /** First active template for a document type (used to pick a default at print time). */
+    suspend fun firstTemplate(documentType: String): Template? =
+        templateDao.firstByType(documentType)?.toTemplate()
 
     suspend fun save(template: Template) {
         require(template.id.isNotBlank()) { "Template UID must be set by the ViewModel" }

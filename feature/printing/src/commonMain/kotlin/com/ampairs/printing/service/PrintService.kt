@@ -1,9 +1,11 @@
 package com.ampairs.printing.service
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.printing.core.model.PlainValueFormatter
 import com.ampairs.printing.core.model.PrintDocument
 import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.PrinterProfile
+import com.ampairs.printing.core.model.ValueFormatter
 import com.ampairs.printing.core.render.Renderer
 import com.ampairs.printing.core.spool.SendOutcome
 import com.ampairs.printing.core.transport.PrinterTransport
@@ -29,10 +31,14 @@ class PrintService {
     private val mapLock = Mutex()
     private val printerMutexes = mutableMapOf<String, Mutex>()
 
-    suspend fun print(document: PrintDocument, profile: PrinterProfile): SendOutcome {
+    suspend fun print(
+        document: PrintDocument,
+        profile: PrinterProfile,
+        formatter: ValueFormatter = PlainValueFormatter,
+    ): SendOutcome {
         val transport = transportFor(profile) ?: return SendOutcome.PERMANENT_FAILURE
         val renderer: Renderer = rendererFor(profile.printerClass)
-        val output = renderer.render(document, profile)
+        val output = renderer.render(document, profile, formatter)
 
         return mutexFor(profile.id).withLock {
             val opened = transport.open(profile)

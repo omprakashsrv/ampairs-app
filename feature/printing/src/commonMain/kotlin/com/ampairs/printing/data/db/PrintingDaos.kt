@@ -56,6 +56,9 @@ interface PrintTemplateDao {
     @Query("SELECT * FROM print_templates WHERE id = :id")
     suspend fun getById(id: String): PrintTemplateEntity?
 
+    @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType LIMIT 1")
+    suspend fun firstByType(documentType: String): PrintTemplateEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: PrintTemplateEntity)
 
