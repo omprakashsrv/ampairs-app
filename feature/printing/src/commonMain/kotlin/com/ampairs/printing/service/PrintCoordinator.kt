@@ -6,6 +6,7 @@ import com.ampairs.printing.core.model.DocumentType
 import com.ampairs.printing.core.model.PaperSpec
 import com.ampairs.printing.core.model.PlainValueFormatter
 import com.ampairs.printing.core.model.PrintJobState
+import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.Template
 import com.ampairs.printing.core.model.ValueFormatter
 import com.ampairs.printing.core.provider.PrintValueProvider
@@ -74,6 +75,10 @@ class PrintCoordinator(
     suspend fun hasRoutedPrinter(documentType: DocumentType): Boolean =
         printerRepository.resolvePrinter(documentType.key) != null
 
+    /** Whether ANY printer is configured at all — if false, the UI should launch printer setup. */
+    suspend fun hasAnyPrinter(): Boolean =
+        printerRepository.resolvePrinter(DocumentType.INVOICE.key) != null || printerRepository.anyPrinter() != null
+
     /** User confirms a SENT_UNCONFIRMED job actually printed — moves it to CONFIRMED. */
     suspend fun markPrinted(jobId: String) {
         val job = jobRepository.get(jobId) ?: return
@@ -91,12 +96,14 @@ class PrintCoordinator(
         printerId: String?,
     ): Result<SendOutcome> {
         val documentType = provider.documentType
+        // Prefer the explicit printer (retry), then the routed printer, then ANY configured printer.
         val profile = (if (printerId != null) printerRepository.getProfile(printerId) else null)
             ?: printerRepository.resolvePrinter(documentType.key)
-            ?: return Result.failure(IllegalStateException("No printer routed for ${documentType.key}"))
+            ?: printerRepository.anyPrinter()
+            ?: return Result.failure(IllegalStateException("No printer configured"))
 
         val template: Template = templateRepository.firstTemplate(documentType.key)
-            ?: defaultTemplate(documentType)
+            ?: defaultTemplate(documentType, profile.printerClass)
             ?: return Result.failure(IllegalStateException("No template for ${documentType.key}"))
 
         val existing = jobRepository.get(idempotencyKey)
@@ -138,8 +145,11 @@ class PrintCoordinator(
         }
     }
 
-    private fun defaultTemplate(documentType: DocumentType): Template? = when (documentType) {
-        DocumentType.INVOICE -> DefaultTemplates.thermalInvoice(PaperSpec.THERMAL_80)
+    /** Seeded fallback template, matched to the target printer's class (page printers get A4). */
+    private fun defaultTemplate(documentType: DocumentType, printerClass: PrinterClass): Template? = when (documentType) {
+        DocumentType.INVOICE ->
+            if (printerClass == PrinterClass.PAGE) DefaultTemplates.pageInvoice()
+            else DefaultTemplates.thermalInvoice(PaperSpec.THERMAL_80)
         DocumentType.ORDER -> DefaultTemplates.thermalOrder(PaperSpec.THERMAL_80)
         DocumentType.RECEIPT -> DefaultTemplates.thermalReceipt(PaperSpec.THERMAL_58)
         else -> null

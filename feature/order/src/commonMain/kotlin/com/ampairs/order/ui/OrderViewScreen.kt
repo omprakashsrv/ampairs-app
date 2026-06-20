@@ -74,6 +74,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,6 +93,7 @@ import com.ampairs.invoice.editor.DocSyncChip
 import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.viewmodel.OrderViewViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
@@ -108,6 +110,7 @@ fun OrderViewScreen(
     onNavigateBack: () -> Unit,
     onEdit: (orderId: String) -> Unit = {},
     onOpenInvoice: (invoiceId: String) -> Unit = {},
+    onOpenPrinterSetup: () -> Unit = {},
     viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory>(key = orderId) { create(orderId) }
 ) {
     val locale = LocalAppLocale.current
@@ -115,6 +118,7 @@ fun OrderViewScreen(
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
     var showConvertConfirm by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val converted = !order.invoiceRefId.isNullOrEmpty()
 
     viewModel.printMessage?.let { msg ->
@@ -150,7 +154,14 @@ fun OrderViewScreen(
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
-                    IconButton(onClick = { viewModel.printThermal() }, enabled = !viewModel.printing) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                if (viewModel.hasAnyPrinter()) viewModel.printThermal() else onOpenPrinterSetup()
+                            }
+                        },
+                        enabled = !viewModel.printing,
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Print,
                             contentDescription = stringResource(Res.string.ord_view_cd_print)

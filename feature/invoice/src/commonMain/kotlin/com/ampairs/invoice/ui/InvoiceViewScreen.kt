@@ -79,6 +79,7 @@ fun InvoiceViewScreen(
     onNavigateBack: () -> Unit,
     onEdit: (invoiceId: String) -> Unit = {},
     onOpenOrder: (orderId: String) -> Unit = {},
+    onOpenPrinterSetup: () -> Unit = {},
     viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory>(key = invoiceId) { create(invoiceId) }
 ) {
     val invoice = viewModel.invoice
@@ -130,9 +131,8 @@ fun InvoiceViewScreen(
                     IconButton(
                         onClick = {
                             scope.launch {
-                                // Use the configured printer (spool) when one is routed; otherwise
-                                // fall back to the OS print preview so printing always works.
-                                if (viewModel.hasInvoicePrinter()) viewModel.printThermal() else showPreview = true
+                                // Print to the configured printer; if none is set up yet, open setup.
+                                if (viewModel.hasAnyPrinter()) viewModel.printThermal() else onOpenPrinterSetup()
                             }
                         },
                         enabled = !viewModel.printing,

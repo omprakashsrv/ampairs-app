@@ -24,6 +24,9 @@ class PrinterRepository(
 
     suspend fun getProfile(id: String): PrinterProfile? = printerDao.getById(id)?.toProfile()
 
+    /** Any configured printer — fallback when a document type has no explicit route. */
+    suspend fun anyPrinter(): PrinterProfile? = printerDao.firstActive()?.toProfile()
+
     suspend fun savePrinter(profile: PrinterProfile) = printerDao.upsert(profile.toEntity())
 
     suspend fun removePrinter(id: String) = printerDao.deactivate(id)

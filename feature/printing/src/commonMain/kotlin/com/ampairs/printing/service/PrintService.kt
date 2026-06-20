@@ -1,6 +1,7 @@
 package com.ampairs.printing.service
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.printing.core.model.ConnectionType
 import com.ampairs.printing.core.model.PlainValueFormatter
 import com.ampairs.printing.core.model.PrintDocument
 import com.ampairs.printing.core.model.PrinterClass
@@ -57,8 +58,13 @@ class PrintService(
             }
             val sent = transport.send(output)
             transport.close()
-            // Raw thermal is fire-and-forget: success means "sent", not "confirmed" (§19).
-            if (sent.isSuccess) SendOutcome.SENT_UNCONFIRMED else SendOutcome.TRANSIENT_FAILURE
+            when {
+                sent.isFailure -> SendOutcome.TRANSIENT_FAILURE
+                // OS print service accepted the job → confirmed. Raw thermal is fire-and-forget:
+                // "sent" but not confirmed (no back-channel), so it stays for the user to verify (§19).
+                profile.connectionType == ConnectionType.OS_PRINT -> SendOutcome.CONFIRMED
+                else -> SendOutcome.SENT_UNCONFIRMED
+            }
         }
     }
 

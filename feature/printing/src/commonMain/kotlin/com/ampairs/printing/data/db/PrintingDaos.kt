@@ -14,6 +14,9 @@ interface PrinterDao {
     @Query("SELECT * FROM printers WHERE id = :id")
     suspend fun getById(id: String): PrinterEntity?
 
+    @Query("SELECT * FROM printers WHERE active = 1 ORDER BY name LIMIT 1")
+    suspend fun firstActive(): PrinterEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: PrinterEntity)
 

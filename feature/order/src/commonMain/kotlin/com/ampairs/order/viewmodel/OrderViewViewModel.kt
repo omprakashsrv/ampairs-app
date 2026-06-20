@@ -148,6 +148,9 @@ class OrderViewViewModel(
         }
     }
 
+    /** True if any printer is configured (so we print); else the UI launches printer setup. */
+    suspend fun hasAnyPrinter(): Boolean = printCoordinator.hasAnyPrinter()
+
     fun clearPrintMessage() {
         printMessage = null
     }
