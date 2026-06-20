@@ -473,6 +473,50 @@ with explicit reified type params, per `/metro-di`.
 
 ---
 
+## 14a. Implementation Status (updated 2026-06-20)
+
+Phases 1–2 plus the reliability spine and test-print are implemented and compile green on
+**Android, iOS and Desktop** in CI (no per-device hardware validation yet).
+
+### Shipped
+
+- **Core + renderers + engine** — `printing/core` IR, `PrintEngine`, `BindingResolver`;
+  `EscPosRenderer` (thermal), `HtmlRenderer` (page), `LabelRenderer` (TSPL). Pure + golden-tested.
+- **ESC/POS coverage** — real `GS k` 1D barcodes (CODE128/EAN13/UPCA, HRI), native QR (`GS ( k`),
+  styled text, cut, cash drawer, buzzer. (Validated against DantSu + Printer-KMP references.)
+- **Transports (per-platform via Metro `PrinterTransportFactory`, not commonMain `new`):**
+
+  | Class | Android | iOS | Desktop |
+  |---|---|---|---|
+  | Thermal (raw ESC/POS) | USB (`UsbManager`) · Bluetooth **classic SPP** (`BluetoothAdapter`/RFCOMM) · TCP :9100 | TCP | TCP |
+  | Inkjet/Laser (page) | `PrintManager` (system print UI) | AirPrint (`UIPrintInteractionController`) | `javax.print` (`JEditorPane`+`PrinterJob`) |
+  | Label | USB/BT/TCP | TCP | TCP |
+
+  > **Bluetooth note:** Jetpack `androidx.bluetooth` is BLE-only and cannot drive ESC/POS (classic
+  > SPP), so the platform `BluetoothAdapter`/`BluetoothSocket` is used. `javax.print`/OS-print is
+  > page-only — raw ESC/POS is rejected there (OS spoolers mangle control codes).
+
+- **Discovery** — `PrinterDiscoverer` per platform: Android enumerates USB printer-class devices +
+  bonded BT devices; Desktop lists `javax.print` services; iOS defers to the AirPrint picker.
+  Printer-management UI has Scan + add-discovered.
+- **Reliability spine (§19)** — `SpoolPolicy` print-once: `PrintCoordinator` enforces idempotency by
+  key (no double-print on retry), `retry(jobId)` rebuilds via a Metro `PrintValueProvider` registry
+  (`@DocumentTypeKey`), `markPrinted(jobId)` resolves SENT_UNCONFIRMED jobs; per-printer single-writer
+  `Mutex`. Print-queue UI (history, state, retry, mark-printed).
+- **Test print** — `TestPrintDocuments` + `PrintService.testPrint(profile)` exercises the full
+  render→transport path for every class, on every platform; per-printer action in the UI.
+- **End-to-end** — invoice thermal print wired (`InvoicePrintValueProvider`); reachable from the More
+  menu (Printers) and the invoice screen.
+
+### Known gaps / next
+
+- **Android runtime permissions + manifest** (`BLUETOOTH_CONNECT`/`SCAN`, USB host feature) — required
+  before on-device USB/BT printing works. TCP and OS-print need none. **(Next step.)**
+- **Hardware QA** — CI verifies compilation/interop only; no physical-printer output tested.
+- **Desktop USB** (needs a native lib, e.g. usb4java) and **iOS USB/classic-BT** (MFi only) — not supported.
+- **PDF renderer**, **visual template editor** (Phase 3), more **document providers** + labels (Phase 5),
+  **status reads** (DLE EOT/ASB), **logo/UPI raster**, telemetry/RBAC/flags — pending.
+
 ## 15. Phased Roadmap
 
 1. **Phase 1 — Core + network thermal.** `printing/core` IR + template model + engine;
