@@ -18,4 +18,9 @@
     <string name="printing_no_devices_found">No printers found</string>
     <string name="printing_add">Add</string>
     <string name="printing_done">Done</string>
+    <string name="printing_queue_title">Print queue</string>
+    <string name="printing_queue">Print queue</string>
+    <string name="printing_no_jobs">No print jobs yet</string>
+    <string name="printing_retry">Retry</string>
+    <string name="printing_mark_printed">Mark printed</string>
 </resources>

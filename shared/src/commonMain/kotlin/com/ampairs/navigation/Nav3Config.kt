@@ -29,6 +29,7 @@ import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitFormRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.printing.ui.PrinterListRoute
+import com.ampairs.printing.ui.PrintQueueRoute
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
@@ -155,6 +156,7 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
 
                 // Printing Routes
                 subclass(PrinterListRoute::class)
+                subclass(PrintQueueRoute::class)
             }
         }
     }

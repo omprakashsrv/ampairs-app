@@ -55,6 +55,7 @@ import ampairsapp.feature.printing.generated.resources.printing_paper_58
 import ampairsapp.feature.printing.generated.resources.printing_paper_80
 import ampairsapp.feature.printing.generated.resources.printing_paper_width
 import ampairsapp.feature.printing.generated.resources.printing_printers_title
+import ampairsapp.feature.printing.generated.resources.printing_queue
 import ampairsapp.feature.printing.generated.resources.printing_save
 import ampairsapp.feature.printing.generated.resources.printing_set_default
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -63,6 +64,7 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrinterListScreen(
+    onOpenQueue: () -> Unit = {},
     viewModel: PrinterListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -75,6 +77,7 @@ fun PrinterListScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.printing_printers_title)) },
                 actions = {
+                    TextButton(onClick = onOpenQueue) { Text(stringResource(Res.string.printing_queue)) }
                     IconButton(onClick = { viewModel.discover() }) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.printing_discover))
                     }

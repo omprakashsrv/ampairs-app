@@ -3,6 +3,8 @@ package com.ampairs.navigation.providers
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.printing.ui.PrintQueueRoute
+import com.ampairs.printing.ui.PrintQueueScreen
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.printing.ui.PrinterListScreen
 
@@ -12,10 +14,17 @@ import com.ampairs.printing.ui.PrinterListScreen
  */
 fun printingEntryProvider(
     key: NavKey,
-    @Suppress("UNUSED_PARAMETER") backStack: MutableList<NavKey>,
+    backStack: MutableList<NavKey>,
 ): NavEntry<NavKey>? = when (key) {
     is PrinterListRoute -> NavEntry(key) {
-        PrinterListScreen(modifier = Modifier)
+        PrinterListScreen(
+            onOpenQueue = { backStack.add(PrintQueueRoute) },
+            modifier = Modifier,
+        )
+    }
+
+    is PrintQueueRoute -> NavEntry(key) {
+        PrintQueueScreen(modifier = Modifier)
     }
 
     else -> null
