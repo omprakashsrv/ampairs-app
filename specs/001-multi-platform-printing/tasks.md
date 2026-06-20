@@ -106,11 +106,11 @@ correct receipt; simulate paper-out and offline and confirm actionable status + 
 
 ### Tests for US1
 
-- [ ] T014 [P] [US1] Golden-file tests for `EscPosRenderer` (58mm + 80mm, alignment/wrap/cut) in
+- [x] T014 [P] [US1] Golden-file tests for `EscPosRenderer` (58mm + 80mm, alignment/wrap/cut) in
       `printing/render/src/commonTest/`.
-- [ ] T015 [P] [US1] Unit tests for the spool state machine (queued→sending→sent→confirmed/failed/
+- [x] T015 [P] [US1] Unit tests for the spool state machine (queued→sending→sent→confirmed/failed/
       unconfirmed; dead-letter; TTL) in `feature/printing/src/commonTest/`.
-- [ ] T016 [P] [US1] Integration test: engine + `EscPosRenderer` + `MockTransport` prints a seeded
+- [x] T016 [P] [US1] Integration test: engine + `EscPosRenderer` + `MockTransport` prints a seeded
       invoice; assert totals equal stored amounts (SC-006).
 
 ### Implementation for US1
@@ -119,15 +119,15 @@ correct receipt; simulate paper-out and offline and confirm actionable status + 
       weighted columns, word-wrap, right-align, cut) in `printing/render/.../escpos/`.
 - [x] T018 [P] [US1] `NetworkTransport` (raw socket :9100) in `printing/transport/src/commonMain/`
       (ktor-network) with timeout/cancellation.
-- [ ] T019 [US1] Idempotent `PrintJobEntity` + DAO + `PrintSpooler` (retry/backoff, dead-letter, TTL,
+- [x] T019 [US1] Idempotent `PrintJobEntity` + DAO + `PrintSpooler` (retry/backoff, dead-letter, TTL,
       FIFO per printer, process-death recovery) — device-local DB in `feature/printing/.../spool/`.
-- [ ] T020 [US1] `PrintService` orchestration: per-printer single-writer `Mutex`, pre-flight status,
+- [x] T020 [US1] `PrintService` orchestration: per-printer single-writer `Mutex`, pre-flight status,
       render→send→cut→status-poll, emits status via `SharedFlow` in `feature/printing/.../service/`.
 - [ ] T021 [US1] `PrinterStatus` read via ESC/POS `DLE EOT`/ASB (paper/cover/cutter/offline) in
       `printing/transport/.../status/`.
-- [ ] T022 [P] [US1] `InvoicePrintValueProvider` + `ReceiptPrintValueProvider` (standard + computed
+- [x] T022 [P] [US1] `InvoicePrintValueProvider` + `ReceiptPrintValueProvider` (standard + computed
       fields; locale formatting) in `feature/invoice/.../print/`.
-- [ ] T023 [P] [US1] Seed default 80mm/58mm invoice + receipt templates in
+- [x] T023 [P] [US1] Seed default 80mm/58mm invoice + receipt templates in
       `printing/render/.../composeResources/`.
 - [ ] T024 [US1] Print preview + Print action on the invoice detail screen (incl. a **copies**
       selector, FR-027); print queue UI (view/cancel/reprint); "unconfirmed" + "out of paper" prompts.
@@ -153,7 +153,7 @@ confirm a second device does not inherit them.
 
 ### Implementation for US2
 
-- [ ] T027 [US2] Device-local `PrinterEntity` + `PrintRoutingEntity` + DAOs + repository (NOT synced),
+- [x] T027 [US2] Device-local `PrinterEntity` + `PrintRoutingEntity` + DAOs + repository (NOT synced),
       scoped **per device + per workspace** (keyed by workspace; new instance per workspace graph) in
       `feature/printing/.../data/` (FR-008).
 - [ ] T028 [P] [US2] `BluetoothTransport` actuals: Android `BluetoothSocket` SPP/BLE; iOS
@@ -181,14 +181,14 @@ another device's print.
 
 ### Tests for US3
 
-- [ ] T034 [P] [US3] Tests for `TemplateSyncDelegate` (push/pull, version conflict re-pull/retry) and
+- [x] T034 [P] [US3] Tests for `TemplateSyncDelegate` (push/pull, version conflict re-pull/retry) and
       broken-binding detection in `feature/printing/src/commonTest/`.
 
 ### Implementation for US3
 
 - [ ] T035 [US3] Workspace-synced `TemplateEntity` (+ blocks) + DAO + local-only repository
       (`markPendingPush`) — `@SingleIn(WorkspaceScope)` in `feature/printing/.../data/`.
-- [ ] T036 [US3] `TemplateSyncDelegate` (`@ContributesIntoMap(WorkspaceScope)`,
+- [x] T036 [US3] `TemplateSyncDelegate` (`@ContributesIntoMap(WorkspaceScope)`,
       `@SyncEntityKey(PRINT_TEMPLATE)`); backend `GET/POST /printing/v1/templates/sync` (coordinate).
 - [ ] T037 [US3] Field-binding picker sourced from `ConfigLookup.observeSchema(documentType)`
       (standard + custom) + computed-field catalog; broken-binding surfacing.

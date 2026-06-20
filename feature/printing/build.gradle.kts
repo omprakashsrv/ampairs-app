@@ -27,7 +27,9 @@ kotlin {
                 implementation(projects.printing.transport)
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
+                implementation(projects.feature.authApi)
                 implementation(libs.metro.runtime)
+                implementation(libs.bundles.ktor.common)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.dateTime)
@@ -41,12 +43,25 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
             }
         }
+        androidMain {
+            dependencies {
+                implementation(libs.ktor.client.okHttp)
+            }
+        }
+        val desktopMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.okHttp)
+            }
+        }
         val iosArm64Main by getting
         val iosSimulatorArm64Main by getting
         val iosMain by creating {
             dependsOn(commonMain.get())
             iosArm64Main.dependsOn(this)
             iosSimulatorArm64Main.dependsOn(this)
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
         }
     }
 }

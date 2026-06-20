@@ -67,4 +67,7 @@ interface PrintTemplateDao {
 
     @Query("UPDATE print_templates SET synced = 1 WHERE id = :id")
     suspend fun markSynced(id: String)
+
+    @Query("DELETE FROM print_templates WHERE id = :id")
+    suspend fun delete(id: String)
 }
