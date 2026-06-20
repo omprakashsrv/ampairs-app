@@ -6,6 +6,7 @@ import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.printing.core.model.ConnectionType
+import com.ampairs.printing.core.transport.PrinterDiscoverer
 import com.ampairs.printing.core.transport.PrinterTransportFactory
 import com.ampairs.printing.data.db.PrintingDatabase
 import com.ampairs.printing.transport.network.NetworkTransport
@@ -42,5 +43,11 @@ interface PrintingDesktopModule {
                     else -> null
                 }
             }
+
+        /** List the installed system printers via the Java Print Service (inkjet/laser). */
+        @Provides
+        @SingleIn(WorkspaceScope::class)
+        fun providePrinterDiscoverer(): PrinterDiscoverer =
+            PrinterDiscoverer { createOsPrintTransport()?.discover().orEmpty() }
     }
 }

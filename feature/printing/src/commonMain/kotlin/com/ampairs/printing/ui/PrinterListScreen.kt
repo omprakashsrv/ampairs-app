@@ -13,8 +13,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -37,11 +39,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.printing.generated.resources.Res
+import ampairsapp.feature.printing.generated.resources.printing_add
 import ampairsapp.feature.printing.generated.resources.printing_add_printer
 import ampairsapp.feature.printing.generated.resources.printing_address
 import ampairsapp.feature.printing.generated.resources.printing_cancel
 import ampairsapp.feature.printing.generated.resources.printing_delete
+import ampairsapp.feature.printing.generated.resources.printing_discover
+import ampairsapp.feature.printing.generated.resources.printing_discovered_title
+import ampairsapp.feature.printing.generated.resources.printing_discovering
+import ampairsapp.feature.printing.generated.resources.printing_done
 import ampairsapp.feature.printing.generated.resources.printing_name
+import ampairsapp.feature.printing.generated.resources.printing_no_devices_found
 import ampairsapp.feature.printing.generated.resources.printing_no_printers
 import ampairsapp.feature.printing.generated.resources.printing_paper_58
 import ampairsapp.feature.printing.generated.resources.printing_paper_80
@@ -63,7 +71,16 @@ fun PrinterListScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text(stringResource(Res.string.printing_printers_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(Res.string.printing_printers_title)) },
+                actions = {
+                    IconButton(onClick = { viewModel.discover() }) {
+                        Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.printing_discover))
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAdd = true }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.printing_add_printer))
@@ -101,6 +118,64 @@ fun PrinterListScreen(
             },
         )
     }
+
+    if (state.discovering || state.discovered.isNotEmpty()) {
+        DiscoveredPrintersDialog(
+            discovering = state.discovering,
+            discovered = state.discovered.map { Triple(it.id, it.name, "${it.connectionType.name} · ${it.address ?: ""}") },
+            onAdd = { id -> state.discovered.firstOrNull { it.id == id }?.let { viewModel.addDiscoveredPrinter(it) } },
+            onDismiss = { viewModel.clearDiscovered() },
+        )
+    }
+}
+
+@Composable
+private fun DiscoveredPrintersDialog(
+    discovering: Boolean,
+    discovered: List<Triple<String, String, String>>,
+    onAdd: (id: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.printing_discovered_title)) },
+        text = {
+            when {
+                discovering -> Row(
+                    Modifier.fillMaxWidth().padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator()
+                    Text(stringResource(Res.string.printing_discovering))
+                }
+
+                discovered.isEmpty() -> Text(stringResource(Res.string.printing_no_devices_found))
+
+                else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(discovered, key = { it.first }) { (id, name, subtitle) ->
+                        Card(Modifier.fillMaxWidth()) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                TextButton(onClick = { onAdd(id) }) {
+                                    Text(stringResource(Res.string.printing_add))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.printing_done)) }
+        },
+    )
 }
 
 @Composable

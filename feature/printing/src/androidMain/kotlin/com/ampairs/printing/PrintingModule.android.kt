@@ -7,6 +7,8 @@ import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.printing.core.model.ConnectionType
+import com.ampairs.printing.core.transport.DiscoveredPrinter
+import com.ampairs.printing.core.transport.PrinterDiscoverer
 import com.ampairs.printing.core.transport.PrinterTransportFactory
 import com.ampairs.printing.data.db.PrintingDatabase
 import com.ampairs.printing.osprint.AndroidOsPrintTransport
@@ -51,6 +53,17 @@ interface PrintingAndroidModule {
                     ConnectionType.OS_PRINT -> AndroidOsPrintTransport(context)
                     else -> null
                 }
+            }
+
+        /** Discover connected USB printer-class devices and bonded classic-Bluetooth devices. */
+        @Provides
+        @SingleIn(WorkspaceScope::class)
+        fun providePrinterDiscoverer(context: Context): PrinterDiscoverer =
+            PrinterDiscoverer {
+                val usb = UsbThermalTransport(context, null).discover()
+                val bluetooth = runCatching { BluetoothThermalTransport(context, null).discover() }
+                    .getOrDefault(emptyList<DiscoveredPrinter>())
+                usb + bluetooth
             }
     }
 }
