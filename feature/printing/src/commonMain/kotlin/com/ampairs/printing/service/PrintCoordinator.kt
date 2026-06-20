@@ -136,6 +136,7 @@ class PrintCoordinator(
 
     private fun defaultTemplate(documentType: DocumentType): Template? = when (documentType) {
         DocumentType.INVOICE -> DefaultTemplates.thermalInvoice(PaperSpec.THERMAL_80)
+        DocumentType.ORDER -> DefaultTemplates.thermalOrder(PaperSpec.THERMAL_80)
         DocumentType.RECEIPT -> DefaultTemplates.thermalReceipt(PaperSpec.THERMAL_58)
         else -> null
     }

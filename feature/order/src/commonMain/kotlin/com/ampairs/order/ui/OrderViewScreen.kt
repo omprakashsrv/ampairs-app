@@ -12,6 +12,7 @@ import ampairsapp.feature.order.generated.resources.ord_conv_title
 import ampairsapp.feature.order.generated.resources.ord_view_bill_to
 import ampairsapp.feature.order.generated.resources.ord_view_cd_back
 import ampairsapp.feature.order.generated.resources.ord_view_cd_edit
+import ampairsapp.feature.order.generated.resources.ord_view_cd_print
 import ampairsapp.feature.order.generated.resources.ord_view_col_particulars
 import ampairsapp.feature.order.generated.resources.ord_view_col_qty
 import ampairsapp.feature.order.generated.resources.ord_view_col_rate
@@ -51,6 +52,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomAppBar
@@ -115,6 +117,16 @@ fun OrderViewScreen(
     var showConvertConfirm by remember { mutableStateOf(false) }
     val converted = !order.invoiceRefId.isNullOrEmpty()
 
+    viewModel.printMessage?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPrintMessage() },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearPrintMessage() }) { Text("OK") }
+            },
+            text = { Text(msg) },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -138,6 +150,12 @@ fun OrderViewScreen(
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
+                    IconButton(onClick = { viewModel.printThermal() }, enabled = !viewModel.printing) {
+                        Icon(
+                            imageVector = Icons.Filled.Print,
+                            contentDescription = stringResource(Res.string.ord_view_cd_print)
+                        )
+                    }
                     IconButton(onClick = { onEdit(order.id) }) {
                         Icon(
                             imageVector = Icons.Filled.Edit,

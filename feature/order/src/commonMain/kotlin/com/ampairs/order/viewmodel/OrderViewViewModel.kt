@@ -16,6 +16,10 @@ import com.ampairs.invoice.domain.TaxSpec as InvoiceTaxSpec
 import com.ampairs.invoice.editor.DocSyncUi
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.domain.Order
+import com.ampairs.order.print.OrderPrintValueProvider
+import com.ampairs.printing.core.spool.SendOutcome
+import com.ampairs.printing.service.PrintCoordinator
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.unit.data.repository.UnitLookup
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
@@ -42,6 +46,8 @@ class OrderViewViewModel(
     val invoiceRepository: InvoiceRepository,
     private val unitLookup: UnitLookup,
     private val syncService: CentralSyncService,
+    private val printCoordinator: PrintCoordinator,
+    private val orderPrintProvider: OrderPrintValueProvider,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -54,6 +60,11 @@ class OrderViewViewModel(
     var order by mutableStateOf(Order())
         private set
     var savingOrder by mutableStateOf(false)
+        private set
+
+    /** Transient result of the last thermal print attempt (shown then dismissed by the screen). */
+    var printMessage by mutableStateOf<String?>(null)
+    var printing by mutableStateOf(false)
         private set
 
     /** Live document sync chip: this row's synced flag + the ORDER entity's sync activity. */
@@ -109,6 +120,36 @@ class OrderViewViewModel(
 
     fun retrySync() {
         syncService.emit(SyncEvent.TriggerPush(SyncEntity.ORDER))
+    }
+
+    /**
+     * Print this order to the routed printer via the offline-first spool. The idempotency key (one
+     * per tap) makes a retry safe — the spool will never double-print (§19).
+     */
+    fun printThermal() {
+        if (printing) return
+        printing = true
+        viewModelScope.launch(DispatcherProvider.io) {
+            val key = UidGenerator.generateUid("PRN")
+            val result = printCoordinator.print(orderPrintProvider, orderId, key)
+            val message = result.fold(
+                onSuccess = {
+                    when (it) {
+                        SendOutcome.CONFIRMED -> "Printed"
+                        SendOutcome.SENT_UNCONFIRMED -> "Sent to printer"
+                        SendOutcome.TRANSIENT_FAILURE -> "Printer unavailable — queued for retry"
+                        SendOutcome.PERMANENT_FAILURE -> "No printer configured for orders"
+                    }
+                },
+                onFailure = { it.message ?: "Print failed" },
+            )
+            printMessage = message
+            printing = false
+        }
+    }
+
+    fun clearPrintMessage() {
+        printMessage = null
     }
 
     fun saveOrder() {

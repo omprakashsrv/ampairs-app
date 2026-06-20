@@ -57,6 +57,43 @@ object DefaultTemplates {
         ),
     )
 
+    /** A thermal order/estimate template (80mm by default). */
+    fun thermalOrder(paper: PaperSpec.Thermal = PaperSpec.THERMAL_80): Template = Template(
+        id = "default_order_thermal_${paper.widthChars}",
+        name = "Order (${paper.widthChars}c thermal)",
+        documentType = DocumentType.ORDER,
+        printerClass = PrinterClass.THERMAL,
+        paper = paper,
+        blocks = listOf(
+            TemplateBlock.BoundText(
+                binding = std("seller_name"),
+                style = TemplateStyle(bold = true, align = Align.CENTER, widthScale = 2, heightScale = 2),
+            ),
+            TemplateBlock.StaticText("ORDER", TemplateStyle(bold = true, align = Align.CENTER)),
+            TemplateBlock.Divider(),
+            TemplateBlock.KeyValue("No:", std("order_number")),
+            TemplateBlock.KeyValue("Date:", std("order_date")),
+            TemplateBlock.KeyValue("Customer:", std("customer_name", EntityRef.CUSTOMER)),
+            TemplateBlock.Divider(),
+            TemplateBlock.LineTable(
+                columns = listOf(
+                    TemplateColumn("Item", line("description"), weight = 5, align = Align.LEFT),
+                    TemplateColumn("Qty", line("quantity"), weight = 2, align = Align.RIGHT),
+                    TemplateColumn("Rate", line("price"), weight = 3, align = Align.RIGHT),
+                    TemplateColumn("Amount", line("total_cost"), weight = 3, align = Align.RIGHT),
+                ),
+            ),
+            TemplateBlock.Divider(),
+            TemplateBlock.KeyValue("Sub Total", std("base_price"), TemplateStyle(align = Align.RIGHT)),
+            TemplateBlock.KeyValue("Tax", std("total_tax"), TemplateStyle(align = Align.RIGHT)),
+            TemplateBlock.KeyValue("TOTAL", std("total_cost"), TemplateStyle(bold = true, align = Align.RIGHT)),
+            TemplateBlock.Divider(),
+            TemplateBlock.StaticText("Thank you!", TemplateStyle(align = Align.CENTER)),
+            TemplateBlock.Spacer(1),
+            TemplateBlock.CutMark(),
+        ),
+    )
+
     /** A thermal sale-receipt template (compact). */
     fun thermalReceipt(paper: PaperSpec.Thermal = PaperSpec.THERMAL_58): Template = Template(
         id = "default_receipt_thermal_${paper.widthChars}",
@@ -115,6 +152,7 @@ object DefaultTemplates {
     fun all(): List<Template> = listOf(
         thermalInvoice(PaperSpec.THERMAL_80),
         thermalInvoice(PaperSpec.THERMAL_58),
+        thermalOrder(PaperSpec.THERMAL_80),
         thermalReceipt(PaperSpec.THERMAL_58),
         pageInvoice(),
     )
