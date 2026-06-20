@@ -132,6 +132,43 @@ class PrinterListViewModel(
         _uiState.update { it.copy(message = null) }
     }
 
+    /**
+     * Add a printer of any class. Manual add targets network/raw printers (thermal & label over TCP);
+     * inkjet/laser printers come from [discover] (the OS print service), not here.
+     */
+    fun addPrinter(
+        name: String,
+        printerClass: PrinterClass,
+        address: String?,
+        paperWidthMm: Int = 80,
+        labelWidthMm: Double = 50.0,
+        labelHeightMm: Double = 25.0,
+    ) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val paper = when (printerClass) {
+                PrinterClass.THERMAL -> if (paperWidthMm == 58) PaperSpec.THERMAL_58 else PaperSpec.THERMAL_80
+                PrinterClass.PAGE -> PaperSpec.Page()
+                PrinterClass.LABEL -> PaperSpec.Label(labelWidthMm, labelHeightMm)
+            }
+            val capabilities = if (paper is PaperSpec.Thermal) {
+                PrinterCapabilities(charsPerLine = paper.widthChars)
+            } else {
+                PrinterCapabilities()
+            }
+            val profile = PrinterProfile(
+                id = UidGenerator.generateUid("PRN"),
+                name = name.trim(),
+                printerClass = printerClass,
+                connectionType = ConnectionType.NETWORK,
+                address = address?.trim(),
+                paper = paper,
+                capabilities = capabilities,
+            )
+            repository.savePrinter(profile)
+        }
+    }
+
     fun delete(printerId: String) {
         viewModelScope.launch { repository.removePrinter(printerId) }
     }

@@ -64,6 +64,14 @@ import ampairsapp.feature.printing.generated.resources.printing_save
 import ampairsapp.feature.printing.generated.resources.printing_set_default
 import ampairsapp.feature.printing.generated.resources.printing_setup_guide
 import ampairsapp.feature.printing.generated.resources.printing_test
+import ampairsapp.feature.printing.generated.resources.printing_type
+import ampairsapp.feature.printing.generated.resources.printing_type_label
+import ampairsapp.feature.printing.generated.resources.printing_type_page
+import ampairsapp.feature.printing.generated.resources.printing_type_thermal
+import ampairsapp.feature.printing.generated.resources.printing_label_height
+import ampairsapp.feature.printing.generated.resources.printing_label_width
+import ampairsapp.feature.printing.generated.resources.printing_page_note
+import com.ampairs.printing.core.model.PrinterClass
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -122,8 +130,12 @@ fun PrinterListScreen(
     if (showAdd) {
         AddPrinterDialog(
             onDismiss = { showAdd = false },
-            onSave = { name, address, width ->
-                viewModel.addNetworkPrinter(name, address, width)
+            onScan = {
+                showAdd = false
+                viewModel.discover()
+            },
+            onSave = { name, printerClass, address, widthMm, labelW, labelH ->
+                viewModel.addPrinter(name, printerClass, address, widthMm, labelW, labelH)
                 showAdd = false
             },
         )
@@ -239,17 +251,24 @@ private fun PrinterRow(
 @Composable
 private fun AddPrinterDialog(
     onDismiss: () -> Unit,
-    onSave: (name: String, address: String, paperWidthMm: Int) -> Unit,
+    onScan: () -> Unit,
+    onSave: (name: String, printerClass: PrinterClass, address: String, paperWidthMm: Int, labelWidthMm: Double, labelHeightMm: Double) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
+    var printerClass by remember { mutableStateOf(PrinterClass.THERMAL) }
     var address by remember { mutableStateOf("") }
     var width by remember { mutableStateOf(80) }
+    var labelW by remember { mutableStateOf("50") }
+    var labelH by remember { mutableStateOf("25") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.printing_add_printer)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -257,31 +276,62 @@ private fun AddPrinterDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
-                    value = address,
-                    onValueChange = { address = it },
-                    label = { Text(stringResource(Res.string.printing_address)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(stringResource(Res.string.printing_paper_width), style = MaterialTheme.typography.labelLarge)
+
+                Text(stringResource(Res.string.printing_type), style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = width == 80,
-                        onClick = { width = 80 },
-                        label = { Text(stringResource(Res.string.printing_paper_80)) },
+                    FilterChip(printerClass == PrinterClass.THERMAL, { printerClass = PrinterClass.THERMAL }, { Text(stringResource(Res.string.printing_type_thermal)) })
+                    FilterChip(printerClass == PrinterClass.PAGE, { printerClass = PrinterClass.PAGE }, { Text(stringResource(Res.string.printing_type_page)) })
+                    FilterChip(printerClass == PrinterClass.LABEL, { printerClass = PrinterClass.LABEL }, { Text(stringResource(Res.string.printing_type_label)) })
+                }
+
+                when (printerClass) {
+                    PrinterClass.PAGE -> Text(
+                        stringResource(Res.string.printing_page_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    FilterChip(
-                        selected = width == 58,
-                        onClick = { width = 58 },
-                        label = { Text(stringResource(Res.string.printing_paper_58)) },
-                    )
+
+                    else -> {
+                        OutlinedTextField(
+                            value = address,
+                            onValueChange = { address = it },
+                            label = { Text(stringResource(Res.string.printing_address)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        if (printerClass == PrinterClass.THERMAL) {
+                            Text(stringResource(Res.string.printing_paper_width), style = MaterialTheme.typography.labelLarge)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(width == 80, { width = 80 }, { Text(stringResource(Res.string.printing_paper_80)) })
+                                FilterChip(width == 58, { width = 58 }, { Text(stringResource(Res.string.printing_paper_58)) })
+                            }
+                        } else {
+                            OutlinedTextField(
+                                value = labelW,
+                                onValueChange = { labelW = it },
+                                label = { Text(stringResource(Res.string.printing_label_width)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            OutlinedTextField(
+                                value = labelH,
+                                onValueChange = { labelH = it },
+                                label = { Text(stringResource(Res.string.printing_label_height)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(name, address, width) }) {
-                Text(stringResource(Res.string.printing_save))
+            if (printerClass == PrinterClass.PAGE) {
+                TextButton(onClick = onScan) { Text(stringResource(Res.string.printing_discover)) }
+            } else {
+                TextButton(onClick = {
+                    onSave(name, printerClass, address, width, labelW.toDoubleOrNull() ?: 50.0, labelH.toDoubleOrNull() ?: 25.0)
+                }) { Text(stringResource(Res.string.printing_save)) }
             }
         },
         dismissButton = {
