@@ -5,7 +5,11 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import com.ampairs.printing.core.model.ConnectionType
 import com.ampairs.printing.core.model.PrinterProfile
 import com.ampairs.printing.core.render.RenderedOutput
@@ -13,7 +17,10 @@ import com.ampairs.printing.core.transport.DiscoveredPrinter
 import com.ampairs.printing.core.transport.PrinterStatus
 import com.ampairs.printing.core.transport.PrinterTransport
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.OutputStream
 import java.util.UUID
 
@@ -40,17 +47,65 @@ class BluetoothThermalTransport(
     private fun adapter(): BluetoothAdapter? =
         (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
 
+    /**
+     * Lists paired devices first, then runs a classic-Bluetooth inquiry (≈12s) to find nearby
+     * unpaired devices too. Needs BLUETOOTH_SCAN (API 31+) / BLUETOOTH_ADMIN + location (≤30),
+     * granted by the UI before scanning.
+     */
     override suspend fun discover(): List<DiscoveredPrinter> = withContext(Dispatchers.IO) {
         val a = adapter() ?: return@withContext emptyList()
-        a.bondedDevices.orEmpty().map { device ->
-            DiscoveredPrinter(
-                id = device.address,
-                name = device.name ?: device.address,
-                connectionType = ConnectionType.BLUETOOTH,
-                address = device.address,
-            )
+        val found = LinkedHashMap<String, DiscoveredPrinter>()
+        a.bondedDevices.orEmpty().forEach { device ->
+            found[device.address] = device.toDiscovered()
         }
+        runCatching {
+            withTimeoutOrNull(DISCOVERY_TIMEOUT_MS) {
+                callbackFlow {
+                    val receiver = object : BroadcastReceiver() {
+                        override fun onReceive(c: Context, intent: Intent) {
+                            when (intent.action) {
+                                BluetoothDevice.ACTION_FOUND ->
+                                    intent.bluetoothDevice()?.let { trySend(it) }
+                                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> close()
+                            }
+                        }
+                    }
+                    val filter = IntentFilter().apply {
+                        addAction(BluetoothDevice.ACTION_FOUND)
+                        addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+                    } else {
+                        @Suppress("UnspecifiedRegisterReceiverFlag")
+                        context.registerReceiver(receiver, filter)
+                    }
+                    if (a.isDiscovering) a.cancelDiscovery()
+                    a.startDiscovery()
+                    awaitClose {
+                        runCatching { a.cancelDiscovery() }
+                        runCatching { context.unregisterReceiver(receiver) }
+                    }
+                }.collect { device -> found[device.address] = device.toDiscovered() }
+            }
+        }
+        found.values.toList()
     }
+
+    private fun BluetoothDevice.toDiscovered() = DiscoveredPrinter(
+        id = address,
+        name = name ?: address,
+        connectionType = ConnectionType.BLUETOOTH,
+        address = address,
+    )
+
+    private fun Intent.bluetoothDevice(): BluetoothDevice? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+        }
 
     override suspend fun open(profile: PrinterProfile): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
@@ -95,5 +150,8 @@ class BluetoothThermalTransport(
     companion object {
         /** Serial Port Profile UUID — the standard RFCOMM service for ESC/POS Bluetooth printers. */
         val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+
+        /** Classic Bluetooth inquiry runs ~12s; cap the scan so the UI doesn't wait forever. */
+        private const val DISCOVERY_TIMEOUT_MS = 12_000L
     }
 }

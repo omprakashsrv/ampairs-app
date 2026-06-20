@@ -508,6 +508,14 @@ Phases 1–2 plus the reliability spine and test-print are implemented and compi
 - **End-to-end** — invoice thermal print wired (`InvoicePrintValueProvider`); reachable from the More
   menu (Printers) and the invoice screen.
 
+### Thermal connectivity per platform (what each channel needs)
+
+| Channel | Android | iOS | Desktop |
+|---|---|---|---|
+| **TCP (:9100)** | ✅ ktor-network; add by IP + test print | ✅ same | ✅ same |
+| **Bluetooth (classic SPP)** | ✅ `BluetoothAdapter`/RFCOMM; **device discovery** = paired list + active inquiry (`startDiscovery`, ~12s). Needs `BLUETOOTH_SCAN` (31+) or `BLUETOOTH_ADMIN`+location (≤30; ≤30 falls back to paired-only without location) | ❌ classic BT needs MFi (ExternalAccessory) — not supported; use TCP | ❌ no portable JVM classic-BT API — use TCP |
+| **USB** | ✅ `UsbManager` bulk transfer + per-device `PendingIntent` grant + `usb.host` feature | ❌ MFi/ExternalAccessory only — generic USB not accessible | ⚠️ **not implemented** — the JDK has no USB API; needs **usb4java** (libusb JNI) with per-OS native libs + driver setup (WinUSB/Zadig on Windows, udev on Linux, entitlements on macOS). Recommend TCP/Bluetooth on desktop, or treat USB as a raw OS print queue; native USB is a follow-up |
+
 ### Known gaps / next
 
 - **Android runtime permissions + manifest** (`BLUETOOTH_CONNECT`/`SCAN`, USB host feature) — required
