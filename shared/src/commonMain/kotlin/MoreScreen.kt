@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -362,12 +361,6 @@ fun MoreScreen(
                         Icons.Default.Tune
                     ) {
                         backStack.add(Route.Settings)
-                    },
-                    Triple(
-                        "Printers",
-                        Icons.Default.Print
-                    ) {
-                        backStack.add(Route.Printing)
                     },
                 )
                 items.forEachIndexed { index, (label, icon, action) ->
