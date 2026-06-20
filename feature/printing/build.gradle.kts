@@ -37,6 +37,7 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.dateTime)
+                implementation(libs.kermit)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 // Compose

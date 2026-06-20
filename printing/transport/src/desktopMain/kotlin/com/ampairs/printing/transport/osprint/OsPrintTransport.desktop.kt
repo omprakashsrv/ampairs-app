@@ -6,6 +6,7 @@ import com.ampairs.printing.core.render.RenderedOutput
 import com.ampairs.printing.core.transport.DiscoveredPrinter
 import com.ampairs.printing.core.transport.PrinterStatus
 import com.ampairs.printing.core.transport.PrinterTransport
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.print.PrinterJob
@@ -42,6 +43,7 @@ internal class JavaPrintServiceTransport : PrinterTransport {
     override val connectionType: ConnectionType = ConnectionType.OS_PRINT
 
     private var service: PrintService? = null
+    private val log = Logger.withTag("JavaPrintService")
 
     override suspend fun discover(): List<DiscoveredPrinter> = withContext(Dispatchers.IO) {
         PrintServiceLookup.lookupPrintServices(null, null).map { svc ->
@@ -57,20 +59,24 @@ internal class JavaPrintServiceTransport : PrinterTransport {
     override suspend fun open(profile: PrinterProfile): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val target = profile.address?.trim().orEmpty()
+            val available = PrintServiceLookup.lookupPrintServices(null, null).map { it.name }
+            log.i { "open: target='$target' available=$available" }
             service = if (target.isEmpty()) {
                 PrintServiceLookup.lookupDefaultPrintService()
                     ?: error("No default OS print service available")
             } else {
                 PrintServiceLookup.lookupPrintServices(null, null)
                     .firstOrNull { it.name.equals(target, ignoreCase = true) }
-                    ?: error("OS printer not found: $target")
+                    ?: error("OS printer not found: '$target' (available: $available)")
             }
-        }
+            log.i { "open: bound to service='${service?.name}'" }
+        }.onFailure { log.e(it) { "open failed: ${it.message}" } }
     }
 
     override suspend fun send(output: RenderedOutput): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val svc = service ?: error("JavaPrintServiceTransport.send called before open()")
+            log.i { "send: output=${output::class.simpleName} to '${svc.name}'" }
             when (output) {
                 is RenderedOutput.Markup -> printHtmlPage(svc, output.html)
                 is RenderedOutput.Pdf -> printPdf(svc, output.data)
@@ -78,7 +84,8 @@ internal class JavaPrintServiceTransport : PrinterTransport {
                 is RenderedOutput.Bytes ->
                     error("Java Print Service is for inkjet/laser pages; print raw ESC/POS via the network/USB transport")
             }
-        }
+            log.i { "send: completed to '${svc.name}'" }
+        }.onFailure { log.e(it) { "send failed: ${it.message}" } }
     }
 
     /** Inkjet/laser path — render the HTML page and print it to [svc] with no dialog. */
@@ -97,7 +104,9 @@ internal class JavaPrintServiceTransport : PrinterTransport {
         job.printService = svc
         // JTextComponent.getPrintable wraps content to the printer page width and paginates.
         job.setPrintable(paneRef.get().getPrintable(null, null))
+        log.i { "printHtmlPage: submitting job to '${svc.name}' (html=${html.length} chars)" }
         job.print()
+        log.i { "printHtmlPage: job.print() returned for '${svc.name}'" }
     }
 
     /** Print a pre-rendered PDF straight to the queue (inkjet/laser). */

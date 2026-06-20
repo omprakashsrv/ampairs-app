@@ -17,6 +17,7 @@ import com.ampairs.printing.data.repository.PrintJobRepository
 import com.ampairs.printing.data.repository.PrinterRepository
 import com.ampairs.printing.data.repository.TemplateRepository
 import com.ampairs.printing.template.DefaultTemplates
+import co.touchlab.kermit.Logger
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlin.time.Clock
@@ -40,6 +41,7 @@ class PrintCoordinator(
     private val providers: Map<DocumentType, PrintValueProvider>,
 ) {
     private val engine = PrintEngine()
+    private val log = Logger.withTag("PrintCoordinator")
 
     /**
      * Print a document once. If a job already exists for [idempotencyKey] and is in-flight or done,
@@ -96,15 +98,21 @@ class PrintCoordinator(
         printerId: String?,
     ): Result<SendOutcome> {
         val documentType = provider.documentType
+        log.i { "send: docType=${documentType.key} id=$documentId key=$idempotencyKey printerIdOverride=$printerId" }
         // Prefer the explicit printer (retry), then the routed printer, then ANY configured printer.
         val profile = (if (printerId != null) printerRepository.getProfile(printerId) else null)
             ?: printerRepository.resolvePrinter(documentType.key)
             ?: printerRepository.anyPrinter()
-            ?: return Result.failure(IllegalStateException("No printer configured"))
+            ?: run {
+                log.w { "send: no printer configured for ${documentType.key}" }
+                return Result.failure(IllegalStateException("No printer configured"))
+            }
+        log.i { "send: resolved printer name=${profile.name} class=${profile.printerClass} conn=${profile.connectionType} addr=${profile.address}" }
 
         val template: Template = templateRepository.firstTemplate(documentType.key)
             ?: defaultTemplate(documentType, profile.printerClass)
             ?: return Result.failure(IllegalStateException("No template for ${documentType.key}"))
+        log.i { "send: using template=${template.id} (class=${template.printerClass})" }
 
         val existing = jobRepository.get(idempotencyKey)
         val now = Clock.System.now().toEpochMilliseconds()
@@ -125,7 +133,9 @@ class PrintCoordinator(
 
         return runCatching {
             val document = engine.build(template, documentId, provider)
+            log.i { "send: built document blocks=${document.blocks.size}; calling PrintService" }
             val outcome = printService.print(document, profile, formatter)
+            log.i { "send: PrintService outcome=$outcome" }
             job = job.copy(
                 state = SpoolPolicy.afterSend(job, outcome),
                 attempts = job.attempts + 1,
@@ -134,6 +144,7 @@ class PrintCoordinator(
             jobRepository.save(job)
             outcome
         }.onFailure { error ->
+            log.e(error) { "send: print FAILED for ${documentType.key} on ${profile.name}: ${error.message}" }
             jobRepository.save(
                 job.copy(
                     state = PrintJobState.FAILED,

@@ -22,6 +22,7 @@ kotlin {
                 api(projects.printing.core)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.ktor.network)
+                implementation(libs.kermit)
             }
         }
         commonTest {
