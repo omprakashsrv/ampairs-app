@@ -14,3 +14,7 @@ data object PrintQueueRoute : NavKey
 /** Print template setup — view templates per document type + printer class, restore defaults. */
 @Serializable
 data object TemplateListRoute : NavKey
+
+/** Visual editor for a single template — rename, edit/reorder/add/remove layout blocks. */
+@Serializable
+data class TemplateEditRoute(val templateId: String) : NavKey

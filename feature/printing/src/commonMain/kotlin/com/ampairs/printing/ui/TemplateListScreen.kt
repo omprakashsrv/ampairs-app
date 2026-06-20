@@ -1,5 +1,6 @@
 package com.ampairs.printing.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplateListScreen(
+    onEditTemplate: (String) -> Unit = {},
     viewModel: TemplateListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -68,7 +70,9 @@ fun TemplateListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(state.templates, key = { it.id }) { template ->
-                    Card(Modifier.fillMaxWidth()) {
+                    Card(
+                        Modifier.fillMaxWidth().clickable { onEditTemplate(template.id) }
+                    ) {
                         Row(
                             Modifier.fillMaxWidth().padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,

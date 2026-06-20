@@ -7,6 +7,8 @@ import com.ampairs.printing.ui.PrintQueueRoute
 import com.ampairs.printing.ui.PrintQueueScreen
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.printing.ui.PrinterListScreen
+import com.ampairs.printing.ui.TemplateEditRoute
+import com.ampairs.printing.ui.TemplateEditScreen
 import com.ampairs.printing.ui.TemplateListRoute
 import com.ampairs.printing.ui.TemplateListScreen
 
@@ -31,7 +33,18 @@ fun printingEntryProvider(
     }
 
     is TemplateListRoute -> NavEntry(key) {
-        TemplateListScreen(modifier = Modifier)
+        TemplateListScreen(
+            onEditTemplate = { templateId -> backStack.add(TemplateEditRoute(templateId)) },
+            modifier = Modifier,
+        )
+    }
+
+    is TemplateEditRoute -> NavEntry(key) {
+        TemplateEditScreen(
+            templateId = key.templateId,
+            onBack = { backStack.removeLastOrNull() },
+            modifier = Modifier,
+        )
     }
 
     else -> null

@@ -70,6 +70,7 @@ import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitFormRoute
 import com.ampairs.printing.ui.PrintQueueRoute
 import com.ampairs.printing.ui.PrinterListRoute
+import com.ampairs.printing.ui.TemplateEditRoute
 import com.ampairs.printing.ui.TemplateListRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
@@ -122,6 +123,7 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
     currentRoute is Route.Printing
         || currentRoute is PrinterListRoute
         || currentRoute is TemplateListRoute
+        || currentRoute is TemplateEditRoute
         || currentRoute is PrintQueueRoute -> ModuleCodes.PRINTING
     else -> null
 }
