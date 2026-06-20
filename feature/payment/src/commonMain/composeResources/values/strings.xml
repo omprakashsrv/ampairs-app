@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="payment_collections_title">Collections</string>
+    <string name="payment_record_payment">Record Payment</string>
+    <string name="payment_party_statement">Statement</string>
+    <string name="payment_open_bills">Open Bills</string>
+    <string name="payment_adjustment">Adjustment</string>
+    <string name="payment_opening_balance">Opening Balance</string>
+
+    <string name="payment_amount">Amount</string>
+    <string name="payment_date">Date</string>
+    <string name="payment_mode">Payment Mode</string>
+    <string name="payment_reference_number">Reference / UTR number</string>
+    <string name="payment_cheque_number">Cheque number</string>
+    <string name="payment_bank_name">Bank name</string>
+    <string name="payment_instrument_date">Cheque date</string>
+    <string name="payment_narration">Narration</string>
+    <string name="payment_direction">Direction</string>
+    <string name="payment_received">Received</string>
+    <string name="payment_paid">Paid</string>
+    <string name="payment_save">Save</string>
+    <string name="payment_select_party">Select party</string>
+
+    <string name="payment_to_receive">To receive</string>
+    <string name="payment_to_pay">To pay</string>
+    <string name="payment_closing_balance">Closing balance</string>
+    <string name="payment_running_balance">Running balance</string>
+    <string name="payment_debit">Debit</string>
+    <string name="payment_credit">Credit</string>
+
+    <string name="payment_total_receivable">Total receivable</string>
+    <string name="payment_total_payable">Total payable</string>
+    <string name="payment_aging">Aging</string>
+    <string name="payment_overdue">Overdue</string>
+    <string name="payment_credit_limit_warning">Credit limit exceeded</string>
+    <string name="payment_outstanding">Outstanding</string>
+    <string name="payment_due_date">Due date</string>
+
+    <string name="payment_allocate_to_bills">Allocate to bills</string>
+    <string name="payment_on_account">On-account advance</string>
+
+    <string name="payment_clearance_pending">Pending</string>
+    <string name="payment_clearance_cleared">Cleared</string>
+    <string name="payment_clearance_bounced">Bounced</string>
+    <string name="payment_mark_cleared">Mark cleared</string>
+    <string name="payment_mark_bounced">Mark bounced</string>
+
+    <string name="payment_adjustment_type">Adjustment type</string>
+    <string name="payment_linked_bill">Linked bill (optional)</string>
+
+    <string name="payment_no_data">No data yet</string>
+    <string name="payment_share_statement">Share statement</string>
+</resources>

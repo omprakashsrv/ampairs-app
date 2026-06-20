@@ -133,6 +133,7 @@ kotlin {
                 api(projects.feature.inventory)
                 api(projects.feature.order)
                 api(projects.feature.invoice)
+                api(projects.feature.payment)
                 api(projects.feature.workspace)
                 api(projects.feature.fileApi)
                 api(projects.feature.file)
