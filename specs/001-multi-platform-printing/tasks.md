@@ -89,7 +89,7 @@ registered in `settings.gradle.kts`; `SyncEntity.PRINT_TEMPLATE` added.
       test harness in `printing/render/src/commonTest/` and `printing/transport/src/commonTest/`.
 - [ ] T012 [P] [FOUND] Metro DI skeleton: contribute `Map<DocumentType, PrintValueProvider>` and
       `Map<PrinterClass, Renderer>`; `feature/printing` platform `@ContributesTo(WorkspaceScope)` stubs.
-- [ ] T013 [FOUND] Add `Route.Printing` + feature routes + `printingEntryProvider` +
+- [x] T013 [FOUND] Add `Route.Printing` + feature routes + `printingEntryProvider` +
       `mainRouteEntryProvider` mapping + `ModuleRegistry` entry (navigation wiring).
 
 **Checkpoint**: IR, engine, DI map, navigation, and test harness exist — stories can begin.

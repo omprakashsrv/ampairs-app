@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="printing_printers_title">Printers</string>
+    <string name="printing_add_printer">Add printer</string>
+    <string name="printing_no_printers">No printers configured yet</string>
+    <string name="printing_name">Name</string>
+    <string name="printing_address">Address (host:port)</string>
+    <string name="printing_paper_width">Paper width</string>
+    <string name="printing_paper_80">80mm</string>
+    <string name="printing_paper_58">58mm</string>
+    <string name="printing_save">Save</string>
+    <string name="printing_cancel">Cancel</string>
+    <string name="printing_delete">Delete</string>
+    <string name="printing_set_default">Set as default</string>
+</resources>
