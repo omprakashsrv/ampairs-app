@@ -25,4 +25,5 @@
     <string name="printing_mark_printed">Mark printed</string>
     <string name="printing_test">Test print</string>
     <string name="printing_ok">OK</string>
+    <string name="printing_setup_guide">No printers found.\n\nInkjet / laser (desktop): add the printer in your OS first, then tap Scan again.\n• Windows: Settings → Bluetooth &amp; devices → Printers &amp; scanners → Add device\n• macOS: System Settings → Printers &amp; Scanners → Add Printer\n• Linux: Settings → Printers (or CUPS at http://localhost:631)\n\nThermal printers:\n• Bluetooth: pair the printer in your device\'s Bluetooth settings, then Scan again\n• USB: connect the printer and approve the permission prompt\n• Network: tap Add printer and enter the IP (host:port)</string>
 </resources>

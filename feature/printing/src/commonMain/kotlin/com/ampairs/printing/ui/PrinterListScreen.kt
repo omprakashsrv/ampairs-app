@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -50,7 +53,6 @@ import ampairsapp.feature.printing.generated.resources.printing_discovered_title
 import ampairsapp.feature.printing.generated.resources.printing_discovering
 import ampairsapp.feature.printing.generated.resources.printing_done
 import ampairsapp.feature.printing.generated.resources.printing_name
-import ampairsapp.feature.printing.generated.resources.printing_no_devices_found
 import ampairsapp.feature.printing.generated.resources.printing_no_printers
 import ampairsapp.feature.printing.generated.resources.printing_ok
 import ampairsapp.feature.printing.generated.resources.printing_paper_58
@@ -60,6 +62,7 @@ import ampairsapp.feature.printing.generated.resources.printing_printers_title
 import ampairsapp.feature.printing.generated.resources.printing_queue
 import ampairsapp.feature.printing.generated.resources.printing_save
 import ampairsapp.feature.printing.generated.resources.printing_set_default
+import ampairsapp.feature.printing.generated.resources.printing_setup_guide
 import ampairsapp.feature.printing.generated.resources.printing_test
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -167,7 +170,14 @@ private fun DiscoveredPrintersDialog(
                     Text(stringResource(Res.string.printing_discovering))
                 }
 
-                discovered.isEmpty() -> Text(stringResource(Res.string.printing_no_devices_found))
+                discovered.isEmpty() -> Column(
+                    Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
+                ) {
+                    Text(
+                        stringResource(Res.string.printing_setup_guide),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
 
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(discovered, key = { it.first }) { (id, name, subtitle) ->
