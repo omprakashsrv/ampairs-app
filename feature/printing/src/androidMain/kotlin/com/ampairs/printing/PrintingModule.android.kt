@@ -6,7 +6,12 @@ import com.ampairs.common.database.createAndroidDatabase
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
+import com.ampairs.printing.core.model.ConnectionType
+import com.ampairs.printing.core.transport.PrinterTransportFactory
 import com.ampairs.printing.data.db.PrintingDatabase
+import com.ampairs.printing.transport.bluetooth.BluetoothThermalTransport
+import com.ampairs.printing.transport.network.NetworkTransport
+import com.ampairs.printing.transport.usb.UsbThermalTransport
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -28,5 +33,22 @@ interface PrintingAndroidModule {
             moduleName = "printing",
             workspaceSlug = config.workspaceSlug,
         ).also { closableRegistry.register { it.close() } }
+
+        /**
+         * Android transport map: raw ESC/POS over TCP (:9100), USB (UsbManager) and classic
+         * Bluetooth SPP (BluetoothAdapter/RFCOMM). OS_PRINT (inkjet/laser via PrintManager) is wired
+         * separately once the print-adapter transport lands.
+         */
+        @Provides
+        @SingleIn(WorkspaceScope::class)
+        fun providePrinterTransportFactory(context: Context): PrinterTransportFactory =
+            PrinterTransportFactory { profile ->
+                when (profile.connectionType) {
+                    ConnectionType.NETWORK -> NetworkTransport()
+                    ConnectionType.USB -> UsbThermalTransport(context, profile.address)
+                    ConnectionType.BLUETOOTH -> BluetoothThermalTransport(context, profile.address)
+                    else -> null
+                }
+            }
     }
 }

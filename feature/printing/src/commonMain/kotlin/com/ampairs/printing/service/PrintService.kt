@@ -8,12 +8,10 @@ import com.ampairs.printing.core.model.PrinterProfile
 import com.ampairs.printing.core.model.ValueFormatter
 import com.ampairs.printing.core.render.Renderer
 import com.ampairs.printing.core.spool.SendOutcome
-import com.ampairs.printing.core.transport.PrinterTransport
+import com.ampairs.printing.core.transport.PrinterTransportFactory
 import com.ampairs.printing.render.escpos.EscPosRenderer
 import com.ampairs.printing.render.html.HtmlRenderer
 import com.ampairs.printing.render.label.LabelRenderer
-import com.ampairs.printing.transport.network.NetworkTransport
-import com.ampairs.printing.transport.osprint.createOsPrintTransport
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.sync.Mutex
@@ -22,12 +20,15 @@ import kotlinx.coroutines.sync.withLock
 /**
  * Orchestrates one print: pick the renderer for the printer class, render the IR, and send over the
  * matching transport — serialized per printer with a single-writer [Mutex] (§19). Returns a
- * [SendOutcome] the spool turns into a job-state transition. Currently wires the network transport;
- * Bluetooth/USB/OS-print transports are added in the connectivity phase.
+ * [SendOutcome] the spool turns into a job-state transition. The transport is resolved per platform
+ * via the injected [PrinterTransportFactory] (TCP everywhere; USB/Bluetooth on Android; OS-print on
+ * desktop), so this orchestrator stays platform-agnostic.
  */
 @Inject
 @SingleIn(WorkspaceScope::class)
-class PrintService {
+class PrintService(
+    private val transportFactory: PrinterTransportFactory,
+) {
 
     private val mapLock = Mutex()
     private val printerMutexes = mutableMapOf<String, Mutex>()
@@ -37,7 +38,7 @@ class PrintService {
         profile: PrinterProfile,
         formatter: ValueFormatter = PlainValueFormatter,
     ): SendOutcome {
-        val transport = transportFor(profile) ?: return SendOutcome.PERMANENT_FAILURE
+        val transport = transportFactory.transportFor(profile) ?: return SendOutcome.PERMANENT_FAILURE
         val renderer: Renderer = rendererFor(profile.printerClass)
         val output = renderer.render(document, profile, formatter)
 
@@ -58,13 +59,6 @@ class PrintService {
         PrinterClass.THERMAL -> EscPosRenderer()
         PrinterClass.PAGE -> HtmlRenderer()
         PrinterClass.LABEL -> LabelRenderer()
-    }
-
-    private fun transportFor(profile: PrinterProfile): PrinterTransport? = when (profile.connectionType) {
-        com.ampairs.printing.core.model.ConnectionType.NETWORK -> NetworkTransport()
-        // Desktop drives system/USB printers through the Java Print Service; null on Android/iOS.
-        com.ampairs.printing.core.model.ConnectionType.OS_PRINT -> createOsPrintTransport()
-        else -> null // Bluetooth/USB(native)/Share land in the connectivity phase
     }
 
     private suspend fun mutexFor(printerId: String): Mutex =
