@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -51,6 +52,7 @@ import ampairsapp.feature.printing.generated.resources.printing_done
 import ampairsapp.feature.printing.generated.resources.printing_name
 import ampairsapp.feature.printing.generated.resources.printing_no_devices_found
 import ampairsapp.feature.printing.generated.resources.printing_no_printers
+import ampairsapp.feature.printing.generated.resources.printing_ok
 import ampairsapp.feature.printing.generated.resources.printing_paper_58
 import ampairsapp.feature.printing.generated.resources.printing_paper_80
 import ampairsapp.feature.printing.generated.resources.printing_paper_width
@@ -58,6 +60,7 @@ import ampairsapp.feature.printing.generated.resources.printing_printers_title
 import ampairsapp.feature.printing.generated.resources.printing_queue
 import ampairsapp.feature.printing.generated.resources.printing_save
 import ampairsapp.feature.printing.generated.resources.printing_set_default
+import ampairsapp.feature.printing.generated.resources.printing_test
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -103,7 +106,8 @@ fun PrinterListScreen(
                 items(state.printers, key = { it.id }) { printer ->
                     PrinterRow(
                         name = printer.name,
-                        subtitle = "${printer.connectionType.name} · ${printer.address ?: ""}",
+                        subtitle = "${printer.printerClass.name} · ${printer.connectionType.name} · ${printer.address ?: ""}",
+                        onTestPrint = { viewModel.testPrint(printer.id) },
                         onSetDefault = { viewModel.setAsDefault(printer.id) },
                         onDelete = { viewModel.delete(printer.id) },
                     )
@@ -119,6 +123,16 @@ fun PrinterListScreen(
                 viewModel.addNetworkPrinter(name, address, width)
                 showAdd = false
             },
+        )
+    }
+
+    state.message?.let { message ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearMessage() },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearMessage() }) { Text(stringResource(Res.string.printing_ok)) }
+            },
+            text = { Text(message) },
         )
     }
 
@@ -185,6 +199,7 @@ private fun DiscoveredPrintersDialog(
 private fun PrinterRow(
     name: String,
     subtitle: String,
+    onTestPrint: () -> Unit,
     onSetDefault: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -196,6 +211,9 @@ private fun PrinterRow(
             Column(Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = onTestPrint) {
+                Icon(Icons.Default.Print, contentDescription = stringResource(Res.string.printing_test))
             }
             IconButton(onClick = onSetDefault) {
                 Icon(Icons.Default.Check, contentDescription = stringResource(Res.string.printing_set_default))

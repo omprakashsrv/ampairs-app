@@ -9,9 +9,11 @@ import com.ampairs.printing.core.model.PaperSpec
 import com.ampairs.printing.core.model.PrinterCapabilities
 import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.PrinterProfile
+import com.ampairs.printing.core.spool.SendOutcome
 import com.ampairs.printing.core.transport.DiscoveredPrinter
 import com.ampairs.printing.core.transport.PrinterDiscoverer
 import com.ampairs.printing.data.repository.PrinterRepository
+import com.ampairs.printing.service.PrintService
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -27,6 +29,7 @@ data class PrinterListUiState(
     val printers: List<PrinterProfile> = emptyList(),
     val discovered: List<DiscoveredPrinter> = emptyList(),
     val discovering: Boolean = false,
+    val message: String? = null,
 )
 
 @ContributesIntoMap(WorkspaceScope::class)
@@ -35,6 +38,7 @@ data class PrinterListUiState(
 class PrinterListViewModel(
     private val repository: PrinterRepository,
     private val discoverer: PrinterDiscoverer,
+    private val printService: PrintService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PrinterListUiState())
@@ -103,6 +107,20 @@ class PrinterListViewModel(
             )
             repository.savePrinter(profile)
         }
+    }
+
+    /** Print a test page on the given printer to verify it works end-to-end. */
+    fun testPrint(printerId: String) {
+        viewModelScope.launch {
+            val profile = repository.getProfile(printerId) ?: return@launch
+            val outcome = printService.testPrint(profile)
+            val ok = outcome == SendOutcome.SENT_UNCONFIRMED || outcome == SendOutcome.CONFIRMED
+            _uiState.update { it.copy(message = if (ok) "Test sent to ${profile.name}" else "Test failed: ${outcome.name}") }
+        }
+    }
+
+    fun clearMessage() {
+        _uiState.update { it.copy(message = null) }
     }
 
     fun delete(printerId: String) {

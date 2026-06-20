@@ -33,6 +33,13 @@ class PrintService(
     private val mapLock = Mutex()
     private val printerMutexes = mutableMapOf<String, Mutex>()
 
+    /**
+     * Print a class-appropriate test page on [profile] to verify the full render→transport path
+     * (thermal/page/label) on the current platform. Uses no business data.
+     */
+    suspend fun testPrint(profile: PrinterProfile): SendOutcome =
+        print(TestPrintDocuments.forPrinter(profile.printerClass, profile.name), profile)
+
     suspend fun print(
         document: PrintDocument,
         profile: PrinterProfile,
