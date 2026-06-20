@@ -127,8 +127,10 @@ class RenderPipelineTest {
         val output = HtmlRenderer().render(doc, profile.copy(printerClass = PrinterClass.PAGE, paper = PaperSpec.Page()), PlainValueFormatter)
         assertTrue(output is RenderedOutput.Markup)
         val html = (output as RenderedOutput.Markup).html
-        assertTrue(html.contains("<table>"))
+        assertTrue(html.contains("<table"))
         assertTrue(html.contains("INV-001"))
         assertTrue(html.contains("240.00"))
+        // Columns are sized by weight (3/1/2 → 50/16/33%) so numeric columns stay visible.
+        assertTrue(html.contains("width:50%"), "item column width should be weight-proportional")
     }
 }

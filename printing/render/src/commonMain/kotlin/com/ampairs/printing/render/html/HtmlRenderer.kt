@@ -29,6 +29,7 @@ class HtmlRenderer : Renderer {
     ): RenderedOutput {
         val sb = StringBuilder()
         sb.append("<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">")
+        sb.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
         sb.append("<style>").append(css(profile.paper)).append("</style></head><body><div class=\"doc\">")
         for (element in document.blocks) renderElement(element, formatter, sb)
         sb.append("</div></body></html>")
@@ -48,9 +49,18 @@ class HtmlRenderer : Renderer {
             }
 
             is PrintElement.Table -> {
-                sb.append("<table><thead><tr>")
+                // Size columns by their weight so narrow numeric columns (Qty/Rate/Amount) stay
+                // visible instead of being squeezed out by a long item description (table-layout:fixed).
+                val total = element.columns.sumOf { it.style.weight }.coerceAtLeast(1)
+                sb.append("<table class=\"items\"><colgroup>")
                 for (c in element.columns) {
-                    sb.append("<th class=\"${alignClass(c.style.align)}\">").append(esc(c.title)).append("</th>")
+                    sb.append("<col style=\"width:").append(c.style.weight * 100 / total).append("%\">")
+                }
+                sb.append("</colgroup><thead><tr>")
+                for (c in element.columns) {
+                    // width attr too — desktop JEditorPane (HTML 3.2) ignores <colgroup>/table-layout.
+                    sb.append("<th width=\"").append(c.style.weight * 100 / total)
+                        .append("%\" class=\"${alignClass(c.style.align)}\">").append(esc(c.title)).append("</th>")
                 }
                 sb.append("</tr></thead><tbody>")
                 for (row in element.rows) {
@@ -124,15 +134,18 @@ class HtmlRenderer : Renderer {
         }
         return """
             @page { size: $pageSize; margin: 12mm; }
+            html, body { margin: 0; padding: 0; }
             body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
-            .doc { width: 100%; }
+            .doc { width: 100%; box-sizing: border-box; }
             p { margin: 2px 0; } .b { font-weight: bold; }
             .l { text-align: left; } .c { text-align: center; } .r { text-align: right; }
             .kv { display: flex; justify-content: space-between; }
             table { width: 100%; border-collapse: collapse; margin: 6px 0; }
-            th, td { border-bottom: 1px solid #999; padding: 3px 4px; }
+            table.items { table-layout: fixed; }
+            th, td { border-bottom: 1px solid #999; padding: 3px 4px; word-wrap: break-word; overflow-wrap: break-word; }
             thead { display: table-header-group; }
             tr { break-inside: avoid; }
+            table.grid { table-layout: auto; }
             table.grid td { border: none; padding: 2px 8px; vertical-align: top; }
             .gl { font-weight: bold; }
             .logo { max-height: 60px; }
