@@ -41,9 +41,30 @@ class TemplateRepository(
      * to any template for that type. This is what makes "the right template for the selected printer
      * type" get sent to the print job.
      */
-    suspend fun firstTemplate(documentType: String, printerClass: PrinterClass): Template? =
-        templateDao.firstByTypeAndClass(documentType, printerClass.name)?.toTemplate()
-            ?: firstTemplate(documentType)
+    suspend fun firstTemplate(documentType: String, printerClass: PrinterClass): Template? {
+        // Among templates for this (type, class), honor the user-chosen default; else the first.
+        val matches = templateDao.listByTypeAndClass(documentType, printerClass.name).map { it.toTemplate() }
+        (matches.firstOrNull { it.isDefault } ?: matches.firstOrNull())?.let { return it }
+        return firstTemplate(documentType)
+    }
+
+    /**
+     * Mark [templateId] as the default for its (documentType, printerClass); clears the flag on its
+     * siblings so exactly one is default. Syncs like any other template edit.
+     */
+    suspend fun setDefault(templateId: String) {
+        val target = templateDao.getById(templateId)?.toTemplate() ?: return
+        val siblings = templateDao.listByTypeAndClass(target.documentType.key, target.printerClass.name)
+            .map { it.toTemplate() }
+        siblings.forEach { t ->
+            if (t.id == templateId && !t.isDefault) {
+                templateDao.upsert(t.copy(isDefault = true).toEntity(synced = false))
+            } else if (t.id != templateId && t.isDefault) {
+                templateDao.upsert(t.copy(isDefault = false).toEntity(synced = false))
+            }
+        }
+        markPending()
+    }
 
     suspend fun save(template: Template) {
         require(template.id.isNotBlank()) { "Template UID must be set by the ViewModel" }

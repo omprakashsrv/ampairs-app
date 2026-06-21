@@ -17,6 +17,8 @@ data class Template(
     val version: Long = 1,
     /** DYNAMIC = authored via the block editor; STATIC = a stored HTML file with `{{variables}}`. */
     val kind: TemplateKind = TemplateKind.DYNAMIC,
+    /** The chosen template for its (documentType, printerClass) — one default per pair is honored at print. */
+    val isDefault: Boolean = false,
     val blocks: List<TemplateBlock> = emptyList(),
     /**
      * For [TemplateKind.STATIC]: the file-module uid of the uploaded HTML template (stored as a real

@@ -57,6 +57,11 @@ class TemplateListViewModel(
         viewModelScope.launch { repository.restoreDefaults() }
     }
 
+    /** Choose [templateId] as the default for its document type + printer class. */
+    fun setDefault(templateId: String) {
+        viewModelScope.launch { repository.setDefault(templateId) }
+    }
+
     /**
      * Import a static HTML template: pick a `.html` file, store it via the file module (which uploads
      * it to the backend), and create a STATIC [Template] referencing that file for [documentType].

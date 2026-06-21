@@ -12,6 +12,7 @@
     <string name="printing_cancel">Cancel</string>
     <string name="printing_delete">Delete</string>
     <string name="printing_set_default">Set as default</string>
+    <string name="printing_default">Default</string>
     <string name="printing_discover">Scan for printers</string>
     <string name="printing_discovering">Scanning…</string>
     <string name="printing_discovered_title">Discovered printers</string>

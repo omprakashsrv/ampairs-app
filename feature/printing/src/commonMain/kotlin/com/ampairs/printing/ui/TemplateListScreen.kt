@@ -34,9 +34,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.printing.generated.resources.Res
+import ampairsapp.feature.printing.generated.resources.printing_default
 import ampairsapp.feature.printing.generated.resources.printing_import_html_template
 import ampairsapp.feature.printing.generated.resources.printing_no_templates
 import ampairsapp.feature.printing.generated.resources.printing_restore_defaults
+import ampairsapp.feature.printing.generated.resources.printing_set_default
 import ampairsapp.feature.printing.generated.resources.printing_templates_title
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -111,7 +113,13 @@ fun TemplateListScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            AssistChip(onClick = {}, label = { Text(template.printerClass.name) })
+                            if (template.isDefault) {
+                                AssistChip(onClick = {}, label = { Text(stringResource(Res.string.printing_default)) })
+                            } else {
+                                TextButton(onClick = { viewModel.setDefault(template.id) }) {
+                                    Text(stringResource(Res.string.printing_set_default))
+                                }
+                            }
                         }
                     }
                 }

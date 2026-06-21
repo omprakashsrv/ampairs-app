@@ -77,11 +77,15 @@ interface PrintTemplateDao {
     @Query("SELECT * FROM print_templates WHERE id = :id")
     suspend fun getById(id: String): PrintTemplateEntity?
 
-    @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType LIMIT 1")
+    @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType COLLATE NOCASE LIMIT 1")
     suspend fun firstByType(documentType: String): PrintTemplateEntity?
 
-    @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType AND printer_class = :printerClass LIMIT 1")
+    @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType COLLATE NOCASE AND printer_class = :printerClass COLLATE NOCASE LIMIT 1")
     suspend fun firstByTypeAndClass(documentType: String, printerClass: String): PrintTemplateEntity?
+
+    /** All active templates for a (documentType, printerClass) — repository picks the default among them. */
+    @Query("SELECT * FROM print_templates WHERE active = 1 AND document_type = :documentType COLLATE NOCASE AND printer_class = :printerClass COLLATE NOCASE ORDER BY id ASC")
+    suspend fun listByTypeAndClass(documentType: String, printerClass: String): List<PrintTemplateEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: PrintTemplateEntity)
