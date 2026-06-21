@@ -3,6 +3,7 @@ package com.ampairs.payment.ui
 import ampairsapp.feature.payment.generated.resources.Res
 import ampairsapp.feature.payment.generated.resources.payment_collections_title
 import ampairsapp.feature.payment.generated.resources.payment_no_data
+import ampairsapp.feature.payment.generated.resources.payment_record_payment
 import ampairsapp.feature.payment.generated.resources.payment_to_pay
 import ampairsapp.feature.payment.generated.resources.payment_to_receive
 import androidx.compose.foundation.layout.Box
@@ -10,8 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,6 +42,7 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentDashboardScreen(
+    onRecordPayment: () -> Unit,
     viewModel: PaymentDashboardViewModel = metroViewModel(),
 ) {
     val balances by viewModel.balances.collectAsStateWithLifecycle()
@@ -45,6 +51,13 @@ fun PaymentDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(title = { Text(stringResource(Res.string.payment_collections_title)) })
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onRecordPayment,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text(stringResource(Res.string.payment_record_payment)) },
+            )
         },
     ) { padding ->
         if (balances.isEmpty()) {

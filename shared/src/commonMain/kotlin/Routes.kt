@@ -327,6 +327,12 @@ sealed interface InvoiceRoute : NavKey {
 sealed interface PaymentRoute : NavKey {
     @Serializable
     data object Dashboard : PaymentRoute
+
+    @Serializable
+    data object SelectParty : PaymentRoute
+
+    @Serializable
+    data class Record(val partyUid: String = "") : PaymentRoute
 }
 
 // Business routes

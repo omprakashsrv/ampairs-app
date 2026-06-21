@@ -129,6 +129,8 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
 
                 // Payment Routes
                 subclass(PaymentRoute.Dashboard::class)
+                subclass(PaymentRoute.SelectParty::class)
+                subclass(PaymentRoute.Record::class)
 
                 // Business Routes
                 subclass(BusinessRoute.Overview::class)
