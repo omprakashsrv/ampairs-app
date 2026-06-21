@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="payment_collections_title">Collections</string>
+    <string name="payment_record_payment">Record Payment</string>
+    <string name="payment_party_statement">Statement</string>
+    <string name="payment_open_bills">Open Bills</string>
+    <string name="payment_adjustment">Adjustment</string>
+    <string name="payment_opening_balance">Opening Balance</string>
+
+    <string name="payment_amount">Amount</string>
+    <string name="payment_date">Date</string>
+    <string name="payment_mode">Payment Mode</string>
+    <string name="payment_reference_number">Reference / UTR number</string>
+    <string name="payment_cheque_number">Cheque number</string>
+    <string name="payment_bank_name">Bank name</string>
+    <string name="payment_instrument_date">Cheque date</string>
+    <string name="payment_narration">Narration</string>
+    <string name="payment_direction">Direction</string>
+    <string name="payment_received">Received</string>
+    <string name="payment_paid">Paid</string>
+    <string name="payment_save">Save</string>
+    <string name="payment_select_party">Select party</string>
+    <string name="payment_search_customer">Search customer</string>
+
+    <string name="payment_to_receive">To receive</string>
+    <string name="payment_to_pay">To pay</string>
+    <string name="payment_closing_balance">Closing balance</string>
+    <string name="payment_running_balance">Running balance</string>
+    <string name="payment_debit">Debit</string>
+    <string name="payment_credit">Credit</string>
+
+    <string name="payment_total_receivable">Total receivable</string>
+    <string name="payment_total_payable">Total payable</string>
+    <string name="payment_aging">Aging</string>
+    <string name="payment_overdue">Overdue</string>
+    <string name="payment_credit_limit_warning">Credit limit exceeded</string>
+    <string name="payment_outstanding">Outstanding</string>
+    <string name="payment_due_date">Due date</string>
+
+    <string name="payment_allocate_to_bills">Allocate to bills</string>
+    <string name="payment_on_account">On-account advance</string>
+
+    <string name="payment_clearance_pending">Pending</string>
+    <string name="payment_clearance_cleared">Cleared</string>
+    <string name="payment_clearance_bounced">Bounced</string>
+    <string name="payment_mark_cleared">Mark cleared</string>
+    <string name="payment_mark_bounced">Mark bounced</string>
+    <string name="payment_edit">Edit</string>
+    <string name="payment_cancel_voucher">Cancel voucher</string>
+
+    <string name="payment_adjustment_type">Adjustment type</string>
+    <string name="payment_linked_bill">Linked bill (optional)</string>
+
+    <string name="payment_no_data">No data yet</string>
+    <string name="payment_share_statement">Share statement</string>
+
+    <!-- Clearance + payment modes (component kit) -->
+    <string name="payment_clearance_cancelled">Cancelled</string>
+    <string name="payment_mode_cash">Cash</string>
+    <string name="payment_mode_upi">UPI</string>
+    <string name="payment_mode_cheque">Cheque</string>
+    <string name="payment_mode_neft">NEFT</string>
+    <string name="payment_mode_rtgs">RTGS</string>
+    <string name="payment_mode_imps">IMPS</string>
+    <string name="payment_mode_net_banking">Net banking</string>
+    <string name="payment_mode_card">Card</string>
+    <string name="payment_mode_transfer">Bank transfer</string>
+    <string name="payment_mode_wallet">Wallet</string>
+    <string name="payment_mode_other">Other</string>
+
+    <!-- Dashboard -->
+    <string name="payment_summary_counts">%1$d to receive · %2$d to pay</string>
+    <string name="payment_section_active">Active</string>
+    <string name="payment_filter_all">All</string>
+    <string name="payment_filter_overdue">Overdue</string>
+    <string name="payment_filter_to_pay">To pay</string>
+    <string name="payment_filter_settled">Settled</string>
+    <string name="payment_search_hint">Search name or phone</string>
+    <string name="payment_empty_title">No dues to track yet</string>
+    <string name="payment_empty_body">When you finalise an invoice or record a payment, the customer\'s balance shows up here.</string>
+    <string name="payment_record_a_payment">Record a payment</string>
+    <string name="payment_set_opening_balance_cta">Set an opening balance</string>
+    <string name="payment_new_entry">New entry</string>
+    <string name="payment_settled">Settled</string>
+    <string name="payment_open_bills_count">%1$d open bills</string>
+
+    <!-- Record-payment wizard -->
+    <string name="payment_step_of">%1$d of 3</string>
+    <string name="payment_payment_mode_title">Payment mode</string>
+    <string name="payment_apply_to_bills_title">Apply to bills</string>
+    <string name="payment_choose_mode">Choose mode</string>
+    <string name="payment_next_choose_mode">Next · Choose mode</string>
+    <string name="payment_next_apply_to_bills">Next · Apply to bills</string>
+    <string name="payment_save_payment">Save payment</string>
+    <string name="payment_amount_received">Amount received</string>
+    <string name="payment_amount_paid">Amount paid</string>
+    <string name="payment_cash_no_reference">Cash needs no reference. It clears instantly.</string>
+    <string name="payment_cheque_pending_note">Saved as Pending. The balance updates now; mark it Cleared or Bounced from the receipts later.</string>
+    <string name="payment_note_optional">Note (optional)</string>
+    <string name="payment_received_on">Received on</string>
+    <string name="payment_cheque_date">Cheque date</string>
+    <string name="payment_drawee_bank">Drawee bank</string>
+    <string name="payment_applied_to_bills">Applied to bills</string>
+    <string name="payment_left_on_account">Left on account</string>
+    <string name="payment_auto_allocate">Auto-allocate oldest first</string>
+    <string name="payment_open_bills_oldest">Open bills · oldest first</string>
+    <string name="payment_kept_as_advance">%1$s kept as advance</string>
+    <string name="payment_on_account_credit">On-account credit — apply to the next bill anytime.</string>
+    <string name="payment_recorded">Payment recorded</string>
+    <string name="payment_saved_locally">Saved locally · will sync when online</string>
+    <string name="payment_new_balance">New balance</string>
+    <string name="payment_share_receipt">Share receipt</string>
+    <string name="payment_done">Done</string>
+    <string name="payment_change">Change</string>
+    <string name="payment_balance">Balance</string>
+    <string name="payment_status_part_paid">Part paid</string>
+    <string name="payment_status_fully_paid">Fully paid</string>
+    <string name="payment_status_unpaid">Unpaid</string>
+    <string name="payment_back">Back</string>
+
+    <!-- Statement + receipts -->
+    <string name="payment_send_statement">Send statement</string>
+    <string name="payment_add_entry">Add entry</string>
+    <string name="payment_current_balance">Current balance</string>
+    <string name="payment_statement_running">Statement · running balance</string>
+    <string name="payment_receipts">Receipts</string>
+    <string name="payment_record_adjustment">Record adjustment</string>
+    <string name="payment_add_for_party">Add for this customer</string>
+    <string name="payment_add_for_party_sub">Pre-filled to this customer · no re-pick</string>
+    <string name="payment_send_reminder">Send reminder</string>
+    <string name="payment_recorded_receipts">Recorded receipts</string>
+    <string name="payment_record_payment_sub">Money received or paid</string>
+    <string name="payment_record_adjustment_sub">Return · credit / debit note · discount · write-off</string>
+    <string name="payment_set_opening_balance_sub">As-of date · amount · direction</string>
+
+    <!-- Opening balance / adjustment -->
+    <string name="payment_as_of_date">As-of date</string>
+
+    <!-- Date picker -->
+    <string name="payment_pick_date">Pick date</string>
+    <string name="payment_ok">OK</string>
+    <string name="payment_cancel">Cancel</string>
+</resources>

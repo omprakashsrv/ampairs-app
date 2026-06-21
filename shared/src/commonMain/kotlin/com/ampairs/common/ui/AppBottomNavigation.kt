@@ -5,6 +5,7 @@ import CustomerRoute
 import InventoryRoute
 import InvoiceRoute
 import OrderRoute
+import PaymentRoute
 import ProductRoute
 import Route
 import WorkspaceRoute
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Icon
@@ -46,6 +48,7 @@ import ampairsapp.shared.generated.resources.nav_more_business
 import ampairsapp.shared.generated.resources.nav_more_tax_gst
 import ampairsapp.shared.generated.resources.nav_orders
 import ampairsapp.shared.generated.resources.nav_parties
+import ampairsapp.shared.generated.resources.nav_payments
 import ampairsapp.shared.generated.resources.nav_reports
 import ampairsapp.shared.generated.resources.nav_sales
 import ampairsapp.shared.generated.resources.nav_stock
@@ -90,6 +93,7 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.BUSINESS_PROFILE -> Route.Business
     ModuleCodes.UNIT_MANAGEMENT -> Route.Unit
     ModuleCodes.PRINTING -> Route.Printing
+    ModuleCodes.PAYMENT_COLLECTION -> Route.Payment
     else -> null
 }
 
@@ -125,6 +129,7 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
         || currentRoute is TemplateListRoute
         || currentRoute is TemplateEditRoute
         || currentRoute is PrintQueueRoute -> ModuleCodes.PRINTING
+    currentRoute is PaymentRoute || currentRoute is Route.Payment -> ModuleCodes.PAYMENT_COLLECTION
     else -> null
 }
 
@@ -146,6 +151,7 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.BUSINESS_PROFILE -> stringResource(Res.string.nav_more_business)
     ModuleCodes.UNIT_MANAGEMENT -> stringResource(Res.string.nav_units)
     ModuleCodes.PRINTING -> stringResource(Res.string.nav_printing)
+    ModuleCodes.PAYMENT_COLLECTION -> stringResource(Res.string.nav_payments)
     "business-reporting" -> stringResource(Res.string.nav_reports)
     "business-dashboard" -> stringResource(Res.string.nav_dashboard)
     "notification-system" -> stringResource(Res.string.nav_alerts)
@@ -163,6 +169,7 @@ fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.BUSINESS_PROFILE -> Icons.Default.Business
     ModuleCodes.UNIT_MANAGEMENT -> Icons.Default.Straighten
     ModuleCodes.PRINTING -> Icons.Default.Print
+    ModuleCodes.PAYMENT_COLLECTION -> Icons.Default.Payments
     "business-reporting" -> Icons.Default.Analytics
     "business-dashboard" -> Icons.Default.Dashboard
     "notification-system" -> Icons.Default.Notifications

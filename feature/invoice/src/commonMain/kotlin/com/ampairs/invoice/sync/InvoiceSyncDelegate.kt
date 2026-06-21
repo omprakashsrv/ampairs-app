@@ -37,8 +37,10 @@ class InvoiceSyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.INVOICE
 
-    // Invoices reference orders, customers, products and tax — pull/push those first.
-    override val dependsOn: List<SyncEntity> =
+    // Invoices reference orders, customers, products and tax — push/pull those first. Must be
+    // pushDependencies (not just dependsOn) so the PUSH sends the referenced order before the invoice
+    // (the backend enforces fk_invoice_order_ref → customer_order). dependsOn inherits this list.
+    override val pushDependencies: List<SyncEntity> =
         listOf(SyncEntity.ORDER, SyncEntity.CUSTOMER, SyncEntity.PRODUCT, SyncEntity.TAX)
 
     override suspend fun pullFromServer(): SyncResult =

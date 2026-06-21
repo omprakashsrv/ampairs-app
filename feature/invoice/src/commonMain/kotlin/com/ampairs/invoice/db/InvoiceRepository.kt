@@ -12,6 +12,9 @@ import com.ampairs.invoice.db.model.toDomainModel
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.domain.InvoiceItem
+import com.ampairs.invoice.domain.InvoiceStatus
+import com.ampairs.invoice.spi.FinalizedInvoice
+import com.ampairs.invoice.spi.InvoiceLifecycleListener
 import com.ampairs.invoice.domain.asDatabaseModel as invoiceAsEntity
 import com.ampairs.invoice.domain.asDomainModelSimple
 import com.ampairs.product.data.ProductDataService
@@ -36,13 +39,54 @@ class InvoiceRepository(
     val customerDataService: CustomerDataService,
     val syncStateDao: SyncStateDao,
     val sequenceNumberProvider: SequenceNumberProvider,
+    // Downstream reactions to a LOCAL invoice save (e.g. payment posts the receivable). Contributed
+    // via Metro @ContributesIntoSet(WorkspaceScope) — the payment module always provides one.
+    private val lifecycleListeners: Set<InvoiceLifecycleListener>,
 ) {
-    @Transaction
     suspend fun saveInvoice(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
+        val previous = invoiceDao.selectById(invoiceEntity.id)
         val numbered = if (invoiceEntity.invoice_number.isBlank()) assignNumber(invoiceEntity) else invoiceEntity
-        invoiceDao.insert(numbered.copy(synced = 0))
-        invoiceItemDao.insertAll(invoiceItems)
+        persist(numbered, invoiceItems)
         markPending()
+        // Fire AFTER the DB write completes (and outside the Room transaction) — the listeners write
+        // to a different database (the party ledger). Only local saves reach here; sync-pulled writes
+        // go straight to the DAO via the sync delegate, so this never causes sync churn.
+        notifyFinalizationChange(previous?.status, previous?.total_cost, numbered)
+    }
+
+    @Transaction
+    private suspend fun persist(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
+        invoiceDao.insert(invoiceEntity.copy(synced = 0))
+        invoiceItemDao.insertAll(invoiceItems)
+    }
+
+    /**
+     * Bridge a local billed/un-billed transition — or a billed-amount edit — to downstream listeners
+     * (spec 013, R9). A saved invoice counts as billed (post the receivable) unless it's an explicit
+     * DRAFT — the app saves invoices as NEW, so gating on INVOICEED would never fire. Re-posting is
+     * idempotent (deterministic LDG_<uid>), so an amount change refreshes the receivable.
+     */
+    private suspend fun notifyFinalizationChange(previousStatus: String?, previousTotal: Double?, entity: InvoiceEntity) {
+        if (lifecycleListeners.isEmpty()) return
+        fun billed(status: String?) = !status.isNullOrBlank() && !status.equals(InvoiceStatus.DRAFT.name, ignoreCase = true)
+        val nowBilled = billed(entity.status)
+        val wasBilled = billed(previousStatus)
+        val totalChanged = previousTotal == null || previousTotal != entity.total_cost
+        when {
+            nowBilled && (!wasBilled || totalChanged) -> {
+                if (entity.customer_id.isBlank()) return
+                val info = FinalizedInvoice(
+                    uid = entity.id,
+                    partyUid = entity.customer_id,
+                    invoiceNumber = entity.invoice_number,
+                    invoiceDate = entity.invoice_date,
+                    totalCost = entity.total_cost,
+                )
+                lifecycleListeners.forEach { it.onFinalized(info) }
+            }
+            wasBilled && !nowBilled ->
+                lifecycleListeners.forEach { it.onReverted(entity.id) }
+        }
     }
 
     suspend fun saveInvoice(invoice: Invoice?) {

@@ -6,6 +6,7 @@ import CustomerRoute
 import InventoryRoute
 import InvoiceRoute
 import OrderRoute
+import PaymentRoute
 import ProductRoute
 import Route
 import SubscriptionRoute
@@ -60,6 +61,7 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(Route.Agent::class)
                 subclass(Route.More::class)
                 subclass(Route.Printing::class)
+                subclass(Route.Payment::class)
 
                 // Auth Routes
                 subclass(AuthRoute.LoginRoot::class)
@@ -124,6 +126,15 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(InvoiceRoute.Root::class)
                 subclass(InvoiceRoute.InvoiceView::class)
                 subclass(InvoiceRoute.Invoices::class)
+
+                // Payment Routes
+                subclass(PaymentRoute.Dashboard::class)
+                subclass(PaymentRoute.SelectParty::class)
+                subclass(PaymentRoute.Record::class)
+                subclass(PaymentRoute.Adjustment::class)
+                subclass(PaymentRoute.OpeningBalance::class)
+                subclass(PaymentRoute.Statement::class)
+                subclass(PaymentRoute.PartyPayments::class)
 
                 // Business Routes
                 subclass(BusinessRoute.Overview::class)

@@ -51,6 +51,9 @@ sealed interface Route : NavKey {
     data object Printing : Route
 
     @Serializable
+    data object Payment : Route
+
+    @Serializable
     data object More : Route
 }
 
@@ -317,6 +320,32 @@ sealed interface InvoiceRoute : NavKey {
 
     @Serializable
     data object Invoices : InvoiceRoute
+}
+
+// Payment & Collection routes
+@Serializable
+sealed interface PaymentRoute : NavKey {
+    @Serializable
+    data object Dashboard : PaymentRoute
+
+    // purpose: "PAYMENT" | "ADJUSTMENT" | "OPENING"
+    @Serializable
+    data class SelectParty(val purpose: String = "PAYMENT") : PaymentRoute
+
+    @Serializable
+    data class Record(val partyUid: String = "", val voucherUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class Adjustment(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class OpeningBalance(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class Statement(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class PartyPayments(val partyUid: String = "") : PaymentRoute
 }
 
 // Business routes
