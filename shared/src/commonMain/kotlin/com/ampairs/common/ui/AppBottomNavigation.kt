@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Icon
@@ -49,6 +50,7 @@ import ampairsapp.shared.generated.resources.nav_reports
 import ampairsapp.shared.generated.resources.nav_sales
 import ampairsapp.shared.generated.resources.nav_stock
 import ampairsapp.shared.generated.resources.nav_tax
+import ampairsapp.shared.generated.resources.nav_printing
 import ampairsapp.shared.generated.resources.nav_units
 import ampairsapp.shared.generated.resources.nav_users
 import com.ampairs.customer.ui.CustomerCreateRoute
@@ -66,6 +68,10 @@ import com.ampairs.tax.ui.navigation.TaxCodeSearchRoute
 import com.ampairs.tax.ui.navigation.TaxConfigurationRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitFormRoute
+import com.ampairs.printing.ui.PrintQueueRoute
+import com.ampairs.printing.ui.PrinterListRoute
+import com.ampairs.printing.ui.TemplateEditRoute
+import com.ampairs.printing.ui.TemplateListRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.navigation.ModuleCodes
@@ -83,6 +89,7 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> Route.Tax
     ModuleCodes.BUSINESS_PROFILE -> Route.Business
     ModuleCodes.UNIT_MANAGEMENT -> Route.Unit
+    ModuleCodes.PRINTING -> Route.Printing
     else -> null
 }
 
@@ -113,6 +120,11 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
     currentRoute is Route.Unit
         || currentRoute is UnitListRoute
         || currentRoute is UnitFormRoute -> ModuleCodes.UNIT_MANAGEMENT
+    currentRoute is Route.Printing
+        || currentRoute is PrinterListRoute
+        || currentRoute is TemplateListRoute
+        || currentRoute is TemplateEditRoute
+        || currentRoute is PrintQueueRoute -> ModuleCodes.PRINTING
     else -> null
 }
 
@@ -133,6 +145,7 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> stringResource(Res.string.nav_tax)
     ModuleCodes.BUSINESS_PROFILE -> stringResource(Res.string.nav_more_business)
     ModuleCodes.UNIT_MANAGEMENT -> stringResource(Res.string.nav_units)
+    ModuleCodes.PRINTING -> stringResource(Res.string.nav_printing)
     "business-reporting" -> stringResource(Res.string.nav_reports)
     "business-dashboard" -> stringResource(Res.string.nav_dashboard)
     "notification-system" -> stringResource(Res.string.nav_alerts)
@@ -149,6 +162,7 @@ fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> Icons.Default.Calculate
     ModuleCodes.BUSINESS_PROFILE -> Icons.Default.Business
     ModuleCodes.UNIT_MANAGEMENT -> Icons.Default.Straighten
+    ModuleCodes.PRINTING -> Icons.Default.Print
     "business-reporting" -> Icons.Default.Analytics
     "business-dashboard" -> Icons.Default.Dashboard
     "notification-system" -> Icons.Default.Notifications

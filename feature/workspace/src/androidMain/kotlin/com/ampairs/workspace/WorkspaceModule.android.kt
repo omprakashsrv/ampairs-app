@@ -23,7 +23,6 @@ interface WorkspaceAndroidModule {
             )
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
-                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                 .enableMultiInstanceInvalidation()
                 .build()
         }

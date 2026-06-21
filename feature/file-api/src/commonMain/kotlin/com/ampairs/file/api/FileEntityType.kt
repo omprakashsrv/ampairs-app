@@ -7,4 +7,7 @@ enum class FileEntityType(val backendValue: String) {
     CATEGORY("CATEGORY"),
     SUB_CATEGORY("SUB_CATEGORY"),
     GROUP("GROUP"),
+
+    /** A static HTML print-template file (one per static template, entityUid = template id). */
+    PRINT_TEMPLATE("PRINT_TEMPLATE"),
 }

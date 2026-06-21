@@ -14,4 +14,7 @@ interface FileRepository {
     suspend fun deleteFile(fileUid: String): Result<Unit>
     suspend fun setPrimaryFile(entityType: FileEntityType, entityUid: String, fileUid: String): Result<Unit>
     suspend fun pullFromServer(entityType: FileEntityType, entityUid: String): Result<Int>
+
+    /** Read a stored file's raw bytes from the local cache. Fails if it isn't cached on this device. */
+    suspend fun readFileBytes(fileUid: String): Result<ByteArray>
 }

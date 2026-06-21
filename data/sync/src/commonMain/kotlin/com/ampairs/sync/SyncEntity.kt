@@ -20,7 +20,8 @@ enum class SyncEntity(val entityType: String) {
     FILE("file"),
     ECOM_PRODUCT("ecom_product"),
     ECOM_ADDRESS("ecom_address"),
-    ECOM_ORDER("ecom_order");
+    ECOM_ORDER("ecom_order"),
+    PRINT_TEMPLATE("print_template");
 
     companion object {
         fun fromEntityType(type: String): SyncEntity? =

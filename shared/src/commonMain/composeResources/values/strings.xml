@@ -31,6 +31,7 @@
     <string name="nav_inventory">Inventory</string>
     <string name="nav_tax">Tax</string>
     <string name="nav_units">Units</string>
+    <string name="nav_printing">Printing</string>
     <string name="nav_reports">Reports</string>
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_alerts">Alerts</string>

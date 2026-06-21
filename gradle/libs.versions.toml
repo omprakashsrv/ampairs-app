@@ -27,6 +27,7 @@ paging-common = "3.5.0"
 image-loader = "1.10.0"
 splash-screen = "1.2.0"
 uuid = "0.8.4"
+grant = "2.2.0"
 adaptive = "1.2.0"
 kermit = "2.1.0"
 # Navigation 3 (new paradigm with user-owned back stack)
@@ -41,6 +42,8 @@ firebase-messaging = "24.1.2"
 datastore = "1.2.1"
 androidx-work-runtime = "2.11.2"
 jmapviewer = "2.25"
+# OpenJFX (desktop-only): JavaFX WebView powers the high-fidelity page-template preview + print.
+openjfx = "21.0.5"
 filekit = "0.14.1"
 play-services-location = "21.3.0"
 maps-compose = "8.3.0"
@@ -81,6 +84,7 @@ ktor-client-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json"
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-websockets = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
+ktor-network = { module = "io.ktor:ktor-network", version.ref = "ktor" }
 ktor-serialization-kotlinx-xml = { module = "io.ktor:ktor-serialization-kotlinx-xml", version.ref = "ktor" }
 
 krossbow-stomp-core = { module = "org.hildan.krossbow:krossbow-stomp-core", version.ref = "krossbow" }
@@ -105,6 +109,8 @@ google-firebase-perf = { group = "com.google.firebase", name = "firebase-perf-kt
 google-firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx", version.ref = "firebase-messaging" }
 
 uuid = { group = "com.benasher44", name = "uuid", version.ref = "uuid" }
+grant-core = { module = "dev.brewkits:grant-core", version.ref = "grant" }
+grant-bluetooth = { module = "dev.brewkits:grant-bluetooth", version.ref = "grant" }
 material3-adaptive = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive", version.ref = "adaptive" }
 material3-adaptive-layout = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-layout", version.ref = "adaptive" }
 material3-adaptive-navigation = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-navigation", version.ref = "adaptive" }
