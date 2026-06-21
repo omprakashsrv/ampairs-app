@@ -55,6 +55,9 @@ class InvoiceLedgerPoster(
         )
     }
 
+    /** Reverse a finalized invoice's receivable when it's reverted/cancelled locally (FR-014). */
+    suspend fun reverseForInvoice(invoiceUid: String) = poster.reverseDocumentEntry(invoiceUid)
+
     /** Backfill ledger entries for finalized invoices missing one. Returns the count posted. */
     suspend fun backfillFinalizedInvoices(): Int {
         var posted = 0

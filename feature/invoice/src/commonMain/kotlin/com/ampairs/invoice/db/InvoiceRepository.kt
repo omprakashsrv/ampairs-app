@@ -12,6 +12,9 @@ import com.ampairs.invoice.db.model.toDomainModel
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.domain.InvoiceItem
+import com.ampairs.invoice.domain.InvoiceStatus
+import com.ampairs.invoice.spi.FinalizedInvoice
+import com.ampairs.invoice.spi.InvoiceLifecycleListener
 import com.ampairs.invoice.domain.asDatabaseModel as invoiceAsEntity
 import com.ampairs.invoice.domain.asDomainModelSimple
 import com.ampairs.product.data.ProductDataService
@@ -36,13 +39,48 @@ class InvoiceRepository(
     val customerDataService: CustomerDataService,
     val syncStateDao: SyncStateDao,
     val sequenceNumberProvider: SequenceNumberProvider,
+    // Downstream reactions to a LOCAL invoice save (e.g. payment posts the receivable). Contributed
+    // via Metro @ContributesIntoSet(WorkspaceScope) — the payment module always provides one.
+    private val lifecycleListeners: Set<InvoiceLifecycleListener>,
 ) {
-    @Transaction
     suspend fun saveInvoice(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
+        val previousStatus = invoiceDao.selectById(invoiceEntity.id)?.status
         val numbered = if (invoiceEntity.invoice_number.isBlank()) assignNumber(invoiceEntity) else invoiceEntity
-        invoiceDao.insert(numbered.copy(synced = 0))
-        invoiceItemDao.insertAll(invoiceItems)
+        persist(numbered, invoiceItems)
         markPending()
+        // Fire AFTER the DB write completes (and outside the Room transaction) — the listeners write
+        // to a different database (the party ledger). Only local saves reach here; sync-pulled writes
+        // go straight to the DAO via the sync delegate, so this never causes sync churn.
+        notifyFinalizationChange(previousStatus, numbered)
+    }
+
+    @Transaction
+    private suspend fun persist(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
+        invoiceDao.insert(invoiceEntity.copy(synced = 0))
+        invoiceItemDao.insertAll(invoiceItems)
+    }
+
+    /** Bridge a local finalize/un-finalize transition to downstream listeners (spec 013, R9). */
+    private suspend fun notifyFinalizationChange(previousStatus: String?, entity: InvoiceEntity) {
+        if (lifecycleListeners.isEmpty()) return
+        val finalized = InvoiceStatus.INVOICEED.name
+        val nowFinalized = entity.status.equals(finalized, ignoreCase = true)
+        val wasFinalized = previousStatus?.equals(finalized, ignoreCase = true) == true
+        when {
+            nowFinalized && !wasFinalized -> {
+                if (entity.customer_id.isBlank()) return
+                val info = FinalizedInvoice(
+                    uid = entity.id,
+                    partyUid = entity.customer_id,
+                    invoiceNumber = entity.invoice_number,
+                    invoiceDate = entity.invoice_date,
+                    totalCost = entity.total_cost,
+                )
+                lifecycleListeners.forEach { it.onFinalized(info) }
+            }
+            wasFinalized && !nowFinalized ->
+                lifecycleListeners.forEach { it.onReverted(entity.id) }
+        }
     }
 
     suspend fun saveInvoice(invoice: Invoice?) {
