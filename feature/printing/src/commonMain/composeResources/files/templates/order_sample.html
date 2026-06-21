@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<!--
+  Sample STATIC order template for the Ampairs printing module.
+  Import it via Templates → Import HTML template → ORDER.
+
+  Placeholders resolved at print time (the file itself is never modified):
+    {{seller_name}} {{order_number}} {{order_date}}
+    {{customer.customer_name}}
+    {{base_price}} {{total_tax}} {{total_cost}}
+    {{#lines}} ... {{description}} {{quantity}} {{price}} {{total_cost}} ... {{/lines}}
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --accent: #0a8f5b; --ink: #1a1a1a; --muted: #6b7280; --line: #e3e6ee; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; color: var(--ink); font-size: 13px; line-height: 1.45; }
+  .sheet { max-width: 820px; margin: 0 auto; padding: 32px; }
+
+  .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--accent); padding-bottom: 14px; }
+  .brand { font-size: 24px; font-weight: 700; color: var(--accent); letter-spacing: .3px; }
+  .brand small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+  .doc-title { text-align: right; }
+  .doc-title h1 { margin: 0; font-size: 20px; letter-spacing: 3px; }
+  .doc-meta { margin-top: 6px; color: var(--muted); font-size: 12px; }
+  .doc-meta b { color: var(--ink); }
+
+  .parties { margin: 22px 0 12px; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 2px; }
+  .party-name { font-size: 15px; font-weight: 600; }
+
+  table.items { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  table.items thead th { border-bottom: 2px solid var(--accent); color: var(--ink); font-weight: 600;
+    font-size: 12px; text-transform: uppercase; letter-spacing: .5px; text-align: left; padding: 8px 10px; }
+  table.items thead th.num, table.items td.num { text-align: right; }
+  table.items tbody td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+
+  .totals { width: 300px; margin-left: auto; margin-top: 14px; }
+  .totals .row { display: flex; justify-content: space-between; padding: 6px 2px; }
+  .totals .row.grand { border-top: 2px solid var(--ink); margin-top: 4px; padding-top: 10px;
+    font-size: 16px; font-weight: 700; color: var(--accent); }
+
+  .note { margin-top: 28px; padding: 12px 14px; background: #f3faf6; border: 1px solid #cdeadd;
+    border-radius: 6px; color: #1a5e41; font-size: 12px; }
+  .footer { margin-top: 22px; color: var(--muted); font-size: 11px; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="top">
+      <div class="brand">{{seller_name}}<small>Purchase Order</small></div>
+      <div class="doc-title">
+        <h1>ORDER</h1>
+        <div class="doc-meta">No: <b>{{order_number}}</b><br>Date: <b>{{order_date}}</b></div>
+      </div>
+    </div>
+
+    <div class="parties">
+      <div class="label">Customer</div>
+      <div class="party-name">{{customer.customer_name}}</div>
+    </div>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th class="num">Qty</th>
+          <th class="num">Rate</th>
+          <th class="num">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#lines}}
+        <tr>
+          <td>{{description}}</td>
+          <td class="num">{{quantity}}</td>
+          <td class="num">{{price}}</td>
+          <td class="num">{{total_cost}}</td>
+        </tr>
+        {{/lines}}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="row"><span>Sub Total</span><span>{{base_price}}</span></div>
+      <div class="row"><span>Tax</span><span>{{total_tax}}</span></div>
+      <div class="row grand"><span>Order Total</span><span>{{total_cost}}</span></div>
+    </div>
+
+    <div class="note">Please review the order details above. Goods once delivered as per this order are subject to our standard terms.</div>
+    <div class="footer">Thank you for your business.</div>
+  </div>
+</body>
+</html>
