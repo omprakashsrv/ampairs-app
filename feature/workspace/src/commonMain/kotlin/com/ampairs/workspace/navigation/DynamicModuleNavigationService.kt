@@ -130,7 +130,8 @@ class DynamicModuleNavigationService {
             ModuleCodes.INVOICE_BILLING,
             ModuleCodes.INVENTORY_MANAGEMENT,
             ModuleCodes.TAX_CODE_MANAGEMENT,
-            ModuleCodes.UNIT_MANAGEMENT -> true
+            ModuleCodes.UNIT_MANAGEMENT,
+            ModuleCodes.PRINTING -> true
             else -> false
         }
     }

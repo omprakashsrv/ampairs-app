@@ -22,6 +22,8 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Ampairs uses your local network to send print jobs to nearby network and AirPrint printers.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

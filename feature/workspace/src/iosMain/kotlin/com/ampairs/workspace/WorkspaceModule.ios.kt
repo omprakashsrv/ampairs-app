@@ -21,7 +21,6 @@ interface WorkspaceIosModule {
             )
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(DispatcherProvider.io)
-                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                 .build()
         }
     }

@@ -34,7 +34,6 @@ interface AuthIosModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(DispatcherProvider.io)
                 .addMigrations(AUTH_MIGRATION_2_3)
-                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                 .build()
         }
 

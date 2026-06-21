@@ -192,6 +192,16 @@ fun navigateToMenuItemNav3(
         route == "inventory" -> backStack.add(Route.Inventory)
         route == "tax" -> backStack.add(Route.Tax)
         route == "subscription" -> backStack.add(Route.Subscription)
+        route == "printing" -> backStack.add(Route.Printing)
+
+        route.startsWith("/printing") -> {
+            when (route) {
+                "/printing", "/printing/printers" -> backStack.add(Route.Printing)
+                "/printing/templates" -> backStack.add(com.ampairs.printing.ui.TemplateListRoute)
+                "/printing/queue" -> backStack.add(com.ampairs.printing.ui.PrintQueueRoute)
+                else -> backStack.add(Route.Printing)
+            }
+        }
 
         // Handle specific menu item paths
         route.startsWith("/customers") -> {

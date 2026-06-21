@@ -13,6 +13,5 @@ actual inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.creat
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(queryDispatcher)
         .apply { if (migrations.isNotEmpty()) addMigrations(*migrations.toTypedArray()) }
-        .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
         .build()
 }
