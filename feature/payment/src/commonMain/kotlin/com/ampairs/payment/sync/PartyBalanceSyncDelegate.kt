@@ -5,6 +5,7 @@ import com.ampairs.payment.data.api.PaymentApi
 import com.ampairs.payment.data.api.toApi
 import com.ampairs.payment.data.api.toEntity
 import com.ampairs.payment.data.db.dao.PartyBalanceDao
+import com.ampairs.payment.data.repository.PaymentLedgerPoster
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
@@ -14,13 +15,13 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
 /**
- * Owns party-balance ↔ server traffic (spec 013). [SyncEntity.PARTY_BALANCE] is **pull-authoritative**:
- * the server's `cached_closing_balance` wins on pull (clients recompute locally between syncs for a
- * live UI). Push carries only **opening-balance edits** (unsynced rows); the server recomputes and
- * returns the authoritative closing.
+ * Owns party-balance ↔ server traffic (spec 013). The server is authoritative for the **opening
+ * balance**, but the **closing balance is recomputed locally** after every upsert — the client is the
+ * sole author of invoice-derived receivables (the backend no longer posts them), so its local ledger
+ * is always the authority for the closing. Trusting the server's `cached_closing_balance` would stomp
+ * the local receivable back to the server's (stale) value. Push carries opening-balance edits only.
  *
- * Pulled last — it depends on every ledger-affecting entity so the server's recomputed balance lands
- * after the rows that produced it.
+ * Pulled last — it depends on every ledger-affecting entity so the local recompute sees all entries.
  */
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
@@ -28,6 +29,7 @@ import dev.zacsweers.metro.Inject
 class PartyBalanceSyncDelegate(
     private val api: PaymentApi,
     private val partyBalanceDao: PartyBalanceDao,
+    private val poster: PaymentLedgerPoster,
     private val syncStateDao: SyncStateDao,
 ) : SyncDelegate {
 
@@ -59,8 +61,12 @@ class PartyBalanceSyncDelegate(
         for (batch in unsynced.chunked(100)) {
             try {
                 val response = api.pushPartyBalances(batch.map { it.toApi() })
-                // Apply the server's authoritative closing back to the local cache.
-                response.forEach { partyBalanceDao.insert(it.toEntity(synced = true)) }
+                // Take the server's opening fields, then recompute the closing from the LOCAL ledger
+                // (the client owns invoice receivables; the server's closing may be stale/zero).
+                response.forEach {
+                    partyBalanceDao.insert(it.toEntity(synced = true))
+                    poster.recomputeAndCache(it.partyUid)
+                }
                 batch.forEach { partyBalanceDao.markSynced(it.uid) }
                 synced += batch.size
             } catch (e: Exception) {
@@ -81,17 +87,21 @@ class PartyBalanceSyncDelegate(
         var total = 0
         var page = 0
         var maxTime = ""
+        val affectedParties = mutableSetOf<String>()
         var hasNext: Boolean
         do {
             val pageResponse = api.getPartyBalancesSync(lastSync, page, batchSize)
             val content = pageResponse.content
-            for (api in content) {
-                val existing = partyBalanceDao.getByUid(api.uid)
+            for (row in content) {
+                val existing = partyBalanceDao.getByUid(row.uid)
                 when {
-                    // Local unsynced opening edit wins; everything else (incl. server closing) is authoritative.
+                    // Local unsynced opening edit wins; otherwise take the server's opening fields.
                     existing != null && existing.synced == 0L -> { /* keep local edit */ }
-                    !api.active -> partyBalanceDao.deleteByUid(api.uid)
-                    else -> partyBalanceDao.insert(api.toEntity(synced = true))
+                    !row.active -> partyBalanceDao.deleteByUid(row.uid)
+                    else -> {
+                        partyBalanceDao.insert(row.toEntity(synced = true))
+                        affectedParties += row.partyUid
+                    }
                 }
             }
             val batchMax = content.mapNotNull { it.updatedAt?.takeIf { s -> s.isNotBlank() } }.maxOrNull() ?: ""
@@ -100,6 +110,10 @@ class PartyBalanceSyncDelegate(
             page++
             hasNext = pageResponse.hasNext
         } while (hasNext && total < 10000)
+
+        // Recompute closing from the LOCAL ledger — the client owns invoice receivables, so the
+        // server's pulled cached_closing must not stomp the local value.
+        affectedParties.forEach { poster.recomputeAndCache(it) }
 
         if (maxTime.isNotBlank()) syncStateDao.setLastSyncedAtIso(SyncEntity.PARTY_BALANCE, maxTime)
         Result.success(total)
