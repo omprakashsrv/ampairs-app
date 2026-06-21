@@ -25,6 +25,9 @@ fun paymentEntryProvider(
             onNewAdjustment = { backStack.add(PaymentRoute.SelectParty(purpose = "ADJUSTMENT")) },
             onSetOpeningBalance = { backStack.add(PaymentRoute.SelectParty(purpose = "OPENING")) },
             onOpenParty = { partyUid -> backStack.add(PaymentRoute.Statement(partyUid = partyUid)) },
+            onRecordPaymentForParty = { partyUid -> backStack.add(PaymentRoute.Record(partyUid = partyUid)) },
+            onAdjustmentForParty = { partyUid -> backStack.add(PaymentRoute.Adjustment(partyUid = partyUid)) },
+            onOpeningForParty = { partyUid -> backStack.add(PaymentRoute.OpeningBalance(partyUid = partyUid)) },
         )
     }
 
@@ -39,6 +42,7 @@ fun paymentEntryProvider(
                     else -> backStack.add(PaymentRoute.Record(partyUid = partyUid))
                 }
             },
+            onBack = { backStack.removeLastOrNull() },
         )
     }
 
@@ -47,6 +51,7 @@ fun paymentEntryProvider(
             partyUid = key.partyUid,
             voucherUid = key.voucherUid,
             onSaved = { backStack.removeLastOrNull() },
+            onBack = { backStack.removeLastOrNull() },
         )
     }
 
@@ -54,6 +59,7 @@ fun paymentEntryProvider(
         AdjustmentScreen(
             partyUid = key.partyUid,
             onSaved = { backStack.removeLastOrNull() },
+            onBack = { backStack.removeLastOrNull() },
         )
     }
 
@@ -61,6 +67,7 @@ fun paymentEntryProvider(
         OpeningBalanceScreen(
             partyUid = key.partyUid,
             onSaved = { backStack.removeLastOrNull() },
+            onBack = { backStack.removeLastOrNull() },
         )
     }
 
@@ -68,6 +75,10 @@ fun paymentEntryProvider(
         PartyStatementScreen(
             partyUid = key.partyUid,
             onOpenPayments = { backStack.add(PaymentRoute.PartyPayments(partyUid = key.partyUid)) },
+            onRecordPayment = { backStack.add(PaymentRoute.Record(partyUid = key.partyUid)) },
+            onAdjustment = { backStack.add(PaymentRoute.Adjustment(partyUid = key.partyUid)) },
+            onOpeningBalance = { backStack.add(PaymentRoute.OpeningBalance(partyUid = key.partyUid)) },
+            onBack = { backStack.removeLastOrNull() },
         )
     }
 
@@ -77,6 +88,7 @@ fun paymentEntryProvider(
             onEditVoucher = { voucherUid ->
                 backStack.add(PaymentRoute.Record(partyUid = key.partyUid, voucherUid = voucherUid))
             },
+            onBack = { backStack.removeLastOrNull() },
         )
     }
 

@@ -19,6 +19,8 @@ data class PartyBalance(
     val cachedClosingBalance: Money = Money.ZERO,
     val lastComputedAt: String = "",
     val active: Boolean = true,
+    /** Local offline-sync flag — `false` ⇒ a local edit is still pending push (UI shows cloud_off). */
+    val synced: Boolean = true,
 ) {
     /** Opening folded into the balance as a signed contribution (data-model.md). */
     val openingSigned: Money get() = openingBalance.signed(openingDirection)

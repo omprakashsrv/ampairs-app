@@ -36,6 +36,7 @@ fun PartyBalanceEntity.toDomain(): PartyBalance = PartyBalance(
     cachedClosingBalance = Money(cached_closing_minor),
     lastComputedAt = last_computed_at,
     active = active == 1L,
+    synced = synced == 1L,
 )
 
 fun PartyBalance.toEntity(synced: Boolean = false): PartyBalanceEntity = PartyBalanceEntity(

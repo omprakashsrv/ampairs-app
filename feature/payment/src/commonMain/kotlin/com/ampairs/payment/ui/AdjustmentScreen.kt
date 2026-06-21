@@ -4,6 +4,7 @@ import ampairsapp.feature.payment.generated.resources.Res
 import ampairsapp.feature.payment.generated.resources.payment_adjustment
 import ampairsapp.feature.payment.generated.resources.payment_adjustment_type
 import ampairsapp.feature.payment.generated.resources.payment_amount
+import ampairsapp.feature.payment.generated.resources.payment_back
 import ampairsapp.feature.payment.generated.resources.payment_narration
 import ampairsapp.feature.payment.generated.resources.payment_save
 import androidx.compose.foundation.layout.Arrangement
@@ -16,9 +17,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -46,6 +51,7 @@ import org.jetbrains.compose.resources.stringResource
 fun AdjustmentScreen(
     partyUid: String,
     onSaved: () -> Unit,
+    onBack: () -> Unit = onSaved,
     viewModel: AdjustmentViewModel = assistedMetroViewModel<AdjustmentViewModel, AdjustmentViewModel.Factory>(
         key = partyUid,
     ) { create(partyUid) },
@@ -63,7 +69,16 @@ fun AdjustmentScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(Res.string.payment_adjustment)) }) },
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.payment_back))
+                    }
+                },
+                title = { Text(stringResource(Res.string.payment_adjustment)) },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Column(
@@ -74,7 +89,7 @@ fun AdjustmentScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(state.partyName.ifBlank { partyUid })
+            PartyHeaderChip(name = state.partyName.ifBlank { partyUid })
 
             var typeMenu by remember { mutableStateOf(false) }
             OutlinedButton(onClick = { typeMenu = true }, modifier = Modifier.fillMaxWidth()) {

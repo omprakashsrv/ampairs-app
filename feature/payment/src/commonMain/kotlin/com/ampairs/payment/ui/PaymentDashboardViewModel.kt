@@ -18,11 +18,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** A party row for the collections list: its balance plus the resolved customer display name. */
-data class PartyRow(val balance: PartyBalance, val name: String)
+/** A party row for the collections list: its balance plus resolved customer display fields. */
+data class PartyRow(
+    val balance: PartyBalance,
+    val name: String,
+    val phone: String? = null,
+    /** True when a local edit on this balance is still pending push (UI shows a cloud_off icon). */
+    val pendingSync: Boolean = false,
+)
 
 /**
  * Collections landing for the payment module (spec 013). Lists every party's current closing
@@ -39,13 +46,23 @@ class PaymentDashboardViewModel(
     private val customerDataService: CustomerDataService,
 ) : ViewModel() {
 
+    private val _loading = MutableStateFlow(true)
+    /** True until the first balance emission arrives — drives the dashboard loading skeleton. */
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
+
     val rows: StateFlow<List<PartyRow>> =
         partyBalanceRepository.observeAll()
+            .onEach { _loading.value = false }
             .map { list ->
                 list.map { balance ->
-                    val name = customerDataService.getById(balance.partyUid)?.name
-                        ?.ifBlank { balance.partyUid } ?: balance.partyUid
-                    PartyRow(balance, name)
+                    val customer = customerDataService.getById(balance.partyUid)
+                    val name = customer?.name?.ifBlank { balance.partyUid } ?: balance.partyUid
+                    PartyRow(
+                        balance = balance,
+                        name = name,
+                        phone = customer?.phone,
+                        pendingSync = !balance.synced,
+                    )
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
