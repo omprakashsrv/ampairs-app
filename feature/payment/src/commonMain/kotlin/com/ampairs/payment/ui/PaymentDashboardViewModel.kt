@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.payment.data.repository.PartyBalanceRepository
+import com.ampairs.payment.domain.AgingSummary
 import com.ampairs.payment.domain.InvoiceLedgerPoster
+import com.ampairs.payment.domain.OutstandingService
 import com.ampairs.payment.domain.PartyBalance
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -30,6 +32,7 @@ data class PartyRow(val balance: PartyBalance, val name: String)
 class PaymentDashboardViewModel(
     partyBalanceRepository: PartyBalanceRepository,
     private val invoiceLedgerPoster: InvoiceLedgerPoster,
+    private val outstandingService: OutstandingService,
     private val customerDataService: CustomerDataService,
 ) : ViewModel() {
 
@@ -43,6 +46,12 @@ class PaymentDashboardViewModel(
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Workspace-wide receivable/payable totals + aging buckets (US4), recomputed locally on change. */
+    val aging: StateFlow<AgingSummary?> =
+        partyBalanceRepository.observeAll()
+            .map { outstandingService.agingSummary() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
         // Reconcile finalized invoices into the party ledger locally (offline) so sales receivables
