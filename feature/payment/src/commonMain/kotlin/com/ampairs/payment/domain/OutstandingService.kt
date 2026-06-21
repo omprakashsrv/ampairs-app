@@ -41,12 +41,15 @@ class OutstandingService(
     private val customerDataService: CustomerDataService,
 ) {
 
-    private val finalizedStatus = "INVOICEED" // matches InvoiceStatus.INVOICEED (codebase spelling)
+    // A saved invoice is a real (billable) sale unless it's an explicit DRAFT. The mobile app saves
+    // invoices as NEW (never INVOICEED), so we treat any non-draft status as billed.
+    private fun isBilled(status: String): Boolean =
+        status.isNotBlank() && !status.equals("DRAFT", ignoreCase = true)
 
     /** Open (unpaid) bills for a party, classified into aging buckets. */
     suspend fun openBills(partyUid: String, bucketBoundaries: List<Int> = DEFAULT_BUCKETS): List<OpenBill> {
         val invoices = invoiceDao.getInvoicesByCustomer(partyUid)
-            .filter { it.status.equals(finalizedStatus, ignoreCase = true) }
+            .filter { isBilled(it.status) }
         val creditDays = customerDataService.getById(partyUid)?.creditDays ?: 0
         val now = Clock.System.now()
         return invoices.mapNotNull { inv ->

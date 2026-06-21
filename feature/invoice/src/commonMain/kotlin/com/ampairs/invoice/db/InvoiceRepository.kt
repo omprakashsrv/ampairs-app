@@ -60,12 +60,16 @@ class InvoiceRepository(
         invoiceItemDao.insertAll(invoiceItems)
     }
 
-    /** Bridge a local finalize/un-finalize transition to downstream listeners (spec 013, R9). */
+    /**
+     * Bridge a local billed/un-billed transition to downstream listeners (spec 013, R9). A saved
+     * invoice counts as billed (post the receivable) unless it's an explicit DRAFT — the app saves
+     * invoices as NEW, so gating on INVOICEED would never fire.
+     */
     private suspend fun notifyFinalizationChange(previousStatus: String?, entity: InvoiceEntity) {
         if (lifecycleListeners.isEmpty()) return
-        val finalized = InvoiceStatus.INVOICEED.name
-        val nowFinalized = entity.status.equals(finalized, ignoreCase = true)
-        val wasFinalized = previousStatus?.equals(finalized, ignoreCase = true) == true
+        fun billed(status: String?) = !status.isNullOrBlank() && !status.equals(InvoiceStatus.DRAFT.name, ignoreCase = true)
+        val nowFinalized = billed(entity.status)
+        val wasFinalized = billed(previousStatus)
         when {
             nowFinalized && !wasFinalized -> {
                 if (entity.customer_id.isBlank()) return
