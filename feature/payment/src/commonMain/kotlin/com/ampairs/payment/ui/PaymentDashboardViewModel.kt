@@ -12,8 +12,11 @@ import com.ampairs.payment.domain.PartyBalance
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -46,6 +49,18 @@ class PaymentDashboardViewModel(
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+
+    fun onQueryChange(text: String) { _query.value = text }
+
+    /** Rows filtered by the customer-name search box (case-insensitive; blank shows all). */
+    val filteredRows: StateFlow<List<PartyRow>> =
+        combine(rows, _query) { all, q ->
+            val term = q.trim()
+            if (term.isBlank()) all else all.filter { it.name.contains(term, ignoreCase = true) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Workspace-wide receivable/payable totals + aging buckets (US4), recomputed locally on change. */
     val aging: StateFlow<AgingSummary?> =

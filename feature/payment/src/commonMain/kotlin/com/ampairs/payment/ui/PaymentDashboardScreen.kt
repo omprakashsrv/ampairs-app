@@ -6,6 +6,7 @@ import ampairsapp.feature.payment.generated.resources.payment_collections_title
 import ampairsapp.feature.payment.generated.resources.payment_no_data
 import ampairsapp.feature.payment.generated.resources.payment_opening_balance
 import ampairsapp.feature.payment.generated.resources.payment_record_payment
+import ampairsapp.feature.payment.generated.resources.payment_search_customer
 import ampairsapp.feature.payment.generated.resources.payment_to_pay
 import ampairsapp.feature.payment.generated.resources.payment_to_receive
 import ampairsapp.feature.payment.generated.resources.payment_total_payable
@@ -22,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -31,6 +33,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -68,6 +71,8 @@ fun PaymentDashboardScreen(
     viewModel: PaymentDashboardViewModel = metroViewModel(),
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
+    val filteredRows by viewModel.filteredRows.collectAsStateWithLifecycle()
+    val query by viewModel.query.collectAsStateWithLifecycle()
     val aging by viewModel.aging.collectAsStateWithLifecycle()
     val locale = LocalAppLocale.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -102,7 +107,17 @@ fun PaymentDashboardScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             aging?.let { AgingSummaryCard(it, locale) }
-            if (rows.isEmpty()) {
+            if (rows.isNotEmpty()) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = viewModel::onQueryChange,
+                    label = { Text(stringResource(Res.string.payment_search_customer)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                )
+            }
+            if (filteredRows.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -111,7 +126,7 @@ fun PaymentDashboardScreen(
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(rows, key = { it.balance.uid }) { row ->
+                    items(filteredRows, key = { it.balance.uid }) { row ->
                         val receivable = row.balance.closingDirection == Direction.DR
                         ListItem(
                             headlineContent = { Text(row.name) },

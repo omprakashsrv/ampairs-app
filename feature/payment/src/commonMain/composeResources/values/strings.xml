@@ -20,6 +20,7 @@
     <string name="payment_paid">Paid</string>
     <string name="payment_save">Save</string>
     <string name="payment_select_party">Select party</string>
+    <string name="payment_search_customer">Search customer</string>
 
     <string name="payment_to_receive">To receive</string>
     <string name="payment_to_pay">To pay</string>
