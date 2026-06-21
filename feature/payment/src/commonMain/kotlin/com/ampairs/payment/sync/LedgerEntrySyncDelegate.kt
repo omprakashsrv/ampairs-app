@@ -38,7 +38,9 @@ class LedgerEntrySyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.LEDGER_ENTRY
 
-    override val dependsOn: List<SyncEntity> =
+    // pushDependencies so the PUSH (not just pull) sends parents first — a ledger entry references a
+    // customer (party) and its source invoice/order, which the server expects to already exist.
+    override val pushDependencies: List<SyncEntity> =
         listOf(SyncEntity.CUSTOMER, SyncEntity.INVOICE, SyncEntity.ORDER)
 
     override suspend fun pullFromServer(): SyncResult =

@@ -4,10 +4,18 @@ import com.ampairs.payment.data.db.entity.AdjustmentVoucherEntity
 import com.ampairs.payment.data.db.entity.LedgerEntryEntity
 import com.ampairs.payment.data.db.entity.PartyBalanceEntity
 import com.ampairs.payment.data.db.entity.PaymentAllocationEntity
+import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.payment.data.db.entity.PaymentVoucherEntity
 import com.ampairs.payment.domain.Money
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.ExperimentalTime
+
+/** Normalize a stored date ("yyyy-MM-dd HH:mm:ss" or ISO) to an ISO-8601 Instant the backend parses.
+ *  Invoice-derived ledger entries inherit the invoice's space-formatted date; sync must send ISO. */
+@OptIn(ExperimentalTime::class)
+private fun String.toIsoInstantOrSelf(): String =
+    if (isBlank()) this else DateTimeAdapter.fromDateTimeString(this)?.toString() ?: this
 
 /**
  * Wire DTOs for the payment `/sync` contracts (spec 013 contracts/payment-sync.md). Money is sent
@@ -119,7 +127,7 @@ fun PartyBalanceApiModel.toEntity(synced: Boolean = true): PartyBalanceEntity = 
 fun LedgerEntryEntity.toApi(): LedgerEntryApiModel = LedgerEntryApiModel(
     uid = uid,
     partyUid = party_uid,
-    entryDate = entry_date,
+    entryDate = entry_date.toIsoInstantOrSelf(),
     entryType = entry_type,
     direction = direction,
     amount = Money(amount_minor).toDecimalString(),

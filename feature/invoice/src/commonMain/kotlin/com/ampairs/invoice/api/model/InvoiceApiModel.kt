@@ -114,6 +114,12 @@ fun InvoiceApiModel.toInvoiceDatabaseModel(): InvoiceEntity {
 // --- Entity -> API (for offline sync push, spec 010). Reads product_id/tax_code straight off the
 // entity, so no product lookup is needed; reverses toInvoiceDatabaseModel. ---
 
+/** Normalize a stored date string ("yyyy-MM-dd HH:mm:ss" or ISO) to an ISO-8601 Instant the backend
+ *  (`java.time.Instant`) can parse. The entity stores invoice_date space-formatted; sync must send ISO. */
+@OptIn(ExperimentalTime::class)
+private fun String.toIsoInstantOrSelf(): String =
+    if (isBlank()) this else DateTimeAdapter.fromDateTimeString(this)?.toString() ?: this
+
 private fun String?.decodeTaxInfos(): List<TaxInfoApiModel>? =
     this?.takeIf { it.isNotBlank() && it != "null" }
         ?.let { runCatching { Json.decodeFromString<List<TaxInfoApiModel>>(it) }.getOrNull() }
@@ -144,7 +150,7 @@ fun InvoiceItemEntity.toApiModel(): InvoiceItemApiModel = InvoiceItemApiModel(
 
 fun InvoiceEntity.toApiModel(items: List<InvoiceItemEntity>): InvoiceApiModel = InvoiceApiModel(
     id = id,
-    invoiceDate = invoice_date,
+    invoiceDate = invoice_date.toIsoInstantOrSelf(),
     invoiceNumber = invoice_number,
     order_ref_id = order_ref_id,
     customerId = customer_id,

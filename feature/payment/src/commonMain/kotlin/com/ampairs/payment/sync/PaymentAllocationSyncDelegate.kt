@@ -28,7 +28,9 @@ class PaymentAllocationSyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.PAYMENT_ALLOCATION
 
-    override val dependsOn: List<SyncEntity> =
+    // pushDependencies (not just dependsOn) so the PUSH waits for the voucher/invoice — an allocation
+    // references a voucher uid + bill uid the server validates (else 404 "voucher not found").
+    override val pushDependencies: List<SyncEntity> =
         listOf(SyncEntity.INVOICE, SyncEntity.PAYMENT_VOUCHER)
 
     override suspend fun pullFromServer(): SyncResult =

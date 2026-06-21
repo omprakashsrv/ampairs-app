@@ -28,7 +28,8 @@ class AdjustmentSyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.ADJUSTMENT
 
-    override val dependsOn: List<SyncEntity> =
+    // pushDependencies so the PUSH orders parents first (customer + the adjustment's ledger entry).
+    override val pushDependencies: List<SyncEntity> =
         listOf(SyncEntity.CUSTOMER, SyncEntity.LEDGER_ENTRY)
 
     override suspend fun pullFromServer(): SyncResult =

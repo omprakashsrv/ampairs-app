@@ -29,7 +29,9 @@ class PaymentVoucherSyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.PAYMENT_VOUCHER
 
-    override val dependsOn: List<SyncEntity> =
+    // pushDependencies so the PUSH (not just pull) orders parents first — the voucher's ledger entry
+    // and party references must reach the server before/with the voucher.
+    override val pushDependencies: List<SyncEntity> =
         listOf(SyncEntity.CUSTOMER, SyncEntity.INVOICE, SyncEntity.LEDGER_ENTRY)
 
     override suspend fun pullFromServer(): SyncResult =

@@ -35,7 +35,9 @@ class PartyBalanceSyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.PARTY_BALANCE
 
-    override val dependsOn: List<SyncEntity> = listOf(
+    // pushDependencies so the PUSH (not just pull) sends every ledger-affecting entity before the
+    // party balance — keeps server-side recompute ordering correct.
+    override val pushDependencies: List<SyncEntity> = listOf(
         SyncEntity.CUSTOMER,
         SyncEntity.INVOICE,
         SyncEntity.LEDGER_ENTRY,
