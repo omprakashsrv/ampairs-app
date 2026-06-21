@@ -17,17 +17,27 @@ import com.ampairs.printing.core.model.PrinterProfile
 import com.ampairs.printing.core.model.Template
 import com.ampairs.printing.core.model.TemplateBlock
 import com.ampairs.printing.core.model.TemplateColumn
+import com.ampairs.printing.core.model.TemplateKind
 import com.ampairs.printing.core.model.TemplateStyle
 import com.ampairs.printing.core.render.RenderedOutput
 import com.ampairs.printing.data.repository.TemplateRepository
 import com.ampairs.printing.preview.SampleValueProvider
 import com.ampairs.printing.render.html.HtmlRenderer
+import com.ampairs.file.api.FileEntityType
+import com.ampairs.file.api.FilePickerResult
+import com.ampairs.file.api.FileRepository
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.name
+import io.github.vinceglb.filekit.readBytes
+import io.github.vinceglb.filekit.size
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,6 +67,7 @@ data class TemplateEditUiState(
 class TemplateEditViewModel(
     @Assisted val templateId: String,
     private val repository: TemplateRepository,
+    private val fileRepository: FileRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TemplateEditUiState())
@@ -81,6 +92,29 @@ class TemplateEditViewModel(
     }
 
     fun updateName(name: String) = mutate { it.copy(name = name) }
+
+    /** Re-import the HTML file for a STATIC template (replaces the stored file, keeps the template). */
+    fun replaceHtmlFile() {
+        viewModelScope.launch {
+            val template = _uiState.value.template ?: return@launch
+            if (template.kind != TemplateKind.STATIC) return@launch
+            val file = FileKit.openFilePicker(type = FileKitType.File(setOf("html", "htm"))) ?: return@launch
+            val saved = fileRepository.saveLocally(
+                entityType = FileEntityType.PRINT_TEMPLATE,
+                entityUid = template.id,
+                result = FilePickerResult(
+                    fileName = file.name,
+                    contentType = "text/html",
+                    fileSize = file.size(),
+                    imageData = file.readBytes(),
+                ),
+                isPrimary = true,
+            ).getOrNull() ?: return@launch
+            val oldUid = template.htmlFileUid
+            mutate { it.copy(htmlFileUid = saved.uid, name = file.name.substringBeforeLast(".")) }
+            if (oldUid != null && oldUid != saved.uid) fileRepository.deleteFile(oldUid)
+        }
+    }
 
     /** Update the primary editable text of a block (StaticText.text, KeyValue.label, etc.). */
     fun updateBlockText(index: Int, text: String) = updateBlock(index) { block ->
@@ -236,7 +270,12 @@ class TemplateEditViewModel(
         val template = _uiState.value.template ?: return
         previewJob?.cancel()
         previewJob = viewModelScope.launch {
-            val document = engine.build(template, "preview", sampleProvider)
+            val document = if (template.kind == TemplateKind.STATIC && template.htmlFileUid != null) {
+                val html = fileRepository.readFileBytes(template.htmlFileUid!!).getOrNull()?.decodeToString() ?: ""
+                engine.buildStatic(template, "preview", sampleProvider, html)
+            } else {
+                engine.build(template, "preview", sampleProvider)
+            }
             if (template.printerClass == PrinterClass.PAGE) {
                 val html = (htmlRenderer.render(document, previewProfile(template)) as? RenderedOutput.Markup)?.html
                 _uiState.update { it.copy(previewHtml = html, previewElements = emptyList()) }

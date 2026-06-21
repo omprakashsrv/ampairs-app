@@ -107,6 +107,15 @@ sealed interface PrintElement {
     data class CashDrawerKick(
         override val region: BandRegion = BandRegion.BODY,
     ) : PrintElement
+
+    /**
+     * Pre-rendered HTML for a STATIC template (already variable-substituted). Page renderers emit it
+     * as the page; thermal/label renderers fall back to stripped plain text.
+     */
+    data class RawHtml(
+        val html: String,
+        override val region: BandRegion = BandRegion.BODY,
+    ) : PrintElement
 }
 
 data class TableHeader(

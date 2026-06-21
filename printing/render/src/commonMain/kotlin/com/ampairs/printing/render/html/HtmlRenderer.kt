@@ -26,6 +26,14 @@ class HtmlRenderer : Renderer {
         profile: PrinterProfile,
         formatter: ValueFormatter,
     ): RenderedOutput {
+        // STATIC template: the single RawHtml element IS the page — emit it verbatim (already
+        // variable-substituted), only prepending print page-setup the user's HTML may omit.
+        (document.blocks.singleOrNull() as? PrintElement.RawHtml)?.let { raw ->
+            val style = "<style>@media print { @page { size: ${pageSizeOf(profile.paper)}; margin: 12mm; } } " +
+                "html, body { margin: 0; padding: 0; }</style>"
+            return RenderedOutput.Markup(style + raw.html)
+        }
+
         val sb = StringBuilder()
         // No <meta viewport> here: desktop (JavaFX WebKit) and Android lay the page out at the view
         // width, which is what we want. iOS WKWebView needs the meta and injects it in its preview.
@@ -117,6 +125,7 @@ class HtmlRenderer : Renderer {
             is PrintElement.Qr -> sb.append("<p align=\"center\">").append(esc(element.value)).append("</p>")
             is PrintElement.Cut -> Unit          // page printers do not cut
             is PrintElement.CashDrawerKick -> Unit
+            is PrintElement.RawHtml -> sb.append(element.html) // (single-RawHtml is special-cased in render)
         }
     }
 
@@ -139,17 +148,19 @@ class HtmlRenderer : Renderer {
         Align.RIGHT -> "right"
     }
 
-    private fun css(paper: PaperSpec): String {
-        val pageSize = when (paper) {
-            is PaperSpec.Page -> {
-                val s = when (paper.size) {
-                    PageSize.A4 -> "A4"; PageSize.A5 -> "A5"; PageSize.A6 -> "A6"; PageSize.A7 -> "A7"
-                    PageSize.LETTER -> "letter"; PageSize.LEGAL -> "legal"
-                }
-                if (paper.orientation == Orientation.LANDSCAPE) "$s landscape" else s
+    private fun pageSizeOf(paper: PaperSpec): String = when (paper) {
+        is PaperSpec.Page -> {
+            val s = when (paper.size) {
+                PageSize.A4 -> "A4"; PageSize.A5 -> "A5"; PageSize.A6 -> "A6"; PageSize.A7 -> "A7"
+                PageSize.LETTER -> "letter"; PageSize.LEGAL -> "legal"
             }
-            else -> "A4"
+            if (paper.orientation == Orientation.LANDSCAPE) "$s landscape" else s
         }
+        else -> "A4"
+    }
+
+    private fun css(paper: PaperSpec): String {
+        val pageSize = pageSizeOf(paper)
         // Styling travels as HTML attributes/tags (align=, <b>, <font>, td width=) so it renders in
         // JEditorPane too; this CSS only carries print page setup + a few enhancements WebViews honor.
         return """

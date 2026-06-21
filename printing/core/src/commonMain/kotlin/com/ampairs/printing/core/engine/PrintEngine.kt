@@ -54,6 +54,40 @@ class PrintEngine(
         return PrintDocument(PrintMeta(documentType = template.documentType), elements)
     }
 
+    /**
+     * Build a STATIC template: substitute `{{variables}}` in [html] against the document's values and
+     * wrap the result as a single [PrintElement.RawHtml]. The HTML file is loaded by the caller (it
+     * lives in the file module); this only resolves the placeholders.
+     */
+    suspend fun buildStatic(
+        template: Template,
+        documentId: String,
+        provider: PrintValueProvider,
+        html: String,
+    ): PrintDocument {
+        val standard = provider.standardValues(documentId)
+        val custom = provider.customValues(documentId)
+        val lines = if (html.contains("{{#lines}}")) provider.lines(documentId) else emptyList()
+
+        val nested = HashMap<EntityRef, Map<String, FieldValue>>()
+        for (ref in EntityRef.entries) {
+            if (ref == EntityRef.SELF) continue
+            if (html.contains("{{${ref.name.lowercase()}.")) {
+                nested[ref] = provider.nestedValues(documentId, ref)
+            }
+        }
+
+        val computedMap = HashMap<String, FieldValue>()
+        computed?.keys(template.documentType)?.forEach { key ->
+            if (html.contains("{{$key}}") || html.contains("{{ $key }}")) {
+                computedMap[key] = computed.compute(template.documentType, documentId, key)
+            }
+        }
+
+        val resolved = StaticHtmlResolver.resolve(html, standard, custom, nested, lines, computedMap)
+        return PrintDocument(PrintMeta(documentType = template.documentType), listOf(PrintElement.RawHtml(resolved)))
+    }
+
     private suspend fun renderBlock(
         block: TemplateBlock,
         template: Template,

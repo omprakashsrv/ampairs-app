@@ -13,8 +13,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -23,16 +26,22 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.printing.generated.resources.Res
+import ampairsapp.feature.printing.generated.resources.printing_import_html_template
 import ampairsapp.feature.printing.generated.resources.printing_no_templates
 import ampairsapp.feature.printing.generated.resources.printing_restore_defaults
 import ampairsapp.feature.printing.generated.resources.printing_templates_title
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
+import com.ampairs.printing.core.model.DocumentType
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -51,6 +60,23 @@ fun TemplateListScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.printing_templates_title)) },
                 actions = {
+                    var importMenu by remember { mutableStateOf(false) }
+                    androidx.compose.foundation.layout.Box {
+                        IconButton(onClick = { importMenu = true }) {
+                            Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.printing_import_html_template))
+                        }
+                        DropdownMenu(expanded = importMenu, onDismissRequest = { importMenu = false }) {
+                            listOf(DocumentType.INVOICE, DocumentType.ORDER, DocumentType.RECEIPT).forEach { dt ->
+                                DropdownMenuItem(
+                                    text = { Text("${stringResource(Res.string.printing_import_html_template)} · ${dt.name}") },
+                                    onClick = {
+                                        importMenu = false
+                                        viewModel.importStaticTemplate(dt)
+                                    },
+                                )
+                            }
+                        }
+                    }
                     TextButton(onClick = { viewModel.restoreDefaults() }) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                         Text(stringResource(Res.string.printing_restore_defaults))

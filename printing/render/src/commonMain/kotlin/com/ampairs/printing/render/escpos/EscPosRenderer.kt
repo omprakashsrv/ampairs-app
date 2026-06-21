@@ -141,6 +141,15 @@ class EscPosRenderer : Renderer {
                 // Logo raster is a follow-up; emit nothing rather than corrupt output.
             }
 
+            is PrintElement.RawHtml -> {
+                // STATIC HTML templates are page-oriented; on thermal, strip tags to readable text.
+                for (line in stripHtml(element.html).split('\n')) {
+                    if (line.isNotBlank()) {
+                        emitStyledLines(ThermalLineComposer.line(line, width, Align.LEFT), false, 1, 1, out)
+                    }
+                }
+            }
+
             is PrintElement.Cut -> {
                 if (profile.capabilities.supportsCut) out += EscPos.cut(element.partial)
             }
@@ -206,6 +215,14 @@ class EscPosRenderer : Renderer {
         }
     }
 }
+
+/** Best-effort HTML→plain-text for thermal/label fallback of STATIC templates. */
+internal fun stripHtml(html: String): String =
+    html.replace(Regex("(?i)<br\\s*/?>"), "\n")
+        .replace(Regex("(?i)</(p|tr|div|h[1-6]|li)>"), "\n")
+        .replace(Regex("<[^>]+>"), "")
+        .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&nbsp;", " ")
+        .lines().map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n")
 
 /** Minimal growable byte buffer (avoids platform deps in commonMain). */
 internal class ByteWriter {

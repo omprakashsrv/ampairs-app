@@ -8,8 +8,10 @@ import com.ampairs.printing.core.model.PlainValueFormatter
 import com.ampairs.printing.core.model.PrintJobState
 import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.Template
+import com.ampairs.printing.core.model.TemplateKind
 import com.ampairs.printing.core.model.ValueFormatter
 import com.ampairs.printing.core.provider.PrintValueProvider
+import com.ampairs.file.api.FileRepository
 import com.ampairs.printing.core.spool.PrintJob
 import com.ampairs.printing.core.spool.SendOutcome
 import com.ampairs.printing.core.spool.SpoolPolicy
@@ -37,6 +39,7 @@ class PrintCoordinator(
     private val templateRepository: TemplateRepository,
     private val jobRepository: PrintJobRepository,
     private val printService: PrintService,
+    private val fileRepository: FileRepository,
     /** All document providers, keyed by type — lets [retry] rebuild any spooled job. */
     private val providers: Map<DocumentType, PrintValueProvider>,
 ) {
@@ -135,7 +138,12 @@ class PrintCoordinator(
         jobRepository.save(job)
 
         return runCatching {
-            val document = engine.build(template, documentId, provider)
+            val document = if (template.kind == TemplateKind.STATIC && template.htmlFileUid != null) {
+                val html = fileRepository.readFileBytes(template.htmlFileUid!!).getOrThrow().decodeToString()
+                engine.buildStatic(template, documentId, provider, html)
+            } else {
+                engine.build(template, documentId, provider)
+            }
             log.i { "send: built document blocks=${document.blocks.size}; calling PrintService" }
             val outcome = printService.print(document, profile, formatter)
             log.i { "send: PrintService outcome=$outcome" }

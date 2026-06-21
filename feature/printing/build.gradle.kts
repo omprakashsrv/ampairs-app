@@ -44,6 +44,10 @@ kotlin {
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
                 implementation(projects.feature.authApi)
+                implementation(projects.feature.fileApi)
+                // FileKit — pick the .html file for static templates.
+                implementation(libs.filekit.core)
+                implementation(libs.filekit.dialogs)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)

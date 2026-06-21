@@ -79,6 +79,8 @@ private fun ReceiptElement(element: PrintElement) {
             MonoText(text)
         }
 
+        is PrintElement.RawHtml -> stripHtmlToText(element.html).split('\n').forEach { if (it.isNotBlank()) MonoText(it) }
+
         is PrintElement.Divider -> MonoText(element.char.toString().repeat(32))
         is PrintElement.Spacer -> Spacer(Modifier.height((element.lines * 8).dp))
         is PrintElement.Feed -> Spacer(Modifier.height((element.lines * 8).dp))
@@ -112,3 +114,11 @@ private fun MonoText(
         },
     )
 }
+
+/** Best-effort HTML→plain-text so a STATIC template still shows something on the thermal preview. */
+private fun stripHtmlToText(html: String): String =
+    html.replace(Regex("(?i)<br\\s*/?>"), "\n")
+        .replace(Regex("(?i)</(p|tr|div|h[1-6]|li)>"), "\n")
+        .replace(Regex("<[^>]+>"), "")
+        .replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&nbsp;", " ")
+        .lines().map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n")

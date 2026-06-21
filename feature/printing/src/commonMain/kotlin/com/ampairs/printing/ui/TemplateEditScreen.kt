@@ -79,13 +79,17 @@ import ampairsapp.feature.printing.generated.resources.printing_move_up
 import ampairsapp.feature.printing.generated.resources.printing_not_editable
 import ampairsapp.feature.printing.generated.resources.printing_remove
 import ampairsapp.feature.printing.generated.resources.printing_save
+import ampairsapp.feature.printing.generated.resources.printing_replace_html
 import ampairsapp.feature.printing.generated.resources.printing_spacer_lines
+import ampairsapp.feature.printing.generated.resources.printing_static_template
+import ampairsapp.feature.printing.generated.resources.printing_static_template_note
 import ampairsapp.feature.printing.generated.resources.printing_template_name
 import com.ampairs.printing.core.model.Align
 import com.ampairs.printing.core.model.PrintElement
 import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.Template
 import com.ampairs.printing.core.model.TemplateBlock
+import com.ampairs.printing.core.model.TemplateKind
 import com.ampairs.printing.core.model.TemplateStyle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -141,7 +145,11 @@ fun TemplateEditScreen(
                         contentPadding = PaddingValues(12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        templateEditorItems(template, viewModel)
+                        if (template.kind == TemplateKind.STATIC) {
+                            staticTemplateItems(template, viewModel)
+                        } else {
+                            templateEditorItems(template, viewModel)
+                        }
                     }
                     VerticalDivider()
                     TemplatePreviewPane(
@@ -166,7 +174,11 @@ fun TemplateEditScreen(
                         contentPadding = PaddingValues(12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        templateEditorItems(template, viewModel)
+                        if (template.kind == TemplateKind.STATIC) {
+                            staticTemplateItems(template, viewModel)
+                        } else {
+                            templateEditorItems(template, viewModel)
+                        }
                     }
                 }
             }
@@ -244,6 +256,38 @@ private fun TemplatePreviewPane(
             previewHtml?.let { HtmlPreview(it, Modifier.fillMaxSize()) }
         } else {
             ReceiptPreview(previewElements, Modifier.fillMaxSize())
+        }
+    }
+}
+
+/** Editor for a STATIC (HTML-file) template: rename + re-import the .html file; preview is live. */
+private fun LazyListScope.staticTemplateItems(
+    template: Template,
+    viewModel: TemplateEditViewModel,
+) {
+    item {
+        OutlinedTextField(
+            value = template.name,
+            onValueChange = viewModel::updateName,
+            label = { Text(stringResource(Res.string.printing_template_name)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    item {
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(Res.string.printing_static_template), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(Res.string.printing_static_template_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = { viewModel.replaceHtmlFile() }) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Text(stringResource(Res.string.printing_replace_html))
+                }
+            }
         }
     }
 }
