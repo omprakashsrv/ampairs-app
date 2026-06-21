@@ -248,7 +248,10 @@ fun PartyStatementContent(
 
 @Composable
 private fun LedgerStatementRow(line: StatementLine, locale: AppLocale, onEditPayment: (String) -> Unit) {
-    val editable = line.sourceType == LedgerSourceType.PAYMENT && line.sourceUid.isNotBlank()
+    val editable = line.sourceType == LedgerSourceType.PAYMENT &&
+        line.sourceUid.isNotBlank() &&
+        !line.reversed &&
+        !line.isReversal
     val isDebit = line.debit.isPositive
     val delta = if (isDebit) line.debit else line.credit
     val deltaColor = if (isDebit) CollectionsColors.payable else CollectionsColors.receivable

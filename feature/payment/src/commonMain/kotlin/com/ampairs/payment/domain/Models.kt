@@ -114,6 +114,10 @@ data class StatementLine(
     val sourceType: LedgerSourceType? = null,
     /** The source document uid — for [LedgerSourceType.PAYMENT] this is the voucher uid (edit target). */
     val sourceUid: String = "",
+    /** True when this entry has been reversed (e.g. a bounced cheque's original line) — not editable. */
+    val reversed: Boolean = false,
+    /** True when this line is itself a contra reversal entry (e.g. the bounce contra) — not editable. */
+    val isReversal: Boolean = false,
 )
 
 /** A party's open (unpaid) bill with aging classification. */

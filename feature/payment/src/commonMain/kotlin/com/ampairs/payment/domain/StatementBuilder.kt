@@ -59,6 +59,8 @@ object StatementBuilder {
                 credit = if (e.direction == Direction.CR) e.amount else Money.ZERO,
                 sourceType = e.sourceType,
                 sourceUid = e.sourceUid,
+                reversed = e.reversed,
+                isReversal = e.reversalOf != null,
             )
         }
 
