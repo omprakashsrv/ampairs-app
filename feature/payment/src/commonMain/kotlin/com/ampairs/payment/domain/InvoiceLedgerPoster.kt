@@ -70,9 +70,11 @@ class InvoiceLedgerPoster(
         var posted = 0
         val billed = invoiceDao.selectAll().filter { isBilled(it.status) }
         for (inv in billed) {
-            val existing = ledgerEntryDao.getByUid(poster.ledgerUidFor(inv.id))
-            if (existing != null && existing.active == 1L) continue
             if (inv.customer_id.isBlank()) continue
+            val existing = ledgerEntryDao.getByUid(poster.ledgerUidFor(inv.id))
+            // Skip only if an active entry already exists with the SAME amount; re-post on amount edits.
+            val expectedMinor = Money.fromDouble(inv.total_cost).minor
+            if (existing != null && existing.active == 1L && existing.amount_minor == expectedMinor) continue
             poster.postDocumentEntry(
                 partyUid = inv.customer_id,
                 sourceType = LedgerSourceType.INVOICE,

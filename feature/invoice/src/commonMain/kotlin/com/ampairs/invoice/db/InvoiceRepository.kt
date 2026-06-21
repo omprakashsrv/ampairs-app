@@ -44,14 +44,14 @@ class InvoiceRepository(
     private val lifecycleListeners: Set<InvoiceLifecycleListener>,
 ) {
     suspend fun saveInvoice(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
-        val previousStatus = invoiceDao.selectById(invoiceEntity.id)?.status
+        val previous = invoiceDao.selectById(invoiceEntity.id)
         val numbered = if (invoiceEntity.invoice_number.isBlank()) assignNumber(invoiceEntity) else invoiceEntity
         persist(numbered, invoiceItems)
         markPending()
         // Fire AFTER the DB write completes (and outside the Room transaction) — the listeners write
         // to a different database (the party ledger). Only local saves reach here; sync-pulled writes
         // go straight to the DAO via the sync delegate, so this never causes sync churn.
-        notifyFinalizationChange(previousStatus, numbered)
+        notifyFinalizationChange(previous?.status, previous?.total_cost, numbered)
     }
 
     @Transaction
@@ -61,17 +61,19 @@ class InvoiceRepository(
     }
 
     /**
-     * Bridge a local billed/un-billed transition to downstream listeners (spec 013, R9). A saved
-     * invoice counts as billed (post the receivable) unless it's an explicit DRAFT — the app saves
-     * invoices as NEW, so gating on INVOICEED would never fire.
+     * Bridge a local billed/un-billed transition — or a billed-amount edit — to downstream listeners
+     * (spec 013, R9). A saved invoice counts as billed (post the receivable) unless it's an explicit
+     * DRAFT — the app saves invoices as NEW, so gating on INVOICEED would never fire. Re-posting is
+     * idempotent (deterministic LDG_<uid>), so an amount change refreshes the receivable.
      */
-    private suspend fun notifyFinalizationChange(previousStatus: String?, entity: InvoiceEntity) {
+    private suspend fun notifyFinalizationChange(previousStatus: String?, previousTotal: Double?, entity: InvoiceEntity) {
         if (lifecycleListeners.isEmpty()) return
         fun billed(status: String?) = !status.isNullOrBlank() && !status.equals(InvoiceStatus.DRAFT.name, ignoreCase = true)
-        val nowFinalized = billed(entity.status)
-        val wasFinalized = billed(previousStatus)
+        val nowBilled = billed(entity.status)
+        val wasBilled = billed(previousStatus)
+        val totalChanged = previousTotal == null || previousTotal != entity.total_cost
         when {
-            nowFinalized && !wasFinalized -> {
+            nowBilled && (!wasBilled || totalChanged) -> {
                 if (entity.customer_id.isBlank()) return
                 val info = FinalizedInvoice(
                     uid = entity.id,
@@ -82,7 +84,7 @@ class InvoiceRepository(
                 )
                 lifecycleListeners.forEach { it.onFinalized(info) }
             }
-            wasFinalized && !nowFinalized ->
+            wasBilled && !nowBilled ->
                 lifecycleListeners.forEach { it.onReverted(entity.id) }
         }
     }
