@@ -44,6 +44,19 @@ interface CartDao {
     @Query("DELETE FROM cart_item WHERE cart_id = :cartId")
     suspend fun clearItems(cartId: String)
 
+    @Query("DELETE FROM cart_item")
+    suspend fun clearAllItems()
+
+    @Query("DELETE FROM cart")
+    suspend fun clearAllCarts()
+
+    /** Wipe every local cart and its lines (used on logout). */
+    @Transaction
+    suspend fun clearAll() {
+        clearAllItems()
+        clearAllCarts()
+    }
+
     /** Replace the local mirror with the authoritative server cart contents. */
     @Transaction
     suspend fun replaceItems(cartId: String, items: List<CartItemEntity>) {

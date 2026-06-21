@@ -97,6 +97,12 @@ class CartRepository(
         return Result.success(Unit)
     }
 
+    /** Wipe every local cart across all storefronts. Called on logout so a new user starts clean. */
+    suspend fun clearAllLocalCarts(): Result<Unit> {
+        cartDao.clearAll()
+        return Result.success(Unit)
+    }
+
     /** Current local session token for a storefront (used after [materializeToServer]). */
     suspend fun sessionToken(storefrontId: String): String? =
         cartDao.cartForStorefront(storefrontId)?.session_token
