@@ -15,8 +15,20 @@ data class Template(
     val printerClass: PrinterClass,
     val paper: PaperSpec,
     val version: Long = 1,
+    /** DYNAMIC = authored via the block editor; STATIC = a stored HTML file with `{{variables}}`. */
+    val kind: TemplateKind = TemplateKind.DYNAMIC,
     val blocks: List<TemplateBlock> = emptyList(),
+    /**
+     * For [TemplateKind.STATIC]: the file-module uid of the uploaded HTML template (stored as a real
+     * file, not inline JSON; entityType = PRINT_TEMPLATE, entityUid = this template's [id]). The HTML
+     * is loaded from the file at print/preview time and only its `{{variables}}` are substituted.
+     */
+    val htmlFileUid: String? = null,
 )
+
+/** How a [Template] is authored/rendered. */
+@Serializable
+enum class TemplateKind { DYNAMIC, STATIC }
 
 /** A reference from a template element to a data field, resolved against a document at print time. */
 @Serializable
