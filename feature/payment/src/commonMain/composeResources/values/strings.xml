@@ -44,6 +44,8 @@
     <string name="payment_clearance_bounced">Bounced</string>
     <string name="payment_mark_cleared">Mark cleared</string>
     <string name="payment_mark_bounced">Mark bounced</string>
+    <string name="payment_edit">Edit</string>
+    <string name="payment_cancel_voucher">Cancel voucher</string>
 
     <string name="payment_adjustment_type">Adjustment type</string>
     <string name="payment_linked_bill">Linked bill (optional)</string>

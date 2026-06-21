@@ -53,9 +53,10 @@ import org.jetbrains.compose.resources.stringResource
 fun RecordPaymentScreen(
     partyUid: String,
     onSaved: () -> Unit,
+    voucherUid: String = "",
     viewModel: RecordPaymentViewModel = assistedMetroViewModel<RecordPaymentViewModel, RecordPaymentViewModel.Factory>(
-        key = partyUid,
-    ) { create(partyUid) },
+        key = "$partyUid:$voucherUid",
+    ) { create(partyUid, voucherUid) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }

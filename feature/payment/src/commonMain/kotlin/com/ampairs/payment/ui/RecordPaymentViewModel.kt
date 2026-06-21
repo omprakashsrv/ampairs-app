@@ -54,7 +54,12 @@ data class RecordPaymentUiState(
     val openBills: List<AllocationRow> = emptyList(),
     val overCreditLimit: Boolean = false,
     val saving: Boolean = false,
+    /** Non-blank when editing an existing voucher (FR-012); blank when creating a new one. */
+    val editingVoucherUid: String = "",
+    /** Allocations already on the voucher being edited — reused/preserved on save. */
+    val existingAllocations: List<PaymentAllocation> = emptyList(),
 ) {
+    val isEditing: Boolean get() = editingVoucherUid.isNotBlank()
     val amount: Money get() = Money.fromDecimalString(amountText)
     val allocatedTotal: Money
         get() = Money(openBills.sumOf { it.allocatedMinor })
@@ -70,6 +75,7 @@ sealed interface RecordPaymentEvent {
 @AssistedInject
 class RecordPaymentViewModel(
     @Assisted val partyUid: String,
+    @Assisted val voucherUid: String,
     private val voucherRepository: PaymentVoucherRepository,
     private val outstandingService: OutstandingService,
     private val customerDataService: CustomerDataService,
@@ -99,6 +105,33 @@ class RecordPaymentViewModel(
                     openBills = bills,
                     overCreditLimit = overLimit,
                 )
+            }
+
+            // Edit mode (FR-012): prefill from the existing voucher and overlay its allocations.
+            if (voucherUid.isNotBlank()) {
+                val existing = voucherRepository.getByUid(voucherUid)
+                if (existing != null) {
+                    val allocs = voucherRepository.getAllocations(voucherUid)
+                    _uiState.update { state ->
+                        val overlaid = state.openBills.map { row ->
+                            val a = allocs.firstOrNull { it.targetUid == row.bill.billUid }
+                            if (a != null) row.copy(allocatedMinor = a.amount.minor) else row
+                        }
+                        state.copy(
+                            editingVoucherUid = existing.uid,
+                            existingAllocations = allocs,
+                            direction = existing.direction,
+                            amountText = existing.totalAmount.toDecimalString(),
+                            mode = existing.paymentMode,
+                            referenceNumber = if (!existing.paymentMode.isCheque) existing.referenceNumber.orEmpty() else state.referenceNumber,
+                            chequeNumber = if (existing.paymentMode.isCheque) existing.referenceNumber.orEmpty() else state.chequeNumber,
+                            bankName = existing.bankName.orEmpty(),
+                            instrumentDate = existing.instrumentDate.orEmpty(),
+                            narration = existing.narration.orEmpty(),
+                            openBills = overlaid,
+                        )
+                    }
+                }
             }
         }
     }
@@ -153,7 +186,7 @@ class RecordPaymentViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(saving = true) }
             val prefix = if (state.direction == PaymentDirection.RECEIVED) "RCP" else "PAY"
-            val voucherUid = UidGenerator.generateUid(prefix)
+            val voucherUid = state.editingVoucherUid.ifBlank { UidGenerator.generateUid(prefix) }
             val requiresClearance = state.mode.isCheque && paymentSettings.chequeRequiresClearance()
             val clearance = if (state.mode.isInstant || !requiresClearance) ClearanceStatus.CLEARED else ClearanceStatus.PENDING
             val reference = if (state.mode.isCheque) state.chequeNumber.ifBlank { null } else state.referenceNumber.ifBlank { null }
@@ -171,17 +204,22 @@ class RecordPaymentViewModel(
                 clearanceStatus = clearance,
                 narration = state.narration.ifBlank { null },
             )
-            val allocations = state.openBills
+            val openBillUids = state.openBills.map { it.bill.billUid }.toSet()
+            val fromBills = state.openBills
                 .filter { it.allocatedMinor > 0 }
-                .map {
+                .map { row ->
+                    val existing = state.existingAllocations.firstOrNull { it.targetUid == row.bill.billUid }
                     PaymentAllocation(
-                        uid = UidGenerator.generateUid("ALC"),
+                        uid = existing?.uid ?: UidGenerator.generateUid("ALC"),
                         paymentVoucherUid = voucherUid,
                         targetType = AllocationTarget.INVOICE,
-                        targetUid = it.bill.billUid,
-                        amount = Money(it.allocatedMinor),
+                        targetUid = row.bill.billUid,
+                        amount = Money(row.allocatedMinor),
                     )
                 }
+            // Preserve allocations to bills no longer in the open list (already fully consumed).
+            val preserved = state.existingAllocations.filter { it.targetUid !in openBillUids }
+            val allocations = fromBills + preserved
             val result = voucherRepository.save(voucher, allocations)
             _uiState.update { it.copy(saving = false) }
             result.fold(
@@ -195,6 +233,6 @@ class RecordPaymentViewModel(
     @ManualViewModelAssistedFactoryKey
     @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
-        fun create(partyUid: String): RecordPaymentViewModel
+        fun create(partyUid: String, voucherUid: String): RecordPaymentViewModel
     }
 }

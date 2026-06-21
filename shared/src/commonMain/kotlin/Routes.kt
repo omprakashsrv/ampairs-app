@@ -333,7 +333,7 @@ sealed interface PaymentRoute : NavKey {
     data class SelectParty(val purpose: String = "PAYMENT") : PaymentRoute
 
     @Serializable
-    data class Record(val partyUid: String = "") : PaymentRoute
+    data class Record(val partyUid: String = "", val voucherUid: String = "") : PaymentRoute
 
     @Serializable
     data class Adjustment(val partyUid: String = "") : PaymentRoute

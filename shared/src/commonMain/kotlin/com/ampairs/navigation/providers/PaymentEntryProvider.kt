@@ -45,6 +45,7 @@ fun paymentEntryProvider(
     is PaymentRoute.Record -> NavEntry(key) {
         RecordPaymentScreen(
             partyUid = key.partyUid,
+            voucherUid = key.voucherUid,
             onSaved = { backStack.removeLastOrNull() },
         )
     }
@@ -71,7 +72,12 @@ fun paymentEntryProvider(
     }
 
     is PaymentRoute.PartyPayments -> NavEntry(key) {
-        PartyPaymentsScreen(partyUid = key.partyUid)
+        PartyPaymentsScreen(
+            partyUid = key.partyUid,
+            onEditVoucher = { voucherUid ->
+                backStack.add(PaymentRoute.Record(partyUid = key.partyUid, voucherUid = voucherUid))
+            },
+        )
     }
 
     else -> null

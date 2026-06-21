@@ -1,9 +1,11 @@
 package com.ampairs.payment.ui
 
 import ampairsapp.feature.payment.generated.resources.Res
+import ampairsapp.feature.payment.generated.resources.payment_cancel_voucher
 import ampairsapp.feature.payment.generated.resources.payment_clearance_bounced
 import ampairsapp.feature.payment.generated.resources.payment_clearance_cleared
 import ampairsapp.feature.payment.generated.resources.payment_clearance_pending
+import ampairsapp.feature.payment.generated.resources.payment_edit
 import ampairsapp.feature.payment.generated.resources.payment_mark_bounced
 import ampairsapp.feature.payment.generated.resources.payment_mark_cleared
 import ampairsapp.feature.payment.generated.resources.payment_no_data
@@ -46,6 +48,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun PartyPaymentsScreen(
     partyUid: String,
+    onEditVoucher: (String) -> Unit = {},
     viewModel: PartyPaymentsViewModel = assistedMetroViewModel<PartyPaymentsViewModel, PartyPaymentsViewModel.Factory>(
         key = partyUid,
     ) { create(partyUid) },
@@ -72,6 +75,8 @@ fun PartyPaymentsScreen(
                         voucher = voucher,
                         onMarkCleared = { viewModel.markCleared(voucher.uid) },
                         onMarkBounced = { viewModel.markBounced(voucher.uid) },
+                        onEdit = { onEditVoucher(voucher.uid) },
+                        onCancel = { viewModel.cancel(voucher.uid) },
                     )
                     HorizontalDivider()
                 }
@@ -86,6 +91,8 @@ private fun PaymentRow(
     voucher: PaymentVoucher,
     onMarkCleared: () -> Unit,
     onMarkBounced: () -> Unit,
+    onEdit: () -> Unit,
+    onCancel: () -> Unit,
 ) {
     val locale = LocalAppLocale.current
     val statusLabel = when (voucher.clearanceStatus) {
@@ -104,6 +111,12 @@ private fun PaymentRow(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         TextButton(onClick = onMarkCleared) { Text(stringResource(Res.string.payment_mark_cleared)) }
                         TextButton(onClick = onMarkBounced) { Text(stringResource(Res.string.payment_mark_bounced)) }
+                    }
+                }
+                if (!voucher.isTerminal) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        TextButton(onClick = onEdit) { Text(stringResource(Res.string.payment_edit)) }
+                        TextButton(onClick = onCancel) { Text(stringResource(Res.string.payment_cancel_voucher)) }
                     }
                 }
             }

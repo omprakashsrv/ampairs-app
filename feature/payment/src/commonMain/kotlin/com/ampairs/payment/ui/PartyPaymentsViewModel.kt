@@ -64,6 +64,13 @@ class PartyPaymentsViewModel(
         }
     }
 
+    /** Cancel (soft-delete + reverse the ledger entry) a voucher (FR-012/FR-023). Offline. */
+    fun cancel(uid: String) {
+        viewModelScope.launch {
+            voucherRepository.delete(uid).onFailure { _events.tryEmit(it.message ?: "Failed to cancel") }
+        }
+    }
+
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
     @ContributesIntoMap(WorkspaceScope::class)
