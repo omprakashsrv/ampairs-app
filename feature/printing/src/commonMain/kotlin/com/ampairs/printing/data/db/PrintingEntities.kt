@@ -175,5 +175,17 @@ fun Template.toEntity(synced: Boolean = false, active: Boolean = true, updatedAt
         updatedAt = updatedAt,
     )
 
+/** Read the embedded `isDefault` from a stored template JSON (false if it can't be parsed). */
+fun templateJsonIsDefault(templateJson: String): Boolean =
+    runCatching { printingJson.decodeFromString(Template.serializer(), templateJson).isDefault }.getOrDefault(false)
+
+/** Return [templateJson] with its embedded `isDefault` forced to [isDefault] (server column wins on pull). */
+fun templateJsonWithDefault(templateJson: String, isDefault: Boolean): String =
+    runCatching {
+        val t = printingJson.decodeFromString(Template.serializer(), templateJson)
+        if (t.isDefault == isDefault) templateJson
+        else printingJson.encodeToString(Template.serializer(), t.copy(isDefault = isDefault))
+    }.getOrDefault(templateJson)
+
 private inline fun <reified T : Enum<T>> enumOrDefault(name: String, default: T): T =
     enumValues<T>().firstOrNull { it.name == name } ?: default
