@@ -18,9 +18,12 @@ import ampairsapp.feature.payment.generated.resources.payment_done
 import ampairsapp.feature.payment.generated.resources.payment_drawee_bank
 import ampairsapp.feature.payment.generated.resources.payment_kept_as_advance
 import ampairsapp.feature.payment.generated.resources.payment_left_on_account
+import ampairsapp.feature.payment.generated.resources.payment_cancel
 import ampairsapp.feature.payment.generated.resources.payment_next_apply_to_bills
 import ampairsapp.feature.payment.generated.resources.payment_next_choose_mode
 import ampairsapp.feature.payment.generated.resources.payment_note_optional
+import ampairsapp.feature.payment.generated.resources.payment_ok
+import ampairsapp.feature.payment.generated.resources.payment_pick_date
 import ampairsapp.feature.payment.generated.resources.payment_on_account_credit
 import ampairsapp.feature.payment.generated.resources.payment_open_bills_oldest
 import ampairsapp.feature.payment.generated.resources.payment_payment_mode_title
@@ -63,13 +66,17 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -100,6 +107,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.currencySymbol
 import com.ampairs.payment.domain.PaymentDirection
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 import com.ampairs.payment.ui.components.AmountKeypad
 import com.ampairs.payment.ui.components.CollectionsColors
 import com.ampairs.payment.ui.components.DirectionToggle
@@ -524,13 +533,7 @@ private fun ModeSpecificFields(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedTextField(
-                value = state.instrumentDate,
-                onValueChange = onInstrumentDate,
-                label = { Text(stringResource(Res.string.payment_cheque_date)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            ChequeDateField(value = state.instrumentDate, onChange = onInstrumentDate)
             OutlinedTextField(
                 value = state.bankName,
                 onValueChange = onBankName,
@@ -749,6 +752,65 @@ private fun ReceivedSummaryBanner(state: RecordPaymentUiState) {
         )
     }
 }
+
+/** Read-only cheque-date field backed by a Material 3 date picker (no manual typing). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChequeDateField(value: String, onChange: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(stringResource(Res.string.payment_cheque_date)) },
+            trailingIcon = { Icon(Icons.Filled.Event, contentDescription = stringResource(Res.string.payment_pick_date)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        // Transparent overlay so a tap anywhere on the field opens the picker.
+        Box(modifier = Modifier.matchParentSize().clickable { open = true })
+    }
+    if (open) {
+        val pickerState = rememberDatePickerState(initialSelectedDateMillis = isoDateToMillis(value))
+        DatePickerDialog(
+            onDismissRequest = { open = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { onChange(millisToIsoDate(it)) }
+                    open = false
+                }) { Text(stringResource(Res.string.payment_ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { open = false }) { Text(stringResource(Res.string.payment_cancel)) }
+            },
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+}
+
+/** Parse a stored `yyyy-MM-dd` (or ISO timestamp prefix) to UTC-midnight millis, or null if blank/invalid. */
+@OptIn(kotlin.time.ExperimentalTime::class)
+private fun isoDateToMillis(value: String): Long? {
+    val datePart = value.substringBefore('T').trim()
+    if (datePart.isBlank()) return null
+    return try {
+        kotlinx.datetime.LocalDate.parse(datePart)
+            .atStartOfDayIn(kotlinx.datetime.TimeZone.UTC)
+            .toEpochMilliseconds()
+    } catch (_: Exception) {
+        null
+    }
+}
+
+/** Selected millis (UTC) → `yyyy-MM-dd`. */
+@OptIn(kotlin.time.ExperimentalTime::class)
+private fun millisToIsoDate(millis: Long): String =
+    kotlin.time.Instant.fromEpochMilliseconds(millis)
+        .toLocalDateTime(kotlinx.datetime.TimeZone.UTC)
+        .date
+        .toString()
 
 @Composable
 private fun ModeDropdown(

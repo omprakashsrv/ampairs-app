@@ -135,4 +135,9 @@
 
     <!-- Opening balance / adjustment -->
     <string name="payment_as_of_date">As-of date</string>
+
+    <!-- Date picker -->
+    <string name="payment_pick_date">Pick date</string>
+    <string name="payment_ok">OK</string>
+    <string name="payment_cancel">Cancel</string>
 </resources>
