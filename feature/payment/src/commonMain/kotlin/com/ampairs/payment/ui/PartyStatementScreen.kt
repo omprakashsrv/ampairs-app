@@ -167,6 +167,7 @@ fun PartyStatementContent(
     onOpeningBalance: () -> Unit,
     onSendStatement: () -> Unit,
     modifier: Modifier = Modifier,
+    onReceipts: () -> Unit = {},
 ) {
     val statement = state.statement
     if (statement == null || statement.lines.isEmpty()) {
@@ -221,6 +222,10 @@ fun PartyStatementContent(
                 OutlinedButton(onClick = onOpeningBalance) {
                     Icon(Icons.Filled.Flag, contentDescription = null, modifier = Modifier.size(18.dp))
                     Text(" " + stringResource(Res.string.payment_opening_balance))
+                }
+                OutlinedButton(onClick = onReceipts) {
+                    Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(" " + stringResource(Res.string.payment_receipts))
                 }
                 OutlinedButton(onClick = onSendStatement) {
                     Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))

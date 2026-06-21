@@ -28,6 +28,7 @@ fun paymentEntryProvider(
             onRecordPaymentForParty = { partyUid -> backStack.add(PaymentRoute.Record(partyUid = partyUid)) },
             onAdjustmentForParty = { partyUid -> backStack.add(PaymentRoute.Adjustment(partyUid = partyUid)) },
             onOpeningForParty = { partyUid -> backStack.add(PaymentRoute.OpeningBalance(partyUid = partyUid)) },
+            onReceiptsForParty = { partyUid -> backStack.add(PaymentRoute.PartyPayments(partyUid = partyUid)) },
         )
     }
 
