@@ -6,6 +6,7 @@ import InventoryRoute
 import InvoiceRoute
 import MoreScreen
 import OrderRoute
+import PaymentRoute
 import ProductRoute
 import Route
 import SubscriptionRoute
@@ -29,6 +30,7 @@ import com.ampairs.navigation.providers.ecomEntryProvider
 import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
 import com.ampairs.navigation.providers.orderEntryProvider
+import com.ampairs.navigation.providers.paymentEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
 import com.ampairs.navigation.providers.sequenceEntryProvider
 import com.ampairs.navigation.providers.storeEntryProvider
@@ -74,6 +76,7 @@ fun combinedEntryProvider(
         ?: sequenceEntryProvider(key, backStack)
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
+        ?: paymentEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key)
         ?: agentEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
@@ -206,6 +209,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(InventoryRoute.Inventory)
+        }
+    }
+
+    // Route.Payment redirects to PaymentRoute.Dashboard
+    is Route.Payment -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(PaymentRoute.Dashboard)
         }
     }
 

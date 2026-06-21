@@ -51,6 +51,9 @@ sealed interface Route : NavKey {
     data object Printing : Route
 
     @Serializable
+    data object Payment : Route
+
+    @Serializable
     data object More : Route
 }
 
@@ -317,6 +320,13 @@ sealed interface InvoiceRoute : NavKey {
 
     @Serializable
     data object Invoices : InvoiceRoute
+}
+
+// Payment & Collection routes
+@Serializable
+sealed interface PaymentRoute : NavKey {
+    @Serializable
+    data object Dashboard : PaymentRoute
 }
 
 // Business routes

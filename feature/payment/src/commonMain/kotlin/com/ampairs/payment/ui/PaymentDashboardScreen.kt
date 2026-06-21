@@ -1,0 +1,80 @@
+package com.ampairs.payment.ui
+
+import ampairsapp.feature.payment.generated.resources.Res
+import ampairsapp.feature.payment.generated.resources.payment_collections_title
+import ampairsapp.feature.payment.generated.resources.payment_no_data
+import ampairsapp.feature.payment.generated.resources.payment_to_pay
+import ampairsapp.feature.payment.generated.resources.payment_to_receive
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
+import com.ampairs.payment.domain.Direction
+import dev.zacsweers.metrox.viewmodel.metroViewModel
+import org.jetbrains.compose.resources.stringResource
+
+/**
+ * Collections dashboard — the landing screen for the Payments module (Route.Payment).
+ * Lists each party's current closing balance with a receivable/payable indicator.
+ *
+ * NOTE (spec 013, WIP): shows the party uid for now; resolving the customer display name and the
+ * record-payment / statement / aging flows are follow-ups on the mobile UI.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PaymentDashboardScreen(
+    viewModel: PaymentDashboardViewModel = metroViewModel(),
+) {
+    val balances by viewModel.balances.collectAsStateWithLifecycle()
+    val locale = LocalAppLocale.current
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text(stringResource(Res.string.payment_collections_title)) })
+        },
+    ) { padding ->
+        if (balances.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(stringResource(Res.string.payment_no_data))
+            }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+                items(balances, key = { it.uid }) { balance ->
+                    val receivable = balance.closingDirection == Direction.DR
+                    ListItem(
+                        headlineContent = { Text(balance.partyUid) },
+                        supportingContent = {
+                            Text(
+                                stringResource(
+                                    if (receivable) Res.string.payment_to_receive
+                                    else Res.string.payment_to_pay,
+                                ),
+                            )
+                        },
+                        trailingContent = {
+                            Text(formatMoney(balance.cachedClosingBalance.abs().toDouble(), locale))
+                        },
+                    )
+                    HorizontalDivider()
+                }
+            }
+        }
+    }
+}

@@ -10,6 +10,7 @@ object ModuleCodes {
     const val BUSINESS_PROFILE = "business-profile"
     const val UNIT_MANAGEMENT = "unit-management"
     const val PRINTING = "printing-management"
+    const val PAYMENT_COLLECTION = "payment-collection"
 
     // Not yet implemented locally
     const val NOTIFICATION_SYSTEM = "notification-system"

@@ -193,6 +193,9 @@ fun navigateToMenuItemNav3(
         route == "tax" -> backStack.add(Route.Tax)
         route == "subscription" -> backStack.add(Route.Subscription)
         route == "printing" -> backStack.add(Route.Printing)
+        route == "payment" -> backStack.add(Route.Payment)
+
+        route.startsWith("/payments") -> backStack.add(Route.Payment)
 
         route.startsWith("/printing") -> {
             when (route) {
