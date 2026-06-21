@@ -340,6 +340,9 @@ sealed interface PaymentRoute : NavKey {
 
     @Serializable
     data class OpeningBalance(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class Statement(val partyUid: String = "") : PaymentRoute
 }
 
 // Business routes

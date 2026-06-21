@@ -8,6 +8,7 @@ import ampairsapp.feature.payment.generated.resources.payment_opening_balance
 import ampairsapp.feature.payment.generated.resources.payment_record_payment
 import ampairsapp.feature.payment.generated.resources.payment_to_pay
 import ampairsapp.feature.payment.generated.resources.payment_to_receive
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -52,9 +53,10 @@ fun PaymentDashboardScreen(
     onRecordPayment: () -> Unit,
     onNewAdjustment: () -> Unit,
     onSetOpeningBalance: () -> Unit,
+    onOpenParty: (String) -> Unit,
     viewModel: PaymentDashboardViewModel = metroViewModel(),
 ) {
-    val balances by viewModel.balances.collectAsStateWithLifecycle()
+    val rows by viewModel.rows.collectAsStateWithLifecycle()
     val locale = LocalAppLocale.current
     var menuOpen by remember { mutableStateOf(false) }
 
@@ -86,7 +88,7 @@ fun PaymentDashboardScreen(
             }
         },
     ) { padding ->
-        if (balances.isEmpty()) {
+        if (rows.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center,
@@ -95,10 +97,10 @@ fun PaymentDashboardScreen(
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                items(balances, key = { it.uid }) { balance ->
-                    val receivable = balance.closingDirection == Direction.DR
+                items(rows, key = { it.balance.uid }) { row ->
+                    val receivable = row.balance.closingDirection == Direction.DR
                     ListItem(
-                        headlineContent = { Text(balance.partyUid) },
+                        headlineContent = { Text(row.name) },
                         supportingContent = {
                             Text(
                                 stringResource(
@@ -108,8 +110,9 @@ fun PaymentDashboardScreen(
                             )
                         },
                         trailingContent = {
-                            Text(formatMoney(balance.cachedClosingBalance.abs().toDouble(), locale))
+                            Text(formatMoney(row.balance.cachedClosingBalance.abs().toDouble(), locale))
                         },
+                        modifier = Modifier.clickable { onOpenParty(row.balance.partyUid) },
                     )
                     HorizontalDivider()
                 }

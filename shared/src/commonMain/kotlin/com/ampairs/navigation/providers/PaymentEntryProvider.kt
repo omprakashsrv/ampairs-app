@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.payment.ui.AdjustmentScreen
 import com.ampairs.payment.ui.OpeningBalanceScreen
+import com.ampairs.payment.ui.PartyStatementScreen
 import com.ampairs.payment.ui.PaymentDashboardScreen
 import com.ampairs.payment.ui.PaymentPartyPickerScreen
 import com.ampairs.payment.ui.RecordPaymentScreen
@@ -22,6 +23,7 @@ fun paymentEntryProvider(
             onRecordPayment = { backStack.add(PaymentRoute.SelectParty(purpose = "PAYMENT")) },
             onNewAdjustment = { backStack.add(PaymentRoute.SelectParty(purpose = "ADJUSTMENT")) },
             onSetOpeningBalance = { backStack.add(PaymentRoute.SelectParty(purpose = "OPENING")) },
+            onOpenParty = { partyUid -> backStack.add(PaymentRoute.Statement(partyUid = partyUid)) },
         )
     }
 
@@ -58,6 +60,10 @@ fun paymentEntryProvider(
             partyUid = key.partyUid,
             onSaved = { backStack.removeLastOrNull() },
         )
+    }
+
+    is PaymentRoute.Statement -> NavEntry(key) {
+        PartyStatementScreen(partyUid = key.partyUid)
     }
 
     else -> null

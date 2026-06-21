@@ -133,6 +133,7 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(PaymentRoute.Record::class)
                 subclass(PaymentRoute.Adjustment::class)
                 subclass(PaymentRoute.OpeningBalance::class)
+                subclass(PaymentRoute.Statement::class)
 
                 // Business Routes
                 subclass(BusinessRoute.Overview::class)
