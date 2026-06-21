@@ -3,6 +3,8 @@ package com.ampairs.navigation.providers
 import PaymentRoute
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.payment.ui.AdjustmentScreen
+import com.ampairs.payment.ui.OpeningBalanceScreen
 import com.ampairs.payment.ui.PaymentDashboardScreen
 import com.ampairs.payment.ui.PaymentPartyPickerScreen
 import com.ampairs.payment.ui.RecordPaymentScreen
@@ -17,21 +19,42 @@ fun paymentEntryProvider(
 ): NavEntry<NavKey>? = when (key) {
     is PaymentRoute.Dashboard -> NavEntry(key) {
         PaymentDashboardScreen(
-            onRecordPayment = { backStack.add(PaymentRoute.SelectParty) },
+            onRecordPayment = { backStack.add(PaymentRoute.SelectParty(purpose = "PAYMENT")) },
+            onNewAdjustment = { backStack.add(PaymentRoute.SelectParty(purpose = "ADJUSTMENT")) },
+            onSetOpeningBalance = { backStack.add(PaymentRoute.SelectParty(purpose = "OPENING")) },
         )
     }
 
     is PaymentRoute.SelectParty -> NavEntry(key) {
+        val purpose = key.purpose
         PaymentPartyPickerScreen(
             onPartySelected = { partyUid ->
                 backStack.removeLastOrNull()
-                backStack.add(PaymentRoute.Record(partyUid = partyUid))
+                when (purpose) {
+                    "ADJUSTMENT" -> backStack.add(PaymentRoute.Adjustment(partyUid = partyUid))
+                    "OPENING" -> backStack.add(PaymentRoute.OpeningBalance(partyUid = partyUid))
+                    else -> backStack.add(PaymentRoute.Record(partyUid = partyUid))
+                }
             },
         )
     }
 
     is PaymentRoute.Record -> NavEntry(key) {
         RecordPaymentScreen(
+            partyUid = key.partyUid,
+            onSaved = { backStack.removeLastOrNull() },
+        )
+    }
+
+    is PaymentRoute.Adjustment -> NavEntry(key) {
+        AdjustmentScreen(
+            partyUid = key.partyUid,
+            onSaved = { backStack.removeLastOrNull() },
+        )
+    }
+
+    is PaymentRoute.OpeningBalance -> NavEntry(key) {
+        OpeningBalanceScreen(
             partyUid = key.partyUid,
             onSaved = { backStack.removeLastOrNull() },
         )

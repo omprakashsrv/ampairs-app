@@ -328,11 +328,18 @@ sealed interface PaymentRoute : NavKey {
     @Serializable
     data object Dashboard : PaymentRoute
 
+    // purpose: "PAYMENT" | "ADJUSTMENT" | "OPENING"
     @Serializable
-    data object SelectParty : PaymentRoute
+    data class SelectParty(val purpose: String = "PAYMENT") : PaymentRoute
 
     @Serializable
     data class Record(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class Adjustment(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class OpeningBalance(val partyUid: String = "") : PaymentRoute
 }
 
 // Business routes

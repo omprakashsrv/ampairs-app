@@ -1,8 +1,10 @@
 package com.ampairs.payment.ui
 
 import ampairsapp.feature.payment.generated.resources.Res
+import ampairsapp.feature.payment.generated.resources.payment_adjustment
 import ampairsapp.feature.payment.generated.resources.payment_collections_title
 import ampairsapp.feature.payment.generated.resources.payment_no_data
+import ampairsapp.feature.payment.generated.resources.payment_opening_balance
 import ampairsapp.feature.payment.generated.resources.payment_record_payment
 import ampairsapp.feature.payment.generated.resources.payment_to_pay
 import ampairsapp.feature.payment.generated.resources.payment_to_receive
@@ -13,6 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -23,6 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,21 +50,40 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun PaymentDashboardScreen(
     onRecordPayment: () -> Unit,
+    onNewAdjustment: () -> Unit,
+    onSetOpeningBalance: () -> Unit,
     viewModel: PaymentDashboardViewModel = metroViewModel(),
 ) {
     val balances by viewModel.balances.collectAsStateWithLifecycle()
     val locale = LocalAppLocale.current
+    var menuOpen by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text(stringResource(Res.string.payment_collections_title)) })
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onRecordPayment,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(Res.string.payment_record_payment)) },
-            )
+            Box {
+                ExtendedFloatingActionButton(
+                    onClick = { menuOpen = true },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text(stringResource(Res.string.payment_record_payment)) },
+                )
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(Res.string.payment_record_payment)) },
+                        onClick = { menuOpen = false; onRecordPayment() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(Res.string.payment_adjustment)) },
+                        onClick = { menuOpen = false; onNewAdjustment() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(Res.string.payment_opening_balance)) },
+                        onClick = { menuOpen = false; onSetOpeningBalance() },
+                    )
+                }
+            }
         },
     ) { padding ->
         if (balances.isEmpty()) {
