@@ -6,6 +6,7 @@ import ampairsapp.feature.payment.generated.resources.payment_add_for_party
 import ampairsapp.feature.payment.generated.resources.payment_add_for_party_sub
 import ampairsapp.feature.payment.generated.resources.payment_back
 import ampairsapp.feature.payment.generated.resources.payment_current_balance
+import ampairsapp.feature.payment.generated.resources.payment_edit
 import ampairsapp.feature.payment.generated.resources.payment_no_data
 import ampairsapp.feature.payment.generated.resources.payment_opening_balance
 import ampairsapp.feature.payment.generated.resources.payment_party_statement
@@ -71,6 +72,7 @@ import com.ampairs.common.locale.AppLocale
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.payment.domain.Direction
+import com.ampairs.payment.domain.LedgerSourceType
 import com.ampairs.payment.domain.StatementBuilder
 import com.ampairs.payment.domain.StatementLine
 import com.ampairs.payment.ui.components.CollectionsColors
@@ -89,6 +91,7 @@ fun PartyStatementScreen(
     onAdjustment: () -> Unit = {},
     onOpeningBalance: () -> Unit = {},
     onSendStatement: () -> Unit = {},
+    onEditPayment: (String) -> Unit = {},
     onBack: () -> Unit = {},
     viewModel: PartyStatementViewModel = assistedMetroViewModel<PartyStatementViewModel, PartyStatementViewModel.Factory>(
         key = partyUid,
@@ -135,6 +138,7 @@ fun PartyStatementScreen(
             onAdjustment = onAdjustment,
             onOpeningBalance = onOpeningBalance,
             onSendStatement = onSendStatement,
+            onEditPayment = onEditPayment,
             modifier = Modifier.fillMaxSize().padding(padding),
         )
     }
@@ -168,6 +172,7 @@ fun PartyStatementContent(
     onSendStatement: () -> Unit,
     modifier: Modifier = Modifier,
     onReceipts: () -> Unit = {},
+    onEditPayment: (String) -> Unit = {},
 ) {
     val statement = state.statement
     if (statement == null || statement.lines.isEmpty()) {
@@ -236,13 +241,14 @@ fun PartyStatementContent(
 
         SectionHeader(stringResource(Res.string.payment_statement_running))
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(statement.lines) { line -> LedgerStatementRow(line, locale) }
+            items(statement.lines) { line -> LedgerStatementRow(line, locale, onEditPayment) }
         }
     }
 }
 
 @Composable
-private fun LedgerStatementRow(line: StatementLine, locale: AppLocale) {
+private fun LedgerStatementRow(line: StatementLine, locale: AppLocale, onEditPayment: (String) -> Unit) {
+    val editable = line.sourceType == LedgerSourceType.PAYMENT && line.sourceUid.isNotBlank()
     val isDebit = line.debit.isPositive
     val delta = if (isDebit) line.debit else line.credit
     val deltaColor = if (isDebit) CollectionsColors.payable else CollectionsColors.receivable
@@ -265,7 +271,13 @@ private fun LedgerStatementRow(line: StatementLine, locale: AppLocale) {
         line.voucherNo.takeIf { it.isNotBlank() },
     ).joinToString(" · ")
 
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (editable) Modifier.clickable { onEditPayment(line.sourceUid) } else Modifier)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Box(modifier = Modifier.size(34.dp).background(iconBg, CircleShape), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = deltaColor, modifier = Modifier.size(18.dp))
         }
@@ -286,6 +298,14 @@ private fun LedgerStatementRow(line: StatementLine, locale: AppLocale) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+        if (editable) {
+            Icon(
+                Icons.Filled.ChevronRight,
+                contentDescription = stringResource(Res.string.payment_edit),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp).size(18.dp),
+            )
         }
     }
 }

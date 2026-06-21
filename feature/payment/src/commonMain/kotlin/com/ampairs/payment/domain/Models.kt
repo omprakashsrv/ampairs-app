@@ -110,6 +110,10 @@ data class StatementLine(
     val runningBalance: Money,
     val debit: Money,
     val credit: Money,
+    /** Provenance of the line's ledger entry (null for the synthetic opening line). */
+    val sourceType: LedgerSourceType? = null,
+    /** The source document uid — for [LedgerSourceType.PAYMENT] this is the voucher uid (edit target). */
+    val sourceUid: String = "",
 )
 
 /** A party's open (unpaid) bill with aging classification. */

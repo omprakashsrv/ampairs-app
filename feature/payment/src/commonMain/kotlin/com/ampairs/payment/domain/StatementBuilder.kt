@@ -57,6 +57,8 @@ object StatementBuilder {
                 runningBalance = running,
                 debit = if (e.direction == Direction.DR) e.amount else Money.ZERO,
                 credit = if (e.direction == Direction.CR) e.amount else Money.ZERO,
+                sourceType = e.sourceType,
+                sourceUid = e.sourceUid,
             )
         }
 

@@ -101,6 +101,7 @@ fun PaymentDashboardScreen(
     onAdjustmentForParty: (String) -> Unit = { onNewAdjustment() },
     onOpeningForParty: (String) -> Unit = { onSetOpeningBalance() },
     onReceiptsForParty: (String) -> Unit = { onOpenParty(it) },
+    onEditPaymentForParty: (String, String) -> Unit = { partyUid, _ -> onOpenParty(partyUid) },
     viewModel: PaymentDashboardViewModel = metroViewModel(),
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
@@ -174,6 +175,7 @@ fun PaymentDashboardScreen(
                                 onAdjustment = { onAdjustmentForParty(effectiveSelection) },
                                 onOpeningBalance = { onOpeningForParty(effectiveSelection) },
                                 onReceipts = { onReceiptsForParty(effectiveSelection) },
+                                onEditPayment = { voucherUid -> onEditPaymentForParty(effectiveSelection, voucherUid) },
                             )
                         }
                     }
@@ -287,6 +289,7 @@ private fun StatementDetailPane(
     onAdjustment: () -> Unit,
     onOpeningBalance: () -> Unit,
     onReceipts: () -> Unit,
+    onEditPayment: (String) -> Unit,
 ) {
     val viewModel: PartyStatementViewModel = assistedMetroViewModel<PartyStatementViewModel, PartyStatementViewModel.Factory>(
         key = partyUid,
@@ -301,6 +304,7 @@ private fun StatementDetailPane(
         onOpeningBalance = onOpeningBalance,
         onSendStatement = {},
         onReceipts = onReceipts,
+        onEditPayment = onEditPayment,
         modifier = Modifier.fillMaxSize(),
     )
 }
