@@ -44,7 +44,6 @@ interface AuthAndroidModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .addMigrations(AUTH_MIGRATION_2_3)
-                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                 .enableMultiInstanceInvalidation()
                 .build()
         }
