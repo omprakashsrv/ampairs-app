@@ -29,10 +29,10 @@ import kotlin.test.assertTrue
 class ProductCatalogSyncRepositoryTest {
 
     private val api = FakeProductCatalogApi()
-    private val groupDao = FakeGroupDao()
-    private val categoryDao = FakeCategoryDao()
-    private val brandDao = FakeBrandDao()
-    private val subCategoryDao = FakeSubCategoryDao()
+    private val groupDao = CatalogFakeGroupDao()
+    private val categoryDao = CatalogFakeCategoryDao()
+    private val brandDao = CatalogFakeBrandDao()
+    private val subCategoryDao = CatalogFakeSubCategoryDao()
 
     private val repository = ProductCatalogSyncRepository(
         api = api,
@@ -179,7 +179,7 @@ private class FakeProductCatalogApi : ProductCatalogApi {
 
 // ---- DAO fakes (private to this file) ----
 
-private class FakeGroupDao : GroupDao {
+private class CatalogFakeGroupDao : GroupDao {
     private val rows = MutableStateFlow<Map<String, GroupEntity>>(emptyMap())
     override suspend fun groupById(id: String): GroupEntity? = rows.value[id]
     override suspend fun getGroups(): List<GroupEntity> = rows.value.values.sortedBy { it.name }
@@ -198,7 +198,7 @@ private class FakeGroupDao : GroupDao {
     override suspend fun updateActiveStatus(id: String, active: Int) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) } }
 }
 
-private class FakeCategoryDao : CategoryDao {
+private class CatalogFakeCategoryDao : CategoryDao {
     private val rows = MutableStateFlow<Map<String, CategoryEntity>>(emptyMap())
     override suspend fun categoryById(id: String): CategoryEntity? = rows.value[id]
     override suspend fun getCategories(): List<CategoryEntity> = rows.value.values.sortedBy { it.name }
@@ -219,7 +219,7 @@ private class FakeCategoryDao : CategoryDao {
     override suspend fun updateActiveStatus(id: String, active: Int) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) } }
 }
 
-private class FakeBrandDao : BrandDao {
+private class CatalogFakeBrandDao : BrandDao {
     private val rows = MutableStateFlow<Map<String, BrandEntity>>(emptyMap())
     override suspend fun brandById(id: String): BrandEntity? = rows.value[id]
     override suspend fun getBrands(): List<BrandEntity> = rows.value.values.sortedBy { it.name }
@@ -238,7 +238,7 @@ private class FakeBrandDao : BrandDao {
     override suspend fun updateActiveStatus(id: String, active: Int) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) } }
 }
 
-private class FakeSubCategoryDao : SubCategoryDao {
+private class CatalogFakeSubCategoryDao : SubCategoryDao {
     private val rows = MutableStateFlow<Map<String, SubCategoryEntity>>(emptyMap())
     override suspend fun subCategoryById(id: String): SubCategoryEntity? = rows.value[id]
     override suspend fun getSubCategories(): List<SubCategoryEntity> = rows.value.values.sortedBy { it.name }
