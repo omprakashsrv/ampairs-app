@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.printing.core.model.ConnectionType
-import com.ampairs.printing.core.model.DocumentType
 import com.ampairs.printing.core.model.PaperSpec
 import com.ampairs.printing.core.model.PrinterCapabilities
 import com.ampairs.printing.core.model.PrinterClass
@@ -179,15 +178,5 @@ class PrinterListViewModel(
 
     fun delete(printerId: String) {
         viewModelScope.launch { repository.removePrinter(printerId) }
-    }
-
-    /** Route the common document types to this printer. */
-    /** Make this the single default printer: wipe any old/stale routes, then route everything here. */
-    fun setAsDefault(printerId: String) {
-        viewModelScope.launch {
-            repository.clearRoutes()
-            DocumentType.entries.forEach { repository.setRoute(it.key, printerId) }
-            _uiState.update { it.copy(message = "Set as default printer for all documents") }
-        }
     }
 }

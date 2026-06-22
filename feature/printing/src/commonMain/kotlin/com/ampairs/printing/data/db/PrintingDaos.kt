@@ -35,6 +35,9 @@ interface PrintRoutingDao {
     @Query("SELECT * FROM print_routing WHERE document_type = :documentType")
     suspend fun getForType(documentType: String): PrintRoutingEntity?
 
+    @Query("DELETE FROM print_routing WHERE document_type = :documentType")
+    suspend fun deleteForType(documentType: String)
+
     @Query("DELETE FROM print_routing")
     suspend fun clearAll()
 

@@ -79,5 +79,25 @@
     <string name="printing_static_template">Static HTML template</string>
     <string name="printing_static_template_note">This template is a stored .html file. Edit it externally and re-import. Use {{field}} placeholders and {{#lines}}…{{/lines}} for line items.</string>
     <string name="printing_replace_html">Replace HTML file</string>
+    <string name="printing_printers_subtitle">%1$d configured · tap to manage routing</string>
+    <string name="printing_no_printers_body">Add a printer to start printing invoices, orders and receipts. Ampairs can find printers on your network, Bluetooth or USB — or use your device\'s print dialog.</string>
+    <string name="printing_discover_printers">Discover printers</string>
+    <string name="printing_open">Open</string>
+    <string name="printing_send_test_print">Send test print</string>
+    <string name="printing_routing_title">Default for document types</string>
+    <string name="printing_routing_note">This printer auto-prints the selected documents. Each type routes to one printer.</string>
+    <string name="printing_delete_printer">Delete printer</string>
+    <string name="printing_no_templates_body">Restore the built-in defaults to get invoice, order and receipt layouts — or import your own HTML template.</string>
+    <string name="printing_template_html">HTML file</string>
+    <string name="printing_template_blocks">Block layout</string>
+    <string name="printing_queue_in_progress">In progress %1$d</string>
+    <string name="printing_queue_awaiting">Awaiting %1$d</string>
+    <string name="printing_queue_failed">Failed %1$d</string>
+    <string name="printing_all_caught_up">All caught up</string>
+    <string name="printing_no_jobs_body">No print jobs in the queue. Printed documents and any failures will show up here.</string>
+    <string name="printing_reprint">Reprint</string>
+    <string name="printing_clear_all_title">Clear all jobs?</string>
+    <string name="printing_clear_all_body">This removes every job from the queue, including failed ones. Documents already printed are unaffected.</string>
+    <string name="printing_attempts">%1$d attempt(s)</string>
     <string name="printing_setup_guide">No printers found.\n\nInkjet / laser (desktop): add the printer in your OS first, then tap Scan again.\n• Windows: Settings → Bluetooth &amp; devices → Printers &amp; scanners → Add device\n• macOS: System Settings → Printers &amp; Scanners → Add Printer\n• Linux: Settings → Printers (or CUPS at http://localhost:631)\n\nThermal printers:\n• Bluetooth: pair the printer in your device\'s Bluetooth settings, then Scan again\n• USB: connect the printer and approve the permission prompt\n• Network: tap Add printer and enter the IP (host:port)</string>
 </resources>
