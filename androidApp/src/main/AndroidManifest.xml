@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      grant-bluetooth declares minSdk 26, but the app ships minSdk 24. Force the merge so we keep
+      Android 7.0/7.1 (API 24-25) support. The Grant Bluetooth path only runs when a user connects a
+      Bluetooth printer; on API 24-25 that flow may fail at runtime (acceptable trade-off — those
+      devices are a negligible share and Bluetooth printing is optional).
+    -->
+    <uses-sdk tools:overrideLibrary="dev.brewkits.grant.bluetooth, dev.brewkits.grant" />
 
     <!-- Network thermal printers (raw TCP :9100) -->
     <uses-permission android:name="android.permission.INTERNET" />
