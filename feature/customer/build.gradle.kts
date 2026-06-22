@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.metro)
+    alias(libs.plugins.kover)
 }
 
 kotlin {
@@ -60,6 +61,13 @@ kotlin {
                 implementation(libs.coil.network)
                 // Material3 Adaptive for WindowSizeClass
                 implementation(libs.material3.adaptive)
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
             }
         }
         androidMain {
