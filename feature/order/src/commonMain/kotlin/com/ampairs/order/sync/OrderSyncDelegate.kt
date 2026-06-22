@@ -36,8 +36,9 @@ class OrderSyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.ORDER
 
-    // Orders reference customers and products — pull/push those first.
-    override val dependsOn: List<SyncEntity> = listOf(SyncEntity.CUSTOMER, SyncEntity.PRODUCT)
+    // Orders reference customers and products — push/pull those first. pushDependencies so the PUSH
+    // (not just pull) sends parents before the order; dependsOn inherits this list.
+    override val pushDependencies: List<SyncEntity> = listOf(SyncEntity.CUSTOMER, SyncEntity.PRODUCT)
 
     override suspend fun pullFromServer(): SyncResult =
         pull().fold(

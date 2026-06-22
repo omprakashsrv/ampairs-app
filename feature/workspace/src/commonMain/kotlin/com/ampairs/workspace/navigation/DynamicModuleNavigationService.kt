@@ -131,6 +131,8 @@ class DynamicModuleNavigationService {
             ModuleCodes.INVENTORY_MANAGEMENT,
             ModuleCodes.TAX_CODE_MANAGEMENT,
             ModuleCodes.UNIT_MANAGEMENT,
+            ModuleCodes.PRINTING,
+            ModuleCodes.PAYMENT_COLLECTION -> true
             ModuleCodes.STOREFRONT_MANAGEMENT -> true
             else -> false
         }

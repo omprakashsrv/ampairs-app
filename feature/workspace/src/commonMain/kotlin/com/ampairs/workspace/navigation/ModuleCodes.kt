@@ -9,6 +9,8 @@ object ModuleCodes {
     const val TAX_CODE_MANAGEMENT = "tax-code-management"
     const val BUSINESS_PROFILE = "business-profile"
     const val UNIT_MANAGEMENT = "unit-management"
+    const val PRINTING = "printing-management"
+    const val PAYMENT_COLLECTION = "payment-collection"
     const val STOREFRONT_MANAGEMENT = "storefront-management"
 
     // Not yet implemented locally

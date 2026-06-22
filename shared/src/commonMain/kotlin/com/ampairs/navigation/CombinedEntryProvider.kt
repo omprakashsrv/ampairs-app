@@ -6,6 +6,7 @@ import InventoryRoute
 import InvoiceRoute
 import MoreScreen
 import OrderRoute
+import PaymentRoute
 import ProductRoute
 import Route
 import SubscriptionRoute
@@ -29,6 +30,7 @@ import com.ampairs.navigation.providers.ecomEntryProvider
 import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
 import com.ampairs.navigation.providers.orderEntryProvider
+import com.ampairs.navigation.providers.paymentEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
 import com.ampairs.navigation.providers.sequenceEntryProvider
 import com.ampairs.navigation.providers.storeEntryProvider
@@ -36,10 +38,12 @@ import com.ampairs.navigation.providers.storefrontEntryProvider
 import com.ampairs.navigation.providers.subscriptionEntryProvider
 import com.ampairs.navigation.providers.taxEntryProvider
 import com.ampairs.navigation.providers.unitEntryProvider
+import com.ampairs.navigation.providers.printingEntryProvider
 import com.ampairs.navigation.providers.workspaceEntryProvider
 import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitListRoute
+import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 
 /**
@@ -69,10 +73,12 @@ fun combinedEntryProvider(
         ?: businessEntryProvider(key, backStack)
         ?: subscriptionEntryProvider(key, backStack)
         ?: unitEntryProvider(key, backStack)
+        ?: printingEntryProvider(key, backStack)
         ?: storeEntryProvider(key, backStack)
         ?: sequenceEntryProvider(key, backStack)
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
+        ?: paymentEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key)
         ?: agentEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
@@ -176,6 +182,14 @@ private fun mainRouteEntryProvider(
         }
     }
 
+    // Route.Printing redirects to PrinterListRoute
+    is Route.Printing -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(PrinterListRoute)
+        }
+    }
+
     // Route.Order redirects to OrderRoute.Orders
     is Route.Order -> NavEntry(key) {
         LaunchedEffect(Unit) {
@@ -197,6 +211,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(InventoryRoute.Inventory)
+        }
+    }
+
+    // Route.Payment redirects to PaymentRoute.Dashboard
+    is Route.Payment -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(PaymentRoute.Dashboard)
         }
     }
 

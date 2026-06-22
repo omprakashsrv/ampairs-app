@@ -30,6 +30,10 @@ include(":data:common")
 include(":data:sync")
 include(":data:event")
 include(":tally")
+include(":printing:core")
+include(":printing:render")
+include(":printing:transport")
+include(":feature:printing")
 include(
     ":feature:file-api",
     ":feature:file",
@@ -58,5 +62,6 @@ include(
     ":feature:inventory",
     ":feature:order",
     ":feature:invoice",
+    ":feature:payment",
     ":feature:workspace"
 )

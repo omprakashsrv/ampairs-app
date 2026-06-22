@@ -29,9 +29,11 @@ import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,7 +45,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -75,18 +79,24 @@ fun InvoiceViewScreen(
     onNavigateBack: () -> Unit,
     onEdit: (invoiceId: String) -> Unit = {},
     onOpenOrder: (orderId: String) -> Unit = {},
+    onOpenPrinterSetup: () -> Unit = {},
     viewModel: InvoiceViewViewModel = assistedMetroViewModel<InvoiceViewViewModel, InvoiceViewViewModel.Factory>(key = invoiceId) { create(invoiceId) }
 ) {
     val invoice = viewModel.invoice
     val locale = LocalAppLocale.current
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
-    var showPreview by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val fromOrder = !invoice.orderRefId.isNullOrBlank()
 
-    if (showPreview) {
-        TaxInvoicePreviewScreen(invoice = invoice, onClose = { showPreview = false })
-        return
+    viewModel.printMessage?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPrintMessage() },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearPrintMessage() }) { Text("OK") }
+            },
+            text = { Text(msg) },
+        )
     }
 
     Scaffold(
@@ -112,7 +122,15 @@ fun InvoiceViewScreen(
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
-                    IconButton(onClick = { showPreview = true }) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                // Print to the configured printer; if none is set up yet, open setup.
+                                if (viewModel.hasAnyPrinter()) viewModel.printThermal() else onOpenPrinterSetup()
+                            }
+                        },
+                        enabled = !viewModel.printing,
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Print,
                             contentDescription = stringResource(Res.string.inv_view_print_cd)

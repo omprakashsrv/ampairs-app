@@ -23,7 +23,6 @@ interface WorkspaceDesktopModule {
             )
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
-                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                 .build()
         }
     }

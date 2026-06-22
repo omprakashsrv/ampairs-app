@@ -5,6 +5,7 @@ import CustomerRoute
 import InventoryRoute
 import InvoiceRoute
 import OrderRoute
+import PaymentRoute
 import ProductRoute
 import Route
 import WorkspaceRoute
@@ -22,6 +23,8 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Warehouse
@@ -46,11 +49,13 @@ import ampairsapp.shared.generated.resources.nav_more_business
 import ampairsapp.shared.generated.resources.nav_more_tax_gst
 import ampairsapp.shared.generated.resources.nav_orders
 import ampairsapp.shared.generated.resources.nav_parties
+import ampairsapp.shared.generated.resources.nav_payments
 import ampairsapp.shared.generated.resources.nav_reports
 import ampairsapp.shared.generated.resources.nav_sales
 import ampairsapp.shared.generated.resources.nav_stock
 import ampairsapp.shared.generated.resources.nav_storefront
 import ampairsapp.shared.generated.resources.nav_tax
+import ampairsapp.shared.generated.resources.nav_printing
 import ampairsapp.shared.generated.resources.nav_units
 import ampairsapp.shared.generated.resources.nav_users
 import com.ampairs.customer.ui.CustomerCreateRoute
@@ -68,6 +73,10 @@ import com.ampairs.tax.ui.navigation.TaxCodeSearchRoute
 import com.ampairs.tax.ui.navigation.TaxConfigurationRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitFormRoute
+import com.ampairs.printing.ui.PrintQueueRoute
+import com.ampairs.printing.ui.PrinterListRoute
+import com.ampairs.printing.ui.TemplateEditRoute
+import com.ampairs.printing.ui.TemplateListRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.navigation.ModuleCodes
@@ -85,6 +94,8 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> Route.Tax
     ModuleCodes.BUSINESS_PROFILE -> Route.Business
     ModuleCodes.UNIT_MANAGEMENT -> Route.Unit
+    ModuleCodes.PRINTING -> Route.Printing
+    ModuleCodes.PAYMENT_COLLECTION -> Route.Payment
     ModuleCodes.STOREFRONT_MANAGEMENT -> Route.Storefront
     else -> null
 }
@@ -116,6 +127,12 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
     currentRoute is Route.Unit
         || currentRoute is UnitListRoute
         || currentRoute is UnitFormRoute -> ModuleCodes.UNIT_MANAGEMENT
+    currentRoute is Route.Printing
+        || currentRoute is PrinterListRoute
+        || currentRoute is TemplateListRoute
+        || currentRoute is TemplateEditRoute
+        || currentRoute is PrintQueueRoute -> ModuleCodes.PRINTING
+    currentRoute is PaymentRoute || currentRoute is Route.Payment -> ModuleCodes.PAYMENT_COLLECTION
     currentRoute is Route.Storefront -> ModuleCodes.STOREFRONT_MANAGEMENT
     else -> null
 }
@@ -137,6 +154,8 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> stringResource(Res.string.nav_tax)
     ModuleCodes.BUSINESS_PROFILE -> stringResource(Res.string.nav_more_business)
     ModuleCodes.UNIT_MANAGEMENT -> stringResource(Res.string.nav_units)
+    ModuleCodes.PRINTING -> stringResource(Res.string.nav_printing)
+    ModuleCodes.PAYMENT_COLLECTION -> stringResource(Res.string.nav_payments)
     ModuleCodes.STOREFRONT_MANAGEMENT -> stringResource(Res.string.nav_storefront)
     "business-reporting" -> stringResource(Res.string.nav_reports)
     "business-dashboard" -> stringResource(Res.string.nav_dashboard)
@@ -154,6 +173,8 @@ fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> Icons.Default.Calculate
     ModuleCodes.BUSINESS_PROFILE -> Icons.Default.Business
     ModuleCodes.UNIT_MANAGEMENT -> Icons.Default.Straighten
+    ModuleCodes.PRINTING -> Icons.Default.Print
+    ModuleCodes.PAYMENT_COLLECTION -> Icons.Default.Payments
     ModuleCodes.STOREFRONT_MANAGEMENT -> Icons.Default.Storefront
     "business-reporting" -> Icons.Default.Analytics
     "business-dashboard" -> Icons.Default.Dashboard

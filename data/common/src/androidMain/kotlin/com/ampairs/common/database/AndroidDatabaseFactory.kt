@@ -26,7 +26,6 @@ inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.createAndroi
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(queryDispatcher)
         .apply { if (migrations.isNotEmpty()) addMigrations(*migrations.toTypedArray()) }
-        .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
         .enableMultiInstanceInvalidation()
         .build()
 }

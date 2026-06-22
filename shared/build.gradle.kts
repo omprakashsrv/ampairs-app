@@ -113,6 +113,10 @@ kotlin {
             dependencies {
                 api(projects.data.common)
                 api(projects.data.sync)
+                api(projects.printing.core)
+                api(projects.printing.render)
+                api(projects.printing.transport)
+                api(projects.feature.printing)
 
                 // Feature modules — api so androidApp can see Metro-generated supertypes
                 api(projects.feature.auth)
@@ -133,6 +137,7 @@ kotlin {
                 api(projects.feature.inventory)
                 api(projects.feature.order)
                 api(projects.feature.invoice)
+                api(projects.feature.payment)
                 api(projects.feature.workspace)
                 api(projects.feature.fileApi)
                 api(projects.feature.file)

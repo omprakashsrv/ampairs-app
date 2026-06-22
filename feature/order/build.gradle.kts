@@ -47,6 +47,8 @@ kotlin {
                 implementation(projects.feature.store)
                 implementation(projects.feature.sequence)
                 implementation(projects.feature.invoice)
+                implementation(projects.printing.core)
+                implementation(projects.feature.printing)
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)

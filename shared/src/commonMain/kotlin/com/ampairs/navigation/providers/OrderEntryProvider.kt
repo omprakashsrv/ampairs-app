@@ -2,6 +2,7 @@ package com.ampairs.navigation.providers
 
 import InvoiceRoute
 import OrderRoute
+import Route
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.order.ui.OrderPaneScreen
@@ -42,6 +43,7 @@ fun orderEntryProvider(
             orderId = key.id,
             onOpenInvoice = { invoiceId -> backStack.add(InvoiceRoute.InvoiceView(id = invoiceId)) },
             onEdit = { orderId -> backStack.add(OrderRoute.Root(id = orderId)) },
+            onOpenPrinterSetup = { backStack.add(Route.Printing) },
             onNavigateBack = { backStack.removeLastOrNull() }
         )
     }
