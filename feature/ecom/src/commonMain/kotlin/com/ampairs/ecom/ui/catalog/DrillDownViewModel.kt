@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -49,7 +50,6 @@ data class DrillDownUiState(
     val cartCount: Int = 0,
     val cartTotal: Double = 0.0,
     val isSearch: Boolean = false,
-    val query: String = "",
 )
 
 @AssistedInject
@@ -72,6 +72,13 @@ class DrillDownViewModel(
     private val isSearch = args.query != null
     private val searchQuery = MutableStateFlow(args.query.orEmpty())
 
+    /**
+     * The live search term. The text field binds to THIS (synchronous) flow, not [uiState] — the
+     * latter is produced from Room flows and lags a keystroke behind, which reorders fast typing
+     * (e.g. "ring" → "ingr") because the field reconciles against a stale value.
+     */
+    val query: StateFlow<String> = searchQuery.asStateFlow()
+
     fun setQuery(value: String) {
         searchQuery.value = value
     }
@@ -81,7 +88,7 @@ class DrillDownViewModel(
         combine(session.active, refine, searchQuery) { active, r, q -> Triple(active, r, q) }
             .flatMapLatest { (active, activeRefine, query) ->
                 if (active == null) {
-                    flowOf(DrillDownUiState(title = args.title, isSearch = isSearch, query = query))
+                    flowOf(DrillDownUiState(title = args.title, isSearch = isSearch))
                 } else {
                     val id = active.storefrontId
                     val productsFlow = if (isSearch) {
@@ -114,11 +121,10 @@ class DrillDownViewModel(
                             cartCount = cartItems.sumOf { it.quantity },
                             cartTotal = cartItems.sumOf { it.unit_price * it.quantity },
                             isSearch = isSearch,
-                            query = query,
                         )
                     }
                 }
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DrillDownUiState(title = args.title, isSearch = isSearch, query = args.query.orEmpty()))
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DrillDownUiState(title = args.title, isSearch = isSearch))
 
     fun toggleRefine(value: String) {
         refine.value = if (refine.value == value) null else value

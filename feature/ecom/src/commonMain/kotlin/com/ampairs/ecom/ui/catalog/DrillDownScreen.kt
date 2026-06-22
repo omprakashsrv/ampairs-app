@@ -63,6 +63,8 @@ fun DrillDownScreen(
         assistedMetroViewModel<DrillDownViewModel, DrillDownViewModel.Factory>(key = args.key) { create(args) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Bind the field to the synchronous query flow (uiState lags a keystroke behind via Room flows).
+    val query by viewModel.query.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.messages.collect { snackbar.showSnackbar(it) } }
 
     Column(Modifier.fillMaxSize()) {
@@ -75,13 +77,13 @@ fun DrillDownScreen(
                 val focusRequester = remember { FocusRequester() }
                 LaunchedEffect(Unit) { focusRequester.requestFocus() }
                 OutlinedTextField(
-                    value = state.query,
+                    value = query,
                     onValueChange = viewModel::setQuery,
                     modifier = Modifier.weight(1f).focusRequester(focusRequester),
                     placeholder = { Text(stringResource(Res.string.ecom_search_placeholder)) },
                     leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                     trailingIcon = {
-                        if (state.query.isNotEmpty()) {
+                        if (query.isNotEmpty()) {
                             IconButton(onClick = { viewModel.setQuery("") }) {
                                 Icon(Icons.Filled.Close, contentDescription = "Clear")
                             }
@@ -96,7 +98,7 @@ fun DrillDownScreen(
         }
 
         // Only show the result count once a search term is entered (or for category/brand drill-down).
-        if (!state.isSearch || state.query.isNotBlank()) {
+        if (!state.isSearch || query.isNotBlank()) {
             Text(
                 stringResource(Res.string.ecom_result_count, state.products.size),
                 style = MaterialTheme.typography.bodySmall,
@@ -122,7 +124,7 @@ fun DrillDownScreen(
             Box(Modifier.weight(1f).fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(
-                        if (state.query.isBlank()) Res.string.ecom_search_prompt else Res.string.ecom_search_no_results
+                        if (query.isBlank()) Res.string.ecom_search_prompt else Res.string.ecom_search_no_results
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
