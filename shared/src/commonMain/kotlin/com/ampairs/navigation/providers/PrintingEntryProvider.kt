@@ -5,6 +5,8 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.printing.ui.PrintQueueRoute
 import com.ampairs.printing.ui.PrintQueueScreen
+import com.ampairs.printing.ui.PrinterDetailRoute
+import com.ampairs.printing.ui.PrinterDetailScreen
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.printing.ui.PrinterListScreen
 import com.ampairs.printing.ui.TemplateEditRoute
@@ -24,6 +26,15 @@ fun printingEntryProvider(
         PrinterListScreen(
             onOpenQueue = { backStack.add(PrintQueueRoute) },
             onOpenTemplates = { backStack.add(TemplateListRoute) },
+            onOpenPrinter = { printerId -> backStack.add(PrinterDetailRoute(printerId)) },
+            modifier = Modifier,
+        )
+    }
+
+    is PrinterDetailRoute -> NavEntry(key) {
+        PrinterDetailScreen(
+            printerId = key.printerId,
+            onBack = { backStack.removeLastOrNull() },
             modifier = Modifier,
         )
     }

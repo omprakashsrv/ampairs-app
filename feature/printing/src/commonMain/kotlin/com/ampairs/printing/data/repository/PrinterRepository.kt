@@ -31,9 +31,15 @@ class PrinterRepository(
 
     suspend fun removePrinter(id: String) = printerDao.deactivate(id)
 
+    /** Observe the full document-type -> printer routing table (which doc types print where). */
+    fun observeRoutes(): Flow<List<PrintRoutingEntity>> = routingDao.observeAll()
+
     /** Set the default printer for a document type (e.g. "invoice" -> counter thermal). */
     suspend fun setRoute(documentType: String, printerId: String) =
         routingDao.upsert(PrintRoutingEntity(documentType, printerId))
+
+    /** Remove the route for a single document type (so it falls back to any-printer). */
+    suspend fun removeRoute(documentType: String) = routingDao.deleteForType(documentType)
 
     /** Drop all document routes — used before re-pointing everything at a new default printer. */
     suspend fun clearRoutes() = routingDao.clearAll()

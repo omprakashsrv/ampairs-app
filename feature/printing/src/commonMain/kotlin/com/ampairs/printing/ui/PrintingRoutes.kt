@@ -7,6 +7,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object PrinterListRoute : NavKey
 
+/** A single printer's settings — status, test print, and per-document-type routing toggles. */
+@Serializable
+data class PrinterDetailRoute(val printerId: String) : NavKey
+
 /** Print job spool/history with retry + mark-printed actions. */
 @Serializable
 data object PrintQueueRoute : NavKey
