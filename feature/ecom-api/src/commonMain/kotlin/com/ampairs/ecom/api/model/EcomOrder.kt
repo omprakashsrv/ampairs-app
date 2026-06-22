@@ -15,6 +15,8 @@ data class DeliveryAddress(
     @SerialName("pin_code") val pinCode: String = "",
     @SerialName("country") val country: String = "IN",
     @SerialName("phone") val phone: String? = null,
+    @SerialName("latitude") val latitude: Double? = null,
+    @SerialName("longitude") val longitude: Double? = null,
 )
 
 @Serializable

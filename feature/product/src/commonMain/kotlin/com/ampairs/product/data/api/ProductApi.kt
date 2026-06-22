@@ -23,4 +23,10 @@ interface ProductApi {
     // Non-sync UI endpoints.
     suspend fun getProduct(productId: String): Result<ProductApiModel>
     suspend fun searchProducts(query: String): Result<List<ProductApiModel>>
+
+    /**
+     * Toggle whether a product is listed on the workspace's ecom storefront. Online, UI-invoked
+     * action; the backend updates the storefront catalog asynchronously.
+     */
+    suspend fun setEcomListing(productId: String, listed: Boolean): Result<ProductApiModel>
 }

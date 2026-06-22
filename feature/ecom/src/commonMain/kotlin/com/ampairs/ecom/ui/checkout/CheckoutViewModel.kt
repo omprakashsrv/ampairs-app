@@ -105,15 +105,18 @@ class CheckoutViewModel(
         if (form.value.isPlacing) return
         form.update { it.copy(isPlacing = true) }
         viewModelScope.launch {
-            val token = cartRepository.sessionToken(storefrontId)
-            if (token == null) {
+            // The cart is built offline; materialise it to the server now. This is where stock /
+            // availability are validated — a failure here is surfaced before the order is placed.
+            val token = cartRepository.materializeToServer(slug, storefrontId).getOrElse {
                 form.update { it.copy(isPlacing = false) }
-                _events.tryEmit(CheckoutEvent.Error("Cart session expired"))
+                _events.tryEmit(CheckoutEvent.Error(it.message ?: "Couldn't validate your cart"))
                 return@launch
             }
             val request = CheckoutRequest(deliveryAddressId = addressId, notes = uiState.value.notes.ifBlank { null })
             orderRepository.checkout(slug, token, request).fold(
                 onSuccess = { order ->
+                    // The local cart has been turned into an order — clear it.
+                    cartRepository.clear(storefrontId)
                     syncService.emit(SyncEvent.TriggerPull(SyncEntity.ECOM_ORDER))
                     _events.tryEmit(CheckoutEvent.OrderPlaced(order.ecomOrderRef))
                 },

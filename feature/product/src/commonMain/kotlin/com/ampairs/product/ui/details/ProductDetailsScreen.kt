@@ -38,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -88,6 +89,9 @@ import ampairsapp.feature.product.generated.resources.prod_section_classificatio
 import ampairsapp.feature.product.generated.resources.prod_section_stock_info
 import ampairsapp.feature.product.generated.resources.prod_section_category_brand
 import ampairsapp.feature.product.generated.resources.prod_section_unit
+import ampairsapp.feature.product.generated.resources.prod_section_storefront
+import ampairsapp.feature.product.generated.resources.prod_storefront_listed
+import ampairsapp.feature.product.generated.resources.prod_storefront_hint
 import ampairsapp.feature.product.generated.resources.prod_section_variants
 import ampairsapp.feature.product.generated.resources.prod_section_images
 import ampairsapp.feature.product.generated.resources.prod_label_name
@@ -170,9 +174,9 @@ fun ProductDetailsScreen(
             uiState.product != null -> {
                 val product = uiState.product!!
                 if (isExpanded) {
-                    ProductDetailsExpanded(product = product, uiState = uiState, primaryImageUrl = uiState.primaryImageUrl, onManageVariants = onManageVariants, onEdit = { onEditProduct(productId) }, modifier = Modifier.fillMaxSize())
+                    ProductDetailsExpanded(product = product, uiState = uiState, primaryImageUrl = uiState.primaryImageUrl, onManageVariants = onManageVariants, onEdit = { onEditProduct(productId) }, onToggleEcom = { viewModel.setEcomListing(it) }, modifier = Modifier.fillMaxSize())
                 } else {
-                    ProductDetailsMobile(product = product, uiState = uiState, primaryImageUrl = uiState.primaryImageUrl, onManageVariants = onManageVariants, modifier = Modifier.fillMaxSize())
+                    ProductDetailsMobile(product = product, uiState = uiState, primaryImageUrl = uiState.primaryImageUrl, onManageVariants = onManageVariants, onToggleEcom = { viewModel.setEcomListing(it) }, modifier = Modifier.fillMaxSize())
                 }
             }
 
@@ -204,6 +208,7 @@ private fun ProductDetailsMobile(
     uiState: ProductDetailsUiState,
     primaryImageUrl: String?,
     onManageVariants: ((String, String) -> Unit)?,
+    onToggleEcom: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -221,7 +226,7 @@ private fun ProductDetailsMobile(
                 modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants, showInlineImages = false)
+                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants, showInlineImages = false, onToggleEcom = onToggleEcom)
             }
             1 -> ProductImageManagementScreen(
                 productId = product.id,
@@ -242,6 +247,7 @@ private fun ProductDetailsExpanded(
     primaryImageUrl: String?,
     onManageVariants: ((String, String) -> Unit)?,
     onEdit: () -> Unit,
+    onToggleEcom: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val locale = LocalAppLocale.current
@@ -342,7 +348,7 @@ private fun ProductDetailsExpanded(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants, showInlineImages = false)
+                ProductInfoContent(product = product, uiState = uiState, onManageVariants = onManageVariants, showInlineImages = false, onToggleEcom = onToggleEcom)
             }
         }
 
@@ -453,6 +459,7 @@ private fun ProductInfoContent(
     uiState: ProductDetailsUiState,
     onManageVariants: ((String, String) -> Unit)?,
     showInlineImages: Boolean = true,
+    onToggleEcom: (Boolean) -> Unit = {},
 ) {
     val locale = LocalAppLocale.current
     if (showInlineImages && !uiState.primaryImageUrl.isNullOrBlank()) {
@@ -513,6 +520,33 @@ private fun ProductInfoContent(
     if (uiState.baseUnitName.isNotBlank()) {
         InfoSection(title = stringResource(Res.string.prod_section_unit)) {
             InfoRow(label = stringResource(Res.string.prod_label_base_unit), value = uiState.baseUnitName)
+        }
+    }
+
+    InfoSection(title = stringResource(Res.string.prod_section_storefront)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(Res.string.prod_storefront_listed),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = stringResource(Res.string.prod_storefront_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = uiState.isEcomListed,
+                onCheckedChange = onToggleEcom,
+                enabled = !uiState.isEcomToggling,
+            )
+        }
+        uiState.ecomError?.let { err ->
+            Text(text = err, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
     }
 }

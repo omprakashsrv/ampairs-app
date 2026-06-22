@@ -32,6 +32,12 @@ enum class LineItemStatus { PENDING, CONFIRMED, DISPATCHED, DELIVERED, CANCELLED
 enum class AccessMode { GUEST_FIRST, LOGIN_FIRST }
 
 /**
+ * Merchant-side storefront access model (backend `access_mode`). PUBLIC = anyone can browse;
+ * RESTRICTED = customers must request/be granted access. See the ecom storefront management API.
+ */
+enum class StorefrontAccessMode { PUBLIC, RESTRICTED, UNKNOWN }
+
+/**
  * Store-access request state for the LOGIN_FIRST gate (future backend API, see plan §11.1).
  */
 enum class StoreAccessStatus { GRANTED, PENDING, REJECTED, NONE }

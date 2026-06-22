@@ -7,15 +7,45 @@ import com.ampairs.payment.data.db.entity.PaymentAllocationEntity
 import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.payment.data.db.entity.PaymentVoucherEntity
 import com.ampairs.payment.domain.Money
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toInstant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /** Normalize a stored date ("yyyy-MM-dd HH:mm:ss" or ISO) to an ISO-8601 Instant the backend parses.
  *  Invoice-derived ledger entries inherit the invoice's space-formatted date; sync must send ISO. */
 @OptIn(ExperimentalTime::class)
 private fun String.toIsoInstantOrSelf(): String =
     if (isBlank()) this else DateTimeAdapter.fromDateTimeString(this)?.toString() ?: this
+
+/**
+ * Normalize a stored date to an ISO-8601 UTC instant the backend deserializes as [Instant]. Voucher
+ * dates are stored in the UI's `dd-MM-yyyy` form (e.g. "12-06-2026"), which the server rejects
+ * ("Cannot deserialize java.time.Instant from String '12-06-2026'"). Handles ISO instants, ISO local
+ * date/date-time, and `dd-MM-yyyy` / `dd/MM/yyyy`; an unrecognized value is returned unchanged rather
+ * than corrupted to the epoch.
+ */
+@OptIn(ExperimentalTime::class)
+private fun String.toIsoDateInstant(): String {
+    val s = trim()
+    if (s.isEmpty()) return this
+    runCatching { return Instant.parse(s).toString() }                                              // ISO instant
+    runCatching { return LocalDateTime.parse(s.replace(' ', 'T')).toInstant(TimeZone.UTC).toString() } // yyyy-MM-dd HH:mm:ss
+    runCatching { return LocalDate.parse(s).atStartOfDayIn(TimeZone.UTC).toString() }                // yyyy-MM-dd
+    val p = s.substringBefore(' ').split('-', '/')                                                   // dd-MM-yyyy / dd/MM/yyyy
+    if (p.size == 3 && p[2].length == 4) {
+        val day = p[0].toIntOrNull(); val month = p[1].toIntOrNull(); val year = p[2].toIntOrNull()
+        if (day != null && month != null && year != null) {
+            runCatching { return LocalDate(year, month, day).atStartOfDayIn(TimeZone.UTC).toString() }
+        }
+    }
+    return this
+}
 
 /**
  * Wire DTOs for the payment `/sync` contracts (spec 013 contracts/payment-sync.md). Money is sent
@@ -162,12 +192,12 @@ fun PaymentVoucherEntity.toApi(): PaymentVoucherApiModel = PaymentVoucherApiMode
     uid = uid,
     partyUid = party_uid,
     voucherNo = voucher_no,
-    voucherDate = voucher_date,
+    voucherDate = voucher_date.toIsoDateInstant(),
     direction = direction,
     totalAmount = Money(total_minor).toDecimalString(),
     paymentMode = payment_mode,
     referenceNumber = reference_number,
-    instrumentDate = instrument_date,
+    instrumentDate = instrument_date?.toIsoDateInstant(),
     bankName = bank_name,
     clearanceStatus = clearance_status,
     unallocatedAmount = Money(unallocated_minor).toDecimalString(),
@@ -218,7 +248,7 @@ fun AdjustmentVoucherEntity.toApi(): AdjustmentVoucherApiModel = AdjustmentVouch
     uid = uid,
     partyUid = party_uid,
     voucherNo = voucher_no,
-    voucherDate = voucher_date,
+    voucherDate = voucher_date.toIsoDateInstant(),
     adjustmentType = adjustment_type,
     amount = Money(amount_minor).toDecimalString(),
     narration = narration,

@@ -242,12 +242,21 @@ class ProductRepository(
     }
 
     /**
-     * Delete a product. Hard-deletes locally; the server-side delete is reconciled on the next
-     * pull (server reports status=DELETED) — products have no delete branch in the bulk push.
+     * Delete a product. Soft-deletes locally (active = 0, soft_deleted = 1, synced = 0) and flags
+     * PRODUCT pending-push so the bulk sync sends it to the server (status = DELETED). The delegate
+     * then hard-deletes the local row once the server confirms; the server-side delete also unlists
+     * the product from the ecom storefront.
      */
     suspend fun deleteProduct(productId: String): Result<Unit> {
         return try {
-            productDao.deleteById(productId)
+            val existing = productDao.productById(productId)
+            if (existing == null) {
+                // Never synced to the server (local-only) — just drop it locally.
+                productDao.deleteById(productId)
+            } else {
+                productDao.insert(existing.copy(active = 0, soft_deleted = 1, synced = 0))
+                markPending()
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "ProductRepository.deleteProduct")

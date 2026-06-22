@@ -136,6 +136,8 @@ fun AddressResponse.toEntity(synced: Int = 1): CustomerAddressEntity = CustomerA
     is_default = if (isDefault) 1 else 0,
     active = 1,
     synced = synced,
+    latitude = latitude,
+    longitude = longitude,
 )
 
 fun CustomerAddressEntity.toModel(): AddressResponse = AddressResponse(
@@ -149,6 +151,8 @@ fun CustomerAddressEntity.toModel(): AddressResponse = AddressResponse(
     country = country,
     phone = phone,
     isDefault = is_default == 1,
+    latitude = latitude,
+    longitude = longitude,
 )
 
 // ── Order ──

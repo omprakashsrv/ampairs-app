@@ -29,6 +29,10 @@ kotlin {
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
                 implementation(projects.feature.authApi)
+                api(projects.feature.fileApi)
+                implementation(projects.feature.file)
+                // Location picker (current location / map select + reverse geocode) for addresses
+                implementation(projects.feature.formwidgets)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)

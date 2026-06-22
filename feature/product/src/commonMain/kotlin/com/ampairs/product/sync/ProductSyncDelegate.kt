@@ -70,7 +70,12 @@ class ProductSyncDelegate(
             val apiModels = batch.map { it.asProductApiModel() }
             productApi.bulkUpdateProducts(apiModels)
                 .onSuccess {
-                    batch.forEach { entity -> productDao.insert(entity.copy(synced = 1)) }
+                    batch.forEach { entity ->
+                        // Soft-deleted rows are now confirmed on the server → hard-delete locally.
+                        // Active rows just flip to synced.
+                        if (entity.soft_deleted == 1) productDao.deleteById(entity.id)
+                        else productDao.insert(entity.copy(synced = 1))
+                    }
                     pushed += batch.size
                 }
                 .onFailure { error ->

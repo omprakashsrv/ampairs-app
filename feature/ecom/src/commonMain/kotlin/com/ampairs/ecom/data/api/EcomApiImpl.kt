@@ -17,11 +17,14 @@ import com.ampairs.ecom.api.model.CatalogMeta
 import com.ampairs.ecom.api.model.CheckoutRequest
 import com.ampairs.ecom.api.model.EcomOrderResponse
 import com.ampairs.ecom.api.model.ListedProduct
+import com.ampairs.ecom.api.model.ManagedStorefront
 import com.ampairs.ecom.api.model.PageResponse
 import com.ampairs.ecom.api.model.ProductSyncPage
 import com.ampairs.ecom.api.model.StoreAccessRequest
 import com.ampairs.ecom.api.model.StoreAccessResponse
 import com.ampairs.ecom.api.model.Storefront
+import com.ampairs.ecom.api.model.StorefrontCreateRequest
+import com.ampairs.ecom.api.model.StorefrontUpdateRequest
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -159,6 +162,36 @@ class EcomApiImpl(
 
     override suspend fun getStoreAccess(slug: String): Result<StoreAccessResponse> = call {
         get<Response<StoreAccessResponse>>(client, ApiUrlBuilder.ecomUrl("account/store-access/$slug"))
+    }
+
+    // ── Merchant storefront management ──
+
+    override suspend fun getMyStorefront(): Result<ManagedStorefront?> = try {
+        val response = get<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront"))
+        when {
+            response.data != null -> Result.success(response.data)
+            // No storefront created yet — distinguish 404 NOT_FOUND from a real error.
+            response.error?.code == "NOT_FOUND" -> Result.success(null)
+            else -> Result.failure(Exception(response.error?.message?.ifBlank { "Failed to load storefront" } ?: "Failed to load storefront"))
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    override suspend fun createStorefront(request: StorefrontCreateRequest): Result<ManagedStorefront> = call {
+        post<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront"), request)
+    }
+
+    override suspend fun updateStorefront(request: StorefrontUpdateRequest): Result<ManagedStorefront> = call {
+        put<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront"), request)
+    }
+
+    override suspend fun publishStorefront(): Result<ManagedStorefront> = call {
+        put<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront/publish"), null)
+    }
+
+    override suspend fun unpublishStorefront(): Result<ManagedStorefront> = call {
+        put<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront/unpublish"), null)
     }
 
     /** Shared Response<T> → Result<T> mapping; no exceptions reach the UI layer. */

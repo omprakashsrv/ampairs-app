@@ -30,4 +30,5 @@ data class ProductApiModel(
     @SerialName("images") val images: List<ImageApiModel>,
     @SerialName("inventory") val inventory: InventoryApiModel? = null,
     @SerialName("attributes") val attributes: Map<String, String>? = null,
+    @SerialName("is_ecom_listed") val isEcomListed: Boolean = false,
 )

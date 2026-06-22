@@ -33,6 +33,7 @@
     <string name="nav_units">Units</string>
     <string name="nav_printing">Printing</string>
     <string name="nav_payments">Payments</string>
+    <string name="nav_storefront">Store</string>
     <string name="nav_reports">Reports</string>
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_alerts">Alerts</string>

@@ -29,6 +29,13 @@ interface AddressDao {
 
     @Query("DELETE FROM customer_address WHERE uid = :uid")
     suspend fun hardDelete(uid: String)
+
+    /**
+     * Delete-by-absence on pull: drop synced rows the server no longer returns. Unsynced rows
+     * (pending local create/edit/delete) are preserved — local edits win until pushed.
+     */
+    @Query("DELETE FROM customer_address WHERE synced = 1 AND uid NOT IN (:keepUids)")
+    suspend fun deleteSyncedNotIn(keepUids: List<String>)
 }
 
 @Dao

@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserDataService
 import com.ampairs.auth.api.isAuthenticated
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.ecom.data.repository.CartRepository
 import com.ampairs.ecom.domain.EcomSession
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -31,12 +32,13 @@ sealed interface AccountEvent {
 }
 
 @Inject
-@ContributesIntoMap(AppScope::class)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 class AccountViewModel(
     private val tokenRepository: TokenRepository,
     private val userDataService: UserDataService,
     private val session: EcomSession,
+    private val cartRepository: CartRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AccountUiState())
@@ -65,6 +67,9 @@ class AccountViewModel(
 
     fun logout() {
         tokenRepository.clearTokens()
+        // Wipe local carts so the next user doesn't inherit the previous user's cart.
+        viewModelScope.launch { cartRepository.clearAllLocalCarts() }
+        session.clear()
         _state.update { it.copy(isLoggedIn = false, displayName = "") }
         _events.tryEmit(AccountEvent.LoggedOut)
     }

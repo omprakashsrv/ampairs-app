@@ -81,8 +81,8 @@ class BrowseViewModel(
         val storefrontId = session.activeStorefrontId
         if (slug != null && storefrontId != null) {
             viewModelScope.launch {
-                // Make sure a cart exists for quick-add, and refresh taxonomy tiles.
-                cartRepository.ensureCart(slug, storefrontId)
+                // Make sure a local cart exists for quick-add, and refresh taxonomy tiles.
+                cartRepository.ensureCart(storefrontId)
                 storefrontRepository.refreshCatalogMeta(slug, storefrontId)
             }
         }
@@ -98,10 +98,9 @@ class BrowseViewModel(
     }
 
     fun setQuantity(productId: String, quantity: Int) {
-        val slug = session.activeSlug ?: return
         val storefrontId = session.activeStorefrontId ?: return
         viewModelScope.launch {
-            cartRepository.setItem(slug, storefrontId, productId, quantity)
+            cartRepository.setItem(storefrontId, productId, quantity)
                 .onFailure { _messages.tryEmit(it.message ?: "Couldn't update cart") }
         }
     }

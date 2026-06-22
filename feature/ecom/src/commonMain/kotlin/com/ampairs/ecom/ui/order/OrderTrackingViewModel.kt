@@ -3,10 +3,13 @@ package com.ampairs.ecom.ui.order
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.ecom.api.model.DeliveryAddress
 import com.ampairs.ecom.data.db.entity.EcomOrderEntity
 import com.ampairs.ecom.data.db.entity.EcomOrderLineItemEntity
 import com.ampairs.ecom.data.repository.EcomOrderRepository
+import com.ampairs.ecom.domain.EcomLogger
 import com.ampairs.ecom.domain.EcomSession
+import kotlinx.serialization.json.Json
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -25,7 +28,17 @@ import kotlinx.coroutines.launch
 data class OrderTrackingUiState(
     val order: EcomOrderEntity? = null,
     val lineItems: List<EcomOrderLineItemEntity> = emptyList(),
+    val deliveryAddress: DeliveryAddress? = null,
 )
+
+private val deliveryAddressJson = Json { ignoreUnknownKeys = true }
+
+private fun EcomOrderEntity.parseDeliveryAddress(): DeliveryAddress? =
+    delivery_address?.let { raw ->
+        runCatching { deliveryAddressJson.decodeFromString(DeliveryAddress.serializer(), raw) }
+            .onFailure { EcomLogger.w("Order", "Failed to parse delivery address for $ecom_order_ref", it) }
+            .getOrNull()
+    }
 
 @AssistedInject
 class OrderTrackingViewModel(
@@ -40,7 +53,7 @@ class OrderTrackingViewModel(
         else combine(
             flowOf(order),
             orderRepository.observeLineItems(order.uid),
-        ) { o, items -> OrderTrackingUiState(order = o, lineItems = items) }
+        ) { o, items -> OrderTrackingUiState(order = o, lineItems = items, deliveryAddress = o.parseDeliveryAddress()) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OrderTrackingUiState())
 
     init {

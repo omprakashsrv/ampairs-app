@@ -120,7 +120,7 @@ fun BrowseScreen(
             // Popular
             SectionTitle(stringResource(Res.string.ecom_popular))
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Adaptive(minSize = 170.dp),
                 modifier = Modifier.fillMaxWidth().heightIn(max = 2000.dp).padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),

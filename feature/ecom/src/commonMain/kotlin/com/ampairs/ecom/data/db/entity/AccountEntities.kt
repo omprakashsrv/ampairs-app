@@ -19,6 +19,8 @@ data class CustomerAddressEntity(
     val is_default: Int = 0,
     val active: Int = 1,
     val synced: Int = 0,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 /** Cached order header. Contract §8 `ecom_order`. `delivery_address` is a JSON blob. */

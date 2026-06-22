@@ -7,6 +7,7 @@ import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.ecom.data.db.EcomRoomDatabase
+import com.ampairs.ecom.data.db.migrations.ECOM_MIGRATION_1_2
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -27,6 +28,7 @@ interface EcomAndroidModule {
             queryDispatcher = Dispatchers.IO,
             moduleName = "ecom",
             workspaceSlug = config.workspaceSlug,
+            migrations = listOf(ECOM_MIGRATION_1_2),
         ).also { closableRegistry.register { it.close() } }
     }
 }

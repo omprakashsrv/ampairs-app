@@ -36,6 +36,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object Unit : Route
 
+    /** Merchant-side online-store (ecom storefront) setup & configuration. */
+    @Serializable
+    data object Storefront : Route
+
     @Serializable
     data class FormConfig(
         val entityType: String = ""
