@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.metro)
+    alias(libs.plugins.kover)
 }
 
 kotlin {
@@ -47,6 +48,13 @@ kotlin {
                 // Navigation 3 for NavKey
                 implementation(libs.navigation3.ui)
                 implementation(libs.lifecycle.viewmodel.navigation3)
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
             }
         }
         androidMain {

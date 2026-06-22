@@ -61,6 +61,9 @@ firebase-crashlytics-gradle = "3.0.7"
 firebase-perf-gradle = "2.0.2"
 sentry-kmp = "0.27.0"
 junit5 = "5.11.0"
+# Testing
+turbine = "1.2.1"      # Flow testing (KMP: jvm/native/js)
+kover = "0.9.1"        # Kotlin code coverage (KMP-aware)
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -128,6 +131,9 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx" }
 
+# Testing
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+
 # Compose Multiplatform libraries (explicit dependencies for 1.10.0+)
 compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "compose-plugin" }
 compose-ui = { group = "org.jetbrains.compose.ui", name = "ui", version.ref = "compose-plugin" }
@@ -180,6 +186,7 @@ firebasePerf = { id = "com.google.firebase.firebase-perf", version.ref = "fireba
 kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
 sentryPlugin = { id = "io.sentry.kotlin.multiplatform.gradle", version.ref = "sentry-kmp" }
 metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 
 [bundles]
 ktor-common = ["ktor-client-core", "ktor-client-logging", "ktor-client-serialization", "ktor-client-contentNegotiation", "ktor-client-auth", "ktor-client-cio", "ktor-client-websockets"]
