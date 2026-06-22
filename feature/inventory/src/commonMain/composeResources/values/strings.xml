@@ -222,6 +222,19 @@
     <string name="desktop_auth_step_3">Desktop app automatically completes sign in</string>
     <string name="desktop_auth_credentials_not_stored">Your credentials are never stored on this device.</string>
 
+    <!-- Inventory dashboard + adjust (spec 014) -->
+    <string name="inv_dash_low_stock">Low stock</string>
+    <string name="inv_dash_out_of_stock">Out of stock</string>
+    <string name="inv_dash_total_value">Stock value</string>
+    <string name="inv_form_label_sku">SKU</string>
+    <string name="inv_form_label_reorder">Reorder level</string>
+    <string name="inv_adjust_title">Adjust stock</string>
+    <string name="inv_adjust_qty">Quantity</string>
+    <string name="inv_adjust_in">Stock in</string>
+    <string name="inv_adjust_out">Stock out</string>
+    <string name="inv_adjust_reason">Reason</string>
+    <string name="inv_adjust_apply">Apply</string>
+
     <!-- General -->
     <string name="translated_description_image">Translated description of what the image contains</string>
 </resources>
