@@ -80,6 +80,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: 'App Code Coverage'
           update-comment: true
+          # Informational for now (foundation baseline). Raise min-coverage-changed-files
+          # later to enforce that new/changed code is tested.
+          min-coverage-overall: 0
+          min-coverage-changed-files: 0
       - name: Upload HTML coverage report
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
