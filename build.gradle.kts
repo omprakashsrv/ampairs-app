@@ -36,4 +36,7 @@ dependencies {
     kover(project(":feature:unit"))
     kover(project(":feature:tax"))
     kover(project(":feature:invoice"))
+    kover(project(":feature:customer"))
+    kover(project(":feature:product"))
+    kover(project(":feature:order"))
 }
