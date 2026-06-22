@@ -5,8 +5,14 @@ set -euo pipefail
 # Ampairs App — Release Tagging Script
 # =============================================================================
 #
-# Usage: ./scripts/release.sh <version> <message>
-# Example: ./scripts/release.sh 1.0.16 "Release 1.0.16 — Payments & Printing"
+# Usage: ./scripts/release.sh <version> <message-or-file>
+# Examples:
+#   ./scripts/release.sh 1.0.16 "Release 1.0.16 — short one-liner"
+#   ./scripts/release.sh 1.0.16 /tmp/release_notes.txt    # multi-line notes
+#
+# The 2nd argument may be EITHER an inline string OR a path to a text file.
+# For real release notes (multiple lines / bullet points) ALWAYS pass a file —
+# a long inline -m string gets truncated to its first line in the GitHub release.
 #
 # This script ONLY creates and pushes the annotated git tag. The version bump,
 # commit, and push of source changes must already be done (see steps below).
@@ -31,11 +37,14 @@ set -euo pipefail
 #       git commit -m "Release X.Y.Z" -m "<body summarizing changes>"
 #       git push origin main
 #
-# 3. Write a release message summarizing changes since the previous tag:
+# 3. Write the full release notes (multi-line) to a file, summarizing changes
+#    since the previous tag:
 #       git log vPREV..HEAD --oneline --no-merges   # to review what changed
+#       # write the notes into e.g. /tmp/release_notes.txt
 #
-# 4. Run this script to create and push the tag:
-#       ./scripts/release.sh X.Y.Z "<release message>"
+# 4. Run this script with the NOTES FILE (not an inline string) so the whole
+#    message lands in the tag / GitHub release:
+#       ./scripts/release.sh X.Y.Z /tmp/release_notes.txt
 #
 #    The pushed tag triggers the GitHub release workflow.
 # =============================================================================
@@ -44,13 +53,20 @@ VERSION="${1:-}"
 MESSAGE="${2:-}"
 
 if [[ -z "$VERSION" || -z "$MESSAGE" ]]; then
-  echo "Usage: $0 <version> <message>"
+  echo "Usage: $0 <version> <message-or-file>"
   exit 1
 fi
 
 TAG="v${VERSION}"
 
-git tag -a "$TAG" -m "$MESSAGE"
+# Accept the 2nd arg as a file path (preferred, keeps multi-line notes intact)
+# or fall back to treating it as an inline message string.
+if [[ -f "$MESSAGE" ]]; then
+  git tag -a "$TAG" -F "$MESSAGE"
+else
+  git tag -a "$TAG" -m "$MESSAGE"
+fi
+
 git remote set-url origin git@github.com:omprakashsrv/ampairs-app.git
 git push origin "$TAG"
 
