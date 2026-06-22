@@ -381,13 +381,44 @@ class CentralSyncService {
         }
     }
 
-    private suspend fun executePush(entity: SyncEntity) {
-        val delegate = delegates[entity] ?: return
-        // Run push dependencies sequentially before acquiring this entity's mutex.
-        // Each dependency uses its own mutex, so a concurrently running catalog push will
-        // simply be waited on rather than duplicated.
-        delegate.pushDependencies.forEach { dep -> executePush(dep) }
-        pushMutexes[entity]?.withLock {
+    /**
+     * Push an entity after its push-dependencies, in dependency-safe order. Returns true when this
+     * entity's push (and every dependency it needed) succeeded; false when it was deferred because a
+     * parent had not yet reached the server.
+     *
+     * Two properties make cross-resource pushes correct and stop the retry storm:
+     *
+     * 1. **Per-run memoization** ([attempted]): the push DAG is a diamond — `allocation → invoice`
+     *    AND `allocation → voucher → invoice → order`, and `party_balance → (almost) everything`.
+     *    Without memoization a single trigger re-walks and re-pushes the same parent many times; if
+     *    that parent batch is doomed (parent not yet acked) it fails on every pass — the observed
+     *    "same batch retried ~6× in ~150ms". Memoizing per top-level invocation pushes each entity at
+     *    most once per run.
+     *
+     * 2. **Defer-on-unsynced-parent**: a dependency push that does not fully succeed means the parent
+     *    is not on the server yet, so pushing the child would hit `fk_invoice_order_ref` (409) /
+     *    "voucher not found" (404). We DEFER the child instead — leave it PENDING_PUSH (no hard
+     *    failure, no DB write, so the reactive observer does not re-fire) and return false so its own
+     *    dependents defer too. When the parent later pushes successfully we re-trigger the child.
+     */
+    private suspend fun executePush(
+        entity: SyncEntity,
+        attempted: MutableMap<SyncEntity, Boolean> = mutableMapOf(),
+    ): Boolean {
+        attempted[entity]?.let { return it }
+        // No delegate for this entity (not installed) — treat as a satisfied dependency, don't block.
+        val delegate = delegates[entity] ?: run { attempted[entity] = true; return true }
+
+        // Push dependencies first; if any could not fully sync, defer this entity.
+        for (dep in delegate.pushDependencies) {
+            if (!executePush(dep, attempted)) {
+                deferPush(entity, dep)
+                attempted[entity] = false
+                return false
+            }
+        }
+
+        val succeeded = pushMutexes[entity]?.withLock {
             updateState(entity) { it.copy(status = SyncStatus.Syncing) }
             appendLog(SyncLogEntry(Clock.System.now().toEpochMilliseconds(), entity, SyncLogEntry.Direction.PUSH, SyncLogEntry.Outcome.STARTED, "Push started"))
             val result = runCatching { delegate.pushPendingToServer() }.fold(
@@ -395,7 +426,38 @@ class CentralSyncService {
                 onFailure = { SyncResult.Failure(it) },
             )
             applyResult(entity, result, wasPull = false)
+            result is SyncResult.Success
+        } ?: false
+        attempted[entity] = succeeded
+
+        // A parent just reached the server — re-attempt any still-pending entity that was waiting on
+        // it, so a deferred child retries as soon as its parent syncs (not only on the next reconnect).
+        if (succeeded) {
+            pushDependentsOf(entity).forEach { dependent ->
+                val status = _syncStates.value[dependent]?.status
+                if (status is SyncStatus.PendingPush || status is SyncStatus.Failed) {
+                    emit(SyncEvent.TriggerPush(dependent))
+                }
+            }
         }
+        return succeeded
+    }
+
+    /** Entities that declare [entity] among their push dependencies (reverse edges of the push DAG). */
+    private fun pushDependentsOf(entity: SyncEntity): List<SyncEntity> =
+        delegates.filterValues { entity in it.pushDependencies }.keys.toList()
+
+    /**
+     * Mark [entity] as waiting on an unsynced parent. The DB row stays PENDING_PUSH (we never cleared
+     * it), so nothing is persisted and the reactive observer does not re-fire — this is what stops the
+     * retry storm. Only the in-memory status is refreshed so the UI keeps showing "pending".
+     */
+    private fun deferPush(entity: SyncEntity, blockedBy: SyncEntity) {
+        updateState(entity) { state ->
+            val count = (state.status as? SyncStatus.PendingPush)?.count ?: 0
+            state.copy(status = SyncStatus.PendingPush(count))
+        }
+        log.d { "Deferring ${entity.name} push — ${blockedBy.name} not synced yet; will retry after it syncs" }
     }
 
     private suspend fun executeBackendEvent(entity: SyncEntity, entityId: String, eventType: String) {
