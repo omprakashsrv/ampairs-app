@@ -35,4 +35,5 @@ plugins {
 dependencies {
     kover(project(":feature:unit"))
     kover(project(":feature:tax"))
+    kover(project(":feature:invoice"))
 }
