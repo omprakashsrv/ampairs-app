@@ -4,20 +4,32 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.RequestQuote
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.SpaceBar
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material.icons.filled.ViewWeek
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -28,6 +40,7 @@ import com.ampairs.printing.core.model.ConnectionType
 import com.ampairs.printing.core.model.DocumentType
 import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.PrintJobState
+import com.ampairs.printing.core.model.TemplateBlock
 
 /**
  * Shared visual mappings for the printing UI — semantic status colors, document/connection icons,
@@ -117,3 +130,20 @@ val PrintJobState.statusVisual: JobStatusVisual
 
 val PrintJobState.docIcon: ImageVector
     get() = Icons.Filled.Print
+
+/** Leading icon for a template block, by its kind — used in the editor's block list. */
+val TemplateBlock.icon: ImageVector
+    get() = when (this) {
+        is TemplateBlock.StaticText -> Icons.Filled.Notes
+        is TemplateBlock.BoundText -> Icons.Filled.DataObject
+        is TemplateBlock.KeyValue -> Icons.Filled.Label
+        is TemplateBlock.LineTable -> Icons.Filled.TableChart
+        is TemplateBlock.InfoGrid -> Icons.Filled.GridView
+        is TemplateBlock.Divider -> Icons.Filled.HorizontalRule
+        is TemplateBlock.Spacer -> Icons.Filled.SpaceBar
+        is TemplateBlock.Logo -> Icons.Filled.Storefront
+        is TemplateBlock.BarcodeField -> Icons.Filled.ViewWeek
+        is TemplateBlock.QrField -> Icons.Filled.QrCode2
+        is TemplateBlock.CutMark -> Icons.Filled.ContentCut
+        is TemplateBlock.CashDrawer -> Icons.Filled.PointOfSale
+    }

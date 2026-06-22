@@ -99,5 +99,6 @@
     <string name="printing_clear_all_title">Clear all jobs?</string>
     <string name="printing_clear_all_body">This removes every job from the queue, including failed ones. Documents already printed are unaffected.</string>
     <string name="printing_attempts">%1$d attempt(s)</string>
+    <string name="printing_live_preview">Live preview</string>
     <string name="printing_setup_guide">No printers found.\n\nInkjet / laser (desktop): add the printer in your OS first, then tap Scan again.\n• Windows: Settings → Bluetooth &amp; devices → Printers &amp; scanners → Add device\n• macOS: System Settings → Printers &amp; Scanners → Add Printer\n• Linux: Settings → Printers (or CUPS at http://localhost:631)\n\nThermal printers:\n• Bluetooth: pair the printer in your device\'s Bluetooth settings, then Scan again\n• USB: connect the printer and approve the permission prompt\n• Network: tap Add printer and enter the IP (host:port)</string>
 </resources>

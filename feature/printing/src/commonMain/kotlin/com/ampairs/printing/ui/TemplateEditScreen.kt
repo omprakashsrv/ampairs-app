@@ -1,18 +1,23 @@
 package com.ampairs.printing.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -20,29 +25,47 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.SpaceBar
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.printing.generated.resources.Res
 import ampairsapp.feature.printing.generated.resources.printing_add_cell
@@ -52,12 +75,6 @@ import ampairsapp.feature.printing.generated.resources.printing_add_grid
 import ampairsapp.feature.printing.generated.resources.printing_add_space
 import ampairsapp.feature.printing.generated.resources.printing_add_table
 import ampairsapp.feature.printing.generated.resources.printing_add_text
-import ampairsapp.feature.printing.generated.resources.printing_block_grid
-import ampairsapp.feature.printing.generated.resources.printing_cell_label
-import ampairsapp.feature.printing.generated.resources.printing_column_header
-import ampairsapp.feature.printing.generated.resources.printing_field_key
-import ampairsapp.feature.printing.generated.resources.printing_grid_columns
-import ampairsapp.feature.printing.generated.resources.printing_weight
 import ampairsapp.feature.printing.generated.resources.printing_align_center
 import ampairsapp.feature.printing.generated.resources.printing_align_left
 import ampairsapp.feature.printing.generated.resources.printing_align_right
@@ -65,26 +82,35 @@ import ampairsapp.feature.printing.generated.resources.printing_block_barcode
 import ampairsapp.feature.printing.generated.resources.printing_block_bound
 import ampairsapp.feature.printing.generated.resources.printing_block_cash_drawer
 import ampairsapp.feature.printing.generated.resources.printing_block_cut
+import ampairsapp.feature.printing.generated.resources.printing_block_grid
 import ampairsapp.feature.printing.generated.resources.printing_block_label
 import ampairsapp.feature.printing.generated.resources.printing_block_line_table
 import ampairsapp.feature.printing.generated.resources.printing_block_logo
 import ampairsapp.feature.printing.generated.resources.printing_block_qr
 import ampairsapp.feature.printing.generated.resources.printing_block_text
+import ampairsapp.feature.printing.generated.resources.printing_blocks
 import ampairsapp.feature.printing.generated.resources.printing_bold
+import ampairsapp.feature.printing.generated.resources.printing_cell_label
+import ampairsapp.feature.printing.generated.resources.printing_column_header
 import ampairsapp.feature.printing.generated.resources.printing_divider_char
 import ampairsapp.feature.printing.generated.resources.printing_edit_template
+import ampairsapp.feature.printing.generated.resources.printing_field_key
+import ampairsapp.feature.printing.generated.resources.printing_grid_columns
 import ampairsapp.feature.printing.generated.resources.printing_large
+import ampairsapp.feature.printing.generated.resources.printing_live_preview
 import ampairsapp.feature.printing.generated.resources.printing_move_down
 import ampairsapp.feature.printing.generated.resources.printing_move_up
 import ampairsapp.feature.printing.generated.resources.printing_not_editable
 import ampairsapp.feature.printing.generated.resources.printing_remove
-import ampairsapp.feature.printing.generated.resources.printing_save
 import ampairsapp.feature.printing.generated.resources.printing_replace_html
+import ampairsapp.feature.printing.generated.resources.printing_save
 import ampairsapp.feature.printing.generated.resources.printing_spacer_lines
 import ampairsapp.feature.printing.generated.resources.printing_static_template
 import ampairsapp.feature.printing.generated.resources.printing_static_template_note
 import ampairsapp.feature.printing.generated.resources.printing_template_name
+import ampairsapp.feature.printing.generated.resources.printing_weight
 import com.ampairs.printing.core.model.Align
+import com.ampairs.printing.core.model.PaperSpec
 import com.ampairs.printing.core.model.PrintElement
 import com.ampairs.printing.core.model.PrinterClass
 import com.ampairs.printing.core.model.Template
@@ -106,22 +132,46 @@ fun TemplateEditScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         viewModel.savedEvent.collect { onBack() }
     }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
+            val template = state.template
             TopAppBar(
-                title = { Text(state.template?.name ?: stringResource(Res.string.printing_edit_template)) },
+                title = {
+                    Column {
+                        Text(
+                            template?.name ?: stringResource(Res.string.printing_edit_template),
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                        )
+                        if (template != null) {
+                            Text(
+                                "${template.documentType.displayName} · ${template.printerClass.label}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
                 actions = {
-                    TextButton(onClick = { viewModel.save() }, enabled = state.template != null && !state.saving) {
+                    Button(
+                        onClick = { viewModel.save() },
+                        enabled = state.template != null && !state.saving,
+                        contentPadding = PaddingValues(horizontal = 14.dp),
+                        modifier = Modifier.padding(end = 8.dp),
+                    ) {
+                        Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
                         Text(stringResource(Res.string.printing_save))
                     }
                 },
@@ -138,51 +188,92 @@ fun TemplateEditScreen(
 
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
             if (maxWidth >= 700.dp) {
-                // Wide (tablet / desktop): settings and live preview side by side.
+                // Wide (tablet / desktop): a fixed editor sidebar + a large preview pane. A 50/50 split
+                // squeezes the preview below an A4 page's width, so the page gets clipped ("only half
+                // shows"); a fixed sidebar gives the preview the room it needs to show the full page.
+                val sidebarWidth = (maxWidth * 0.4f).coerceIn(320.dp, 460.dp)
                 Row(Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        if (template.kind == TemplateKind.STATIC) {
-                            staticTemplateItems(template, viewModel)
-                        } else {
-                            templateEditorItems(template, viewModel)
-                        }
-                    }
-                    VerticalDivider()
-                    TemplatePreviewPane(
+                    EditorList(
                         template = template,
-                        previewHtml = state.previewHtml,
-                        previewElements = state.previewElements,
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        viewModel = viewModel,
+                        modifier = Modifier.width(sidebarWidth).fillMaxHeight(),
                     )
+                    VerticalDivider()
+                    Column(Modifier.weight(1f).fillMaxHeight()) {
+                        PreviewHeader(template.printerClass)
+                        TemplatePreviewPane(
+                            template = template,
+                            previewHtml = state.previewHtml,
+                            previewElements = state.previewElements,
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                        )
+                    }
                 }
             } else {
-                // Narrow (phone): preview on top, settings below.
+                // Narrow (phone): Blocks / Live Preview tabs.
+                var tab by rememberSaveable { mutableIntStateOf(0) }
                 Column(Modifier.fillMaxSize()) {
-                    TemplatePreviewPane(
-                        template = template,
-                        previewHtml = state.previewHtml,
-                        previewElements = state.previewElements,
-                        modifier = Modifier.fillMaxWidth().height(280.dp),
-                    )
-                    HorizontalDivider()
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    SingleChoiceSegmentedButtonRow(
+                        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
                     ) {
-                        if (template.kind == TemplateKind.STATIC) {
-                            staticTemplateItems(template, viewModel)
-                        } else {
-                            templateEditorItems(template, viewModel)
+                        SegmentedButton(
+                            selected = tab == 0,
+                            onClick = { tab = 0 },
+                            shape = SegmentedButtonDefaults.itemShape(0, 2),
+                        ) { Text(stringResource(Res.string.printing_blocks)) }
+                        SegmentedButton(
+                            selected = tab == 1,
+                            onClick = { tab = 1 },
+                            shape = SegmentedButtonDefaults.itemShape(1, 2),
+                        ) { Text(stringResource(Res.string.printing_live_preview)) }
+                    }
+                    if (tab == 0) {
+                        EditorList(template, viewModel, Modifier.fillMaxWidth().weight(1f))
+                    } else {
+                        Column(Modifier.fillMaxWidth().weight(1f)) {
+                            PreviewHeader(template.printerClass)
+                            TemplatePreviewPane(
+                                template = template,
+                                previewHtml = state.previewHtml,
+                                previewElements = state.previewElements,
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                            )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EditorList(template: Template, viewModel: TemplateEditViewModel, modifier: Modifier = Modifier) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (template.kind == TemplateKind.STATIC) {
+            staticTemplateItems(template, viewModel)
+        } else {
+            templateEditorItems(template, viewModel)
+        }
+    }
+}
+
+@Composable
+private fun PreviewHeader(printerClass: PrinterClass) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(Icons.Filled.Visibility, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+        Text(
+            "${stringResource(Res.string.printing_live_preview).uppercase()} · ${printerClass.label.uppercase()}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -218,29 +309,27 @@ private fun LazyListScope.templateEditorItems(
         )
     }
 
-    item {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { viewModel.addText() }) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text(stringResource(Res.string.printing_add_text))
-            }
-            TextButton(onClick = { viewModel.addDivider() }) {
-                Icon(Icons.Default.HorizontalRule, contentDescription = null)
-                Text(stringResource(Res.string.printing_add_divider))
-            }
-            TextButton(onClick = { viewModel.addSpacer() }) {
-                Icon(Icons.Default.SpaceBar, contentDescription = null)
-                Text(stringResource(Res.string.printing_add_space))
-            }
-            TextButton(onClick = { viewModel.addTable() }) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text(stringResource(Res.string.printing_add_table))
-            }
-            TextButton(onClick = { viewModel.addGrid() }) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text(stringResource(Res.string.printing_add_grid))
-            }
-        }
+    item { AddBlockBar(viewModel) }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AddBlockBar(viewModel: TemplateEditViewModel) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        AddBlockButton(Icons.Filled.TextFields, stringResource(Res.string.printing_add_text)) { viewModel.addText() }
+        AddBlockButton(Icons.Filled.HorizontalRule, stringResource(Res.string.printing_add_divider)) { viewModel.addDivider() }
+        AddBlockButton(Icons.Filled.SpaceBar, stringResource(Res.string.printing_add_space)) { viewModel.addSpacer() }
+        AddBlockButton(Icons.Filled.TableChart, stringResource(Res.string.printing_add_table)) { viewModel.addTable() }
+        AddBlockButton(Icons.Filled.GridView, stringResource(Res.string.printing_add_grid)) { viewModel.addGrid() }
+    }
+}
+
+@Composable
+private fun AddBlockButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(6.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -251,11 +340,32 @@ private fun TemplatePreviewPane(
     previewElements: List<PrintElement>,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier) {
-        if (template.printerClass == PrinterClass.PAGE) {
+    if (template.printerClass == PrinterClass.PAGE) {
+        // The page preview is a native WebView (a heavyweight SwingPanel on desktop). It must fill its
+        // slot directly — wrapping it in a width-capped / centered Box mis-sizes the native panel and
+        // it overflows the pane off-screen. Let it fill and scroll natively.
+        Box(modifier) {
             previewHtml?.let { HtmlPreview(it, Modifier.fillMaxSize()) }
-        } else {
-            ReceiptPreview(previewElements, Modifier.fillMaxSize())
+        }
+    } else {
+        // Thermal / label is pure Compose, so we can render a paper-width sheet centered on a tinted
+        // tray — on a wide pane the receipt stays a narrow strip (amounts don't fly to the far edge).
+        Box(
+            modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            val paperWidth = (template.paper as? PaperSpec.Thermal)
+                ?.let { if (it.widthChars <= 33) 260.dp else 340.dp } ?: 320.dp
+            Box(
+                Modifier
+                    .padding(vertical = 18.dp)
+                    .width(paperWidth)
+                    .fillMaxHeight()
+                    .shadow(2.dp, RoundedCornerShape(4.dp))
+                    .background(Color.White),
+            ) {
+                ReceiptPreview(previewElements, Modifier.fillMaxSize())
+            }
         }
     }
 }
@@ -275,16 +385,20 @@ private fun LazyListScope.staticTemplateItems(
         )
     }
     item {
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Card(
+            Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        ) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(Res.string.printing_static_template), style = MaterialTheme.typography.titleSmall)
                 Text(
                     stringResource(Res.string.printing_static_template_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                TextButton(onClick = { viewModel.replaceHtmlFile() }) {
-                    Icon(Icons.Default.Add, contentDescription = null)
+                OutlinedButton(onClick = { viewModel.replaceHtmlFile() }) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(6.dp))
                     Text(stringResource(Res.string.printing_replace_html))
                 }
             }
@@ -307,23 +421,43 @@ private fun BlockCard(
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth()) {
+    Card(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    blockTitle(block),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(
+                    Icons.Filled.DragIndicator,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(16.dp),
                 )
-                IconButton(onClick = onMoveUp, enabled = !isFirst) {
-                    Icon(Icons.Default.ArrowUpward, contentDescription = stringResource(Res.string.printing_move_up))
+                IconTile(
+                    icon = block.icon,
+                    container = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    content = MaterialTheme.colorScheme.onSurfaceVariant,
+                    size = 38,
+                    cornerRadius = 10,
+                    iconSize = 20,
+                )
+                Column(Modifier.weight(1f)) {
+                    Text(blockTitle(block), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+                    val sub = blockSubtitle(block)
+                    if (sub.isNotEmpty()) {
+                        Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    }
                 }
-                IconButton(onClick = onMoveDown, enabled = !isLast) {
-                    Icon(Icons.Default.ArrowDownward, contentDescription = stringResource(Res.string.printing_move_down))
+                Column {
+                    IconButton(onClick = onMoveUp, enabled = !isFirst, modifier = Modifier.size(30.dp)) {
+                        Icon(Icons.Filled.ArrowUpward, contentDescription = stringResource(Res.string.printing_move_up), modifier = Modifier.size(18.dp))
+                    }
+                    IconButton(onClick = onMoveDown, enabled = !isLast, modifier = Modifier.size(30.dp)) {
+                        Icon(Icons.Filled.ArrowDownward, contentDescription = stringResource(Res.string.printing_move_down), modifier = Modifier.size(18.dp))
+                    }
                 }
                 IconButton(onClick = onRemove) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.printing_remove))
+                    Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.printing_remove), tint = MaterialTheme.colorScheme.error)
                 }
             }
 
@@ -400,7 +534,7 @@ private fun LineTableEditor(index: Int, block: TemplateBlock.LineTable, viewMode
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = { viewModel.removeColumn(index, col) }) {
-                        Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.printing_remove))
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.printing_remove))
                     }
                 }
                 OutlinedTextField(
@@ -424,7 +558,7 @@ private fun LineTableEditor(index: Int, block: TemplateBlock.LineTable, viewMode
             }
         }
         TextButton(onClick = { viewModel.addColumn(index) }) {
-            Icon(Icons.Default.Add, contentDescription = null)
+            Icon(Icons.Filled.Add, contentDescription = null)
             Text(stringResource(Res.string.printing_add_column))
         }
     }
@@ -451,7 +585,7 @@ private fun InfoGridEditor(index: Int, block: TemplateBlock.InfoGrid, viewModel:
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = { viewModel.removeCell(index, cell) }) {
-                        Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.printing_remove))
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(Res.string.printing_remove))
                     }
                 }
                 OutlinedTextField(
@@ -465,7 +599,7 @@ private fun InfoGridEditor(index: Int, block: TemplateBlock.InfoGrid, viewModel:
             }
         }
         TextButton(onClick = { viewModel.addCell(index) }) {
-            Icon(Icons.Default.Add, contentDescription = null)
+            Icon(Icons.Filled.Add, contentDescription = null)
             Text(stringResource(Res.string.printing_add_cell))
         }
     }
@@ -503,6 +637,15 @@ private fun blockTitle(block: TemplateBlock): String = when (block) {
     is TemplateBlock.QrField -> stringResource(Res.string.printing_block_qr)
     is TemplateBlock.CutMark -> stringResource(Res.string.printing_block_cut)
     is TemplateBlock.CashDrawer -> stringResource(Res.string.printing_block_cash_drawer)
+}
+
+/** A short, secondary description of a block — what it binds or how many parts it has. */
+private fun blockSubtitle(block: TemplateBlock): String = when (block) {
+    is TemplateBlock.BoundText -> block.binding.fieldKey
+    is TemplateBlock.LineTable -> "${block.columns.size} columns"
+    is TemplateBlock.InfoGrid -> "${block.cells.size} cells · ${block.columns} per row"
+    is TemplateBlock.Spacer -> "${block.lines} lines"
+    else -> ""
 }
 
 @Composable
