@@ -217,7 +217,7 @@ class FakeTaxComponentDao : TaxComponentDao {
         rows.value.values.filter {
             it.jurisdiction == jurisdiction && it.isActive &&
                 it.effectiveFrom <= effectiveDate &&
-                (it.effectiveTo == null || it.effectiveTo!! >= effectiveDate)
+                (it.effectiveTo == null || it.effectiveTo >= effectiveDate)
         }.sortedBy { it.calculationOrder }
 
     override suspend fun getById(id: String): TaxComponentEntity? = rows.value[id]

@@ -84,11 +84,15 @@ class EntryMatcherEdgeTest {
     }
 
     @Test
-    fun hsnPrefix_doesNotMatchOnSuffix() {
+    fun hsnMatchesOnPrefixNotSuffix() {
         val catalog = listOf(candidate("A", "thing", hsn = "2523"))
-        // "523" is a suffix, not a prefix → no match (and it's not a barcode/qty either)
-        val m = EntryMatcher.match(EntryParser.parse("523"), catalog, emptyList())
-        assertTrue(m.isEmpty())
+        // A bare 1–7 digit number is parsed as the *quantity*, not a search word; the leading "1 "
+        // consumes the quantity slot so the second numeric token is kept as a word to match on.
+        // HSN matching is prefix-only (hsn.startsWith(word)):
+        //   "252" is a prefix of "2523" → match
+        assertEquals(1, EntryMatcher.match(EntryParser.parse("1 252"), catalog, emptyList()).size)
+        //   "523" is a suffix, not a prefix → no match
+        assertTrue(EntryMatcher.match(EntryParser.parse("1 523"), catalog, emptyList()).isEmpty())
     }
 
     // ── resolve: unit fallback + decimals ──
