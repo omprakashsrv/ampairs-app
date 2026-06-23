@@ -222,6 +222,176 @@
     <string name="desktop_auth_step_3">Desktop app automatically completes sign in</string>
     <string name="desktop_auth_credentials_not_stored">Your credentials are never stored on this device.</string>
 
+    <!-- Inventory dashboard + adjust (spec 014) -->
+    <string name="inv_dash_low_stock">Low stock</string>
+    <string name="inv_dash_out_of_stock">Out of stock</string>
+    <string name="inv_dash_total_value">Stock value</string>
+    <string name="inv_form_label_sku">SKU</string>
+    <string name="inv_form_label_reorder">Reorder level</string>
+    <string name="inv_adjust_title">Adjust stock</string>
+    <string name="inv_adjust_qty">Quantity</string>
+    <string name="inv_adjust_in">Stock in</string>
+    <string name="inv_adjust_out">Stock out</string>
+    <string name="inv_adjust_reason">Reason</string>
+    <string name="inv_adjust_apply">Apply</string>
+
+    <!-- ===== Inventory UX spec — full screen set ===== -->
+    <!-- Common / nav -->
+    <string name="inv_back">Back</string>
+    <string name="inv_synced">Synced</string>
+    <string name="inv_pending">Pending</string>
+    <string name="inv_offline">Offline</string>
+    <string name="inv_offline_banner">You\'re offline — changes will sync when you reconnect.</string>
+    <string name="inv_view_all">View all</string>
+    <string name="inv_refresh">Refresh</string>
+
+    <!-- Stock status -->
+    <string name="inv_status_in_stock">In stock</string>
+    <string name="inv_status_low_stock">Low stock</string>
+    <string name="inv_status_out_of_stock">Out of stock</string>
+    <string name="inv_status_inactive">Inactive</string>
+    <string name="inv_status_negative">Negative</string>
+
+    <!-- Dashboard -->
+    <string name="inv_dash_title">Inventory</string>
+    <string name="inv_dash_overview">Inventory overview</string>
+    <string name="inv_dash_total_items">Total items</string>
+    <string name="inv_dash_quick_actions">Quick actions</string>
+    <string name="inv_dash_recent_movements">Recent movements</string>
+    <string name="inv_dash_recent_empty">No movements yet</string>
+    <string name="inv_action_add_item">Add item</string>
+    <string name="inv_action_adjust">Adjust</string>
+    <string name="inv_action_count">Count</string>
+    <string name="inv_action_low_stock">Low stock</string>
+    <string name="inv_action_ledger">Ledger</string>
+
+    <!-- List + filters -->
+    <string name="inv_filter_all">All</string>
+    <string name="inv_filter_low">Low</string>
+    <string name="inv_filter_out">Out</string>
+    <string name="inv_filter_inactive">Inactive</string>
+    <string name="inv_sort">Sort</string>
+    <string name="inv_sort_name">Name</string>
+    <string name="inv_sort_updated">Recently updated</string>
+    <string name="inv_sort_stock_low_high">Stock: low to high</string>
+    <string name="inv_sort_value_high_low">Value: high to low</string>
+    <string name="inv_list_select_prompt">Select an item to see its detail and movement history.</string>
+    <string name="inv_list_on_hand">On hand</string>
+
+    <!-- Empty / error states -->
+    <string name="inv_empty_filtered_title">No matching items</string>
+    <string name="inv_empty_low_title">No low-stock items</string>
+    <string name="inv_empty_low_desc">Everything\'s above its reorder level. Nice.</string>
+    <string name="inv_empty_out_title">No out-of-stock items</string>
+    <string name="inv_empty_inactive_title">No inactive items</string>
+    <string name="inv_error_title">Couldn\'t load items</string>
+    <string name="inv_error_desc">Check your connection and try again.</string>
+
+    <!-- Item detail -->
+    <string name="inv_detail_title">Item</string>
+    <string name="inv_detail_on_hand">On hand</string>
+    <string name="inv_detail_available">Available</string>
+    <string name="inv_detail_reserved">Reserved</string>
+    <string name="inv_detail_stock_value">Stock value</string>
+    <string name="inv_detail_pricing">Pricing</string>
+    <string name="inv_detail_cost">Cost</string>
+    <string name="inv_detail_selling">Selling</string>
+    <string name="inv_detail_mrp">MRP</string>
+    <string name="inv_detail_reorder">Reorder level</string>
+    <string name="inv_detail_history">Movement history</string>
+    <string name="inv_detail_history_empty">No movements yet for this item.</string>
+    <string name="inv_detail_balance">bal %1$s</string>
+    <string name="inv_detail_refresh_banner">On-hand changed — a sale just updated stock on another device.</string>
+    <string name="inv_detail_edit">Edit item</string>
+    <string name="inv_detail_adjust">Adjust stock</string>
+    <string name="inv_detail_deactivate">Deactivate</string>
+    <string name="inv_detail_not_found">Item not found.</string>
+
+    <!-- Source / reason labels -->
+    <string name="inv_src_sale">Sale</string>
+    <string name="inv_src_purchase">Purchase</string>
+    <string name="inv_src_manual">Manual</string>
+    <string name="inv_reason_opening">Opening stock</string>
+    <string name="inv_reason_count">Count adjustment</string>
+    <string name="inv_reason_correction">Correction</string>
+    <string name="inv_reason_damage">Damage</string>
+    <string name="inv_reason_loss">Loss</string>
+    <string name="inv_reason_return">Return</string>
+    <string name="inv_type_stock_in">Stock in</string>
+    <string name="inv_type_stock_out">Stock out</string>
+    <string name="inv_type_adjustment">Adjustment</string>
+    <string name="inv_type_count">Count</string>
+
+    <!-- Add / edit form -->
+    <string name="inv_form_section_basics">Basics</string>
+    <string name="inv_form_section_pricing">Pricing</string>
+    <string name="inv_form_section_stock">Stock</string>
+    <string name="inv_form_label_opening_stock">Opening stock</string>
+    <string name="inv_form_opening_hint">Becomes the item\'s first OPENING movement — never a silent number.</string>
+    <string name="inv_form_error_name_required">Name is required.</string>
+    <string name="inv_form_save">Save</string>
+    <string name="inv_form_close">Close</string>
+
+    <!-- Adjust sheet -->
+    <string name="inv_adjust_direction">Direction</string>
+    <string name="inv_adjust_preview">New on-hand</string>
+    <string name="inv_adjust_reason_optional">Reason (optional)</string>
+    <string name="inv_adjust_blocked_negative">Can\'t go below zero. Negative stock is disabled for this workspace. Reduce the quantity, or enable negative stock in settings.</string>
+    <string name="inv_adjust_disabled">Manual adjustments are turned off for this workspace.</string>
+    <string name="inv_adjust_success">Adjustment recorded. Saved locally · will sync when online.</string>
+
+    <!-- Physical count -->
+    <string name="inv_count_title">Physical count</string>
+    <string name="inv_count_subtitle">Enter counted quantity — variance updates live.</string>
+    <string name="inv_count_system">System</string>
+    <string name="inv_count_counted">Counted</string>
+    <string name="inv_count_variance">Variance</string>
+    <string name="inv_count_review">Review variances</string>
+    <string name="inv_count_review_only">Showing only items with a variance.</string>
+    <string name="inv_count_save_draft">Save draft</string>
+    <string name="inv_count_confirm">Confirm count</string>
+    <string name="inv_count_confirm_dialog_title">Post count adjustments?</string>
+    <string name="inv_count_confirm_dialog_body">This writes immutable COUNT movements; matched items are skipped.</string>
+    <string name="inv_count_no_variances">No variances — every counted item matches the system.</string>
+    <string name="inv_count_posted">Count posted. %1$d adjustment(s) recorded.</string>
+
+    <!-- Movement ledger -->
+    <string name="inv_ledger_title">All movements</string>
+    <string name="inv_ledger_search">Search reference or number</string>
+    <string name="inv_ledger_filter">Filter</string>
+    <string name="inv_ledger_filter_type">Type</string>
+    <string name="inv_ledger_filter_reason">Reason</string>
+    <string name="inv_ledger_filter_source">Source</string>
+    <string name="inv_ledger_clear_filters">Clear</string>
+    <string name="inv_ledger_empty">No movements match these filters.</string>
+    <string name="inv_ledger_immutable">Append-only — movements are never edited or deleted.</string>
+    <string name="inv_ledger_export">Export CSV</string>
+
+    <!-- Low stock -->
+    <string name="inv_low_title">Low &amp; out of stock</string>
+    <string name="inv_low_attention">%1$d items need attention</string>
+    <string name="inv_low_alerts_on">alerts on</string>
+    <string name="inv_low_alerts_off">alerts off</string>
+    <string name="inv_low_stock_in">Stock in</string>
+    <string name="inv_low_create_order">Create order</string>
+
+    <!-- Settings -->
+    <string name="inv_settings_title">Inventory settings</string>
+    <string name="inv_settings_header">Inventory behavior</string>
+    <string name="inv_settings_subtitle">Applies to this workspace · changes save instantly</string>
+    <string name="inv_settings_on">On</string>
+    <string name="inv_settings_off">Off</string>
+    <string name="inv_set_auto_deduct_title">Auto-deduct stock on sale</string>
+    <string name="inv_set_auto_deduct_desc">When a sale is confirmed or an invoice is finalized, stock is deducted automatically — no manual step.</string>
+    <string name="inv_set_block_out_title">Block orders when out of stock</string>
+    <string name="inv_set_block_out_desc">Sales can\'t be confirmed for items with zero available stock. Sellers see a blocked state in the line-item editor.</string>
+    <string name="inv_set_allow_negative_title">Allow negative stock</string>
+    <string name="inv_set_allow_negative_desc">Permit on-hand to drop below zero (back-orders). When off, adjustments and sales that would go negative are blocked.</string>
+    <string name="inv_set_allow_manual_title">Allow manual adjustments</string>
+    <string name="inv_set_allow_manual_desc">Let members adjust stock by hand, outside sales and counts. When off, only sales and counts move stock.</string>
+    <string name="inv_set_low_alerts_title">Low-stock alerts</string>
+    <string name="inv_set_low_alerts_desc">Notify and badge the dashboard when items reach their reorder level.</string>
+
     <!-- General -->
     <string name="translated_description_image">Translated description of what the image contains</string>
 </resources>

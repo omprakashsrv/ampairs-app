@@ -43,6 +43,7 @@ include(
     ":feature:ecom",
     ":feature:customer-api",
     ":feature:product-api",
+    ":feature:inventory-api",
     ":feature:tax-api",
     ":feature:form-api",
     ":feature:unit-api",
