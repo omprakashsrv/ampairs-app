@@ -98,8 +98,9 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 > Edge Gallery, Apache-2.0): **`docs/features/AGENT_LITERTLM_REFERENCE.md`**. Mirror it.
 
 ### 2a. Provider abstraction (do first — the adaptability backbone)
-- [ ] T020 Define ports + descriptors in `feature/agent/llm/`: `LlmEngine` (interface), `LlmBackend`,
-      `ModelDescriptor`, `OutputSchema`, `LlmParams`.
+- [x] T020 Ports + descriptors in `feature/agent/llm/`: `LlmEngine` (load/generate/generateConstrained/
+      close), `LlmBackend` (id/supports/create), `ModelDescriptor` (+`ModelRole`), `OutputSchema`
+      (structured + `toJsonSchema()`/`toGbnf()`), `LlmParams`. Pure commonMain, no native code.
 - [ ] T021 `ModelCatalog` (commonMain) + `AssistantConfig` persisted in the existing DataStore
       (active engine id, model id, STT/TTS provider, flags).
 - [ ] T022 `PlatformDefaults` expect/actual (best engine id per platform: Android/iOS/Desktop→litert-lm,
@@ -128,8 +129,9 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       `LlamaCppEngine : LlmEngine` with GBNF from `OutputSchema`.
 
 ### 2d. Resolver + schema + delivery
-- [ ] T028 `AgentSchemaBuilder`: `ActionRegistry` `ActionDescriptor`s → `OutputSchema` (GBNF + JSON-schema
-      / function-call renderings) + system prompt; engine-agnostic.
+- [x] T028 `AgentSchemaBuilder`: `ActionDescriptor`s → `OutputSchema` (JSON-schema + GBNF renderings)
+      + `systemPrompt`; engine-agnostic. Unit-tested (`AgentSchemaBuilderTest`): output constrained to
+      exactly the registered action types/modules, required-param markers in the prompt (SC-003 backbone).
 - [ ] T029 `LlmIntentResolver : IntentResolver` via `ProviderRegistry.llmEngine()`; parse → `ResolvedIntent`;
       validate against schema, re-ask on failure; low confidence → `Clarification`.
 - [ ] T030 Composite offline resolver: `LlmIntentResolver` when a model is loaded else
