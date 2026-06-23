@@ -141,8 +141,10 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       SC-003); one re-ask on parse failure. Engine resolved lazily via `engineProvider` (→
       `ProviderRegistry` at T023). Unit-tested with a fake engine (`LlmIntentResolverTest`). Remaining:
       DI-bind the `engineProvider` once `ProviderRegistry` (T023) exists.
-- [ ] T030 Composite offline resolver: `LlmIntentResolver` when a model is loaded else
-      `RuleBasedIntentResolver`; bind `@OfflineIntentResolver`.
+- [~] T030 `CompositeOfflineResolver`: uses `LlmIntentResolver` when `isLlmReady()` else
+      `RuleBasedIntentResolver`, and falls back to rule-based if the LLM path throws (graceful
+      degradation, FR-004/FR-012). Unit-tested (`CompositeOfflineResolverTest`). Remaining: bind it to
+      `@OfflineIntentResolver` with `isLlmReady`/`engineProvider` from `ProviderRegistry` (T023).
 - [ ] T031 ⚠ Verify integration assumptions: LiteRT-LM **Kotlin/JVM desktop** native libs work; LiteRT-LM
       **iOS Swift-package** bridge works from iosMain; **FunctionGemma-270m** (tool-calling) + **Gemma 3n
       E2B/E4B** (`.litertlm`/`.task`, chat) available; **Qwen2.5-3B** GGUF set for the llama.cpp path.
