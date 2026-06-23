@@ -38,9 +38,20 @@ class InventoryItemRepository(
     fun observeOutOfStock(): Flow<List<InventoryItem>> =
         itemDao.getOutOfStockItems().map { list -> list.map { it.toInventoryItem() } }
 
+    fun observeInactiveItems(): Flow<List<InventoryItem>> =
+        itemDao.getInactiveItems().map { list -> list.map { it.toInventoryItem() } }
+
+    fun observeAllItemsIncludingInactive(): Flow<List<InventoryItem>> =
+        itemDao.getAllItemsIncludingInactive().map { list -> list.map { it.toInventoryItem() } }
+
     fun observeTotalStockValue(): Flow<Double> = itemDao.getTotalStockValue()
 
+    fun observeActiveItemCount(): Flow<Int> = itemDao.getActiveItemCount()
+
     suspend fun getItem(id: String): InventoryItem? = itemDao.getItemById(id)?.toInventoryItem()
+
+    fun observeItem(id: String): Flow<InventoryItem?> =
+        itemDao.observeItemById(id).map { it?.toInventoryItem() }
 
     /** Offline-first create/update — caller (ViewModel) sets the uid. */
     suspend fun saveItem(item: InventoryItem): Result<InventoryItem> = try {

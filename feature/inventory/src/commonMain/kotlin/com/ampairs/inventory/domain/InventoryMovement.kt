@@ -29,7 +29,11 @@ data class InventoryMovement(
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
 ) {
-    /** Signed quantity for display: STOCK_OUT is negative. */
+    /**
+     * Signed quantity for display. STOCK_IN/STOCK_OUT carry a magnitude in [quantity] (sign comes from
+     * the type); COUNT/ADJUSTMENT carry an already-signed [quantity] (the variance/delta), so it is
+     * returned as-is.
+     */
     val signedQuantity: Double
         get() = if (transactionType == "STOCK_OUT") -quantity else quantity
 }

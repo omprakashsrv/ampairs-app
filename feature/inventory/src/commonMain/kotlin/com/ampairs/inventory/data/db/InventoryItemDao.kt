@@ -18,11 +18,23 @@ interface InventoryItemDao {
     @Query("SELECT * FROM inventory_items WHERE active = 1 AND currentStock <= 0 ORDER BY name ASC")
     fun getOutOfStockItems(): Flow<List<InventoryItemEntity>>
 
+    @Query("SELECT * FROM inventory_items WHERE active = 0 ORDER BY name ASC")
+    fun getInactiveItems(): Flow<List<InventoryItemEntity>>
+
+    @Query("SELECT * FROM inventory_items ORDER BY name ASC")
+    fun getAllItemsIncludingInactive(): Flow<List<InventoryItemEntity>>
+
+    @Query("SELECT COUNT(*) FROM inventory_items WHERE active = 1")
+    fun getActiveItemCount(): Flow<Int>
+
     @Query("SELECT COALESCE(SUM(currentStock * costPrice), 0) FROM inventory_items WHERE active = 1")
     fun getTotalStockValue(): Flow<Double>
 
     @Query("SELECT * FROM inventory_items WHERE id = :id")
     suspend fun getItemById(id: String): InventoryItemEntity?
+
+    @Query("SELECT * FROM inventory_items WHERE id = :id")
+    fun observeItemById(id: String): Flow<InventoryItemEntity?>
 
     @Query("SELECT * FROM inventory_items WHERE productId = :productId AND active = 1 LIMIT 1")
     suspend fun getItemByProduct(productId: String): InventoryItemEntity?

@@ -51,6 +51,7 @@ fun InventoryItemEntity.toInventoryItem(): InventoryItem = InventoryItem(
     active = active,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    pendingSync = !synced,
 )
 
 fun InventoryItem.toEntity(): InventoryItemEntity = InventoryItemEntity(

@@ -36,6 +36,23 @@ class InventoryTransactionRepository(
     fun pagingMovements(itemId: String): PagingSource<Int, InventoryTransactionEntity> =
         transactionDao.pagingMovementsByItem(itemId)
 
+    /** Most-recent movements across all items (dashboard recent-activity preview). */
+    fun observeRecentMovements(limit: Int = 20): Flow<List<InventoryMovement>> =
+        transactionDao.getRecentMovements(limit).map { list -> list.map { it.toMovement() } }
+
+    /** Global, optionally-filtered movement ledger. Null filter args = unfiltered on that column. */
+    fun observeFilteredMovements(
+        type: String? = null,
+        reason: String? = null,
+        sourceType: String? = null,
+        fromDate: String? = null,
+        toDate: String? = null,
+        reference: String? = null,
+        limit: Int = 500,
+    ): Flow<List<InventoryMovement>> =
+        transactionDao.getFilteredMovements(type, reason, sourceType, fromDate, toDate, reference, limit)
+            .map { list -> list.map { it.toMovement() } }
+
     /**
      * Record an append-only movement (manual adjustment / count). Caller (ViewModel) sets the uid and
      * a STOCK_IN/STOCK_OUT [InventoryMovement.transactionType] carrying the direction. Updates the
@@ -46,6 +63,8 @@ class InventoryTransactionRepository(
         val signed = when (movement.transactionType) {
             InventoryConstants.TXN_TYPE_STOCK_IN -> movement.quantity
             InventoryConstants.TXN_TYPE_STOCK_OUT -> -movement.quantity
+            // COUNT / ADJUSTMENT carry an already-signed delta in `quantity` (the variance).
+            InventoryConstants.TXN_TYPE_COUNT, InventoryConstants.TXN_TYPE_ADJUSTMENT -> movement.quantity
             else -> 0.0
         }
         val item = itemDao.getItemById(movement.inventoryItemId)

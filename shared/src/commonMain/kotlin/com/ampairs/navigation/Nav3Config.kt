@@ -116,7 +116,13 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(CustomerGroupCreateRoute::class)
 
                 // Inventory Routes
-                subclass(InventoryRoute.Inventory::class)
+                subclass(InventoryRoute.Dashboard::class)
+                subclass(InventoryRoute.Items::class)
+                subclass(InventoryRoute.ItemForm::class)
+                subclass(InventoryRoute.PhysicalCount::class)
+                subclass(InventoryRoute.Ledger::class)
+                subclass(InventoryRoute.LowStock::class)
+                subclass(InventoryRoute.Settings::class)
 
                 // Order Routes
                 subclass(OrderRoute.Root::class)

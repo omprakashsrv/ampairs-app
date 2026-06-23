@@ -2,6 +2,7 @@ package com.ampairs.inventory.domain
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
  * Inventory item domain model — mirrors the backend InventoryItemSync DTO (spec 014).
@@ -26,6 +27,8 @@ data class InventoryItem(
     @SerialName("is_active") val active: Boolean = true,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
+    /** UI-only: true when this row has local edits not yet pushed. Excluded from the wire model. */
+    @Transient val pendingSync: Boolean = false,
 ) {
     val isLowStock: Boolean get() = reorderLevel > 0.0 && currentStock > 0.0 && currentStock <= reorderLevel
     val isOutOfStock: Boolean get() = currentStock <= 0.0

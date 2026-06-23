@@ -28,6 +28,7 @@ kotlin {
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
                 implementation(projects.feature.inventoryApi)
+                implementation(projects.feature.store)
                 implementation(libs.kermit)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.json)
