@@ -65,33 +65,49 @@ llama.cpp on Android for parity testing).
 > and the **iOS Swift package** is reachable from the Kotlin/Native iosMain layer (bridge through the
 > `iosApp` Swift target if needed). Until confirmed on Desktop, llama.cpp is the Desktop default.
 
-### Tool-calling — native where available, grammar elsewhere (engine-agnostic port)
+### Tool-calling — native `ToolSet` on LiteRT-LM, grammar on llama.cpp
 
-- **LiteRT-LM (Android/iOS):** use its **built-in structured function-calling** — the runtime returns a
-  structured tool-call request and resumes on the tool result. Near-perfect fit for `AgentAction`.
-- **llama.cpp (Desktop):** **GBNF grammar-constrained decoding** to the `AgentAction` JSON schema.
-- Both are produced from one `OutputSchema` built from `ActionRegistry` metadata; the resolver validates
-  output against the schema and re-asks on failure → 100% structurally-valid actions (SC-003).
+Validated against the **Google AI Edge Gallery** "Mobile Actions" task (Apache-2.0). Concrete recipe +
+file citations: **`docs/features/AGENT_LITERTLM_REFERENCE.md`**.
+
+- **LiteRT-LM (Android/iOS/Desktop):** use the native function-calling API — `com.google.ai.edge.litertlm`
+  `ToolSet` with `@Tool`/`@ToolParam` methods, registered via `ConversationConfig(tools = listOf(tool(...)))`.
+  Each `@Tool` maps to an `AgentAction` and delegates to `ActionRegistry.dispatch` (their
+  `onFunctionCalled` → `performAction` is our `dispatch` → `ActionHandler.execute`). Optionally set
+  `ExperimentalFlags.enableConversationConstrainedDecoding` for stricter structured output.
+- **llama.cpp (fallback):** GBNF grammar to the `AgentAction` JSON schema.
+- Both are produced from the same `ActionRegistry` metadata; the resolver validates and re-asks on
+  failure → 100% structurally-valid actions (SC-003).
 
 ### Models — adaptable catalog, not a hardcoded choice
 
-| Tier | Model | ~size | Notes |
-|---|---|---|---|
-| Default (capable) | **Gemma 4 E4B** | ~3 GB | On-device tier of Gemma 4; agentic/function-call tuned; first-class on LiteRT-LM (Android/iOS). |
-| Low-RAM | **Gemma 4 E2B** / Gemma 3 1B | ~0.8–1.5 GB | For ~4 GB devices. |
-| llama.cpp / compatibility | **Qwen2.5-3B-Instruct** (GGUF) | ~2 GB | Robust llama.cpp support; the default for the llama.cpp adapter and a universal fallback when a device can't run Gemma 4 or LiteRT-LM is unavailable. |
+Split by **role** (the Gallery uses a tiny tool-caller + a larger chat model — we mirror that):
 
-Models live in a **`ModelCatalog`** (id, engine, format, url, sizeBytes, minRamBytes, capabilities).
-Adding/changing a model = add a catalog entry; `ModelManager` downloads it and `ProviderRegistry`
-selects it — no change to the resolver, handlers, or UI.
+| Role | Model | ~size | Notes |
+|---|---|---|---|
+| **Intent → action (tool-calling)** | **FunctionGemma-270m** | ~few hundred MB | The Gallery's "Mobile Actions" model — device-control / function-call finetune. Tiny + fast, runs on low-end phones. Default for the intent resolver. |
+| **Conversational answers / queries** | **Gemma 3n E2B / E4B** (`.task`/`.litertlm`) | ~2–3 GB | For phrasing query results & chat (Gallery ships these in `model_allowlist.json`; E4B when RAM allows). Gemma 4 E-series when available on LiteRT-LM. |
+| **llama.cpp fallback (Desktop/parity)** | **Qwen2.5-3B-Instruct** (GGUF) | ~2 GB | Robust llama.cpp support; default for the llama.cpp adapter / when LiteRT-LM is unavailable. |
+
+Models live in a **`ModelCatalog`** mirroring the Gallery's `model_allowlist.json` (name, `modelId`
+[Hugging Face], `modelFile`, `sizeInBytes`, `estimatedPeakMemoryInBytes`,
+`defaultConfig{topK,topP,temperature,maxTokens,accelerators}`, capabilities). `ModelManager` downloads
+from HF and probes `Capabilities(modelPath)`; `estimatedPeakMemoryInBytes` drives `DeviceCapability`
+RAM gating and `accelerators` drives backend selection (`Backend.CPU/GPU/NPU`; Gallery note: **CPU
+often beats GPU on cold start**). Adding/changing a model = a catalog entry — no resolver/handler/UI change.
 
 ### Speech & delivery (same port pattern)
 
 | Concern | Android | iOS | Desktop | Port |
 |---|---|---|---|---|
-| STT (phase 1) | `SpeechRecognizer` (offline) | `SFSpeechRecognizer` (on-device) | stub | `SpeechToText` |
-| STT (phase 2) | whisper.cpp | whisper.cpp | whisper.cpp | `SpeechToText` |
+| STT (primary) | **LiteRT-LM audio input** (`Content.AudioBytes`, Gemma 3n audio) — engine transcribes, no separate STT model | same | same | (via `LlmEngine`) |
+| STT (lighter alt) | `SpeechRecognizer` (offline) | `SFSpeechRecognizer` (on-device) | whisper.cpp | `SpeechToText` |
 | TTS | `TextToSpeech` | `AVSpeechSynthesizer` | system / Piper | `TextToSpeech` |
+
+> STT refinement from the Gallery: it transcribes via the model's **audio input** ("Audio Scribe",
+> `Content.AudioBytes`) and a hold-to-dictate UX (`ui/common/textandvoiceinput/HoldToDictate`). On
+> LiteRT-LM we can feed audio straight to the engine — simpler than a separate whisper.cpp model —
+> with the platform recognizer as a lighter fallback.
 
 Model delivery: on-demand download to app-private dir, Wi-Fi gated, RAM-gated selection (FR-011/012).
 Online path: `OnlineIntentResolver` slot for a cloud LLM, tried first when connected (FR-014).
@@ -300,8 +316,10 @@ native integration) is isolated behind the `LlmEngine` port in Phase 2.
   - Phase-2 **whisper.cpp** for cross-platform STT.
 - iOS: package native libs as XCFrameworks / SPM; add cinterop `.def` where needed. Desktop: bundle
   per-OS native libs (Linux/macOS/Windows).
-- Reference implementation to study for the LiteRT-LM integration + model download UX: the open-source
-  **Google AI Edge Gallery** app (runs Gemma via LiteRT/LiteRT-LM on-device).
+- **Reference implementation (studied, copy-adaptable, Apache-2.0):** the **Google AI Edge Gallery**
+  app — concrete LiteRT-LM recipe, `ToolSet` pattern, Model Manager, and voice UX are distilled in
+  **`docs/features/AGENT_LITERTLM_REFERENCE.md`** (with file citations). The `LiteRtLmEngine` wraps
+  `com.google.ai.edge.litertlm` `Engine`/`Conversation`/`tool()`; tool calls bridge to `ActionRegistry`.
 - Models are **not** Gradle deps — downloaded at runtime (FR-011).
 - Per `/cmp-practices` §9: if `feature/agent` ever gets `maven-publish`, pin `packageOfResClass`.
 

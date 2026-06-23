@@ -17,10 +17,11 @@ Best-per-platform behind one `LlmEngine` port (see `plan.md` §2/§4.0):
 | iOS | **LiteRT-LM** (Swift package, Metal; bridged from iosMain) | llama.cpp (cinterop) |
 | Desktop (JVM) | **LiteRT-LM** (Kotlin/JVM) — verify desktop native libs (T031); else llama.cpp | llama.cpp (JNI) |
 
-Default model **Gemma 4 E4B** (low-RAM **E2B / Gemma 3 1B**; llama.cpp/compat **Qwen2.5-3B**). Engine +
+Models by **role** (per the Gallery): **FunctionGemma-270m** for intent→action tool-calling,
+**Gemma 3n E2B/E4B** for conversational answers, **Qwen2.5-3B** GGUF as the llama.cpp fallback. Engine +
 model are runtime-selectable via `ProviderRegistry` + `PlatformDefaults` + `AssistantConfig` +
-`ModelCatalog` — never hardcoded. Tool-calling: LiteRT-LM native function calling on mobile/JVM, GBNF on
-llama.cpp, both from one `OutputSchema`.
+`ModelCatalog` — never hardcoded. Tool-calling: LiteRT-LM native `ToolSet`/`@Tool` on mobile/JVM, GBNF on
+llama.cpp. Reference recipe: `docs/features/AGENT_LITERTLM_REFERENCE.md`.
 
 ---
 
@@ -88,6 +89,9 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 
 ## Phase 2 — On-device LLM NLU (US3) · FR-003/004/011/012
 
+> Concrete LiteRT-LM recipe + `ToolSet` pattern + Model Manager + voice UX (from the studied Google AI
+> Edge Gallery, Apache-2.0): **`docs/features/AGENT_LITERTLM_REFERENCE.md`**. Mirror it.
+
 ### 2a. Provider abstraction (do first — the adaptability backbone)
 - [ ] T020 Define ports + descriptors in `feature/agent/llm/`: `LlmEngine` (interface), `LlmBackend`,
       `ModelDescriptor`, `OutputSchema`, `LlmParams`.
@@ -102,8 +106,13 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 ### 2b. LiteRT-LM adapter (primary on all platforms)
 - [ ] T024 Add LiteRT-LM to `gradle/libs.versions.toml`: Kotlin API (Android + Desktop/JVM); iOS via
       Swift package consumed by the `iosApp` target.
-- [ ] T025 [P] `LiteRtLmEngine : LlmEngine` — Android (Kotlin API) + Desktop (Kotlin/JVM) actuals; use
-      LiteRT-LM **native function calling** to satisfy `OutputSchema`.
+- [ ] T025 [P] `LiteRtLmEngine : LlmEngine` — Android (Kotlin API) + Desktop (Kotlin/JVM) actuals,
+      wrapping `Engine(EngineConfig(modelPath, backend, maxNumTokens, …))` + `engine.createConversation(
+      ConversationConfig(samplerConfig, systemInstruction, tools))` + `conversation.sendMessageAsync(
+      Contents, MessageCallback)` (see reference doc).
+- [ ] T025b `AmpairsAgentToolSet : ToolSet` — one `@Tool`/`@ToolParam` method per supported action
+      (createInvoice, searchCustomers, countInvoices, lowStockItems, …), each → `AgentAction` →
+      `ActionRegistry.dispatch` (mirrors Gallery `MobileActionsTools` + `onFunctionCalled`).
 - [ ] T026 [P] `LiteRtLmEngine` iOS actual: thin Swift bridge in `iosApp` exposing the LiteRT-LM Swift
       package to iosMain (`Dispatchers.Default`).
 
@@ -119,11 +128,12 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [ ] T030 Composite offline resolver: `LlmIntentResolver` when a model is loaded else
       `RuleBasedIntentResolver`; bind `@OfflineIntentResolver`.
 - [ ] T031 ⚠ Verify integration assumptions: LiteRT-LM **Kotlin/JVM desktop** native libs work; LiteRT-LM
-      **iOS Swift-package** bridge works from iosMain; **Gemma 4 E4B** `.litertlm` available (mobile) and
-      Gemma 4 GGUF / Qwen2.5-3B set in the catalog for the llama.cpp path. Adjust `PlatformDefaults` /
-      catalog defaults per findings (no pipeline change required).
-- [ ] T032 `ModelManager`: catalog-driven Ktor download to app-private dir, progress, checksum, Wi-Fi
-      gating, RAM-based selection; persist choice (FR-011/012). (Study Google AI Edge Gallery for UX.)
+      **iOS Swift-package** bridge works from iosMain; **FunctionGemma-270m** (tool-calling) + **Gemma 3n
+      E2B/E4B** (`.litertlm`/`.task`, chat) available; **Qwen2.5-3B** GGUF set for the llama.cpp path.
+      Adjust `PlatformDefaults` / catalog defaults per findings (no pipeline change required).
+- [ ] T032 `ModelManager`: catalog-driven (mirror Gallery `model_allowlist.json` + `ModelAllowlist.kt`/
+      `DownloadRepository.kt`) Hugging Face download to app-private dir, progress, checksum, Wi-Fi gating,
+      RAM gating via `estimatedPeakMemoryInBytes` + `Capabilities(modelPath)` probe; persist choice (FR-011/012).
 - [ ] T033 [P] Model/engine UI: download progress, Wi-Fi prompt, "reduced mode" banner (US5); dev
       settings engine+model picker reading `AssistantConfig`.
 - [ ] T034 [P] Eval harness: 20 paraphrase variants (SC-003) + 30-question set (SC-001); run across both
@@ -164,8 +174,8 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 
 ## Phase 4 — Polish & online path · FR-013/014
 
-- [ ] T050 [P] whisper.cpp Desktop (and optional mobile) STT actual via `expect`/`actual` + whisper model
-      in `ModelManager`.
+- [ ] T050 [P] STT: primary = **LiteRT-LM audio input** (`Content.AudioBytes` + Gemma 3n audio; mirror
+      Gallery `HoldToDictate`); whisper.cpp only as the Desktop/lighter fallback `SpeechToText` actual.
 - [ ] T051 [P] Cloud `OnlineIntentResolver` (backend proxy to hosted LLM, tool-use) bound to
       `@OnlineIntentResolver`; verify orchestrator online→offline fallback (FR-014).
 - [ ] T052 [P] Locale/strings audit; accessibility pass; assistant onboarding/help.
