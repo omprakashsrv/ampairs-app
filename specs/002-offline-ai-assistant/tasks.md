@@ -52,6 +52,18 @@ llama.cpp, both from one `OutputSchema`.
 **Phase 0 acceptance:** US1 scenarios pass in airplane mode using the existing rule-based resolver.
 **Status:** wiring complete (T001–T004); compile + smoke-test (T005/T007) pending a build environment.
 
+### Phase 0.5 — Ship the assistant as an installable product module · (new requirement)
+The AI assistant is surfaced through the dynamic-module system (installed per workspace), not always-on.
+- [x] T008 Add `ModuleCodes.AI_ASSISTANT = "ai-assistant"`; mark it implementation-available in
+      `DynamicModuleNavigationService.isModuleImplementationAvailable`.
+- [x] T009 Map the module to the chat route: `moduleCodeToRoute(AI_ASSISTANT) → Route.Agent`,
+      `resolveActiveModuleCode(Route.Agent) → AI_ASSISTANT`, display name (`nav_assistant`), icon
+      (`AutoAwesome`), desktop menu path (`agent`). `Route.Agent` was previously unreachable; it now
+      appears only when the workspace has the module installed + active.
+- [ ] T010 **Backend (ampairs repo):** register an `ai-assistant` module in the workspace module
+      catalog so it shows up as installable to users. Until then the app maps it correctly but it won't
+      appear in the install list. (Cross-repo; not in this PR.)
+
 ---
 
 ## Phase 1 — Voice I/O (US4) · FR-008/009

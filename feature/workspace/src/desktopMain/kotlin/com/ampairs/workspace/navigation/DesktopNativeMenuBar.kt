@@ -78,6 +78,7 @@ private fun getModuleNavigationPath(moduleCode: String): String {
         ModuleCodes.TAX_CODE_MANAGEMENT -> "tax"
         ModuleCodes.BUSINESS_PROFILE -> "business"
         ModuleCodes.UNIT_MANAGEMENT -> "unit"
+        ModuleCodes.AI_ASSISTANT -> "agent"
         else -> "unknown"
     }
 }

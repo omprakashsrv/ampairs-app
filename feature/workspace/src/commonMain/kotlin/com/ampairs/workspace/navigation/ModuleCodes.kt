@@ -12,6 +12,7 @@ object ModuleCodes {
     const val PRINTING = "printing-management"
     const val PAYMENT_COLLECTION = "payment-collection"
     const val STOREFRONT_MANAGEMENT = "storefront-management"
+    const val AI_ASSISTANT = "ai-assistant"
 
     // Not yet implemented locally
     const val NOTIFICATION_SYSTEM = "notification-system"
