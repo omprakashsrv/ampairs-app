@@ -146,16 +146,17 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [x] T028 `AgentSchemaBuilder`: `ActionDescriptor`s → `OutputSchema` (JSON-schema + GBNF renderings)
       + `systemPrompt`; engine-agnostic. Unit-tested (`AgentSchemaBuilderTest`): output constrained to
       exactly the registered action types/modules, required-param markers in the prompt (SC-003 backbone).
-- [~] T029 `LlmIntentResolver : IntentResolver` — builds the schema/prompt (`AgentSchemaBuilder`), calls
+- [x] T029 `LlmIntentResolver : IntentResolver` — builds the schema/prompt (`AgentSchemaBuilder`), calls
       `engine.generateConstrained`, extracts the JSON (even from prose), and **strictly validates**:
       unregistered action/module or missing required param → `Clarification` (never a wrong action,
-      SC-003); one re-ask on parse failure. Engine resolved lazily via `engineProvider` (→
-      `ProviderRegistry` at T023). Unit-tested with a fake engine (`LlmIntentResolverTest`). Remaining:
-      DI-bind the `engineProvider` once `ProviderRegistry` (T023) exists.
-- [~] T030 `CompositeOfflineResolver`: uses `LlmIntentResolver` when `isLlmReady()` else
+      SC-003); one re-ask on parse failure. Engine resolved lazily via `engineProvider`, now DI-bound to
+      `ProviderRegistry.engineOrNull()` in `AgentLlmModule`. Unit-tested with a fake engine
+      (`LlmIntentResolverTest`).
+- [x] T030 `CompositeOfflineResolver`: uses `LlmIntentResolver` when `isLlmReady()` else
       `RuleBasedIntentResolver`, and falls back to rule-based if the LLM path throws (graceful
-      degradation, FR-004/FR-012). Unit-tested (`CompositeOfflineResolverTest`). Remaining: bind it to
-      `@OfflineIntentResolver` with `isLlmReady`/`engineProvider` from `ProviderRegistry` (T023).
+      degradation, FR-004/FR-012). Bound to `@OfflineIntentResolver` in WorkspaceScope (`AgentLlmModule`)
+      with `isLlmReady`/`engineProvider` from `ProviderRegistry`. Unit-tested
+      (`CompositeOfflineResolverTest`).
 - [ ] T031 ⚠ Verify integration assumptions: LiteRT-LM **Kotlin/JVM desktop** native libs work; LiteRT-LM
       **iOS Swift-package** bridge works from iosMain; **FunctionGemma-270m** (tool-calling) + **Gemma 3n
       E2B/E4B** (`.litertlm`/`.task`, chat) available; **Qwen2.5-3B** GGUF set for the llama.cpp path.
