@@ -79,7 +79,10 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       interface (not `expect`) so platforms contribute via Metro DI, matching the codebase idiom.
 - [x] T012 `TextToSpeech` port in `feature/agent/speech/TextToSpeech.kt` — `speak`/`stop`/`isAvailable`
       (mute handled in `ChatUiState`, T017).
-- [ ] T013 [P] Android actuals: `SpeechRecognizer` (`EXTRA_PREFER_OFFLINE`) + `android.speech.tts.TextToSpeech`.
+- [~] T013 [P] Android actuals: `AndroidSpeechToText` over `SpeechRecognizer` (`EXTRA_PREFER_OFFLINE`,
+      partial results, main-thread `callbackFlow` → `SttEvent`) + `AndroidTextToSpeech` over
+      `android.speech.tts.TextToSpeech` (async-init aware), bound in `SpeechAndroidModule` with the app
+      `Context`. Compiles on the Android CI job; runtime needs `RECORD_AUDIO` (T016) + a device to verify.
 - [ ] T014 [P] iOS actuals: `SFSpeechRecognizer` (`requiresOnDeviceRecognition = true`) +
       `AVSpeechSynthesizer` (use `Dispatchers.Default`, `@OptIn(ExperimentalForeignApi::class)`).
 - [x] T015 [P] Desktop fallback: shared commonMain `UnsupportedSpeechToText` (emits one `Error` →

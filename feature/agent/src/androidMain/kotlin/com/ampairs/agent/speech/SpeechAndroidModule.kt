@@ -1,22 +1,23 @@
 package com.ampairs.agent.speech
 
+import android.content.Context
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
 /**
- * Android speech bindings. Placeholder fallbacks for now — T013 replaces these bodies with the real
- * `SpeechRecognizer` (`EXTRA_PREFER_OFFLINE`) + `android.speech.tts.TextToSpeech` implementations
- * (which need `Context` from the platform graph and a device to verify). The ChatViewModel wiring
- * (T017) already consumes the [SpeechToText]/[TextToSpeech] ports, so T013 is a drop-in.
+ * Android speech bindings (T013): real [SpeechRecognizer]-backed STT (`EXTRA_PREFER_OFFLINE`) +
+ * [android.speech.tts.TextToSpeech]-backed TTS, both taking the app [Context] from the graph. The
+ * `RECORD_AUDIO` runtime permission gate (T016) is a host-app concern; without it STT emits an error
+ * and the UI degrades to text input.
  */
 @ContributesTo(AppScope::class)
 interface SpeechAndroidModule {
     companion object {
         @Provides
-        fun provideSpeechToText(): SpeechToText = UnsupportedSpeechToText
+        fun provideSpeechToText(context: Context): SpeechToText = AndroidSpeechToText(context)
 
         @Provides
-        fun provideTextToSpeech(): TextToSpeech = NoOpTextToSpeech
+        fun provideTextToSpeech(context: Context): TextToSpeech = AndroidTextToSpeech(context)
     }
 }
