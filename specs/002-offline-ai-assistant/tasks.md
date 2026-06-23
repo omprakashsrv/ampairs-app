@@ -61,9 +61,11 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       `resolveActiveModuleCode(Route.Agent) → AI_ASSISTANT`, display name (`nav_assistant`), icon
       (`AutoAwesome`), desktop menu path (`agent`). `Route.Agent` was previously unreachable; it now
       appears only when the workspace has the module installed + active.
-- [ ] T010 **Backend (ampairs repo):** register an `ai-assistant` module in the workspace module
-      catalog so it shows up as installable to users. Until then the app maps it correctly but it won't
-      appear in the install list. (Cross-repo; not in this PR.)
+- [x] T010 **Backend (ampairs repo):** `ai-assistant` master module seeded in
+      `MasterModuleSeederService` (moduleCode = `ai-assistant`, matches `ModuleCodes.AI_ASSISTANT`) so
+      it appears as installable per workspace. COMMUNICATION category, FREE tier, depends on
+      customer-management / product-management / invoice-billing. Runtime seed (CommandLineRunner) — no
+      migration. Lives in the ampairs repo on branch `claude/nice-gauss-0ndtbn`.
 
 ---
 
