@@ -45,6 +45,10 @@ kotlin {
                 // Grant — KMP runtime-permission library (Android+iOS); used here for the
                 // RECORD_AUDIO mic gate (T016). iOS binding follows once Android probe is green.
                 implementation(libs.grant.core)
+                // LiteRT-LM (Google AI Edge) — on-device LLM runtime for the LiteRtLmEngine
+                // adapter (T025); loads the `litert-lm` Gemma models (FunctionGemma-270m,
+                // Gemma 3n E2B/E4B). Android-only; iOS/Desktop fall back to llama.cpp (T027).
+                implementation(libs.litertlm.android)
             }
         }
         commonTest {

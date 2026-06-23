@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Voice input for the assistant (FR-008). Merged into the host app manifest. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+      LiteRT-LM (T025) declares minSdk 31, but the app stays minSdk 24. The on-device LLM is an
+      optional, capability-gated enhancement: LiteRtLmBackend.supports() requires API >= 31 at
+      runtime, so the litert-lm engine is never instantiated on older devices (they fall back to the
+      rule-based resolver). overrideLibrary lets the manifest merge succeed without raising the app
+      floor; the native lib simply ships unused on Android < 12.
+    -->
+    <uses-sdk tools:overrideLibrary="com.google.ai.edge.litertlm" />
 </manifest>
