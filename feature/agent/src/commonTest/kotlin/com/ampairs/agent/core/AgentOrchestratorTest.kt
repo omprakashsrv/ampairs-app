@@ -5,7 +5,6 @@ import com.ampairs.common.agent.ActionHandler
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.ActionType
 import com.ampairs.agent.query.SafeQueryService
-import com.ampairs.agent.query.SafeSqlValidator
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.CONFIRMED_PARAM
 import kotlinx.coroutines.test.runTest
@@ -52,7 +51,7 @@ class AgentOrchestratorTest {
             actionRegistry = ActionRegistry(mapOf(handler.moduleName to handler)),
             onlineResolver = FixedResolver(intent),
             offlineResolver = FixedResolver(intent),
-            safeQueryService = SafeQueryService(emptyMap(), SafeSqlValidator()),
+            safeQueryService = SafeQueryService(emptyMap()),
         )
 
     @Test

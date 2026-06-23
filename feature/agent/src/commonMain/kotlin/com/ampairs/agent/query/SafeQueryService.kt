@@ -20,8 +20,10 @@ import dev.zacsweers.metro.Multibinds
 @Inject
 class SafeQueryService(
     private val executors: Map<String, ModuleQueryExecutor>,
-    private val validator: SafeSqlValidator,
 ) {
+    // Pure, dependency-free SQL gate — not a DI binding, so construct it directly (not injected).
+    private val validator = SafeSqlValidator()
+
     suspend fun run(moduleName: String, candidateSql: String): SafeQueryOutcome {
         val schema = BuiltInQuerySchemas.forModule(moduleName)
             ?: return SafeQueryOutcome.Unavailable("I can't query the '$moduleName' module.")
