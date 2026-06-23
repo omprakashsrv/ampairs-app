@@ -198,11 +198,12 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       (each `@ContributesIntoMap(WorkspaceScope)` + `@QueryExecutorKey("<module>")`, reading its own
       workspace-scoped DB). **Schema types relocated** to `data/common/agent` (`ModuleQuerySchema`/
       `TableSchema`/`ColumnSchema`, alongside `ModuleQueryExecutor`) so a feature module can own a schema
-      without depending on the agent module. Remaining: the cross-module `@Provides @IntoMap
-      @QuerySchemaKey` contribution + `SafeQueryService` switch off `BuiltInQuerySchemas` — that DI
-      pattern has no in-repo precedent, so probe it on one module (like the executor Room API) before
-      fanning out and removing the central catalog, ideally once a SafeQuery producer exists.
-      Device-verify a real read-only round-trip.
+      without depending on the agent module. **Schema map wired**: `SafeQueryExecutorModule` now also
+      `@Multibinds(allowEmpty=true) Map<String, ModuleQuerySchema>`; `SafeQueryService` consumes it
+      (per-module schema wins, `BuiltInQuerySchemas` fallback). `InvoiceQuerySchemaModule` is the probe
+      for the cross-module `@Provides @IntoMap @QuerySchemaKey("invoice")` pattern (no in-repo
+      precedent). Remaining (once the probe is CI-green): fan out customer/product/inventory schema
+      providers and retire `BuiltInQuerySchemas`. Device-verify a real read-only round-trip.
 - [~] T038 `ResolvedIntent.SafeQuery(moduleName, sql)` + `SafeQueryService` (validate via curated
       schema + `SafeSqlValidator` → execute on the module's read-only `ModuleQueryExecutor` →
       `SafeQueryOutcome` rendered to chat). `AgentOrchestrator` routes the `SafeQuery` intent through

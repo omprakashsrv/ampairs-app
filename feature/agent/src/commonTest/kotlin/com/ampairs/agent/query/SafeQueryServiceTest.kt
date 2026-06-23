@@ -26,7 +26,8 @@ class SafeQueryServiceTest {
 
     private fun service(executor: FakeExecutor?): Pair<SafeQueryService, FakeExecutor?> {
         val map = executor?.let { mapOf(it.moduleName to (it as ModuleQueryExecutor)) } ?: emptyMap()
-        return SafeQueryService(map) to executor
+        // schemas left empty → falls back to BuiltInQuerySchemas (invoice present) for these tests
+        return SafeQueryService(emptyMap(), map) to executor
     }
 
     @Test
@@ -80,7 +81,7 @@ class SafeQueryServiceTest {
             override val moduleName = "invoice"
             override suspend fun executeReadOnly(sql: String): QueryResultSet = throw IllegalStateException("disk error")
         }
-        val svc = SafeQueryService(mapOf("invoice" to boom))
+        val svc = SafeQueryService(emptyMap(), mapOf("invoice" to boom))
         val outcome = svc.run("invoice", "SELECT status FROM invoiceEntity")
 
         assertTrue(outcome is SafeQueryOutcome.Failed)

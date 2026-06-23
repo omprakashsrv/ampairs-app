@@ -1,5 +1,7 @@
 package com.ampairs.common.agent
 
+import dev.zacsweers.metro.MapKey
+
 /**
  * A curated, **read-only** description of the tables/columns the agent's SAFE_QUERY fallback is
  * allowed to query for ONE module's SQLite (Room) database.
@@ -43,3 +45,11 @@ data class ModuleQuerySchema(
         }
     }
 }
+
+/**
+ * Metro map key — contributes a [ModuleQuerySchema] into the SAFE_QUERY schema map keyed by module
+ * name (e.g. "invoice"), so each feature module owns and provides its own curated schema via
+ * `@Provides @IntoMap @QuerySchemaKey("<module>")`. Mirrors [QueryExecutorKey].
+ */
+@MapKey
+annotation class QuerySchemaKey(val value: String)

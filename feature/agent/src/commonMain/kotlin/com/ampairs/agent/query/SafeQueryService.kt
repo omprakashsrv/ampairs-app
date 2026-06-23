@@ -20,13 +20,16 @@ import dev.zacsweers.metro.Multibinds
  */
 @Inject
 class SafeQueryService(
+    private val schemas: Map<String, ModuleQuerySchema>,
     private val executors: Map<String, ModuleQueryExecutor>,
 ) {
     // Pure, dependency-free SQL gate — not a DI binding, so construct it directly (not injected).
     private val validator = SafeSqlValidator()
 
     suspend fun run(moduleName: String, candidateSql: String): SafeQueryOutcome {
-        val schema = BuiltInQuerySchemas.forModule(moduleName)
+        // Per-module contributed schema wins; fall back to the central catalog until every module
+        // owns and contributes its own (T037 fan-out).
+        val schema = schemas[moduleName] ?: BuiltInQuerySchemas.forModule(moduleName)
             ?: return SafeQueryOutcome.Unavailable("I can't query the '$moduleName' module.")
 
         val sql = when (val validation = validator.validate(candidateSql, schema)) {
@@ -73,11 +76,16 @@ private fun QueryResultSet.toText(): String {
 private const val MAX_RENDERED_ROWS = 20
 
 /**
- * Workspace-scope multibinding for the SAFE_QUERY executor map — `allowEmpty` so the graph resolves
- * before any per-module `SqlQueryDelegate` (T037) contributes. Mirrors the sync-delegate pattern.
+ * Workspace-scope multibindings for the SAFE_QUERY maps — both `allowEmpty` so the graph resolves
+ * before any per-module executor/schema (T037) contributes. Mirrors the sync-delegate pattern. Each
+ * feature module contributes its executor (`@ContributesIntoMap` + `@QueryExecutorKey`) and its
+ * curated schema (`@Provides @IntoMap @QuerySchemaKey`).
  */
 @ContributesTo(WorkspaceScope::class)
 interface SafeQueryExecutorModule {
     @Multibinds(allowEmpty = true)
     fun moduleQueryExecutors(): Map<String, ModuleQueryExecutor>
+
+    @Multibinds(allowEmpty = true)
+    fun moduleQuerySchemas(): Map<String, ModuleQuerySchema>
 }

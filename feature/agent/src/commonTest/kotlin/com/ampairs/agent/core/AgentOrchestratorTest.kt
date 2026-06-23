@@ -51,7 +51,7 @@ class AgentOrchestratorTest {
             actionRegistry = ActionRegistry(mapOf(handler.moduleName to handler)),
             onlineResolver = FixedResolver(intent),
             offlineResolver = FixedResolver(intent),
-            safeQueryService = SafeQueryService(emptyMap()),
+            safeQueryService = SafeQueryService(emptyMap(), emptyMap()),
         )
 
     @Test
