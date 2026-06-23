@@ -1,7 +1,10 @@
 package com.ampairs.agent.query
 
+import com.ampairs.common.agent.ColumnSchema
 import com.ampairs.common.agent.ModuleQueryExecutor
+import com.ampairs.common.agent.ModuleQuerySchema
 import com.ampairs.common.agent.QueryResultSet
+import com.ampairs.common.agent.TableSchema
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,6 +18,19 @@ import kotlin.test.assertTrue
  */
 class SafeQueryServiceTest {
 
+    /** Minimal invoice schema for the validator (allowlist = invoiceEntity only). */
+    private val invoiceSchema = mapOf(
+        "invoice" to ModuleQuerySchema(
+            moduleName = "invoice",
+            tables = listOf(
+                TableSchema(
+                    "invoiceEntity",
+                    listOf(ColumnSchema("status"), ColumnSchema("total_cost")),
+                ),
+            ),
+        ),
+    )
+
     /** Records executed SQL and returns a canned row set; asserts read-only by never mutating. */
     private class FakeExecutor(override val moduleName: String) : ModuleQueryExecutor {
         val executed = mutableListOf<String>()
@@ -26,8 +42,7 @@ class SafeQueryServiceTest {
 
     private fun service(executor: FakeExecutor?): Pair<SafeQueryService, FakeExecutor?> {
         val map = executor?.let { mapOf(it.moduleName to (it as ModuleQueryExecutor)) } ?: emptyMap()
-        // schemas left empty → falls back to BuiltInQuerySchemas (invoice present) for these tests
-        return SafeQueryService(emptyMap(), map) to executor
+        return SafeQueryService(invoiceSchema, map) to executor
     }
 
     @Test
@@ -81,7 +96,7 @@ class SafeQueryServiceTest {
             override val moduleName = "invoice"
             override suspend fun executeReadOnly(sql: String): QueryResultSet = throw IllegalStateException("disk error")
         }
-        val svc = SafeQueryService(emptyMap(), mapOf("invoice" to boom))
+        val svc = SafeQueryService(invoiceSchema, mapOf("invoice" to boom))
         val outcome = svc.run("invoice", "SELECT status FROM invoiceEntity")
 
         assertTrue(outcome is SafeQueryOutcome.Failed)

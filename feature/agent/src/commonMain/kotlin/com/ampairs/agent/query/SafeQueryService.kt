@@ -27,9 +27,8 @@ class SafeQueryService(
     private val validator = SafeSqlValidator()
 
     suspend fun run(moduleName: String, candidateSql: String): SafeQueryOutcome {
-        // Per-module contributed schema wins; fall back to the central catalog until every module
-        // owns and contributes its own (T037 fan-out).
-        val schema = schemas[moduleName] ?: BuiltInQuerySchemas.forModule(moduleName)
+        // Each module owns and contributes its curated schema into the multibound map.
+        val schema = schemas[moduleName]
             ?: return SafeQueryOutcome.Unavailable("I can't query the '$moduleName' module.")
 
         val sql = when (val validation = validator.validate(candidateSql, schema)) {

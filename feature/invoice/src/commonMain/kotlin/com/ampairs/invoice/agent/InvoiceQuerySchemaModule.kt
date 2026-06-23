@@ -12,8 +12,8 @@ import dev.zacsweers.metro.Provides
 /**
  * Per-module SAFE_QUERY schema ownership (FR-016, T037): the invoice module contributes its own
  * curated read-only [ModuleQuerySchema] into the workspace-scope schema map via
- * `@Provides @IntoMap @QuerySchemaKey("invoice")`. `SafeQueryService` prefers this over the central
- * `BuiltInQuerySchemas` catalog. Internal/sync/JSON columns are deliberately omitted.
+ * `@Provides @IntoMap @QuerySchemaKey("invoice")`. `SafeQueryService` reads this map directly.
+ * Internal/sync/JSON columns are deliberately omitted.
  */
 @ContributesTo(WorkspaceScope::class)
 interface InvoiceQuerySchemaModule {
