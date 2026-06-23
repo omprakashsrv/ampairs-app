@@ -82,7 +82,7 @@ fun combinedEntryProvider(
         ?: invoiceEntryProvider(key, backStack)
         ?: paymentEntryProvider(key, backStack)
         ?: notificationEntryProvider(key, backStack)
-        ?: inventoryEntryProvider(key)
+        ?: inventoryEntryProvider(key, backStack)
         ?: agentEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
         ?: NavEntry(key) { Text("Unknown route: $key") }
@@ -209,11 +209,11 @@ private fun mainRouteEntryProvider(
         }
     }
 
-    // Route.Inventory redirects to InventoryRoute.Inventory
+    // Route.Inventory redirects to InventoryRoute.Dashboard
     is Route.Inventory -> NavEntry(key) {
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
-            backStack.add(InventoryRoute.Inventory)
+            backStack.add(InventoryRoute.Dashboard)
         }
     }
 

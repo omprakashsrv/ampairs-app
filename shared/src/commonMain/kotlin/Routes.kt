@@ -289,8 +289,30 @@ sealed interface CustomerRoute : NavKey {
 // Inventory routes
 @Serializable
 sealed interface InventoryRoute : NavKey {
+    /** Landing — stock truth at a glance (Route.Inventory redirects here). */
     @Serializable
-    data object Inventory : InventoryRoute
+    data object Dashboard : InventoryRoute
+
+    /** Adaptive list + detail two-pane host. */
+    @Serializable
+    data object Items : InventoryRoute
+
+    /** Add (itemId = null) / edit an item. */
+    @Serializable
+    data class ItemForm(val itemId: String? = null) : InventoryRoute
+
+    @Serializable
+    data object PhysicalCount : InventoryRoute
+
+    /** Global, immutable movement ledger across all items. */
+    @Serializable
+    data object Ledger : InventoryRoute
+
+    @Serializable
+    data object LowStock : InventoryRoute
+
+    @Serializable
+    data object Settings : InventoryRoute
 }
 
 // Order routes
