@@ -2,6 +2,7 @@ import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.home_action_add_customer
 import ampairsapp.shared.generated.resources.home_action_add_product
 import ampairsapp.shared.generated.resources.home_action_new_invoice
+import ampairsapp.shared.generated.resources.home_cd_notifications
 import ampairsapp.shared.generated.resources.home_greeting
 import ampairsapp.shared.generated.resources.home_placeholder_value
 import ampairsapp.shared.generated.resources.home_recent_activity_empty
