@@ -7,6 +7,21 @@ sibling `[P]` tasks. Each phase is independently shippable. Compile all three ta
 phase that touches `commonMain`:
 `androidApp:compileDebugKotlinAndroid` · `shared:compileKotlinIosSimulatorArm64` · `desktopApp:compileKotlin`.
 
+### Engine decision (drives Phase 2 + Phase 4)
+
+Best-per-platform behind one `LlmEngine` port (see `plan.md` §2/§4.0):
+
+| Platform | Primary engine | Fallback |
+|---|---|---|
+| Android | **LiteRT-LM** (Kotlin API, GPU/NPU, native Gemma 4 function calling) | llama.cpp (JNI) |
+| iOS | **LiteRT-LM** (Swift package, Metal; bridged from iosMain) | llama.cpp (cinterop) |
+| Desktop (JVM) | **LiteRT-LM** (Kotlin/JVM) — verify desktop native libs (T031); else llama.cpp | llama.cpp (JNI) |
+
+Default model **Gemma 4 E4B** (low-RAM **E2B / Gemma 3 1B**; llama.cpp/compat **Qwen2.5-3B**). Engine +
+model are runtime-selectable via `ProviderRegistry` + `PlatformDefaults` + `AssistantConfig` +
+`ModelCatalog` — never hardcoded. Tool-calling: LiteRT-LM native function calling on mobile/JVM, GBNF on
+llama.cpp, both from one `OutputSchema`.
+
 ---
 
 ## Phase 0 — Wire the registry (US1 backbone) · FR-001/002
