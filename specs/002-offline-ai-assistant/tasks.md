@@ -173,8 +173,13 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [~] T042 Line-item resolution: single optional item supported (`productDataService.searchSummaries`
       + quantity). Multi-item commands ("2 widgets and 1 cable") await the LLM resolver (Phase 2);
       unit/tax-code selection still TODO.
-- [ ] T043 Tax/total computation reusing the tax module calculator. → currently total = Σ(qty×price)
-      on a DRAFT (no GST breakdown); user finalizes in the editor. Wire the tax calculator next.
+- [x] T043 Tax/total via the tax module calculator. `InvoiceActionHandler.applyTaxes()` mirrors
+      `InvoiceViewModel.computeTotals()`: resolves the scenario from the buyer GSTIN
+      (`ScenarioResolver`, seller-origin state still unset like the editor), reads the workspace
+      `prices_include_tax` price mode, resolves rates via `TaxRateProvider`, and runs
+      `DocumentTotalsCalculator` → per-item `taxInfos`/`totalTax` + invoice `basePrice`/`totalTax`/
+      `totalCost` (GST-correct grand total). Applied in both propose (Confirm summary) and persist, so
+      the assistant total matches what the editor shows on open.
 - [x] T044 Added `ActionResult.Confirm(summary, pendingAction)` + `CONFIRMED_PARAM` to the shared
       contract (`data/common/.../agent/`). `InvoiceActionHandler.CREATE` is now **two-phase**:
       `proposeInvoice` resolves customer/product, builds the draft **in memory** to compute the total,

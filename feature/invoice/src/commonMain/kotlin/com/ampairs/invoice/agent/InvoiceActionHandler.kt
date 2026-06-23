@@ -20,13 +20,26 @@ import com.ampairs.invoice.domain.INVOICE_PREFIX
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.domain.InvoiceItem
 import com.ampairs.invoice.domain.InvoiceStatus
+import com.ampairs.invoice.domain.TaxInfo
+import com.ampairs.invoice.domain.TaxSpec
 import com.ampairs.product.domain.ProductSummary
+import com.ampairs.store.domain.StoreSettingsProvider
+import com.ampairs.tax.calculation.document.DocumentCalcInput
+import com.ampairs.tax.calculation.document.DocumentTotalsCalculator
+import com.ampairs.tax.calculation.document.LineCalcInput
+import com.ampairs.tax.calculation.document.OverallDiscountMode
+import com.ampairs.tax.calculation.document.PriceMode
+import com.ampairs.tax.calculation.document.ScenarioResolver
+import com.ampairs.tax.calculation.document.TaxRateProvider
+import com.ampairs.tax.calculation.document.TaxScenario
 
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
 @ActionHandlerKey("invoice")
 class InvoiceActionHandler(
     private val invoiceRepository: InvoiceRepository,
+    private val taxRateProvider: TaxRateProvider,
+    private val storeSettings: StoreSettingsProvider,
 ) : ActionHandler {
 
     override val moduleName = "invoice"
@@ -97,6 +110,7 @@ class InvoiceActionHandler(
 
         // Build the draft in memory only (to compute the total) — do NOT persist before confirmation.
         val draft = buildDraft(customer, lineItem)
+        applyTaxes(draft)
         val linePart = lineItem?.let { " with ${formatQty(it.quantity)} × ${it.product?.name ?: "item"}" } ?: ""
         val pendingParams = buildMap {
             put(CONFIRMED_PARAM, "true")
@@ -126,6 +140,7 @@ class InvoiceActionHandler(
         }
 
         val invoice = buildDraft(customer, lineItem)
+        applyTaxes(invoice)
         return try {
             invoiceRepository.saveInvoice(invoice)
             val linePart = lineItem?.let { " with ${formatQty(it.quantity)} × ${it.product?.name ?: "item"}" } ?: ""
@@ -146,6 +161,65 @@ class InvoiceActionHandler(
         this.customer = customer
         status = InvoiceStatus.DRAFT
         items = mutableListOf<InvoiceItem>().apply { lineItem?.let { add(it) } }
+    }
+
+    /**
+     * Apply GST to the draft via the tax module's pure calculator — mirrors
+     * `InvoiceViewModel.computeTotals()` so the assistant's total matches what the editor shows on
+     * open (T043, FR-005). Scenario is driven by the buyer's GSTIN (seller-origin state is owned by
+     * the tax module and still unset, exactly like the editor's `sellerStateCode = null`); price mode
+     * comes from the workspace `prices_include_tax` setting. No discounts in the assistant flow yet.
+     */
+    private suspend fun applyTaxes(invoice: Invoice) {
+        if (invoice.items.isEmpty()) return
+        val scenario = ScenarioResolver.resolve(
+            sellerStateCode = null,
+            buyerStateCode = ScenarioResolver.stateCodeFromGstin(invoice.customer?.gstNumber),
+        )
+        val priceMode =
+            if (storeSettings.getBoolean("common", "prices_include_tax", default = false)) {
+                PriceMode.TAX_INCLUSIVE
+            } else {
+                PriceMode.TAX_EXCLUSIVE
+            }
+        val rates = taxRateProvider.resolveAll(invoice.items.mapNotNull { it.product?.taxCode }, scenario)
+        val result = DocumentTotalsCalculator.calculate(
+            DocumentCalcInput(
+                lines = invoice.items.map { item ->
+                    LineCalcInput(
+                        id = item.id,
+                        taxCode = item.product?.taxCode ?: "",
+                        unitPrice = item.price,
+                        quantity = item.quantity,
+                    )
+                },
+                priceMode = priceMode,
+                overallDiscount = null,
+                overallDiscountMode = OverallDiscountMode.POST_TAX_REDUCTION,
+                scenario = scenario,
+                rates = rates,
+            ),
+        )
+        val spec = if (scenario == TaxScenario.INTRA) TaxSpec.INTRA else TaxSpec.INTER
+        val byId = result.lines.associateBy { it.id }
+        invoice.items.forEach { item ->
+            val line = byId[item.id] ?: return@forEach
+            item.basePrice = line.taxable
+            item.totalTax = line.totalTax
+            item.totalCost = line.lineTotal
+            item.taxInfos = line.components.map { c ->
+                TaxInfo(name = c.name, percentage = c.percentage, taxSpec = spec, value = c.amount)
+            }
+        }
+        invoice.taxSpec = spec
+        invoice.basePrice = result.taxableSubtotal
+        invoice.totalTax = result.totalTax
+        invoice.taxInfos = result.taxComponents.map { c ->
+            TaxInfo(name = c.name, percentage = 0.0, taxSpec = spec, value = c.amount)
+        }.toMutableList()
+        invoice.totalItems = invoice.items.size
+        invoice.totalQuantity = invoice.items.sumOf { it.quantity }
+        invoice.totalCost = result.grandTotal
     }
 
     // Plain (currency-symbol-free) formatting for the chat summary — the symbol/grouping belongs to
