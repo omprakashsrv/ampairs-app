@@ -1,6 +1,7 @@
 package com.ampairs
 
 import com.ampairs.common.firebase.messaging.FirebaseMessaging
+import kotlin.concurrent.Volatile
 
 /**
  * Swift ⇄ Kotlin bridge for FCM on iOS (Phase 4 of push notifications).
