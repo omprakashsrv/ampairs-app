@@ -191,9 +191,12 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       derived from the Room `@Entity`s (internal/sync/JSON columns hidden) + business descriptions for
       text-to-SQL. Tested (`BuiltInQuerySchemasTest`). NOTE: move to per-module ownership with T037 so
       they can't drift from the entities.
-- [ ] T037 Per-module `SqlQueryDelegate` (WorkspaceScope): expose a curated `ModuleQuerySchema` +
-      execute validated SQL via Room KMP `@RawQuery`/`RoomRawQuery` on a **reader** connection →
-      `List<Map<String,Any?>>`. (Build env: needs each module's DAO.)
+- [~] T037 Per-module `ModuleQueryExecutor` (WorkspaceScope): execute validated SQL via Room KMP
+      `useReaderConnection { usePrepared(sql) { SQLiteStatement } }` on a **reader** connection →
+      `QueryResultSet` (columns + string-rendered rows). Reference impl landed: `InvoiceQueryExecutor`
+      (`@ContributesIntoMap(WorkspaceScope)` + `@QueryExecutorKey("invoice")`). Remaining: customer/
+      product/inventory executors (mechanical copies) + move `BuiltInQuerySchemas` to per-module
+      ownership so the curated schema can't drift from the entities (T036b note).
 - [~] T038 `ResolvedIntent.SafeQuery(moduleName, sql)` + `SafeQueryService` (validate via curated
       schema + `SafeSqlValidator` → execute on the module's read-only `ModuleQueryExecutor` →
       `SafeQueryOutcome` rendered to chat). `AgentOrchestrator` routes the `SafeQuery` intent through
