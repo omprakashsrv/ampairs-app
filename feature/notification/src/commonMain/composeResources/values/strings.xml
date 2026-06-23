@@ -1,0 +1,9 @@
+<resources>
+    <string name="notification_list_title">Notifications</string>
+    <string name="notification_empty_title">You\'re all caught up</string>
+    <string name="notification_empty_subtitle">New notifications will appear here.</string>
+    <string name="notification_error_title">Something went wrong</string>
+    <string name="notification_cd_mark_all_read">Mark all as read</string>
+    <string name="notification_cd_refresh">Refresh</string>
+    <string name="notification_cd_dismiss">Dismiss notification</string>
+</resources>

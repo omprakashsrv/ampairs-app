@@ -58,6 +58,9 @@ sealed interface Route : NavKey {
     data object Payment : Route
 
     @Serializable
+    data object Notifications : Route
+
+    @Serializable
     data object More : Route
 }
 

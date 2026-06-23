@@ -141,6 +141,11 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/subscription/$cleanPath"
     }
 
+    fun notificationUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/notification/$cleanPath"
+    }
+
     fun taxUrl(path: String, queryParams: Map<String, String> = emptyMap()): String {
         val cleanPath = path.removePrefix("/")
         val baseUrl = "${ConfigurationManager.apiBaseUrl}/api/tax/$cleanPath"

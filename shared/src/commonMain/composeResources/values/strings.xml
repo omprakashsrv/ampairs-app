@@ -56,6 +56,7 @@
 
     <!-- Home Screen -->
     <string name="home_greeting">Welcome back</string>
+    <string name="home_cd_notifications">Notifications</string>
     <string name="home_section_overview">Overview</string>
     <string name="home_section_quick_actions">Quick actions</string>
     <string name="home_section_recent_activity">Recent activity</string>
