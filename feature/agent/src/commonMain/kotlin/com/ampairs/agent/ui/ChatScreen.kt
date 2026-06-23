@@ -51,7 +51,9 @@ import ampairsapp.feature.agent.generated.resources.agent_confirm_prompt
 import ampairsapp.feature.agent.generated.resources.agent_empty_hint
 import ampairsapp.feature.agent.generated.resources.agent_empty_title
 import ampairsapp.feature.agent.generated.resources.agent_input_placeholder
+import ampairsapp.feature.agent.generated.resources.agent_mute_cd
 import ampairsapp.feature.agent.generated.resources.agent_send_cd
+import ampairsapp.feature.agent.generated.resources.agent_unmute_cd
 import ampairsapp.feature.agent.generated.resources.agent_thinking
 import ampairsapp.feature.agent.generated.resources.agent_title
 import com.ampairs.agent.ui.components.MessageBubble
