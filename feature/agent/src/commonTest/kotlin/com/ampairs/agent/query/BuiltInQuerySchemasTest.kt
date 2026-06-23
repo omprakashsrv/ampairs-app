@@ -41,7 +41,7 @@ class BuiltInQuerySchemasTest {
             "invoice" to "SELECT status, total_cost FROM invoiceEntity WHERE status = 'NEW'",
             "customer" to "SELECT name, city FROM customers WHERE state = 'KA'",
             "product" to "SELECT name, stock_quantity FROM productEntity WHERE stock_quantity < low_stock_alert",
-            "inventory" to "SELECT product_id, stock FROM inventoryEntity",
+            "inventory" to "SELECT productId, currentStock FROM inventory_items WHERE availableStock <= reorderLevel",
         )
         queries.forEach { (module, sql) ->
             val schema = BuiltInQuerySchemas.forModule(module)!!
