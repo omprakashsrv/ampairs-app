@@ -119,4 +119,10 @@ dependencies {
 
     // Ktor OkHttp engine for Android
     implementation(libs.ktor.client.okHttp)
+
+    // FCM push notifications: AmpairsFirebaseMessagingService + NotificationCompat.
+    // `shared` depends on firebase-messaging via `implementation` (not `api`), so the service
+    // base class isn't visible transitively — declare it directly here.
+    implementation(libs.google.firebase.messaging)
+    implementation(libs.androidx.core)
 }

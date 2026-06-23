@@ -13,6 +13,9 @@
     <!-- Network thermal printers (raw TCP :9100) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- FCM push notifications (Android 13+ runtime permission) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Classic Bluetooth (SPP/RFCOMM) thermal printers -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
@@ -38,6 +41,20 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
+
+        <!-- FCM: handles token refresh + incoming messages -->
+        <service
+            android:name="com.ampairs.app.AmpairsFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Default channel FCM uses for "notification" messages when the app is backgrounded -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/default_notification_channel_id" />
 
         <activity
             android:name="com.ampairs.app.MainActivity"
