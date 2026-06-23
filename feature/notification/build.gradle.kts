@@ -59,6 +59,8 @@ kotlin {
         androidMain {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
+                // Runtime POST_NOTIFICATIONS permission request (Android 13+)
+                implementation(libs.accompanist.permissions)
             }
         }
         val desktopMain by getting {

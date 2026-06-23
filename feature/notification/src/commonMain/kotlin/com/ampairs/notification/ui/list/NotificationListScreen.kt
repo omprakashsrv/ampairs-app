@@ -40,15 +40,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.filled.Settings
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatDateTime
 import com.ampairs.notification.domain.model.AppNotification
+import com.ampairs.notification.permission.RequestNotificationPermissionEffect
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.notification.generated.resources.Res
 import ampairsapp.feature.notification.generated.resources.notification_cd_dismiss
 import ampairsapp.feature.notification.generated.resources.notification_cd_mark_all_read
 import ampairsapp.feature.notification.generated.resources.notification_cd_refresh
+import ampairsapp.feature.notification.generated.resources.notification_cd_settings
 import ampairsapp.feature.notification.generated.resources.notification_empty_subtitle
 import ampairsapp.feature.notification.generated.resources.notification_empty_title
 import ampairsapp.feature.notification.generated.resources.notification_error_title
@@ -58,11 +61,16 @@ import ampairsapp.feature.notification.generated.resources.notification_list_tit
 @Composable
 fun NotificationListScreen(
     onOpenDeepLink: (String) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     viewModel: NotificationListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val locale = LocalAppLocale.current
+
+    // Phase 6: request the runtime notification permission the first time the center opens
+    // (Android 13+ POST_NOTIFICATIONS; no-op on iOS/Desktop).
+    RequestNotificationPermissionEffect()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -97,6 +105,12 @@ fun NotificationListScreen(
                                 contentDescription = stringResource(Res.string.notification_cd_mark_all_read),
                             )
                         }
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = stringResource(Res.string.notification_cd_settings),
+                        )
                     }
                     if (uiState.isRefreshing) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp))

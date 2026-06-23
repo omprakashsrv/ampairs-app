@@ -6,4 +6,18 @@
     <string name="notification_cd_mark_all_read">Mark all as read</string>
     <string name="notification_cd_refresh">Refresh</string>
     <string name="notification_cd_dismiss">Dismiss notification</string>
+    <string name="notification_cd_settings">Notification settings</string>
+    <string name="notification_cd_back">Back</string>
+
+    <!-- Notification settings screen -->
+    <string name="notification_settings_title">Notification settings</string>
+    <string name="notification_settings_section_types">Notification types</string>
+    <string name="notification_settings_master_title">Enable notifications</string>
+    <string name="notification_settings_master_subtitle">Receive notifications on this device.</string>
+    <string name="notification_settings_order_title">Order updates</string>
+    <string name="notification_settings_order_subtitle">New orders and status changes.</string>
+    <string name="notification_settings_invoice_title">Invoice updates</string>
+    <string name="notification_settings_invoice_subtitle">Invoices and payment activity.</string>
+    <string name="notification_settings_announcements_title">Announcements</string>
+    <string name="notification_settings_announcements_subtitle">Product news and important updates.</string>
 </resources>

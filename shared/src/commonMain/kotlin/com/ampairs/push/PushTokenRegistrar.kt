@@ -5,8 +5,11 @@ import com.ampairs.common.DeviceService
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.firebase.messaging.FcmDataKeys
+import com.ampairs.common.firebase.messaging.FcmMessageTypes
+import com.ampairs.common.firebase.messaging.FcmTopics
 import com.ampairs.common.firebase.messaging.FirebaseMessaging
 import com.ampairs.common.firebase.messaging.RemoteMessage
+import com.ampairs.common.notification.NotificationPreferencesManager
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.notification.data.repository.NotificationRepository
 import com.ampairs.notification.domain.model.AppNotification
@@ -20,6 +23,10 @@ import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 private val log = Logger.withTag("PushTokenRegistrar")
@@ -48,6 +55,7 @@ class PushTokenRegistrar(
     private val deviceService: DeviceService,
     private val notificationRepository: NotificationRepository,
     private val centralSyncService: CentralSyncService,
+    private val notificationPreferences: NotificationPreferencesManager,
     closableRegistry: WorkspaceClosableRegistry,
 ) {
     // FCM tokens always use the "FCM" type — even on iOS the token is the FCM registration token
@@ -78,6 +86,24 @@ class PushTokenRegistrar(
             scope.launch { onForegroundMessage(message) }
         }
         scope.launch { register() }
+
+        // Phase 6: keep the FCM "announcements" topic subscription in sync with the device-local
+        // preference. Opting out unsubscribes from the broadcast topic so the server stops sending
+        // announcement pushes to this device entirely.
+        notificationPreferences.notifyAnnouncements
+            .distinctUntilChanged()
+            .onEach { subscribed -> syncAnnouncementsTopic(subscribed) }
+            .launchIn(scope)
+    }
+
+    private suspend fun syncAnnouncementsTopic(subscribed: Boolean) {
+        runCatching {
+            if (subscribed) {
+                firebaseMessaging.subscribeToTopic(FcmTopics.ANNOUNCEMENTS)
+            } else {
+                firebaseMessaging.unsubscribeFromTopic(FcmTopics.ANNOUNCEMENTS)
+            }
+        }.onFailure { log.w(it) { "Failed to update announcements topic subscription" } }
     }
 
     /**
@@ -90,6 +116,11 @@ class PushTokenRegistrar(
     private suspend fun onForegroundMessage(message: RemoteMessage) {
         runCatching {
             val data = message.data
+            // Phase 6: honour the device-local preferences before surfacing anything.
+            if (!isTypeEnabled(data[FcmDataKeys.TYPE])) {
+                log.d { "Notification suppressed by user preference (type=${data[FcmDataKeys.TYPE]})" }
+                return@runCatching
+            }
             val uid = data["notification_uid"] ?: data[FcmDataKeys.ENTITY_ID]
             if (!uid.isNullOrBlank()) {
                 notificationRepository.upsertFromPush(
@@ -107,6 +138,20 @@ class PushTokenRegistrar(
             // Always pull so the feed (and badge) converge on the server's view.
             centralSyncService.emit(SyncEvent.TriggerPull(SyncEntity.NOTIFICATION))
         }.onFailure { log.w(it) { "Failed to handle foreground push message" } }
+    }
+
+    /**
+     * Gate display on device-local preferences. The master switch wins; per-type toggles then
+     * filter order/invoice/announcement pushes. Unknown types fall through the master switch only.
+     */
+    private suspend fun isTypeEnabled(type: String?): Boolean {
+        if (!notificationPreferences.notificationsEnabled.first()) return false
+        return when (type) {
+            FcmMessageTypes.ORDER_UPDATE -> notificationPreferences.notifyOrderUpdates.first()
+            FcmMessageTypes.INVOICE_UPDATE -> notificationPreferences.notifyInvoiceUpdates.first()
+            FcmMessageTypes.SYSTEM_ANNOUNCEMENT -> notificationPreferences.notifyAnnouncements.first()
+            else -> true
+        }
     }
 
     private fun currentPlatform(): DevicePlatform =

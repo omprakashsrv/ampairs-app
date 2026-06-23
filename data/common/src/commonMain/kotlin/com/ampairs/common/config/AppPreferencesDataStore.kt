@@ -128,6 +128,24 @@ interface AppPreferencesDataStore {
     // Incremental sync watermarks: last seen ALTERID per entity type per workspace
     fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
     suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
+
+    // ---- Notification preferences (device-local; no backend API) ----
+
+    /** Master notification switch. When false, no notifications are surfaced. Default true. */
+    fun getNotificationsEnabled(): Flow<Boolean>
+    suspend fun setNotificationsEnabled(enabled: Boolean)
+
+    /** Per-type: order updates. Default true. */
+    fun getNotifyOrderUpdates(): Flow<Boolean>
+    suspend fun setNotifyOrderUpdates(enabled: Boolean)
+
+    /** Per-type: invoice updates. Default true. */
+    fun getNotifyInvoiceUpdates(): Flow<Boolean>
+    suspend fun setNotifyInvoiceUpdates(enabled: Boolean)
+
+    /** Per-type: announcements (also toggles the FCM "announcements" topic subscription). Default true. */
+    fun getNotifyAnnouncements(): Flow<Boolean>
+    suspend fun setNotifyAnnouncements(enabled: Boolean)
 }
 
 /**
