@@ -101,8 +101,11 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [x] T020 Ports + descriptors in `feature/agent/llm/`: `LlmEngine` (load/generate/generateConstrained/
       close), `LlmBackend` (id/supports/create), `ModelDescriptor` (+`ModelRole`), `OutputSchema`
       (structured + `toJsonSchema()`/`toGbnf()`), `LlmParams`. Pure commonMain, no native code.
-- [ ] T021 `ModelCatalog` (commonMain) + `AssistantConfig` persisted in the existing DataStore
-      (active engine id, model id, STT/TTS provider, flags).
+- [~] T021 `ModelCatalog` (commonMain) — role-split entries (FunctionGemma-270m / Gemma 3n E2B/E4B /
+      Qwen2.5-3B) with provisional download metadata (confirm T031); `byId`/`byRole`/`byBackend`.
+      `AssistantConfig` (engine/model ids, llm/stt/tts flags, `safeQueryEnabled` default off). Unit-
+      tested (`ModelCatalogTest`). Remaining: DataStore persistence binding — lands with `ProviderRegistry`
+      (T023), kept out here so the shape stays pure/testable.
 - [ ] T022 `PlatformDefaults` expect/actual (best engine id per platform: Android/iOS/Desktop→litert-lm,
       fallback→llamacpp) + `DeviceCapability` expect/actual (`totalRamBytes()`) in `data/common/.../agent/`.
       Encode the RAM tiers from plan Open-Q#4: <3 GB → rule-based only; 3–6 GB → FunctionGemma-270m +
