@@ -124,13 +124,20 @@ llama.cpp, both from one `OutputSchema`.
 
 ## Phase 3 — Invoice-by-voice (US2) · FR-005/006/007
 
-- [ ] T040 Add `ActionType.CREATE` to `InvoiceActionHandler` (`feature/invoice/agent/`).
-- [ ] T041 Customer resolution: search by spoken name → 0/1/many; many → `NeedsInput`
-      disambiguation; 0 → offer create/ask.
-- [ ] T042 Line-item resolution: product search + quantity (word→number) + unit price + tax code.
-- [ ] T043 Tax/total computation reusing the tax module calculator.
+- [x] T040 `ActionType.CREATE` added to `InvoiceActionHandler` — builds a **DRAFT** invoice and saves
+      via `InvoiceRepository.saveInvoice(...)` (offline-first, flagged PENDING_PUSH); returns a
+      navigation target to open it. Rule-based resolver routes "create/make a bill/invoice for {X}".
+- [x] T041 Customer resolution via `customerDataService.listCustomers(name)` → exact/single match
+      used; many → `NeedsInput` disambiguation; none → `Error` (offer to add the customer).
+- [~] T042 Line-item resolution: single optional item supported (`productDataService.searchSummaries`
+      + quantity). Multi-item commands ("2 widgets and 1 cable") await the LLM resolver (Phase 2);
+      unit/tax-code selection still TODO.
+- [ ] T043 Tax/total computation reusing the tax module calculator. → currently total = Σ(qty×price)
+      on a DRAFT (no GST breakdown); user finalizes in the editor. Wire the tax calculator next.
 - [ ] T044 Build transient `InvoiceDraft`; return a typed `ActionResult.Confirm` summary with total
-      formatted in workspace locale; **no persistence yet** (FR-006).
+      formatted in workspace locale; **no persistence yet** (FR-006). → current cut saves a DRAFT
+      directly (DRAFT ⇒ no receivable side-effects); the explicit pre-save Confirm step is the next
+      increment.
 - [ ] T045 Confirm/cancel handling in `AgentOrchestrator`/`ChatViewModel` (carry pending action across
       turns); on confirm → build `InvoiceEntity` + items, UID in VM/handler, call
       `InvoiceRepository.saveInvoice(...)` (offline-first → pending push).

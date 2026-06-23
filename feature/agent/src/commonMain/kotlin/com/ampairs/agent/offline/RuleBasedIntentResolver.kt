@@ -25,7 +25,8 @@ class RuleBasedIntentResolver : IntentResolver {
             return ResolvedIntent.Conversation("Please type a command or question.")
         }
 
-        return tryCreate(trimmed)
+        return tryCreateInvoice(trimmed)
+            ?: tryCreate(trimmed)
             ?: trySearch(trimmed)
             ?: tryCount(trimmed)
             ?: tryList(trimmed)
@@ -35,6 +36,28 @@ class RuleBasedIntentResolver : IntentResolver {
             ?: trySync(trimmed)
             ?: tryRead(trimmed)
             ?: fallback()
+    }
+
+    // ── Pattern: "create/make/raise a bill/invoice for {customer}" ──
+    // Routed before the generic create so "invoice"/"bill" don't fall through to it. Single-item
+    // commands (e.g. "... with 2 widgets") are left to the on-device LLM resolver (Phase 2).
+
+    private fun tryCreateInvoice(input: String): ResolvedIntent? {
+        val pattern = Regex(
+            """(?i)(?:create|add|new|make|generate|raise)\s+(?:an?\s+)?(?:invoice|bill)\s+(?:for\s+)?(.+)"""
+        )
+        pattern.find(input)?.let { match ->
+            val customer = match.groupValues[1].trim()
+            if (customer.isBlank()) return null
+            return ResolvedIntent.Action(
+                AgentAction(
+                    actionType = ActionType.CREATE,
+                    moduleName = "invoice",
+                    params = mapOf("customer" to customer),
+                )
+            )
+        }
+        return null
     }
 
     // ── Pattern: "add/create/new {module} [called/named] {name}" ──
@@ -232,6 +255,7 @@ class RuleBasedIntentResolver : IntentResolver {
     private fun fallback(): ResolvedIntent = ResolvedIntent.Conversation(
         "I can help you manage customers, products, orders, invoices, and inventory. Try:\n" +
             "  - \"add customer John\"\n" +
+            "  - \"create a bill for John\"\n" +
             "  - \"search orders 1001\"\n" +
             "  - \"list invoices with status PENDING\"\n" +
             "  - \"how many invoices\"\n" +
