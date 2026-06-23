@@ -2,6 +2,7 @@ package com.ampairs.agent.core
 
 import com.ampairs.agent.di.OfflineIntentResolver
 import com.ampairs.agent.di.OnlineIntentResolver
+import com.ampairs.agent.query.SafeQueryService
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
 import dev.zacsweers.metro.Inject
@@ -17,6 +18,7 @@ class AgentOrchestrator(
     private val actionRegistry: ActionRegistry,
     @OnlineIntentResolver private val onlineResolver: IntentResolver,
     @OfflineIntentResolver private val offlineResolver: IntentResolver,
+    private val safeQueryService: SafeQueryService,
 ) {
 
     /**
@@ -50,6 +52,11 @@ class AgentOrchestrator(
 
             is ResolvedIntent.Conversation -> {
                 AgentResponse(text = intent.response)
+            }
+
+            is ResolvedIntent.SafeQuery -> {
+                // Read-only SQL fallback (FR-016): validate + execute on the module's reader connection.
+                AgentResponse(text = safeQueryService.run(intent.moduleName, intent.sql).toText())
             }
 
             is ResolvedIntent.Error -> {

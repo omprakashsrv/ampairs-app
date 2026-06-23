@@ -4,6 +4,8 @@ import com.ampairs.common.agent.ActionDescriptor
 import com.ampairs.common.agent.ActionHandler
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.ActionType
+import com.ampairs.agent.query.SafeQueryService
+import com.ampairs.agent.query.SafeSqlValidator
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.CONFIRMED_PARAM
 import kotlinx.coroutines.test.runTest
@@ -50,6 +52,7 @@ class AgentOrchestratorTest {
             actionRegistry = ActionRegistry(mapOf(handler.moduleName to handler)),
             onlineResolver = FixedResolver(intent),
             offlineResolver = FixedResolver(intent),
+            safeQueryService = SafeQueryService(emptyMap(), SafeSqlValidator()),
         )
 
     @Test
@@ -79,6 +82,23 @@ class AgentOrchestratorTest {
         assertTrue(confirmed.actionResult is ActionResult.Success)
         assertNull(confirmed.pendingConfirmation) // confirmation consumed
         assertEquals(1, handler.persistCount)
+    }
+
+    @Test
+    fun safeQueryIntent_isRoutedToSafeQueryService_withoutDispatchingActions() = runTest {
+        val handler = ConfirmingHandler("invoice")
+        val orch = orchestrator(
+            handler,
+            ResolvedIntent.SafeQuery("invoice", "SELECT status FROM invoiceEntity"),
+        )
+
+        val response = orch.processMessage("what's my average order value?", emptyList(), isOnline = false)
+
+        // Empty executor map (pre-T037) → a non-blank "unavailable" reply, and crucially no typed
+        // action was dispatched or persisted by the SAFE_QUERY path.
+        assertTrue(response.text.isNotBlank())
+        assertNull(response.pendingConfirmation)
+        assertEquals(0, handler.persistCount)
     }
 
     @Test

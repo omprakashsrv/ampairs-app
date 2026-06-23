@@ -158,10 +158,17 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [ ] T037 Per-module `SqlQueryDelegate` (WorkspaceScope): expose a curated `ModuleQuerySchema` +
       execute validated SQL via Room KMP `@RawQuery`/`RoomRawQuery` on a **reader** connection →
       `List<Map<String,Any?>>`. (Build env: needs each module's DAO.)
-- [ ] T038 `ResolvedIntent.SafeQuery` + orchestrator fallback tier (Action → SAFE_QUERY →
-      Clarification); module pick + text-to-SQL (`ModuleQuerySchema.toPromptText()`) → validate →
-      execute → model phrases rows. Gated by `AssistantConfig` (default off); prefer online/larger model.
-- [ ] T039 Tests: text-to-SQL eval set (rejection rate = 100% for bad inputs, SC-009) + read-only proof.
+- [~] T038 `ResolvedIntent.SafeQuery(moduleName, sql)` + `SafeQueryService` (validate via curated
+      schema + `SafeSqlValidator` → execute on the module's read-only `ModuleQueryExecutor` →
+      `SafeQueryOutcome` rendered to chat). `AgentOrchestrator` routes the `SafeQuery` intent through
+      it. `ModuleQueryExecutor`/`QueryResultSet`/`QueryExecutorKey` contract added in `data/common`;
+      empty executor map allowed via `@Multibinds(allowEmpty = true)` until T037 contributes per-module
+      executors. Remaining: the LLM resolver must *emit* `SafeQuery` (Phase 2) and the `AssistantConfig`
+      opt-in gate (T021) — until then no resolver produces it.
+- [x] T039 Tests: `SafeQueryServiceTest` proves the validation gate (mutating/multi-statement/comment/
+      off-allowlist SQL all `Rejected`, executor never called — SC-009 read-only proof), unknown-module
+      vs no-executor `Unavailable`, executor failure → `Failed`, and valid SELECT executes with an
+      enforced LIMIT. Orchestrator routing covered in `AgentOrchestratorTest`.
 
 ---
 
