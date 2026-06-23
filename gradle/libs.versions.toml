@@ -48,7 +48,6 @@ filekit = "0.14.2"
 play-services-location = "21.3.0"
 maps-compose = "8.3.0"
 accompanist-permissions = "0.37.3"
-grant = "2.2.1"
 play-services-coroutines = "1.11.0"
 play-services-auth = "21.6.0"
 play-integrity = "1.6.0"
@@ -167,7 +166,6 @@ app-update = { module = "com.google.android.play:app-update-ktx", version.ref = 
 billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
-grant-core = { module = "dev.brewkits:grant-core", version.ref = "grant" }
 
 # Native Firebase for Android
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
