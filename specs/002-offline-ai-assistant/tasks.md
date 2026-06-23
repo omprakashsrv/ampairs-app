@@ -135,8 +135,12 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [x] T028 `AgentSchemaBuilder`: `ActionDescriptor`s → `OutputSchema` (JSON-schema + GBNF renderings)
       + `systemPrompt`; engine-agnostic. Unit-tested (`AgentSchemaBuilderTest`): output constrained to
       exactly the registered action types/modules, required-param markers in the prompt (SC-003 backbone).
-- [ ] T029 `LlmIntentResolver : IntentResolver` via `ProviderRegistry.llmEngine()`; parse → `ResolvedIntent`;
-      validate against schema, re-ask on failure; low confidence → `Clarification`.
+- [~] T029 `LlmIntentResolver : IntentResolver` — builds the schema/prompt (`AgentSchemaBuilder`), calls
+      `engine.generateConstrained`, extracts the JSON (even from prose), and **strictly validates**:
+      unregistered action/module or missing required param → `Clarification` (never a wrong action,
+      SC-003); one re-ask on parse failure. Engine resolved lazily via `engineProvider` (→
+      `ProviderRegistry` at T023). Unit-tested with a fake engine (`LlmIntentResolverTest`). Remaining:
+      DI-bind the `engineProvider` once `ProviderRegistry` (T023) exists.
 - [ ] T030 Composite offline resolver: `LlmIntentResolver` when a model is loaded else
       `RuleBasedIntentResolver`; bind `@OfflineIntentResolver`.
 - [ ] T031 ⚠ Verify integration assumptions: LiteRT-LM **Kotlin/JVM desktop** native libs work; LiteRT-LM
