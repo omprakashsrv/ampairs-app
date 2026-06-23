@@ -1,5 +1,9 @@
 package com.ampairs.agent.query
 
+import com.ampairs.common.agent.ColumnSchema
+import com.ampairs.common.agent.ModuleQuerySchema
+import com.ampairs.common.agent.TableSchema
+
 /**
  * Curated, read-only [ModuleQuerySchema]s for the SAFE_QUERY fallback — the allow-listed tables/columns
  * the agent may query per module, with business descriptions to help the LLM write correct SQL.

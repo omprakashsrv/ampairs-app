@@ -1,4 +1,4 @@
-package com.ampairs.agent.query
+package com.ampairs.common.agent
 
 /**
  * A curated, **read-only** description of the tables/columns the agent's SAFE_QUERY fallback is
@@ -9,7 +9,10 @@ package com.ampairs.agent.query
  *  - other modules' tables are unreachable (each module is a separate DB anyway),
  *  - the schema fed to the LLM (for text-to-SQL) stays small and safe.
  *
- * The [SafeSqlValidator] rejects any query that references a table outside [allowedTables].
+ * Lives in `data/common` (alongside [ModuleQueryExecutor]) so each owning feature module can define
+ * and contribute its own schema (per-module ownership, FR-016/T037) without depending on the agent
+ * module. The agent's `SafeSqlValidator` rejects any query that references a table outside
+ * [ModuleQuerySchema.allowedTables].
  */
 data class ColumnSchema(
     val name: String,

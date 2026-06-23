@@ -1,6 +1,7 @@
 package com.ampairs.agent.query
 
 import com.ampairs.common.agent.ModuleQueryExecutor
+import com.ampairs.common.agent.ModuleQuerySchema
 import com.ampairs.common.agent.QueryResultSet
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesTo

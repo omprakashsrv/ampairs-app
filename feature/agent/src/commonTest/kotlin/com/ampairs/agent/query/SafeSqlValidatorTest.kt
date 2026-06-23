@@ -1,5 +1,8 @@
 package com.ampairs.agent.query
 
+import com.ampairs.common.agent.ColumnSchema
+import com.ampairs.common.agent.ModuleQuerySchema
+import com.ampairs.common.agent.TableSchema
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

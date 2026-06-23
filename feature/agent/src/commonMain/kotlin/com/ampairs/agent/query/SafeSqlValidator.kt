@@ -1,5 +1,7 @@
 package com.ampairs.agent.query
 
+import com.ampairs.common.agent.ModuleQuerySchema
+
 /**
  * Defense-in-depth validator for LLM-generated SQL used by the **SAFE_QUERY fallback** (when no typed
  * action matched). Read-only by construction:
