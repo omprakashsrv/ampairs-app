@@ -7,11 +7,15 @@ import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.ParameterType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import com.ampairs.inventory.db.InventoryRepository
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("inventory")
 class InventoryActionHandler(
     private val inventoryRepository: InventoryRepository,
 ) : ActionHandler {

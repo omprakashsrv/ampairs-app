@@ -8,11 +8,15 @@ import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import com.ampairs.invoice.db.InvoiceRepository
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("invoice")
 class InvoiceActionHandler(
     private val invoiceRepository: InvoiceRepository,
 ) : ActionHandler {

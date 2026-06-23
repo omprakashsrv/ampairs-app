@@ -8,11 +8,15 @@ import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import com.ampairs.order.db.OrderRepository
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("order")
 class OrderActionHandler(
     private val orderRepository: OrderRepository,
 ) : ActionHandler {

@@ -26,22 +26,28 @@ llama.cpp, both from one `OutputSchema`.
 
 ## Phase 0 — Wire the registry (US1 backbone) · FR-001/002
 
-- [ ] T001 Add `@ActionHandlerKey` map-key annotation + Metro `@ContributesIntoMap(WorkspaceScope::class)`
+- [x] T001 Add `@ActionHandlerKey` map-key annotation + Metro `@ContributesIntoMap(WorkspaceScope::class)`
       to each handler: customer, product, order, invoice, inventory (`feature/*/agent/*ActionHandler.kt`).
-- [ ] T002 Make `ActionRegistry` consume the injected `Map<String, ActionHandler>` (or providers) and
-      self-populate on init; remove the unused manual `register()` path or keep for tests
-      (`feature/agent/core/ActionRegistry.kt`).
-- [ ] T003 Move `AgentOrchestrator` (and the registry) to `WorkspaceScope`; verify `ChatViewModel`
-      (already `WorkspaceScope`) resolves them. Confirm no `AppScope` consumer exists.
-- [ ] T004 Verify `AgentModule` DI still binds `@OfflineIntentResolver`/`@OnlineIntentResolver`
-      (`feature/agent/di/AgentModule.kt`).
+      → `ActionHandlerKey` added in `data/common/.../agent/`; all 5 handlers annotated.
+- [x] T002 `ActionRegistry` now consumes injected `Map<String, ActionHandler>` (Metro multibinding) and
+      is self-populating; removed the unused `register()`/`ActionHandlerProvider` path
+      (`ActionHandlerProvider.kt` deleted).
+- [x] T003 `AgentOrchestrator` + `ActionRegistry` stay unscoped `@Inject` and resolve inside the
+      WorkspaceGraph via `ChatViewModel` (already `WorkspaceScope`); handlers' map is WorkspaceScope. No
+      `AppScope` consumer of the orchestrator exists.
+- [x] T004 `AgentModule` still binds `@OfflineIntentResolver`/`@OnlineIntentResolver` (unchanged).
 - [ ] T005 [P] Smoke-test offline: registry non-empty, "how many invoices", "low stock", "search
-      orders 1001" execute end-to-end against Room.
+      orders 1001" execute end-to-end against Room. (pending — needs a run; see T007 note)
 - [ ] T006 [P] Move any hardcoded chat strings to Compose resources; format amounts via
-      `formatMoney(..., LocalAppLocale.current)` in result rendering.
-- [ ] T007 Compile all three targets (checkpoint).
+      `formatMoney(..., LocalAppLocale.current)` in result rendering. (deferred — `MessageBubble`/result
+      rendering pass)
+- [ ] T007 Compile all three targets (checkpoint). ⚠ Could not run in the dev sandbox: the Gradle
+      daemon is pinned to a JetBrains JDK (`gradle/gradle-daemon-jvm.properties`) that can't be
+      downloaded offline, and plugin repos (AGP) are unreachable. Run locally/CI:
+      `androidApp:compileDebugKotlinAndroid` · `shared:compileKotlinIosSimulatorArm64` · `desktopApp:compileKotlin`.
 
 **Phase 0 acceptance:** US1 scenarios pass in airplane mode using the existing rule-based resolver.
+**Status:** wiring complete (T001–T004); compile + smoke-test (T005/T007) pending a build environment.
 
 ---
 

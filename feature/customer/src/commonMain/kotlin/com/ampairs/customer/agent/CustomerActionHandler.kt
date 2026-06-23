@@ -8,7 +8,9 @@ import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.repository.CustomerRepository
@@ -20,6 +22,8 @@ import com.ampairs.sync.SyncEvent
 import kotlinx.coroutines.flow.first
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("customer")
 class CustomerActionHandler(
     private val customerRepository: CustomerRepository,
     private val syncService: CentralSyncService,
