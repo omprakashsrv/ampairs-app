@@ -74,13 +74,17 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 
 ## Phase 1 — Voice I/O (US4) · FR-008/009
 
-- [ ] T011 `expect interface SpeechToText` in `feature/agent/speech/SpeechToText.kt` (start/stop,
-      `Flow<String>` partials, final result, error).
-- [ ] T012 `expect interface TextToSpeech` in `feature/agent/speech/TextToSpeech.kt` (speak/stop/mute).
+- [x] T011 `SpeechToText` port in `feature/agent/speech/SpeechToText.kt` — cold `Flow<SttEvent>`
+      (`Partial`/`Final`/`Error`/`EndOfSpeech`), `listen(languageTag)`/`stop()`/`isAvailable`. Plain
+      interface (not `expect`) so platforms contribute via Metro DI, matching the codebase idiom.
+- [x] T012 `TextToSpeech` port in `feature/agent/speech/TextToSpeech.kt` — `speak`/`stop`/`isAvailable`
+      (mute handled in `ChatUiState`, T017).
 - [ ] T013 [P] Android actuals: `SpeechRecognizer` (`EXTRA_PREFER_OFFLINE`) + `android.speech.tts.TextToSpeech`.
 - [ ] T014 [P] iOS actuals: `SFSpeechRecognizer` (`requiresOnDeviceRecognition = true`) +
       `AVSpeechSynthesizer` (use `Dispatchers.Default`, `@OptIn(ExperimentalForeignApi::class)`).
-- [ ] T015 [P] Desktop actuals: text-only stub for STT (returns unsupported) + system TTS or no-op.
+- [~] T015 [P] Desktop fallback: shared commonMain `UnsupportedSpeechToText` (emits one `Error` →
+      text-only, US4-3) + `NoOpTextToSpeech`, unit-tested (`UnsupportedSpeechTest`). Remaining: the
+      Desktop DI module binding these (lands with T017 wiring).
 - [ ] T016 Mic permission flow via Moko Permissions; deny → graceful text fallback (US4-3).
 - [ ] T017 Wire `ChatViewModel`: collect STT final → `onVoiceResult()` → submit; speak responses via
       TTS with mute control in `ChatUiState`.
