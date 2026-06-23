@@ -16,4 +16,7 @@
     <string name="agent_voice_stop_cd">Stop listening</string>
     <string name="agent_error_generic">Something went wrong</string>
     <string name="agent_cancelled">Okay, cancelled. Nothing was saved.</string>
+    <string name="agent_mute_cd">Mute spoken responses</string>
+    <string name="agent_unmute_cd">Read responses aloud</string>
+    <string name="agent_speech_unavailable">Voice input isn\'t available on this device.</string>
 </resources>

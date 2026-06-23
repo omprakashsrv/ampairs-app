@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,6 +80,14 @@ fun ChatScreen(
         TopAppBar(
             title = { Text(stringResource(Res.string.agent_title)) },
             actions = {
+                IconButton(onClick = { viewModel.toggleMute() }) {
+                    Icon(
+                        imageVector = if (uiState.isTtsMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                        contentDescription = stringResource(
+                            if (uiState.isTtsMuted) Res.string.agent_unmute_cd else Res.string.agent_mute_cd,
+                        ),
+                    )
+                }
                 if (uiState.messages.isNotEmpty()) {
                     IconButton(onClick = { viewModel.clearChat() }) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = stringResource(Res.string.agent_clear_chat_cd))
@@ -159,7 +169,7 @@ fun ChatScreen(
             onSend = viewModel::sendMessage,
             isProcessing = uiState.isProcessing,
             isListening = uiState.isListening,
-            onVoiceClick = { viewModel.setListening(!uiState.isListening) },
+            onVoiceClick = { viewModel.toggleVoiceInput() },
         )
     }
 }

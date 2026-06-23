@@ -82,14 +82,20 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [ ] T013 [P] Android actuals: `SpeechRecognizer` (`EXTRA_PREFER_OFFLINE`) + `android.speech.tts.TextToSpeech`.
 - [ ] T014 [P] iOS actuals: `SFSpeechRecognizer` (`requiresOnDeviceRecognition = true`) +
       `AVSpeechSynthesizer` (use `Dispatchers.Default`, `@OptIn(ExperimentalForeignApi::class)`).
-- [~] T015 [P] Desktop fallback: shared commonMain `UnsupportedSpeechToText` (emits one `Error` →
-      text-only, US4-3) + `NoOpTextToSpeech`, unit-tested (`UnsupportedSpeechTest`). Remaining: the
-      Desktop DI module binding these (lands with T017 wiring).
-- [ ] T016 Mic permission flow via Moko Permissions; deny → graceful text fallback (US4-3).
-- [ ] T017 Wire `ChatViewModel`: collect STT final → `onVoiceResult()` → submit; speak responses via
-      TTS with mute control in `ChatUiState`.
-- [ ] T018 [P] `ChatScreen`/`VoiceInputButton`: show live transcript, listening state, mute toggle;
-      `contentDescription` on controls.
+- [x] T015 [P] Desktop fallback: shared commonMain `UnsupportedSpeechToText` (emits one `Error` →
+      text-only, US4-3) + `NoOpTextToSpeech`, unit-tested (`UnsupportedSpeechTest`), bound in
+      `SpeechDesktopModule`. Android/iOS bind the same fallbacks as placeholders (`SpeechAndroidModule`/
+      `SpeechIosModule`) so T013/T014 are drop-in body swaps.
+- [ ] T016 Mic permission flow via Moko Permissions; deny → graceful text fallback (US4-3). NOTE: the
+      ChatViewModel wiring is permission-agnostic (it just collects `SpeechToText.listen()`), so the
+      RECORD_AUDIO gate slots in at the Android actual (T013) without touching commonMain.
+- [x] T017 Wire `ChatViewModel`: injects `SpeechToText`/`TextToSpeech`; `toggleVoiceInput()` collects
+      the recognition flow (partials → `liveTranscript`, `Final` → submit, `Error`/unavailable →
+      graceful stop/notice); speaks non-error replies unless muted; `toggleMute()` + `isTtsMuted`/
+      `liveTranscript` in `ChatUiState`.
+- [~] T018 [P] `ChatScreen`: voice button → `toggleVoiceInput()`, mute toggle in the app bar
+      (`VolumeUp`/`VolumeOff` + `contentDescription`); listening state already shown by
+      `VoiceInputButton`. Remaining: surface `liveTranscript` inline while listening.
 - [ ] T019 Compile all three targets (checkpoint).
 
 **Phase 1 acceptance:** US4 scenarios pass on Android & iOS (Desktop = text-only).
