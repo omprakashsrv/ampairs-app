@@ -235,7 +235,9 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       `@OnlineIntentResolver`; verify orchestrator online→offline fallback (FR-014).
 - [ ] T052 [P] Locale/strings audit; accessibility pass; assistant onboarding/help.
 - [ ] T053 [P] Telemetry (resolve latency, action success, fallbacks) + Sentry breadcrumbs.
-- [ ] T054 Docs: update `docs/features/` and module CLAUDE notes; final SC-001…SC-009 verification.
+- [~] T054 Docs: `docs/features/AGENT_OFFLINE_ASSISTANT.md` captures the implemented architecture,
+      what's built (commonMain, CI-green) + the native extension seams + pending device tasks +
+      SC status. Remaining: final SC-001…SC-009 verification (needs on-device measurement, T034/T047).
 
 ---
 
