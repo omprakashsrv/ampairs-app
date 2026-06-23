@@ -18,7 +18,7 @@ object AgentSchemaBuilder {
         val paramsByModule = actions
             .groupBy { it.moduleName }
             .mapValues { (_, list) -> list.flatMap { d -> d.parameters.map { it.name } }.distinct().sorted() }
-            .toSortedMap()
+            .toList().sortedBy { it.first }.toMap()
         return OutputSchema(
             intents = INTENTS,
             actionTypes = actionTypes,
@@ -38,7 +38,7 @@ object AgentSchemaBuilder {
         appendLine("- params values are strings; include only what the user provided.")
         appendLine()
         appendLine("Supported actions:")
-        actions.groupBy { it.moduleName }.toSortedMap().forEach { (module, list) ->
+        actions.groupBy { it.moduleName }.toList().sortedBy { it.first }.forEach { (module, list) ->
             appendLine("Module \"$module\":")
             list.sortedBy { it.actionType.name }.forEach { a ->
                 val params = a.parameters.joinToString(", ") { p -> p.name + if (p.required) "*" else "" }
