@@ -1,11 +1,11 @@
 package com.ampairs.agent.llm
 
 import android.content.Context
-import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,7 +25,8 @@ import kotlin.concurrent.Volatile
  * stays on the rule-based path — the app never crashes for a missing model.
  *
  * **Threading.** `Engine.initialize()` (up to ~10 s) and `sendMessage()` are blocking native calls,
- * so both run on [Dispatchers.IO].
+ * so both run on [Dispatchers.IO]. The acceleration backend is left at [EngineConfig]'s default
+ * (CPU — the safe cold-start choice per the Gallery notes).
  *
  * **Constrained decoding.** Currently *prompt-guided*: [com.ampairs.agent.offline.LlmIntentResolver]
  * builds a JSON-instructed prompt (from [OutputSchema]) and validates the parsed action against the
@@ -49,8 +50,8 @@ class LiteRtLmEngine(
             val eng = Engine(
                 EngineConfig(
                     modelPath = modelFile.absolutePath,
-                    backend = Backend.CPU(), // CPU is the safe cold-start default (Gallery note)
                     cacheDir = context.cacheDir.absolutePath,
+                    // backend left at EngineConfig's default (CPU); see KDoc.
                 ),
             )
             eng.initialize()
@@ -80,7 +81,7 @@ class LiteRtLmEngine(
 
     private suspend fun runInference(prompt: String): String {
         val convo = conversation ?: error("LiteRtLmEngine.generate() called before load()")
-        return withContext(Dispatchers.IO) { convo.sendMessage(prompt).toString() }
+        return withContext(Dispatchers.IO) { convo.sendMessage(Message.user(prompt)).toString() }
     }
 
     override suspend fun close() {
