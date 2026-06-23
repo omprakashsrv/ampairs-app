@@ -112,9 +112,18 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       `feature/agent/llm/`. RAM tiers encoded in pure `RamTiers` (<3 GB rule-based / 3–6 GB E2B / ≥6 GB
       E4B), unit-tested (`RamTiersTest`). Remaining: `ProviderRegistry` (T023) consumes these. No
       external deps — CI compile-validates all targets; actual RAM values verified on device.
-- [ ] T023 `ProviderRegistry` (`@Inject`, WorkspaceScope): pick `LlmBackend` from the Metro
-      `Set<LlmBackend>` via config + defaults + capability; create/close engine lazily; register with
-      `WorkspaceClosableRegistry`.
+- [~] T023 `ProviderRegistry` (`@Inject`, `@SingleIn(WorkspaceScope)`): picks an `LlmBackend` from the
+      Metro `Set<LlmBackend>` via the pure, unit-tested `BackendSelector` (`BackendSelectorTest`) —
+      preference order config override → `PlatformDefaults` primary → fallback, requiring
+      `supports(model)`. Chat model is RAM-gated through `RamTiers`/`DeviceCapability` (sub-3 GB or
+      `llmEnabled=false` → null engine → rule-based only). Engine created + loaded lazily behind a
+      `Mutex`; registered with `WorkspaceClosableRegistry` (suspend `close()` bridged via a fire-and-
+      forget cleanup scope). Exposes suspend `engineOrNull()` / `isLlmReady()` as the seams for the
+      T029 `engineProvider` and T030 `isLlmReady`. DI: `AgentLlmModule` `@Multibinds(allowEmpty=true)`
+      `Set<LlmBackend>` (engines contribute at T025/T027) + `@Provides AssistantConfig.Default`.
+      Remaining: bind `engineProvider`/`isLlmReady` into the `@OfflineIntentResolver` (T030) and
+      DataStore-back `AssistantConfig` (T032/T033). CI compile-validates all targets; engine
+      create/load path verified on device once an adapter lands.
 
 ### 2b. LiteRT-LM adapter (primary on all platforms)
 - [ ] T024 Add LiteRT-LM to `gradle/libs.versions.toml`: Kotlin API (Android + Desktop/JVM); iOS via
