@@ -110,8 +110,11 @@ output always being a structurally valid action (grammar-constrained).
    the assistant maps it to the correct action and parameters.
 2. **Given** any model output, **When** an intent is produced, **Then** it is always a structurally
    valid `AgentAction` (no malformed/hallucinated action types or modules).
-3. **Given** the model cannot confidently resolve an intent, **When** confidence is low, **Then** the
-   assistant asks a clarifying question rather than executing a wrong action.
+3. **Given** the model cannot resolve a valid intent — output fails to parse, the action type/module is
+   not registered, a required parameter is missing, or an entity slot matches zero/multiple local records
+   — **When** any of these occurs, **Then** the assistant asks a clarifying question rather than
+   executing a wrong action. (There is no probabilistic confidence threshold; the triggers are explicit
+   — see `plan.md` §4.2.)
 
 ---
 

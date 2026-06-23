@@ -99,6 +99,8 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       (active engine id, model id, STT/TTS provider, flags).
 - [ ] T022 `PlatformDefaults` expect/actual (best engine id per platform: Android/iOS/Desktop→litert-lm,
       fallback→llamacpp) + `DeviceCapability` expect/actual (`totalRamBytes()`) in `data/common/.../agent/`.
+      Encode the RAM tiers from plan Open-Q#4: <3 GB → rule-based only; 3–6 GB → FunctionGemma-270m +
+      Gemma 3n E2B; ≥6 GB → FunctionGemma-270m + Gemma 3n E4B (llama.cpp/Qwen2.5-3B needs ≥6 GB).
 - [ ] T023 `ProviderRegistry` (`@Inject`, WorkspaceScope): pick `LlmBackend` from the Metro
       `Set<LlmBackend>` via config + defaults + capability; create/close engine lazily; register with
       `WorkspaceClosableRegistry`.
@@ -173,10 +175,11 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       unit/tax-code selection still TODO.
 - [ ] T043 Tax/total computation reusing the tax module calculator. → currently total = Σ(qty×price)
       on a DRAFT (no GST breakdown); user finalizes in the editor. Wire the tax calculator next.
-- [ ] T044 Build transient `InvoiceDraft`; return a typed `ActionResult.Confirm` summary with total
-      formatted in workspace locale; **no persistence yet** (FR-006). → current cut saves a DRAFT
-      directly (DRAFT ⇒ no receivable side-effects); the explicit pre-save Confirm step is the next
-      increment.
+- [ ] T044 Add `ActionResult.Confirm(summary, pendingAction)` to the shared contract
+      (`data/common/.../agent/ActionResult.kt`); build a transient `InvoiceDraft` and return that
+      `Confirm` summary with total formatted in workspace locale; **no persistence yet** (FR-006).
+      → current cut saves a DRAFT directly (DRAFT ⇒ no receivable side-effects); the explicit pre-save
+      Confirm step (and the new `Confirm` variant) is the next increment.
 - [ ] T045 Confirm/cancel handling in `AgentOrchestrator`/`ChatViewModel` (carry pending action across
       turns); on confirm → build `InvoiceEntity` + items, UID in VM/handler, call
       `InvoiceRepository.saveInvoice(...)` (offline-first → pending push).

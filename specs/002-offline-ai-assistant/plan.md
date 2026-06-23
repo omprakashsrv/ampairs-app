@@ -217,8 +217,8 @@ class InvoiceActionHandler(...) : ActionHandler { ... }
 registers them on creation, so `getAllActions()` / `dispatch()` are populated. `AgentOrchestrator`,
 `LlmIntentResolver`, and `ChatViewModel` move to `WorkspaceScope` (ChatViewModel already is).
 
-> Decision point for review: handlers wrap workspace DBs, so registry + orchestrator must be
-> `WorkspaceScope`. Confirm there are no `AppScope` consumers of `AgentOrchestrator`.
+> Decision (resolved in Phase 0, T003): handlers wrap workspace DBs, so registry + orchestrator are
+> `WorkspaceScope`. Verified there are no `AppScope` consumers of `AgentOrchestrator`.
 
 ### 4.2 On-device intent resolution (closes Gap #2, FR-003/004)
 
@@ -232,8 +232,12 @@ registers them on creation, so `getAllActions()` / `dispatch()` are populated. `
    or a **JSON-schema / function-call definition** (LiteRT-LM) — the resolver doesn't care which.
 3. Call `providerRegistry.llmEngine().generateConstrained(prompt, schema)` → parse → `ResolvedIntent`.
    On LiteRT-LM, prefer its native function-calling (the engine returns a structured tool call directly).
-4. Validate the parsed action against the schema; on parse/confidence failure → `ResolvedIntent.Clarification`
-   (never execute a wrong action).
+4. Validate the parsed action against the schema. Trigger `ResolvedIntent.Clarification` (never execute
+   a wrong action) on any of these **concrete** conditions — there is no probabilistic confidence score:
+   (a) the output fails to parse into a valid `AgentAction`; (b) `actionType`/`moduleName` is not in the
+   registry; (c) a **required** `ActionDescriptor` parameter is missing; (d) an entity slot
+   (customer/product) resolves to **zero or multiple** local matches (delegated to the handler's
+   `NeedsInput`, FR-007). Otherwise dispatch.
 
 `LlmEngine` is a **commonMain interface** (not an `expect class`) so a platform can offer more than one
 backend and config can pick between them (see §4.0). Adapters: **`LiteRtLmEngine`** (Android/JVM Kotlin
@@ -274,9 +278,10 @@ Add `ActionType.CREATE` to `InvoiceActionHandler`:
    Room write `synced=false` + `markPending` → `CentralSyncService` pushes when online. UID generated
    in the handler/VM layer per project rules.
 
-Confirmation model: extend `ActionResult` with `data class Confirm(summary, pendingAction)` OR carry a
-pending action in `ChatUiState` and reuse `NeedsInput`. **Decision for review:** prefer a typed
-`Confirm` result so the UI can render an explicit confirm/cancel affordance and TTS can read the total.
+Confirmation model: **decided** — extend `ActionResult` with `data class Confirm(summary, pendingAction)`
+(in `data/common/.../agent/ActionResult.kt`) rather than reusing `NeedsInput`, so the UI can render an
+explicit confirm/cancel affordance and TTS can read the total. The pending action is carried across the
+confirm turn (see T045).
 
 ### 4.5 Model delivery & capability gating (FR-011/012)
 
@@ -386,10 +391,17 @@ native integration) is isolated behind the `LlmEngine` port in Phase 2.
    target the full offline-LLM experience in one release?
 2. **Cloud LLM path:** do we want an online resolver (backend proxy to a hosted model) now, or
    offline-only for v1?
-3. **Confirm UX:** typed `ActionResult.Confirm` (preferred) vs. reuse `NeedsInput` with pending action.
+3. **Confirm UX — RESOLVED:** use a typed **`ActionResult.Confirm(summary, pendingAction)`** (added to
+   the `ActionResult` sealed class in `data/common/.../agent/ActionResult.kt`) rather than overloading
+   `NeedsInput` — so the UI can render an explicit confirm/cancel affordance and TTS can read the total.
+   See T044/T045.
 4. **Default engine + model + tiers — RESOLVED:** **LiteRT-LM** is the primary engine on
    Android/iOS/Desktop with **llama.cpp** as the fallback. Models are **role-split and user-switchable**
    via `ModelCatalog` + `AssistantConfig` (never hardcoded): intent→action **FunctionGemma-270m**,
-   conversational **Gemma 3n E2B/E4B** (selected by RAM), llama.cpp/compat **Qwen2.5-3B**. *Still open:*
-   the exact RAM thresholds for tier gating (resolve before Phase 2 T022/T032).
+   conversational **Gemma 3n E2B/E4B** (selected by RAM), llama.cpp/compat **Qwen2.5-3B**. **RAM tier
+   thresholds** (device `totalRamBytes()`, the default gate — overridable via `AssistantConfig`):
+   **< 3 GB → rule-based only** (no on-device LLM); **3–6 GB → FunctionGemma-270m + Gemma 3n E2B**;
+   **≥ 6 GB → FunctionGemma-270m + Gemma 3n E4B**. The llama.cpp/Qwen2.5-3B path also requires **≥ 6 GB**
+   (Desktop/parity). `ModelManager` refines per-model with `estimatedPeakMemoryInBytes` (catalog) — a
+   model is offered only when it fits both the tier and the probe.
 5. **Languages:** which STT/UI languages for v1 (English only, or English + Hindi/code-mixed)?
