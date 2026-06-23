@@ -106,10 +106,12 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       `AssistantConfig` (engine/model ids, llm/stt/tts flags, `safeQueryEnabled` default off). Unit-
       tested (`ModelCatalogTest`). Remaining: DataStore persistence binding — lands with `ProviderRegistry`
       (T023), kept out here so the shape stays pure/testable.
-- [ ] T022 `PlatformDefaults` expect/actual (best engine id per platform: Android/iOS/Desktop→litert-lm,
-      fallback→llamacpp) + `DeviceCapability` expect/actual (`totalRamBytes()`) in `data/common/.../agent/`.
-      Encode the RAM tiers from plan Open-Q#4: <3 GB → rule-based only; 3–6 GB → FunctionGemma-270m +
-      Gemma 3n E2B; ≥6 GB → FunctionGemma-270m + Gemma 3n E4B (llama.cpp/Qwen2.5-3B needs ≥6 GB).
+- [~] T022 `PlatformDefaults` expect/actual (primary/fallback engine id: Android/iOS → litert-lm,
+      Desktop → llamacpp until T031) + `DeviceCapability` expect/actual `totalRamBytes()` (Android
+      `/proc/meminfo`, Desktop `com.sun.management` MXBean, iOS `NSProcessInfo.physicalMemory`) in
+      `feature/agent/llm/`. RAM tiers encoded in pure `RamTiers` (<3 GB rule-based / 3–6 GB E2B / ≥6 GB
+      E4B), unit-tested (`RamTiersTest`). Remaining: `ProviderRegistry` (T023) consumes these. No
+      external deps — CI compile-validates all targets; actual RAM values verified on device.
 - [ ] T023 `ProviderRegistry` (`@Inject`, WorkspaceScope): pick `LlmBackend` from the Metro
       `Set<LlmBackend>` via config + defaults + capability; create/close engine lazily; register with
       `WorkspaceClosableRegistry`.
