@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -130,6 +132,14 @@ fun ChatScreen(
             }
         }
 
+        // Confirmation bar for money/destructive actions — nothing persists until the user taps Confirm (FR-006)
+        if (uiState.pendingConfirmation != null) {
+            ConfirmActionBar(
+                onConfirm = viewModel::confirmPending,
+                onCancel = viewModel::cancelPending,
+            )
+        }
+
         // Input area
         ChatInputBar(
             text = uiState.inputText,
@@ -139,6 +149,34 @@ fun ChatScreen(
             isListening = uiState.isListening,
             onVoiceClick = { viewModel.setListening(!uiState.isListening) },
         )
+    }
+}
+
+@Composable
+private fun ConfirmActionBar(
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        tonalElevation = 2.dp,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Confirm this action?",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onCancel) { Text("Cancel") }
+            Button(onClick = onConfirm) { Text("Confirm") }
+        }
     }
 }
 

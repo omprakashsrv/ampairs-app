@@ -9,15 +9,18 @@ import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
 import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.agent.CONFIRMED_PARAM
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
+import com.ampairs.customer.domain.Customer
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.domain.INVOICE_PREFIX
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.domain.InvoiceItem
 import com.ampairs.invoice.domain.InvoiceStatus
+import com.ampairs.product.domain.ProductSummary
 
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
@@ -40,13 +43,20 @@ class InvoiceActionHandler(
     }
 
     /**
-     * Create a DRAFT invoice for a named customer, optionally with a single line item. Resolves the
-     * customer and product against local data (offline-first), saves via [InvoiceRepository] (which
-     * flags it PENDING_PUSH for sync), and returns a navigation target to open it. DRAFT status means
-     * no receivable is posted until the user reviews and finalizes — the safe default for an
-     * assistant-drafted bill. Multi-item commands arrive with the on-device LLM resolver (Phase 2).
+     * Create a DRAFT invoice for a named customer, optionally with a single line item — in two phases
+     * so a money action never persists from a single utterance (FR-006):
+     *  - **propose** (no `CONFIRMED_PARAM`): resolve customer/product against local data, compute the
+     *    total, and return [ActionResult.Confirm] with the resolved ids in `pendingAction`. Nothing
+     *    is written.
+     *  - **persist** (`CONFIRMED_PARAM == "true"`): rebuild from those ids and save via
+     *    [InvoiceRepository] (offline-first, flagged PENDING_PUSH), returning a nav target.
+     * DRAFT status means no receivable is posted until the user finalizes. Multi-item commands arrive
+     * with the on-device LLM resolver (Phase 2).
      */
-    private suspend fun createInvoice(params: Map<String, String>): ActionResult {
+    private suspend fun createInvoice(params: Map<String, String>): ActionResult =
+        if (params[CONFIRMED_PARAM] == "true") persistInvoice(params) else proposeInvoice(params)
+
+    private suspend fun proposeInvoice(params: Map<String, String>): ActionResult {
         val customerName = (params["customer"] ?: params["customerName"] ?: params["name"])?.trim()
         if (customerName.isNullOrBlank()) {
             return ActionResult.NeedsInput("Who is the bill for?", listOf("customer"))
@@ -67,10 +77,12 @@ class InvoiceActionHandler(
 
         // Optional single line item: "... 2 widget". Resolve the product locally if one was given.
         val productName = (params["product"] ?: params["item"])?.trim()
+        var resolvedProduct: ProductSummary? = null
+        var resolvedQty = 1.0
         val lineItem: InvoiceItem? = if (productName.isNullOrBlank()) {
             null
         } else {
-            val qty = params["quantity"]?.trim()?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 1.0
+            resolvedQty = params["quantity"]?.trim()?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 1.0
             val products = invoiceRepository.productDataService.searchSummaries(productName, limit = 10)
             if (products.isEmpty()) return ActionResult.Error("No product matching \"$productName\".")
             val product = products.firstOrNull { it.name.equals(productName, ignoreCase = true) }
@@ -79,16 +91,41 @@ class InvoiceActionHandler(
                     "Which product did you mean? " + products.take(5).joinToString(", ") { it.name },
                     listOf("product"),
                 )
+            resolvedProduct = product
+            InvoiceItem(product).apply { quantity = resolvedQty }
+        }
+
+        // Build the draft in memory only (to compute the total) — do NOT persist before confirmation.
+        val draft = buildDraft(customer, lineItem)
+        val linePart = lineItem?.let { " with ${formatQty(it.quantity)} × ${it.product?.name ?: "item"}" } ?: ""
+        val pendingParams = buildMap {
+            put(CONFIRMED_PARAM, "true")
+            put("customerId", pickedCustomer.id)
+            resolvedProduct?.let {
+                put("productId", it.id)
+                put("quantity", formatQty(resolvedQty))
+            }
+        }
+        return ActionResult.Confirm(
+            summary = "Create a draft invoice for ${customer.name}$linePart — total ${formatAmount(draft.totalCost)}?",
+            pendingAction = AgentAction(ActionType.CREATE, moduleName, pendingParams),
+        )
+    }
+
+    private suspend fun persistInvoice(params: Map<String, String>): ActionResult {
+        val customerId = params["customerId"]
+            ?: return ActionResult.Error("Lost track of the customer — please try again.")
+        val customer = invoiceRepository.customerDataService.getById(customerId)
+            ?: return ActionResult.Error("Couldn't load the customer — please try again.")
+
+        val lineItem: InvoiceItem? = params["productId"]?.let { productId ->
+            val product = invoiceRepository.productDataService.getById(productId)
+                ?: return ActionResult.Error("Couldn't load the product — please try again.")
+            val qty = params["quantity"]?.trim()?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 1.0
             InvoiceItem(product).apply { quantity = qty }
         }
 
-        val invoice = Invoice().apply {
-            id = UidGenerator.generateUid(INVOICE_PREFIX)
-            this.customer = customer
-            status = InvoiceStatus.DRAFT
-            items = mutableListOf<InvoiceItem>().apply { lineItem?.let { add(it) } }
-        }
-
+        val invoice = buildDraft(customer, lineItem)
         return try {
             invoiceRepository.saveInvoice(invoice)
             val linePart = lineItem?.let { " with ${formatQty(it.quantity)} × ${it.product?.name ?: "item"}" } ?: ""
@@ -102,6 +139,13 @@ class InvoiceActionHandler(
         } catch (e: Exception) {
             ActionResult.Error("Couldn't create the invoice: ${e.message}")
         }
+    }
+
+    private fun buildDraft(customer: Customer, lineItem: InvoiceItem?): Invoice = Invoice().apply {
+        id = UidGenerator.generateUid(INVOICE_PREFIX)
+        this.customer = customer
+        status = InvoiceStatus.DRAFT
+        items = mutableListOf<InvoiceItem>().apply { lineItem?.let { add(it) } }
     }
 
     // Plain (currency-symbol-free) formatting for the chat summary — the symbol/grouping belongs to

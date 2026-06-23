@@ -42,18 +42,7 @@ class AgentOrchestrator(
         }
 
         return when (intent) {
-            is ResolvedIntent.Action -> {
-                val result = actionRegistry.dispatch(intent.action)
-                AgentResponse(
-                    text = when (result) {
-                        is ActionResult.Success -> result.summary
-                        is ActionResult.Error -> result.message
-                        is ActionResult.NeedsInput -> result.question
-                    },
-                    actionResult = result,
-                    resolvedAction = intent.action,
-                )
-            }
+            is ResolvedIntent.Action -> respondToResult(actionRegistry.dispatch(intent.action), intent.action)
 
             is ResolvedIntent.Clarification -> {
                 AgentResponse(text = intent.question)
@@ -68,10 +57,34 @@ class AgentOrchestrator(
             }
         }
     }
+
+    /**
+     * Execute a user-confirmed pending action (from a prior [ActionResult.Confirm]). The action
+     * already carries `CONFIRMED_PARAM = "true"` and the resolved ids, so the handler persists this
+     * time. This is the only path that turns a proposed money action into a written one (FR-006).
+     */
+    suspend fun confirmAction(pendingAction: AgentAction): AgentResponse =
+        respondToResult(actionRegistry.dispatch(pendingAction), pendingAction)
+
+    private fun respondToResult(result: ActionResult, action: AgentAction): AgentResponse =
+        AgentResponse(
+            text = when (result) {
+                is ActionResult.Success -> result.summary
+                is ActionResult.Error -> result.message
+                is ActionResult.NeedsInput -> result.question
+                is ActionResult.Confirm -> result.summary
+            },
+            actionResult = result,
+            resolvedAction = action,
+            // Surfaced so the ViewModel can render confirm/cancel and re-dispatch on confirm.
+            pendingConfirmation = (result as? ActionResult.Confirm)?.pendingAction,
+        )
 }
 
 data class AgentResponse(
     val text: String,
     val actionResult: ActionResult? = null,
     val resolvedAction: AgentAction? = null,
+    /** Non-null when the action needs explicit user confirmation before it will persist (FR-006). */
+    val pendingConfirmation: AgentAction? = null,
 )

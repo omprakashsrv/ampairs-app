@@ -175,18 +175,22 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       unit/tax-code selection still TODO.
 - [ ] T043 Tax/total computation reusing the tax module calculator. → currently total = Σ(qty×price)
       on a DRAFT (no GST breakdown); user finalizes in the editor. Wire the tax calculator next.
-- [ ] T044 Add `ActionResult.Confirm(summary, pendingAction)` to the shared contract
-      (`data/common/.../agent/ActionResult.kt`); build a transient `InvoiceDraft` and return that
-      `Confirm` summary with total formatted in workspace locale; **no persistence yet** (FR-006).
-      → current cut saves a DRAFT directly (DRAFT ⇒ no receivable side-effects); the explicit pre-save
-      Confirm step (and the new `Confirm` variant) is the next increment.
-- [ ] T045 Confirm/cancel handling in `AgentOrchestrator`/`ChatViewModel` (carry pending action across
-      turns); on confirm → build `InvoiceEntity` + items, UID in VM/handler, call
-      `InvoiceRepository.saveInvoice(...)` (offline-first → pending push).
-- [ ] T046 [P] Render confirm card in `ChatScreen` (confirm/cancel buttons) + TTS reads the total.
-- [ ] T047 [P] Tests: 20-utterance create set (SC-002); assert 0% persisted without confirm; restart →
-      persists → pushes on reconnect (SC-007); assert failed/`NeedsInput` actions never render as
-      success — only persisted actions report success (FR-015).
+- [x] T044 Added `ActionResult.Confirm(summary, pendingAction)` + `CONFIRMED_PARAM` to the shared
+      contract (`data/common/.../agent/`). `InvoiceActionHandler.CREATE` is now **two-phase**:
+      `proposeInvoice` resolves customer/product, builds the draft **in memory** to compute the total,
+      and returns `Confirm` with the resolved ids in `pendingAction` (**no persistence**, FR-006);
+      `persistInvoice` (on the confirmed re-dispatch) rebuilds from those ids and saves.
+- [x] T045 Confirm/cancel handling: `AgentOrchestrator.confirmAction(pendingAction)` re-dispatches the
+      confirmed action; `AgentResponse.pendingConfirmation` surfaces it. `ChatViewModel` carries
+      `pendingConfirmation` across turns with `confirmPending()` / `cancelPending()`; on confirm →
+      handler's `persistInvoice` → `InvoiceRepository.saveInvoice(...)` (offline-first → pending push).
+- [~] T046 [P] `ChatScreen` renders a `ConfirmActionBar` (Confirm/Cancel) when a confirmation is
+      pending. TTS read-back of the total is deferred to the Phase 1/4 voice wiring (FR-009).
+- [~] T047 [P] Tests: `AgentOrchestratorTest` proves the confirm flow — first turn returns `Confirm`
+      and persists nothing (FR-006), `confirmAction` persists exactly once, plain queries carry no
+      pending confirmation. The 20-utterance create set (SC-002) and restart→push (SC-007) e2e remain
+      (need device/heavy repo fakes). FR-015 (only persisted actions report success) holds via the
+      `success = result is ActionResult.Success` mapping (Confirm/Error/NeedsInput → not success).
 - [ ] T048 Compile all three targets (checkpoint).
 
 **Phase 3 acceptance:** US2 scenarios pass; SC-002/005/007 measured.
