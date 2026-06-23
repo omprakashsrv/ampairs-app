@@ -41,9 +41,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ampairsapp.feature.agent.generated.resources.Res
+import ampairsapp.feature.agent.generated.resources.agent_cancel
+import ampairsapp.feature.agent.generated.resources.agent_clear_chat_cd
+import ampairsapp.feature.agent.generated.resources.agent_confirm
+import ampairsapp.feature.agent.generated.resources.agent_confirm_prompt
+import ampairsapp.feature.agent.generated.resources.agent_empty_hint
+import ampairsapp.feature.agent.generated.resources.agent_empty_title
+import ampairsapp.feature.agent.generated.resources.agent_input_placeholder
+import ampairsapp.feature.agent.generated.resources.agent_send_cd
+import ampairsapp.feature.agent.generated.resources.agent_thinking
+import ampairsapp.feature.agent.generated.resources.agent_title
 import com.ampairs.agent.ui.components.MessageBubble
 import com.ampairs.agent.ui.components.VoiceInputButton
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,11 +76,11 @@ fun ChatScreen(
 
     Column(modifier = modifier.fillMaxSize().imePadding()) {
         TopAppBar(
-            title = { Text("Assistant") },
+            title = { Text(stringResource(Res.string.agent_title)) },
             actions = {
                 if (uiState.messages.isNotEmpty()) {
                     IconButton(onClick = { viewModel.clearChat() }) {
-                        Icon(Icons.Default.DeleteSweep, contentDescription = "Clear chat")
+                        Icon(Icons.Default.DeleteSweep, contentDescription = stringResource(Res.string.agent_clear_chat_cd))
                     }
                 }
             },
@@ -84,13 +96,13 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "How can I help you?",
+                        text = stringResource(Res.string.agent_empty_title),
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Try: \"add customer John\" or \"search products\"",
+                        text = stringResource(Res.string.agent_empty_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -118,7 +130,7 @@ fun ChatScreen(
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                 Text(
-                                    text = "Thinking...",
+                                    text = stringResource(Res.string.agent_thinking),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.outline,
                                 )
@@ -169,13 +181,13 @@ private fun ConfirmActionBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Confirm this action?",
+                text = stringResource(Res.string.agent_confirm_prompt),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onCancel) { Text("Cancel") }
-            Button(onClick = onConfirm) { Text("Confirm") }
+            TextButton(onClick = onCancel) { Text(stringResource(Res.string.agent_cancel)) }
+            Button(onClick = onConfirm) { Text(stringResource(Res.string.agent_confirm)) }
         }
     }
 }
@@ -208,7 +220,7 @@ private fun ChatInputBar(
             OutlinedTextField(
                 value = text,
                 onValueChange = onTextChange,
-                placeholder = { Text("Type a message...") },
+                placeholder = { Text(stringResource(Res.string.agent_input_placeholder)) },
                 modifier = Modifier.weight(1f),
                 maxLines = 4,
                 shape = MaterialTheme.shapes.extraLarge,
@@ -231,7 +243,7 @@ private fun ChatInputBar(
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
+                        contentDescription = stringResource(Res.string.agent_send_cd),
                     )
                 }
             }

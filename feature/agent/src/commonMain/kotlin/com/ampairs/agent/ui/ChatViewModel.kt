@@ -2,6 +2,9 @@ package com.ampairs.agent.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ampairsapp.feature.agent.generated.resources.Res
+import ampairsapp.feature.agent.generated.resources.agent_cancelled
+import ampairsapp.feature.agent.generated.resources.agent_error_generic
 import com.ampairs.agent.core.ActionResultSummary
 import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.ChatMessage
@@ -18,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
@@ -72,7 +76,7 @@ class ChatViewModel(
                     )
                 )
             } catch (e: Exception) {
-                appendError("Something went wrong: ${e.message}")
+                appendError(errorText(e))
             }
         }
     }
@@ -85,7 +89,7 @@ class ChatViewModel(
             try {
                 appendAgentResponse(orchestrator.confirmAction(pending))
             } catch (e: Exception) {
-                appendError("Something went wrong: ${e.message}")
+                appendError(errorText(e))
             }
         }
     }
@@ -93,13 +97,19 @@ class ChatViewModel(
     /** User declined a pending action — discard it; nothing was persisted. */
     fun cancelPending() {
         if (_uiState.value.pendingConfirmation == null) return
-        val message = ChatMessage(
-            id = UidGenerator.generateUid("MSG"),
-            text = "Okay, cancelled. Nothing was saved.",
-            isFromUser = false,
-        )
-        _uiState.update { it.copy(pendingConfirmation = null, messages = it.messages + message) }
+        _uiState.update { it.copy(pendingConfirmation = null) }
+        viewModelScope.launch {
+            val message = ChatMessage(
+                id = UidGenerator.generateUid("MSG"),
+                text = getString(Res.string.agent_cancelled),
+                isFromUser = false,
+            )
+            _uiState.update { it.copy(messages = it.messages + message) }
+        }
     }
+
+    private suspend fun errorText(e: Exception): String =
+        getString(Res.string.agent_error_generic) + (e.message?.let { ": $it" } ?: "")
 
     private fun appendAgentResponse(response: AgentResponse) {
         val actionSummary = response.resolvedAction?.let { action ->

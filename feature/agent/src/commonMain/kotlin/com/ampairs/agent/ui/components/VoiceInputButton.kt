@@ -13,6 +13,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ampairsapp.feature.agent.generated.resources.Res
+import ampairsapp.feature.agent.generated.resources.agent_voice_start_cd
+import ampairsapp.feature.agent.generated.resources.agent_voice_stop_cd
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun VoiceInputButton(
@@ -39,7 +43,9 @@ fun VoiceInputButton(
     ) {
         Icon(
             imageVector = if (isListening) Icons.Default.MicOff else Icons.Default.Mic,
-            contentDescription = if (isListening) "Stop listening" else "Start voice input",
+            contentDescription = stringResource(
+                if (isListening) Res.string.agent_voice_stop_cd else Res.string.agent_voice_start_cd,
+            ),
         )
     }
 }

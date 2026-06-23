@@ -42,9 +42,12 @@ llama.cpp. Reference recipe: `docs/features/AGENT_LITERTLM_REFERENCE.md`.
       params passthrough, unknown-module error, handler-exception handling, capabilities, empty-registry)
       + agent module folded into Kover. Full handler-against-Room e2e still pending (needs the heavy
       repo fakes; see T007 build note).
-- [ ] T006 [P] Move any hardcoded chat strings to Compose resources; format amounts via
-      `formatMoney(..., LocalAppLocale.current)` in result rendering. (deferred — `MessageBubble`/result
-      rendering pass)
+- [~] T006 [P] Agent UI strings moved to Compose resources: created
+      `feature/agent/.../composeResources/values/strings.xml` (agent_* keys); `ChatScreen`,
+      `VoiceInputButton`, `ActionResultCard` use `stringResource`, `ChatViewModel` uses `getString`
+      (error/cancel). Remaining: amounts in result text are formatted by the handler (plain number) —
+      rendering them via `formatMoney(LocalAppLocale.current)` needs `ActionResult` to carry a
+      structured amount to the UI (deferred; tracked with T052).
 - [ ] T007 Compile all three targets (checkpoint). ⚠ Could not run in the dev sandbox: the Gradle
       daemon is pinned to a JetBrains JDK (`gradle/gradle-daemon-jvm.properties`) that can't be
       downloaded offline, and plugin repos (AGP) are unreachable. Run locally/CI:
