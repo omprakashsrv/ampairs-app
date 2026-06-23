@@ -117,6 +117,11 @@ interface SubscriptionApi {
     suspend fun getDeviceAccessMode(deviceId: String): SubscriptionAccessMode
 
     /**
+     * Register/update the device's FCM push token on the backend.
+     */
+    suspend fun updatePushToken(deviceId: String, pushToken: String, pushTokenType: String)
+
+    /**
      * Deactivate a device
      */
     suspend fun deactivateDevice(deviceUid: String, reason: String? = null)
