@@ -286,6 +286,30 @@ best model that fits `DeviceCapability.totalRamBytes()` — or none (→ rule-ba
 model id and download state in the existing DataStore (never a new instance). Wi-Fi gating + explicit
 user opt-in for the download.
 
+### 4.6 Safe read-only SQL fallback (SAFE_QUERY) — FR-016
+
+When the resolver returns no `Action` (and it isn't plain chat), the orchestrator MAY try a
+**read-only, single-module** text-to-SQL fallback so the long tail ("what's my average order value this
+month?") still gets answered — without surrendering safety or pretending the per-module SQLite DBs are one.
+
+Pipeline tier: `resolve → Action? dispatch · else SAFE_QUERY? · else Clarification/Conversation`.
+
+1. **Pick one module** (LLM or keyword heuristic) → selects that module's DB + curated
+   `ModuleQuerySchema` (an allow-listed subset of tables/columns; internal/sync columns hidden).
+2. **Text-to-SQL** on that schema only (`ModuleQuerySchema.toPromptText()` in the prompt).
+3. **`SafeSqlValidator.validate(sql, schema)`** (commonMain, built + unit-tested now): SELECT-only,
+   single statement, no comments, keyword denylist, FROM/JOIN tables ∈ allowlist (or CTE), enforced
+   `LIMIT`. → `Valid(sql)` | `Rejected(reason)`.
+4. **Execute read-only** via a per-module `SqlQueryDelegate` using Room KMP `@RawQuery`/`RoomRawQuery`
+   on a **reader** connection (the runtime backstop); return generic rows the model phrases.
+
+Guardrails / decisions:
+- **Read-only forever** — writes always go through typed handlers (keeps offline-sync `PENDING_PUSH`
+  invariants). No DDL/DML ever reaches the DB.
+- **Single module per statement** — cross-module questions stay on step-wise tool chaining (§4.4 pattern).
+- **Opt-in** via `AssistantConfig` (default off); **prefer the larger/online model** for the SQL step —
+  FunctionGemma-270m does tools, not SQL. Tools remain the primary path; SQL is the fallback only.
+
 ---
 
 ## 5. Phasing (incremental, each independently shippable)

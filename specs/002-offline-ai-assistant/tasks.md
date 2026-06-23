@@ -142,6 +142,18 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 
 **Phase 2 acceptance:** US3 + US5 scenarios pass; SC-001/003/004/006 measured.
 
+### Phase 2g — Safe read-only SQL fallback (SAFE_QUERY) · FR-016 (see plan §4.6)
+- [x] T036 `SafeSqlValidator` + `ModuleQuerySchema`/`TableSchema`/`ColumnSchema` (commonMain,
+      `feature/agent/query/`): SELECT-only, single-statement, no-comments, keyword-deny, table-allowlist
+      (+ CTE), LIMIT-enforce → `Valid`/`Rejected`. Unit-tested (`SafeSqlValidatorTest`, SC-009).
+- [ ] T037 Per-module `SqlQueryDelegate` (WorkspaceScope): expose a curated `ModuleQuerySchema` +
+      execute validated SQL via Room KMP `@RawQuery`/`RoomRawQuery` on a **reader** connection →
+      `List<Map<String,Any?>>`. (Build env: needs each module's DAO.)
+- [ ] T038 `ResolvedIntent.SafeQuery` + orchestrator fallback tier (Action → SAFE_QUERY →
+      Clarification); module pick + text-to-SQL (`ModuleQuerySchema.toPromptText()`) → validate →
+      execute → model phrases rows. Gated by `AssistantConfig` (default off); prefer online/larger model.
+- [ ] T039 Tests: text-to-SQL eval set (rejection rate = 100% for bad inputs, SC-009) + read-only proof.
+
 ---
 
 ## Phase 3 — Invoice-by-voice (US2) · FR-005/006/007

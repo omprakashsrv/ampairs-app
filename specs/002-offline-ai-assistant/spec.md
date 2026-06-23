@@ -212,6 +212,12 @@ confirm the cloud path is preferred with offline fallback.
   (preserve existing `AgentOrchestrator` behavior).
 - **FR-015**: The assistant MUST never report success for an action that did not persist; failures and
   "needs input" states MUST be surfaced to the user.
+- **FR-016**: When no typed action matches, the assistant MAY fall back to a **read-only SAFE_QUERY**
+  over a single module's local database. It MUST be opt-in (config-gated), restricted to `SELECT`
+  against a **curated per-module schema allowlist**, validated before execution (single statement, no
+  comments, no DDL/DML, allow-listed tables only, enforced row `LIMIT`), and executed on a **read-only**
+  connection. SAFE_QUERY MUST NOT mutate data (all writes go through typed handlers) and MUST NOT span
+  modules in a single statement (separate SQLite DBs).
 
 ### Capability Scope (what offline models will and won't do) *(informative)*
 
@@ -257,6 +263,8 @@ confirm the cloud path is preferred with offline fallback.
   to the server on reconnect.
 - **SC-008**: All three targets compile (`androidApp:compileDebugKotlinAndroid`,
   `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`).
+- **SC-009**: The SAFE_QUERY validator rejects **100%** of non-`SELECT` / multi-statement / commented /
+  off-allowlist / mutating inputs, and **0** rows are ever written via the SQL path (read-only).
 
 ---
 
