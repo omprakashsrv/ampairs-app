@@ -42,12 +42,12 @@ llama.cpp. Reference recipe: `docs/features/AGENT_LITERTLM_REFERENCE.md`.
       params passthrough, unknown-module error, handler-exception handling, capabilities, empty-registry)
       + agent module folded into Kover. Full handler-against-Room e2e still pending (needs the heavy
       repo fakes; see T007 build note).
-- [~] T006 [P] Agent UI strings moved to Compose resources: created
+- [x] T006 [P] Agent UI strings moved to Compose resources: created
       `feature/agent/.../composeResources/values/strings.xml` (agent_* keys); `ChatScreen`,
-      `VoiceInputButton`, `ActionResultCard` use `stringResource`, `ChatViewModel` uses `getString`
-      (error/cancel). Remaining: amounts in result text are formatted by the handler (plain number) —
-      rendering them via `formatMoney(LocalAppLocale.current)` needs `ActionResult` to carry a
-      structured amount to the UI (deferred; tracked with T052).
+      `VoiceInputButton`, `ActionResultCard`, `MessageBubble` use `stringResource`, `ChatViewModel` uses
+      `getString` (error/cancel). Amounts now render via `formatMoney(amount, LocalAppLocale.current)`:
+      `ActionResult.Success/Confirm` carry a structured `amount` → `AgentResponse` → `ChatMessage` →
+      `MessageBubble` "Total: …" line in the workspace business currency (FR-013).
 - [ ] T007 Compile all three targets (checkpoint). ⚠ Could not run in the dev sandbox: the Gradle
       daemon is pinned to a JetBrains JDK (`gradle/gradle-daemon-jvm.properties`) that can't be
       downloaded offline, and plugin repos (AGP) are unreachable. Run locally/CI:
@@ -207,7 +207,9 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       contract (`data/common/.../agent/`). `InvoiceActionHandler.CREATE` is now **two-phase**:
       `proposeInvoice` resolves customer/product, builds the draft **in memory** to compute the total,
       and returns `Confirm` with the resolved ids in `pendingAction` (**no persistence**, FR-006);
-      `persistInvoice` (on the confirmed re-dispatch) rebuilds from those ids and saves.
+      `persistInvoice` (on the confirmed re-dispatch) rebuilds from those ids and saves. The total
+      rides as a structured `amount` (not baked into the summary) so the UI renders it via
+      `formatMoney(LocalAppLocale.current)` in the workspace currency (see T006).
 - [x] T045 Confirm/cancel handling: `AgentOrchestrator.confirmAction(pendingAction)` re-dispatches the
       confirmed action; `AgentResponse.pendingConfirmation` surfaces it. `ChatViewModel` carries
       `pendingConfirmation` across turns with `confirmPending()` / `cancelPending()`; on confirm →

@@ -11,6 +11,8 @@ data class ChatMessage(
     val actionResult: ActionResultSummary? = null,
     val isLoading: Boolean = false,
     val isError: Boolean = false,
+    /** Money total to render via `formatMoney(LocalAppLocale.current)` in the bubble (FR-013). */
+    val amount: Double? = null,
 )
 
 @Serializable

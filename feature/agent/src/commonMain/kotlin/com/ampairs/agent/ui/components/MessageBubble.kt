@@ -13,8 +13,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ampairsapp.feature.agent.generated.resources.Res
+import ampairsapp.feature.agent.generated.resources.agent_total
 import com.ampairs.agent.core.ChatMessage
+import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.formatMoney
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MessageBubble(
@@ -44,16 +50,28 @@ fun MessageBubble(
                 },
                 tonalElevation = if (message.isFromUser) 0.dp else 1.dp,
             ) {
-                Text(
-                    text = message.text,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    color = when {
-                        message.isError -> MaterialTheme.colorScheme.onErrorContainer
-                        message.isFromUser -> MaterialTheme.colorScheme.onPrimary
-                        else -> MaterialTheme.colorScheme.onSecondaryContainer
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                val onColor = when {
+                    message.isError -> MaterialTheme.colorScheme.onErrorContainer
+                    message.isFromUser -> MaterialTheme.colorScheme.onPrimary
+                    else -> MaterialTheme.colorScheme.onSecondaryContainer
+                }
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Text(
+                        text = message.text,
+                        color = onColor,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    // Money total rendered in the active workspace's business currency (FR-013).
+                    message.amount?.let { amount ->
+                        Text(
+                            text = "${stringResource(Res.string.agent_total)}: ${formatMoney(amount, LocalAppLocale.current)}",
+                            color = onColor,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
             }
 
             // Show action result card if present

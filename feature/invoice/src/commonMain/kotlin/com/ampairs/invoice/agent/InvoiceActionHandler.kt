@@ -121,8 +121,9 @@ class InvoiceActionHandler(
             }
         }
         return ActionResult.Confirm(
-            summary = "Create a draft invoice for ${customer.name}$linePart — total ${formatAmount(draft.totalCost)}?",
+            summary = "Create a draft invoice for ${customer.name}$linePart?",
             pendingAction = AgentAction(ActionType.CREATE, moduleName, pendingParams),
+            amount = draft.totalCost, // UI renders the total via formatMoney(LocalAppLocale.current)
         )
     }
 
@@ -145,11 +146,12 @@ class InvoiceActionHandler(
             invoiceRepository.saveInvoice(invoice)
             val linePart = lineItem?.let { " with ${formatQty(it.quantity)} × ${it.product?.name ?: "item"}" } ?: ""
             ActionResult.Success(
-                summary = "Draft invoice created for ${customer.name}$linePart (total ${formatAmount(invoice.totalCost)}). Open it to review and finalize.",
+                summary = "Draft invoice created for ${customer.name}$linePart. Open it to review and finalize.",
                 navigationTarget = NavigationTarget(
                     routeDescription = "InvoiceView",
                     routeData = mapOf("invoiceId" to invoice.id),
                 ),
+                amount = invoice.totalCost, // UI renders the total via formatMoney(LocalAppLocale.current)
             )
         } catch (e: Exception) {
             ActionResult.Error("Couldn't create the invoice: ${e.message}")
@@ -220,13 +222,6 @@ class InvoiceActionHandler(
         invoice.totalItems = invoice.items.size
         invoice.totalQuantity = invoice.items.sumOf { it.quantity }
         invoice.totalCost = result.grandTotal
-    }
-
-    // Plain (currency-symbol-free) formatting for the chat summary — the symbol/grouping belongs to
-    // the UI layer (LocalAppLocale), which a non-composable handler can't read.
-    private fun formatAmount(value: Double): String {
-        val rounded = kotlin.math.round(value * 100.0) / 100.0
-        return if (rounded % 1.0 == 0.0) rounded.toLong().toString() else rounded.toString()
     }
 
     private fun formatQty(value: Double): String =

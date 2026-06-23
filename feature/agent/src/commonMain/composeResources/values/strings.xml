@@ -11,6 +11,7 @@
     <string name="agent_confirm">Confirm</string>
     <string name="agent_cancel">Cancel</string>
     <string name="agent_view">View</string>
+    <string name="agent_total">Total</string>
     <string name="agent_voice_start_cd">Start voice input</string>
     <string name="agent_voice_stop_cd">Stop listening</string>
     <string name="agent_error_generic">Something went wrong</string>

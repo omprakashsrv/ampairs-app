@@ -85,6 +85,7 @@ class AgentOrchestrator(
             resolvedAction = action,
             // Surfaced so the ViewModel can render confirm/cancel and re-dispatch on confirm.
             pendingConfirmation = (result as? ActionResult.Confirm)?.pendingAction,
+            amount = (result as? ActionResult.Confirm)?.amount ?: (result as? ActionResult.Success)?.amount,
         )
 }
 
@@ -94,4 +95,6 @@ data class AgentResponse(
     val resolvedAction: AgentAction? = null,
     /** Non-null when the action needs explicit user confirmation before it will persist (FR-006). */
     val pendingConfirmation: AgentAction? = null,
+    /** Money total for the UI to format via `formatMoney(LocalAppLocale.current)` (FR-013). */
+    val amount: Double? = null,
 )

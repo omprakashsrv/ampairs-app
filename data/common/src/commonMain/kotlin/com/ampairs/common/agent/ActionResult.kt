@@ -6,6 +6,8 @@ sealed class ActionResult {
         val summary: String,
         val data: Any? = null,
         val navigationTarget: NavigationTarget? = null,
+        /** Optional money total for the UI to render via `formatMoney(LocalAppLocale.current)`. */
+        val amount: Double? = null,
     ) : ActionResult()
 
     data class Error(val message: String) : ActionResult()
@@ -25,6 +27,8 @@ sealed class ActionResult {
     data class Confirm(
         val summary: String,
         val pendingAction: AgentAction,
+        /** Optional money total for the UI to render via `formatMoney(LocalAppLocale.current)`. */
+        val amount: Double? = null,
     ) : ActionResult()
 }
 
