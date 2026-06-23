@@ -16,7 +16,8 @@
 
 The app already ships a half-wired **agentic scaffold** that this feature completes and extends:
 
-- Contracts in `data/common/.../agent/`: `AgentAction` (serializable `{actionType, moduleName, params}`), `ActionType`, `ActionDescriptor`/`ActionParameter` (self-describing tool metadata), `ActionResult` (Success / Error / **NeedsInput**), `ActionHandler`, `ActionHandlerProvider`.
+- Contracts in `data/common/.../agent/`: `AgentAction` (serializable `{actionType, moduleName, params}`), `ActionType`, `ActionDescriptor`/`ActionParameter` (self-describing tool metadata), `ActionResult` (Success / Error / **NeedsInput**), `ActionHandler` (`ActionHandlerProvider` was removed
+in Phase 0 — handlers are now contributed via a Metro multibinding map; see tasks T001–T002).
 - Pipeline in `feature/agent/core/`: `AgentOrchestrator` → `IntentResolver` (online/offline) → `ActionRegistry.dispatch()` → per-module `ActionHandler`. `ChatViewModel` + `ChatScreen` + `VoiceInputButton`.
 - Per-module handlers: customer (CRUD+sync), product (CRUD), order/invoice/inventory (read-only).
 - `RuleBasedIntentResolver` (regex) for offline command parsing.
@@ -277,6 +278,8 @@ confirm the cloud path is preferred with offline fallback.
 - A cloud LLM path (e.g. via the backend) may be added as the online resolver, but the feature's
   acceptance does not depend on it — offline is the contract.
 - On-device engine and model are **pluggable** (ports & adapters): primary engine **LiteRT-LM** (Google
-  AI Edge — Kotlin on Android/Desktop, Swift on iOS) with **llama.cpp** fallback; default model **Gemma 4
-  E4B** with low-RAM (Gemma 4 E2B / Gemma 3 1B) and llama.cpp/compat (Qwen2.5-3B) tiers. These are
-  `plan.md` decisions and swappable by config; this spec stays engine-agnostic.
+  AI Edge — Kotlin on Android/Desktop, Swift on iOS) with **llama.cpp** fallback. Models are
+  **role-split and user-switchable** via `ModelCatalog` + `AssistantConfig` (never hardcoded):
+  intent→action tool-calling (default **FunctionGemma-270m**), conversational answers (default **Gemma 3n
+  E2B/E4B**, selected by RAM), and a llama.cpp/compat tier (**Qwen2.5-3B**). These are `plan.md`
+  decisions and swappable by config; this spec stays engine-agnostic.

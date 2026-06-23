@@ -23,7 +23,7 @@ and KMP/CMP rules (`/cmp-practices`), and keeps all feature code in feature modu
                                                              │
                                    Repository (local-only) ─▶ Room  (synced=false) ─▶ CentralSyncService push
                                                              ▲
-                       LlmEngine (pluggable: MediaPipe / llama.cpp)  │  ModelManager (download + capability gating)
+                       LlmEngine (pluggable: LiteRT-LM / llama.cpp)  │  ModelManager (download + capability gating)
 ```
 
 Everything swappable sits behind a **stable `commonMain` port** (interface). Each platform contributes
@@ -319,8 +319,12 @@ Guardrails / decisions:
   queries. No new deps. (FR-001/002)
 - **Phase 1 — Voice I/O (US4).** `SpeechToText`/`TextToSpeech` expect/actual with platform-native
   engines; wire `onVoiceResult` + read-back. Text+voice for the regex assistant. (FR-008/009)
-- **Phase 2 — On-device LLM NLU (US3).** Add `LlmEngine` (llama.cpp) + `LlmIntentResolver` +
-  `AgentGrammarBuilder` + `ModelManager`. Natural-language → valid actions. (FR-003/004/011/012)
+- **Phase 2 — On-device LLM NLU (US3).** Add `LlmEngine` (LiteRT-LM primary, llama.cpp fallback) +
+  `ProviderRegistry` + `LlmIntentResolver` + `AgentSchemaBuilder` + `ModelManager`. Natural-language →
+  valid actions. (FR-003/004/011/012)
+- **Phase 2g — Safe read-only SQL fallback (SAFE_QUERY).** `SafeSqlValidator` + curated per-module
+  `ModuleQuerySchema` + per-module `SqlQueryDelegate` + an orchestrator SAFE_QUERY tier (read-only,
+  single-module, opt-in). Answers the long-tail query when no typed action matches. (FR-016; see §4.6)
 - **Phase 3 — Invoice-by-voice (US2).** Invoice CREATE handler + `Confirm` flow + entity resolution +
   tax. (FR-005/006/007)
 - **Phase 4 — Polish & online path.** whisper.cpp Desktop STT, cloud `OnlineIntentResolver`, locale
@@ -356,7 +360,7 @@ native integration) is isolated behind the `LlmEngine` port in Phase 2.
 | Native engine integration effort (3 platforms) | Isolate behind the `LlmEngine` port; Phases 0–1 don't need it. LiteRT-LM gives one runtime across Android (Kotlin), iOS (Swift), Desktop (Kotlin/JVM); llama.cpp is the fallback adapter. Start Android → Desktop → iOS. |
 | Engine/model churn over time | Ports + `ProviderRegistry` + `ModelCatalog`/`AssistantConfig` make engines and models swappable by config; adding a backend is one adapter class. |
 | Small-model tool-calling unreliability | LiteRT-LM **native function calling** on mobile; **GBNF grammar** on llama.cpp — both via one `OutputSchema`; validate + re-ask guarantees valid `AgentAction` (SC-003). |
-| Model size / device RAM / battery | `ModelManager` capability gating + low-RAM tier (Gemma 4 E2B / Gemma 3 1B) + rule-based fallback (SC-006). |
+| Model size / device RAM / battery | `ModelManager` capability gating + low-RAM tier (Gemma 3n E2B / Gemma 3 1B) + rule-based fallback (SC-006). |
 | LiteRT-LM Desktop/iOS binding maturity | Verify Kotlin/JVM desktop native libs + iOS Swift-package bridge early (T031); llama.cpp covers any gap with zero pipeline change. |
 | Money actions executed wrongly from speech | Mandatory `Confirm` step with spoken total (FR-006, SC-002). |
 | Workspace data leakage / stale model | Workspace-scoped registry + engine; close on switch via `WorkspaceClosableRegistry`. |
@@ -367,7 +371,7 @@ native integration) is isolated behind the `LlmEngine` port in Phase 2.
 
 ## 8. Definition of Done
 
-- All FRs met; success criteria SC-001…SC-008 measured and passing.
+- All FRs met; success criteria SC-001…SC-009 measured and passing.
 - All three targets compile (SC-008); no `java.*`/`android.*` in `commonMain`.
 - No `LocalAppGraph.current` in composables; ViewModels via Metro; strings from Compose resources;
   amounts via `formatMoney(..., LocalAppLocale.current)`.
@@ -383,7 +387,9 @@ native integration) is isolated behind the `LlmEngine` port in Phase 2.
 2. **Cloud LLM path:** do we want an online resolver (backend proxy to a hosted model) now, or
    offline-only for v1?
 3. **Confirm UX:** typed `ActionResult.Confirm` (preferred) vs. reuse `NeedsInput` with pending action.
-4. **Default engine + model + tiers:** confirm LiteRT-LM as the primary engine (Android/iOS/Desktop)
-   with llama.cpp fallback; default model **Gemma 4 E4B**, low-RAM **Gemma 4 E2B / Gemma 3 1B**,
-   llama.cpp/compat **Qwen2.5-3B**. Confirm RAM thresholds for gating.
+4. **Default engine + model + tiers — RESOLVED:** **LiteRT-LM** is the primary engine on
+   Android/iOS/Desktop with **llama.cpp** as the fallback. Models are **role-split and user-switchable**
+   via `ModelCatalog` + `AssistantConfig` (never hardcoded): intent→action **FunctionGemma-270m**,
+   conversational **Gemma 3n E2B/E4B** (selected by RAM), llama.cpp/compat **Qwen2.5-3B**. *Still open:*
+   the exact RAM thresholds for tier gating (resolve before Phase 2 T022/T032).
 5. **Languages:** which STT/UI languages for v1 (English only, or English + Hindi/code-mixed)?

@@ -69,19 +69,19 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 
 ## Phase 1 — Voice I/O (US4) · FR-008/009
 
-- [ ] T010 `expect interface SpeechToText` in `feature/agent/speech/SpeechToText.kt` (start/stop,
+- [ ] T011 `expect interface SpeechToText` in `feature/agent/speech/SpeechToText.kt` (start/stop,
       `Flow<String>` partials, final result, error).
-- [ ] T011 `expect interface TextToSpeech` in `feature/agent/speech/TextToSpeech.kt` (speak/stop/mute).
-- [ ] T012 [P] Android actuals: `SpeechRecognizer` (`EXTRA_PREFER_OFFLINE`) + `android.speech.tts.TextToSpeech`.
-- [ ] T013 [P] iOS actuals: `SFSpeechRecognizer` (`requiresOnDeviceRecognition = true`) +
+- [ ] T012 `expect interface TextToSpeech` in `feature/agent/speech/TextToSpeech.kt` (speak/stop/mute).
+- [ ] T013 [P] Android actuals: `SpeechRecognizer` (`EXTRA_PREFER_OFFLINE`) + `android.speech.tts.TextToSpeech`.
+- [ ] T014 [P] iOS actuals: `SFSpeechRecognizer` (`requiresOnDeviceRecognition = true`) +
       `AVSpeechSynthesizer` (use `Dispatchers.Default`, `@OptIn(ExperimentalForeignApi::class)`).
-- [ ] T014 [P] Desktop actuals: text-only stub for STT (returns unsupported) + system TTS or no-op.
-- [ ] T015 Mic permission flow via Moko Permissions; deny → graceful text fallback (US4-3).
-- [ ] T016 Wire `ChatViewModel`: collect STT final → `onVoiceResult()` → submit; speak responses via
+- [ ] T015 [P] Desktop actuals: text-only stub for STT (returns unsupported) + system TTS or no-op.
+- [ ] T016 Mic permission flow via Moko Permissions; deny → graceful text fallback (US4-3).
+- [ ] T017 Wire `ChatViewModel`: collect STT final → `onVoiceResult()` → submit; speak responses via
       TTS with mute control in `ChatUiState`.
-- [ ] T017 [P] `ChatScreen`/`VoiceInputButton`: show live transcript, listening state, mute toggle;
+- [ ] T018 [P] `ChatScreen`/`VoiceInputButton`: show live transcript, listening state, mute toggle;
       `contentDescription` on controls.
-- [ ] T018 Compile all three targets (checkpoint).
+- [ ] T019 Compile all three targets (checkpoint).
 
 **Phase 1 acceptance:** US4 scenarios pass on Android & iOS (Desktop = text-only).
 
@@ -137,7 +137,8 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [ ] T033 [P] Model/engine UI: download progress, Wi-Fi prompt, "reduced mode" banner (US5); dev
       settings engine+model picker reading `AssistantConfig`.
 - [ ] T034 [P] Eval harness: 20 paraphrase variants (SC-003) + 30-question set (SC-001); run across both
-      engines (LiteRT-LM, llama.cpp) to compare.
+      engines (LiteRT-LM, llama.cpp) to compare. Also capture end-of-speech→response latency on a
+      mid-range (4–8 GB) device and assert the median ≤ 3 s (SC-004).
 - [ ] T035 Compile all three targets (checkpoint).
 
 **Phase 2 acceptance:** US3 + US5 scenarios pass; SC-001/003/004/006 measured.
@@ -181,7 +182,8 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       `InvoiceRepository.saveInvoice(...)` (offline-first → pending push).
 - [ ] T046 [P] Render confirm card in `ChatScreen` (confirm/cancel buttons) + TTS reads the total.
 - [ ] T047 [P] Tests: 20-utterance create set (SC-002); assert 0% persisted without confirm; restart →
-      persists → pushes on reconnect (SC-007).
+      persists → pushes on reconnect (SC-007); assert failed/`NeedsInput` actions never render as
+      success — only persisted actions report success (FR-015).
 - [ ] T048 Compile all three targets (checkpoint).
 
 **Phase 3 acceptance:** US2 scenarios pass; SC-002/005/007 measured.
@@ -196,7 +198,7 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       `@OnlineIntentResolver`; verify orchestrator online→offline fallback (FR-014).
 - [ ] T052 [P] Locale/strings audit; accessibility pass; assistant onboarding/help.
 - [ ] T053 [P] Telemetry (resolve latency, action success, fallbacks) + Sentry breadcrumbs.
-- [ ] T054 Docs: update `docs/features/` and module CLAUDE notes; final SC-001…SC-008 verification.
+- [ ] T054 Docs: update `docs/features/` and module CLAUDE notes; final SC-001…SC-009 verification.
 
 ---
 
