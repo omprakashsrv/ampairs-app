@@ -5,7 +5,6 @@ import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
-import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.SamplerConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -81,7 +80,7 @@ class LiteRtLmEngine(
 
     private suspend fun runInference(prompt: String): String {
         val convo = conversation ?: error("LiteRtLmEngine.generate() called before load()")
-        return withContext(Dispatchers.IO) { convo.sendMessage(Message.user(prompt)).toString() }
+        return withContext(Dispatchers.IO) { convo.sendMessage(prompt).toString() }
     }
 
     override suspend fun close() {
