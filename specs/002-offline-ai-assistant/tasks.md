@@ -146,6 +146,10 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
 - [x] T036 `SafeSqlValidator` + `ModuleQuerySchema`/`TableSchema`/`ColumnSchema` (commonMain,
       `feature/agent/query/`): SELECT-only, single-statement, no-comments, keyword-deny, table-allowlist
       (+ CTE), LIMIT-enforce → `Valid`/`Rejected`. Unit-tested (`SafeSqlValidatorTest`, SC-009).
+- [x] T036b `BuiltInQuerySchemas` — curated read-only schemas for invoice/customer/product/inventory,
+      derived from the Room `@Entity`s (internal/sync/JSON columns hidden) + business descriptions for
+      text-to-SQL. Tested (`BuiltInQuerySchemasTest`). NOTE: move to per-module ownership with T037 so
+      they can't drift from the entities.
 - [ ] T037 Per-module `SqlQueryDelegate` (WorkspaceScope): expose a curated `ModuleQuerySchema` +
       execute validated SQL via Room KMP `@RawQuery`/`RoomRawQuery` on a **reader** connection →
       `List<Map<String,Any?>>`. (Build env: needs each module's DAO.)
