@@ -36,8 +36,11 @@ llama.cpp, both from one `OutputSchema`.
       WorkspaceGraph via `ChatViewModel` (already `WorkspaceScope`); handlers' map is WorkspaceScope. No
       `AppScope` consumer of the orchestrator exists.
 - [x] T004 `AgentModule` still binds `@OfflineIntentResolver`/`@OnlineIntentResolver` (unchanged).
-- [ ] T005 [P] Smoke-test offline: registry non-empty, "how many invoices", "low stock", "search
-      orders 1001" execute end-to-end against Room. (pending — needs a run; see T007 note)
+- [~] T005 [P] Smoke-test offline: registry non-empty, "how many invoices", "low stock", "search
+      orders 1001" execute end-to-end against Room. → `ActionRegistryTest` added (dispatch routing,
+      params passthrough, unknown-module error, handler-exception handling, capabilities, empty-registry)
+      + agent module folded into Kover. Full handler-against-Room e2e still pending (needs the heavy
+      repo fakes; see T007 build note).
 - [ ] T006 [P] Move any hardcoded chat strings to Compose resources; format amounts via
       `formatMoney(..., LocalAppLocale.current)` in result rendering. (deferred — `MessageBubble`/result
       rendering pass)
