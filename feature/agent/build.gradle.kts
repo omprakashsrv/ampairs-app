@@ -41,6 +41,9 @@ kotlin {
         }
         androidMain {
             dependencies {
+                // Grant — KMP runtime-permission library (Android+iOS); used here for the
+                // RECORD_AUDIO mic gate (T016). iOS binding follows once Android probe is green.
+                implementation(libs.grant.core)
             }
         }
         commonTest {

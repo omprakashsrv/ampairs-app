@@ -89,9 +89,13 @@ The AI assistant is surfaced through the dynamic-module system (installed per wo
       text-only, US4-3) + `NoOpTextToSpeech`, unit-tested (`UnsupportedSpeechTest`), bound in
       `SpeechDesktopModule`. Android/iOS bind the same fallbacks as placeholders (`SpeechAndroidModule`/
       `SpeechIosModule`) so T013/T014 are drop-in body swaps.
-- [ ] T016 Mic permission flow via Moko Permissions; deny → graceful text fallback (US4-3). NOTE: the
-      ChatViewModel wiring is permission-agnostic (it just collects `SpeechToText.listen()`), so the
-      RECORD_AUDIO gate slots in at the Android actual (T013) without touching commonMain.
+- [~] T016 Mic permission flow via the **Grant** KMP library (`dev.brewkits:grant-core`, not Moko —
+      Moko was never in the catalog). commonMain `MicPermissionController` interface; `ChatViewModel`
+      calls `ensureMicGranted()` before listening, deny → text fallback (US4-3). Android binding uses
+      Grant (`GrantManager.request(AppGrant.MICROPHONE)`); `RECORD_AUDIO` declared in the agent
+      androidMain manifest. iOS/Desktop bindings report granted for now (iOS prompts at recognizer
+      time). Probing Grant on **Android first** (its iOS packaging is unverified); iOS Grant binding
+      pairs with T014. CI compiles the Android path; full runtime needs a device.
 - [x] T017 Wire `ChatViewModel`: injects `SpeechToText`/`TextToSpeech`; `toggleVoiceInput()` collects
       the recognition flow (partials → `liveTranscript`, `Final` → submit, `Error`/unavailable →
       graceful stop/notice); speaks non-error replies unless muted; `toggleMute()` + `isTtsMuted`/

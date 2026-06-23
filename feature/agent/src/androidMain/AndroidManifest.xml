@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Voice input for the assistant (FR-008). Merged into the host app manifest. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+</manifest>

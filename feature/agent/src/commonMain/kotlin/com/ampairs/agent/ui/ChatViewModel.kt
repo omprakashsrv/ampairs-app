@@ -5,11 +5,13 @@ import androidx.lifecycle.viewModelScope
 import ampairsapp.feature.agent.generated.resources.Res
 import ampairsapp.feature.agent.generated.resources.agent_cancelled
 import ampairsapp.feature.agent.generated.resources.agent_error_generic
+import ampairsapp.feature.agent.generated.resources.agent_mic_permission_denied
 import ampairsapp.feature.agent.generated.resources.agent_speech_unavailable
 import com.ampairs.agent.core.ActionResultSummary
 import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.AgentResponse
+import com.ampairs.agent.permission.MicPermissionController
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
 import com.ampairs.agent.speech.TextToSpeech
@@ -51,6 +53,7 @@ class ChatViewModel(
     private val orchestrator: AgentOrchestrator,
     private val speechToText: SpeechToText,
     private val textToSpeech: TextToSpeech,
+    private val micPermission: MicPermissionController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -183,9 +186,13 @@ class ChatViewModel(
             viewModelScope.launch { appendError(getString(Res.string.agent_speech_unavailable)) }
             return
         }
-        _uiState.update { it.copy(isListening = true, liveTranscript = "") }
         voiceJob?.cancel()
         voiceJob = viewModelScope.launch {
+            if (!micPermission.ensureMicGranted()) {
+                appendError(getString(Res.string.agent_mic_permission_denied))
+                return@launch
+            }
+            _uiState.update { it.copy(isListening = true, liveTranscript = "") }
             speechToText.listen()
                 .catch { stopListeningState() }
                 .collect { event -> handleSttEvent(event) }
