@@ -52,25 +52,47 @@ phase that touches `commonMain`:
 
 ## Phase 2 — On-device LLM NLU (US3) · FR-003/004/011/012
 
-- [ ] T020 Add llama.cpp bindings to `gradle/libs.versions.toml` (Android JNI/AAR, Desktop JVM JNI,
-      iOS cinterop `.def`); package XCFramework (iOS) and native libs (Desktop).
-- [ ] T021 `expect class LlmEngine` (`feature/agent/llm/LlmEngine.kt`):
-      `load/generateConstrained/generate/isLoaded/close` + `LlmParams`.
-- [ ] T022 [P] Android/Desktop JNI actual; T023 [P] iOS cinterop actual (`Dispatchers.Default`).
-- [ ] T024 `DeviceCapability` expect/actual in `data/common/.../agent/` (`totalRamBytes()`).
-- [ ] T025 `ModelManager` (commonMain): `ModelAsset` state, Ktor download to app-private dir, progress,
-      checksum, Wi-Fi gating, capability-based selection; persist choice in existing DataStore.
-- [ ] T026 `AgentGrammarBuilder`: turn `ActionRegistry` `ActionDescriptor`s into a GBNF grammar + system
-      prompt constraining output to a valid `AgentAction` (+ intent discriminator).
-- [ ] T027 `LlmIntentResolver : IntentResolver`: prompt + `generateConstrained` → parse → `ResolvedIntent`;
-      low-confidence/parse-fail → `Clarification`.
-- [ ] T028 Composite offline resolver: use `LlmIntentResolver` when a model is loaded, else
-      `RuleBasedIntentResolver`; bind to `@OfflineIntentResolver`. Register engine with
-      `WorkspaceClosableRegistry` (close on workspace switch).
-- [ ] T029 [P] Model download UI: progress, Wi-Fi prompt, "reduced mode" banner when no model (US5).
-- [ ] T030 [P] Evaluation harness: 20 paraphrase variants → assert valid action + correct mapping
-      (SC-003); 30-question query set (SC-001).
-- [ ] T031 Compile all three targets (checkpoint).
+### 2a. Provider abstraction (do first — the adaptability backbone)
+- [ ] T020 Define ports + descriptors in `feature/agent/llm/`: `LlmEngine` (interface), `LlmBackend`,
+      `ModelDescriptor`, `OutputSchema`, `LlmParams`.
+- [ ] T021 `ModelCatalog` (commonMain) + `AssistantConfig` persisted in the existing DataStore
+      (active engine id, model id, STT/TTS provider, flags).
+- [ ] T022 `PlatformDefaults` expect/actual (best engine id per platform: Android/iOS/Desktop→litert-lm,
+      fallback→llamacpp) + `DeviceCapability` expect/actual (`totalRamBytes()`) in `data/common/.../agent/`.
+- [ ] T023 `ProviderRegistry` (`@Inject`, WorkspaceScope): pick `LlmBackend` from the Metro
+      `Set<LlmBackend>` via config + defaults + capability; create/close engine lazily; register with
+      `WorkspaceClosableRegistry`.
+
+### 2b. LiteRT-LM adapter (primary on all platforms)
+- [ ] T024 Add LiteRT-LM to `gradle/libs.versions.toml`: Kotlin API (Android + Desktop/JVM); iOS via
+      Swift package consumed by the `iosApp` target.
+- [ ] T025 [P] `LiteRtLmEngine : LlmEngine` — Android (Kotlin API) + Desktop (Kotlin/JVM) actuals; use
+      LiteRT-LM **native function calling** to satisfy `OutputSchema`.
+- [ ] T026 [P] `LiteRtLmEngine` iOS actual: thin Swift bridge in `iosApp` exposing the LiteRT-LM Swift
+      package to iosMain (`Dispatchers.Default`).
+
+### 2c. llama.cpp adapter (fallback + parity)
+- [ ] T027 [P] Add llama.cpp bindings (Android JNI, Desktop JNI, iOS cinterop `.def` / XCFramework);
+      `LlamaCppEngine : LlmEngine` with GBNF from `OutputSchema`.
+
+### 2d. Resolver + schema + delivery
+- [ ] T028 `AgentSchemaBuilder`: `ActionRegistry` `ActionDescriptor`s → `OutputSchema` (GBNF + JSON-schema
+      / function-call renderings) + system prompt; engine-agnostic.
+- [ ] T029 `LlmIntentResolver : IntentResolver` via `ProviderRegistry.llmEngine()`; parse → `ResolvedIntent`;
+      validate against schema, re-ask on failure; low confidence → `Clarification`.
+- [ ] T030 Composite offline resolver: `LlmIntentResolver` when a model is loaded else
+      `RuleBasedIntentResolver`; bind `@OfflineIntentResolver`.
+- [ ] T031 ⚠ Verify integration assumptions: LiteRT-LM **Kotlin/JVM desktop** native libs work; LiteRT-LM
+      **iOS Swift-package** bridge works from iosMain; **Gemma 4 E4B** `.litertlm` available (mobile) and
+      Gemma 4 GGUF / Qwen2.5-3B set in the catalog for the llama.cpp path. Adjust `PlatformDefaults` /
+      catalog defaults per findings (no pipeline change required).
+- [ ] T032 `ModelManager`: catalog-driven Ktor download to app-private dir, progress, checksum, Wi-Fi
+      gating, RAM-based selection; persist choice (FR-011/012). (Study Google AI Edge Gallery for UX.)
+- [ ] T033 [P] Model/engine UI: download progress, Wi-Fi prompt, "reduced mode" banner (US5); dev
+      settings engine+model picker reading `AssistantConfig`.
+- [ ] T034 [P] Eval harness: 20 paraphrase variants (SC-003) + 30-question set (SC-001); run across both
+      engines (LiteRT-LM, llama.cpp) to compare.
+- [ ] T035 Compile all three targets (checkpoint).
 
 **Phase 2 acceptance:** US3 + US5 scenarios pass; SC-001/003/004/006 measured.
 

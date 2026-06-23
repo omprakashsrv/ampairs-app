@@ -268,5 +268,7 @@ confirm the cloud path is preferred with offline fallback.
   persistence/push mechanism the assistant uses; the assistant never calls feature APIs directly.
 - A cloud LLM path (e.g. via the backend) may be added as the online resolver, but the feature's
   acceptance does not depend on it — offline is the contract.
-- On-device model selection (Gemma 3 / Qwen2.5 class, ~1–3B q4) and engine choice are design decisions
-  fixed in `plan.md`; this spec is engine-agnostic.
+- On-device engine and model are **pluggable** (ports & adapters): primary engine **LiteRT-LM** (Google
+  AI Edge — Kotlin on Android/Desktop, Swift on iOS) with **llama.cpp** fallback; default model **Gemma 4
+  E4B** with low-RAM (Gemma 4 E2B / Gemma 3 1B) and llama.cpp/compat (Qwen2.5-3B) tiers. These are
+  `plan.md` decisions and swappable by config; this spec stays engine-agnostic.

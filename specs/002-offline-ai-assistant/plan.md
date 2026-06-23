@@ -23,30 +23,81 @@ and KMP/CMP rules (`/cmp-practices`), and keeps all feature code in feature modu
                                                              │
                                    Repository (local-only) ─▶ Room  (synced=false) ─▶ CentralSyncService push
                                                              ▲
-                       LlmEngine (expect/actual: llama.cpp)  │   ModelManager (download + device-capability gating)
+                       LlmEngine (pluggable: MediaPipe / llama.cpp)  │  ModelManager (download + capability gating)
 ```
 
-Three new capabilities, each behind a `commonMain` interface with `expect`/`actual` platform bridges:
-**LlmEngine**, **SpeechToText**, **TextToSpeech**. One new `commonMain` service: **ModelManager**
-(asset download + selection). Plus the registry wiring and the invoice CREATE handler.
+Everything swappable sits behind a **stable `commonMain` port** (interface). Each platform contributes
+one or more **adapters**, and a **`ProviderRegistry`** picks the active adapter from `PlatformDefaults`
+(best-per-platform) overridable by a persisted **`AssistantConfig`**. New ports: **LlmEngine**,
+**SpeechToText**, **TextToSpeech**. New services: **ProviderRegistry**, **ModelManager** (catalog-driven
+download + selection). Plus the registry wiring and the invoice CREATE handler. This is what makes the
+pipeline adaptable — see §4.0.
 
 ---
 
-## 2. Technology Choices (decisions)
+## 2. Technology Choices — best-per-platform, behind a stable abstraction
 
-| Concern | Decision | Rationale |
+Guiding principle: **ports & adapters**. The pipeline depends only on small `commonMain` interfaces
+(ports); each platform plugs in the best available engine (adapter). "Best" is **configuration, not
+hardcoding** — a `ProviderRegistry` + persisted `AssistantConfig` choose the active adapter and model at
+runtime, so swapping a model, engine, or flow later is a config/registry change, not a rewrite (§4.0).
+
+### LLM engine — best per platform (all behind one `LlmEngine` port)
+
+| Platform | Primary engine | Why |
 |---|---|---|
-| LLM runtime | **llama.cpp** via `expect`/`actual` (JNI on Android + Desktop-JVM, C-interop on iOS) | Only engine that covers **all 3** targets incl. Desktop; supports **GBNF grammar** constrained decoding. |
-| LLM model (default) | **Qwen2.5-3B-Instruct q4** (≈2 GB); fallback **Gemma 3 1B q4** (≈0.8 GB) for low-RAM | Strong small-model tool-calling; Gemma satisfies the "Gemma" ask and the low-RAM tier. |
-| Reliable tool-calling | **Grammar-constrained decoding** to the `AgentAction` JSON schema, generated from `ActionRegistry` metadata | Makes 1–3B models emit 100% structurally-valid actions (SC-003). |
-| STT (phase 1) | Platform-native: Android `SpeechRecognizer` (offline pref), iOS `SFSpeechRecognizer` (`requiresOnDeviceRecognition`), Desktop stub→Vosk/whisper | Zero model download, fastest to ship on mobile. |
-| STT (phase 2) | **whisper.cpp** (base ≈140 MB) via `expect`/`actual` | Uniform cross-platform quality incl. Desktop; multilingual/code-mixed. |
-| TTS | Platform-native (`TextToSpeech` / `AVSpeechSynthesizer`); Desktop via system/Piper | Offline, no download on mobile. |
-| Model delivery | On-demand download to app-private dir; Wi-Fi gated; device-RAM gating | Models too large to bundle (FR-011/FR-012). |
-| Online path | Keep `OnlineIntentResolver` slot for a cloud LLM (backend proxy) — optional | Orchestrator already does online→offline fallback. |
+| **Android** | **LiteRT-LM** (Google AI Edge) | First-class Google runtime; OpenCL/GPU accel (~52 tok/s); **native Gemma 4 function calling**; `.litertlm` models. |
+| **iOS** | **LiteRT-LM Swift API** | Google's **new native iOS Swift API** with Metal GPU (~56 tok/s); runs Gemma 4 offline with the same native function calling. |
+| **Desktop (JVM)** | **LiteRT-LM Kotlin/JVM API** (CPU/GPU); **llama.cpp** (GGUF) fallback | LiteRT-LM's Kotlin API officially targets **Android *and* JVM**, so Desktop can share the same engine + models; llama.cpp stays as a portable fallback. |
 
-`expect`/`actual` note: per project KMP rules, the iOS actual for IO dispatch uses
-`Dispatchers.Default`, not `Dispatchers.IO`.
+All engines implement the **same `LlmEngine` port** (load / constrained-generate / generate / close), so
+the rest of the pipeline is platform-identical. A device can override its engine via config (e.g. force
+llama.cpp on Android for parity testing).
+
+> **LiteRT-LM is effectively a single engine across our targets.** Google ships a **Kotlin API for
+> Android + JVM**, a **Swift package for iOS + macOS**, plus Web/Flutter/Python/CLI — so one runtime can
+> back Android, iOS, *and* Desktop. Its runtime-level **function calling** (pause → structured tool-call
+> → resume, from FunctionGemma/Gemma 4) maps almost 1:1 onto our `AgentAction` dispatch. The ports
+> abstraction means we treat LiteRT-LM as the **primary adapter on all three platforms** and keep
+> **llama.cpp** as an alternate/fallback adapter — both swappable by config, never hardcoded.
+>
+> Verify before locking in: the LiteRT-LM **Kotlin/JVM** native libs cover Linux/macOS/Windows desktop,
+> and the **iOS Swift package** is reachable from the Kotlin/Native iosMain layer (bridge through the
+> `iosApp` Swift target if needed). Until confirmed on Desktop, llama.cpp is the Desktop default.
+
+### Tool-calling — native where available, grammar elsewhere (engine-agnostic port)
+
+- **LiteRT-LM (Android/iOS):** use its **built-in structured function-calling** — the runtime returns a
+  structured tool-call request and resumes on the tool result. Near-perfect fit for `AgentAction`.
+- **llama.cpp (Desktop):** **GBNF grammar-constrained decoding** to the `AgentAction` JSON schema.
+- Both are produced from one `OutputSchema` built from `ActionRegistry` metadata; the resolver validates
+  output against the schema and re-asks on failure → 100% structurally-valid actions (SC-003).
+
+### Models — adaptable catalog, not a hardcoded choice
+
+| Tier | Model | ~size | Notes |
+|---|---|---|---|
+| Default (capable) | **Gemma 4 E4B** | ~3 GB | On-device tier of Gemma 4; agentic/function-call tuned; first-class on LiteRT-LM (Android/iOS). |
+| Low-RAM | **Gemma 4 E2B** / Gemma 3 1B | ~0.8–1.5 GB | For ~4 GB devices. |
+| llama.cpp / compatibility | **Qwen2.5-3B-Instruct** (GGUF) | ~2 GB | Robust llama.cpp support; the default for the llama.cpp adapter and a universal fallback when a device can't run Gemma 4 or LiteRT-LM is unavailable. |
+
+Models live in a **`ModelCatalog`** (id, engine, format, url, sizeBytes, minRamBytes, capabilities).
+Adding/changing a model = add a catalog entry; `ModelManager` downloads it and `ProviderRegistry`
+selects it — no change to the resolver, handlers, or UI.
+
+### Speech & delivery (same port pattern)
+
+| Concern | Android | iOS | Desktop | Port |
+|---|---|---|---|---|
+| STT (phase 1) | `SpeechRecognizer` (offline) | `SFSpeechRecognizer` (on-device) | stub | `SpeechToText` |
+| STT (phase 2) | whisper.cpp | whisper.cpp | whisper.cpp | `SpeechToText` |
+| TTS | `TextToSpeech` | `AVSpeechSynthesizer` | system / Piper | `TextToSpeech` |
+
+Model delivery: on-demand download to app-private dir, Wi-Fi gated, RAM-gated selection (FR-011/012).
+Online path: `OnlineIntentResolver` slot for a cloud LLM, tried first when connected (FR-014).
+
+`expect`/`actual` note: per project KMP rules, the iOS actual for IO dispatch uses `Dispatchers.Default`,
+not `Dispatchers.IO`.
 
 ---
 
@@ -61,16 +112,20 @@ feature/agent/src/
 │   ├── core/AgentOrchestrator.kt                 (exists)
 │   ├── core/ActionRegistry.kt                    (exists; now actually populated)
 │   ├── offline/RuleBasedIntentResolver.kt        (exists; stays as fallback)
-│   ├── offline/LlmIntentResolver.kt              ★ new — grammar-constrained, uses LlmEngine
-│   ├── offline/AgentGrammarBuilder.kt            ★ new — ActionDescriptors → GBNF/JSON schema + system prompt
-│   ├── llm/LlmEngine.kt                          ★ new — expect interface (load/generateConstrained/close)
-│   ├── speech/SpeechToText.kt                    ★ new — expect interface (Flow<partial>, final)
-│   ├── speech/TextToSpeech.kt                    ★ new — expect interface (speak/stop)
-│   ├── model/ModelManager.kt                     ★ new — download, capability gating, ModelAsset state
+│   ├── offline/LlmIntentResolver.kt              ★ new — uses ProviderRegistry.llmEngine + OutputSchema
+│   ├── offline/AgentSchemaBuilder.kt             ★ new — ActionDescriptors → OutputSchema (GBNF + JSON-schema)
+│   ├── llm/LlmEngine.kt                          ★ new — port interface (load/generateConstrained/generate/close)
+│   ├── llm/LlmBackend.kt                         ★ new — adapter descriptor (id/supports/create)
+│   ├── llm/ProviderRegistry.kt                   ★ new — picks adapter via PlatformDefaults + AssistantConfig
+│   ├── llm/PlatformDefaults.kt                   ★ new — expect/actual: best engine id per platform
+│   ├── config/AssistantConfig.kt                 ★ new — runtime overrides (DataStore-backed)
+│   ├── speech/SpeechToText.kt + TextToSpeech.kt  ★ new — ports (+ STT/TTS backend registry, same pattern)
+│   ├── model/ModelCatalog.kt + ModelManager.kt   ★ new — catalog + download/capability gating
 │   └── ui/ (ChatViewModel/ChatScreen/components)  (exists; wire voice + confirm UI)
-├── androidMain/.../agent/   ★ LlmEngine/STT/TTS/ModelManager android actuals
-├── iosMain/.../agent/       ★ ... ios actuals (Dispatchers.Default)
-└── desktopMain/.../agent/   ★ ... desktop actuals
+├── androidMain/.../agent/   ★ LiteRtLmEngine (Kotlin API) + LlamaCppEngine + STT/TTS android actuals
+├── iosMain/.../agent/       ★ LiteRtLmEngine (Swift pkg bridge) + LlamaCppEngine + actuals (Dispatchers.Default)
+└── desktopMain/.../agent/   ★ LiteRtLmEngine (Kotlin/JVM) and/or LlamaCppEngine + actuals
+   (iosApp Swift target: thin bridge exposing the LiteRT-LM Swift package to iosMain)
 
 data/common/src/commonMain/.../agent/
 ├── (existing contracts)
@@ -85,6 +140,49 @@ Registry wiring: contribute each handler into a Metro map and populate `ActionRe
 ---
 
 ## 4. Detailed Design
+
+### 4.0 Provider abstraction (ports & adapters) — the adaptability backbone
+
+Everything swappable sits behind a `commonMain` **port**; each platform ships one or more **adapters**;
+a `ProviderRegistry` selects the active one at runtime from `PlatformDefaults` (overridable by
+`AssistantConfig`). This is what makes engines, models, speech, and flow steps interchangeable later.
+
+```kotlin
+// Ports — the pipeline only ever sees these
+interface LlmEngine { suspend fun load(model: ModelDescriptor, params: LlmParams)
+    suspend fun generateConstrained(prompt: String, schema: OutputSchema, maxTokens: Int): String
+    suspend fun generate(prompt: String, maxTokens: Int): String; fun isLoaded(): Boolean; suspend fun close() }
+interface SpeechToText { /* start/stop, Flow<partial>, final */ }
+interface TextToSpeech { /* speak/stop/mute */ }
+interface IntentResolver { /* exists */ }
+interface ActionHandler { /* exists */ }
+
+// Self-describing adapters, contributed to a Metro multibinding
+interface LlmBackend { val id: String; fun supports(m: ModelDescriptor): Boolean; fun create(): LlmEngine }
+
+@Inject @SingleIn(WorkspaceScope::class)
+class ProviderRegistry(
+    private val llmBackends: Set<LlmBackend>,        // LiteRtLmBackend, LlamaCppBackend, …
+    private val platformDefaults: PlatformDefaults,  // expect/actual: best ids per platform
+    private val config: AssistantConfig,             // persisted in DataStore — runtime override
+    private val catalog: ModelCatalog,
+) {
+    fun llmEngine(): LlmEngine = pick(llmBackends, config, platformDefaults).create()
+}
+```
+
+Adaptability guarantees this buys:
+
+- **Swap the model** → add/point to a `ModelCatalog` entry; `ModelManager` downloads, `ProviderRegistry`
+  selects. No code change to resolver/handlers/UI.
+- **Swap/add an engine** (e.g. a future MLC or ONNX backend) → add one `LlmBackend` adapter + register
+  it. `PlatformDefaults`/`AssistantConfig` decide when it's used.
+- **Change the pipeline/flow** → the orchestrator is a thin ordered chain of injected steps
+  (transcribe → resolve → confirm? → dispatch → render/speak); steps can be reordered, inserted
+  (e.g. a guardrail/PII or analytics stage), or replaced independently.
+- **Per-platform "best"** lives only in `PlatformDefaults` (Android/iOS/Desktop → litert-lm; llama.cpp
+  fallback). Everything else reads it; nothing else hardcodes a platform choice.
+- **STT/TTS** follow the identical backend-registry pattern, so speech engines are swappable too.
 
 ### 4.1 Registry wiring (closes Gap #1)
 
@@ -111,27 +209,22 @@ registers them on creation, so `getAllActions()` / `dispatch()` are populated. `
 `LlmIntentResolver : IntentResolver`:
 
 1. Build a system prompt from `ActionRegistry.generateCapabilitiesPrompt()` (already exists).
-2. Build a **GBNF grammar** (`AgentGrammarBuilder`) that constrains output to a JSON object matching
-   `AgentAction` — `actionType` limited to the enum, `moduleName` limited to registered modules, and
-   `params` keys hinted from the relevant `ActionDescriptor`. Include an `"intent": "conversation" |
-   "clarify" | "action"` discriminator so the model can ask questions or chat.
-3. Call `LlmEngine.generateConstrained(prompt, grammar)` → parse JSON → `ResolvedIntent`.
-4. On parse/confidence failure → return `ResolvedIntent.Clarification` (never execute a wrong action).
+2. Build an engine-agnostic **`OutputSchema`** (`AgentSchemaBuilder`) from `ActionRegistry` metadata,
+   constraining output to a valid `AgentAction` — `actionType` limited to the enum, `moduleName` to
+   registered modules, `params` keys hinted from the relevant `ActionDescriptor`, plus an
+   `"intent": conversation | clarify | action` discriminator. The schema renders to **GBNF** (llama.cpp)
+   or a **JSON-schema / function-call definition** (LiteRT-LM) — the resolver doesn't care which.
+3. Call `providerRegistry.llmEngine().generateConstrained(prompt, schema)` → parse → `ResolvedIntent`.
+   On LiteRT-LM, prefer its native function-calling (the engine returns a structured tool call directly).
+4. Validate the parsed action against the schema; on parse/confidence failure → `ResolvedIntent.Clarification`
+   (never execute a wrong action).
 
-`LlmEngine` (expect):
-
-```kotlin
-expect class LlmEngine {
-    suspend fun load(modelPath: String, params: LlmParams)
-    suspend fun generateConstrained(prompt: String, grammar: String, maxTokens: Int): String
-    suspend fun generate(prompt: String, maxTokens: Int): String   // for result phrasing
-    fun isLoaded(): Boolean
-    suspend fun close()
-}
-```
-
-Actuals: Android/Desktop JNI to llama.cpp; iOS via cinterop. Engine is created lazily on first LLM use
-and closed on workspace switch (register with `WorkspaceClosableRegistry`).
+`LlmEngine` is a **commonMain interface** (not an `expect class`) so a platform can offer more than one
+backend and config can pick between them (see §4.0). Adapters: **`LiteRtLmEngine`** (Android/JVM Kotlin
+API; iOS via the Swift package bridged from iosMain) and **`LlamaCppEngine`** (JNI on Android/Desktop,
+cinterop on iOS) — both registered as `LlmBackend`s. `ProviderRegistry` picks per `PlatformDefaults` +
+`AssistantConfig`. The engine is created lazily on first use and closed on workspace switch
+(`WorkspaceClosableRegistry`).
 
 DI: bind `@OfflineIntentResolver` to a composite that uses `LlmIntentResolver` when a model is loaded,
 else `RuleBasedIntentResolver` (FR-004/FR-012). `@OnlineIntentResolver` stays the cloud slot.
@@ -193,16 +286,22 @@ user opt-in for the download.
 - **Phase 4 — Polish & online path.** whisper.cpp Desktop STT, cloud `OnlineIntentResolver`, locale
   formatting pass, accessibility, telemetry. (FR-013/014)
 
-Phases 0–1 ship value with **no native/model integration risk**; the heavy lift (llama.cpp cinterop +
-JNI) is isolated to Phase 2.
+Phases 0–1 ship value with **no native/model integration risk**; the heavy lift (LiteRT-LM / llama.cpp
+native integration) is isolated behind the `LlmEngine` port in Phase 2.
 
 ---
 
 ## 6. Build / Dependencies
 
-- Add to `gradle/libs.versions.toml` only (no hardcoded versions): llama.cpp binding(s) per platform
-  (Android AAR/JNI, Desktop JVM JNI artifact, iOS via cinterop def), and Phase-2 whisper.cpp.
-- iOS: package llama/whisper as XCFrameworks; add cinterop `.def`. Desktop: bundle native libs per OS.
+- Add to `gradle/libs.versions.toml` only (no hardcoded versions):
+  - **LiteRT-LM**: Kotlin API (Android + Desktop/JVM); Swift package for iOS/macOS (consumed via the
+    `iosApp` Swift target / SPM, bridged into iosMain).
+  - **llama.cpp** binding(s) as the fallback adapter (Android AAR/JNI, Desktop JVM JNI, iOS cinterop).
+  - Phase-2 **whisper.cpp** for cross-platform STT.
+- iOS: package native libs as XCFrameworks / SPM; add cinterop `.def` where needed. Desktop: bundle
+  per-OS native libs (Linux/macOS/Windows).
+- Reference implementation to study for the LiteRT-LM integration + model download UX: the open-source
+  **Google AI Edge Gallery** app (runs Gemma via LiteRT/LiteRT-LM on-device).
 - Models are **not** Gradle deps — downloaded at runtime (FR-011).
 - Per `/cmp-practices` §9: if `feature/agent` ever gets `maven-publish`, pin `packageOfResClass`.
 
@@ -212,9 +311,11 @@ JNI) is isolated to Phase 2.
 
 | Risk | Mitigation |
 |---|---|
-| Native llama.cpp integration effort (3 platforms) | Isolate behind `LlmEngine` expect/actual; Phases 0–1 don't need it; start with Android actual, then Desktop, then iOS. |
-| Small-model tool-calling unreliability | **Grammar-constrained decoding** (GBNF) — non-negotiable; guarantees valid `AgentAction`. |
-| Model size / device RAM / battery | `ModelManager` capability gating + low-RAM Gemma-1B tier + rule-based fallback (SC-006). |
+| Native engine integration effort (3 platforms) | Isolate behind the `LlmEngine` port; Phases 0–1 don't need it. LiteRT-LM gives one runtime across Android (Kotlin), iOS (Swift), Desktop (Kotlin/JVM); llama.cpp is the fallback adapter. Start Android → Desktop → iOS. |
+| Engine/model churn over time | Ports + `ProviderRegistry` + `ModelCatalog`/`AssistantConfig` make engines and models swappable by config; adding a backend is one adapter class. |
+| Small-model tool-calling unreliability | LiteRT-LM **native function calling** on mobile; **GBNF grammar** on llama.cpp — both via one `OutputSchema`; validate + re-ask guarantees valid `AgentAction` (SC-003). |
+| Model size / device RAM / battery | `ModelManager` capability gating + low-RAM tier (Gemma 4 E2B / Gemma 3 1B) + rule-based fallback (SC-006). |
+| LiteRT-LM Desktop/iOS binding maturity | Verify Kotlin/JVM desktop native libs + iOS Swift-package bridge early (T031); llama.cpp covers any gap with zero pipeline change. |
 | Money actions executed wrongly from speech | Mandatory `Confirm` step with spoken total (FR-006, SC-002). |
 | Workspace data leakage / stale model | Workspace-scoped registry + engine; close on switch via `WorkspaceClosableRegistry`. |
 | STT accuracy for code-mixed/Hindi | Phase-1 native + Phase-2 whisper.cpp multilingual; show transcript for user correction. |
@@ -240,6 +341,7 @@ JNI) is isolated to Phase 2.
 2. **Cloud LLM path:** do we want an online resolver (backend proxy to a hosted model) now, or
    offline-only for v1?
 3. **Confirm UX:** typed `ActionResult.Confirm` (preferred) vs. reuse `NeedsInput` with pending action.
-4. **Default model + tiers:** confirm Qwen2.5-3B (default) / Gemma-3-1B (low-RAM), and the RAM
-   thresholds for gating.
+4. **Default engine + model + tiers:** confirm LiteRT-LM as the primary engine (Android/iOS/Desktop)
+   with llama.cpp fallback; default model **Gemma 4 E4B**, low-RAM **Gemma 4 E2B / Gemma 3 1B**,
+   llama.cpp/compat **Qwen2.5-3B**. Confirm RAM thresholds for gating.
 5. **Languages:** which STT/UI languages for v1 (English only, or English + Hindi/code-mixed)?
