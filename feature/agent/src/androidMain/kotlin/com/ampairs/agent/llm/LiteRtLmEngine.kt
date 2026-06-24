@@ -41,8 +41,9 @@ import kotlin.concurrent.Volatile
  * stays on the rule-based path — the app never crashes for a missing model.
  *
  * **Threading.** `Engine.initialize()` (up to ~10 s) and `sendMessage()` are blocking native calls,
- * so both run on [Dispatchers.IO]. The acceleration backend is **GPU with an automatic CPU
- * fallback** ([initEngine]) for lower latency, dropping to CPU when GPU init fails on a device.
+ * so both run on [Dispatchers.IO]. The acceleration backend is **GPU only** ([initEngine]) — there is
+ * deliberately no CPU fallback (CPU latency is unusably slow); a GPU init failure surfaces in logs and
+ * the assistant stays rule-based rather than silently running on CPU.
  *
  * **Streaming + stateless per call.** [generateStream] streams text deltas from `sendMessageAsync`;
  * [generate]/[generateConstrained] collect that stream into a full string (bounded by
@@ -82,33 +83,29 @@ class LiteRtLmEngine(
     }
 
     /**
-     * Initialize on the **GPU** for lower latency, transparently falling back to **CPU** if GPU
-     * init fails (driver/device incompatibility) — so the assistant still runs everywhere. A failed
-     * GPU attempt surfaces in Logcat (tag [LOG_TAG]); switch the device and compare timings there.
+     * Initialize the engine on the **GPU only** — no CPU fallback (product decision: CPU is far too
+     * slow for usable on-device latency). `visionBackend`/`audioBackend` are explicitly null for our
+     * text model (matching the Gallery recipe); leaving them at EngineConfig defaults made GPU init
+     * fail on a text-only model, which is what previously forced the slow CPU path. If GPU init throws
+     * it propagates to [load] → [ProviderRegistry] logs it and stays rule-based — never silent CPU.
      */
-    private fun initEngine(modelFile: File): Engine {
-        runCatching { buildEngine(modelFile, Backend.GPU()) }
-            .onSuccess {
-                Logger.i(tag = LOG_TAG) { "LiteRT-LM engine initialized on GPU (maxNumTokens=$MAX_NUM_TOKENS)" }
-                return it
-            }
-            .onFailure { Logger.w(throwable = it, tag = LOG_TAG) { "GPU backend unavailable — falling back to CPU" } }
-        return buildEngine(modelFile, Backend.CPU())
-            .also { Logger.i(tag = LOG_TAG) { "LiteRT-LM engine initialized on CPU (maxNumTokens=$MAX_NUM_TOKENS)" } }
-    }
-
-    private fun buildEngine(modelFile: File, backend: Backend): Engine =
+    private fun initEngine(modelFile: File): Engine =
         Engine(
             EngineConfig(
                 modelPath = modelFile.absolutePath,
                 cacheDir = context.cacheDir.absolutePath,
-                backend = backend,
+                backend = Backend.GPU(),
+                visionBackend = null, // text model — must be null or GPU init fails
+                audioBackend = null,
                 // Bound total context (prompt + generation). litertlm 0.13.1 has no per-response
                 // output-token cap; this caps the KV-cache / total tokens — keep it above the built
                 // prompt size so the intent JSON is never truncated.
                 maxNumTokens = MAX_NUM_TOKENS,
             ),
-        ).also { it.initialize() }
+        ).also {
+            it.initialize()
+            Logger.i(tag = LOG_TAG) { "LiteRT-LM engine initialized on GPU (maxNumTokens=$MAX_NUM_TOKENS)" }
+        }
 
     override fun isLoaded(): Boolean = engine != null && samplerConfig != null
 
