@@ -83,6 +83,8 @@ import ampairsapp.feature.agent.generated.resources.agent_model_chip_cd
 import ampairsapp.feature.agent.generated.resources.agent_model_chip_downloading
 import ampairsapp.feature.agent.generated.resources.agent_model_chip_loading
 import ampairsapp.feature.agent.generated.resources.agent_model_chip_rule_based
+import ampairsapp.feature.agent.generated.resources.agent_model_chip_unsupported
+import ampairsapp.feature.agent.generated.resources.agent_model_manager_unsupported_note
 import ampairsapp.feature.agent.generated.resources.agent_model_delete
 import ampairsapp.feature.agent.generated.resources.agent_model_download_action
 import ampairsapp.feature.agent.generated.resources.agent_model_manager_rule_based_note
@@ -233,6 +235,7 @@ fun ChatScreen(
         if (uiState.showModelSheet) {
             ModelManagerSheet(
                 models = uiState.models,
+                supported = uiState.llmSupported,
                 isRuleBased = uiState.modelBar.phase == ModelPhase.RULE_BASED,
                 onUse = viewModel::onUseModel,
                 onDownload = viewModel::onDownloadModel,
@@ -352,6 +355,7 @@ private fun ModelStatusChip(
 ) {
     val chipCd = stringResource(Res.string.agent_model_chip_cd)
     val label = when (state.phase) {
+        ModelPhase.UNSUPPORTED -> stringResource(Res.string.agent_model_chip_unsupported)
         ModelPhase.RULE_BASED -> stringResource(Res.string.agent_model_chip_rule_based)
         ModelPhase.LOADING -> stringResource(Res.string.agent_model_chip_loading)
         ModelPhase.DOWNLOADING ->
@@ -388,7 +392,7 @@ private fun ModelStatusChip(
                         contentDescription = null,
                         modifier = Modifier.size(AssistChipDefaults.IconSize),
                     )
-                ModelPhase.RULE_BASED ->
+                ModelPhase.RULE_BASED, ModelPhase.UNSUPPORTED ->
                     Icon(
                         Icons.Default.SmartToy,
                         contentDescription = null,
@@ -404,6 +408,7 @@ private fun ModelStatusChip(
 @Composable
 private fun ModelManagerSheet(
     models: List<ModelUiItem>,
+    supported: Boolean,
     isRuleBased: Boolean,
     onUse: (String) -> Unit,
     onDownload: (String) -> Unit,
@@ -424,6 +429,22 @@ private fun ModelManagerSheet(
                 text = stringResource(Res.string.agent_model_manager_title),
                 style = MaterialTheme.typography.headlineSmall,
             )
+            if (!supported) {
+                // No on-device engine on this platform (Desktop/iOS) — explain, offer nothing.
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.agent_model_manager_unsupported_note),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+                return@Column
+            }
             Text(
                 text = stringResource(Res.string.agent_model_manager_subtitle),
                 style = MaterialTheme.typography.bodyMedium,

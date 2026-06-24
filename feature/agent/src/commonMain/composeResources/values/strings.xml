@@ -43,6 +43,8 @@
     <!-- Model manager (status chip + download / switch / delete sheet) -->
     <string name="agent_model_chip_cd">Manage AI model</string>
     <string name="agent_model_chip_rule_based">Rule-based</string>
+    <string name="agent_model_chip_unsupported">Android only</string>
+    <string name="agent_model_manager_unsupported_note">On-device AI currently runs on Android only. On this platform the assistant uses rule-based mode (actions). Model download and switching will appear here once a desktop/iOS engine is available.</string>
     <string name="agent_model_chip_loading">Loading…</string>
     <string name="agent_model_chip_downloading">%1$d%%</string>
     <string name="agent_model_manager_title">AI model</string>

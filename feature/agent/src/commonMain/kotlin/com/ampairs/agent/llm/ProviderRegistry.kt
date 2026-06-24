@@ -115,6 +115,13 @@ class ProviderRegistry(
     suspend fun isLlmReady(): Boolean = engineOrNull()?.isLoaded() == true
 
     /**
+     * True when this platform has at least one LLM engine backend registered. Today only Android
+     * contributes one (LiteRT-LM); Desktop/iOS have none until a llama.cpp backend lands, so the
+     * model manager uses this to show "Android only" instead of offering un-loadable downloads.
+     */
+    fun hasLlmBackend(): Boolean = backends.isNotEmpty()
+
+    /**
      * Drop the cached engine (closing it) so the next [engineOrNull] re-resolves [selectedChatModel]
      * and loads afresh. Called when the user switches/deletes the active model in the model manager.
      */

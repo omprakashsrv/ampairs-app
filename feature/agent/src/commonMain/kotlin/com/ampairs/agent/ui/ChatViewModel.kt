@@ -70,6 +70,8 @@ data class ChatUiState(
     val models: List<ModelUiItem> = emptyList(),
     /** True while the model-manager bottom sheet is open. */
     val showModelSheet: Boolean = false,
+    /** False when this platform has no on-device LLM engine (Desktop/iOS today) — manager is informational only. */
+    val llmSupported: Boolean = true,
 )
 
 /** What the model status chip shows: the active model's display name and its current phase. */
@@ -82,6 +84,9 @@ data class ModelBarState(
 
 /** Lifecycle phase of the active on-device model, surfaced by the top-bar chip. */
 enum class ModelPhase {
+    /** This platform has no on-device LLM engine yet (Desktop/iOS) — on-device AI is Android-only. */
+    UNSUPPORTED,
+
     /** No model can run on this device — chat uses the rule-based path. */
     RULE_BASED,
 
@@ -166,6 +171,9 @@ class ChatViewModel(
     private enum class EngineLoad { UNKNOWN, LOADING, READY, FAILED }
     private var engineLoad = EngineLoad.UNKNOWN
 
+    /** False on platforms with no LLM engine backend (Desktop/iOS today) — manager is informational. */
+    private var llmSupported = true
+
     init {
         voiceNoteController.recordingState
             .onEach { state ->
@@ -188,6 +196,12 @@ class ChatViewModel(
      * is also what warms the model before the user's first message.
      */
     private fun initModelManager() {
+        llmSupported = providerRegistry.hasLlmBackend()
+        if (!llmSupported) {
+            // No on-device engine on this platform (Desktop/iOS) — show "Android only", offer nothing.
+            _uiState.update { it.copy(llmSupported = false, modelBar = ModelBarState(phase = ModelPhase.UNSUPPORTED)) }
+            return
+        }
         viewModelScope.launch {
             catalog = runCatching { modelCatalog.all() }.getOrDefault(emptyList())
             runCatching { modelManager.refresh() }
@@ -247,6 +261,7 @@ class ChatViewModel(
     }
 
     private fun computeChip(active: ModelDescriptor?, statuses: Map<String, ModelInstallStatus>): ModelBarState {
+        if (!llmSupported) return ModelBarState(phase = ModelPhase.UNSUPPORTED)
         if (active == null) return ModelBarState(phase = ModelPhase.RULE_BASED)
         val status = statuses[active.id]
         if (status is ModelInstallStatus.Downloading) {
@@ -265,6 +280,7 @@ class ChatViewModel(
     /** Open the model-manager sheet, refreshing the catalog + on-disk state first. */
     fun openModelManager() {
         _uiState.update { it.copy(showModelSheet = true) }
+        if (!llmSupported) return // informational sheet only — nothing to refresh
         viewModelScope.launch {
             if (catalog.isEmpty()) catalog = runCatching { modelCatalog.all() }.getOrDefault(emptyList())
             runCatching { modelManager.refresh() }
@@ -327,6 +343,8 @@ class ChatViewModel(
      */
     private fun maybeOfferModelDownload() {
         viewModelScope.launch {
+            // No engine on this platform → never offer a download that can't be loaded.
+            if (!providerRegistry.hasLlmBackend()) return@launch
             val model = providerRegistry.selectedChatModel() ?: return@launch
             offeredModel = model
             // Filesystem truth (survives restarts even before statuses are refreshed).
