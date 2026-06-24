@@ -48,16 +48,19 @@ class LlmIntentResolver(
             append("User: ").append(userMessage).append("\nJSON:")
         }
 
-        // One re-ask on unparseable output, then give up gracefully.
-        repeat(MAX_ATTEMPTS) { attempt ->
-            val raw = engine.generateConstrained(prompt, schema)
-            val parsed = parse(raw)
-            if (parsed != null) return toIntent(parsed, actions)
-            if (attempt == MAX_ATTEMPTS - 1) {
-                return ResolvedIntent.Clarification("Sorry, I didn't catch that — could you rephrase?")
-            }
+        val raw = engine.generateConstrained(prompt, schema)
+        val parsed = parse(raw)
+        if (parsed != null) return toIntent(parsed, raw, actions)
+
+        // The model didn't return parseable intent JSON — it most likely just answered in prose.
+        // Surface that as a conversational reply instead of a canned "didn't catch that", so plain
+        // chat works even when the model ignores the JSON instruction.
+        val prose = raw.trim()
+        return if (prose.isNotEmpty()) {
+            ResolvedIntent.Conversation(prose)
+        } else {
+            ResolvedIntent.Clarification("Sorry, I didn't catch that — could you rephrase?")
         }
-        return ResolvedIntent.Clarification("Sorry, I didn't catch that — could you rephrase?")
     }
 
     private fun parse(raw: String): RawIntent? {
@@ -65,9 +68,13 @@ class LlmIntentResolver(
         return runCatching { json.decodeFromString<RawIntent>(jsonText) }.getOrNull()
     }
 
-    private fun toIntent(parsed: RawIntent, actions: List<ActionDescriptor>): ResolvedIntent {
+    private fun toIntent(parsed: RawIntent, raw: String, actions: List<ActionDescriptor>): ResolvedIntent {
         when (parsed.intent?.lowercase()) {
-            "conversation" -> return ResolvedIntent.Conversation(parsed.reply?.ifBlank { null } ?: "How can I help?")
+            "conversation" -> return ResolvedIntent.Conversation(
+                // Prefer the model's reply; if it left it blank, fall back to any prose it wrote
+                // around the JSON, then a generic prompt — never a silent empty bubble.
+                parsed.reply?.ifBlank { null } ?: stripJsonObject(raw).ifBlank { null } ?: "How can I help?",
+            )
             "clarify" -> return ResolvedIntent.Clarification(parsed.reply?.ifBlank { null } ?: "Could you give me a bit more detail?")
         }
 
@@ -91,6 +98,12 @@ class LlmIntentResolver(
 
     private fun clarifyUnresolved(): ResolvedIntent =
         ResolvedIntent.Clarification("I'm not sure which action you mean — could you rephrase?")
+
+    /** Return the model's text with the first JSON object removed — any conversational prose it wrote. */
+    private fun stripJsonObject(raw: String): String {
+        val obj = extractJsonObject(raw) ?: return raw.trim()
+        return raw.replace(obj, "").trim()
+    }
 
     /** Pull the first balanced `{...}` block out of the model's text (it may add prose around JSON). */
     private fun extractJsonObject(raw: String): String? {
@@ -120,7 +133,6 @@ class LlmIntentResolver(
     )
 
     companion object {
-        private const val MAX_ATTEMPTS = 2
         private const val HISTORY_TURNS = 6
         private val DEFAULT_JSON = Json { ignoreUnknownKeys = true; isLenient = true }
     }

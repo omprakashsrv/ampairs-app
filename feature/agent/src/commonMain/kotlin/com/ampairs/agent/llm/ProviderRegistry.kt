@@ -1,5 +1,6 @@
 package com.ampairs.agent.llm
 
+import co.touchlab.kermit.Logger
 import com.ampairs.agent.config.AssistantConfig
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
@@ -80,13 +81,22 @@ class ProviderRegistry(
         val model = selectedChatModel() ?: return null
         return mutex.withLock {
             engine?.let { return it }
-            val backend = BackendSelector.select(backends, model, enginePreference()) ?: return null
+            val backend = BackendSelector.select(backends, model, enginePreference()) ?: run {
+                Logger.w(tag = LOG_TAG) { "No backend supports model '${model.id}' (${model.backendId})" }
+                return null
+            }
             val created = backend.create()
-            val loaded = runCatching { created.load(model) }.isSuccess
-            if (!loaded) {
+            val loadResult = runCatching { created.load(model) }
+            if (loadResult.isFailure) {
+                // Surface why the engine didn't come up (missing/incompatible model file, native init
+                // failure, OOM) — otherwise the assistant silently stays rule-based (actions only).
+                Logger.e(throwable = loadResult.exceptionOrNull(), tag = LOG_TAG) {
+                    "Failed to load on-device model '${model.id}' (${model.fileName}, ${model.backendId})"
+                }
                 cleanupScope.launch { runCatching { created.close() } }
                 return null
             }
+            Logger.i(tag = LOG_TAG) { "On-device LLM ready: ${model.id} (${model.fileName})" }
             registerCloseableOnce()
             engine = created
             created
@@ -104,5 +114,9 @@ class ProviderRegistry(
             engine = null
             if (toClose != null) cleanupScope.launch { runCatching { toClose.close() } }
         }
+    }
+
+    private companion object {
+        const val LOG_TAG = "AgentLlm"
     }
 }

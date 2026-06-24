@@ -29,6 +29,7 @@ kotlin {
                 implementation(projects.feature.customerApi)
                 implementation(projects.feature.productApi)
                 implementation(libs.metro.runtime)
+                implementation(libs.kermit)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.lifecycle.viewmodel)
                 implementation(libs.lifecycle.viewmodel.navigation3)
