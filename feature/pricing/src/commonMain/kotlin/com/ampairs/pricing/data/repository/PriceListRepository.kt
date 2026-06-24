@@ -51,6 +51,8 @@ class PriceListRepository(
     fun observeGeoZones(): Flow<List<GeoZone>> =
         geoZoneDao.getAllGeoZones().map { rows -> rows.map { it.toGeoZone() } }
 
+    suspend fun getGeoZone(id: String): GeoZone? = geoZoneDao.getGeoZoneById(id)?.toGeoZone()
+
     /** Full aggregate (header + items) for editing. */
     suspend fun getPriceList(id: String): PriceListAggregate? {
         val header = priceListDao.getPriceListById(id)?.toPriceList() ?: return null

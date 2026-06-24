@@ -3,9 +3,13 @@ package com.ampairs.navigation.providers
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.pricing.ui.GeoZoneFormRoute
+import com.ampairs.pricing.ui.GeoZoneListRoute
 import com.ampairs.pricing.ui.PriceListFormRoute
 import com.ampairs.pricing.ui.PriceListListRoute
 import com.ampairs.pricing.ui.form.PriceListFormScreen
+import com.ampairs.pricing.ui.geozone.GeoZoneFormScreen
+import com.ampairs.pricing.ui.geozone.GeoZoneListScreen
 import com.ampairs.pricing.ui.list.PriceListListScreen
 
 /**
@@ -20,6 +24,7 @@ fun pricingEntryProvider(
         PriceListListScreen(
             onPriceListClick = { id -> backStack.add(PriceListFormRoute(id)) },
             onAddPriceList = { backStack.add(PriceListFormRoute()) },
+            onManageGeoZones = { backStack.add(GeoZoneListRoute) },
             modifier = Modifier,
         )
     }
@@ -27,6 +32,22 @@ fun pricingEntryProvider(
     is PriceListFormRoute -> NavEntry(key) {
         PriceListFormScreen(
             priceListId = key.priceListId,
+            onSaveSuccess = { backStack.removeLastOrNull() },
+            modifier = Modifier,
+        )
+    }
+
+    is GeoZoneListRoute -> NavEntry(key) {
+        GeoZoneListScreen(
+            onZoneClick = { id -> backStack.add(GeoZoneFormRoute(id)) },
+            onAddZone = { backStack.add(GeoZoneFormRoute()) },
+            modifier = Modifier,
+        )
+    }
+
+    is GeoZoneFormRoute -> NavEntry(key) {
+        GeoZoneFormScreen(
+            geoZoneId = key.geoZoneId,
             onSaveSuccess = { backStack.removeLastOrNull() },
             modifier = Modifier,
         )

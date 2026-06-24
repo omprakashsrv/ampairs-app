@@ -35,8 +35,19 @@
     <string name="pricing_add_tier">Add tier</string>
     <string name="pricing_cd_remove_tier">Remove tier</string>
 
-    <!-- Geo zones (future) -->
+    <!-- Geo zones -->
     <string name="pricing_geo_zones_title">Geo Zones</string>
+    <string name="pricing_manage_geo_zones">Geo Zones</string>
+    <string name="pricing_geo_add">Add Geo Zone</string>
+    <string name="pricing_geo_empty">No geo zones yet</string>
+    <string name="pricing_geo_new_title">New Geo Zone</string>
+    <string name="pricing_geo_edit_title">Edit Geo Zone</string>
+    <string name="pricing_geo_pincodes">Pincodes (comma-separated)</string>
+    <string name="pricing_geo_states">States (comma-separated)</string>
+    <string name="pricing_geo_ranges_label">Pincode ranges</string>
+    <string name="pricing_geo_range_from">From</string>
+    <string name="pricing_geo_range_to">To</string>
+    <string name="pricing_geo_add_range">Add range</string>
     <string name="pricing_cancel">Cancel</string>
     <string name="pricing_save">Save</string>
 </resources>
