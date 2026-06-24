@@ -8,7 +8,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.AVFAudio.AVAudioSession
 import platform.Speech.SFSpeechRecognizer
 import platform.Speech.SFSpeechRecognizerAuthorizationStatus
-import platform.Speech.SFSpeechRecognizerAuthorizationStatusAuthorized
+import platform.Speech.SFSpeechRecognizerAuthorizationStatus.SFSpeechRecognizerAuthorizationStatusAuthorized
 import kotlin.coroutines.resume
 
 /**

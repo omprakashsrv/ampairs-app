@@ -1,6 +1,7 @@
 package com.ampairs.agent.speech
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.coroutines.CompletableDeferred
 import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
@@ -25,6 +26,7 @@ class IosTextToSpeech : TextToSpeech {
     private var current: CompletableDeferred<Unit>? = null
 
     private val handler = object : NSObject(), AVSpeechSynthesizerDelegateProtocol {
+        @ObjCSignatureOverride
         override fun speechSynthesizer(
             synthesizer: AVSpeechSynthesizer,
             didFinishSpeechUtterance: AVSpeechUtterance,
@@ -32,6 +34,7 @@ class IosTextToSpeech : TextToSpeech {
             current?.complete(Unit)
         }
 
+        @ObjCSignatureOverride
         override fun speechSynthesizer(
             synthesizer: AVSpeechSynthesizer,
             didCancelSpeechUtterance: AVSpeechUtterance,
