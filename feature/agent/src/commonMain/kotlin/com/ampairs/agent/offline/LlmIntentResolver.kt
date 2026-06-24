@@ -78,13 +78,16 @@ class LlmIntentResolver(
             "clarify" -> return ResolvedIntent.Clarification(parsed.reply?.ifBlank { null } ?: "Could you give me a bit more detail?")
         }
 
-        // intent == "action" (or unspecified but with an actionType) → validate strictly.
-        val typeName = parsed.actionType ?: return clarifyUnresolved()
-        val module = parsed.moduleName ?: return clarifyUnresolved()
-        val actionType = runCatching { ActionType.valueOf(typeName) }.getOrNull() ?: return clarifyUnresolved()
+        // intent == "action" (or unspecified) → try to build a valid, registered action. If any
+        // piece is missing/unknown, DON'T bounce the user with a canned "which action?" — a small
+        // model frequently emits imperfect JSON for plain chat, so fall back to its own words as a
+        // conversational reply (clarify only when there is genuinely nothing to say).
+        val actionType = parsed.actionType?.let { runCatching { ActionType.valueOf(it) }.getOrNull() }
+            ?: return conversationOrClarify(parsed, raw)
+        val module = parsed.moduleName ?: return conversationOrClarify(parsed, raw)
 
         val descriptor = actions.firstOrNull { it.actionType == actionType && it.moduleName == module }
-            ?: return clarifyUnresolved() // unregistered (actionType, module) pair
+            ?: return conversationOrClarify(parsed, raw) // unregistered (actionType, module) pair
 
         val missing = descriptor.parameters
             .filter { it.required && parsed.params[it.name].isNullOrBlank() }
@@ -94,6 +97,12 @@ class LlmIntentResolver(
         }
 
         return ResolvedIntent.Action(AgentAction(actionType, module, parsed.params))
+    }
+
+    /** No valid action could be built: prefer the model's reply/prose as chat, else a gentle clarify. */
+    private fun conversationOrClarify(parsed: RawIntent, raw: String): ResolvedIntent {
+        val reply = parsed.reply?.ifBlank { null } ?: stripJsonObject(raw).ifBlank { null }
+        return if (reply != null) ResolvedIntent.Conversation(reply) else clarifyUnresolved()
     }
 
     private fun clarifyUnresolved(): ResolvedIntent =
