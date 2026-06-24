@@ -181,7 +181,12 @@ class LiteRtLmEngine(
         convo.sendMessageAsync(
             Contents.of(listOf(Content.Text(userMessage))),
             object : MessageCallback {
-                override fun onMessage(message: Message) { trySend(AgentStreamEvent.TextDelta(message.toString())) }
+                override fun onMessage(message: Message) {
+                    val thought = message.channels["thought"]
+                    if (!thought.isNullOrBlank()) trySend(AgentStreamEvent.ThoughtDelta(thought))
+                    val text = message.toString()
+                    if (text.isNotEmpty()) trySend(AgentStreamEvent.TextDelta(text))
+                }
                 override fun onDone() {
                     Logger.i(tag = LOG_TAG) { "Chat stream done in ${System.currentTimeMillis() - started}ms" }
                     trySend(AgentStreamEvent.Done)

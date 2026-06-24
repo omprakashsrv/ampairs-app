@@ -13,6 +13,9 @@ sealed interface AgentStreamEvent {
     /** An incremental chunk of the assistant's reply text, to append to the live bubble. */
     data class TextDelta(val text: String) : AgentStreamEvent
 
+    /** An incremental chunk of the model's "thinking" channel, shown transiently while it reasons. */
+    data class ThoughtDelta(val text: String) : AgentStreamEvent
+
     /** A tool call that resolved a money/destructive action but did NOT persist — needs confirm. */
     data class ActionProposed(val action: AgentAction, val summary: String, val amount: Double?) : AgentStreamEvent
 

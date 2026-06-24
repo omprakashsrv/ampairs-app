@@ -36,6 +36,7 @@ import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,6 +69,8 @@ data class ChatUiState(
     val playingVoiceNoteId: String? = null,
     /** First-use on-device model download prompt (consent → progress → failure); null when nothing to show. */
     val llmDownloadPrompt: LlmDownloadPrompt? = null,
+    /** The model's transient "thinking" text while it reasons (tool-calling stream); null when none. */
+    val streamingThought: String? = null,
     /** Status chip shown in the chat top bar: which model is active and what state it's in. */
     val modelBar: ModelBarState = ModelBarState(),
     /** Catalog models for the model-manager sheet (download / switch / delete). */
@@ -162,6 +165,9 @@ class ChatViewModel(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private var voiceJob: Job? = null
+
+    /** The in-flight streaming chat turn, cancellable via [stopGeneration]. */
+    private var streamJob: Job? = null
 
     /** The model this device can run, resolved once on open; null when the device can't run an LLM. */
     private var offeredModel: ModelDescriptor? = null
@@ -446,7 +452,8 @@ class ChatViewModel(
             )
         }
 
-        viewModelScope.launch {
+        streamJob?.cancel()
+        streamJob = viewModelScope.launch {
             // Prefer the native tool-calling streaming path when a model with tools is loaded; it
             // types the reply out live and dispatches actions via tools. Fall back to the rule-based
             // orchestrator otherwise (no model / other platforms) or if streaming fails.
@@ -457,6 +464,13 @@ class ChatViewModel(
                 processWithOrchestrator(text)
             }
         }
+    }
+
+    /** Stop an in-flight streaming reply: cancels the flow, whose awaitClose calls cancelProcess(). */
+    fun stopGeneration() {
+        streamJob?.cancel()
+        streamJob = null
+        _uiState.update { it.copy(isProcessing = false, streamingThought = null) }
     }
 
     private suspend fun processWithOrchestrator(text: String) {
@@ -488,11 +502,17 @@ class ChatViewModel(
 
         val streamId = UidGenerator.generateUid("MSG")
         val buffer = StringBuilder()
+        val thought = StringBuilder()
         var bubbleAdded = false
         var producedOutput = false
         try {
             engine.chatStream(text, history, actionRegistry::dispatch).collect { event ->
                 when (event) {
+                    is AgentStreamEvent.ThoughtDelta -> {
+                        thought.append(event.text)
+                        _uiState.update { it.copy(streamingThought = thought.toString()) }
+                    }
+
                     is AgentStreamEvent.TextDelta -> {
                         buffer.append(event.text)
                         producedOutput = true
@@ -500,7 +520,7 @@ class ChatViewModel(
                             bubbleAdded = true
                             _uiState.update {
                                 it.copy(
-                                    isProcessing = false,
+                                    streamingThought = null, // real answer started — drop the thinking line
                                     messages = it.messages + ChatMessage(id = streamId, text = buffer.toString(), isFromUser = false),
                                 )
                             }
@@ -514,7 +534,7 @@ class ChatViewModel(
 
                     is AgentStreamEvent.ActionProposed -> {
                         producedOutput = true
-                        _uiState.update { it.copy(pendingConfirmation = event.action, isProcessing = false) }
+                        _uiState.update { it.copy(pendingConfirmation = event.action, streamingThought = null) }
                     }
 
                     is AgentStreamEvent.ActionExecuted -> {
@@ -529,7 +549,7 @@ class ChatViewModel(
                         )
                         _uiState.update {
                             it.copy(
-                                isProcessing = false,
+                                streamingThought = null,
                                 messages = it.messages + ChatMessage(
                                     id = UidGenerator.generateUid("MSG"),
                                     text = event.summary,
@@ -542,19 +562,25 @@ class ChatViewModel(
                     }
 
                     AgentStreamEvent.Done -> {
-                        _uiState.update { it.copy(isProcessing = false) }
+                        _uiState.update { it.copy(isProcessing = false, streamingThought = null) }
                         if (bubbleAdded) {
                             _uiState.value.messages.firstOrNull { it.id == streamId }?.let { speakIfEnabled(it) }
                         }
                     }
 
                     is AgentStreamEvent.Failed -> {
+                        _uiState.update { it.copy(streamingThought = null) }
                         if (!producedOutput) processWithOrchestrator(text) else _uiState.update { it.copy(isProcessing = false) }
                     }
                 }
             }
             if (!producedOutput) processWithOrchestrator(text) // model said nothing → rule-based reply
+        } catch (c: CancellationException) {
+            // User tapped Stop (or the VM was cleared) — keep any partial reply, no error, no fallback.
+            _uiState.update { it.copy(streamingThought = null) }
+            throw c
         } catch (e: Exception) {
+            _uiState.update { it.copy(streamingThought = null) }
             if (!producedOutput) processWithOrchestrator(text) else appendError(errorText(e))
         }
     }
@@ -754,8 +780,10 @@ class ChatViewModel(
     }
 
     fun clearChat() {
+        streamJob?.cancel()
+        streamJob = null
         voiceNoteController.stopPlayback()
-        _uiState.update { it.copy(messages = emptyList()) }
+        _uiState.update { it.copy(messages = emptyList(), isProcessing = false, streamingThought = null) }
     }
 
     private companion object {

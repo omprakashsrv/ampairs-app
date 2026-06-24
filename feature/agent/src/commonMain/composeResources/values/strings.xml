@@ -7,6 +7,7 @@
     <string name="agent_thinking">Thinking…</string>
     <string name="agent_input_placeholder">Type a message…</string>
     <string name="agent_send_cd">Send</string>
+    <string name="agent_stop_cd">Stop generating</string>
     <string name="agent_confirm_prompt">Confirm this action?</string>
     <string name="agent_confirm">Confirm</string>
     <string name="agent_cancel">Cancel</string>

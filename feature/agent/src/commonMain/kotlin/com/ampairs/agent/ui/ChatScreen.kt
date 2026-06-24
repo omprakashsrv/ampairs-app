@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
@@ -100,6 +101,7 @@ import ampairsapp.feature.agent.generated.resources.agent_model_status_not_insta
 import ampairsapp.feature.agent.generated.resources.agent_model_use
 import ampairsapp.feature.agent.generated.resources.agent_mute_cd
 import ampairsapp.feature.agent.generated.resources.agent_send_cd
+import ampairsapp.feature.agent.generated.resources.agent_stop_cd
 import ampairsapp.feature.agent.generated.resources.agent_unmute_cd
 import ampairsapp.feature.agent.generated.resources.agent_voice_note_cancel_cd
 import ampairsapp.feature.agent.generated.resources.agent_voice_note_record_cd
@@ -189,8 +191,11 @@ fun ChatScreen(
                         )
                     }
 
-                    // Typing indicator
-                    if (uiState.isProcessing) {
+                    // Typing / thinking indicator: while the model reasons (thought) or before its
+                    // reply bubble has started (last message still the user's). Hidden once text streams.
+                    val showThinking = uiState.streamingThought != null ||
+                        (uiState.isProcessing && (uiState.messages.lastOrNull()?.isFromUser != false))
+                    if (showThinking) {
                         item {
                             Row(
                                 modifier = Modifier.padding(vertical = 8.dp),
@@ -199,7 +204,8 @@ fun ChatScreen(
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                 Text(
-                                    text = stringResource(Res.string.agent_thinking),
+                                    text = uiState.streamingThought?.takeIf { it.isNotBlank() }
+                                        ?: stringResource(Res.string.agent_thinking),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.outline,
                                 )
@@ -250,6 +256,7 @@ fun ChatScreen(
             onTextChange = viewModel::updateInputText,
             onSend = viewModel::sendMessage,
             isProcessing = uiState.isProcessing,
+            onStop = viewModel::stopGeneration,
             isListening = uiState.isListening,
             onVoiceClick = { viewModel.toggleVoiceInput() },
             isRecordingVoiceNote = uiState.isRecordingVoiceNote,
@@ -602,6 +609,7 @@ private fun ChatInputBar(
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
     isProcessing: Boolean,
+    onStop: () -> Unit,
     isListening: Boolean,
     onVoiceClick: () -> Unit,
     isRecordingVoiceNote: Boolean,
@@ -674,7 +682,22 @@ private fun ChatInputBar(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                if (text.isNotBlank() && !isProcessing) {
+                if (isProcessing) {
+                    // While the assistant is generating, the action button stops the stream.
+                    IconButton(
+                        onClick = onStop,
+                        modifier = Modifier.size(40.dp),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
+                    ) {
+                        Icon(
+                            Icons.Default.Stop,
+                            contentDescription = stringResource(Res.string.agent_stop_cd),
+                        )
+                    }
+                } else if (text.isNotBlank()) {
                     IconButton(
                         onClick = onSend,
                         modifier = Modifier.size(40.dp),
