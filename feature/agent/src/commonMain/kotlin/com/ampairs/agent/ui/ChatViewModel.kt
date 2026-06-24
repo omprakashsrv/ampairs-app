@@ -9,10 +9,13 @@ import ampairsapp.feature.agent.generated.resources.agent_mic_permission_denied
 import ampairsapp.feature.agent.generated.resources.agent_speech_unavailable
 import ampairsapp.feature.agent.generated.resources.agent_voice_note_empty
 import ampairsapp.feature.agent.generated.resources.agent_voice_note_failed
+import com.ampairs.agent.core.ActionRegistry
 import com.ampairs.agent.core.ActionResultSummary
 import com.ampairs.agent.core.AgentOrchestrator
+import com.ampairs.agent.core.AgentStreamEvent
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.AgentResponse
+import com.ampairs.agent.llm.LlmEngine
 import com.ampairs.agent.llm.ModelCatalogProvider
 import com.ampairs.agent.llm.ModelDescriptor
 import com.ampairs.agent.llm.ModelInstallStatus
@@ -38,6 +41,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -151,6 +155,7 @@ class ChatViewModel(
     private val modelManager: ModelManager,
     private val modelCatalog: ModelCatalogProvider,
     private val appPreferences: AppPreferencesDataStore,
+    private val actionRegistry: ActionRegistry,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -442,17 +447,115 @@ class ChatViewModel(
         }
 
         viewModelScope.launch {
-            try {
-                appendAgentResponse(
-                    orchestrator.processMessage(
-                        userMessage = text,
-                        conversationHistory = _uiState.value.messages,
-                        isOnline = _uiState.value.isOnline,
-                    )
-                )
-            } catch (e: Exception) {
-                appendError(errorText(e))
+            // Prefer the native tool-calling streaming path when a model with tools is loaded; it
+            // types the reply out live and dispatches actions via tools. Fall back to the rule-based
+            // orchestrator otherwise (no model / other platforms) or if streaming fails.
+            val engine = runCatching { providerRegistry.engineOrNull() }.getOrNull()
+            if (engine != null && engine.supportsToolCalling) {
+                streamChat(text, engine)
+            } else {
+                processWithOrchestrator(text)
             }
+        }
+    }
+
+    private suspend fun processWithOrchestrator(text: String) {
+        try {
+            appendAgentResponse(
+                orchestrator.processMessage(
+                    userMessage = text,
+                    conversationHistory = _uiState.value.messages,
+                    isOnline = _uiState.value.isOnline,
+                )
+            )
+        } catch (e: Exception) {
+            appendError(errorText(e))
+        }
+    }
+
+    /**
+     * Stream a tool-calling turn (Gallery-style): type the model's reply into a live bubble and route
+     * tool events — [AgentStreamEvent.ActionProposed] to the confirm bar (money/destructive, FR-006),
+     * [AgentStreamEvent.ActionExecuted] to an action-result message. Falls back to the rule-based
+     * orchestrator if the model produced nothing usable or the stream errored.
+     */
+    private suspend fun streamChat(text: String, engine: LlmEngine) {
+        val history = _uiState.value.messages
+            .dropLast(1) // exclude the user message we just added
+            .filter { it.text.isNotBlank() && !it.isVoiceNote }
+            .takeLast(HISTORY_TURNS)
+            .map { (if (it.isFromUser) "User: " else "Assistant: ") + it.text }
+
+        val streamId = UidGenerator.generateUid("MSG")
+        val buffer = StringBuilder()
+        var bubbleAdded = false
+        var producedOutput = false
+        try {
+            engine.chatStream(text, history, actionRegistry::dispatch).collect { event ->
+                when (event) {
+                    is AgentStreamEvent.TextDelta -> {
+                        buffer.append(event.text)
+                        producedOutput = true
+                        if (!bubbleAdded) {
+                            bubbleAdded = true
+                            _uiState.update {
+                                it.copy(
+                                    isProcessing = false,
+                                    messages = it.messages + ChatMessage(id = streamId, text = buffer.toString(), isFromUser = false),
+                                )
+                            }
+                        } else {
+                            val current = buffer.toString()
+                            _uiState.update { st ->
+                                st.copy(messages = st.messages.map { if (it.id == streamId) it.copy(text = current) else it })
+                            }
+                        }
+                    }
+
+                    is AgentStreamEvent.ActionProposed -> {
+                        producedOutput = true
+                        _uiState.update { it.copy(pendingConfirmation = event.action, isProcessing = false) }
+                    }
+
+                    is AgentStreamEvent.ActionExecuted -> {
+                        producedOutput = true
+                        val success = event.result as? ActionResult.Success
+                        val summary = ActionResultSummary(
+                            actionType = event.action.actionType.name,
+                            moduleName = event.action.moduleName,
+                            success = event.result is ActionResult.Success,
+                            navigationRouteDescription = success?.navigationTarget?.routeDescription,
+                            navigationRouteData = success?.navigationTarget?.routeData,
+                        )
+                        _uiState.update {
+                            it.copy(
+                                isProcessing = false,
+                                messages = it.messages + ChatMessage(
+                                    id = UidGenerator.generateUid("MSG"),
+                                    text = event.summary,
+                                    isFromUser = false,
+                                    actionResult = summary,
+                                    amount = success?.amount,
+                                ),
+                            )
+                        }
+                    }
+
+                    AgentStreamEvent.Done -> {
+                        _uiState.update { it.copy(isProcessing = false) }
+                        if (bubbleAdded) {
+                            _uiState.value.messages.firstOrNull { it.id == streamId }?.let { speakIfEnabled(it) }
+                        }
+                    }
+
+                    is AgentStreamEvent.Failed -> {
+                        if (!producedOutput) processWithOrchestrator(text) else _uiState.update { it.copy(isProcessing = false) }
+                    }
+                }
+            }
+            if (!producedOutput) processWithOrchestrator(text) // model said nothing → rule-based reply
+        } catch (e: Exception) {
+            if (!producedOutput) processWithOrchestrator(text) else appendError(errorText(e))
         }
     }
 
@@ -653,5 +756,10 @@ class ChatViewModel(
     fun clearChat() {
         voiceNoteController.stopPlayback()
         _uiState.update { it.copy(messages = emptyList()) }
+    }
+
+    private companion object {
+        /** Recent turns fed to the tool-calling chat as short context (the conversation is stateless). */
+        const val HISTORY_TURNS = 6
     }
 }
