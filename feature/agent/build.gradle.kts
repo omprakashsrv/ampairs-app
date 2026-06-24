@@ -26,6 +26,8 @@ kotlin {
             dependencies {
                 implementation(projects.data.common)
                 implementation(projects.feature.authApi)
+                implementation(projects.feature.customerApi)
+                implementation(projects.feature.productApi)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.lifecycle.viewmodel)

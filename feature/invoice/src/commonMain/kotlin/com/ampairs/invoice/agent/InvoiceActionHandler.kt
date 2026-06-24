@@ -10,6 +10,7 @@ import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
 import com.ampairs.common.agent.ActionHandlerKey
 import com.ampairs.common.agent.CONFIRMED_PARAM
+import com.ampairs.common.agent.DraftDocumentStore
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import dev.zacsweers.metro.ContributesIntoMap
@@ -40,6 +41,7 @@ class InvoiceActionHandler(
     private val invoiceRepository: InvoiceRepository,
     private val taxRateProvider: TaxRateProvider,
     private val storeSettings: StoreSettingsProvider,
+    private val draft: DraftDocumentStore,
 ) : ActionHandler {
 
     override val moduleName = "invoice"
@@ -66,8 +68,88 @@ class InvoiceActionHandler(
      * DRAFT status means no receivable is posted until the user finalizes. Multi-item commands arrive
      * with the on-device LLM resolver (Phase 2).
      */
-    private suspend fun createInvoice(params: Map<String, String>): ActionResult =
-        if (params[CONFIRMED_PARAM] == "true") persistInvoice(params) else proposeInvoice(params)
+    private suspend fun createInvoice(params: Map<String, String>): ActionResult {
+        val confirmed = params[CONFIRMED_PARAM] == "true"
+        // Cart mode: the conversational draft (DraftDocumentStore) holds the items — finalize from it.
+        val cartMode = params["fromCart"] == "true" || (!confirmed && !draft.isEmpty)
+        return when {
+            cartMode && confirmed -> persistFromCart(params)
+            cartMode -> proposeFromCart(params)
+            confirmed -> persistInvoice(params)
+            else -> proposeInvoice(params)
+        }
+    }
+
+    /** Propose an invoice built from the multi-item conversational cart (one confirmation, full total). */
+    private suspend fun proposeFromCart(params: Map<String, String>): ActionResult {
+        if (draft.isEmpty) {
+            return ActionResult.NeedsInput("Your cart is empty. Add items like \"add 2 widgets\" first.", listOf("product"))
+        }
+        val customerId = draft.customerId ?: resolveCustomerId(params)
+            ?: return ActionResult.NeedsInput("Who is the bill for? Say \"customer NAME\".", listOf("customer"))
+        val customer = invoiceRepository.customerDataService.getById(customerId)
+            ?: return ActionResult.Error("Couldn't load the customer — please try again.")
+        val items = buildItemsFromCart()
+        if (items.isEmpty()) return ActionResult.Error("Couldn't resolve the cart items — please try again.")
+
+        val previewDraft = buildDraft(customer, items)
+        applyTaxes(previewDraft)
+        return ActionResult.Confirm(
+            summary = "Create a draft invoice for ${customer.name} with ${items.size} item(s) (${formatQty(draft.totalQuantity)} unit(s))?",
+            pendingAction = AgentAction(
+                ActionType.CREATE,
+                moduleName,
+                mapOf(CONFIRMED_PARAM to "true", "fromCart" to "true", "customerId" to customerId),
+            ),
+            amount = previewDraft.totalCost,
+        )
+    }
+
+    private suspend fun persistFromCart(params: Map<String, String>): ActionResult {
+        if (draft.isEmpty) return ActionResult.Error("The cart is empty — nothing to create.")
+        val customerId = params["customerId"] ?: draft.customerId
+            ?: return ActionResult.Error("Lost track of the customer — please try again.")
+        val customer = invoiceRepository.customerDataService.getById(customerId)
+            ?: return ActionResult.Error("Couldn't load the customer — please try again.")
+        val items = buildItemsFromCart()
+        if (items.isEmpty()) return ActionResult.Error("Couldn't resolve the cart items — please try again.")
+
+        val invoice = buildDraft(customer, items)
+        applyTaxes(invoice)
+        return try {
+            invoiceRepository.saveInvoice(invoice)
+            draft.clear()
+            ActionResult.Success(
+                summary = "Draft invoice created for ${customer.name} with ${items.size} item(s). Open it to review and finalize.",
+                navigationTarget = NavigationTarget(
+                    routeDescription = "InvoiceView",
+                    routeData = mapOf("invoiceId" to invoice.id),
+                ),
+                amount = invoice.totalCost,
+            )
+        } catch (e: Exception) {
+            ActionResult.Error("Couldn't create the invoice: ${e.message}")
+        }
+    }
+
+    /** Resolve each cart line to a current product and build invoice items (honoring price overrides). */
+    private suspend fun buildItemsFromCart(): List<InvoiceItem> = draft.lines.mapNotNull { line ->
+        val product = invoiceRepository.productDataService.getById(line.productId) ?: return@mapNotNull null
+        InvoiceItem(product).apply {
+            quantity = line.quantity
+            price = line.unitPrice
+            priceOverridden = line.unitPrice != product.sellingPrice
+        }
+    }
+
+    /** Resolve a customer id from a free-text name param (single/exact match), or null when ambiguous. */
+    private suspend fun resolveCustomerId(params: Map<String, String>): String? {
+        val name = (params["customer"] ?: params["customerName"] ?: params["name"])?.trim()
+        if (name.isNullOrBlank()) return null
+        val candidates = invoiceRepository.customerDataService.listCustomers(name)
+        return candidates.firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
+            ?: candidates.singleOrNull()?.id
+    }
 
     private suspend fun proposeInvoice(params: Map<String, String>): ActionResult {
         val customerName = (params["customer"] ?: params["customerName"] ?: params["name"])?.trim()
@@ -109,8 +191,8 @@ class InvoiceActionHandler(
         }
 
         // Build the draft in memory only (to compute the total) — do NOT persist before confirmation.
-        val draft = buildDraft(customer, lineItem)
-        applyTaxes(draft)
+        val previewDraft = buildDraft(customer, listOfNotNull(lineItem))
+        applyTaxes(previewDraft)
         val linePart = lineItem?.let { " with ${formatQty(it.quantity)} × ${it.product?.name ?: "item"}" } ?: ""
         val pendingParams = buildMap {
             put(CONFIRMED_PARAM, "true")
@@ -123,7 +205,7 @@ class InvoiceActionHandler(
         return ActionResult.Confirm(
             summary = "Create a draft invoice for ${customer.name}$linePart?",
             pendingAction = AgentAction(ActionType.CREATE, moduleName, pendingParams),
-            amount = draft.totalCost, // UI renders the total via formatMoney(LocalAppLocale.current)
+            amount = previewDraft.totalCost, // UI renders the total via formatMoney(LocalAppLocale.current)
         )
     }
 
@@ -140,7 +222,7 @@ class InvoiceActionHandler(
             InvoiceItem(product).apply { quantity = qty }
         }
 
-        val invoice = buildDraft(customer, lineItem)
+        val invoice = buildDraft(customer, listOfNotNull(lineItem))
         applyTaxes(invoice)
         return try {
             invoiceRepository.saveInvoice(invoice)
@@ -158,11 +240,11 @@ class InvoiceActionHandler(
         }
     }
 
-    private fun buildDraft(customer: Customer, lineItem: InvoiceItem?): Invoice = Invoice().apply {
+    private fun buildDraft(customer: Customer, lineItems: List<InvoiceItem>): Invoice = Invoice().apply {
         id = UidGenerator.generateUid(INVOICE_PREFIX)
         this.customer = customer
         status = InvoiceStatus.DRAFT
-        items = mutableListOf<InvoiceItem>().apply { lineItem?.let { add(it) } }
+        items = lineItems.toMutableList()
     }
 
     /**
@@ -282,11 +364,11 @@ class InvoiceActionHandler(
             ActionDescriptor(
                 actionType = ActionType.CREATE,
                 moduleName = "invoice",
-                description = "Create a draft invoice/bill for a customer, optionally with one line item",
+                description = "Finalize a draft invoice/bill. Uses the conversational cart (items added via cart.ADD_ITEM) when present; otherwise creates one with an optional single line item. Customer comes from the cart or the 'customer' param.",
                 parameters = listOf(
-                    ActionParameter("customer", ParameterType.STRING, required = true, "Customer name to bill"),
-                    ActionParameter("product", ParameterType.STRING, required = false, "Product name for a line item"),
-                    ActionParameter("quantity", ParameterType.NUMBER, required = false, "Quantity for the line item"),
+                    ActionParameter("customer", ParameterType.STRING, required = false, "Customer name to bill (optional if already set on the cart)"),
+                    ActionParameter("product", ParameterType.STRING, required = false, "Product name for a single line item (when not using the cart)"),
+                    ActionParameter("quantity", ParameterType.NUMBER, required = false, "Quantity for the single line item"),
                 ),
             ),
             ActionDescriptor(

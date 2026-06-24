@@ -14,4 +14,10 @@ enum class ActionType {
     SYNC,
     CALCULATE_TAX,
     GET_INVENTORY,
+
+    /** Append a line item to the conversational document draft (cart). */
+    ADD_ITEM,
+
+    /** Set the customer on the conversational document draft (cart). */
+    SET_CUSTOMER,
 }
