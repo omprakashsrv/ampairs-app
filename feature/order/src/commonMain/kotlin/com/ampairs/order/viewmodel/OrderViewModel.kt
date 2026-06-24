@@ -32,6 +32,7 @@ import com.ampairs.order.domain.asDatabaseModel
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.data.PriceResolver
+import com.ampairs.product.data.PriceResolutionInput
 import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.store.domain.StoreSettingsProvider
@@ -362,13 +363,22 @@ class OrderViewModel(
         val item = orderItems.find { it.id == lineId } ?: return
         viewModelScope.launch(DispatcherProvider.io) {
             val product = productDataService.getById(productId) ?: return@launch
-            // Resolve the line price through the PriceResolver seam (spec 009). The default
-            // passthrough returns product.sellingPrice unchanged — no behavior change.
+            // Resolve the line price through the PriceResolver seam (spec 009), supplying the order's
+            // customer + channel context. Walk-in => RETAIL, a named customer => WHOLESALE. Falls back
+            // to product.sellingPrice when no price list matches.
+            val orderCustomer = order.customer
             val resolvedPrice = priceResolver.resolveUnitPrice(
-                productId = product.id,
-                variantSku = null,
-                quantity = item.quantity,
-                fallbackUnitPrice = product.sellingPrice,
+                PriceResolutionInput(
+                    productId = product.id,
+                    variantSku = null,
+                    quantity = item.quantity,
+                    fallbackUnitPrice = product.sellingPrice,
+                    channel = if (customerWalkIn || orderCustomer == null) "RETAIL" else "WHOLESALE",
+                    customerId = orderCustomer?.uid,
+                    customerGroupId = orderCustomer?.customerGroup,
+                    customerType = orderCustomer?.customerType,
+                    pincode = orderCustomer?.pincode,
+                ),
             )
             item.product = product
             item.productId = product.id
