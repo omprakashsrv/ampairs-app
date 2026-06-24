@@ -82,7 +82,9 @@ class DefaultModelManager(
 
     override fun localPathOrNull(model: ModelDescriptor): String? {
         val size = sizeOf(filePath(model)) ?: return null
-        return if (model.sizeBytes <= 0 || size == model.sizeBytes) filePath(model).toString() else null
+        // A file only reaches its final path after finalizeDownload validated it (against the
+        // server Content-Length), so presence ⇒ installed. Don't re-check the catalog estimate here.
+        return if (size > 0L) filePath(model).toString() else null
     }
 
     override suspend fun refresh() = withContext(DispatcherProvider.io) {
@@ -90,7 +92,7 @@ class DefaultModelManager(
         for (model in ModelCatalog.all) {
             if (updated[model.id] is ModelInstallStatus.Downloading) continue // don't clobber live progress
             val size = sizeOf(filePath(model))
-            updated[model.id] = if (size != null && (model.sizeBytes <= 0 || size == model.sizeBytes)) {
+            updated[model.id] = if (size != null && size > 0L) {
                 ModelInstallStatus.Installed(size)
             } else {
                 ModelInstallStatus.NotInstalled
@@ -153,8 +155,11 @@ class DefaultModelManager(
     private suspend fun runDownload(model: ModelDescriptor, authToken: String?) {
         val part = partPath(model)
         val alreadyHave = sizeOf(part) ?: 0L
-        val wantResume = alreadyHave in 1 until (if (model.sizeBytes > 0) model.sizeBytes else Long.MAX_VALUE)
+        val wantResume = alreadyHave > 0L
 
+        // The proxy's Content-Length is the authoritative full file size; the catalog sizeBytes is
+        // only an estimate (per agent/CLAUDE.md), so we validate against this, not the estimate.
+        var expectedTotal: Long? = null
         client.prepareGet(model.downloadUrl) {
             val bearer = authToken ?: tokenRepository.getAccessToken()
             bearer?.let { header(HttpHeaders.Authorization, "Bearer $it") }
@@ -172,10 +177,9 @@ class DefaultModelManager(
             if (!resumed) SystemFileSystem.delete(part, mustExist = false)
 
             var downloaded = if (resumed) alreadyHave else 0L
-            val total = when {
-                model.sizeBytes > 0 -> model.sizeBytes
-                else -> response.contentLength()?.let { it + downloaded } ?: -1L
-            }
+            // On a 206 the Content-Length is the remaining bytes, so add what we already have.
+            expectedTotal = response.contentLength()?.let { if (resumed) it + alreadyHave else it }
+            val total = expectedTotal ?: model.sizeBytes.takeIf { it > 0 } ?: -1L
             var lastEmitted = downloaded
 
             val channel: ByteReadChannel = response.bodyAsChannel()
@@ -196,12 +200,19 @@ class DefaultModelManager(
             }
         }
 
-        finalizeDownload(model, part)
+        finalizeDownload(model, part, expectedTotal)
     }
 
-    private fun finalizeDownload(model: ModelDescriptor, part: Path) {
+    private fun finalizeDownload(model: ModelDescriptor, part: Path, expectedTotal: Long?) {
         val size = sizeOf(part) ?: 0L
-        if (model.sizeBytes > 0 && size != model.sizeBytes) {
+        if (size <= 0L) {
+            SystemFileSystem.delete(part, mustExist = false)
+            set(model.id, ModelInstallStatus.Failed("Download produced no data"))
+            return
+        }
+        // Validate against the server's authoritative Content-Length when known; never hard-fail on
+        // the catalog sizeBytes estimate (which can legitimately differ from the real file).
+        if (expectedTotal != null && expectedTotal > 0 && size != expectedTotal) {
             SystemFileSystem.delete(part, mustExist = false)
             set(model.id, ModelInstallStatus.Failed("Downloaded size does not match expected size"))
             return
