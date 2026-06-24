@@ -30,15 +30,4 @@
     <string name="agent_voice_note_label">Voice note</string>
     <string name="agent_voice_note_failed">Couldn\'t start recording.</string>
     <string name="agent_voice_note_empty">Nothing recorded.</string>
-    <!-- On-device AI model management -->
-    <string name="agent_models_title">AI models</string>
-    <string name="agent_models_back_cd">Back</string>
-    <string name="agent_model_download">Download</string>
-    <string name="agent_model_cancel">Cancel</string>
-    <string name="agent_model_delete">Delete</string>
-    <string name="agent_model_retry">Retry</string>
-    <string name="agent_model_status_installed">Downloaded</string>
-    <string name="agent_model_status_not_installed">Not downloaded</string>
-    <string name="agent_model_status_downloading">Downloading…</string>
-    <string name="agent_manage_models_cd">Manage AI models</string>
 </resources>

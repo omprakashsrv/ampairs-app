@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.agent.ui.ChatScreen
-import com.ampairs.agent.ui.ModelManagerScreen
 import com.ampairs.customer.ui.CustomerDetailsRoute
 import Route
 
@@ -37,13 +36,6 @@ fun agentEntryProvider(
                     }
                 }
             },
-            onManageModels = { backStack.add(Route.AgentModels) },
-            modifier = Modifier,
-        )
-    }
-    is Route.AgentModels -> NavEntry(key) {
-        ModelManagerScreen(
-            onNavigateBack = { backStack.removeLastOrNull() },
             modifier = Modifier,
         )
     }
