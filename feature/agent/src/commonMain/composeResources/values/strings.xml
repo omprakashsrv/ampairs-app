@@ -62,4 +62,17 @@
     <string name="agent_model_status_failed">Download failed</string>
     <string name="agent_model_status_downloading">Downloading %1$d%%</string>
     <string name="agent_model_role_size">%1$s · %2$s</string>
+    <!-- Full-screen hands-free voice conversation mode -->
+    <string name="agent_voice_mode_cd">Start voice conversation</string>
+    <string name="agent_voice_unavailable">Voice conversation isn\'t available on this device.</string>
+    <string name="agent_voice_connecting">Getting ready…</string>
+    <string name="agent_voice_listening">Listening…</string>
+    <string name="agent_voice_listening_hint">Speak now</string>
+    <string name="agent_voice_thinking">Thinking…</string>
+    <string name="agent_voice_speaking">Speaking…</string>
+    <string name="agent_voice_paused">Paused</string>
+    <string name="agent_voice_pause_cd">Pause</string>
+    <string name="agent_voice_resume_cd">Resume</string>
+    <string name="agent_voice_exit_cd">Exit voice mode</string>
+    <string name="agent_voice_title">Voice conversation</string>
 </resources>

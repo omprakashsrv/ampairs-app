@@ -6,8 +6,8 @@ import ampairsapp.feature.agent.generated.resources.Res
 import ampairsapp.feature.agent.generated.resources.agent_cancelled
 import ampairsapp.feature.agent.generated.resources.agent_error_generic
 import ampairsapp.feature.agent.generated.resources.agent_mic_permission_denied
-import ampairsapp.feature.agent.generated.resources.agent_speech_unavailable
 import ampairsapp.feature.agent.generated.resources.agent_voice_note_empty
+import ampairsapp.feature.agent.generated.resources.agent_voice_unavailable
 import ampairsapp.feature.agent.generated.resources.agent_voice_note_failed
 import com.ampairs.agent.core.ActionRegistry
 import com.ampairs.agent.core.ActionResultSummary
@@ -38,6 +38,8 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,16 +56,13 @@ data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val inputText: String = "",
     val isProcessing: Boolean = false,
-    val isListening: Boolean = false,
     val isOnline: Boolean = true,
     val error: String? = null,
     /** A money/destructive action awaiting explicit confirm/cancel before it persists (FR-006). */
     val pendingConfirmation: AgentAction? = null,
-    /** Live interim transcript shown while listening (FR-008). */
-    val liveTranscript: String = "",
     /** When true, assistant replies are not read aloud (TTS, FR-009). */
     val isTtsMuted: Boolean = false,
-    /** True while a voice note is being recorded (distinct from STT [isListening]). */
+    /** True while a voice note is being recorded. */
     val isRecordingVoiceNote: Boolean = false,
     /** Id of the voice-note message currently playing, or null. */
     val playingVoiceNoteId: String? = null,
@@ -79,7 +78,43 @@ data class ChatUiState(
     val showModelSheet: Boolean = false,
     /** False when this platform has no on-device LLM engine (Desktop/iOS today) — manager is informational only. */
     val llmSupported: Boolean = true,
+    /** Non-null while the full-screen hands-free voice conversation is active (FR-008/009); null otherwise. */
+    val voiceMode: VoiceConversationState? = null,
 )
+
+/** State of the hands-free voice conversation overlay: the loop phase plus what's on screen now. */
+data class VoiceConversationState(
+    val phase: VoicePhase = VoicePhase.Connecting,
+    /** Live interim transcript while [VoicePhase.Listening]. */
+    val partialTranscript: String = "",
+    /** The last committed user utterance (shown briefly while thinking/speaking). */
+    val lastUserText: String = "",
+    /** The assistant reply currently being / just spoken. */
+    val lastReply: String = "",
+    /** Set when the loop hit an unrecoverable error (no STT/TTS, mic denied). */
+    val error: String? = null,
+)
+
+/** Phase of the hands-free voice loop: listen → think → speak → listen, with manual pause. */
+enum class VoicePhase {
+    /** Acquiring mic permission / warming up before the first listen. */
+    Connecting,
+
+    /** Microphone open, transcribing the user. */
+    Listening,
+
+    /** Utterance committed; the assistant is producing a reply. */
+    Thinking,
+
+    /** Reading the reply aloud; the mic re-opens when it finishes. */
+    Speaking,
+
+    /** User paused the loop; tap to resume. */
+    Paused,
+
+    /** Unrecoverable error (no engine / permission denied). */
+    Error,
+}
 
 /** What the model status chip shows: the active model's display name and its current phase. */
 data class ModelBarState(
@@ -164,10 +199,11 @@ class ChatViewModel(
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private var voiceJob: Job? = null
-
     /** The in-flight streaming chat turn, cancellable via [stopGeneration]. */
     private var streamJob: Job? = null
+
+    /** The hands-free voice conversation loop (listen → think → speak → listen); null when not running. */
+    private var voiceLoopJob: Job? = null
 
     /** The model this device can run, resolved once on open; null when the device can't run an LLM. */
     private var offeredModel: ModelDescriptor? = null
@@ -437,33 +473,32 @@ class ChatViewModel(
     fun sendMessage() {
         val text = _uiState.value.inputText.trim()
         if (text.isBlank()) return
-
-        val userMessage = ChatMessage(
-            id = UidGenerator.generateUid("MSG"),
-            text = text,
-            isFromUser = true,
-        )
-
-        _uiState.update { state ->
-            state.copy(
-                messages = state.messages + userMessage,
-                inputText = "",
-                isProcessing = true,
-            )
-        }
-
+        _uiState.update { it.copy(inputText = "") }
+        addUserMessage(text)
         streamJob?.cancel()
         streamJob = viewModelScope.launch {
-            // Prefer the native tool-calling streaming path when a model with tools is loaded; it
-            // types the reply out live and dispatches actions via tools. Fall back to the rule-based
-            // orchestrator otherwise (no model / other platforms) or if streaming fails.
-            val engine = runCatching { providerRegistry.engineOrNull() }.getOrNull()
-            if (engine != null && engine.supportsToolCalling) {
-                streamChat(text, engine)
-            } else {
-                processWithOrchestrator(text)
-            }
+            val reply = runAssistantTurn(text)
+            if (reply != null) speakText(reply)
         }
+    }
+
+    /** Append the user's message to the transcript and flip into processing (text + voice paths). */
+    private fun addUserMessage(text: String) {
+        val userMessage = ChatMessage(id = UidGenerator.generateUid("MSG"), text = text, isFromUser = true)
+        _uiState.update { it.copy(messages = it.messages + userMessage, isProcessing = true) }
+    }
+
+    /**
+     * Run one assistant turn for [text]: stream/append the reply into the transcript and return the
+     * final speakable text (or null when there's nothing to speak — empty/error/action-only). Prefers
+     * the native tool-calling streaming path when a model with tools is loaded; falls back to the
+     * rule-based orchestrator otherwise (no model / other platforms) or if streaming fails. Does NOT
+     * speak — the caller decides (text path fire-and-forget; the voice loop awaits playback).
+     */
+    private suspend fun runAssistantTurn(text: String): String? {
+        val engine = runCatching { providerRegistry.engineOrNull() }.getOrNull()
+        return if (engine != null && engine.supportsToolCalling) streamChat(text, engine)
+        else processWithOrchestrator(text)
     }
 
     /** Stop an in-flight streaming reply: cancels the flow, whose awaitClose calls cancelProcess(). */
@@ -473,17 +508,18 @@ class ChatViewModel(
         _uiState.update { it.copy(isProcessing = false, streamingThought = null) }
     }
 
-    private suspend fun processWithOrchestrator(text: String) {
-        try {
-            appendAgentResponse(
-                orchestrator.processMessage(
-                    userMessage = text,
-                    conversationHistory = _uiState.value.messages,
-                    isOnline = _uiState.value.isOnline,
-                )
+    private suspend fun processWithOrchestrator(text: String): String? {
+        return try {
+            val response = orchestrator.processMessage(
+                userMessage = text,
+                conversationHistory = _uiState.value.messages,
+                isOnline = _uiState.value.isOnline,
             )
+            appendAgentResponse(response)
+            if (response.actionResult is ActionResult.Error) null else response.text.ifBlank { null }
         } catch (e: Exception) {
             appendError(errorText(e))
+            null
         }
     }
 
@@ -493,7 +529,7 @@ class ChatViewModel(
      * [AgentStreamEvent.ActionExecuted] to an action-result message. Falls back to the rule-based
      * orchestrator if the model produced nothing usable or the stream errored.
      */
-    private suspend fun streamChat(text: String, engine: LlmEngine) {
+    private suspend fun streamChat(text: String, engine: LlmEngine): String? {
         val history = _uiState.value.messages
             .dropLast(1) // exclude the user message we just added
             .filter { it.text.isNotBlank() && !it.isVoiceNote }
@@ -505,6 +541,8 @@ class ChatViewModel(
         val thought = StringBuilder()
         var bubbleAdded = false
         var producedOutput = false
+        // Speakable fallback when the turn produced no prose bubble (an action ran/was proposed).
+        var lastActionSummary: String? = null
         try {
             engine.chatStream(text, history, actionRegistry::dispatch).collect { event ->
                 when (event) {
@@ -534,11 +572,13 @@ class ChatViewModel(
 
                     is AgentStreamEvent.ActionProposed -> {
                         producedOutput = true
+                        lastActionSummary = event.summary
                         _uiState.update { it.copy(pendingConfirmation = event.action, streamingThought = null) }
                     }
 
                     is AgentStreamEvent.ActionExecuted -> {
                         producedOutput = true
+                        lastActionSummary = event.summary
                         val success = event.result as? ActionResult.Success
                         val summary = ActionResultSummary(
                             actionType = event.action.actionType.name,
@@ -563,25 +603,25 @@ class ChatViewModel(
 
                     AgentStreamEvent.Done -> {
                         _uiState.update { it.copy(isProcessing = false, streamingThought = null) }
-                        if (bubbleAdded) {
-                            _uiState.value.messages.firstOrNull { it.id == streamId }?.let { speakIfEnabled(it) }
-                        }
                     }
 
                     is AgentStreamEvent.Failed -> {
+                        // Fallback (if any) is handled once after the stream completes, below.
                         _uiState.update { it.copy(streamingThought = null) }
-                        if (!producedOutput) processWithOrchestrator(text) else _uiState.update { it.copy(isProcessing = false) }
                     }
                 }
             }
-            if (!producedOutput) processWithOrchestrator(text) // model said nothing → rule-based reply
+            // Stream finished. Nothing usable → rule-based reply; else return the speakable text.
+            if (!producedOutput) return processWithOrchestrator(text)
+            _uiState.update { it.copy(isProcessing = false) }
+            return buffer.toString().ifBlank { lastActionSummary }
         } catch (c: CancellationException) {
             // User tapped Stop (or the VM was cleared) — keep any partial reply, no error, no fallback.
             _uiState.update { it.copy(streamingThought = null) }
             throw c
         } catch (e: Exception) {
             _uiState.update { it.copy(streamingThought = null) }
-            if (!producedOutput) processWithOrchestrator(text) else appendError(errorText(e))
+            return if (!producedOutput) processWithOrchestrator(text) else { appendError(errorText(e)); null }
         }
     }
 
@@ -591,7 +631,9 @@ class ChatViewModel(
         _uiState.update { it.copy(pendingConfirmation = null, isProcessing = true) }
         viewModelScope.launch {
             try {
-                appendAgentResponse(orchestrator.confirmAction(pending))
+                val response = orchestrator.confirmAction(pending)
+                appendAgentResponse(response)
+                if (response.actionResult !is ActionResult.Error) speakText(response.text)
             } catch (e: Exception) {
                 appendError(errorText(e))
             }
@@ -641,14 +683,12 @@ class ChatViewModel(
                 pendingConfirmation = response.pendingConfirmation,
             )
         }
-        speakIfEnabled(agentMessage)
     }
 
-    /** Read an assistant reply aloud unless muted, the platform lacks TTS, or it's an error message. */
-    private fun speakIfEnabled(message: ChatMessage) {
-        if (message.isError || _uiState.value.isTtsMuted || !textToSpeech.isAvailable) return
-        if (message.text.isBlank()) return
-        viewModelScope.launch { runCatching { textToSpeech.speak(message.text) } }
+    /** Read [text] aloud (fire-and-forget) unless muted or the platform lacks TTS. */
+    private fun speakText(text: String) {
+        if (_uiState.value.isTtsMuted || !textToSpeech.isAvailable || text.isBlank()) return
+        viewModelScope.launch { runCatching { textToSpeech.speak(text) } }
     }
 
     private fun appendError(text: String) {
@@ -663,54 +703,109 @@ class ChatViewModel(
         }
     }
 
-    /** Toggle voice input: start listening if idle, otherwise stop the in-progress recognition. */
-    fun toggleVoiceInput() {
-        if (_uiState.value.isListening) stopVoiceInput() else startVoiceInput()
-    }
+    // ---- Full-screen hands-free voice conversation (listen → think → speak → listen) ----
 
-    private fun startVoiceInput() {
-        if (!speechToText.isAvailable) {
-            viewModelScope.launch { appendError(getString(Res.string.agent_speech_unavailable)) }
-            return
-        }
-        voiceJob?.cancel()
-        voiceJob = viewModelScope.launch {
-            if (!micPermission.ensureMicGranted()) {
-                appendError(getString(Res.string.agent_mic_permission_denied))
-                return@launch
-            }
-            _uiState.update { it.copy(isListening = true, liveTranscript = "") }
-            speechToText.listen()
-                .catch { stopListeningState() }
-                .collect { event -> handleSttEvent(event) }
-        }
-    }
-
-    private fun stopVoiceInput() {
-        speechToText.stop()
-        voiceJob?.cancel()
-        voiceJob = null
-        stopListeningState()
-    }
-
-    private fun handleSttEvent(event: SttEvent) {
-        when (event) {
-            is SttEvent.Partial -> _uiState.update { it.copy(liveTranscript = event.text) }
-            is SttEvent.Final -> {
-                stopListeningState()
-                val text = event.text.trim()
-                if (text.isNotBlank()) {
-                    _uiState.update { it.copy(inputText = text) }
-                    sendMessage()
+    /**
+     * Open the voice-conversation overlay and start the loop. Requires both on-device STT and TTS
+     * (Android/iOS); on platforms without them (Desktop) it shows an error state rather than a mic that
+     * can't work. TTS is force-unmuted on entry — a silent voice conversation makes no sense.
+     */
+    fun enterVoiceMode() {
+        if (_uiState.value.voiceMode != null) return
+        if (!speechToText.isAvailable || !textToSpeech.isAvailable) {
+            viewModelScope.launch {
+                _uiState.update {
+                    it.copy(voiceMode = VoiceConversationState(
+                        phase = VoicePhase.Error,
+                        error = getString(Res.string.agent_voice_unavailable),
+                    ))
                 }
             }
-            is SttEvent.Error -> stopListeningState()
-            SttEvent.EndOfSpeech -> { /* keep listening until Final/Error */ }
+            return
+        }
+        _uiState.update { it.copy(isTtsMuted = false, voiceMode = VoiceConversationState(phase = VoicePhase.Connecting)) }
+        startVoiceLoop()
+    }
+
+    /** Cancel the loop, silence mic + speech, and dismiss the overlay. */
+    fun exitVoiceMode() {
+        voiceLoopJob?.cancel()
+        voiceLoopJob = null
+        textToSpeech.stop()
+        speechToText.stop()
+        _uiState.update { it.copy(voiceMode = null) }
+    }
+
+    /** Pause an active loop (mic + speech off) or resume a paused one. */
+    fun toggleVoicePause() {
+        val vm = _uiState.value.voiceMode ?: return
+        if (vm.phase == VoicePhase.Paused) {
+            startVoiceLoop()
+        } else {
+            voiceLoopJob?.cancel()
+            voiceLoopJob = null
+            textToSpeech.stop()
+            speechToText.stop()
+            updateVoice { it.copy(phase = VoicePhase.Paused, partialTranscript = "") }
         }
     }
 
-    private fun stopListeningState() {
-        _uiState.update { it.copy(isListening = false, liveTranscript = "") }
+    /**
+     * The conversation loop: confirm mic permission once, then cycle listen → think → speak forever
+     * until paused/exited. Each [textToSpeech.speak] suspends until playback finishes, so the mic only
+     * re-opens after the assistant stops talking; a short gap avoids the recognizer catching the TTS tail.
+     */
+    private fun startVoiceLoop() {
+        voiceLoopJob?.cancel()
+        voiceLoopJob = viewModelScope.launch {
+            if (!micPermission.ensureMicGranted()) {
+                updateVoice { it.copy(phase = VoicePhase.Error, error = getString(Res.string.agent_mic_permission_denied)) }
+                return@launch
+            }
+            while (isActive && _uiState.value.voiceMode != null) {
+                val utterance = listenOnce()
+                if (!isActive || _uiState.value.voiceMode == null) break
+                if (utterance.isNullOrBlank()) {
+                    delay(MIC_REARM_GAP_MS) // silence / no-match / error → brief pause, then listen again
+                    continue
+                }
+                updateVoice { it.copy(phase = VoicePhase.Thinking, lastUserText = utterance, partialTranscript = "") }
+                addUserMessage(utterance)
+                val reply = runAssistantTurn(utterance)
+                if (!isActive || _uiState.value.voiceMode == null) break
+                if (!reply.isNullOrBlank()) {
+                    updateVoice { it.copy(phase = VoicePhase.Speaking, lastReply = reply) }
+                    runCatching { textToSpeech.speak(reply) } // suspends until spoken (or stop()/cancel)
+                }
+                delay(MIC_REARM_GAP_MS) // let the TTS tail settle before re-opening the mic
+            }
+        }
+    }
+
+    /**
+     * Listen for one utterance, streaming partials into [VoiceConversationState.partialTranscript].
+     * Returns the final transcript (trimmed), or null on error/no-match. The cold STT flow closes
+     * itself on Final/Error, so the collect returns.
+     */
+    private suspend fun listenOnce(): String? {
+        updateVoice { it.copy(phase = VoicePhase.Listening, partialTranscript = "") }
+        var finalText: String? = null
+        speechToText.listen()
+            .catch { /* surfaced as null below → loop re-listens */ }
+            .collect { event ->
+                when (event) {
+                    is SttEvent.Partial -> updateVoice { it.copy(partialTranscript = event.text) }
+                    is SttEvent.Final -> finalText = event.text.trim()
+                    is SttEvent.Error -> { /* finalText stays null → re-listen */ }
+                    SttEvent.EndOfSpeech -> { /* keep collecting until Final/Error */ }
+                }
+            }
+        return finalText
+    }
+
+    /** Apply [transform] to the voice-mode sub-state if the overlay is open (no-op otherwise). */
+    private fun updateVoice(transform: (VoiceConversationState) -> VoiceConversationState) {
+        _uiState.update { st -> st.voiceMode?.let { st.copy(voiceMode = transform(it)) } ?: st }
     }
 
     /** Mute/unmute spoken responses; muting also stops any in-progress speech. */
@@ -718,11 +813,6 @@ class ChatViewModel(
         val nowMuted = !_uiState.value.isTtsMuted
         if (nowMuted) textToSpeech.stop()
         _uiState.update { it.copy(isTtsMuted = nowMuted) }
-    }
-
-    /** Programmatically set the transcribed input (used by tests / external callers). */
-    fun onVoiceResult(transcribedText: String) {
-        _uiState.update { it.copy(inputText = transcribedText, isListening = false, liveTranscript = "") }
     }
 
     fun setOnlineStatus(online: Boolean) {
@@ -789,5 +879,9 @@ class ChatViewModel(
     private companion object {
         /** Recent turns fed to the tool-calling chat as short context (the conversation is stateless). */
         const val HISTORY_TURNS = 6
+
+        /** Pause after the assistant finishes speaking before re-opening the mic, so the recognizer
+         *  doesn't pick up the tail of the spoken reply. */
+        const val MIC_REARM_GAP_MS = 350L
     }
 }

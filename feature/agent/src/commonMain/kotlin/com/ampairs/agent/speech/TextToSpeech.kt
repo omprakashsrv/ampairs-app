@@ -11,8 +11,12 @@ interface TextToSpeech {
     /** Whether speech synthesis is usable on this platform/device. */
     val isAvailable: Boolean
 
-    /** Speak [text]; [languageTag] is a BCP-47 tag (e.g. "en-IN"), null → device default. Suspends until
-     *  the utterance is queued (not necessarily finished). */
+    /**
+     * Speak [text]; [languageTag] is a BCP-47 tag (e.g. "en-IN"), null → device default. **Suspends
+     * until the utterance finishes playing** (or is cut short by [stop]), so a hands-free voice loop
+     * can re-open the mic only after the assistant has finished talking. Cancelling the calling
+     * coroutine stops playback. No-op implementations return immediately.
+     */
     suspend fun speak(text: String, languageTag: String? = null)
 
     /** Stop any in-progress and queued speech. */

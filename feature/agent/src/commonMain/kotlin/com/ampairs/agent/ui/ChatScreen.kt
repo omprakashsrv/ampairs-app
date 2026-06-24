@@ -21,13 +21,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.FiberManualRecord
-import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeOff
@@ -103,14 +101,10 @@ import ampairsapp.feature.agent.generated.resources.agent_mute_cd
 import ampairsapp.feature.agent.generated.resources.agent_send_cd
 import ampairsapp.feature.agent.generated.resources.agent_stop_cd
 import ampairsapp.feature.agent.generated.resources.agent_unmute_cd
-import ampairsapp.feature.agent.generated.resources.agent_voice_note_cancel_cd
-import ampairsapp.feature.agent.generated.resources.agent_voice_note_record_cd
-import ampairsapp.feature.agent.generated.resources.agent_voice_note_recording
-import ampairsapp.feature.agent.generated.resources.agent_voice_note_stop_cd
+import ampairsapp.feature.agent.generated.resources.agent_voice_mode_cd
 import ampairsapp.feature.agent.generated.resources.agent_thinking
 import ampairsapp.feature.agent.generated.resources.agent_title
 import com.ampairs.agent.ui.components.MessageBubble
-import com.ampairs.agent.ui.components.VoiceInputButton
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -131,7 +125,8 @@ fun ChatScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize().imePadding()) {
+    Box(modifier = modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().imePadding()) {
         TopAppBar(
             title = { Text(stringResource(Res.string.agent_title)) },
             actions = {
@@ -257,13 +252,18 @@ fun ChatScreen(
             onSend = viewModel::sendMessage,
             isProcessing = uiState.isProcessing,
             onStop = viewModel::stopGeneration,
-            isListening = uiState.isListening,
-            onVoiceClick = { viewModel.toggleVoiceInput() },
-            isRecordingVoiceNote = uiState.isRecordingVoiceNote,
-            onStartVoiceNote = viewModel::startVoiceNote,
-            onStopAndSendVoiceNote = viewModel::stopAndSendVoiceNote,
-            onCancelVoiceNote = viewModel::cancelVoiceNote,
+            onVoiceMode = viewModel::enterVoiceMode,
         )
+    }
+
+        // Full-screen hands-free voice conversation overlay (covers the chat while active).
+        uiState.voiceMode?.let { voice ->
+            VoiceConversationScreen(
+                state = voice,
+                onPauseToggle = viewModel::toggleVoicePause,
+                onExit = viewModel::exitVoiceMode,
+            )
+        }
     }
 }
 
@@ -610,12 +610,7 @@ private fun ChatInputBar(
     onSend: () -> Unit,
     isProcessing: Boolean,
     onStop: () -> Unit,
-    isListening: Boolean,
-    onVoiceClick: () -> Unit,
-    isRecordingVoiceNote: Boolean,
-    onStartVoiceNote: () -> Unit,
-    onStopAndSendVoiceNote: () -> Unit,
-    onCancelVoiceNote: () -> Unit,
+    onVoiceMode: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -626,106 +621,51 @@ private fun ChatInputBar(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (isRecordingVoiceNote) {
-                // Recording a voice note: discard | "Recording…" | stop & send.
-                IconButton(onClick = onCancelVoiceNote, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.agent_voice_note_cancel_cd))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+            OutlinedTextField(
+                value = text,
+                onValueChange = onTextChange,
+                placeholder = { Text(stringResource(Res.string.agent_input_placeholder)) },
+                modifier = Modifier.weight(1f),
+                maxLines = 4,
+                shape = MaterialTheme.shapes.extraLarge,
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            when {
+                // While the assistant is generating, the action button stops the stream.
+                isProcessing -> IconButton(
+                    onClick = onStop,
+                    modifier = Modifier.size(40.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    ),
                 ) {
-                    Icon(
-                        Icons.Default.FiberManualRecord,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = stringResource(Res.string.agent_voice_note_recording),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Icon(Icons.Default.Stop, contentDescription = stringResource(Res.string.agent_stop_cd))
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = onStopAndSendVoiceNote,
+
+                text.isNotBlank() -> IconButton(
+                    onClick = onSend,
                     modifier = Modifier.size(40.dp),
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                     ),
                 ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Send,
-                        contentDescription = stringResource(Res.string.agent_voice_note_stop_cd),
-                    )
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(Res.string.agent_send_cd))
                 }
-            } else {
-                VoiceInputButton(
-                    isListening = isListening,
-                    onClick = onVoiceClick,
-                )
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = onTextChange,
-                    placeholder = { Text(stringResource(Res.string.agent_input_placeholder)) },
-                    modifier = Modifier.weight(1f),
-                    maxLines = 4,
-                    shape = MaterialTheme.shapes.extraLarge,
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                if (isProcessing) {
-                    // While the assistant is generating, the action button stops the stream.
-                    IconButton(
-                        onClick = onStop,
-                        modifier = Modifier.size(40.dp),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                        ),
-                    ) {
-                        Icon(
-                            Icons.Default.Stop,
-                            contentDescription = stringResource(Res.string.agent_stop_cd),
-                        )
-                    }
-                } else if (text.isNotBlank()) {
-                    IconButton(
-                        onClick = onSend,
-                        modifier = Modifier.size(40.dp),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(Res.string.agent_send_cd),
-                        )
-                    }
-                } else {
-                    // Blank input → record a voice note (waveform glyph distinguishes it from STT mic).
-                    IconButton(
-                        onClick = onStartVoiceNote,
-                        modifier = Modifier.size(40.dp),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                    ) {
-                        Icon(
-                            Icons.Default.GraphicEq,
-                            contentDescription = stringResource(Res.string.agent_voice_note_record_cd),
-                        )
-                    }
+                // Blank input → enter the full-screen hands-free voice conversation.
+                else -> IconButton(
+                    onClick = onVoiceMode,
+                    modifier = Modifier.size(40.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                ) {
+                    Icon(Icons.Default.Mic, contentDescription = stringResource(Res.string.agent_voice_mode_cd))
                 }
             }
         }
