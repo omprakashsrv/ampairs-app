@@ -1,11 +1,28 @@
 <resources>
-    <!-- Price list management -->
+    <!-- Price list — list screen -->
     <string name="pricing_list_title">Price Lists</string>
     <string name="pricing_add">Add Price List</string>
     <string name="pricing_empty_title">No price lists yet</string>
+    <string name="pricing_list_create">Create Price List</string>
+    <string name="pricing_cd_delete">Delete</string>
+    <string name="pricing_error_title">Error</string>
+    <string name="pricing_retry">Retry</string>
+
+    <!-- Price list — form screen -->
+    <string name="pricing_form_new_title">New Price List</string>
+    <string name="pricing_form_edit_title">Edit Price List</string>
+    <string name="pricing_form_name">Name</string>
+    <string name="pricing_form_channel">Channel</string>
+    <string name="pricing_form_status">Status</string>
+    <string name="pricing_form_currency">Currency (3-letter code)</string>
+    <string name="pricing_form_priority">Priority</string>
+    <string name="pricing_form_customer_group">Customer group ID (optional)</string>
+    <string name="pricing_form_active">Active</string>
+    <string name="pricing_form_items_count">%1$d item(s) — edit items in a follow-up screen</string>
+    <string name="pricing_form_save">Save</string>
+
+    <!-- Geo zones (future) -->
     <string name="pricing_geo_zones_title">Geo Zones</string>
     <string name="pricing_cancel">Cancel</string>
     <string name="pricing_save">Save</string>
-    <string name="pricing_retry">Retry</string>
-    <string name="pricing_error_title">Error</string>
 </resources>
