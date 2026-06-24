@@ -17,5 +17,7 @@ data class ModelDescriptor(
     val downloadUrl: String,
     val sizeBytes: Long,
     val estimatedPeakMemoryBytes: Long,
+    /** Optional lowercase-hex SHA-256; when set, `ModelManager` verifies the file after download. */
+    val sha256: String? = null,
     val defaultParams: LlmParams = LlmParams(),
 )

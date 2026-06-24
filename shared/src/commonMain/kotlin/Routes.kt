@@ -48,6 +48,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object Agent : Route
 
+    /** On-device AI model management (download / delete LLM model files). */
+    @Serializable
+    data object AgentModels : Route
+
     @Serializable
     data object Settings : Route
 

@@ -50,6 +50,8 @@ maps-compose = "8.3.0"
 accompanist-permissions = "0.37.3"
 litertlm = "0.13.1"
 kodio = "0.1.5"
+kotlinx-io = "0.9.0"
+kotlincrypto-sha2 = "0.8.0"
 play-services-coroutines = "1.11.0"
 play-services-auth = "21.6.0"
 play-integrity = "1.6.0"
@@ -120,6 +122,8 @@ grant-core = { module = "dev.brewkits:grant-core", version.ref = "grant" }
 grant-bluetooth = { module = "dev.brewkits:grant-bluetooth", version.ref = "grant" }
 litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
 kodio-core = { module = "space.kodio:core", version.ref = "kodio" }
+kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
+kotlincrypto-sha2 = { module = "org.kotlincrypto.hash:sha2", version.ref = "kotlincrypto-sha2" }
 material3-adaptive = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive", version.ref = "adaptive" }
 material3-adaptive-layout = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-layout", version.ref = "adaptive" }
 material3-adaptive-navigation = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive-navigation", version.ref = "adaptive" }

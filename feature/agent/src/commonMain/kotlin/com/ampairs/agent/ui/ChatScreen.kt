@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.VolumeOff
@@ -51,6 +52,7 @@ import ampairsapp.feature.agent.generated.resources.agent_confirm_prompt
 import ampairsapp.feature.agent.generated.resources.agent_empty_hint
 import ampairsapp.feature.agent.generated.resources.agent_empty_title
 import ampairsapp.feature.agent.generated.resources.agent_input_placeholder
+import ampairsapp.feature.agent.generated.resources.agent_manage_models_cd
 import ampairsapp.feature.agent.generated.resources.agent_mute_cd
 import ampairsapp.feature.agent.generated.resources.agent_send_cd
 import ampairsapp.feature.agent.generated.resources.agent_unmute_cd
@@ -69,6 +71,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ChatScreen(
     onNavigateToRoute: (Map<String, String>) -> Unit = {},
+    onManageModels: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel = metroViewModel(),
 ) {
@@ -86,6 +89,12 @@ fun ChatScreen(
         TopAppBar(
             title = { Text(stringResource(Res.string.agent_title)) },
             actions = {
+                IconButton(onClick = onManageModels) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = stringResource(Res.string.agent_manage_models_cd),
+                    )
+                }
                 IconButton(onClick = { viewModel.toggleMute() }) {
                     Icon(
                         imageVector = if (uiState.isTtsMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
