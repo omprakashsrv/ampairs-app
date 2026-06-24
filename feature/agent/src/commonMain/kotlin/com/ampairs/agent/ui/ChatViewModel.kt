@@ -240,24 +240,28 @@ class ChatViewModel(
     private fun rebuildModelUi(statuses: Map<String, ModelInstallStatus>) {
         val active = activeModel
         val items = catalog.map { m ->
+            val live = statuses[m.id]
+            val status = when {
+                live is ModelInstallStatus.Downloading -> ModelItemStatus.Downloading(live.fraction)
+                // Filesystem truth: a present file ⇒ installed, even when `statuses` hasn't been
+                // reconciled for this server-catalog id (e.g. right after an app restart, where the
+                // manager's refresh keys off the bundled fallback catalog). This matches what the
+                // engine actually loads — otherwise a downloaded model shows "Download" on relaunch.
+                modelManager.localPathOrNull(m) != null -> ModelItemStatus.Installed
+                live is ModelInstallStatus.Failed -> ModelItemStatus.Failed(live.message)
+                else -> ModelItemStatus.NotInstalled
+            }
             ModelUiItem(
                 id = m.id,
                 displayName = m.displayName,
                 sizeText = formatModelSize(m.sizeBytes),
                 role = m.role.name,
                 recommended = m.recommended,
-                status = (statuses[m.id] ?: ModelInstallStatus.NotInstalled).toItemStatus(),
+                status = status,
                 isActive = m.id == active?.id,
             )
         }
         _uiState.update { it.copy(models = items, modelBar = computeChip(active, statuses)) }
-    }
-
-    private fun ModelInstallStatus.toItemStatus(): ModelItemStatus = when (this) {
-        is ModelInstallStatus.NotInstalled -> ModelItemStatus.NotInstalled
-        is ModelInstallStatus.Downloading -> ModelItemStatus.Downloading(fraction)
-        is ModelInstallStatus.Installed -> ModelItemStatus.Installed
-        is ModelInstallStatus.Failed -> ModelItemStatus.Failed(message)
     }
 
     private fun computeChip(active: ModelDescriptor?, statuses: Map<String, ModelInstallStatus>): ModelBarState {

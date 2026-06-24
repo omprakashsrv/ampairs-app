@@ -1,13 +1,18 @@
 package com.ampairs.agent.llm
 
 import android.content.Context
-import com.google.ai.edge.litertlm.Conversation
+import co.touchlab.kermit.Logger
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.SamplerConfig
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import kotlin.concurrent.Volatile
 
@@ -27,6 +32,14 @@ import kotlin.concurrent.Volatile
  * so both run on [Dispatchers.IO]. The acceleration backend is left at [EngineConfig]'s default
  * (CPU — the safe cold-start choice per the Gallery notes).
  *
+ * **Stateless per call.** Each [runInference] creates a *fresh* [Conversation] and closes it after,
+ * so the native side never accumulates turn history (the resolver already rebuilds the full prompt,
+ * incl. recent turns, each call). A long-lived shared conversation grew context every message and
+ * progressively bogged a 1B CPU model down to an apparent hang; a fresh one bounds the work to the
+ * built prompt. A blocking [runInference] is also bounded by [INFERENCE_TIMEOUT_MS]: it runs in a
+ * detached job we abandon on timeout so a slow/hung native call can't pin the chat on "Thinking…"
+ * forever — the composite resolver then falls back to rule-based.
+ *
  * **Constrained decoding.** Currently *prompt-guided*: [com.ampairs.agent.offline.LlmIntentResolver]
  * builds a JSON-instructed prompt (from [OutputSchema]) and validates the parsed action against the
  * registry (SC-003), so [generateConstrained] just generates and returns the raw text. Native
@@ -39,7 +52,10 @@ class LiteRtLmEngine(
 ) : LlmEngine {
 
     @Volatile private var engine: Engine? = null
-    @Volatile private var conversation: Conversation? = null
+    @Volatile private var conversationConfig: ConversationConfig? = null
+
+    // Detached scope for the blocking native inference so a timeout can abandon a stuck call.
+    private val inferenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override suspend fun load(model: ModelDescriptor, params: LlmParams) {
         if (engine != null) return
@@ -54,21 +70,18 @@ class LiteRtLmEngine(
                 ),
             )
             eng.initialize()
-            val convo = eng.createConversation(
-                ConversationConfig(
-                    samplerConfig = SamplerConfig(
-                        topK = params.topK,
-                        topP = params.topP.toDouble(),
-                        temperature = params.temperature.toDouble(),
-                    ),
+            engine = eng
+            conversationConfig = ConversationConfig(
+                samplerConfig = SamplerConfig(
+                    topK = params.topK,
+                    topP = params.topP.toDouble(),
+                    temperature = params.temperature.toDouble(),
                 ),
             )
-            engine = eng
-            conversation = convo
         }
     }
 
-    override fun isLoaded(): Boolean = engine != null && conversation != null
+    override fun isLoaded(): Boolean = engine != null && conversationConfig != null
 
     override suspend fun generate(prompt: String, maxTokens: Int): String = runInference(prompt)
 
@@ -79,16 +92,43 @@ class LiteRtLmEngine(
     ): String = runInference(prompt)
 
     private suspend fun runInference(prompt: String): String {
-        val convo = conversation ?: error("LiteRtLmEngine.generate() called before load()")
-        return withContext(Dispatchers.IO) { convo.sendMessage(prompt).toString() }
+        val eng = engine ?: error("LiteRtLmEngine.generate() called before load()")
+        val cfg = conversationConfig ?: error("LiteRtLmEngine.generate() called before load()")
+        // Run the blocking native call in a detached job so withTimeoutOrNull can return control even
+        // if sendMessage never does — a fresh, single-turn conversation keeps each call stateless.
+        val deferred = inferenceScope.async {
+            val started = System.currentTimeMillis()
+            val convo = eng.createConversation(cfg)
+            try {
+                convo.sendMessage(prompt).toString().also {
+                    Logger.i(tag = LOG_TAG) {
+                        "Inference ok in ${System.currentTimeMillis() - started}ms (prompt=${prompt.length} chars, out=${it.length})"
+                    }
+                }
+            } finally {
+                runCatching { convo.close() }
+            }
+        }
+        val result = withTimeoutOrNull(INFERENCE_TIMEOUT_MS) { deferred.await() }
+        if (result == null) {
+            deferred.cancel() // native thread finishes on its own; we stop waiting on it
+            Logger.w(tag = LOG_TAG) { "Inference timed out after ${INFERENCE_TIMEOUT_MS / 1000}s — falling back" }
+            throw IllegalStateException("On-device inference timed out after ${INFERENCE_TIMEOUT_MS / 1000}s")
+        }
+        return result
     }
 
     override suspend fun close() {
+        runCatching { inferenceScope.cancel() }
         withContext(Dispatchers.IO) {
-            runCatching { conversation?.close() }
             runCatching { engine?.close() }
-            conversation = null
+            conversationConfig = null
             engine = null
         }
+    }
+
+    private companion object {
+        const val LOG_TAG = "AgentLlm"
+        const val INFERENCE_TIMEOUT_MS = 60_000L
     }
 }
