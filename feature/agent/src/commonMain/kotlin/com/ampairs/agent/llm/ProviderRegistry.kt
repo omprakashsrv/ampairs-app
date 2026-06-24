@@ -2,6 +2,7 @@ package com.ampairs.agent.llm
 
 import co.touchlab.kermit.Logger
 import com.ampairs.agent.config.AssistantConfig
+import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import dev.zacsweers.metro.Inject
@@ -10,6 +11,7 @@ import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -42,6 +44,7 @@ class ProviderRegistry(
     private val config: AssistantConfig,
     private val closableRegistry: WorkspaceClosableRegistry,
     private val modelCatalog: ModelCatalogProvider,
+    private val appPreferences: AppPreferencesDataStore,
 ) {
     private val mutex = Mutex()
     private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -53,16 +56,21 @@ class ProviderRegistry(
     private var closableRegistered = false
 
     /**
-     * The chat model the device may run, gated by RAM; null → rule-based-only. Resolved from the
-     * server manifest ([ModelCatalogProvider]): among CHAT models whose footprint fits this device's
-     * RAM, prefer the server-flagged `recommended` one, else the largest that fits.
+     * The chat model the device should run; null → rule-based-only. Resolution order:
+     * 1. The user's explicit choice from the model manager ([AppPreferencesDataStore.getSelectedLlmModelId]),
+     *    if it's still in the catalog — an explicit pick overrides the RAM gate (the user opted in).
+     * 2. Otherwise, the RAM-gated auto-pick: among CHAT models whose footprint fits this device's RAM,
+     *    the server-flagged `recommended` one, else the largest that fits.
      */
     suspend fun selectedChatModel(): ModelDescriptor? {
         if (!config.llmEnabled) return null
+        val all = modelCatalog.all()
+        appPreferences.getSelectedLlmModelId().first()?.let { chosenId ->
+            all.firstOrNull { it.id == chosenId }?.let { return it }
+        }
         val ram = DeviceCapability.totalRamBytes()
         if (!RamTiers.canRunLlm(ram)) return null
-        val candidates = modelCatalog.all()
-            .filter { it.role == ModelRole.CHAT && it.estimatedPeakMemoryBytes <= ram }
+        val candidates = all.filter { it.role == ModelRole.CHAT && it.estimatedPeakMemoryBytes <= ram }
         return candidates.filter { it.recommended }.maxByOrNull { it.estimatedPeakMemoryBytes }
             ?: candidates.maxByOrNull { it.estimatedPeakMemoryBytes }
     }
@@ -105,6 +113,19 @@ class ProviderRegistry(
 
     /** True only when an engine is created and reports loaded — drives `CompositeOfflineResolver`. */
     suspend fun isLlmReady(): Boolean = engineOrNull()?.isLoaded() == true
+
+    /**
+     * Drop the cached engine (closing it) so the next [engineOrNull] re-resolves [selectedChatModel]
+     * and loads afresh. Called when the user switches/deletes the active model in the model manager.
+     */
+    suspend fun reload() {
+        val toClose = mutex.withLock {
+            val current = engine
+            engine = null
+            current
+        }
+        toClose?.let { runCatching { it.close() } }
+    }
 
     private fun registerCloseableOnce() {
         if (closableRegistered) return

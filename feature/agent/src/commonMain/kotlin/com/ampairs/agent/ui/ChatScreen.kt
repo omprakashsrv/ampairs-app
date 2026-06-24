@@ -16,15 +16,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,17 +42,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.agent.generated.resources.Res
 import ampairsapp.feature.agent.generated.resources.agent_cancel
@@ -62,6 +78,24 @@ import ampairsapp.feature.agent.generated.resources.agent_model_download_retry
 import ampairsapp.feature.agent.generated.resources.agent_model_download_title
 import ampairsapp.feature.agent.generated.resources.agent_model_downloading_progress
 import ampairsapp.feature.agent.generated.resources.agent_model_downloading_title
+import ampairsapp.feature.agent.generated.resources.agent_model_active
+import ampairsapp.feature.agent.generated.resources.agent_model_chip_cd
+import ampairsapp.feature.agent.generated.resources.agent_model_chip_downloading
+import ampairsapp.feature.agent.generated.resources.agent_model_chip_loading
+import ampairsapp.feature.agent.generated.resources.agent_model_chip_rule_based
+import ampairsapp.feature.agent.generated.resources.agent_model_delete
+import ampairsapp.feature.agent.generated.resources.agent_model_download_action
+import ampairsapp.feature.agent.generated.resources.agent_model_manager_rule_based_note
+import ampairsapp.feature.agent.generated.resources.agent_model_manager_subtitle
+import ampairsapp.feature.agent.generated.resources.agent_model_manager_title
+import ampairsapp.feature.agent.generated.resources.agent_model_recommended
+import ampairsapp.feature.agent.generated.resources.agent_model_retry
+import ampairsapp.feature.agent.generated.resources.agent_model_role_size
+import ampairsapp.feature.agent.generated.resources.agent_model_status_downloading
+import ampairsapp.feature.agent.generated.resources.agent_model_status_failed
+import ampairsapp.feature.agent.generated.resources.agent_model_status_installed
+import ampairsapp.feature.agent.generated.resources.agent_model_status_not_installed
+import ampairsapp.feature.agent.generated.resources.agent_model_use
 import ampairsapp.feature.agent.generated.resources.agent_mute_cd
 import ampairsapp.feature.agent.generated.resources.agent_send_cd
 import ampairsapp.feature.agent.generated.resources.agent_unmute_cd
@@ -97,6 +131,10 @@ fun ChatScreen(
         TopAppBar(
             title = { Text(stringResource(Res.string.agent_title)) },
             actions = {
+                ModelStatusChip(
+                    state = uiState.modelBar,
+                    onClick = { viewModel.openModelManager() },
+                )
                 IconButton(onClick = { viewModel.toggleMute() }) {
                     Icon(
                         imageVector = if (uiState.isTtsMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
@@ -188,6 +226,18 @@ fun ChatScreen(
                 onAccept = viewModel::onAcceptModelDownload,
                 onDecline = viewModel::onDeclineModelDownload,
                 onDismiss = viewModel::dismissModelDownloadPrompt,
+            )
+        }
+
+        // Full model manager: download other models, switch the active one, or delete files.
+        if (uiState.showModelSheet) {
+            ModelManagerSheet(
+                models = uiState.models,
+                isRuleBased = uiState.modelBar.phase == ModelPhase.RULE_BASED,
+                onUse = viewModel::onUseModel,
+                onDownload = viewModel::onDownloadModel,
+                onDelete = viewModel::onDeleteModel,
+                onDismiss = viewModel::closeModelManager,
             )
         }
 
@@ -290,6 +340,237 @@ private fun LlmDownloadDialog(
             dismissButton = {
                 TextButton(onClick = onDismiss) { Text(stringResource(Res.string.agent_model_download_hide)) }
             },
+        )
+    }
+}
+
+/** Compact top-bar chip showing the active model + its phase; tap opens the model manager. */
+@Composable
+private fun ModelStatusChip(
+    state: ModelBarState,
+    onClick: () -> Unit,
+) {
+    val chipCd = stringResource(Res.string.agent_model_chip_cd)
+    val label = when (state.phase) {
+        ModelPhase.RULE_BASED -> stringResource(Res.string.agent_model_chip_rule_based)
+        ModelPhase.LOADING -> stringResource(Res.string.agent_model_chip_loading)
+        ModelPhase.DOWNLOADING ->
+            state.modelName + " " + stringResource(Res.string.agent_model_chip_downloading, (state.downloadProgress * 100).toInt())
+        ModelPhase.NOT_DOWNLOADED, ModelPhase.READY, ModelPhase.FAILED ->
+            state.modelName.ifBlank { stringResource(Res.string.agent_model_chip_rule_based) }
+    }
+    AssistChip(
+        onClick = onClick,
+        label = {
+            Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium)
+        },
+        leadingIcon = {
+            when (state.phase) {
+                ModelPhase.LOADING, ModelPhase.DOWNLOADING ->
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                ModelPhase.READY ->
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                    )
+                ModelPhase.FAILED ->
+                    Icon(
+                        Icons.Default.ErrorOutline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                    )
+                ModelPhase.NOT_DOWNLOADED ->
+                    Icon(
+                        Icons.Default.CloudDownload,
+                        contentDescription = null,
+                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                    )
+                ModelPhase.RULE_BASED ->
+                    Icon(
+                        Icons.Default.SmartToy,
+                        contentDescription = null,
+                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                    )
+            }
+        },
+        modifier = Modifier.semantics { contentDescription = chipCd },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModelManagerSheet(
+    models: List<ModelUiItem>,
+    isRuleBased: Boolean,
+    onUse: (String) -> Unit,
+    onDownload: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.agent_model_manager_title),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Text(
+                text = stringResource(Res.string.agent_model_manager_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (isRuleBased) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.agent_model_manager_rule_based_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+            }
+            models.forEach { item ->
+                ModelRow(
+                    item = item,
+                    onUse = { onUse(item.id) },
+                    onDownload = { onDownload(item.id) },
+                    onDelete = { onDelete(item.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModelRow(
+    item: ModelUiItem,
+    onUse: () -> Unit,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Surface(
+        tonalElevation = 1.dp,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = item.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (item.recommended) {
+                    StatusPill(
+                        text = stringResource(Res.string.agent_model_recommended),
+                        container = MaterialTheme.colorScheme.tertiaryContainer,
+                        content = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+                if (item.isActive) {
+                    StatusPill(
+                        text = stringResource(Res.string.agent_model_active),
+                        container = MaterialTheme.colorScheme.primaryContainer,
+                        content = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+            Text(
+                text = stringResource(Res.string.agent_model_role_size, item.role, item.sizeText),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            when (val status = item.status) {
+                is ModelItemStatus.Downloading -> {
+                    if (status.progress > 0f) {
+                        LinearProgressIndicator(progress = { status.progress }, modifier = Modifier.fillMaxWidth())
+                    } else {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                    Text(
+                        text = stringResource(Res.string.agent_model_status_downloading, (status.progress * 100).toInt()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                is ModelItemStatus.Installed -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!item.isActive) {
+                        Button(onClick = onUse) { Text(stringResource(Res.string.agent_model_use)) }
+                    } else {
+                        Text(
+                            text = stringResource(Res.string.agent_model_status_installed),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f).padding(top = 8.dp),
+                        )
+                    }
+                    OutlinedButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(Res.string.agent_model_delete))
+                    }
+                }
+
+                is ModelItemStatus.Failed -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.agent_model_status_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(onClick = onDownload) { Text(stringResource(Res.string.agent_model_retry)) }
+                }
+
+                is ModelItemStatus.NotInstalled -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.agent_model_status_not_installed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(onClick = onDownload) {
+                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(Res.string.agent_model_download_action))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusPill(text: String, container: Color, content: Color) {
+    Surface(color = container, shape = MaterialTheme.shapes.small) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = content,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
         )
     }
 }

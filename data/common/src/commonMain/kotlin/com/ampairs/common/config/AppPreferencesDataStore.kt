@@ -136,6 +136,14 @@ interface AppPreferencesDataStore {
      */
     fun getLlmModelDownloadConsent(): Flow<Boolean?>
     suspend fun setLlmModelDownloadConsent(granted: Boolean)
+
+    /**
+     * The on-device AI model the user explicitly chose in the model manager, by
+     * `ModelDescriptor.id`. `null` = no explicit choice; selection falls back to the RAM-gated
+     * auto-pick. App-wide (not per-workspace).
+     */
+    fun getSelectedLlmModelId(): Flow<String?>
+    suspend fun setSelectedLlmModelId(modelId: String?)
 }
 
 /**

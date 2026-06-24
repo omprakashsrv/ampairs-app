@@ -40,4 +40,23 @@
     <string name="agent_model_download_failed_title">Download failed</string>
     <string name="agent_model_download_hide">Hide</string>
     <string name="agent_model_download_retry">Retry</string>
+    <!-- Model manager (status chip + download / switch / delete sheet) -->
+    <string name="agent_model_chip_cd">Manage AI model</string>
+    <string name="agent_model_chip_rule_based">Rule-based</string>
+    <string name="agent_model_chip_loading">Loading…</string>
+    <string name="agent_model_chip_downloading">%1$d%%</string>
+    <string name="agent_model_manager_title">AI model</string>
+    <string name="agent_model_manager_subtitle">Pick which on-device model powers the assistant. Larger models converse better but use more space and memory.</string>
+    <string name="agent_model_manager_rule_based_note">No model selected — the assistant is in rule-based mode (actions only). Download a model below for full conversation.</string>
+    <string name="agent_model_use">Use</string>
+    <string name="agent_model_active">Active</string>
+    <string name="agent_model_download_action">Download</string>
+    <string name="agent_model_delete">Delete</string>
+    <string name="agent_model_retry">Retry</string>
+    <string name="agent_model_recommended">Recommended</string>
+    <string name="agent_model_status_installed">Downloaded</string>
+    <string name="agent_model_status_not_installed">Not downloaded</string>
+    <string name="agent_model_status_failed">Download failed</string>
+    <string name="agent_model_status_downloading">Downloading %1$d%%</string>
+    <string name="agent_model_role_size">%1$s · %2$s</string>
 </resources>

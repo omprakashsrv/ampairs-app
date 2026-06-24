@@ -13,10 +13,12 @@ import com.ampairs.agent.core.ActionResultSummary
 import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.AgentResponse
+import com.ampairs.agent.llm.ModelCatalogProvider
 import com.ampairs.agent.llm.ModelDescriptor
 import com.ampairs.agent.llm.ModelInstallStatus
 import com.ampairs.agent.llm.ModelManager
 import com.ampairs.agent.llm.ProviderRegistry
+import com.ampairs.agent.llm.formatModelSize
 import com.ampairs.agent.permission.MicPermissionController
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
@@ -62,7 +64,62 @@ data class ChatUiState(
     val playingVoiceNoteId: String? = null,
     /** First-use on-device model download prompt (consent → progress → failure); null when nothing to show. */
     val llmDownloadPrompt: LlmDownloadPrompt? = null,
+    /** Status chip shown in the chat top bar: which model is active and what state it's in. */
+    val modelBar: ModelBarState = ModelBarState(),
+    /** Catalog models for the model-manager sheet (download / switch / delete). */
+    val models: List<ModelUiItem> = emptyList(),
+    /** True while the model-manager bottom sheet is open. */
+    val showModelSheet: Boolean = false,
 )
+
+/** What the model status chip shows: the active model's display name and its current phase. */
+data class ModelBarState(
+    val modelName: String = "",
+    val phase: ModelPhase = ModelPhase.RULE_BASED,
+    /** 0f..1f, only meaningful while [phase] is [ModelPhase.DOWNLOADING]. */
+    val downloadProgress: Float = 0f,
+)
+
+/** Lifecycle phase of the active on-device model, surfaced by the top-bar chip. */
+enum class ModelPhase {
+    /** No model can run on this device — chat uses the rule-based path. */
+    RULE_BASED,
+
+    /** A model is selected but its file isn't downloaded yet. */
+    NOT_DOWNLOADED,
+
+    /** The selected model's file is downloading. */
+    DOWNLOADING,
+
+    /** The file is present and the engine is loading into memory. */
+    LOADING,
+
+    /** The engine is loaded and ready for full conversation. */
+    READY,
+
+    /** Download or engine load failed. */
+    FAILED,
+}
+
+/** One catalog model row in the model-manager sheet. */
+data class ModelUiItem(
+    val id: String,
+    val displayName: String,
+    val sizeText: String,
+    val role: String,
+    val recommended: Boolean,
+    val status: ModelItemStatus,
+    /** True when this is the currently selected/active model. */
+    val isActive: Boolean,
+)
+
+/** Install state of a single catalog model in the manager sheet. */
+sealed interface ModelItemStatus {
+    data object NotInstalled : ModelItemStatus
+    data class Downloading(val progress: Float) : ModelItemStatus
+    data object Installed : ModelItemStatus
+    data class Failed(val message: String) : ModelItemStatus
+}
 
 /** UI state for the one-time on-device AI model download flow (FR: first-use consent + auto-download). */
 sealed interface LlmDownloadPrompt {
@@ -87,6 +144,7 @@ class ChatViewModel(
     private val voiceNoteController: VoiceNoteController,
     private val providerRegistry: ProviderRegistry,
     private val modelManager: ModelManager,
+    private val modelCatalog: ModelCatalogProvider,
     private val appPreferences: AppPreferencesDataStore,
 ) : ViewModel() {
 
@@ -98,6 +156,16 @@ class ChatViewModel(
     /** The model this device can run, resolved once on open; null when the device can't run an LLM. */
     private var offeredModel: ModelDescriptor? = null
 
+    /** Full server-driven catalog, cached for the model-manager sheet. */
+    private var catalog: List<ModelDescriptor> = emptyList()
+
+    /** The model currently selected for chat (user override or RAM-gated auto-pick); null → rule-based. */
+    private var activeModel: ModelDescriptor? = null
+
+    /** Tracks the engine load attempt so the chip can show LOADING → READY / FAILED. */
+    private enum class EngineLoad { UNKNOWN, LOADING, READY, FAILED }
+    private var engineLoad = EngineLoad.UNKNOWN
+
     init {
         voiceNoteController.recordingState
             .onEach { state ->
@@ -107,7 +175,148 @@ class ChatViewModel(
         voiceNoteController.playingNoteId
             .onEach { id -> _uiState.update { it.copy(playingVoiceNoteId = id) } }
             .launchIn(viewModelScope)
+        initModelManager()
         maybeOfferModelDownload()
+    }
+
+    // ---- Model manager (status chip + download / switch / delete sheet) ----
+
+    /**
+     * Load the catalog, reconcile install state from disk, resolve the active model, and start
+     * observing install-status changes so the chip + sheet stay live. When the active model's file is
+     * present, eagerly load the engine so the chip can report READY (or surface a load FAILED) — this
+     * is also what warms the model before the user's first message.
+     */
+    private fun initModelManager() {
+        viewModelScope.launch {
+            catalog = runCatching { modelCatalog.all() }.getOrDefault(emptyList())
+            runCatching { modelManager.refresh() }
+            activeModel = runCatching { providerRegistry.selectedChatModel() }.getOrNull()
+            rebuildModelUi(modelManager.statuses.value)
+            ensureEngineLoaded()
+        }
+        modelManager.statuses
+            .onEach { statuses ->
+                rebuildModelUi(statuses)
+                // When the active model's download just finished, load the engine (chip → READY).
+                val active = activeModel
+                if (active != null &&
+                    statuses[active.id] is ModelInstallStatus.Installed &&
+                    engineLoad == EngineLoad.UNKNOWN
+                ) {
+                    ensureEngineLoaded()
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    /** Load the engine for the active model if its file is present and we haven't loaded it yet. */
+    private suspend fun ensureEngineLoaded() {
+        val active = activeModel ?: return
+        if (modelManager.localPathOrNull(active) == null) return
+        if (engineLoad == EngineLoad.READY || engineLoad == EngineLoad.LOADING) return
+        engineLoad = EngineLoad.LOADING
+        rebuildModelUi(modelManager.statuses.value)
+        val ready = runCatching { providerRegistry.isLlmReady() }.getOrDefault(false)
+        engineLoad = if (ready) EngineLoad.READY else EngineLoad.FAILED
+        rebuildModelUi(modelManager.statuses.value)
+    }
+
+    /** Recompute the chip + sheet rows from the catalog, the active model, and live install status. */
+    private fun rebuildModelUi(statuses: Map<String, ModelInstallStatus>) {
+        val active = activeModel
+        val items = catalog.map { m ->
+            ModelUiItem(
+                id = m.id,
+                displayName = m.displayName,
+                sizeText = formatModelSize(m.sizeBytes),
+                role = m.role.name,
+                recommended = m.recommended,
+                status = (statuses[m.id] ?: ModelInstallStatus.NotInstalled).toItemStatus(),
+                isActive = m.id == active?.id,
+            )
+        }
+        _uiState.update { it.copy(models = items, modelBar = computeChip(active, statuses)) }
+    }
+
+    private fun ModelInstallStatus.toItemStatus(): ModelItemStatus = when (this) {
+        is ModelInstallStatus.NotInstalled -> ModelItemStatus.NotInstalled
+        is ModelInstallStatus.Downloading -> ModelItemStatus.Downloading(fraction)
+        is ModelInstallStatus.Installed -> ModelItemStatus.Installed
+        is ModelInstallStatus.Failed -> ModelItemStatus.Failed(message)
+    }
+
+    private fun computeChip(active: ModelDescriptor?, statuses: Map<String, ModelInstallStatus>): ModelBarState {
+        if (active == null) return ModelBarState(phase = ModelPhase.RULE_BASED)
+        val status = statuses[active.id]
+        if (status is ModelInstallStatus.Downloading) {
+            return ModelBarState(active.displayName, ModelPhase.DOWNLOADING, status.fraction)
+        }
+        val installed = status is ModelInstallStatus.Installed || modelManager.localPathOrNull(active) != null
+        return when {
+            installed && engineLoad == EngineLoad.READY -> ModelBarState(active.displayName, ModelPhase.READY)
+            installed && engineLoad == EngineLoad.FAILED -> ModelBarState(active.displayName, ModelPhase.FAILED)
+            installed -> ModelBarState(active.displayName, ModelPhase.LOADING)
+            status is ModelInstallStatus.Failed -> ModelBarState(active.displayName, ModelPhase.FAILED)
+            else -> ModelBarState(active.displayName, ModelPhase.NOT_DOWNLOADED)
+        }
+    }
+
+    /** Open the model-manager sheet, refreshing the catalog + on-disk state first. */
+    fun openModelManager() {
+        _uiState.update { it.copy(showModelSheet = true) }
+        viewModelScope.launch {
+            if (catalog.isEmpty()) catalog = runCatching { modelCatalog.all() }.getOrDefault(emptyList())
+            runCatching { modelManager.refresh() }
+            rebuildModelUi(modelManager.statuses.value)
+        }
+    }
+
+    fun closeModelManager() {
+        _uiState.update { it.copy(showModelSheet = false) }
+    }
+
+    /** Download a catalog model (records consent so it can auto-resume) without switching to it. */
+    fun onDownloadModel(modelId: String) {
+        val model = catalog.firstOrNull { it.id == modelId } ?: return
+        viewModelScope.launch {
+            appPreferences.setLlmModelDownloadConsent(true)
+            modelManager.download(model)
+        }
+    }
+
+    /** Make [modelId] the active chat model: persist the choice, reload the engine, download if needed. */
+    fun onUseModel(modelId: String) {
+        val model = catalog.firstOrNull { it.id == modelId } ?: return
+        viewModelScope.launch {
+            appPreferences.setSelectedLlmModelId(modelId)
+            activeModel = model
+            engineLoad = EngineLoad.UNKNOWN
+            providerRegistry.reload()
+            if (modelManager.localPathOrNull(model) == null) {
+                appPreferences.setLlmModelDownloadConsent(true)
+                modelManager.download(model)
+            }
+            rebuildModelUi(modelManager.statuses.value)
+            ensureEngineLoaded()
+        }
+    }
+
+    /** Delete a model's file. If it was the active one, clear the override and resume auto-pick. */
+    fun onDeleteModel(modelId: String) {
+        val model = catalog.firstOrNull { it.id == modelId } ?: return
+        viewModelScope.launch {
+            val wasActive = activeModel?.id == modelId
+            modelManager.delete(model)
+            if (wasActive) {
+                appPreferences.setSelectedLlmModelId(null)
+                providerRegistry.reload()
+                engineLoad = EngineLoad.UNKNOWN
+                activeModel = runCatching { providerRegistry.selectedChatModel() }.getOrNull()
+                ensureEngineLoaded()
+            }
+            rebuildModelUi(modelManager.statuses.value)
+        }
     }
 
     /**

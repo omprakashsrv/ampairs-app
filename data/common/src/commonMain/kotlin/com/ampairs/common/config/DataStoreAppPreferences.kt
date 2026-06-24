@@ -26,6 +26,7 @@ class DataStoreAppPreferences(
         private val LAST_WORKSPACE_ID_KEY = stringPreferencesKey("last_workspace_id")
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
         private val LLM_MODEL_DOWNLOAD_CONSENT_KEY = booleanPreferencesKey("llm_model_download_consent")
+        private val SELECTED_LLM_MODEL_ID_KEY = stringPreferencesKey("selected_llm_model_id")
 
         // Workspace-aware preference keys
         // Note: These keys include workspace slug to maintain separate state per workspace
@@ -271,6 +272,22 @@ class DataStoreAppPreferences(
     override suspend fun setLlmModelDownloadConsent(granted: Boolean) {
         dataStore.edit { preferences ->
             preferences[LLM_MODEL_DOWNLOAD_CONSENT_KEY] = granted
+        }
+    }
+
+    override fun getSelectedLlmModelId(): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[SELECTED_LLM_MODEL_ID_KEY]
+        }
+    }
+
+    override suspend fun setSelectedLlmModelId(modelId: String?) {
+        dataStore.edit { preferences ->
+            if (modelId != null) {
+                preferences[SELECTED_LLM_MODEL_ID_KEY] = modelId
+            } else {
+                preferences.remove(SELECTED_LLM_MODEL_ID_KEY)
+            }
         }
     }
 }
