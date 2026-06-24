@@ -38,6 +38,8 @@ kotlin {
                 implementation(libs.compose.material3)
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
+                // kodio — KMP audio recording/playback for in-chat voice notes (record + replay).
+                implementation(libs.kodio.core)
             }
         }
         androidMain {

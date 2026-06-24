@@ -1,8 +1,5 @@
 package com.ampairs.agent.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +18,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
@@ -54,6 +54,10 @@ import ampairsapp.feature.agent.generated.resources.agent_input_placeholder
 import ampairsapp.feature.agent.generated.resources.agent_mute_cd
 import ampairsapp.feature.agent.generated.resources.agent_send_cd
 import ampairsapp.feature.agent.generated.resources.agent_unmute_cd
+import ampairsapp.feature.agent.generated.resources.agent_voice_note_cancel_cd
+import ampairsapp.feature.agent.generated.resources.agent_voice_note_record_cd
+import ampairsapp.feature.agent.generated.resources.agent_voice_note_recording
+import ampairsapp.feature.agent.generated.resources.agent_voice_note_stop_cd
 import ampairsapp.feature.agent.generated.resources.agent_thinking
 import ampairsapp.feature.agent.generated.resources.agent_title
 import com.ampairs.agent.ui.components.MessageBubble
@@ -129,6 +133,8 @@ fun ChatScreen(
                         MessageBubble(
                             message = message,
                             onActionClick = onNavigateToRoute,
+                            isVoiceNotePlaying = uiState.playingVoiceNoteId == message.id,
+                            onVoiceNoteToggle = { viewModel.toggleVoiceNotePlayback(message.id) },
                         )
                     }
 
@@ -172,6 +178,10 @@ fun ChatScreen(
             isProcessing = uiState.isProcessing,
             isListening = uiState.isListening,
             onVoiceClick = { viewModel.toggleVoiceInput() },
+            isRecordingVoiceNote = uiState.isRecordingVoiceNote,
+            onStartVoiceNote = viewModel::startVoiceNote,
+            onStopAndSendVoiceNote = viewModel::stopAndSendVoiceNote,
+            onCancelVoiceNote = viewModel::cancelVoiceNote,
         )
     }
 }
@@ -212,6 +222,10 @@ private fun ChatInputBar(
     isProcessing: Boolean,
     isListening: Boolean,
     onVoiceClick: () -> Unit,
+    isRecordingVoiceNote: Boolean,
+    onStartVoiceNote: () -> Unit,
+    onStopAndSendVoiceNote: () -> Unit,
+    onCancelVoiceNote: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -222,31 +236,32 @@ private fun ChatInputBar(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            VoiceInputButton(
-                isListening = isListening,
-                onClick = onVoiceClick,
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            OutlinedTextField(
-                value = text,
-                onValueChange = onTextChange,
-                placeholder = { Text(stringResource(Res.string.agent_input_placeholder)) },
-                modifier = Modifier.weight(1f),
-                maxLines = 4,
-                shape = MaterialTheme.shapes.extraLarge,
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            AnimatedVisibility(
-                visible = text.isNotBlank() && !isProcessing,
-                enter = fadeIn(),
-                exit = fadeOut(),
-            ) {
+            if (isRecordingVoiceNote) {
+                // Recording a voice note: discard | "Recording…" | stop & send.
+                IconButton(onClick = onCancelVoiceNote, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.agent_voice_note_cancel_cd))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        Icons.Default.FiberManualRecord,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = stringResource(Res.string.agent_voice_note_recording),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
-                    onClick = onSend,
+                    onClick = onStopAndSendVoiceNote,
                     modifier = Modifier.size(40.dp),
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -255,8 +270,57 @@ private fun ChatInputBar(
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
-                        contentDescription = stringResource(Res.string.agent_send_cd),
+                        contentDescription = stringResource(Res.string.agent_voice_note_stop_cd),
                     )
+                }
+            } else {
+                VoiceInputButton(
+                    isListening = isListening,
+                    onClick = onVoiceClick,
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    placeholder = { Text(stringResource(Res.string.agent_input_placeholder)) },
+                    modifier = Modifier.weight(1f),
+                    maxLines = 4,
+                    shape = MaterialTheme.shapes.extraLarge,
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                if (text.isNotBlank() && !isProcessing) {
+                    IconButton(
+                        onClick = onSend,
+                        modifier = Modifier.size(40.dp),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            contentDescription = stringResource(Res.string.agent_send_cd),
+                        )
+                    }
+                } else {
+                    // Blank input → record a voice note (waveform glyph distinguishes it from STT mic).
+                    IconButton(
+                        onClick = onStartVoiceNote,
+                        modifier = Modifier.size(40.dp),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    ) {
+                        Icon(
+                            Icons.Default.GraphicEq,
+                            contentDescription = stringResource(Res.string.agent_voice_note_record_cd),
+                        )
+                    }
                 }
             }
         }
