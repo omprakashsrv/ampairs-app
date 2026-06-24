@@ -24,6 +24,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -102,15 +103,48 @@ class DefaultModelManager(
         jobs[model.id]?.cancel()
         jobs[model.id] = scope.launch {
             try {
-                set(model.id, ModelInstallStatus.Downloading(0, model.sizeBytes))
+                set(model.id, ModelInstallStatus.Downloading(sizeOf(partPath(model)) ?: 0L, model.sizeBytes))
                 SystemFileSystem.createDirectories(dir())
-                runDownload(model, authToken)
+                downloadWithResume(model, authToken)
             } catch (c: CancellationException) {
                 throw c
             } catch (e: Exception) {
                 set(model.id, ModelInstallStatus.Failed(e.message ?: "Download failed"))
             } finally {
                 jobs.remove(model.id)
+            }
+        }
+    }
+
+    /**
+     * Run [runDownload], transparently resuming from the `.part` file (HTTP `Range`) when the
+     * connection drops mid-stream — common for these multi-GB models on mobile networks. The retry
+     * budget resets whenever bytes advance, so a download over a flaky link keeps going as long as it
+     * makes progress and only gives up after [MAX_STALLED_RETRIES] consecutive attempts with no new
+     * bytes. Terminal failures (size/checksum mismatch) don't throw here — [runDownload] sets
+     * [ModelInstallStatus.Failed] and returns, so they aren't retried.
+     */
+    private suspend fun downloadWithResume(model: ModelDescriptor, authToken: String?) {
+        var stalledRetries = 0
+        var lastBytes = sizeOf(partPath(model)) ?: 0L
+        while (true) {
+            try {
+                runDownload(model, authToken)
+                return
+            } catch (c: CancellationException) {
+                throw c
+            } catch (e: Exception) {
+                val bytes = sizeOf(partPath(model)) ?: 0L
+                if (bytes > lastBytes) {
+                    stalledRetries = 0
+                    lastBytes = bytes
+                } else {
+                    stalledRetries++
+                }
+                if (stalledRetries >= MAX_STALLED_RETRIES) throw e
+                // Keep the UI in "downloading" with the partial progress while we back off, then resume.
+                set(model.id, ModelInstallStatus.Downloading(bytes, model.sizeBytes))
+                delay(RESUME_BACKOFF_MILLIS * stalledRetries)
             }
         }
     }
@@ -217,5 +251,7 @@ class DefaultModelManager(
         const val DOWNLOAD_CHUNK = 64L * 1024
         const val PROGRESS_STEP = 1_000_000L // emit progress roughly per ~1 MB
         const val HEX = "0123456789abcdef"
+        const val MAX_STALLED_RETRIES = 5 // consecutive no-progress resume attempts before giving up
+        const val RESUME_BACKOFF_MILLIS = 2_000L // backoff grows: 2s, 4s, 6s, … between resume attempts
     }
 }
