@@ -40,6 +40,7 @@ class ProviderRegistry(
     private val backends: Set<LlmBackend>,
     private val config: AssistantConfig,
     private val closableRegistry: WorkspaceClosableRegistry,
+    private val modelCatalog: ModelCatalogProvider,
 ) {
     private val mutex = Mutex()
     private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -50,11 +51,19 @@ class ProviderRegistry(
     @Volatile
     private var closableRegistered = false
 
-    /** The chat model the device may run, gated by RAM; null → rule-based-only. */
-    fun selectedChatModel(): ModelDescriptor? {
+    /**
+     * The chat model the device may run, gated by RAM; null → rule-based-only. Resolved from the
+     * server-seeded catalog ([ModelCatalogProvider]) — the RAM tier picks a preferred id, and we fall
+     * back to the largest CHAT model whose memory footprint fits if that exact id isn't seeded.
+     */
+    suspend fun selectedChatModel(): ModelDescriptor? {
         if (!config.llmEnabled) return null
-        val recommendedId = RamTiers.recommendedChatModelId(DeviceCapability.totalRamBytes()) ?: return null
-        return ModelCatalog.byId(recommendedId)
+        val ram = DeviceCapability.totalRamBytes()
+        val recommendedId = RamTiers.recommendedChatModelId(ram) ?: return null
+        val catalog = modelCatalog.all()
+        return catalog.firstOrNull { it.id == recommendedId }
+            ?: catalog.filter { it.role == ModelRole.CHAT && it.estimatedPeakMemoryBytes <= ram }
+                .maxByOrNull { it.estimatedPeakMemoryBytes }
     }
 
     /** Engine ids in preference order: config override → platform primary → platform fallback. */
