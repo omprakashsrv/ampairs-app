@@ -1,0 +1,11 @@
+<resources>
+    <!-- Price list management -->
+    <string name="pricing_list_title">Price Lists</string>
+    <string name="pricing_add">Add Price List</string>
+    <string name="pricing_empty_title">No price lists yet</string>
+    <string name="pricing_geo_zones_title">Geo Zones</string>
+    <string name="pricing_cancel">Cancel</string>
+    <string name="pricing_save">Save</string>
+    <string name="pricing_retry">Retry</string>
+    <string name="pricing_error_title">Error</string>
+</resources>

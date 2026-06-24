@@ -13,6 +13,8 @@ enum class SyncEntity(val entityType: String) {
     BUSINESS("business"),
     TAX("tax"),
     UNIT("unit"),
+    PRICE_LIST("price_list"),
+    GEO_ZONE("geo_zone"),
     SEQUENCE("sequence"),
     STORE("setting"),
     INVENTORY("inventory"),
