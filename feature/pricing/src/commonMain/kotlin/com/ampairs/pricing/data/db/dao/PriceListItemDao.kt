@@ -9,6 +9,9 @@ import com.ampairs.pricing.data.db.entity.PriceListItemEntity
 @Dao
 interface PriceListItemDao {
 
+    @Query("SELECT * FROM price_list_items WHERE id = :id")
+    suspend fun getItemById(id: String): PriceListItemEntity?
+
     @Query("SELECT * FROM price_list_items WHERE price_list_id = :priceListId AND active = 1")
     suspend fun getItemsForPriceList(priceListId: String): List<PriceListItemEntity>
 

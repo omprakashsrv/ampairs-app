@@ -12,11 +12,11 @@ enum class PriceListStatus { DRAFT, ACTIVE, INACTIVE }
 /** Source of a resolved price (mirrors backend PriceResolutionResponse.source). */
 enum class PriceSource { PRICE_LIST, CATALOG_FALLBACK }
 
-/** A quantity slab: at `minQty` and above (until the next tier), the unit price is `unitPrice`. */
+/** Money on the wire: `{ amount_minor, currency }` (matches backend core MoneyDto). */
 @Serializable
-data class PriceTier(
-    @SerialName("min_qty") val minQty: Double,
-    @SerialName("unit_price") val unitPrice: Double,
+data class MoneyDto(
+    @SerialName("amount_minor") val amountMinor: Long = 0,
+    val currency: String? = null,
 )
 
 /** Structured attribute predicate (lowest-precedence targeting). */
@@ -27,23 +27,15 @@ data class AttributePredicate(
     val value: String,
 )
 
-@Serializable
-data class PriceListItem(
-    val uid: String = "",
-    @SerialName("price_list_id") val priceListId: String = "",
-    @SerialName("product_id") val productId: String,
-    @SerialName("variant_sku") val variantSku: String? = null,
-    @SerialName("unit_price") val unitPrice: Double,
-    val moq: Double? = null,
-    val tiers: List<PriceTier> = emptyList(),
-    val active: Boolean = true,
-    @SerialName("created_at") val createdAt: String? = null,
-    @SerialName("updated_at") val updatedAt: String? = null,
-)
-
+/**
+ * Price-list header. Mirrors backend `PriceListResponse` (items are a SEPARATE sync feed —
+ * see [PriceListItem]). Also serialized as the push body; the backend `PriceListRequest` ignores
+ * the extra `created_at`/`updated_at` fields.
+ */
 @Serializable
 data class PriceList(
     val uid: String = "",
+    @SerialName("ref_id") val refId: String? = null,
     val name: String,
     val channel: SalesChannel = SalesChannel.RETAIL,
     @SerialName("customer_group_id") val customerGroupId: String? = null,
@@ -60,23 +52,78 @@ data class PriceList(
     @SerialName("starts_at") val startsAt: String? = null,
     @SerialName("ends_at") val endsAt: String? = null,
     val active: Boolean = true,
-    val items: List<PriceListItem> = emptyList(),
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
 )
 
+/** A quantity slab (local/domain form): at `minQty` and above, the unit price is `unitPriceMinor`. */
+data class PriceTier(
+    val minQty: Double,
+    val unitPriceMinor: Long,
+)
+
+/**
+ * Price-list item (local/domain form). Money is held in minor units to match the backend.
+ * Wire mapping is asymmetric (pull = MoneyDto, push = minor) — see the api layer DTOs.
+ */
+data class PriceListItem(
+    val uid: String = "",
+    val refId: String? = null,
+    val priceListId: String = "",
+    val productId: String,
+    val variantSku: String? = null,
+    val unitPriceMinor: Long,
+    val currency: String? = null,
+    val moq: Double? = null,
+    val tiers: List<PriceTier> = emptyList(),
+    val active: Boolean = true,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+)
+
+/** Header + its items, assembled locally for the editor UI (never serialized as one wire object). */
+data class PriceListAggregate(
+    val header: PriceList,
+    val items: List<PriceListItem> = emptyList(),
+)
+
+/** Geo-zone membership — mirrors backend `GeoZoneMembers`. */
+@Serializable
+data class GeoZoneMembers(
+    val pincodes: List<String> = emptyList(),
+    @SerialName("pincode_ranges") val pincodeRanges: List<PincodeRange> = emptyList(),
+    val states: List<String> = emptyList(),
+) {
+    @Serializable
+    data class PincodeRange(val from: String, val to: String)
+
+    /** True if [pincode] falls in this zone (exact list, a numeric range, or — when given — its [state]). */
+    fun contains(pincode: String, state: String? = null): Boolean {
+        if (pincode in pincodes) return true
+        if (state != null && states.any { it.equals(state, ignoreCase = true) }) return true
+        val numeric = pincode.toLongOrNull()
+        if (numeric != null && pincodeRanges.any { r ->
+                val from = r.from.toLongOrNull()
+                val to = r.to.toLongOrNull()
+                from != null && to != null && numeric in from..to
+            }
+        ) return true
+        return false
+    }
+}
+
 @Serializable
 data class GeoZone(
     val uid: String = "",
+    @SerialName("ref_id") val refId: String? = null,
     val name: String,
-    /** Members: pincodes, ranges ("560001-560010"), or state codes. */
-    val members: List<String> = emptyList(),
+    val members: GeoZoneMembers = GeoZoneMembers(),
     val active: Boolean = true,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
 )
 
-/** Result of resolving an effective unit price for a product+quantity in a channel/segment. */
+/** Result of resolving an effective unit price (major units, for the order/invoice line seam). */
 data class PriceResolution(
     val effectiveUnitPrice: Double,
     val currency: String,

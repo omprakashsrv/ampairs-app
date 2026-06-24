@@ -16,8 +16,8 @@ import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 
 /**
- * Ktor implementation of [PricingApi] against `/api/pricing/v1/price-lists/sync` and
- * `/api/pricing/v1/geo-zones/sync` (the canonical unified `/sync` contract).
+ * Ktor implementation of [PricingApi] against `/api/pricing/v1/price-lists/sync`,
+ * `/api/pricing/v1/price-lists/items/sync`, and `/api/pricing/v1/geo-zones/sync`.
  */
 @Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class PricingApiImpl(
@@ -39,13 +39,7 @@ class PricingApiImpl(
         last = true,
     )
 
-    override suspend fun getPriceListsSync(
-        lastSync: String,
-        page: Int,
-        size: Int,
-        sortBy: String,
-        sortDir: String,
-    ): PageResponse<PriceList> {
+    private fun syncParams(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): Map<String, Any> {
         val params = mutableMapOf<String, Any>(
             "page" to page,
             "size" to size,
@@ -53,11 +47,15 @@ class PricingApiImpl(
             "sort_dir" to sortDir,
         )
         if (lastSync.isNotBlank()) params["last_sync"] = lastSync
+        return params
+    }
 
+    override suspend fun getPriceListsSync(
+        lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String,
+    ): PageResponse<PriceList> {
         val response: Response<PageResponse<PriceList>> = get(
-            client,
-            ApiUrlBuilder.pricingUrl("v1/price-lists/sync"),
-            params,
+            client, ApiUrlBuilder.pricingUrl("v1/price-lists/sync"),
+            syncParams(lastSync, page, size, sortBy, sortDir),
         )
         if (response.error != null) throw Exception(response.error?.message ?: "Network error")
         return response.data ?: emptyPage(page, size)
@@ -65,32 +63,35 @@ class PricingApiImpl(
 
     override suspend fun bulkUpdatePriceLists(priceLists: List<PriceList>): List<PriceList> {
         val response: Response<List<PriceList>> = post(
-            client,
-            ApiUrlBuilder.pricingUrl("v1/price-lists/sync"),
-            priceLists,
+            client, ApiUrlBuilder.pricingUrl("v1/price-lists/sync"), priceLists,
         )
         return response.data ?: throw Exception("Failed to bulk update price lists")
     }
 
-    override suspend fun getGeoZonesSync(
-        lastSync: String,
-        page: Int,
-        size: Int,
-        sortBy: String,
-        sortDir: String,
-    ): PageResponse<GeoZone> {
-        val params = mutableMapOf<String, Any>(
-            "page" to page,
-            "size" to size,
-            "sort_by" to sortBy,
-            "sort_dir" to sortDir,
+    override suspend fun getPriceListItemsSync(
+        lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String,
+    ): PageResponse<PriceListItemResponse> {
+        val response: Response<PageResponse<PriceListItemResponse>> = get(
+            client, ApiUrlBuilder.pricingUrl("v1/price-lists/items/sync"),
+            syncParams(lastSync, page, size, sortBy, sortDir),
         )
-        if (lastSync.isNotBlank()) params["last_sync"] = lastSync
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
 
+    override suspend fun bulkUpdatePriceListItems(items: List<PriceListItemPush>): List<PriceListItemResponse> {
+        val response: Response<List<PriceListItemResponse>> = post(
+            client, ApiUrlBuilder.pricingUrl("v1/price-lists/items/sync"), items,
+        )
+        return response.data ?: throw Exception("Failed to bulk update price list items")
+    }
+
+    override suspend fun getGeoZonesSync(
+        lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String,
+    ): PageResponse<GeoZone> {
         val response: Response<PageResponse<GeoZone>> = get(
-            client,
-            ApiUrlBuilder.pricingUrl("v1/geo-zones/sync"),
-            params,
+            client, ApiUrlBuilder.pricingUrl("v1/geo-zones/sync"),
+            syncParams(lastSync, page, size, sortBy, sortDir),
         )
         if (response.error != null) throw Exception(response.error?.message ?: "Network error")
         return response.data ?: emptyPage(page, size)
@@ -98,9 +99,7 @@ class PricingApiImpl(
 
     override suspend fun bulkUpdateGeoZones(geoZones: List<GeoZone>): List<GeoZone> {
         val response: Response<List<GeoZone>> = post(
-            client,
-            ApiUrlBuilder.pricingUrl("v1/geo-zones/sync"),
-            geoZones,
+            client, ApiUrlBuilder.pricingUrl("v1/geo-zones/sync"), geoZones,
         )
         return response.data ?: throw Exception("Failed to bulk update geo zones")
     }

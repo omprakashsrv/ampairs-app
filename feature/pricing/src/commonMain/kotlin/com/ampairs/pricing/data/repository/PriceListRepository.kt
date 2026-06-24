@@ -9,6 +9,7 @@ import com.ampairs.pricing.data.db.entity.toPriceList
 import com.ampairs.pricing.data.db.entity.toPriceListItem
 import com.ampairs.pricing.domain.model.GeoZone
 import com.ampairs.pricing.domain.model.PriceList
+import com.ampairs.pricing.domain.model.PriceListAggregate
 import com.ampairs.pricing.domain.model.PriceListItem
 import com.ampairs.pricing.domain.model.PriceResolution
 import com.ampairs.pricing.domain.model.PriceSource
@@ -26,6 +27,10 @@ import kotlin.time.ExperimentalTime
  * Local-only data access for price lists, items, and geo zones. The [PricingApi] lives in the
  * sync delegates; writes here persist to Room as unsynced and flag PENDING_PUSH so CentralSyncService
  * runs the automatic bulk push. Also hosts the offline [resolve] used by order/invoice entry.
+ *
+ * Headers and items are separate syncable resources (PRICE_LIST / PRICE_LIST_ITEM), matching the
+ * backend two-feed contract. Money is held in minor units; [resolve] returns major units for the
+ * order/invoice line seam.
  */
 @OptIn(ExperimentalTime::class)
 @Inject
@@ -47,35 +52,36 @@ class PriceListRepository(
         geoZoneDao.getAllGeoZones().map { rows -> rows.map { it.toGeoZone() } }
 
     /** Full aggregate (header + items) for editing. */
-    suspend fun getPriceList(id: String): PriceList? {
-        val header = priceListDao.getPriceListById(id) ?: return null
+    suspend fun getPriceList(id: String): PriceListAggregate? {
+        val header = priceListDao.getPriceListById(id)?.toPriceList() ?: return null
         val items = priceListItemDao.getItemsForPriceList(id).map { it.toPriceListItem() }
-        return header.toPriceList(items)
+        return PriceListAggregate(header, items)
     }
 
     // --- Writes (offline-first) -------------------------------------------------------------
 
-    /** Persist a price-list aggregate (header + items) locally as unsynced and flag for push. */
-    suspend fun savePriceList(priceList: PriceList): Result<PriceList> {
-        require(priceList.uid.isNotBlank()) { "Price list UID must be set by the ViewModel" }
+    /** Persist a price-list aggregate (header + items) locally as unsynced and flag both feeds. */
+    suspend fun savePriceList(aggregate: PriceListAggregate): Result<PriceListAggregate> {
+        val header = aggregate.header
+        require(header.uid.isNotBlank()) { "Price list UID must be set by the ViewModel" }
         return try {
-            priceListDao.insertPriceList(priceList.toEntity().copy(synced = false))
-            // Replace the item set for this list (simple aggregate write).
-            priceListItemDao.deleteItemsForPriceList(priceList.uid)
-            if (priceList.items.isNotEmpty()) {
+            priceListDao.insertPriceList(header.toEntity().copy(synced = false))
+            priceListItemDao.deleteItemsForPriceList(header.uid)
+            if (aggregate.items.isNotEmpty()) {
                 priceListItemDao.insertItems(
-                    priceList.items.map { it.toEntity(priceList.uid).copy(synced = false) }
+                    aggregate.items.map { it.toEntity(header.uid).copy(synced = false) }
                 )
             }
             markPending(SyncEntity.PRICE_LIST)
-            Result.success(priceList)
+            markPending(SyncEntity.PRICE_LIST_ITEM)
+            Result.success(aggregate)
         } catch (e: Exception) {
             PricingLogger.e(tag, "Failed to save price list", e)
             Result.failure(e)
         }
     }
 
-    /** Soft-delete a price-list aggregate (header + items inactive + unsynced) and flag for push. */
+    /** Soft-delete a price-list aggregate (header + items inactive + unsynced) and flag both feeds. */
     suspend fun deletePriceList(id: String): Result<Unit> {
         return try {
             val existing = priceListDao.getPriceListById(id)
@@ -85,6 +91,7 @@ class PriceListRepository(
                     priceListItemDao.insertItem(it.copy(active = false, synced = false))
                 }
                 markPending(SyncEntity.PRICE_LIST)
+                markPending(SyncEntity.PRICE_LIST_ITEM)
             }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -122,10 +129,9 @@ class PriceListRepository(
     // --- Offline resolution -----------------------------------------------------------------
 
     /**
-     * Resolve the effective unit price offline from the local read model. Mirrors the backend
-     * precedence (per-customer > group/channel > product-group/brand/category > geo-zone/type >
-     * predicate), tie-broken by list `priority`. Falls back to [fallbackUnitPrice] when no list
-     * matches (CATALOG_FALLBACK).
+     * Resolve the effective unit price offline from the local read model. Mirrors backend precedence
+     * (per-customer > group/channel > product-group/brand/category > geo-zone/type > predicate),
+     * tie-broken by `priority`. Returns major units; falls back to [fallbackUnitPrice] (CATALOG_FALLBACK).
      */
     suspend fun resolve(
         channel: SalesChannel,
@@ -147,11 +153,11 @@ class PriceListRepository(
 
         for (list in candidates) {
             val item = bestItemFor(list.uid, productId, variantSku) ?: continue
-            val tierPrice = item.priceForQuantity(quantity)
+            val tierMinor = item.priceMinorForQuantity(quantity)
             val belowMoq = item.moq?.let { quantity < it } ?: false
             return PriceResolution(
-                effectiveUnitPrice = tierPrice,
-                currency = list.currency,
+                effectiveUnitPrice = tierMinor / 100.0,
+                currency = item.currency ?: list.currency,
                 source = PriceSource.PRICE_LIST,
                 matchedPriceListUid = list.uid,
                 appliedTierMinQty = item.appliedTierMinQty(quantity),
@@ -166,14 +172,13 @@ class PriceListRepository(
     }
 
     private suspend fun zoneIdForPincode(pincode: String): String? =
-        geoZoneDao.getActiveGeoZones().map { it.toGeoZone() }.firstOrNull { it.matches(pincode) }?.uid
+        geoZoneDao.getActiveGeoZones().map { it.toGeoZone() }.firstOrNull { it.members.contains(pincode) }?.uid
 
     private suspend fun bestItemFor(priceListId: String, productId: String, variantSku: String?): PriceListItem? {
         val items = priceListItemDao.getItemsForPriceList(priceListId)
             .map { it.toPriceListItem() }
             .filter { it.productId == productId }
         if (items.isEmpty()) return null
-        // Variant match wins over a base (null-variant) item.
         return items.firstOrNull { variantSku != null && it.variantSku == variantSku }
             ?: items.firstOrNull { it.variantSku == null }
             ?: items.first()
@@ -214,30 +219,11 @@ internal fun PriceList.matchesTargeting(
     return true
 }
 
-/** Effective unit price for a quantity: highest tier whose minQty <= qty, else the base unitPrice. */
-internal fun PriceListItem.priceForQuantity(quantity: Double): Double {
+/** Effective unit price (minor) for a quantity: highest tier whose minQty <= qty, else base. */
+internal fun PriceListItem.priceMinorForQuantity(quantity: Double): Long {
     val applicable = tiers.filter { it.minQty <= quantity }.maxByOrNull { it.minQty }
-    return applicable?.unitPrice ?: unitPrice
+    return applicable?.unitPriceMinor ?: unitPriceMinor
 }
 
 internal fun PriceListItem.appliedTierMinQty(quantity: Double): Double? =
     tiers.filter { it.minQty <= quantity }.maxByOrNull { it.minQty }?.minQty
-
-/** Geo-zone membership: exact pincode, inclusive numeric range "a-b", or state-code match. */
-internal fun GeoZone.matches(pincode: String): Boolean {
-    val target = pincode.trim()
-    val targetNum = target.toIntOrNull()
-    return members.any { raw ->
-        val m = raw.trim()
-        when {
-            m.equals(target, ignoreCase = true) -> true
-            m.contains('-') && targetNum != null -> {
-                val parts = m.split('-')
-                val lo = parts.getOrNull(0)?.trim()?.toIntOrNull()
-                val hi = parts.getOrNull(1)?.trim()?.toIntOrNull()
-                lo != null && hi != null && targetNum in lo..hi
-            }
-            else -> false
-        }
-    }
-}

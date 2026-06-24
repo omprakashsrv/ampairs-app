@@ -5,14 +5,13 @@ import com.ampairs.pricing.domain.model.GeoZone
 import com.ampairs.pricing.domain.model.PriceList
 
 /**
- * Pricing API — the unified `/sync` contract for price lists and geo zones.
- *  - PULL via `getPriceListsSync` / `getGeoZonesSync` (GET, snake_case params, includes soft-deleted rows)
- *  - PUSH via `bulkUpdatePriceLists` / `bulkUpdateGeoZones` (POST bulk upsert, soft-deletes in-band)
- *
- * Price lists are aggregate-grained: each [PriceList] carries its `items`.
+ * Pricing API — the unified `/sync` contract. Price lists use a TWO-FEED model (mirrors backend):
+ * headers via `/price-lists/sync` and items via `/price-lists/items/sync` (separate resources).
+ * Geo zones sync via `/geo-zones/sync`.
  */
 interface PricingApi {
 
+    // ── price-list headers ──────────────────────────────────────────────────────────────
     suspend fun getPriceListsSync(
         lastSync: String,
         page: Int = 0,
@@ -23,6 +22,18 @@ interface PricingApi {
 
     suspend fun bulkUpdatePriceLists(priceLists: List<PriceList>): List<PriceList>
 
+    // ── price-list items (asymmetric money: pull MoneyDto / push minor) ───────────────────
+    suspend fun getPriceListItemsSync(
+        lastSync: String,
+        page: Int = 0,
+        size: Int = 100,
+        sortBy: String = "updatedAt",
+        sortDir: String = "ASC",
+    ): PageResponse<PriceListItemResponse>
+
+    suspend fun bulkUpdatePriceListItems(items: List<PriceListItemPush>): List<PriceListItemResponse>
+
+    // ── geo zones ─────────────────────────────────────────────────────────────────────────
     suspend fun getGeoZonesSync(
         lastSync: String,
         page: Int = 0,

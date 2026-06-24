@@ -6,13 +6,12 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.ampairs.pricing.domain.model.AttributePredicate
 import com.ampairs.pricing.domain.model.PriceList
-import com.ampairs.pricing.domain.model.PriceListItem
 import com.ampairs.pricing.domain.model.PriceListStatus
 import com.ampairs.pricing.domain.model.SalesChannel
 import kotlinx.serialization.builtins.ListSerializer
 
 /**
- * Room entity for a price list header. Items live in [PriceListItemEntity] (queryable for resolution).
+ * Room entity for a price-list header. Items live in [PriceListItemEntity] (their own `/sync` feed).
  * `attribute_predicates_json` stores the predicate list as JSON text (vendor-portable).
  */
 @Entity(
@@ -25,6 +24,7 @@ import kotlinx.serialization.builtins.ListSerializer
 )
 data class PriceListEntity(
     @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "ref_id") val refId: String? = null,
     @ColumnInfo(name = "name") val name: String,
     @ColumnInfo(name = "channel") val channel: String,
     @ColumnInfo(name = "customer_group_id") val customerGroupId: String? = null,
@@ -61,9 +61,9 @@ private fun encodePredicates(predicates: List<AttributePredicate>): String? =
     if (predicates.isEmpty()) null
     else PricingJson.encodeToString(ListSerializer(AttributePredicate.serializer()), predicates)
 
-/** Entity → domain. Items are passed in separately (they live in their own table). */
-fun PriceListEntity.toPriceList(items: List<PriceListItem> = emptyList()): PriceList = PriceList(
+fun PriceListEntity.toPriceList(): PriceList = PriceList(
     uid = id,
+    refId = refId,
     name = name,
     channel = parseChannel(channel),
     customerGroupId = customerGroupId,
@@ -80,14 +80,13 @@ fun PriceListEntity.toPriceList(items: List<PriceListItem> = emptyList()): Price
     startsAt = startsAt,
     endsAt = endsAt,
     active = active,
-    items = items,
     createdAt = createdAt,
     updatedAt = updatedAt,
 )
 
-/** Domain → entity (header only). */
 fun PriceList.toEntity(): PriceListEntity = PriceListEntity(
     id = uid,
+    refId = refId,
     name = name,
     channel = channel.name,
     customerGroupId = customerGroupId,
