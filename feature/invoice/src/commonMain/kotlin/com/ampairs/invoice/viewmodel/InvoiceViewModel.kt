@@ -30,6 +30,8 @@ import com.ampairs.invoice.editor.entry.EntryMatcher
 import com.ampairs.invoice.editor.entry.EntryPreview
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.data.PriceResolver
+import com.ampairs.product.data.PriceResolutionInput
 import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.store.domain.StoreSettingsProvider
@@ -79,6 +81,7 @@ class InvoiceViewModel(
     val customerDataService: CustomerDataService,
     val invoiceRepository: InvoiceRepository,
     val productDataService: ProductDataService,
+    val priceResolver: PriceResolver,
     val tokenRepository: TokenRepository,
     val taxRateProvider: TaxRateProvider,
     val unitOptionsLookup: UnitOptionsLookup,
@@ -352,17 +355,34 @@ class InvoiceViewModel(
         val item = invoiceItems.find { it.id == lineId } ?: return
         viewModelScope.launch(DispatcherProvider.io) {
             val product = productDataService.getById(productId) ?: return@launch
+            // Resolve the line price through the PriceResolver seam (spec 009) with the invoice's
+            // customer + channel context. Walk-in => RETAIL, named customer => WHOLESALE. Falls back
+            // to product.sellingPrice when no price list matches.
+            val invoiceCustomer = invoice.customer
+            val resolvedPrice = priceResolver.resolveUnitPrice(
+                PriceResolutionInput(
+                    productId = product.id,
+                    variantSku = null,
+                    quantity = item.quantity,
+                    fallbackUnitPrice = product.sellingPrice,
+                    channel = if (customerWalkIn || invoiceCustomer == null) "RETAIL" else "WHOLESALE",
+                    customerId = invoiceCustomer?.uid,
+                    customerGroupId = invoiceCustomer?.customerGroup,
+                    customerType = invoiceCustomer?.customerType,
+                    pincode = invoiceCustomer?.pincode,
+                ),
+            )
             item.product = product
             item.productId = product.id
             item.description = product.name + " " + product.code
-            item.productPrice = product.sellingPrice
+            item.productPrice = resolvedPrice
             item.priceOverridden = false
             item.variantSku = null
             val base = engine.unitsFor(product).firstOrNull()
             if (base != null) {
                 item.selectUnit(base.unitId, base.name, base.multiplier)
             } else {
-                item.price = product.sellingPrice
+                item.price = resolvedPrice
                 item.updateTotal()
             }
             invoice.updateTotalCost()
