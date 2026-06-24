@@ -28,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.io.IOException
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -161,6 +162,12 @@ class DefaultModelManager(
                 ?.let { header("X-Workspace-ID", it) }
             if (wantResume) header(HttpHeaders.Range, "bytes=$alreadyHave-")
         }.execute { response ->
+            // Reject error responses (e.g. proxy 401 gated / 404 / 5xx) instead of writing the error
+            // body into the .part file and later failing with a confusing size mismatch. Throwing
+            // lets downloadWithResume retry transient failures and give up on persistent ones.
+            if (response.status != HttpStatusCode.OK && response.status != HttpStatusCode.PartialContent) {
+                throw IOException("Download failed: server returned ${response.status.value}")
+            }
             val resumed = wantResume && response.status == HttpStatusCode.PartialContent
             if (!resumed) SystemFileSystem.delete(part, mustExist = false)
 
