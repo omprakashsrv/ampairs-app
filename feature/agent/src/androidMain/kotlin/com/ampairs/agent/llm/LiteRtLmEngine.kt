@@ -2,15 +2,21 @@ package com.ampairs.agent.llm
 
 import android.content.Context
 import co.touchlab.kermit.Logger
+import com.ampairs.agent.core.AgentStreamEvent
+import com.ampairs.common.agent.ActionResult
+import com.ampairs.common.agent.AgentAction
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.ExperimentalApi
+import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.SamplerConfig
+import com.google.ai.edge.litertlm.tool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -59,7 +65,7 @@ class LiteRtLmEngine(
 ) : LlmEngine {
 
     @Volatile private var engine: Engine? = null
-    @Volatile private var conversationConfig: ConversationConfig? = null
+    @Volatile private var samplerConfig: SamplerConfig? = null
 
     override suspend fun load(model: ModelDescriptor, params: LlmParams) {
         if (engine != null) return
@@ -67,12 +73,10 @@ class LiteRtLmEngine(
         check(modelFile.exists()) { "LiteRT-LM model not found: ${modelFile.absolutePath}" }
         withContext(Dispatchers.IO) {
             engine = initEngine(modelFile)
-            conversationConfig = ConversationConfig(
-                samplerConfig = SamplerConfig(
-                    topK = params.topK,
-                    topP = params.topP.toDouble(),
-                    temperature = params.temperature.toDouble(),
-                ),
+            samplerConfig = SamplerConfig(
+                topK = params.topK,
+                topP = params.topP.toDouble(),
+                temperature = params.temperature.toDouble(),
             )
         }
     }
@@ -106,7 +110,9 @@ class LiteRtLmEngine(
             ),
         ).also { it.initialize() }
 
-    override fun isLoaded(): Boolean = engine != null && conversationConfig != null
+    override fun isLoaded(): Boolean = engine != null && samplerConfig != null
+
+    override val supportsToolCalling: Boolean = true
 
     override suspend fun generate(prompt: String, maxTokens: Int): String = collectFull(prompt)
 
@@ -125,9 +131,9 @@ class LiteRtLmEngine(
      */
     fun generateStream(prompt: String): Flow<String> = callbackFlow {
         val eng = engine ?: throw IllegalStateException("LiteRtLmEngine.generate() called before load()")
-        val cfg = conversationConfig ?: throw IllegalStateException("LiteRtLmEngine.generate() called before load()")
+        val sampler = samplerConfig ?: throw IllegalStateException("LiteRtLmEngine.generate() called before load()")
         val started = System.currentTimeMillis()
-        val convo = eng.createConversation(cfg)
+        val convo = eng.createConversation(ConversationConfig(samplerConfig = sampler))
         convo.sendMessageAsync(
             Contents.of(listOf(Content.Text(prompt))),
             object : MessageCallback {
@@ -146,6 +152,66 @@ class LiteRtLmEngine(
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * Gallery-style native tool-calling chat: configures a fresh [Conversation] with the
+     * [AmpairsAgentToolSet] + a system instruction (incl. short [recentHistory]) and constrained
+     * decoding, streams the model's prose as [AgentStreamEvent.TextDelta], and lets the runtime invoke
+     * tools — which dispatch via [dispatch] and push [AgentStreamEvent.ActionProposed]/[ActionExecuted].
+     */
+    @OptIn(ExperimentalApi::class)
+    override fun chatStream(
+        userMessage: String,
+        recentHistory: List<String>,
+        dispatch: suspend (AgentAction) -> ActionResult,
+    ): Flow<AgentStreamEvent> = callbackFlow {
+        val eng = engine ?: throw IllegalStateException("LiteRtLmEngine.chatStream() called before load()")
+        val sampler = samplerConfig ?: throw IllegalStateException("LiteRtLmEngine.chatStream() called before load()")
+        val started = System.currentTimeMillis()
+        val toolSet = AmpairsAgentToolSet(dispatch = dispatch, emit = { trySend(it) })
+        // Constrained decoding improves tool-call reliability; flip it only around conversation setup.
+        ExperimentalFlags.enableConversationConstrainedDecoding = true
+        val convo = eng.createConversation(
+            ConversationConfig(
+                samplerConfig = sampler,
+                systemInstruction = Contents.of(listOf(Content.Text(systemInstruction(recentHistory)))),
+                tools = listOf(tool(toolSet)),
+            ),
+        )
+        ExperimentalFlags.enableConversationConstrainedDecoding = false
+        convo.sendMessageAsync(
+            Contents.of(listOf(Content.Text(userMessage))),
+            object : MessageCallback {
+                override fun onMessage(message: Message) { trySend(AgentStreamEvent.TextDelta(message.toString())) }
+                override fun onDone() {
+                    Logger.i(tag = LOG_TAG) { "Chat stream done in ${System.currentTimeMillis() - started}ms" }
+                    trySend(AgentStreamEvent.Done)
+                    close()
+                }
+                override fun onError(throwable: Throwable) {
+                    trySend(AgentStreamEvent.Failed(throwable.message ?: "inference error"))
+                    close()
+                }
+            },
+            emptyMap(),
+        )
+        awaitClose {
+            runCatching { convo.cancelProcess() }
+            runCatching { convo.close() }
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /** System prompt for the tool-calling chat: role, tool guidance, and short recent context. */
+    private fun systemInstruction(recentHistory: List<String>): String = buildString {
+        append("You are the assistant for the Ampairs business management app. ")
+        append("Use the provided tools to perform actions (add cart items, set the customer, create an invoice or order, search customers/products, count). ")
+        append("Build a bill/order by adding items to the cart, then create the invoice or order. ")
+        append("For anything else, answer helpfully and concisely in plain language. Do not output JSON.")
+        if (recentHistory.isNotEmpty()) {
+            append("\n\nRecent conversation:\n")
+            recentHistory.forEach { append(it).append('\n') }
+        }
+    }
+
     /** Collect the whole streamed reply into one string, bounded by [INFERENCE_TIMEOUT_MS]. */
     private suspend fun collectFull(prompt: String): String {
         val sb = StringBuilder()
@@ -163,7 +229,7 @@ class LiteRtLmEngine(
     override suspend fun close() {
         withContext(Dispatchers.IO) {
             runCatching { engine?.close() }
-            conversationConfig = null
+            samplerConfig = null
             engine = null
         }
     }
