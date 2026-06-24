@@ -50,6 +50,10 @@ class DataStoreAppPreferences(
         private fun getShouldShowUpgradeKey(workspaceId: String) =
             booleanPreferencesKey("should_show_upgrade_$workspaceId")
 
+        // Assistant chat transcript (per-workspace), JSON message list capped by the caller.
+        private fun getChatHistoryKey(workspaceId: String) =
+            stringPreferencesKey("agent_chat_history_$workspaceId")
+
         // Tally ERP sync config
         private fun getTallyHostKey(ws: String) = stringPreferencesKey("tally_host_$ws")
         private fun getTallyPortKey(ws: String) = intPreferencesKey("tally_port_$ws")
@@ -288,6 +292,24 @@ class DataStoreAppPreferences(
             } else {
                 preferences.remove(SELECTED_LLM_MODEL_ID_KEY)
             }
+        }
+    }
+
+    override fun getChatHistory(workspaceId: String): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[getChatHistoryKey(workspaceId)]
+        }
+    }
+
+    override suspend fun setChatHistory(workspaceId: String, json: String) {
+        dataStore.edit { preferences ->
+            preferences[getChatHistoryKey(workspaceId)] = json
+        }
+    }
+
+    override suspend fun clearChatHistory(workspaceId: String) {
+        dataStore.edit { preferences ->
+            preferences.remove(getChatHistoryKey(workspaceId))
         }
     }
 }

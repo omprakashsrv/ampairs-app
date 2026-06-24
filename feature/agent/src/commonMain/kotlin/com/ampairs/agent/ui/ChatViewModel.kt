@@ -33,6 +33,7 @@ import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.common.workspace.WorkspaceConfig
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -50,6 +51,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.getString
 
 data class ChatUiState(
@@ -194,7 +197,11 @@ class ChatViewModel(
     private val modelCatalog: ModelCatalogProvider,
     private val appPreferences: AppPreferencesDataStore,
     private val actionRegistry: ActionRegistry,
+    private val workspaceConfig: WorkspaceConfig,
 ) : ViewModel() {
+
+    /** JSON codec for the persisted transcript; tolerant of fields added in future versions. */
+    private val json = Json { ignoreUnknownKeys = true }
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -222,6 +229,7 @@ class ChatViewModel(
     private var llmSupported = true
 
     init {
+        loadPersistedHistory()
         voiceNoteController.recordingState
             .onEach { state ->
                 _uiState.update { it.copy(isRecordingVoiceNote = state == VoiceRecordingState.Recording) }
@@ -486,6 +494,7 @@ class ChatViewModel(
     private fun addUserMessage(text: String) {
         val userMessage = ChatMessage(id = UidGenerator.generateUid("MSG"), text = text, isFromUser = true)
         _uiState.update { it.copy(messages = it.messages + userMessage, isProcessing = true) }
+        persistHistory()
     }
 
     /**
@@ -614,6 +623,7 @@ class ChatViewModel(
             // Stream finished. Nothing usable → rule-based reply; else return the speakable text.
             if (!producedOutput) return processWithOrchestrator(text)
             _uiState.update { it.copy(isProcessing = false) }
+            persistHistory() // streamed bubble + any action messages
             return buffer.toString().ifBlank { lastActionSummary }
         } catch (c: CancellationException) {
             // User tapped Stop (or the VM was cleared) — keep any partial reply, no error, no fallback.
@@ -651,6 +661,7 @@ class ChatViewModel(
                 isFromUser = false,
             )
             _uiState.update { it.copy(messages = it.messages + message) }
+            persistHistory()
         }
     }
 
@@ -683,6 +694,7 @@ class ChatViewModel(
                 pendingConfirmation = response.pendingConfirmation,
             )
         }
+        persistHistory()
     }
 
     /** Read [text] aloud (fire-and-forget) unless muted or the platform lacks TTS. */
@@ -701,6 +713,7 @@ class ChatViewModel(
         _uiState.update { state ->
             state.copy(messages = state.messages + errorMessage, isProcessing = false)
         }
+        persistHistory()
     }
 
     // ---- Full-screen hands-free voice conversation (listen → think → speak → listen) ----
@@ -714,11 +727,9 @@ class ChatViewModel(
         if (_uiState.value.voiceMode != null) return
         if (!speechToText.isAvailable || !textToSpeech.isAvailable) {
             viewModelScope.launch {
+                val msg = getString(Res.string.agent_voice_unavailable)
                 _uiState.update {
-                    it.copy(voiceMode = VoiceConversationState(
-                        phase = VoicePhase.Error,
-                        error = getString(Res.string.agent_voice_unavailable),
-                    ))
+                    it.copy(voiceMode = VoiceConversationState(phase = VoicePhase.Error, error = msg))
                 }
             }
             return
@@ -759,7 +770,8 @@ class ChatViewModel(
         voiceLoopJob?.cancel()
         voiceLoopJob = viewModelScope.launch {
             if (!micPermission.ensureMicGranted()) {
-                updateVoice { it.copy(phase = VoicePhase.Error, error = getString(Res.string.agent_mic_permission_denied)) }
+                val denied = getString(Res.string.agent_mic_permission_denied)
+                updateVoice { it.copy(phase = VoicePhase.Error, error = denied) }
                 return@launch
             }
             while (isActive && _uiState.value.voiceMode != null) {
@@ -874,6 +886,37 @@ class ChatViewModel(
         streamJob = null
         voiceNoteController.stopPlayback()
         _uiState.update { it.copy(messages = emptyList(), isProcessing = false, streamingThought = null) }
+        viewModelScope.launch { runCatching { appPreferences.clearChatHistory(workspaceConfig.workspaceId) } }
+    }
+
+    // ---- Transcript persistence (per-workspace, capped; restored on open so the chat continues) ----
+
+    /** Restore the saved transcript for this workspace on open (only if nothing's in memory yet). */
+    private fun loadPersistedHistory() {
+        viewModelScope.launch {
+            val saved = runCatching { appPreferences.getChatHistory(workspaceConfig.workspaceId).first() }.getOrNull()
+                ?: return@launch
+            val restored = runCatching {
+                json.decodeFromString(ListSerializer(ChatMessage.serializer()), saved)
+            }.getOrNull().orEmpty()
+            if (restored.isEmpty()) return@launch
+            _uiState.update { st ->
+                if (st.messages.isEmpty()) st.copy(messages = restored.takeLast(MAX_PERSISTED_MESSAGES)) else st
+            }
+        }
+    }
+
+    /** Persist the most recent [MAX_PERSISTED_MESSAGES] messages for this workspace (fire-and-forget). */
+    private fun persistHistory() {
+        val snapshot = _uiState.value.messages.takeLast(MAX_PERSISTED_MESSAGES)
+        viewModelScope.launch {
+            runCatching {
+                appPreferences.setChatHistory(
+                    workspaceConfig.workspaceId,
+                    json.encodeToString(ListSerializer(ChatMessage.serializer()), snapshot),
+                )
+            }
+        }
     }
 
     private companion object {
@@ -883,5 +926,8 @@ class ChatViewModel(
         /** Pause after the assistant finishes speaking before re-opening the mic, so the recognizer
          *  doesn't pick up the tail of the spoken reply. */
         const val MIC_REARM_GAP_MS = 350L
+
+        /** How many recent messages are persisted/restored for the chat thread. */
+        const val MAX_PERSISTED_MESSAGES = 100
     }
 }
