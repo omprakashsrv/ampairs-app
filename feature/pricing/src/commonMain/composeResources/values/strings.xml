@@ -21,6 +21,20 @@
     <string name="pricing_form_items_count">%1$d item(s) — edit items in a follow-up screen</string>
     <string name="pricing_form_save">Save</string>
 
+    <!-- Price list — item + tier editor -->
+    <string name="pricing_items_section">Items</string>
+    <string name="pricing_add_item">Add item</string>
+    <string name="pricing_remove_item">Remove item</string>
+    <string name="pricing_item_product_id">Product ID</string>
+    <string name="pricing_item_variant">Variant SKU (optional)</string>
+    <string name="pricing_item_unit_price">Unit price</string>
+    <string name="pricing_item_moq">MOQ (optional)</string>
+    <string name="pricing_tiers_label">Quantity tiers</string>
+    <string name="pricing_tier_min_qty">Min qty</string>
+    <string name="pricing_tier_price">Tier price</string>
+    <string name="pricing_add_tier">Add tier</string>
+    <string name="pricing_cd_remove_tier">Remove tier</string>
+
     <!-- Geo zones (future) -->
     <string name="pricing_geo_zones_title">Geo Zones</string>
     <string name="pricing_cancel">Cancel</string>

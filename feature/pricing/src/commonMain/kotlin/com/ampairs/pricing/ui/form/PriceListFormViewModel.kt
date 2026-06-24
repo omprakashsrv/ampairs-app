@@ -9,6 +9,7 @@ import com.ampairs.pricing.domain.model.PriceList
 import com.ampairs.pricing.domain.model.PriceListAggregate
 import com.ampairs.pricing.domain.model.PriceListItem
 import com.ampairs.pricing.domain.model.PriceListStatus
+import com.ampairs.pricing.domain.model.PriceTier
 import com.ampairs.pricing.domain.model.SalesChannel
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
@@ -21,8 +22,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.round
 
-/** Header-level form state for a price list. Items are preserved across edits (edited elsewhere). */
+/** A quantity slab in the editor; money is entered in major units (e.g. rupees) as text. */
+data class TierFormState(
+    val minQty: String = "",
+    val unitPrice: String = "",
+)
+
+/** A price-list item in the editor. `uid` blank = newly added (gets a UID at save). */
+data class ItemFormState(
+    val uid: String = "",
+    val productId: String = "",
+    val variantSku: String = "",
+    val unitPrice: String = "",
+    val moq: String = "",
+    val tiers: List<TierFormState> = emptyList(),
+)
+
 data class PriceListFormState(
     val uid: String = "",
     val name: String = "",
@@ -37,7 +54,7 @@ data class PriceListFormState(
     val priority: String = "0",
     val status: PriceListStatus = PriceListStatus.DRAFT,
     val active: Boolean = true,
-    val itemCount: Int = 0,
+    val items: List<ItemFormState> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
 )
@@ -58,9 +75,6 @@ class PriceListFormViewModel(
     private val _formState = MutableStateFlow(PriceListFormState())
     val formState: StateFlow<PriceListFormState> = _formState.asStateFlow()
 
-    // Items aren't edited in this header form; preserve them so a header save doesn't wipe them.
-    private var preservedItems: List<PriceListItem> = emptyList()
-
     init {
         if (priceListId != null) load(priceListId)
     }
@@ -73,7 +87,6 @@ class PriceListFormViewModel(
                 _formState.update { it.copy(isLoading = false, error = "Price list not found") }
                 return@launch
             }
-            preservedItems = aggregate.items
             val h = aggregate.header
             _formState.update {
                 it.copy(
@@ -90,25 +103,51 @@ class PriceListFormViewModel(
                     priority = h.priority.toString(),
                     status = h.status,
                     active = h.active,
-                    itemCount = aggregate.items.size,
+                    items = aggregate.items.map { it.toFormState() },
                     isLoading = false,
                 )
             }
         }
     }
 
+    // ── header field updates ──────────────────────────────────────────────────
     fun updateName(v: String) = _formState.update { it.copy(name = v, error = null) }
     fun updateChannel(v: SalesChannel) = _formState.update { it.copy(channel = v) }
     fun updateCustomerGroupId(v: String) = _formState.update { it.copy(customerGroupId = v) }
-    fun updateCustomerType(v: String) = _formState.update { it.copy(customerType = v) }
-    fun updateBrandId(v: String) = _formState.update { it.copy(brandId = v) }
-    fun updateCategoryId(v: String) = _formState.update { it.copy(categoryId = v) }
-    fun updateProductGroupId(v: String) = _formState.update { it.copy(productGroupId = v) }
-    fun updateGeoZoneId(v: String) = _formState.update { it.copy(geoZoneId = v) }
     fun updateCurrency(v: String) = _formState.update { it.copy(currency = v.uppercase(), error = null) }
     fun updatePriority(v: String) = _formState.update { it.copy(priority = v.filter { c -> c.isDigit() }, error = null) }
     fun updateStatus(v: PriceListStatus) = _formState.update { it.copy(status = v) }
     fun updateActive(v: Boolean) = _formState.update { it.copy(active = v) }
+
+    // ── item updates ──────────────────────────────────────────────────────────
+    fun addItem() = _formState.update { it.copy(items = it.items + ItemFormState(), error = null) }
+    fun removeItem(index: Int) =
+        _formState.update { st -> st.copy(items = st.items.filterIndexed { i, _ -> i != index }) }
+
+    fun updateItemProductId(i: Int, v: String) = updateItemAt(i) { it.copy(productId = v) }
+    fun updateItemVariant(i: Int, v: String) = updateItemAt(i) { it.copy(variantSku = v) }
+    fun updateItemUnitPrice(i: Int, v: String) = updateItemAt(i) { it.copy(unitPrice = sanitizeDecimal(v)) }
+    fun updateItemMoq(i: Int, v: String) = updateItemAt(i) { it.copy(moq = sanitizeDecimal(v)) }
+
+    // ── tier updates ──────────────────────────────────────────────────────────
+    fun addTier(itemIndex: Int) = updateItemAt(itemIndex) { it.copy(tiers = it.tiers + TierFormState()) }
+    fun removeTier(itemIndex: Int, tierIndex: Int) =
+        updateItemAt(itemIndex) { item -> item.copy(tiers = item.tiers.filterIndexed { i, _ -> i != tierIndex }) }
+
+    fun updateTierMinQty(itemIndex: Int, tierIndex: Int, v: String) =
+        updateTierAt(itemIndex, tierIndex) { it.copy(minQty = sanitizeDecimal(v)) }
+    fun updateTierPrice(itemIndex: Int, tierIndex: Int, v: String) =
+        updateTierAt(itemIndex, tierIndex) { it.copy(unitPrice = sanitizeDecimal(v)) }
+
+    private fun updateItemAt(index: Int, transform: (ItemFormState) -> ItemFormState) =
+        _formState.update { st ->
+            st.copy(items = st.items.mapIndexed { i, item -> if (i == index) transform(item) else item })
+        }
+
+    private fun updateTierAt(itemIndex: Int, tierIndex: Int, transform: (TierFormState) -> TierFormState) =
+        updateItemAt(itemIndex) { item ->
+            item.copy(tiers = item.tiers.mapIndexed { i, t -> if (i == tierIndex) transform(t) else t })
+        }
 
     fun save(onSuccess: () -> Unit) {
         viewModelScope.launch {
@@ -119,6 +158,10 @@ class PriceListFormViewModel(
             }
             if (s.currency.length != 3) {
                 _formState.update { it.copy(error = "Currency must be a 3-letter code") }
+                return@launch
+            }
+            if (s.items.any { it.productId.isNotBlank() && it.unitPrice.isBlank() }) {
+                _formState.update { it.copy(error = "Each item needs a unit price") }
                 return@launch
             }
             _formState.update { it.copy(isLoading = true, error = null) }
@@ -138,8 +181,10 @@ class PriceListFormViewModel(
                 status = s.status,
                 active = s.active,
             )
-            // Re-point preserved items at the (possibly new) list uid.
-            val items = preservedItems.map { it.copy(priceListId = header.uid) }
+            val items = s.items
+                .filter { it.productId.isNotBlank() }
+                .map { it.toDomain(header.uid) }
+
             val result = repository.savePriceList(PriceListAggregate(header, items))
             if (result.isSuccess) {
                 _formState.update { it.copy(isLoading = false) }
@@ -149,4 +194,40 @@ class PriceListFormViewModel(
             }
         }
     }
+
+    private fun ItemFormState.toDomain(priceListUid: String): PriceListItem = PriceListItem(
+        uid = uid.ifBlank { UidGenerator.generateUid("PLI") },
+        priceListId = priceListUid,
+        productId = productId.trim(),
+        variantSku = variantSku.trim().ifBlank { null },
+        unitPriceMinor = majorToMinor(unitPrice),
+        moq = moq.toDoubleOrNull(),
+        tiers = tiers
+            .filter { it.minQty.isNotBlank() }
+            .map { PriceTier(minQty = it.minQty.toDoubleOrNull() ?: 0.0, unitPriceMinor = majorToMinor(it.unitPrice)) }
+            .sortedBy { it.minQty },
+        active = true,
+    )
+
+    private fun PriceListItem.toFormState(): ItemFormState = ItemFormState(
+        uid = uid,
+        productId = productId,
+        variantSku = variantSku ?: "",
+        unitPrice = minorToMajor(unitPriceMinor),
+        moq = moq?.let { formatDouble(it) } ?: "",
+        tiers = tiers.map { TierFormState(minQty = formatDouble(it.minQty), unitPrice = minorToMajor(it.unitPriceMinor)) },
+    )
+}
+
+// ── money/number helpers (major units <-> minor) ────────────────────────────────
+private fun majorToMinor(text: String): Long = round((text.toDoubleOrNull() ?: 0.0) * 100).toLong()
+private fun minorToMajor(minor: Long): String = formatDouble(minor / 100.0)
+private fun formatDouble(d: Double): String = if (d == d.toLong().toDouble()) d.toLong().toString() else d.toString()
+
+/** Keep only digits and a single decimal point. */
+private fun sanitizeDecimal(input: String): String {
+    val filtered = input.filter { it.isDigit() || it == '.' }
+    val firstDot = filtered.indexOf('.')
+    if (firstDot < 0) return filtered
+    return filtered.substring(0, firstDot + 1) + filtered.substring(firstDot + 1).replace(".", "")
 }
