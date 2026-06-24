@@ -40,6 +40,7 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
+                implementation(projects.feature.productApi)
                 // Adaptive layout
                 implementation(libs.material3.adaptive)
                 implementation(libs.room.runtime)
