@@ -1,5 +1,6 @@
 package com.ampairs.agent.llm
 
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -17,7 +18,6 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readRemaining
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +49,7 @@ class DefaultModelManager(
     private val storage: ModelStorage,
 ) : ModelManager {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + DispatcherProvider.io)
     private val jobs = mutableMapOf<String, Job>()
 
     private val client = HttpClient(engine) {
@@ -80,7 +80,7 @@ class DefaultModelManager(
         return if (model.sizeBytes <= 0 || size == model.sizeBytes) filePath(model).toString() else null
     }
 
-    override suspend fun refresh() = withContext(Dispatchers.IO) {
+    override suspend fun refresh() = withContext(DispatcherProvider.io) {
         val updated = _statuses.value.toMutableMap()
         for (model in ModelCatalog.all) {
             if (updated[model.id] is ModelInstallStatus.Downloading) continue // don't clobber live progress
@@ -183,7 +183,7 @@ class DefaultModelManager(
 
     override suspend fun delete(model: ModelDescriptor) {
         jobs.remove(model.id)?.cancel()
-        withContext(Dispatchers.IO) {
+        withContext(DispatcherProvider.io) {
             SystemFileSystem.delete(filePath(model), mustExist = false)
             SystemFileSystem.delete(partPath(model), mustExist = false)
         }
