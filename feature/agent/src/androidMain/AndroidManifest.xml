@@ -12,4 +12,19 @@
       floor; the native lib simply ships unused on Android < 12.
     -->
     <uses-sdk tools:overrideLibrary="com.google.ai.edge.litertlm" />
+
+    <!--
+      On-device LLM GPU acceleration (LiteRT-LM). On Android 12+ (API 31+) the dynamic linker blocks
+      access to vendor native libraries unless the app declares them here. Without libOpenCL.so the
+      GPU delegate can't reach OpenCL ("OpenCL not supported on this platform"), falls back to the
+      OpenGL delegate, and engine init fails — so the model never loads on GPU. Declaring these (all
+      required="false", matching Google's AI Edge Gallery) lets LiteRT-LM use the OpenCL GPU backend
+      where present; on devices/Android versions without them they're simply ignored.
+    -->
+    <application>
+        <uses-native-library android:name="libvndksupport.so" android:required="false" />
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
+        <uses-native-library android:name="libcdsprpc.so" android:required="false" />
+        <uses-native-library android:name="libedgetpu_litert.so" android:required="false" />
+    </application>
 </manifest>
