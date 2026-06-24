@@ -5,18 +5,18 @@ import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
 /**
- * iOS speech bindings. Placeholder fallbacks for now — T014 replaces these bodies with the real
- * `SFSpeechRecognizer` (`requiresOnDeviceRecognition = true`) + `AVSpeechSynthesizer` implementations
- * (`Dispatchers.Default`, `@OptIn(ExperimentalForeignApi::class)`; need a device to verify). The
- * ChatViewModel wiring (T017) already consumes the ports, so T014 is a drop-in.
+ * iOS speech bindings: real on-device `SFSpeechRecognizer` STT + `AVSpeechSynthesizer` TTS, enabling
+ * the hands-free voice conversation on iOS. Needs the host app's Info.plist
+ * `NSMicrophoneUsageDescription` + `NSSpeechRecognitionUsageDescription` keys; permission is driven by
+ * `IosMicPermissionController`.
  */
 @ContributesTo(AppScope::class)
 interface SpeechIosModule {
     companion object {
         @Provides
-        fun provideSpeechToText(): SpeechToText = UnsupportedSpeechToText
+        fun provideSpeechToText(): SpeechToText = IosSpeechToText()
 
         @Provides
-        fun provideTextToSpeech(): TextToSpeech = NoOpTextToSpeech
+        fun provideTextToSpeech(): TextToSpeech = IosTextToSpeech()
     }
 }
