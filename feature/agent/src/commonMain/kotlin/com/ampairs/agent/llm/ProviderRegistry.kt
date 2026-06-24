@@ -53,17 +53,17 @@ class ProviderRegistry(
 
     /**
      * The chat model the device may run, gated by RAM; null → rule-based-only. Resolved from the
-     * server-seeded catalog ([ModelCatalogProvider]) — the RAM tier picks a preferred id, and we fall
-     * back to the largest CHAT model whose memory footprint fits if that exact id isn't seeded.
+     * server manifest ([ModelCatalogProvider]): among CHAT models whose footprint fits this device's
+     * RAM, prefer the server-flagged `recommended` one, else the largest that fits.
      */
     suspend fun selectedChatModel(): ModelDescriptor? {
         if (!config.llmEnabled) return null
         val ram = DeviceCapability.totalRamBytes()
-        val recommendedId = RamTiers.recommendedChatModelId(ram) ?: return null
-        val catalog = modelCatalog.all()
-        return catalog.firstOrNull { it.id == recommendedId }
-            ?: catalog.filter { it.role == ModelRole.CHAT && it.estimatedPeakMemoryBytes <= ram }
-                .maxByOrNull { it.estimatedPeakMemoryBytes }
+        if (!RamTiers.canRunLlm(ram)) return null
+        val candidates = modelCatalog.all()
+            .filter { it.role == ModelRole.CHAT && it.estimatedPeakMemoryBytes <= ram }
+        return candidates.filter { it.recommended }.maxByOrNull { it.estimatedPeakMemoryBytes }
+            ?: candidates.maxByOrNull { it.estimatedPeakMemoryBytes }
     }
 
     /** Engine ids in preference order: config override → platform primary → platform fallback. */

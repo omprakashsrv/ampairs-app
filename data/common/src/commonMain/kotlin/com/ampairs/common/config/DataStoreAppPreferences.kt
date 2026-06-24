@@ -25,6 +25,7 @@ class DataStoreAppPreferences(
         private val LAST_UPDATE_CHECK_TIME_KEY = longPreferencesKey("last_update_check_time")
         private val LAST_WORKSPACE_ID_KEY = stringPreferencesKey("last_workspace_id")
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
+        private val LLM_MODEL_DOWNLOAD_CONSENT_KEY = booleanPreferencesKey("llm_model_download_consent")
 
         // Workspace-aware preference keys
         // Note: These keys include workspace slug to maintain separate state per workspace
@@ -258,6 +259,18 @@ class DataStoreAppPreferences(
     override suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long) {
         dataStore.edit { preferences ->
             preferences[getTallyAlterIdKey(workspaceSlug, entityType)] = alterId
+        }
+    }
+
+    override fun getLlmModelDownloadConsent(): Flow<Boolean?> {
+        return dataStore.data.map { preferences ->
+            preferences[LLM_MODEL_DOWNLOAD_CONSENT_KEY]
+        }
+    }
+
+    override suspend fun setLlmModelDownloadConsent(granted: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[LLM_MODEL_DOWNLOAD_CONSENT_KEY] = granted
         }
     }
 }

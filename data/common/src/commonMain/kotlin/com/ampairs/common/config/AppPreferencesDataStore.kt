@@ -128,6 +128,14 @@ interface AppPreferencesDataStore {
     // Incremental sync watermarks: last seen ALTERID per entity type per workspace
     fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
     suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
+
+    /**
+     * The user's decision on downloading the on-device AI assistant model.
+     * `null` = not asked yet (show the consent prompt), `true` = consented (auto-download),
+     * `false` = declined (stay rule-based, never re-prompt). App-wide (not per-workspace).
+     */
+    fun getLlmModelDownloadConsent(): Flow<Boolean?>
+    suspend fun setLlmModelDownloadConsent(granted: Boolean)
 }
 
 /**

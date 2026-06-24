@@ -24,12 +24,14 @@ import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -51,6 +53,15 @@ import ampairsapp.feature.agent.generated.resources.agent_confirm_prompt
 import ampairsapp.feature.agent.generated.resources.agent_empty_hint
 import ampairsapp.feature.agent.generated.resources.agent_empty_title
 import ampairsapp.feature.agent.generated.resources.agent_input_placeholder
+import ampairsapp.feature.agent.generated.resources.agent_model_download_confirm
+import ampairsapp.feature.agent.generated.resources.agent_model_download_decline
+import ampairsapp.feature.agent.generated.resources.agent_model_download_failed_title
+import ampairsapp.feature.agent.generated.resources.agent_model_download_hide
+import ampairsapp.feature.agent.generated.resources.agent_model_download_message
+import ampairsapp.feature.agent.generated.resources.agent_model_download_retry
+import ampairsapp.feature.agent.generated.resources.agent_model_download_title
+import ampairsapp.feature.agent.generated.resources.agent_model_downloading_progress
+import ampairsapp.feature.agent.generated.resources.agent_model_downloading_title
 import ampairsapp.feature.agent.generated.resources.agent_mute_cd
 import ampairsapp.feature.agent.generated.resources.agent_send_cd
 import ampairsapp.feature.agent.generated.resources.agent_unmute_cd
@@ -170,6 +181,16 @@ fun ChatScreen(
             )
         }
 
+        // First-use on-device model download: consent → progress → failure (auto-download on accept).
+        uiState.llmDownloadPrompt?.let { prompt ->
+            LlmDownloadDialog(
+                prompt = prompt,
+                onAccept = viewModel::onAcceptModelDownload,
+                onDecline = viewModel::onDeclineModelDownload,
+                onDismiss = viewModel::dismissModelDownloadPrompt,
+            )
+        }
+
         // Input area
         ChatInputBar(
             text = uiState.inputText,
@@ -211,6 +232,65 @@ private fun ConfirmActionBar(
             TextButton(onClick = onCancel) { Text(stringResource(Res.string.agent_cancel)) }
             Button(onClick = onConfirm) { Text(stringResource(Res.string.agent_confirm)) }
         }
+    }
+}
+
+@Composable
+private fun LlmDownloadDialog(
+    prompt: LlmDownloadPrompt,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    when (prompt) {
+        is LlmDownloadPrompt.Consent -> AlertDialog(
+            onDismissRequest = onDecline,
+            title = { Text(stringResource(Res.string.agent_model_download_title)) },
+            text = {
+                Text(stringResource(Res.string.agent_model_download_message, prompt.modelName, prompt.sizeText))
+            },
+            confirmButton = {
+                Button(onClick = onAccept) { Text(stringResource(Res.string.agent_model_download_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = onDecline) { Text(stringResource(Res.string.agent_model_download_decline)) }
+            },
+        )
+
+        is LlmDownloadPrompt.Downloading -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(Res.string.agent_model_downloading_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (prompt.progress > 0f) {
+                        LinearProgressIndicator(progress = { prompt.progress }, modifier = Modifier.fillMaxWidth())
+                    } else {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                    Text(
+                        stringResource(
+                            Res.string.agent_model_downloading_progress,
+                            (prompt.progress * 100).toInt(),
+                        ),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.agent_model_download_hide)) }
+            },
+        )
+
+        is LlmDownloadPrompt.Failed -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(Res.string.agent_model_download_failed_title)) },
+            text = { Text(prompt.message) },
+            confirmButton = {
+                Button(onClick = onAccept) { Text(stringResource(Res.string.agent_model_download_retry)) }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.agent_model_download_hide)) }
+            },
+        )
     }
 }
 

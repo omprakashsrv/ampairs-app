@@ -1,5 +1,6 @@
 package com.ampairs.agent.llm
 
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -37,9 +38,10 @@ import org.kotlincrypto.hash.sha2.SHA256
  * HTTP `Range`), verifies size (+ optional SHA-256), then atomically moves it into place. Install
  * state is derived from the filesystem — see [ModelManager].
  *
- * The download client is built from the app's platform [HttpClientEngine] but is deliberately
- * **un-authenticated** (no JWT/workspace interceptors): model files come from a CDN/HF, not our API.
- * A per-download Bearer token can be supplied for gated/self-hosted URLs.
+ * The download client is built from the app's platform [HttpClientEngine] with no blanket request
+ * timeout (multi-GB files stream for a long time). Bytes come through the backend download proxy
+ * (`/api/agent/v1/models/{id}/download`), which is JWT-authenticated, so each request carries the
+ * current access token + `X-Workspace-ID`. A per-download Bearer token may override the access token.
  */
 @Inject
 @SingleIn(AppScope::class)
@@ -47,6 +49,7 @@ import org.kotlincrypto.hash.sha2.SHA256
 class DefaultModelManager(
     engine: HttpClientEngine,
     private val storage: ModelStorage,
+    private val tokenRepository: TokenRepository,
 ) : ModelManager {
 
     private val scope = CoroutineScope(SupervisorJob() + DispatcherProvider.io)
@@ -118,7 +121,10 @@ class DefaultModelManager(
         val wantResume = alreadyHave in 1 until (if (model.sizeBytes > 0) model.sizeBytes else Long.MAX_VALUE)
 
         client.prepareGet(model.downloadUrl) {
-            authToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+            val bearer = authToken ?: tokenRepository.getAccessToken()
+            bearer?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+            tokenRepository.getWorkspaceIdSync().takeIf { it.isNotBlank() }
+                ?.let { header("X-Workspace-ID", it) }
             if (wantResume) header(HttpHeaders.Range, "bytes=$alreadyHave-")
         }.execute { response ->
             val resumed = wantResume && response.status == HttpStatusCode.PartialContent

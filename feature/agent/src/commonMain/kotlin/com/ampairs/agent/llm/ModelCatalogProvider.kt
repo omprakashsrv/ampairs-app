@@ -10,10 +10,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Source of truth for the on-device model catalog. The catalog is **server-seeded** (pulled from
- * `GET /api/workspace/v1/llm-models/catalog`, like the module catalog) — the app never hardcodes
- * model URLs. [ModelCatalog] is kept only as a bundled fallback for first-launch/offline so model
- * selection still has metadata before the first successful pull.
+ * Source of truth for the on-device model catalog. The catalog is **server-driven** (pulled from
+ * the backend manifest `GET /api/agent/v1/models`) — the app never hardcodes model files. The bundled
+ * [ModelCatalog] is kept only as a fallback for first-launch/offline so model selection still has
+ * metadata before the first successful pull.
  *
  * Cached in-memory for the process lifetime; [all] lazily refreshes on first use. App-scoped
  * singleton so the cache survives across screens (and workspace switches reuse the same cache —

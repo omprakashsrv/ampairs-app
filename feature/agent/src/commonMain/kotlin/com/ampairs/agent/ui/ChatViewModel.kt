@@ -13,6 +13,10 @@ import com.ampairs.agent.core.ActionResultSummary
 import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.AgentResponse
+import com.ampairs.agent.llm.ModelDescriptor
+import com.ampairs.agent.llm.ModelInstallStatus
+import com.ampairs.agent.llm.ModelManager
+import com.ampairs.agent.llm.ProviderRegistry
 import com.ampairs.agent.permission.MicPermissionController
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
@@ -21,6 +25,7 @@ import com.ampairs.agent.voice.VoiceNoteController
 import com.ampairs.agent.voice.VoiceRecordingState
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
+import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
@@ -31,6 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -54,7 +60,21 @@ data class ChatUiState(
     val isRecordingVoiceNote: Boolean = false,
     /** Id of the voice-note message currently playing, or null. */
     val playingVoiceNoteId: String? = null,
+    /** First-use on-device model download prompt (consent → progress → failure); null when nothing to show. */
+    val llmDownloadPrompt: LlmDownloadPrompt? = null,
 )
+
+/** UI state for the one-time on-device AI model download flow (FR: first-use consent + auto-download). */
+sealed interface LlmDownloadPrompt {
+    /** Ask the user to consent to downloading the model. */
+    data class Consent(val modelName: String, val sizeText: String) : LlmDownloadPrompt
+
+    /** Download in progress; [progress] is 0f..1f (0f when total size unknown). */
+    data class Downloading(val progress: Float) : LlmDownloadPrompt
+
+    /** Last download attempt failed. */
+    data class Failed(val message: String) : LlmDownloadPrompt
+}
 
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
@@ -65,12 +85,18 @@ class ChatViewModel(
     private val textToSpeech: TextToSpeech,
     private val micPermission: MicPermissionController,
     private val voiceNoteController: VoiceNoteController,
+    private val providerRegistry: ProviderRegistry,
+    private val modelManager: ModelManager,
+    private val appPreferences: AppPreferencesDataStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private var voiceJob: Job? = null
+
+    /** The model this device can run, resolved once on open; null when the device can't run an LLM. */
+    private var offeredModel: ModelDescriptor? = null
 
     init {
         voiceNoteController.recordingState
@@ -81,6 +107,85 @@ class ChatViewModel(
         voiceNoteController.playingNoteId
             .onEach { id -> _uiState.update { it.copy(playingVoiceNoteId = id) } }
             .launchIn(viewModelScope)
+        maybeOfferModelDownload()
+    }
+
+    /**
+     * On chat open, decide whether to offer the on-device model. Selection is server-driven (the
+     * catalog is pulled lazily by [ProviderRegistry.selectedChatModel]); if the device can run an
+     * LLM and the model isn't installed yet, honor the stored consent: ask on first use, auto-resume
+     * if previously granted, stay rule-based if previously declined. Chat keeps working either way.
+     */
+    private fun maybeOfferModelDownload() {
+        viewModelScope.launch {
+            val model = providerRegistry.selectedChatModel() ?: return@launch
+            offeredModel = model
+            // Filesystem truth (survives restarts even before statuses are refreshed).
+            if (modelManager.localPathOrNull(model) != null) return@launch
+
+            modelManager.statuses
+                .onEach { statuses ->
+                    when (val status = statuses[model.id]) {
+                        is ModelInstallStatus.Downloading ->
+                            _uiState.update { it.copy(llmDownloadPrompt = LlmDownloadPrompt.Downloading(status.fraction)) }
+                        is ModelInstallStatus.Installed ->
+                            _uiState.update { it.copy(llmDownloadPrompt = null) }
+                        is ModelInstallStatus.Failed ->
+                            _uiState.update { it.copy(llmDownloadPrompt = LlmDownloadPrompt.Failed(status.message)) }
+                        else -> { /* NotInstalled / absent — leave any consent prompt as-is */ }
+                    }
+                }
+                .launchIn(viewModelScope)
+
+            when (appPreferences.getLlmModelDownloadConsent().first()) {
+                true -> startModelDownload(model)
+                false -> { /* declined earlier — stay rule-based, never re-prompt */ }
+                null -> _uiState.update {
+                    it.copy(
+                        llmDownloadPrompt = LlmDownloadPrompt.Consent(
+                            modelName = model.displayName,
+                            sizeText = formatBytes(model.sizeBytes),
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    /** User consented to the one-time model download. Persists consent and starts the download. */
+    fun onAcceptModelDownload() {
+        val model = offeredModel ?: return
+        viewModelScope.launch {
+            appPreferences.setLlmModelDownloadConsent(true)
+            startModelDownload(model)
+        }
+    }
+
+    /** User declined the download. Persists the choice so we don't ask again; chat stays rule-based. */
+    fun onDeclineModelDownload() {
+        viewModelScope.launch { appPreferences.setLlmModelDownloadConsent(false) }
+        _uiState.update { it.copy(llmDownloadPrompt = null) }
+    }
+
+    /** Dismiss the progress/failure prompt; an in-progress download continues in the background. */
+    fun dismissModelDownloadPrompt() {
+        _uiState.update { it.copy(llmDownloadPrompt = null) }
+    }
+
+    private fun startModelDownload(model: ModelDescriptor) {
+        _uiState.update { it.copy(llmDownloadPrompt = LlmDownloadPrompt.Downloading(0f)) }
+        modelManager.download(model)
+    }
+
+    /** Human-readable size (e.g. "3.5 GB", "300 MB") for the consent prompt. Decimal units. */
+    private fun formatBytes(bytes: Long): String {
+        val gb = bytes.toDouble() / 1_000_000_000.0
+        if (gb >= 1.0) {
+            val rounded = (gb * 10).toLong() / 10.0
+            return "$rounded GB"
+        }
+        val mb = bytes.toDouble() / 1_000_000.0
+        return "${mb.toLong()} MB"
     }
 
     fun updateInputText(text: String) {

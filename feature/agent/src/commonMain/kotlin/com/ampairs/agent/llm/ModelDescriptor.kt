@@ -19,5 +19,7 @@ data class ModelDescriptor(
     val estimatedPeakMemoryBytes: Long,
     /** Optional lowercase-hex SHA-256; when set, `ModelManager` verifies the file after download. */
     val sha256: String? = null,
+    /** Server-flagged preferred model for its tier (from the manifest); breaks ties in selection. */
+    val recommended: Boolean = false,
     val defaultParams: LlmParams = LlmParams(),
 )

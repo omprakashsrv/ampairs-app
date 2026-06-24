@@ -3,9 +3,9 @@ package com.ampairs.agent.data.api
 import com.ampairs.common.model.Response
 
 /**
- * Pull-only access to the server-seeded LLM model catalog (global; the app filters by device RAM +
- * role locally). Mirrors the module catalog pull — no admin/setup UI; the backend seeds the models.
+ * Pull-only access to the backend on-device model manifest (`GET /api/agent/v1/models`). Global
+ * reference data; the app shows what it gets and gates locally by device RAM. No admin/setup UI.
  */
 interface ModelCatalogApi {
-    suspend fun catalog(): Response<List<RemoteModelDescriptor>>
+    suspend fun catalog(): Response<List<AiModelResponse>>
 }

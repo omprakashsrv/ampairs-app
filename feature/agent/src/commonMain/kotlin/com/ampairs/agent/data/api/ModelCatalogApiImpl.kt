@@ -21,6 +21,6 @@ class ModelCatalogApiImpl(
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun catalog(): Response<List<RemoteModelDescriptor>> =
-        get(client, ApiUrlBuilder.workspaceUrl("v1/llm-models/catalog"))
+    override suspend fun catalog(): Response<List<AiModelResponse>> =
+        get(client, ApiUrlBuilder.agentUrl("v1/models"))
 }
