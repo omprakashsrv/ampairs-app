@@ -12,6 +12,7 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentLength
@@ -136,6 +137,10 @@ class DefaultModelManager(
                 return
             } catch (c: CancellationException) {
                 throw c
+            } catch (e: TerminalDownloadException) {
+                // Auth/gated/not-found won't change on retry — surface immediately, no resume loop.
+                // (This is what prevented the gated-model 502 from being hammered 5× with backoff.)
+                throw e
             } catch (e: Exception) {
                 val bytes = sizeOf(partPath(model)) ?: 0L
                 if (bytes > lastBytes) {
@@ -168,10 +173,14 @@ class DefaultModelManager(
             if (wantResume) header(HttpHeaders.Range, "bytes=$alreadyHave-")
         }.execute { response ->
             // Reject error responses (e.g. proxy 401 gated / 404 / 5xx) instead of writing the error
-            // body into the .part file and later failing with a confusing size mismatch. Throwing
-            // lets downloadWithResume retry transient failures and give up on persistent ones.
+            // body into the .part file and later failing with a confusing size mismatch. Auth/gated/
+            // not-found are terminal (retrying can't help — see TerminalDownloadException); only
+            // genuinely transient statuses fall through to downloadWithResume's retry loop.
             if (response.status != HttpStatusCode.OK && response.status != HttpStatusCode.PartialContent) {
-                throw IOException("Download failed: server returned ${response.status.value}")
+                val code = response.status.value
+                val body = runCatching { response.bodyAsText() }.getOrNull()
+                if (code in TERMINAL_STATUSES) throw TerminalDownloadException(terminalMessage(code, body))
+                throw IOException("Download failed: server returned $code")
             }
             val resumed = wantResume && response.status == HttpStatusCode.PartialContent
             if (!resumed) SystemFileSystem.delete(part, mustExist = false)
@@ -264,8 +273,22 @@ class DefaultModelManager(
         }
     }
 
+    /** A download failure that won't change on retry (auth/gated/not-found) — fail fast, no resume loop. */
+    private class TerminalDownloadException(message: String) : Exception(message)
+
+    /** User-facing message for a terminal HTTP status; the proxy maps a gated upstream repo to 502. */
+    private fun terminalMessage(code: Int, body: String?): String = when {
+        code == 401 || code == 403 || (code == 502 && body?.contains("authentication", ignoreCase = true) == true) ->
+            "This AI model is license-gated. The server needs a HuggingFace token (AGENT_HF_TOKEN) that has " +
+                "accepted the model license. Ask your admin to configure it, then try again."
+        code == 404 -> "Model file not found on the server."
+        else -> "Download failed (server returned $code)."
+    }
+
     private companion object {
         const val PART_SUFFIX = ".part"
+        /** HTTP statuses that won't resolve on retry — surfaced immediately instead of resumed. */
+        val TERMINAL_STATUSES = setOf(401, 403, 404, 502)
         const val DOWNLOAD_CHUNK = 64L * 1024
         const val PROGRESS_STEP = 1_000_000L // emit progress roughly per ~1 MB
         const val HEX = "0123456789abcdef"
