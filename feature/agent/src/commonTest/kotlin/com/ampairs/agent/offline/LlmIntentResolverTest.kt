@@ -21,8 +21,8 @@ import kotlin.test.assertTrue
 /**
  * Validates the on-device resolver's parse + strict-validate logic (FR-003 / SC-003) with a fake
  * engine returning canned JSON — no real model. Confirms: valid action parses; unregistered
- * action/module and missing-required-param become Clarification (never a wrong action); malformed
- * output re-asks then clarifies; JSON embedded in prose is still extracted.
+ * action/module and missing-required-param become Clarification (never a wrong action); non-JSON
+ * prose becomes a conversational reply (empty output clarifies); JSON embedded in prose is extracted.
  */
 class LlmIntentResolverTest {
 
@@ -107,11 +107,21 @@ class LlmIntentResolverTest {
     }
 
     @Test
-    fun malformedOutput_reasksThenClarifies() = runTest {
-        val (resolver, engine) = resolverReturning("not json", "still not json")
+    fun nonJsonOutput_becomesConversation() = runTest {
+        // When the model answers in prose instead of intent JSON, surface that prose as a
+        // conversational reply (single call, no re-ask) so plain chat works.
+        val (resolver, engine) = resolverReturning("Hello! How can I help your business today?")
+        val intent = resolver.resolve("hi", emptyList(), registry.getAllActions())
+        assertTrue(intent is ResolvedIntent.Conversation)
+        assertEquals("Hello! How can I help your business today?", (intent as ResolvedIntent.Conversation).response)
+        assertEquals(1, engine.calls)
+    }
+
+    @Test
+    fun emptyOutput_becomesClarification() = runTest {
+        val (resolver, _) = resolverReturning("")
         val intent = resolver.resolve("???", emptyList(), registry.getAllActions())
         assertTrue(intent is ResolvedIntent.Clarification)
-        assertEquals(2, engine.calls) // one re-ask
     }
 
     @Test
