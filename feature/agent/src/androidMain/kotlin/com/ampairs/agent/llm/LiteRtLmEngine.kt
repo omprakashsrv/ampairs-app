@@ -2,6 +2,7 @@ package com.ampairs.agent.llm
 
 import android.content.Context
 import co.touchlab.kermit.Logger
+import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
@@ -29,8 +30,8 @@ import kotlin.concurrent.Volatile
  * stays on the rule-based path — the app never crashes for a missing model.
  *
  * **Threading.** `Engine.initialize()` (up to ~10 s) and `sendMessage()` are blocking native calls,
- * so both run on [Dispatchers.IO]. The acceleration backend is left at [EngineConfig]'s default
- * (CPU — the safe cold-start choice per the Gallery notes).
+ * so both run on [Dispatchers.IO]. The acceleration backend is **GPU with an automatic CPU
+ * fallback** ([initEngine]) for lower latency, dropping to CPU when GPU init fails on a device.
  *
  * **Stateless per call.** Each [runInference] creates a *fresh* [Conversation] and closes it after,
  * so the native side never accumulates turn history (the resolver already rebuilds the full prompt,
@@ -62,15 +63,7 @@ class LiteRtLmEngine(
         val modelFile = File(modelDir, model.fileName)
         check(modelFile.exists()) { "LiteRT-LM model not found: ${modelFile.absolutePath}" }
         withContext(Dispatchers.IO) {
-            val eng = Engine(
-                EngineConfig(
-                    modelPath = modelFile.absolutePath,
-                    cacheDir = context.cacheDir.absolutePath,
-                    // backend left at EngineConfig's default (CPU); see KDoc.
-                ),
-            )
-            eng.initialize()
-            engine = eng
+            engine = initEngine(modelFile)
             conversationConfig = ConversationConfig(
                 samplerConfig = SamplerConfig(
                     topK = params.topK,
@@ -80,6 +73,35 @@ class LiteRtLmEngine(
             )
         }
     }
+
+    /**
+     * Initialize on the **GPU** for lower latency, transparently falling back to **CPU** if GPU
+     * init fails (driver/device incompatibility) — so the assistant still runs everywhere. A failed
+     * GPU attempt surfaces in Logcat (tag [LOG_TAG]); switch the device and compare timings there.
+     */
+    private fun initEngine(modelFile: File): Engine {
+        runCatching { buildEngine(modelFile, Backend.GPU()) }
+            .onSuccess {
+                Logger.i(tag = LOG_TAG) { "LiteRT-LM engine initialized on GPU (maxNumTokens=$MAX_NUM_TOKENS)" }
+                return it
+            }
+            .onFailure { Logger.w(throwable = it, tag = LOG_TAG) { "GPU backend unavailable — falling back to CPU" } }
+        return buildEngine(modelFile, Backend.CPU())
+            .also { Logger.i(tag = LOG_TAG) { "LiteRT-LM engine initialized on CPU (maxNumTokens=$MAX_NUM_TOKENS)" } }
+    }
+
+    private fun buildEngine(modelFile: File, backend: Backend): Engine =
+        Engine(
+            EngineConfig(
+                modelPath = modelFile.absolutePath,
+                cacheDir = context.cacheDir.absolutePath,
+                backend = backend,
+                // Bound total context (prompt + generation). litertlm 0.13.1 has no per-response
+                // output-token cap; this caps the KV-cache / total tokens — keep it above the built
+                // prompt size so the intent JSON is never truncated.
+                maxNumTokens = MAX_NUM_TOKENS,
+            ),
+        ).also { it.initialize() }
 
     override fun isLoaded(): Boolean = engine != null && conversationConfig != null
 
@@ -130,5 +152,7 @@ class LiteRtLmEngine(
     private companion object {
         const val LOG_TAG = "AgentLlm"
         const val INFERENCE_TIMEOUT_MS = 60_000L
+        // Total-token bound (prompt + generation). Above our built prompt so intent JSON isn't cut.
+        const val MAX_NUM_TOKENS = 2048
     }
 }
