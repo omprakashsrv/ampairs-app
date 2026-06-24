@@ -3,15 +3,20 @@ package com.ampairs.agent.llm
 import android.content.Context
 import co.touchlab.kermit.Logger
 import com.google.ai.edge.litertlm.Backend
+import com.google.ai.edge.litertlm.Content
+import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.Message
+import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.SamplerConfig
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
@@ -33,13 +38,14 @@ import kotlin.concurrent.Volatile
  * so both run on [Dispatchers.IO]. The acceleration backend is **GPU with an automatic CPU
  * fallback** ([initEngine]) for lower latency, dropping to CPU when GPU init fails on a device.
  *
- * **Stateless per call.** Each [runInference] creates a *fresh* [Conversation] and closes it after,
- * so the native side never accumulates turn history (the resolver already rebuilds the full prompt,
- * incl. recent turns, each call). A long-lived shared conversation grew context every message and
- * progressively bogged a 1B CPU model down to an apparent hang; a fresh one bounds the work to the
- * built prompt. A blocking [runInference] is also bounded by [INFERENCE_TIMEOUT_MS]: it runs in a
- * detached job we abandon on timeout so a slow/hung native call can't pin the chat on "Thinking…"
- * forever — the composite resolver then falls back to rule-based.
+ * **Streaming + stateless per call.** [generateStream] streams text deltas from `sendMessageAsync`;
+ * [generate]/[generateConstrained] collect that stream into a full string (bounded by
+ * [INFERENCE_TIMEOUT_MS]). Each call uses a *fresh* single-turn [Conversation] (closed after), so the
+ * native side never accumulates turn history (the resolver rebuilds the full prompt each time) — a
+ * long-lived shared conversation grew context every message and bogged a 1B CPU model to an apparent
+ * hang. On timeout/cancellation `awaitClose` calls `cancelProcess()` to actually stop native
+ * generation, so a slow/hung call can't pin the chat on "Thinking…" and the composite resolver falls
+ * back to rule-based.
  *
  * **Constrained decoding.** Currently *prompt-guided*: [com.ampairs.agent.offline.LlmIntentResolver]
  * builds a JSON-instructed prompt (from [OutputSchema]) and validates the parsed action against the
@@ -54,9 +60,6 @@ class LiteRtLmEngine(
 
     @Volatile private var engine: Engine? = null
     @Volatile private var conversationConfig: ConversationConfig? = null
-
-    // Detached scope for the blocking native inference so a timeout can abandon a stuck call.
-    private val inferenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override suspend fun load(model: ModelDescriptor, params: LlmParams) {
         if (engine != null) return
@@ -105,43 +108,59 @@ class LiteRtLmEngine(
 
     override fun isLoaded(): Boolean = engine != null && conversationConfig != null
 
-    override suspend fun generate(prompt: String, maxTokens: Int): String = runInference(prompt)
+    override suspend fun generate(prompt: String, maxTokens: Int): String = collectFull(prompt)
 
     override suspend fun generateConstrained(
         prompt: String,
         schema: OutputSchema,
         maxTokens: Int,
-    ): String = runInference(prompt)
+    ): String = collectFull(prompt)
 
-    private suspend fun runInference(prompt: String): String {
-        val eng = engine ?: error("LiteRtLmEngine.generate() called before load()")
-        val cfg = conversationConfig ?: error("LiteRtLmEngine.generate() called before load()")
-        // Run the blocking native call in a detached job so withTimeoutOrNull can return control even
-        // if sendMessage never does — a fresh, single-turn conversation keeps each call stateless.
-        val deferred = inferenceScope.async {
-            val started = System.currentTimeMillis()
-            val convo = eng.createConversation(cfg)
-            try {
-                convo.sendMessage(prompt).toString().also {
-                    Logger.i(tag = LOG_TAG) {
-                        "Inference ok in ${System.currentTimeMillis() - started}ms (prompt=${prompt.length} chars, out=${it.length})"
-                    }
+    /**
+     * Stream a turn token-by-token (Gallery-style): emits assistant text **deltas** from LiteRT-LM's
+     * `sendMessageAsync` as they're generated. Each call uses a **fresh, single-turn** [Conversation]
+     * (stateless — the resolver rebuilds the full prompt each time). On cancellation (e.g. the
+     * collector times out) [awaitClose] calls `cancelProcess()` to actually stop native generation
+     * and closes the conversation, instead of leaking a stuck native call.
+     */
+    fun generateStream(prompt: String): Flow<String> = callbackFlow {
+        val eng = engine ?: throw IllegalStateException("LiteRtLmEngine.generate() called before load()")
+        val cfg = conversationConfig ?: throw IllegalStateException("LiteRtLmEngine.generate() called before load()")
+        val started = System.currentTimeMillis()
+        val convo = eng.createConversation(cfg)
+        convo.sendMessageAsync(
+            Contents.of(listOf(Content.Text(prompt))),
+            object : MessageCallback {
+                override fun onMessage(message: Message) { trySend(message.toString()) }
+                override fun onDone() {
+                    Logger.i(tag = LOG_TAG) { "Inference stream done in ${System.currentTimeMillis() - started}ms" }
+                    close()
                 }
-            } finally {
-                runCatching { convo.close() }
-            }
+                override fun onError(throwable: Throwable) { close(throwable) }
+            },
+            emptyMap(),
+        )
+        awaitClose {
+            runCatching { convo.cancelProcess() }
+            runCatching { convo.close() }
         }
-        val result = withTimeoutOrNull(INFERENCE_TIMEOUT_MS) { deferred.await() }
-        if (result == null) {
-            deferred.cancel() // native thread finishes on its own; we stop waiting on it
+    }.flowOn(Dispatchers.IO)
+
+    /** Collect the whole streamed reply into one string, bounded by [INFERENCE_TIMEOUT_MS]. */
+    private suspend fun collectFull(prompt: String): String {
+        val sb = StringBuilder()
+        val finished = withTimeoutOrNull(INFERENCE_TIMEOUT_MS) {
+            generateStream(prompt).collect { sb.append(it) }
+            true
+        }
+        if (finished == null) {
             Logger.w(tag = LOG_TAG) { "Inference timed out after ${INFERENCE_TIMEOUT_MS / 1000}s — falling back" }
             throw IllegalStateException("On-device inference timed out after ${INFERENCE_TIMEOUT_MS / 1000}s")
         }
-        return result
+        return sb.toString()
     }
 
     override suspend fun close() {
-        runCatching { inferenceScope.cancel() }
         withContext(Dispatchers.IO) {
             runCatching { engine?.close() }
             conversationConfig = null
