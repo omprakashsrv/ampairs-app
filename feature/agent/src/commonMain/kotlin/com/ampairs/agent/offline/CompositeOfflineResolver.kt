@@ -1,5 +1,6 @@
 package com.ampairs.agent.offline
 
+import co.touchlab.kermit.Logger
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.IntentResolver
 import com.ampairs.agent.core.ResolvedIntent
@@ -27,9 +28,22 @@ class CompositeOfflineResolver(
     ): ResolvedIntent {
         if (isLlmReady()) {
             runCatching { llm.resolve(userMessage, conversationHistory, availableActions) }
-                .onSuccess { return it }
-            // LLM errored → fall through to the rule-based resolver.
+                .onSuccess {
+                    Logger.i(tag = LOG_TAG) { "Resolved via on-device LLM (${it::class.simpleName})" }
+                    return it
+                }
+                .onFailure { e ->
+                    // Surface why we silently dropped to rule-based — otherwise a loaded model that
+                    // throws on every inference looks exactly like "the model isn't being used".
+                    Logger.e(throwable = e, tag = LOG_TAG) { "On-device LLM resolve failed — falling back to rule-based" }
+                }
+        } else {
+            Logger.i(tag = LOG_TAG) { "On-device LLM not ready — using rule-based resolver" }
         }
         return rule.resolve(userMessage, conversationHistory, availableActions)
+    }
+
+    private companion object {
+        const val LOG_TAG = "AgentLlm"
     }
 }

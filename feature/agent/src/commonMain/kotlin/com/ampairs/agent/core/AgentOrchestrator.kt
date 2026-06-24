@@ -32,15 +32,17 @@ class AgentOrchestrator(
     ): AgentResponse {
         val availableActions = actionRegistry.getAllActions()
 
-        val intent = if (isOnline) {
-            try {
-                onlineResolver.resolve(userMessage, conversationHistory, availableActions)
-            } catch (e: Exception) {
-                // Network failed — fall back to offline
-                offlineResolver.resolve(userMessage, conversationHistory, availableActions)
-            }
-        } else {
+        // The on-device LLM is the assistant's brain. The offline resolver is the
+        // CompositeOfflineResolver: it uses the loaded model when ready and already falls back to the
+        // rule-based resolver when no model is present or inference fails. We therefore route every
+        // message through it regardless of [isOnline] — the previous online-first branch sent every
+        // message to the rule-based stub while online, so a downloaded/loaded model was never used.
+        // The rule-based [onlineResolver] stays as a last-resort guard if the offline path itself
+        // throws (it shouldn't — the composite catches LLM errors internally).
+        val intent = try {
             offlineResolver.resolve(userMessage, conversationHistory, availableActions)
+        } catch (e: Exception) {
+            onlineResolver.resolve(userMessage, conversationHistory, availableActions)
         }
 
         return when (intent) {
