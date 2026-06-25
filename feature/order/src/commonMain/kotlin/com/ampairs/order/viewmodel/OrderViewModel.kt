@@ -634,6 +634,7 @@ class OrderViewModel(
                 taxable = item.basePrice,
                 totalTax = item.totalTax,
                 lineTotal = item.totalCost,
+                belowMoq = item.belowMoq,
             )
         }
     }

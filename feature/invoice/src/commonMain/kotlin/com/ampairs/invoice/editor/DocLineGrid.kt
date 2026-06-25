@@ -11,6 +11,7 @@ import ampairsapp.feature.invoice.generated.resources.doc_col_total
 import ampairsapp.feature.invoice.generated.resources.doc_col_unit
 import ampairsapp.feature.invoice.generated.resources.doc_col_variant
 import ampairsapp.feature.invoice.generated.resources.doc_grid_footer_hint
+import ampairsapp.feature.invoice.generated.resources.doc_line_below_moq
 import ampairsapp.feature.invoice.generated.resources.doc_line_exempt
 import ampairsapp.feature.invoice.generated.resources.doc_line_hsn
 import ampairsapp.feature.invoice.generated.resources.doc_line_none
@@ -205,6 +206,15 @@ private fun GridRow(
                         color = cs.onSurfaceVariant,
                         maxLines = 1,
                     )
+                    if (line.belowMoq) {
+                        Text(
+                            stringResource(Res.string.doc_line_below_moq),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cs.error,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                        )
+                    }
                 }
                 DocProductPickerPopover(
                     expanded = productMenu,
