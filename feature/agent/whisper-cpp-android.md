@@ -1,14 +1,20 @@
 # Whisper.cpp on Android — implementation recipe (offline STT)
 
-> Status: **planned / not yet wired.** Android offline Whisper currently uses a LiteRT `.tflite`
-> graph (`AndroidWhisperTranscriber`) that fails inside the model's own decoder
-> (`gather index out of bounds`). The robust replacement is **whisper.cpp / ggml** — the same engine
-> already used on **Desktop** (`whisper-jni`) and **iOS** (cinterop to `whisper.xcframework`). It takes
-> raw 16 kHz PCM and does mel + decode internally, so none of the tflite shape/vocab/decoder problems
-> exist.
+> Status: **IMPLEMENTED (additive).** Android offline Whisper now runs on **whisper.cpp / ggml** via a
+> dedicated `:whispercpp` `com.android.library` module that CMake-builds whisper.cpp (FetchContent,
+> pinned to the `whisper-cpp-xcframework` catalog version — the same whisper.cpp the iOS cinterop uses).
+> `feature/agent`'s `androidMain` depends on it; `SpeechAndroidModule` registers the `"whisper"` adapter
+> using `WhisperModelCatalog.ggml` + `AndroidWhisperCppTranscriber` (raw 16 kHz PCM → mel + decode
+> natively). The same engine is used on **Desktop** (`whisper-jni`) and **iOS** (cinterop).
 >
-> This must be built where an **Android NDK** is available (local Android Studio / a CI runner with the
-> NDK). It is the **first native build in this repo** — there is no existing CMake/NDK infra.
+> **Must be built where an Android NDK is available** (local Android Studio auto-installs it; a plain
+> Kotlin compile / the PR CI does not invoke the NDK). First native build in this repo. The legacy
+> LiteRT `.tflite` path (`AndroidWhisperTranscriber` + `litert` dep + the tflite mel/vocab front-end) is
+> now dead and slated for removal in a follow-up.
+>
+> The section below is the original recipe, kept for reference; the actual wiring differs slightly
+> (single `libwhisper_jni.so` built via FetchContent rather than a vendored whisper.cpp checkout, and
+> `src/main/cpp` instead of `src/main/jni/whisper`).
 
 ## Why a separate module
 
