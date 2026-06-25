@@ -1,6 +1,7 @@
 plugins {
+    // AGP 9.0+ has built-in Kotlin support — applying org.jetbrains.kotlin.android here is an error
+    // ("no longer required since AGP 9.0"). com.android.library compiles the Kotlin sources itself.
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.kotlinAndroid)
 }
 
 // Standalone Android (com.android.library) module wrapping whisper.cpp's JNI bridge for the offline
@@ -37,13 +38,9 @@ android {
     // r27 LTS — Android Studio auto-installs it on first local build. The native build only runs for
     // assemble/install tasks; a plain Kotlin compile (CI) does not invoke the NDK.
     ndkVersion = "27.0.12077973"
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
 }
 
+// AGP built-in Kotlin exposes the `kotlin` extension for configuration (no kotlin plugin applied).
 kotlin {
     jvmToolchain(21)
 }
