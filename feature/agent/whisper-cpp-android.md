@@ -16,6 +16,25 @@
 `externalNativeBuild`** (no CMake/NDK). So the native bridge lives in a dedicated
 `com.android.library` module, `:thirdparty:whispercpp`, which `feature/agent`'s `androidMain` depends on.
 
+## RECOMMENDED: reuse the official whisper.cpp Android module (don't hand-roll JNI)
+
+`ggml-org/whisper.cpp` ships a ready Android library at `examples/whisper.android/lib` (MIT). Copy it in
+rather than writing the JNI yourself — it's proven and handles CPU-variant `.so` selection. Confirmed
+parameters (from the official example + `mikeesto/whispercpp-android`):
+
+- **Keep the package `com.whispercpp.whisper`** — the JNI C symbols (`Java_com_whispercpp_whisper_WhisperLib_...`)
+  encode it; renaming breaks the bindings.
+- Module layout: `src/main/jni/whisper/{CMakeLists.txt, jni.c}` + `src/main/java/com/whispercpp/whisper/{LibWhisper.kt, WhisperCpuConfig.kt}`.
+- `lib/build.gradle`: `namespace "com.whispercpp"`, `ndkVersion "25.2.9519653"` (or whatever NDK you have
+  installed — match it), `abiFilters "arm64-v8a","armeabi-v7a","x86","x86_64"`, `externalNativeBuild { cmake { path "src/main/jni/whisper/CMakeLists.txt" } }`.
+- Kotlin API: `WhisperContext.createContextFromFile(path)` → `transcribeData(FloatArray): String`. That's
+  exactly our contract (raw 16 kHz PCM in, text out) — wrap it in `AndroidWhisperCppTranscriber`.
+- whisper.cpp C sources: either a git submodule (Step 1) **or** point CMake at an external clone via a
+  Gradle property, as mikeesto does: `-DWHISPER_CPP_DIR=/path/to/whisper.cpp` (set `WHISPER_CPP_DIR`).
+
+With the official module copied in, Steps 3–5 below (hand-written CMake/JNI/binding) are **only a
+fallback** if you'd rather minimize vendored code. Either way, Steps 1, 2, 6, 7, 8 apply.
+
 ## Step 1 — vendor whisper.cpp (pinned to the iOS version)
 
 ```bash
