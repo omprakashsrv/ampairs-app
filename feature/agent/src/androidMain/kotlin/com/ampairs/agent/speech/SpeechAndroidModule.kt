@@ -18,7 +18,6 @@ interface SpeechAndroidModule {
         @SingleIn(AppScope::class)
         fun provideSttAdapters(context: Context): List<SttAdapterEntry> = listOf(
             SttAdapterEntry(id = "native", label = "Device", engine = AndroidSpeechToText(context)),
-            SttAdapterEntry(id = "whisper", label = "Whisper", engine = CactusWhisperStt(context)),
         )
 
         @Provides
