@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.sqrt
 
 /**
  * Offline Whisper [SpeechToText] adapter (selectable in Assistant settings). Orchestrates the shared
@@ -41,37 +40,26 @@ class WhisperSttEngine(
             return@flow
         }
 
-        // Endpointing: stream until the user stops speaking (energy drops for SILENCE_HANGOVER), or
-        // there's no speech at all for NO_SPEECH_TIMEOUT, or we hit the 30 s window. Without this the
-        // capture only ends on a manual stop / the 30 s cap, so it never auto-sends the utterance.
+        // Adaptive voice-activity detection decides when the utterance ends: it self-calibrates to the
+        // room/mic, ends ~1.2 s after you stop speaking, and gives up if nothing is said — so capture
+        // auto-sends instead of running until a manual stop / the 30 s cap. See [VoiceActivityDetector].
         val chunks = ArrayList<FloatArray>()
         var total = 0
-        var speechStarted = false
-        var trailingSilence = 0
-        var maxLevel = 0f
+        val vad = VoiceActivityDetector()
         withTimeoutOrNull(MAX_UTTERANCE_MS) {
             audio.stream().collect { chunk ->
                 chunks.add(chunk)
                 total += chunk.size
-                val level = rms(chunk)
-                if (level > maxLevel) maxLevel = level
-                when {
-                    level >= SPEECH_RMS_THRESHOLD -> {
-                        if (!speechStarted) Logger.i(LOG_TAG) { "Speech detected (rms=$level) — endpointing armed" }
-                        speechStarted = true
-                        trailingSilence = 0
-                    }
-                    speechStarted -> {
-                        trailingSilence += chunk.size
-                        if (trailingSilence >= SILENCE_HANGOVER_SAMPLES) {
-                            Logger.i(LOG_TAG) { "End of speech (≥${SILENCE_HANGOVER_SAMPLES / 16_000f}s silence) — sending" }
-                            audio.stop()
-                        }
-                    }
-                    total >= NO_SPEECH_SAMPLES -> {
-                        Logger.i(LOG_TAG) { "No speech in ${NO_SPEECH_SAMPLES / 16_000}s (maxRms=$maxLevel) — giving up" }
+                when (vad.accept(chunk)) {
+                    VadDecision.ENDPOINT -> {
+                        Logger.i(LOG_TAG) { "End of speech (silence after speech) — sending (maxRms=${vad.maxRms})" }
                         audio.stop()
                     }
+                    VadDecision.NO_SPEECH_TIMEOUT -> {
+                        Logger.i(LOG_TAG) { "No speech detected (maxRms=${vad.maxRms}, floor=${vad.noiseFloor}) — giving up" }
+                        audio.stop()
+                    }
+                    VadDecision.CONTINUE -> {}
                 }
                 if (total >= MAX_SAMPLES) audio.stop() // hit the 30 s window — end the stream
             }
@@ -84,9 +72,9 @@ class WhisperSttEngine(
             emit(SttEvent.Error("Didn't catch that — please try again."))
             return@flow
         }
-        if (!speechStarted) {
+        if (!vad.speechStarted) {
             // Recorded only silence/background — don't waste an inference pass on it.
-            Logger.i(LOG_TAG) { "No speech above threshold (maxRms=$maxLevel, thr=$SPEECH_RMS_THRESHOLD) — skipping transcription" }
+            Logger.i(LOG_TAG) { "No speech above floor (maxRms=${vad.maxRms}, floor=${vad.noiseFloor}) — skipping transcription" }
             emit(SttEvent.Error("Didn't catch that — please try again."))
             return@flow
         }
@@ -116,23 +104,9 @@ class WhisperSttEngine(
 
     override fun stop() = audio.stop()
 
-    /** Root-mean-square level of a normalized [-1,1] PCM chunk; 0 for an empty chunk. */
-    private fun rms(chunk: FloatArray): Float {
-        if (chunk.isEmpty()) return 0f
-        var sum = 0.0
-        for (s in chunk) sum += s.toDouble() * s
-        return sqrt(sum / chunk.size).toFloat()
-    }
-
     private companion object {
         const val LOG_TAG = "AgentWhisper"
         const val MAX_UTTERANCE_MS = 30_000L
         const val MAX_SAMPLES = 16_000 * 30
-        /** Energy gate for "is this speech". Tunable per the maxRms logged each utterance. */
-        const val SPEECH_RMS_THRESHOLD = 0.02f
-        /** Trailing silence (after speech) that ends the utterance: 1.2 s. */
-        const val SILENCE_HANGOVER_SAMPLES = (16_000 * 1.2f).toInt()
-        /** If no speech is detected at all, give up after 10 s. */
-        const val NO_SPEECH_SAMPLES = 16_000 * 10
     }
 }
