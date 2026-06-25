@@ -77,10 +77,6 @@ kotlin {
                 // whisper.cpp via JNI (native libs embedded for Win/Mac/Linux) — offline Whisper STT
                 // engine on Desktop, which has no platform recognizer. Desktop/JVM only.
                 implementation(libs.whisper.jni)
-                // LiteRT-LM unified Kotlin API (JVM build) — on-device LLM with GPU/NPU acceleration
-                // for the desktop LiteRtLmEngine. Native GPU plugins (WebGPU/Dawn, Metal) ship as
-                // separate prebuilt libs that must be on the runtime native path. Desktop/JVM only.
-                implementation(libs.litertlm.desktop)
             }
         }
         val iosArm64Main by getting
