@@ -5,7 +5,9 @@ import Route
 import WorkspaceRoute
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +17,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -121,13 +124,21 @@ fun GlobalAppLayoutNav3(
     when {
         // ── Mobile: NavigationBar at bottom, no top bar ─────────────────────
         navigationPattern == NavigationPattern.SIDE_DRAWER && hasActiveWorkspace -> {
+            // True while the soft keyboard is open. We hide the bottom nav then so the focused
+            // screen's input sits flush above the keyboard (nothing wedged between, no dead gap).
+            // Hide the bottom nav while the keyboard is open so the focused screen's input can sit
+            // flush above the keyboard. The IME inset itself is applied (and consumed) once on the
+            // NavDisplay in AppNavigationNav3 — not here — so it never stacks with the bar insets.
+            val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
             Scaffold(
-                modifier = modifier.imePadding(),
+                modifier = modifier,
                 bottomBar = {
-                    AppBottomNavigation(
-                        backStack = backStack,
-                        currentRoute = currentRoute
-                    )
+                    if (!imeVisible) {
+                        AppBottomNavigation(
+                            backStack = backStack,
+                            currentRoute = currentRoute
+                        )
+                    }
                 },
             ) { paddingValues ->
                 // No global header on mobile — screens render their own back button.

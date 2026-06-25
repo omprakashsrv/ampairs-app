@@ -1,4 +1,6 @@
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -168,7 +170,14 @@ fun AppNavigationNav3(
                     },
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.background)
+                        // Apply the global bar/padding insets, then CONSUME them so a screen's own
+                        // imePadding() doesn't stack on top of the bottom-bar inset (that residual
+                        // stack was the keyboard-sized gap above the IME on the chat input). Finally
+                        // imePadding() lifts content the remaining distance to the keyboard top —
+                        // handled once, centrally, for every screen.
                         .padding(globalPaddingValues)
+                        .consumeWindowInsets(globalPaddingValues)
+                        .imePadding()
                 )
             }
         }

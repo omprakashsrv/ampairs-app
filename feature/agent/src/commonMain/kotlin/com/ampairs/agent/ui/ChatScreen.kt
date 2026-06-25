@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -59,6 +58,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -140,7 +148,9 @@ fun ChatScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-    Column(modifier = Modifier.fillMaxSize().imePadding()) {
+    // IME insets are handled once by the global layout's Scaffold (GlobalAppLayoutNav3); applying
+    // imePadding() here too double-pads and leaves a keyboard-sized black gap above the keyboard.
+    Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(stringResource(Res.string.agent_title)) },
             actions = {
@@ -842,7 +852,25 @@ private fun ChatInputBar(
                 value = text,
                 onValueChange = onTextChange,
                 placeholder = { Text(stringResource(Res.string.agent_input_placeholder)) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    // Hardware-keyboard ergonomics: plain Enter sends; any modifier (Shift / Ctrl /
+                    // Alt·Option / Cmd·Meta) + Enter inserts a newline. We intercept on key-down and
+                    // consume the bare-Enter so the field doesn't also insert a line break.
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                            val withModifier = event.isShiftPressed || event.isCtrlPressed ||
+                                event.isAltPressed || event.isMetaPressed
+                            if (withModifier) {
+                                false // let the newline through
+                            } else {
+                                if (text.isNotBlank() && !isProcessing) onSend()
+                                true // consume — don't insert a line break
+                            }
+                        } else {
+                            false
+                        }
+                    },
                 maxLines = 4,
                 shape = MaterialTheme.shapes.extraLarge,
             )
