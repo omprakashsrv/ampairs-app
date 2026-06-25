@@ -122,6 +122,7 @@ uuid = { group = "com.benasher44", name = "uuid", version.ref = "uuid" }
 grant-core = { module = "dev.brewkits:grant-core", version.ref = "grant" }
 grant-bluetooth = { module = "dev.brewkits:grant-bluetooth", version.ref = "grant" }
 litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
+litertlm-jvm = { module = "com.google.ai.edge.litertlm:litertlm-jvm", version.ref = "litertlm" }
 litert = { module = "com.google.ai.edge.litert:litert", version.ref = "litert" }
 whisper-jni = { module = "io.github.givimad:whisper-jni", version.ref = "whisper-jni" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }

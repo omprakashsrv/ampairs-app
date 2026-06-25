@@ -1,7 +1,8 @@
 package com.ampairs.agent.llm
 
 actual object PlatformDefaults {
-    // LiteRT-LM Kotlin/JVM on desktop is unconfirmed (T031) — default to llama.cpp until verified.
-    actual val primaryEngineId: String = "llamacpp"
+    // Desktop now ships a LiteRT-LM engine (litertlm-jvm, GPU) — prefer it. llama.cpp stays the
+    // declared fallback id (no desktop engine yet, so it resolves to rule-based until added).
+    actual val primaryEngineId: String = "litert-lm"
     actual val fallbackEngineId: String = "llamacpp"
 }
