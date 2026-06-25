@@ -66,6 +66,7 @@
     <string name="agent_settings_cd">Assistant settings</string>
     <string name="agent_settings_title">Assistant settings</string>
     <string name="agent_settings_stt">Speech-to-text engine</string>
+    <string name="agent_settings_mic">Microphone</string>
     <string name="agent_settings_tts">Text-to-speech engine</string>
     <string name="agent_settings_llm">AI model</string>
     <string name="agent_settings_none">Not available on this platform</string>

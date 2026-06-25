@@ -1,7 +1,9 @@
 package com.ampairs.agent.speech
 
+import com.ampairs.agent.speech.whisper.AudioInputDeviceProvider
 import com.ampairs.agent.speech.whisper.IosAudioCapture
 import com.ampairs.agent.speech.whisper.IosWhisperTranscriber
+import com.ampairs.agent.speech.whisper.NoopAudioInputDeviceProvider
 import com.ampairs.agent.speech.whisper.WhisperModelCatalog
 import com.ampairs.agent.speech.whisper.WhisperModelRegistry
 import com.ampairs.agent.speech.whisper.WhisperModelSet
@@ -23,6 +25,11 @@ interface SpeechIosModule {
         @Provides
         @SingleIn(AppScope::class)
         fun provideWhisperModelSet(): WhisperModelSet = WhisperModelSet(WhisperModelCatalog.ggml)
+
+        // iOS lets the OS pick the mic — no in-app device selection.
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideAudioInputDeviceProvider(): AudioInputDeviceProvider = NoopAudioInputDeviceProvider()
 
         @Provides
         @SingleIn(AppScope::class)
