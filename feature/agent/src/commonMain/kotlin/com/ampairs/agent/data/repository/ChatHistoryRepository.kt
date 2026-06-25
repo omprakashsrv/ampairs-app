@@ -10,8 +10,8 @@ import kotlinx.serialization.json.Json
 /**
  * Local-only persistence for the assistant chat thread (Room). Restores the recent transcript on
  * open and rewrites it (capped) at each turn boundary so the conversation resumes where it left off.
- * Voice-note bubbles are dropped (audio isn't persisted). Workspace isolation comes from the
- * workspace-scoped [ChatDatabase], so this is unscoped `@Inject` like other repositories.
+ * Workspace isolation comes from the workspace-scoped [ChatDatabase], so this is unscoped `@Inject`
+ * like other repositories.
  */
 @Inject
 class ChatHistoryRepository(private val dao: ChatMessageDao) {
@@ -22,9 +22,9 @@ class ChatHistoryRepository(private val dao: ChatMessageDao) {
     suspend fun load(limit: Int): List<ChatMessage> =
         dao.getAll().takeLast(limit).map { it.toMessage() }
 
-    /** Persist the most recent [limit] non-voice-note messages, replacing the stored thread. */
+    /** Persist the most recent [limit] messages, replacing the stored thread. */
     suspend fun save(messages: List<ChatMessage>, limit: Int) {
-        val capped = messages.filterNot { it.isVoiceNote }.takeLast(limit)
+        val capped = messages.takeLast(limit)
         dao.replaceAll(capped.mapIndexed { index, message -> message.toEntity(index) })
     }
 

@@ -13,24 +13,11 @@
     <string name="agent_cancel">Cancel</string>
     <string name="agent_view">View</string>
     <string name="agent_total">Total</string>
-    <string name="agent_voice_start_cd">Start voice input</string>
-    <string name="agent_voice_stop_cd">Stop listening</string>
     <string name="agent_error_generic">Something went wrong</string>
     <string name="agent_cancelled">Okay, cancelled. Nothing was saved.</string>
     <string name="agent_mute_cd">Mute spoken responses</string>
     <string name="agent_unmute_cd">Read responses aloud</string>
-    <string name="agent_speech_unavailable">Voice input isn\'t available on this device.</string>
     <string name="agent_mic_permission_denied">Microphone access is needed for voice input. You can still type.</string>
-    <!-- Voice notes (record + replay an audio bubble) -->
-    <string name="agent_voice_note_record_cd">Record voice note</string>
-    <string name="agent_voice_note_stop_cd">Send voice note</string>
-    <string name="agent_voice_note_cancel_cd">Discard recording</string>
-    <string name="agent_voice_note_recording">Recording…</string>
-    <string name="agent_voice_note_play_cd">Play voice note</string>
-    <string name="agent_voice_note_stop_play_cd">Stop playback</string>
-    <string name="agent_voice_note_label">Voice note</string>
-    <string name="agent_voice_note_failed">Couldn\'t start recording.</string>
-    <string name="agent_voice_note_empty">Nothing recorded.</string>
     <!-- First-use on-device model download (consent + progress) -->
     <string name="agent_model_download_title">Download AI model?</string>
     <string name="agent_model_download_message">The offline assistant needs to download %1$s (about %2$s) once. After that it works without internet.</string>

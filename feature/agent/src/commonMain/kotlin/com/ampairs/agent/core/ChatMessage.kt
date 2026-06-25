@@ -13,10 +13,6 @@ data class ChatMessage(
     val isError: Boolean = false,
     /** Money total to render via `formatMoney(LocalAppLocale.current)` in the bubble (FR-013). */
     val amount: Double? = null,
-    /** True when this bubble is a recorded voice note (audio is held by the VoiceNoteController, keyed by [id]). */
-    val isVoiceNote: Boolean = false,
-    /** Voice-note length in milliseconds, for the bubble's duration label. */
-    val voiceNoteDurationMs: Long? = null,
 )
 
 @Serializable

@@ -181,8 +181,6 @@ fun ChatScreen(
                         MessageBubble(
                             message = message,
                             onActionClick = onNavigateToRoute,
-                            isVoiceNotePlaying = uiState.playingVoiceNoteId == message.id,
-                            onVoiceNoteToggle = { viewModel.toggleVoiceNotePlayback(message.id) },
                         )
                     }
 

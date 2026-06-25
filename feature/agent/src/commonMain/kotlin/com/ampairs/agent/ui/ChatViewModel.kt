@@ -6,9 +6,7 @@ import ampairsapp.feature.agent.generated.resources.Res
 import ampairsapp.feature.agent.generated.resources.agent_cancelled
 import ampairsapp.feature.agent.generated.resources.agent_error_generic
 import ampairsapp.feature.agent.generated.resources.agent_mic_permission_denied
-import ampairsapp.feature.agent.generated.resources.agent_voice_note_empty
 import ampairsapp.feature.agent.generated.resources.agent_voice_unavailable
-import ampairsapp.feature.agent.generated.resources.agent_voice_note_failed
 import com.ampairs.agent.core.ActionRegistry
 import com.ampairs.agent.core.ActionResultSummary
 import com.ampairs.agent.core.AgentOrchestrator
@@ -27,8 +25,6 @@ import com.ampairs.agent.permission.MicPermissionController
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
 import com.ampairs.agent.speech.TextToSpeech
-import com.ampairs.agent.voice.VoiceNoteController
-import com.ampairs.agent.voice.VoiceRecordingState
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.config.AppPreferencesDataStore
@@ -63,10 +59,6 @@ data class ChatUiState(
     val pendingConfirmation: AgentAction? = null,
     /** When true, assistant replies are not read aloud (TTS, FR-009). */
     val isTtsMuted: Boolean = false,
-    /** True while a voice note is being recorded. */
-    val isRecordingVoiceNote: Boolean = false,
-    /** Id of the voice-note message currently playing, or null. */
-    val playingVoiceNoteId: String? = null,
     /** First-use on-device model download prompt (consent → progress → failure); null when nothing to show. */
     val llmDownloadPrompt: LlmDownloadPrompt? = null,
     /** The model's transient "thinking" text while it reasons (tool-calling stream); null when none. */
@@ -189,7 +181,6 @@ class ChatViewModel(
     private val speechToText: SpeechToText,
     private val textToSpeech: TextToSpeech,
     private val micPermission: MicPermissionController,
-    private val voiceNoteController: VoiceNoteController,
     private val providerRegistry: ProviderRegistry,
     private val modelManager: ModelManager,
     private val modelCatalog: ModelCatalogProvider,
@@ -225,14 +216,6 @@ class ChatViewModel(
 
     init {
         loadPersistedHistory()
-        voiceNoteController.recordingState
-            .onEach { state ->
-                _uiState.update { it.copy(isRecordingVoiceNote = state == VoiceRecordingState.Recording) }
-            }
-            .launchIn(viewModelScope)
-        voiceNoteController.playingNoteId
-            .onEach { id -> _uiState.update { it.copy(playingVoiceNoteId = id) } }
-            .launchIn(viewModelScope)
         initModelManager()
         maybeOfferModelDownload()
     }
@@ -536,7 +519,7 @@ class ChatViewModel(
     private suspend fun streamChat(text: String, engine: LlmEngine): String? {
         val history = _uiState.value.messages
             .dropLast(1) // exclude the user message we just added
-            .filter { it.text.isNotBlank() && !it.isVoiceNote }
+            .filter { it.text.isNotBlank() }
             .takeLast(HISTORY_TURNS)
             .map { (if (it.isFromUser) "User: " else "Assistant: ") + it.text }
 
@@ -826,60 +809,9 @@ class ChatViewModel(
         _uiState.update { it.copy(isOnline = online) }
     }
 
-    // ---- Voice notes (record + replay an audio bubble; no transcription) ----
-
-    /** Start recording a voice note after confirming mic permission. */
-    fun startVoiceNote() {
-        if (_uiState.value.isRecordingVoiceNote) return
-        viewModelScope.launch {
-            if (!micPermission.ensureMicGranted()) {
-                appendError(getString(Res.string.agent_mic_permission_denied))
-                return@launch
-            }
-            runCatching { voiceNoteController.startRecording() }
-                .onFailure { appendError(getString(Res.string.agent_voice_note_failed)) }
-        }
-    }
-
-    /** Stop recording and post the captured audio as a voice-note bubble. */
-    fun stopAndSendVoiceNote() {
-        if (!_uiState.value.isRecordingVoiceNote) return
-        val noteId = UidGenerator.generateUid("VN")
-        viewModelScope.launch {
-            val note = runCatching { voiceNoteController.stopRecording(noteId) }.getOrNull()
-            if (note == null) {
-                appendError(getString(Res.string.agent_voice_note_empty))
-                return@launch
-            }
-            val message = ChatMessage(
-                id = note.id,
-                text = "",
-                isFromUser = true,
-                isVoiceNote = true,
-                voiceNoteDurationMs = note.durationMs,
-            )
-            _uiState.update { it.copy(messages = it.messages + message) }
-        }
-    }
-
-    /** Discard an in-progress voice-note recording without posting it. */
-    fun cancelVoiceNote() {
-        voiceNoteController.cancelRecording()
-    }
-
-    /** Toggle playback of the voice note in [messageId]'s bubble. */
-    fun toggleVoiceNotePlayback(messageId: String) {
-        if (_uiState.value.playingVoiceNoteId == messageId) {
-            voiceNoteController.stopPlayback()
-        } else {
-            voiceNoteController.play(messageId)
-        }
-    }
-
     fun clearChat() {
         streamJob?.cancel()
         streamJob = null
-        voiceNoteController.stopPlayback()
         _uiState.update { it.copy(messages = emptyList(), isProcessing = false, streamingThought = null) }
         viewModelScope.launch { runCatching { chatHistoryRepository.clear() } }
     }
