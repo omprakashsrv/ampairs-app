@@ -735,7 +735,8 @@ private fun WhisperModelSection(
     onDelete: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(Res.string.agent_settings_whisper_model), style = MaterialTheme.typography.titleMedium)
+        // Heading reuses the existing Whisper adapter label (no new string resource needed).
+        Text(stringResource(Res.string.agent_adapter_whisper), style = MaterialTheme.typography.titleMedium)
         models.forEach { model ->
             Row(
                 modifier = Modifier.fillMaxWidth().clickable { onSelect(model.id) },
