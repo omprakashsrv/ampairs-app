@@ -57,6 +57,16 @@ Java_com_whispercpp_whisper_WhisperLib_00024Companion_fullTranscribe(
     params.offset_ms = 0;
     params.no_context = true;
     params.single_segment = false;
+    // greedy.best_of defaults to 5: it draws 5 candidate decodings and keeps the best. At
+    // temperature 0 (our default) greedy decoding is deterministic, so the extra 4 candidates are
+    // pure wasted compute — best_of=1 gives the same output for ~the work of one decode. (best_of > 1
+    // only matters on temperature-fallback rounds, which stay enabled to guard against repetition.)
+    params.greedy.best_of = 1;
+    // We never emit timestamps, so skip the token-level timestamp bookkeeping entirely.
+    params.token_timestamps = false;
+    // Suppress non-speech tokens (e.g. "[music]"/non-speech artefacts) — cleaner output and a
+    // slightly smaller decode search, with no impact on real speech transcription.
+    params.suppress_nst = true;
 
     whisper_reset_timings(context);
     if (whisper_full(context, params, audio_data_arr, audio_data_length) != 0) {
