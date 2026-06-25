@@ -8,6 +8,7 @@ import com.ampairs.common.agent.AgentAction
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
+import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
@@ -67,6 +68,25 @@ class LiteRtLmEngine(
 
     @Volatile private var engine: Engine? = null
     @Volatile private var samplerConfig: SamplerConfig? = null
+
+    // Persistent tool-calling chat session. The conversation is created once and reused across turns
+    // so LiteRT-LM keeps its KV cache (system prompt + tool schemas + prior turns) warm instead of
+    // re-prefilling that whole block every message — the dominant first-token cost. Reset on
+    // clearChat()/close() or after a cancelled turn (whose KV is left mid-decode).
+    @Volatile private var conversation: Conversation? = null
+    // Per-turn routing for the *persistent* tool set: each turn points these at its own callbackFlow
+    // before sending, so a tool invoked during that turn reaches the right collector.
+    @Volatile private var currentEmit: ((AgentStreamEvent) -> Unit)? = null
+    @Volatile private var currentDispatch: (suspend (AgentAction) -> ActionResult)? = null
+
+    // One tool set, bound to the persistent conversation, routing through the per-turn indirection
+    // above (a fresh tool set per turn would mean rebuilding the conversation — defeating KV reuse).
+    private val toolSet: AmpairsAgentToolSet by lazy {
+        AmpairsAgentToolSet(
+            dispatch = { action -> currentDispatch?.invoke(action) ?: ActionResult.Error("No active chat turn") },
+            emit = { event -> currentEmit?.invoke(event) },
+        )
+    }
 
     override suspend fun load(model: ModelDescriptor, params: LlmParams) {
         if (engine != null) return
@@ -150,31 +170,27 @@ class LiteRtLmEngine(
     }.flowOn(Dispatchers.IO)
 
     /**
-     * Gallery-style native tool-calling chat: configures a fresh [Conversation] with the
-     * [AmpairsAgentToolSet] + a system instruction (incl. short [recentHistory]) and constrained
-     * decoding, streams the model's prose as [AgentStreamEvent.TextDelta], and lets the runtime invoke
-     * tools — which dispatch via [dispatch] and push [AgentStreamEvent.ActionProposed]/[ActionExecuted].
+     * Gallery-style native tool-calling chat over a **persistent** [Conversation]: the conversation is
+     * created once (system instruction + [AmpairsAgentToolSet] + constrained decoding, seeding context
+     * from [recentHistory]) and reused across turns, so LiteRT-LM keeps its KV cache warm instead of
+     * re-prefilling the system prompt + tool schemas + history every message. Each turn streams the
+     * model's prose as [AgentStreamEvent.TextDelta] and lets the runtime invoke tools — which dispatch
+     * via [dispatch] and push [AgentStreamEvent.ActionProposed]/[ActionExecuted].
      */
-    @OptIn(ExperimentalApi::class)
     override fun chatStream(
         userMessage: String,
         recentHistory: List<String>,
         dispatch: suspend (AgentAction) -> ActionResult,
     ): Flow<AgentStreamEvent> = callbackFlow {
-        val eng = engine ?: throw IllegalStateException("LiteRtLmEngine.chatStream() called before load()")
-        val sampler = samplerConfig ?: throw IllegalStateException("LiteRtLmEngine.chatStream() called before load()")
+        val convo = conversationFor(recentHistory) // created once, reused → KV cache persists across turns
         val started = System.currentTimeMillis()
-        val toolSet = AmpairsAgentToolSet(dispatch = dispatch, emit = { trySend(it) })
-        // Constrained decoding improves tool-call reliability; flip it only around conversation setup.
-        ExperimentalFlags.enableConversationConstrainedDecoding = true
-        val convo = eng.createConversation(
-            ConversationConfig(
-                samplerConfig = sampler,
-                systemInstruction = Contents.of(listOf(Content.Text(systemInstruction(recentHistory)))),
-                tools = listOf(tool(toolSet)),
-            ),
-        )
-        ExperimentalFlags.enableConversationConstrainedDecoding = false
+        var completed = false
+        // Point the persistent tool set at THIS turn's collector. Capture our own emit so awaitClose
+        // only clears the binding if a later turn hasn't already replaced it (turns are serialized,
+        // but cancellation teardown can interleave).
+        val myEmit: (AgentStreamEvent) -> Unit = { trySend(it) }
+        currentEmit = myEmit
+        currentDispatch = dispatch
         convo.sendMessageAsync(
             Contents.of(listOf(Content.Text(userMessage))),
             object : MessageCallback {
@@ -185,7 +201,8 @@ class LiteRtLmEngine(
                     if (text.isNotEmpty()) trySend(AgentStreamEvent.TextDelta(text))
                 }
                 override fun onDone() {
-                    Logger.i(tag = LOG_TAG) { "Chat stream done in ${System.currentTimeMillis() - started}ms" }
+                    completed = true
+                    Logger.i(tag = LOG_TAG) { "Chat stream done in ${System.currentTimeMillis() - started}ms (KV reused: ${conversation === convo})" }
                     trySend(AgentStreamEvent.Done)
                     close()
                 }
@@ -197,10 +214,56 @@ class LiteRtLmEngine(
             emptyMap(),
         )
         awaitClose {
-            runCatching { convo.cancelProcess() }
-            runCatching { convo.close() }
+            if (currentEmit === myEmit) {
+                currentEmit = null
+                currentDispatch = null
+            }
+            // Keep the conversation alive on a clean finish so its warm KV cache is reused next turn.
+            // A cancelled/errored turn leaves the KV mid-decode, so drop the conversation — the next
+            // turn rebuilds it (conversationFor also guards on isAlive).
+            if (!completed) {
+                runCatching { convo.cancelProcess() }
+                if (conversation === convo) {
+                    runCatching { convo.close() }
+                    conversation = null
+                }
+            }
         }
     }.flowOn(Dispatchers.IO)
+
+    /**
+     * The retained tool-calling [Conversation], created on first use (and after a reset). Built with
+     * constrained decoding (better tool-call reliability) and the persistent [toolSet]; [recentHistory]
+     * seeds context only at creation — subsequent turns rely on the live KV cache.
+     */
+    @OptIn(ExperimentalApi::class)
+    private fun conversationFor(recentHistory: List<String>): Conversation {
+        conversation?.let { if (it.isAlive) return it else runCatching { it.close() } }
+        val eng = engine ?: throw IllegalStateException("LiteRtLmEngine.chatStream() called before load()")
+        val sampler = samplerConfig ?: throw IllegalStateException("LiteRtLmEngine.chatStream() called before load()")
+        // Constrained decoding improves tool-call reliability; flip it only around conversation setup.
+        ExperimentalFlags.enableConversationConstrainedDecoding = true
+        val convo = eng.createConversation(
+            ConversationConfig(
+                samplerConfig = sampler,
+                systemInstruction = Contents.of(listOf(Content.Text(systemInstruction(recentHistory)))),
+                tools = listOf(tool(toolSet)),
+            ),
+        )
+        ExperimentalFlags.enableConversationConstrainedDecoding = false
+        conversation = convo
+        return convo
+    }
+
+    /** Drop the retained chat conversation so the next turn starts a fresh session (KV cleared). */
+    override fun resetChat() {
+        val convo = conversation ?: return
+        conversation = null
+        currentEmit = null
+        currentDispatch = null
+        runCatching { convo.cancelProcess() }
+        runCatching { convo.close() }
+    }
 
     /** System prompt for the tool-calling chat: role, tool guidance, and short recent context. */
     private fun systemInstruction(recentHistory: List<String>): String = buildString {
@@ -230,6 +293,13 @@ class LiteRtLmEngine(
 
     override suspend fun close() {
         withContext(Dispatchers.IO) {
+            conversation?.let { convo ->
+                runCatching { convo.cancelProcess() }
+                runCatching { convo.close() }
+            }
+            conversation = null
+            currentEmit = null
+            currentDispatch = null
             runCatching { engine?.close() }
             samplerConfig = null
             engine = null

@@ -34,13 +34,21 @@ interface LlmEngine {
      * Stream a Gallery-style tool-calling turn: emits [AgentStreamEvent.TextDelta]s as the model
      * types, and dispatches tool calls through [dispatch], emitting [AgentStreamEvent.ActionProposed]
      * / [AgentStreamEvent.ActionExecuted]. [recentHistory] is pre-rendered "User:"/"Assistant:" lines
-     * for short context (the conversation is stateless per call). Default: empty (engine has no tools).
+     * used to seed context on the **first** turn of a session; after that the engine keeps the
+     * conversation (and its KV cache) alive across turns, so prior turns are reused rather than
+     * re-prefilled. Default: empty (engine has no tools).
      */
     fun chatStream(
         userMessage: String,
         recentHistory: List<String>,
         dispatch: suspend (AgentAction) -> ActionResult,
     ): Flow<AgentStreamEvent> = emptyFlow()
+
+    /**
+     * Drop any retained chat conversation/KV-cache so the next [chatStream] turn starts a fresh
+     * session (call when the user clears the chat). Default no-op for engines that keep no state.
+     */
+    fun resetChat() {}
 
     suspend fun close()
 }

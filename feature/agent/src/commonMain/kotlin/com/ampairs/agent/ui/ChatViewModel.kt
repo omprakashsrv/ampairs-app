@@ -948,7 +948,12 @@ class ChatViewModel(
         streamJob?.cancel()
         streamJob = null
         _uiState.update { it.copy(messages = emptyList(), isProcessing = false, streamingThought = null) }
-        viewModelScope.launch { runCatching { chatHistoryRepository.clear() } }
+        viewModelScope.launch {
+            // Drop the retained tool-calling conversation so the next turn starts a fresh KV cache
+            // (otherwise the just-cleared turns would still live in the engine's context).
+            runCatching { providerRegistry.engineOrNull()?.resetChat() }
+            runCatching { chatHistoryRepository.clear() }
+        }
     }
 
     // ---- Transcript persistence (per-workspace, capped; restored on open so the chat continues) ----
