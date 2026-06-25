@@ -31,9 +31,11 @@ object WhisperModelCatalog {
 
     private const val HF_GGML = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main"
 
-    // Canonical mirror of the vilassn/whisper_android assets (the reference impl the LiteRT path is
-    // based on): all-in-one multilingual whisper.tflite graphs + the mel/vocab companion.
-    private const val HF_TFLITE = "https://huggingface.co/DocWolle/whisper_tflite_models/resolve/main"
+    // Canonical mirrors of the vilassn/whisper_android assets (the reference impl the LiteRT path is
+    // based on). The all-in-one multilingual whisper.tflite graphs live in cik009/whisper; the shared
+    // mel/vocab companion in DocWolle/whisper_tflite_models.
+    private const val HF_TFLITE = "https://huggingface.co/cik009/whisper/resolve/main"
+    private const val HF_TFLITE_ASSETS = "https://huggingface.co/DocWolle/whisper_tflite_models/resolve/main"
 
     /** ggml models for whisper.cpp / `whisper-jni` (Desktop). */
     val ggml: List<ModelDescriptor> = listOf(
@@ -100,7 +102,7 @@ object WhisperModelCatalog {
         role = ModelRole.FALLBACK,
         backendId = "whisper-litert",
         fileName = "filters_vocab_multilingual.bin",
-        downloadUrl = "$HF_TFLITE/filters_vocab_multilingual.bin",
+        downloadUrl = "$HF_TFLITE_ASSETS/filters_vocab_multilingual.bin",
         sizeBytes = 1_500_000L,
         estimatedPeakMemoryBytes = 16_000_000L,
         defaultParams = LlmParams(),
