@@ -49,8 +49,15 @@ class AndroidWhisperTranscriber(
                 val mel = ext.logMel(pcm) // [nMel * N_FRAMES]
                 val nFrames = WhisperFeatureExtractor.N_FRAMES
                 val input = reshape(mel, mel.size / nFrames, nFrames)
-                val output = Array(1) { IntArray(MAX_TOKENS) }
+                // The model defines its own output length (whisper-base emits [1, 451] token ids; tiny
+                // differs), so size the buffer from the actual output tensor — a fixed guess fails the
+                // shape-checked copy ("[1, 451] to [1, 224]").
+                val outShape = interp.getOutputTensor(0).shape()
+                val batch = outShape.firstOrNull() ?: 1
+                val tokens = outShape.lastOrNull() ?: 0
+                val output = Array(batch) { IntArray(tokens) }
                 interp.run(input, output)
+                Logger.i(tag = LOG_TAG) { "Whisper produced $tokens tokens" }
                 tok.decode(output[0])
             }
         }
@@ -106,7 +113,6 @@ class AndroidWhisperTranscriber(
     }
 
     private companion object {
-        const val MAX_TOKENS = 224
         const val LOG_TAG = "AgentWhisper"
         const val FILTERS_WAIT_TICKS = 60 // ~60 s max wait for the ~0.5 MB companion
         const val FILTERS_WAIT_STEP_MS = 1_000L
