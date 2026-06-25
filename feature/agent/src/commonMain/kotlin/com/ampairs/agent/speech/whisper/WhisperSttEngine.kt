@@ -89,12 +89,22 @@ class WhisperSttEngine(
         }
 
         Logger.i(LOG_TAG) { "Transcribing ${pcm.size} samples (~${pcm.size / 16_000}s) with $modelPath" }
-        val text = runCatching { transcriber.transcribe(pcm, modelPath, languageTag) }
-            .getOrElse {
-                Logger.e(LOG_TAG, it) { "Whisper transcription failed: ${it.message}" }
-                emit(SttEvent.Error(it.message ?: "Transcription failed."))
-                return@flow
-            }
+        // Bound the one-shot inference so a stuck/extremely-slow native call surfaces as a retryable
+        // error instead of freezing the voice UI on the mic screen forever. The first call also pays
+        // the model-file load, so the window is generous (the model is cached for later utterances).
+        val result = runCatching {
+            withTimeoutOrNull(TRANSCRIBE_TIMEOUT_MS) { transcriber.transcribe(pcm, modelPath, languageTag) }
+        }.getOrElse {
+            Logger.e(LOG_TAG, it) { "Whisper transcription failed: ${it.message}" }
+            emit(SttEvent.Error(it.message ?: "Transcription failed."))
+            return@flow
+        }
+        if (result == null) {
+            Logger.e(LOG_TAG) { "Whisper transcription timed out after ${TRANSCRIBE_TIMEOUT_MS}ms" }
+            emit(SttEvent.Error("Transcription took too long — please try again."))
+            return@flow
+        }
+        val text = result
         Logger.i(LOG_TAG) { "Whisper transcript: '${text.trim()}'" }
         emit(
             if (text.isBlank()) SttEvent.Error("Didn't catch that — please try again.")
@@ -108,5 +118,8 @@ class WhisperSttEngine(
         const val LOG_TAG = "AgentWhisper"
         const val MAX_UTTERANCE_MS = 30_000L
         const val MAX_SAMPLES = 16_000 * 30
+
+        /** Hard cap for one-shot inference (incl. first-call model load) so the mic UI can't hang. */
+        const val TRANSCRIBE_TIMEOUT_MS = 45_000L
     }
 }

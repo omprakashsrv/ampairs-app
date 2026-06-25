@@ -31,18 +31,9 @@ object WhisperModelCatalog {
 
     /** ggml models for whisper.cpp (Android `:whispercpp`, Desktop `whisper-jni`, iOS cinterop). */
     val ggml: List<ModelDescriptor> = listOf(
-        ModelDescriptor(
-            id = "whisper-base",
-            displayName = "Whisper Base (multilingual)",
-            role = ModelRole.FALLBACK,
-            backendId = "whisper-cpp",
-            fileName = "ggml-base-q5_1.bin",
-            downloadUrl = "$HF_GGML/ggml-base-q5_1.bin",
-            sizeBytes = 57_000_000L,
-            estimatedPeakMemoryBytes = 300_000_000L,
-            recommended = true,
-            defaultParams = LlmParams(),
-        ),
+        // Tiny is the default/recommended: markedly faster first-response on a phone CPU (smaller
+        // model = quicker load + inference), which matters because whisper.cpp is one-shot per
+        // utterance. Base stays available for users who want higher accuracy over latency.
         ModelDescriptor(
             id = "whisper-tiny",
             displayName = "Whisper Tiny (multilingual)",
@@ -52,6 +43,18 @@ object WhisperModelCatalog {
             downloadUrl = "$HF_GGML/ggml-tiny-q5_1.bin",
             sizeBytes = 32_000_000L,
             estimatedPeakMemoryBytes = 200_000_000L,
+            recommended = true,
+            defaultParams = LlmParams(),
+        ),
+        ModelDescriptor(
+            id = "whisper-base",
+            displayName = "Whisper Base (multilingual)",
+            role = ModelRole.FALLBACK,
+            backendId = "whisper-cpp",
+            fileName = "ggml-base-q5_1.bin",
+            downloadUrl = "$HF_GGML/ggml-base-q5_1.bin",
+            sizeBytes = 57_000_000L,
+            estimatedPeakMemoryBytes = 300_000_000L,
             defaultParams = LlmParams(),
         ),
     )
