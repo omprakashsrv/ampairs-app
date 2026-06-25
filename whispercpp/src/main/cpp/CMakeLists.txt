@@ -47,3 +47,9 @@ add_library(whisper_jni SHARED jni.c)
 # C++ runtime is pulled in (keeping the C source means the JNI symbol names are NOT name-mangled).
 set_target_properties(whisper_jni PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(whisper_jni PRIVATE whisper ${LOG_LIB} android)
+
+# 16 KB page-size support (required by Google Play for apps targeting Android 15+ from Nov 1, 2025).
+# NDK r27 supports 16 KB alignment but does not enable it by default (only r28+ does), so its LOAD
+# segments land on 4 KB boundaries and Play rejects the APK. Force the max ELF page size to 16 KB so
+# the segments are aligned and the lib loads on both 4 KB and 16 KB devices.
+target_link_options(whisper_jni PRIVATE "-Wl,-z,max-page-size=16384")
