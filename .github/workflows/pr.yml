@@ -74,7 +74,7 @@ jobs:
       - name: Publish coverage comment on PR
         if: ${{ github.event_name == 'pull_request' }}
         # Kover emits JaCoCo-format XML, so the JaCoCo reporter consumes it directly.
-        uses: madrapps/jacoco-report@v1.7.2
+        uses: madrapps/jacoco-report@v1.8.0
         with:
           paths: ${{ github.workspace }}/build/reports/kover/report.xml
           token: ${{ secrets.GITHUB_TOKEN }}
