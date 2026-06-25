@@ -31,21 +31,10 @@ object WhisperModelCatalog {
 
     /** ggml models for whisper.cpp (Android `:whispercpp`, Desktop `whisper-jni`, iOS cinterop). */
     val ggml: List<ModelDescriptor> = listOf(
-        // Tiny is the default/recommended: markedly faster first-response on a phone CPU (smaller
-        // model = quicker load + inference), which matters because whisper.cpp is one-shot per
-        // utterance. Base stays available for users who want higher accuracy over latency.
-        ModelDescriptor(
-            id = "whisper-tiny",
-            displayName = "Whisper Tiny (multilingual)",
-            role = ModelRole.FALLBACK,
-            backendId = "whisper-cpp",
-            fileName = "ggml-tiny-q5_1.bin",
-            downloadUrl = "$HF_GGML/ggml-tiny-q5_1.bin",
-            sizeBytes = 32_000_000L,
-            estimatedPeakMemoryBytes = 200_000_000L,
-            recommended = true,
-            defaultParams = LlmParams(),
-        ),
+        // Base (q5_1) is the default/recommended: it's noticeably more accurate than tiny —
+        // especially for Hindi and accented speech — while the q5_1 quantization keeps it small
+        // (~57 MB) and fast enough for one-shot, on-device CPU inference. Tiny stays available for
+        // users who want the lowest latency / smallest download over accuracy.
         ModelDescriptor(
             id = "whisper-base",
             displayName = "Whisper Base (multilingual)",
@@ -55,6 +44,18 @@ object WhisperModelCatalog {
             downloadUrl = "$HF_GGML/ggml-base-q5_1.bin",
             sizeBytes = 57_000_000L,
             estimatedPeakMemoryBytes = 300_000_000L,
+            recommended = true,
+            defaultParams = LlmParams(),
+        ),
+        ModelDescriptor(
+            id = "whisper-tiny",
+            displayName = "Whisper Tiny (multilingual)",
+            role = ModelRole.FALLBACK,
+            backendId = "whisper-cpp",
+            fileName = "ggml-tiny-q5_1.bin",
+            downloadUrl = "$HF_GGML/ggml-tiny-q5_1.bin",
+            sizeBytes = 32_000_000L,
+            estimatedPeakMemoryBytes = 200_000_000L,
             defaultParams = LlmParams(),
         ),
     )

@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import io.github.givimad.whisperjni.WhisperContext
 import io.github.givimad.whisperjni.WhisperFullParams
 import io.github.givimad.whisperjni.WhisperJNI
+import io.github.givimad.whisperjni.WhisperSamplingStrategy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -37,10 +38,29 @@ class DesktopWhisperTranscriber : WhisperTranscriber {
             mutex.withLock {
                 val jni = ensureLibrary()
                 val ctx = contextFor(jni, modelPath)
-                // Greedy decode, auto language detection. Use most of the desktop's cores — the default
-                // is a single thread, which makes inference far slower than the machine is capable of.
-                val params = WhisperFullParams().apply {
+                // BCP-47 (e.g. "hi-IN") → whisper ISO 639-1 ("hi"); null/blank → "auto" so whisper.cpp
+                // detects the spoken language and transcribes in it (Hindi stays Hindi), never
+                // translating. Mirrors AndroidWhisperCppTranscriber.
+                val lang = languageTag?.substringBefore('-')?.lowercase()?.takeIf { it.isNotBlank() } ?: "auto"
+                // IMPORTANT: WhisperFullParams()'s no-arg constructor defaults to BEAM SEARCH and
+                // language="en" with progress/timestamp printing on. Construct with GREEDY (much faster
+                // for one-shot short utterances) and mirror the Android/whisper.cpp param block exactly.
+                val params = WhisperFullParams(WhisperSamplingStrategy.GREEDY).apply {
                     nThreads = Runtime.getRuntime().availableProcessors().coerceIn(2, MAX_THREADS)
+                    language = lang          // override the lib's hardcoded "en" default
+                    translate = false        // transcribe in-language, never to English
+                    noContext = true
+                    singleSegment = false
+                    offsetMs = 0
+                    printRealtime = false
+                    printProgress = false    // lib default is true — silence it + skip the work
+                    printTimestamps = false  // lib default is true
+                    printSpecial = false
+                    noTimestamps = true      // we only use segment text
+                    suppressNonSpeechTokens = true
+                    // best_of defaults to 5/-1; at temperature 0 greedy decoding is deterministic, so
+                    // extra candidates are wasted compute — 1 gives the same output for ~one decode.
+                    greedyBestOf = 1
                 }
                 val (text, dur) = measureTimedValue {
                     val result = jni.full(ctx, params, pcm, pcm.size)
