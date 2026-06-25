@@ -84,4 +84,21 @@ object WhisperModelCatalog {
             defaultParams = LlmParams(),
         ),
     )
+
+    /**
+     * Mel-filterbank + BPE vocab companion for the `.tflite` path (shared by both sizes). The LiteRT
+     * graph emits token ids, so the app needs this to compute the log-mel input and detokenize the
+     * output. Downloaded once via the same `ModelManager`. URL provisional — confirm on device.
+     */
+    val tfliteFilters: ModelDescriptor = ModelDescriptor(
+        id = "whisper-filters",
+        displayName = "Whisper assets (mel + vocab)",
+        role = ModelRole.FALLBACK,
+        backendId = "whisper-litert",
+        fileName = "filters_vocab_multilingual.bin",
+        downloadUrl = "https://huggingface.co/filters_vocab_multilingual.bin", // provisional — confirm
+        sizeBytes = 1_500_000L,
+        estimatedPeakMemoryBytes = 16_000_000L,
+        defaultParams = LlmParams(),
+    )
 }
