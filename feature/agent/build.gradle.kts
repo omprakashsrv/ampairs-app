@@ -1,4 +1,5 @@
 import java.net.URI
+import java.util.zip.ZipInputStream
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -18,17 +19,38 @@ plugins {
 val whisperXcframeworkDir = layout.buildDirectory.dir("whisper-xcframework")
 val downloadWhisperXcframework = tasks.register("downloadWhisperXcframework") {
     val outDir = whisperXcframeworkDir.get().asFile
+    val headersDir = outDir.resolve("headers")
     val version = libs.versions.whisper.cpp.xcframework.get()
-    outputs.dir(outDir)
-    onlyIf { !outDir.resolve("whisper.xcframework").exists() }
+    outputs.dir(headersDir)
+    onlyIf { !headersDir.resolve("whisper.h").exists() }
     doLast {
         outDir.mkdirs()
         val zip = outDir.resolve("whisper.zip")
         val url = "https://github.com/ggml-org/whisper.cpp/releases/download/v$version/whisper-v$version-xcframework.zip"
         URI(url).toURL().openStream().use { input -> zip.outputStream().use { input.copyTo(it) } }
-        copy {
-            from(zipTree(zip))
-            into(outDir)
+        // Extract with java.util.zip (copy{}/zipTree capture the Project and break the configuration
+        // cache), then flatten every header into one dir so the cinterop includeDir is independent of
+        // the xcframework's per-slice folder names (whisper.h is identical across slices).
+        val extractRoot = outDir.resolve("extracted")
+        extractRoot.deleteRecursively()
+        extractRoot.mkdirs()
+        ZipInputStream(zip.inputStream().buffered()).use { zin ->
+            var entry = zin.nextEntry
+            while (entry != null) {
+                val target = extractRoot.resolve(entry.name)
+                if (entry.isDirectory) {
+                    target.mkdirs()
+                } else {
+                    target.parentFile.mkdirs()
+                    target.outputStream().use { zin.copyTo(it) }
+                }
+                entry = zin.nextEntry
+            }
+        }
+        headersDir.deleteRecursively()
+        headersDir.mkdirs()
+        extractRoot.walkTopDown().filter { it.isFile && it.extension == "h" }.forEach { h ->
+            h.copyTo(headersDir.resolve(h.name), overwrite = true)
         }
     }
 }
@@ -43,17 +65,18 @@ kotlin {
         androidResources.enable = true
     }
     jvm("desktop")
+    val whisperHeaders = whisperXcframeworkDir.get().asFile.resolve("headers")
     iosArm64 {
         compilations.getByName("main").cinterops.create("whisper") {
             defFile(project.file("src/nativeInterop/cinterop/whisper.def"))
-            includeDirs(whisperXcframeworkDir.get().asFile.resolve("whisper.xcframework/ios-arm64/whisper.framework/Headers"))
+            includeDirs(whisperHeaders)
             tasks.named(interopProcessingTaskName).configure { dependsOn(downloadWhisperXcframework) }
         }
     }
     iosSimulatorArm64 {
         compilations.getByName("main").cinterops.create("whisper") {
             defFile(project.file("src/nativeInterop/cinterop/whisper.def"))
-            includeDirs(whisperXcframeworkDir.get().asFile.resolve("whisper.xcframework/ios-arm64_x86_64-simulator/whisper.framework/Headers"))
+            includeDirs(whisperHeaders)
             tasks.named(interopProcessingTaskName).configure { dependsOn(downloadWhisperXcframework) }
         }
     }
