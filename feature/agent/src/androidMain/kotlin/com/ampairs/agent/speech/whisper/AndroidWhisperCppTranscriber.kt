@@ -33,8 +33,11 @@ class AndroidWhisperCppTranscriber : WhisperTranscriber {
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 val ctx = contextFor(modelPath)
-                val (text, dur) = measureTimedValue { ctx.transcribeData(pcm) }
-                Logger.i(LOG_TAG) { "Inference took $dur for ${pcm.size} samples (~${pcm.size / 16_000}s audio)" }
+                // BCP-47 (e.g. "hi-IN") → whisper ISO 639-1 ("hi"); null/blank → auto-detect, so the
+                // transcript stays in the spoken language (Hindi → Hindi) and is never translated.
+                val lang = languageTag?.substringBefore('-')?.lowercase()?.takeIf { it.isNotBlank() }
+                val (text, dur) = measureTimedValue { ctx.transcribeData(pcm, lang) }
+                Logger.i(LOG_TAG) { "Inference took $dur for ${pcm.size} samples (~${pcm.size / 16_000}s audio, lang=${lang ?: "auto"})" }
                 text.trim()
             }
         }

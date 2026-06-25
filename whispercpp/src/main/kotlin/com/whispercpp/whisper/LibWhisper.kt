@@ -23,12 +23,16 @@ class WhisperContext private constructor(private var ptr: Long) {
         Executors.newSingleThreadExecutor().asCoroutineDispatcher(),
     )
 
-    /** Transcribe a finished 16 kHz mono PCM buffer; returns the concatenated segment text. */
-    suspend fun transcribeData(data: FloatArray): String = withContext(scope.coroutineContext) {
+    /**
+     * Transcribe a finished 16 kHz mono PCM buffer; returns the concatenated segment text.
+     * [language] is an ISO 639-1 code (e.g. "en", "hi"); null/blank → auto-detect (transcribe in the
+     * spoken language, never translate).
+     */
+    suspend fun transcribeData(data: FloatArray, language: String? = null): String = withContext(scope.coroutineContext) {
         require(ptr != 0L) { "WhisperContext already released" }
         val numThreads = WhisperCpuConfig.preferredThreadCount
-        Log.d(LOG_TAG, "Transcribing with $numThreads threads")
-        WhisperLib.fullTranscribe(ptr, numThreads, data)
+        Log.d(LOG_TAG, "Transcribing with $numThreads threads, language=${language ?: "auto"}")
+        WhisperLib.fullTranscribe(ptr, numThreads, data, language)
         val count = WhisperLib.getTextSegmentCount(ptr)
         buildString {
             for (i in 0 until count) append(WhisperLib.getTextSegment(ptr, i))
@@ -66,7 +70,7 @@ private class WhisperLib {
 
         external fun initContext(modelPath: String): Long
         external fun freeContext(contextPtr: Long)
-        external fun fullTranscribe(contextPtr: Long, numThreads: Int, audioData: FloatArray)
+        external fun fullTranscribe(contextPtr: Long, numThreads: Int, audioData: FloatArray, language: String?)
         external fun getTextSegmentCount(contextPtr: Long): Int
         external fun getTextSegment(contextPtr: Long, index: Int): String
         external fun getSystemInfo(): String
