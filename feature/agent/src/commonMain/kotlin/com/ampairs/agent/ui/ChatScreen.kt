@@ -112,6 +112,7 @@ import ampairsapp.feature.agent.generated.resources.agent_adapter_whisper
 import ampairsapp.feature.agent.generated.resources.agent_settings_cd
 import ampairsapp.feature.agent.generated.resources.agent_settings_llm
 import ampairsapp.feature.agent.generated.resources.agent_settings_manage_models
+import ampairsapp.feature.agent.generated.resources.agent_settings_mic
 import ampairsapp.feature.agent.generated.resources.agent_settings_none
 import ampairsapp.feature.agent.generated.resources.agent_settings_stt
 import ampairsapp.feature.agent.generated.resources.agent_settings_title
