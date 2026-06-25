@@ -927,7 +927,7 @@ class ChatViewModel(
          *  doesn't pick up the tail of the spoken reply. */
         const val MIC_REARM_GAP_MS = 350L
 
-        /** How many recent messages are persisted/restored for the chat thread. */
-        const val MAX_PERSISTED_MESSAGES = 100
+        /** How many recent messages are persisted/restored for the chat thread (resume on reopen). */
+        const val MAX_PERSISTED_MESSAGES = 50
     }
 }
