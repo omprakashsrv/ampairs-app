@@ -2,8 +2,10 @@ package com.ampairs.agent.speech.whisper
 
 import co.touchlab.kermit.Logger
 import com.ampairs.agent.llm.ModelDescriptor
+import com.ampairs.agent.llm.ModelInstallStatus
 import com.ampairs.agent.llm.ModelManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -38,11 +40,7 @@ class AndroidWhisperTranscriber(
     override suspend fun transcribe(pcm: FloatArray, modelPath: String, languageTag: String?): String =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                val filtersPath = modelManager.localPathOrNull(filtersModel)
-                    ?: run {
-                        modelManager.download(filtersModel) // fetch the mel/vocab companion, then retry
-                        throw IllegalStateException("Preparing Whisper assets — please try again shortly.")
-                    }
+                val filtersPath = ensureFiltersDownloaded()
                 ensureAssets(filtersPath)
                 val interp = ensureInterpreter(modelPath)
                 val ext = extractor ?: error("assets not loaded")
@@ -56,6 +54,28 @@ class AndroidWhisperTranscriber(
                 tok.decode(output[0])
             }
         }
+
+    /**
+     * Resolve the mel/vocab companion's local path, downloading it first if absent. The companion is
+     * tiny (~0.5 MB) but isn't part of the model-picker download, so the first transcription fetches it
+     * and waits (rather than failing) — otherwise voice mode silently never works on first use.
+     */
+    private suspend fun ensureFiltersDownloaded(): String {
+        modelManager.localPathOrNull(filtersModel)?.let { return it }
+        Logger.i(tag = LOG_TAG) { "Whisper assets missing — downloading ${filtersModel.fileName}" }
+        modelManager.download(filtersModel)
+        repeat(FILTERS_WAIT_TICKS) {
+            delay(FILTERS_WAIT_STEP_MS)
+            modelManager.localPathOrNull(filtersModel)?.let {
+                Logger.i(tag = LOG_TAG) { "Whisper assets ready: ${filtersModel.fileName}" }
+                return it
+            }
+            if (modelManager.statusOf(filtersModel.id) is ModelInstallStatus.Failed) {
+                error("Couldn't download the Whisper assets. Check your connection and try again.")
+            }
+        }
+        error("Whisper assets are still downloading — please try again in a moment.")
+    }
 
     private fun ensureAssets(filtersPath: String) {
         if (assetsPathLoaded == filtersPath && extractor != null) return
@@ -88,5 +108,7 @@ class AndroidWhisperTranscriber(
     private companion object {
         const val MAX_TOKENS = 224
         const val LOG_TAG = "AgentWhisper"
+        const val FILTERS_WAIT_TICKS = 60 // ~60 s max wait for the ~0.5 MB companion
+        const val FILTERS_WAIT_STEP_MS = 1_000L
     }
 }

@@ -1,5 +1,6 @@
 package com.ampairs.agent.speech.whisper
 
+import co.touchlab.kermit.Logger
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
 import com.ampairs.common.coroutines.DispatcherProvider
@@ -33,6 +34,7 @@ class WhisperSttEngine(
     override fun listen(languageTag: String?): Flow<SttEvent> = flow {
         val modelPath = registry.selectedModelPath()
         if (modelPath == null) {
+            Logger.i(LOG_TAG) { "Whisper model not downloaded yet — kicking download, staying text this turn" }
             registry.ensureSelectedDownloaded()
             emit(SttEvent.Error("Downloading the Whisper model — please try again in a moment."))
             return@flow
@@ -51,6 +53,7 @@ class WhisperSttEngine(
         emit(SttEvent.EndOfSpeech)
 
         if (total == 0) {
+            Logger.w(LOG_TAG) { "No audio captured (mic produced 0 samples)" }
             emit(SttEvent.Error("Didn't catch that — please try again."))
             return@flow
         }
@@ -64,11 +67,14 @@ class WhisperSttEngine(
             offset += n
         }
 
+        Logger.i(LOG_TAG) { "Transcribing ${pcm.size} samples (~${pcm.size / 16_000}s) with $modelPath" }
         val text = runCatching { transcriber.transcribe(pcm, modelPath, languageTag) }
             .getOrElse {
+                Logger.e(LOG_TAG, it) { "Whisper transcription failed: ${it.message}" }
                 emit(SttEvent.Error(it.message ?: "Transcription failed."))
                 return@flow
             }
+        Logger.i(LOG_TAG) { "Whisper transcript: '${text.trim()}'" }
         emit(
             if (text.isBlank()) SttEvent.Error("Didn't catch that — please try again.")
             else SttEvent.Final(text.trim()),
@@ -78,6 +84,7 @@ class WhisperSttEngine(
     override fun stop() = audio.stop()
 
     private companion object {
+        const val LOG_TAG = "AgentWhisper"
         const val MAX_UTTERANCE_MS = 30_000L
         const val MAX_SAMPLES = 16_000 * 30
     }
