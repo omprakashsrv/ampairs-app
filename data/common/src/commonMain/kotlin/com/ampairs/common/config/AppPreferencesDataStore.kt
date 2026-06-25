@@ -144,6 +144,16 @@ interface AppPreferencesDataStore {
      */
     fun getSelectedLlmModelId(): Flow<String?>
     suspend fun setSelectedLlmModelId(modelId: String?)
+
+    /**
+     * The assistant speech adapter the user picked in settings, by adapter id (e.g. "native" /
+     * "whisper"). `null` = use the platform default (first registered). App-wide (the available
+     * adapters differ per platform, so this effectively selects per platform).
+     */
+    fun getSelectedSttAdapterId(): Flow<String?>
+    suspend fun setSelectedSttAdapterId(id: String?)
+    fun getSelectedTtsAdapterId(): Flow<String?>
+    suspend fun setSelectedTtsAdapterId(id: String?)
 }
 
 /**

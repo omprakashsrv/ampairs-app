@@ -27,6 +27,8 @@ class DataStoreAppPreferences(
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
         private val LLM_MODEL_DOWNLOAD_CONSENT_KEY = booleanPreferencesKey("llm_model_download_consent")
         private val SELECTED_LLM_MODEL_ID_KEY = stringPreferencesKey("selected_llm_model_id")
+        private val SELECTED_STT_ADAPTER_ID_KEY = stringPreferencesKey("selected_stt_adapter_id")
+        private val SELECTED_TTS_ADAPTER_ID_KEY = stringPreferencesKey("selected_tts_adapter_id")
 
         // Workspace-aware preference keys
         // Note: These keys include workspace slug to maintain separate state per workspace
@@ -291,4 +293,23 @@ class DataStoreAppPreferences(
         }
     }
 
+    override fun getSelectedSttAdapterId(): Flow<String?> =
+        dataStore.data.map { it[SELECTED_STT_ADAPTER_ID_KEY] }
+
+    override suspend fun setSelectedSttAdapterId(id: String?) {
+        dataStore.edit { preferences ->
+            if (id != null) preferences[SELECTED_STT_ADAPTER_ID_KEY] = id
+            else preferences.remove(SELECTED_STT_ADAPTER_ID_KEY)
+        }
+    }
+
+    override fun getSelectedTtsAdapterId(): Flow<String?> =
+        dataStore.data.map { it[SELECTED_TTS_ADAPTER_ID_KEY] }
+
+    override suspend fun setSelectedTtsAdapterId(id: String?) {
+        dataStore.edit { preferences ->
+            if (id != null) preferences[SELECTED_TTS_ADAPTER_ID_KEY] = id
+            else preferences.remove(SELECTED_TTS_ADAPTER_ID_KEY)
+        }
+    }
 }

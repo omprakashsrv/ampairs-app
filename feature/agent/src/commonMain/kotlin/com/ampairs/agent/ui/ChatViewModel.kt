@@ -22,6 +22,8 @@ import com.ampairs.agent.llm.ModelManager
 import com.ampairs.agent.llm.ProviderRegistry
 import com.ampairs.agent.llm.formatModelSize
 import com.ampairs.agent.permission.MicPermissionController
+import com.ampairs.agent.speech.SpeechAdapterOption
+import com.ampairs.agent.speech.SpeechAdapterRegistry
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
 import com.ampairs.agent.speech.TextToSpeech
@@ -33,6 +35,7 @@ import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -73,6 +76,15 @@ data class ChatUiState(
     val llmSupported: Boolean = true,
     /** Non-null while the full-screen hands-free voice conversation is active (FR-008/009); null otherwise. */
     val voiceMode: VoiceConversationState? = null,
+    /** True while the assistant settings sheet (adapter pickers) is open. */
+    val showSettings: Boolean = false,
+    /** Selectable speech-to-text engines for this platform; empty when none. */
+    val sttOptions: List<SpeechAdapterOption> = emptyList(),
+    /** Selectable text-to-speech engines for this platform; empty when none. */
+    val ttsOptions: List<SpeechAdapterOption> = emptyList(),
+    /** Currently selected STT/TTS adapter ids (null → platform default = first option). */
+    val selectedSttId: String? = null,
+    val selectedTtsId: String? = null,
 )
 
 /** State of the hands-free voice conversation overlay: the loop phase plus what's on screen now. */
@@ -178,8 +190,7 @@ sealed interface LlmDownloadPrompt {
 @Inject
 class ChatViewModel(
     private val orchestrator: AgentOrchestrator,
-    private val speechToText: SpeechToText,
-    private val textToSpeech: TextToSpeech,
+    private val speechAdapters: SpeechAdapterRegistry,
     private val micPermission: MicPermissionController,
     private val providerRegistry: ProviderRegistry,
     private val modelManager: ModelManager,
@@ -191,6 +202,10 @@ class ChatViewModel(
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+
+    /** The STT/TTS engines resolved for the in-flight operation, kept so stop()/mute can reach them. */
+    @Volatile private var sttInUse: SpeechToText? = null
+    @Volatile private var ttsInUse: TextToSpeech? = null
 
     /** The in-flight streaming chat turn, cancellable via [stopGeneration]. */
     private var streamJob: Job? = null
@@ -216,8 +231,30 @@ class ChatViewModel(
 
     init {
         loadPersistedHistory()
+        _uiState.update { it.copy(sttOptions = speechAdapters.sttOptions, ttsOptions = speechAdapters.ttsOptions) }
+        speechAdapters.selectedSttId()
+            .onEach { id -> _uiState.update { it.copy(selectedSttId = id) } }
+            .launchIn(viewModelScope)
+        speechAdapters.selectedTtsId()
+            .onEach { id -> _uiState.update { it.copy(selectedTtsId = id) } }
+            .launchIn(viewModelScope)
         initModelManager()
         maybeOfferModelDownload()
+    }
+
+    // ---- Assistant settings (switchable speech/LLM adapters) ----
+
+    fun openSettings() { _uiState.update { it.copy(showSettings = true) } }
+    fun closeSettings() { _uiState.update { it.copy(showSettings = false) } }
+
+    /** Pick the STT engine (persisted); takes effect on the next listen. */
+    fun onSelectSttAdapter(id: String) {
+        viewModelScope.launch { speechAdapters.setSttId(id) }
+    }
+
+    /** Pick the TTS engine (persisted); takes effect on the next spoken reply. */
+    fun onSelectTtsAdapter(id: String) {
+        viewModelScope.launch { speechAdapters.setTtsId(id) }
     }
 
     // ---- Model manager (status chip + download / switch / delete sheet) ----
@@ -675,10 +712,14 @@ class ChatViewModel(
         persistHistory()
     }
 
-    /** Read [text] aloud (fire-and-forget) unless muted or the platform lacks TTS. */
+    /** Read [text] aloud (fire-and-forget) unless muted or the platform has no TTS engine. */
     private fun speakText(text: String) {
-        if (_uiState.value.isTtsMuted || !textToSpeech.isAvailable || text.isBlank()) return
-        viewModelScope.launch { runCatching { textToSpeech.speak(text) } }
+        if (_uiState.value.isTtsMuted || text.isBlank()) return
+        viewModelScope.launch {
+            val tts = speechAdapters.tts() ?: return@launch
+            ttsInUse = tts
+            runCatching { tts.speak(text) }
+        }
     }
 
     private fun appendError(text: String) {
@@ -703,25 +744,24 @@ class ChatViewModel(
      */
     fun enterVoiceMode() {
         if (_uiState.value.voiceMode != null) return
-        if (!speechToText.isAvailable || !textToSpeech.isAvailable) {
-            viewModelScope.launch {
-                val msg = getString(Res.string.agent_voice_unavailable)
-                _uiState.update {
-                    it.copy(voiceMode = VoiceConversationState(phase = VoicePhase.Error, error = msg))
-                }
-            }
-            return
-        }
         _uiState.update { it.copy(isTtsMuted = false, voiceMode = VoiceConversationState(phase = VoicePhase.Connecting)) }
-        startVoiceLoop()
+        viewModelScope.launch {
+            // Both a STT and a TTS engine must be available (selected adapter resolves to non-null).
+            if (speechAdapters.stt() == null || speechAdapters.tts() == null) {
+                val msg = getString(Res.string.agent_voice_unavailable)
+                _uiState.update { it.copy(voiceMode = VoiceConversationState(phase = VoicePhase.Error, error = msg)) }
+                return@launch
+            }
+            startVoiceLoop()
+        }
     }
 
     /** Cancel the loop, silence mic + speech, and dismiss the overlay. */
     fun exitVoiceMode() {
         voiceLoopJob?.cancel()
         voiceLoopJob = null
-        textToSpeech.stop()
-        speechToText.stop()
+        ttsInUse?.stop()
+        sttInUse?.stop()
         _uiState.update { it.copy(voiceMode = null) }
     }
 
@@ -733,15 +773,15 @@ class ChatViewModel(
         } else {
             voiceLoopJob?.cancel()
             voiceLoopJob = null
-            textToSpeech.stop()
-            speechToText.stop()
+            ttsInUse?.stop()
+            sttInUse?.stop()
             updateVoice { it.copy(phase = VoicePhase.Paused, partialTranscript = "") }
         }
     }
 
     /**
      * The conversation loop: confirm mic permission once, then cycle listen → think → speak forever
-     * until paused/exited. Each [textToSpeech.speak] suspends until playback finishes, so the mic only
+     * until paused/exited. Each TTS speak() suspends until playback finishes, so the mic only
      * re-opens after the assistant stops talking; a short gap avoids the recognizer catching the TTS tail.
      */
     private fun startVoiceLoop() {
@@ -764,8 +804,12 @@ class ChatViewModel(
                 val reply = runAssistantTurn(utterance)
                 if (!isActive || _uiState.value.voiceMode == null) break
                 if (!reply.isNullOrBlank()) {
-                    updateVoice { it.copy(phase = VoicePhase.Speaking, lastReply = reply) }
-                    runCatching { textToSpeech.speak(reply) } // suspends until spoken (or stop()/cancel)
+                    val tts = speechAdapters.tts()
+                    if (tts != null) {
+                        ttsInUse = tts
+                        updateVoice { it.copy(phase = VoicePhase.Speaking, lastReply = reply) }
+                        runCatching { tts.speak(reply) } // suspends until spoken (or stop()/cancel)
+                    }
                 }
                 delay(MIC_REARM_GAP_MS) // let the TTS tail settle before re-opening the mic
             }
@@ -778,9 +822,11 @@ class ChatViewModel(
      * itself on Final/Error, so the collect returns.
      */
     private suspend fun listenOnce(): String? {
+        val stt = speechAdapters.stt() ?: return null
+        sttInUse = stt
         updateVoice { it.copy(phase = VoicePhase.Listening, partialTranscript = "") }
         var finalText: String? = null
-        speechToText.listen()
+        stt.listen()
             .catch { /* surfaced as null below → loop re-listens */ }
             .collect { event ->
                 when (event) {
@@ -801,7 +847,7 @@ class ChatViewModel(
     /** Mute/unmute spoken responses; muting also stops any in-progress speech. */
     fun toggleMute() {
         val nowMuted = !_uiState.value.isTtsMuted
-        if (nowMuted) textToSpeech.stop()
+        if (nowMuted) ttsInUse?.stop()
         _uiState.update { it.copy(isTtsMuted = nowMuted) }
     }
 

@@ -1,5 +1,6 @@
 package com.ampairs.agent.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.VolumeOff
@@ -44,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -104,6 +107,16 @@ import ampairsapp.feature.agent.generated.resources.agent_unmute_cd
 import ampairsapp.feature.agent.generated.resources.agent_voice_mode_cd
 import ampairsapp.feature.agent.generated.resources.agent_thinking
 import ampairsapp.feature.agent.generated.resources.agent_title
+import ampairsapp.feature.agent.generated.resources.agent_adapter_device
+import ampairsapp.feature.agent.generated.resources.agent_adapter_whisper
+import ampairsapp.feature.agent.generated.resources.agent_settings_cd
+import ampairsapp.feature.agent.generated.resources.agent_settings_llm
+import ampairsapp.feature.agent.generated.resources.agent_settings_manage_models
+import ampairsapp.feature.agent.generated.resources.agent_settings_none
+import ampairsapp.feature.agent.generated.resources.agent_settings_stt
+import ampairsapp.feature.agent.generated.resources.agent_settings_title
+import ampairsapp.feature.agent.generated.resources.agent_settings_tts
+import com.ampairs.agent.speech.SpeechAdapterOption
 import com.ampairs.agent.ui.components.MessageBubble
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -141,6 +154,9 @@ fun ChatScreen(
                             if (uiState.isTtsMuted) Res.string.agent_unmute_cd else Res.string.agent_mute_cd,
                         ),
                     )
+                }
+                IconButton(onClick = { viewModel.openSettings() }) {
+                    Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.agent_settings_cd))
                 }
                 if (uiState.messages.isNotEmpty()) {
                     IconButton(onClick = { viewModel.clearChat() }) {
@@ -240,6 +256,24 @@ fun ChatScreen(
                 onDownload = viewModel::onDownloadModel,
                 onDelete = viewModel::onDeleteModel,
                 onDismiss = viewModel::closeModelManager,
+            )
+        }
+
+        // Assistant settings: switch the STT / TTS engine adapters, and open the model manager.
+        if (uiState.showSettings) {
+            AssistantSettingsSheet(
+                sttOptions = uiState.sttOptions,
+                ttsOptions = uiState.ttsOptions,
+                selectedSttId = uiState.selectedSttId,
+                selectedTtsId = uiState.selectedTtsId,
+                modelName = uiState.modelBar.modelName,
+                onSelectStt = viewModel::onSelectSttAdapter,
+                onSelectTts = viewModel::onSelectTtsAdapter,
+                onManageModels = {
+                    viewModel.closeSettings()
+                    viewModel.openModelManager()
+                },
+                onDismiss = viewModel::closeSettings,
             )
         }
 
@@ -587,6 +621,99 @@ private fun ModelRow(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AssistantSettingsSheet(
+    sttOptions: List<SpeechAdapterOption>,
+    ttsOptions: List<SpeechAdapterOption>,
+    selectedSttId: String?,
+    selectedTtsId: String?,
+    modelName: String,
+    onSelectStt: (String) -> Unit,
+    onSelectTts: (String) -> Unit,
+    onManageModels: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(stringResource(Res.string.agent_settings_title), style = MaterialTheme.typography.headlineSmall)
+
+            AdapterSection(
+                title = stringResource(Res.string.agent_settings_stt),
+                options = sttOptions,
+                selectedId = selectedSttId ?: sttOptions.firstOrNull()?.id,
+                onSelect = onSelectStt,
+            )
+            AdapterSection(
+                title = stringResource(Res.string.agent_settings_tts),
+                options = ttsOptions,
+                selectedId = selectedTtsId ?: ttsOptions.firstOrNull()?.id,
+                onSelect = onSelectTts,
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(Res.string.agent_settings_llm), style = MaterialTheme.typography.titleMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = modelName.ifBlank { stringResource(Res.string.agent_model_chip_rule_based) },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedButton(onClick = onManageModels) {
+                        Text(stringResource(Res.string.agent_settings_manage_models))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdapterSection(
+    title: String,
+    options: List<SpeechAdapterOption>,
+    selectedId: String?,
+    onSelect: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        if (options.isEmpty()) {
+            Text(
+                text = stringResource(Res.string.agent_settings_none),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            options.forEach { option ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onSelect(option.id) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = option.id == selectedId, onClick = { onSelect(option.id) })
+                    Text(adapterLabel(option), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+    }
+}
+
+/** Localized display name for a speech adapter, by id, falling back to the registered label. */
+@Composable
+private fun adapterLabel(option: SpeechAdapterOption): String = when (option.id) {
+    "native" -> stringResource(Res.string.agent_adapter_device)
+    "whisper" -> stringResource(Res.string.agent_adapter_whisper)
+    else -> option.label
 }
 
 @Composable

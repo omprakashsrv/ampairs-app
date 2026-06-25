@@ -4,20 +4,26 @@ import android.content.Context
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 
 /**
- * Android speech bindings (T013): real [SpeechRecognizer]-backed STT (`EXTRA_PREFER_OFFLINE`) +
- * [android.speech.tts.TextToSpeech]-backed TTS, both taking the app [Context] from the graph. The
- * `RECORD_AUDIO` runtime permission gate (T016) is a host-app concern; without it STT emits an error
- * and the UI degrades to text input.
+ * Android speech adapters: the device's native [SpeechRecognizer] STT (`EXTRA_PREFER_OFFLINE`) and
+ * [android.speech.tts.TextToSpeech]. Contributed as selectable lists so the settings sheet can switch
+ * engines; additional engines (e.g. an offline Whisper STT adapter) are appended to these lists.
  */
 @ContributesTo(AppScope::class)
 interface SpeechAndroidModule {
     companion object {
         @Provides
-        fun provideSpeechToText(context: Context): SpeechToText = AndroidSpeechToText(context)
+        @SingleIn(AppScope::class)
+        fun provideSttAdapters(context: Context): List<SttAdapterEntry> = listOf(
+            SttAdapterEntry(id = "native", label = "Device", engine = AndroidSpeechToText(context)),
+        )
 
         @Provides
-        fun provideTextToSpeech(context: Context): TextToSpeech = AndroidTextToSpeech(context)
+        @SingleIn(AppScope::class)
+        fun provideTtsAdapters(context: Context): List<TtsAdapterEntry> = listOf(
+            TtsAdapterEntry(id = "native", label = "Device", engine = AndroidTextToSpeech(context)),
+        )
     }
 }

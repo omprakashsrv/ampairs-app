@@ -62,4 +62,14 @@
     <string name="agent_voice_resume_cd">Resume</string>
     <string name="agent_voice_exit_cd">Exit voice mode</string>
     <string name="agent_voice_title">Voice conversation</string>
+    <!-- Assistant settings (switchable speech / model adapters) -->
+    <string name="agent_settings_cd">Assistant settings</string>
+    <string name="agent_settings_title">Assistant settings</string>
+    <string name="agent_settings_stt">Speech-to-text engine</string>
+    <string name="agent_settings_tts">Text-to-speech engine</string>
+    <string name="agent_settings_llm">AI model</string>
+    <string name="agent_settings_none">Not available on this platform</string>
+    <string name="agent_settings_manage_models">Manage models</string>
+    <string name="agent_adapter_device">Device (built-in)</string>
+    <string name="agent_adapter_whisper">Whisper (offline)</string>
 </resources>
