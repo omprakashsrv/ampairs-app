@@ -108,6 +108,7 @@ import ampairsapp.feature.agent.generated.resources.agent_voice_mode_cd
 import ampairsapp.feature.agent.generated.resources.agent_thinking
 import ampairsapp.feature.agent.generated.resources.agent_title
 import ampairsapp.feature.agent.generated.resources.agent_adapter_device
+import ampairsapp.feature.agent.generated.resources.agent_adapter_whisper
 import ampairsapp.feature.agent.generated.resources.agent_settings_cd
 import ampairsapp.feature.agent.generated.resources.agent_settings_llm
 import ampairsapp.feature.agent.generated.resources.agent_settings_manage_models
@@ -711,6 +712,7 @@ private fun AdapterSection(
 @Composable
 private fun adapterLabel(option: SpeechAdapterOption): String = when (option.id) {
     "native" -> stringResource(Res.string.agent_adapter_device)
+    "whisper" -> stringResource(Res.string.agent_adapter_whisper)
     else -> option.label
 }
 

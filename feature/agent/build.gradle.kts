@@ -69,7 +69,13 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
             }
         }
-        val desktopMain by getting { }
+        val desktopMain by getting {
+            dependencies {
+                // whisper.cpp via JNI (native libs embedded for Win/Mac/Linux) — offline Whisper STT
+                // engine on Desktop, which has no platform recognizer. Desktop/JVM only.
+                implementation(libs.whisper.jni)
+            }
+        }
         val iosArm64Main by getting
         val iosSimulatorArm64Main by getting
         val iosMain by creating {

@@ -154,6 +154,15 @@ interface AppPreferencesDataStore {
     suspend fun setSelectedSttAdapterId(id: String?)
     fun getSelectedTtsAdapterId(): Flow<String?>
     suspend fun setSelectedTtsAdapterId(id: String?)
+
+    /**
+     * The Whisper model the user picked for the offline Whisper STT adapter, by `ModelDescriptor.id`
+     * (e.g. "whisper-base" / "whisper-tiny"). `null` = use the catalog default (first entry). App-wide;
+     * the available models differ per platform (`.tflite` on mobile, ggml on desktop), so this
+     * effectively selects per platform.
+     */
+    fun getSelectedWhisperModelId(): Flow<String?>
+    suspend fun setSelectedWhisperModelId(id: String?)
 }
 
 /**
