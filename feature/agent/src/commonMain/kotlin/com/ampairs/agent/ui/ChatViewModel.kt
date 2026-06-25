@@ -804,8 +804,10 @@ class ChatViewModel(
         if (_uiState.value.voiceMode != null) return
         _uiState.update { it.copy(isTtsMuted = false, voiceMode = VoiceConversationState(phase = VoicePhase.Connecting)) }
         viewModelScope.launch {
-            // Both a STT and a TTS engine must be available (selected adapter resolves to non-null).
-            if (speechAdapters.stt() == null || speechAdapters.tts() == null) {
+            // STT is required; TTS is optional. Desktop has Whisper STT but no TTS engine, so gating
+            // on TTS too would wrongly block voice there — the loop already handles a null TTS by
+            // skipping the spoken reply and showing it as text.
+            if (speechAdapters.stt() == null) {
                 val msg = getString(Res.string.agent_voice_unavailable)
                 _uiState.update { it.copy(voiceMode = VoiceConversationState(phase = VoicePhase.Error, error = msg)) }
                 return@launch
