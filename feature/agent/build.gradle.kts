@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
@@ -23,7 +25,7 @@ val downloadWhisperXcframework = tasks.register("downloadWhisperXcframework") {
         outDir.mkdirs()
         val zip = outDir.resolve("whisper.zip")
         val url = "https://github.com/ggml-org/whisper.cpp/releases/download/v$version/whisper-v$version-xcframework.zip"
-        java.net.URI(url).toURL().openStream().use { input -> zip.outputStream().use { input.copyTo(it) } }
+        URI(url).toURL().openStream().use { input -> zip.outputStream().use { input.copyTo(it) } }
         copy {
             from(zipTree(zip))
             into(outDir)
