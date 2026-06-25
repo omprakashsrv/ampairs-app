@@ -47,6 +47,8 @@ interface SpeechDesktopModule {
 
         @Provides
         @SingleIn(AppScope::class)
-        fun provideTtsAdapters(): List<TtsAdapterEntry> = emptyList()
+        fun provideTtsAdapters(): List<TtsAdapterEntry> = listOf(
+            TtsAdapterEntry(id = "native", label = "Device", engine = DesktopTextToSpeech()),
+        )
     }
 }
