@@ -3,9 +3,6 @@ package com.ampairs.agent.speech.whisper
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.cstr
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
@@ -13,7 +10,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.concurrent.Volatile
-import whisper.cpp.whisper_context
+import cnames.structs.whisper_context
 import whisper.cpp.whisper_context_default_params
 import whisper.cpp.whisper_free
 import whisper.cpp.whisper_full
@@ -73,9 +70,9 @@ class IosWhisperTranscriber : WhisperTranscriber {
         ctx?.let { if (loadedPath == modelPath) return it }
         ctx?.let { whisper_free(it) }
         ctx = null
-        val created = memScoped {
-            whisper_init_from_file_with_params(modelPath.cstr.ptr, whisper_context_default_params())
-        } ?: throw IllegalStateException("Failed to load Whisper model: $modelPath")
+        // cinterop maps whisper_init_from_file_with_params' `const char*` path to a Kotlin String.
+        val created = whisper_init_from_file_with_params(modelPath, whisper_context_default_params())
+            ?: throw IllegalStateException("Failed to load Whisper model: $modelPath")
         ctx = created
         loadedPath = modelPath
         return created
