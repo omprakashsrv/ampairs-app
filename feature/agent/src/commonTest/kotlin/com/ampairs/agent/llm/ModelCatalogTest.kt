@@ -26,8 +26,8 @@ class ModelCatalogTest {
     fun byId_andByBackend_resolve() {
         assertNotNull(ModelCatalog.byId("function-gemma-270m"))
         assertNull(ModelCatalog.byId("does-not-exist"))
+        assertTrue(ModelCatalog.byBackend("litert-lm").isNotEmpty())
         assertTrue(ModelCatalog.byBackend("litert-lm").all { it.backendId == "litert-lm" })
-        assertTrue(ModelCatalog.byBackend("llamacpp").isNotEmpty())
     }
 
     @Test

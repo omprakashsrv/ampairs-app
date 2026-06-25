@@ -2,12 +2,13 @@ package com.ampairs.agent.llm
 
 /**
  * The role-split, swappable model catalog (plan §2). Mirrors the Google AI Edge Gallery's
- * `model_allowlist.json`: a tiny tool-caller for intent→action + a larger chat model, plus a
- * llama.cpp fallback. `ModelManager` (T032) downloads entries from [ModelDescriptor.downloadUrl];
- * `ProviderRegistry` (T023) + `DeviceCapability` (T022) select by [ModelRole] and RAM.
+ * `model_allowlist.json`: a tiny tool-caller for intent→action + larger chat models (Gemma 3n,
+ * Qwen2.5) — all LiteRT-LM (`.litertlm`). `ModelManager` downloads entries from
+ * [ModelDescriptor.downloadUrl]; `ProviderRegistry` + `DeviceCapability` select by [ModelRole]/RAM.
  *
- * NOTE: `downloadUrl`/`fileName`/byte sizes are provisional and confirmed at T031 (model availability
- * verification) before the downloader (T032) ships — nothing downloads yet, so they're inert here.
+ * Gemma 3n + Qwen2.5 file names, sizes, params and HuggingFace URLs come from the AI Edge LiteRT-LM
+ * allowlist (gated repos — the downloader supplies the HF auth token). The intent model's params are
+ * kept deterministic (temp 0 / top-k 1) for constrained JSON intent resolution.
  */
 object ModelCatalog {
 
@@ -24,46 +25,49 @@ object ModelCatalog {
         defaultParams = LlmParams(temperature = 0.0f, topK = 1, maxTokens = 256),
     )
 
-    /** Conversational answers / query phrasing — low-RAM tier (3–6 GB). */
+    /** Conversational answers / query phrasing — low-RAM tier. Multimodal (text/vision/audio). */
     val GEMMA_3N_E2B = ModelDescriptor(
         id = "gemma-3n-e2b",
         displayName = "Gemma 3n E2B",
         role = ModelRole.CHAT,
         backendId = "litert-lm",
-        fileName = "gemma-3n-e2b.litertlm",
-        downloadUrl = "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm", // provisional — confirm T031
-        sizeBytes = 3_000_000_000L,
-        estimatedPeakMemoryBytes = 3_500_000_000L,
-        defaultParams = LlmParams(temperature = 0.3f, topK = 40, topP = 0.95f, maxTokens = 512),
+        fileName = "gemma-3n-E2B-it-int4.litertlm",
+        downloadUrl = "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm/resolve/main/gemma-3n-E2B-it-int4.litertlm",
+        sizeBytes = 3_655_827_456L,
+        estimatedPeakMemoryBytes = 4_100_000_000L,
+        defaultParams = LlmParams(temperature = 1.0f, topK = 64, topP = 0.95f, maxTokens = 4096),
     )
 
-    /** Conversational answers — higher-RAM tier (≥ 6 GB). */
+    /** Conversational answers — higher-RAM tier. Multimodal (text/vision/audio). */
     val GEMMA_3N_E4B = ModelDescriptor(
         id = "gemma-3n-e4b",
         displayName = "Gemma 3n E4B",
         role = ModelRole.CHAT,
         backendId = "litert-lm",
-        fileName = "gemma-3n-e4b.litertlm",
-        downloadUrl = "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm", // provisional — confirm T031
-        sizeBytes = 4_400_000_000L,
-        estimatedPeakMemoryBytes = 6_000_000_000L,
-        defaultParams = LlmParams(temperature = 0.3f, topK = 40, topP = 0.95f, maxTokens = 512),
+        fileName = "gemma-3n-E4B-it-int4.litertlm",
+        downloadUrl = "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/main/gemma-3n-E4B-it-int4.litertlm",
+        sizeBytes = 4_919_541_760L,
+        estimatedPeakMemoryBytes = 5_500_000_000L,
+        defaultParams = LlmParams(temperature = 1.0f, topK = 64, topP = 0.95f, maxTokens = 4096),
     )
 
-    /** llama.cpp fallback / parity (Desktop, or when LiteRT-LM is unavailable). Needs ≥ 6 GB. */
-    val QWEN2_5_3B = ModelDescriptor(
-        id = "qwen2.5-3b-instruct",
-        displayName = "Qwen2.5 3B Instruct (GGUF)",
+    /**
+     * Qwen2.5 1.5B Instruct — a LiteRT-LM chat alternative (text-only), from the AI Edge
+     * `litert-community` allowlist. Selectable in the model manager alongside the Gemma chat models.
+     */
+    val QWEN2_5_1_5B = ModelDescriptor(
+        id = "qwen2.5-1.5b-instruct",
+        displayName = "Qwen2.5 1.5B Instruct",
         role = ModelRole.FALLBACK,
-        backendId = "llamacpp",
-        fileName = "qwen2.5-3b-instruct-q4_k_m.gguf",
-        downloadUrl = "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF", // provisional — confirm T031
-        sizeBytes = 2_000_000_000L,
-        estimatedPeakMemoryBytes = 4_000_000_000L,
-        defaultParams = LlmParams(temperature = 0.2f, topK = 40, topP = 0.9f, maxTokens = 512),
+        backendId = "litert-lm",
+        fileName = "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
+        downloadUrl = "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
+        sizeBytes = 1_597_931_520L,
+        estimatedPeakMemoryBytes = 1_900_000_000L,
+        defaultParams = LlmParams(temperature = 0.7f, topK = 20, topP = 0.8f, maxTokens = 4096),
     )
 
-    val all: List<ModelDescriptor> = listOf(FUNCTION_GEMMA_270M, GEMMA_3N_E2B, GEMMA_3N_E4B, QWEN2_5_3B)
+    val all: List<ModelDescriptor> = listOf(FUNCTION_GEMMA_270M, GEMMA_3N_E2B, GEMMA_3N_E4B, QWEN2_5_1_5B)
 
     fun byId(id: String): ModelDescriptor? = all.firstOrNull { it.id == id }
 

@@ -16,7 +16,19 @@ class BackendSelectorTest {
     }
 
     private val e2b = ModelCatalog.GEMMA_3N_E2B          // backendId = "litert-lm"
-    private val qwen = ModelCatalog.QWEN2_5_3B           // backendId = "llamacpp"
+
+    // Self-contained "non-litert-lm backend" fixture (the catalog is all litert-lm now).
+    private val qwen = ModelDescriptor(
+        id = "gguf-test",
+        displayName = "GGUF model (test)",
+        role = ModelRole.FALLBACK,
+        backendId = "llamacpp",
+        fileName = "test.gguf",
+        downloadUrl = "",
+        sizeBytes = 1L,
+        estimatedPeakMemoryBytes = 1L,
+        defaultParams = LlmParams(),
+    )
 
     @Test
     fun emptyBackends_returnsNull() {
