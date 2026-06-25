@@ -18,9 +18,9 @@ object ModelCatalog {
         displayName = "FunctionGemma 270M",
         role = ModelRole.INTENT,
         backendId = "litert-lm",
-        fileName = "function-gemma-270m.litertlm",
-        downloadUrl = "https://huggingface.co/google/function-gemma-270m", // provisional — confirm T031
-        sizeBytes = 300_000_000L,
+        fileName = "tiny_garden.litertlm",
+        downloadUrl = "https://huggingface.co/google/functiongemma-270m-it/resolve/main/tiny_garden.litertlm",
+        sizeBytes = 288_440_320L,
         estimatedPeakMemoryBytes = 700_000_000L,
         defaultParams = LlmParams(temperature = 0.0f, topK = 1, maxTokens = 256),
     )

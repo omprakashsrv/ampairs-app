@@ -17,6 +17,8 @@ data class AiModelEntity(
     val name: String,
     val family: String,
     val parameterLabel: String,
+    /** Pipeline slot from the manifest ("INTENT"/"CHAT"/"FALLBACK"); persisted so role survives offline. */
+    val role: String,
     val fileName: String,
     val sizeBytes: Long,
     val sha256: String?,
