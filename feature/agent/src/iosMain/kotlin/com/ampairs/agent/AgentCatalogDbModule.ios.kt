@@ -22,6 +22,9 @@ interface AgentCatalogDbIosModule {
             )
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(DispatcherProvider.io)
+                // The catalog is a disposable cache (re-pulled from the manifest), so drop & recreate
+                // on schema change instead of writing migrations.
+                .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
     }
 }

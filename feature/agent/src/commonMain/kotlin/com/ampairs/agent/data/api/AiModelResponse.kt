@@ -20,6 +20,8 @@ data class AiModelResponse(
     val name: String,
     val family: String = "",
     @SerialName("parameter_label") val parameterLabel: String = "",
+    /** Pipeline slot from the manifest: "INTENT" (tool-caller) / "CHAT" / "FALLBACK". */
+    val role: String = "CHAT",
     @SerialName("file_name") val fileName: String,
     @SerialName("size_bytes") val sizeBytes: Long,
     val sha256: String? = null,
@@ -29,15 +31,23 @@ data class AiModelResponse(
     val recommended: Boolean = false,
 )
 
+/** Parse the manifest's role string to [ModelRole]; unknown/blank ⇒ CHAT (a safe, selectable default). */
+fun roleFromManifest(role: String): ModelRole =
+    when (role.trim().uppercase()) {
+        "INTENT" -> ModelRole.INTENT
+        "FALLBACK" -> ModelRole.FALLBACK
+        else -> ModelRole.CHAT
+    }
+
 /**
- * Map a manifest entry onto the engine-facing [ModelDescriptor]. The manifest carries only the file +
- * RAM gate, so role and sampling params are assigned app-side (all manifest models are general CHAT
- * models), and [ModelDescriptor.downloadUrl] is the backend proxy URL for this model's bytes.
+ * Map a manifest entry onto the engine-facing [ModelDescriptor]. The manifest carries the file, RAM
+ * gate, and pipeline [role] (so the tool-caller is wired as INTENT, not auto-picked as a chat model);
+ * sampling params are assigned app-side, and [ModelDescriptor.downloadUrl] is the backend proxy URL.
  */
 fun AiModelResponse.toDescriptor(): ModelDescriptor = ModelDescriptor(
     id = id,
     displayName = name,
-    role = ModelRole.CHAT,
+    role = roleFromManifest(role),
     backendId = backendId,
     fileName = fileName,
     downloadUrl = ApiUrlBuilder.agentUrl("v1/models/$id/download"),
@@ -55,6 +65,7 @@ fun AiModelResponse.toEntity(): AiModelEntity = AiModelEntity(
     name = name,
     family = family,
     parameterLabel = parameterLabel,
+    role = role,
     fileName = fileName,
     sizeBytes = sizeBytes,
     sha256 = sha256,
@@ -70,6 +81,7 @@ fun AiModelEntity.toResponse(): AiModelResponse = AiModelResponse(
     name = name,
     family = family,
     parameterLabel = parameterLabel,
+    role = role,
     fileName = fileName,
     sizeBytes = sizeBytes,
     sha256 = sha256,

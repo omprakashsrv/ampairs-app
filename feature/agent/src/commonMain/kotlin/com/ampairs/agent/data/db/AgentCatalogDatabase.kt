@@ -12,11 +12,11 @@ import com.ampairs.agent.data.db.entity.AiModelEntity
  * file (`agent_catalog.db`), built directly per platform like `AuthRoomDatabase` — NOT the
  * workspace-scoped [ChatDatabase] — because the model files are global (a single app-wide models dir)
  * and the same catalog applies to every workspace. Persisting it makes already-downloaded models
- * selectable + loadable offline. Version 1.
+ * selectable + loadable offline. Version 2 (added `role`).
  */
 @Database(
     entities = [AiModelEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @ConstructedBy(AgentCatalogDatabaseConstructor::class)
