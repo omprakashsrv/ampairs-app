@@ -27,7 +27,6 @@ class DataStoreAppPreferences(
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
         private val LLM_MODEL_DOWNLOAD_CONSENT_KEY = booleanPreferencesKey("llm_model_download_consent")
         private val SELECTED_LLM_MODEL_ID_KEY = stringPreferencesKey("selected_llm_model_id")
-        private val CACHED_AGENT_MODEL_CATALOG_KEY = stringPreferencesKey("cached_agent_model_catalog")
         private val SELECTED_STT_ADAPTER_ID_KEY = stringPreferencesKey("selected_stt_adapter_id")
         private val SELECTED_TTS_ADAPTER_ID_KEY = stringPreferencesKey("selected_tts_adapter_id")
         private val SELECTED_WHISPER_MODEL_ID_KEY = stringPreferencesKey("selected_whisper_model_id")
@@ -292,16 +291,6 @@ class DataStoreAppPreferences(
             } else {
                 preferences.remove(SELECTED_LLM_MODEL_ID_KEY)
             }
-        }
-    }
-
-    override fun getCachedAgentModelCatalog(): Flow<String?> =
-        dataStore.data.map { it[CACHED_AGENT_MODEL_CATALOG_KEY] }
-
-    override suspend fun setCachedAgentModelCatalog(json: String?) {
-        dataStore.edit { preferences ->
-            if (json != null) preferences[CACHED_AGENT_MODEL_CATALOG_KEY] = json
-            else preferences.remove(CACHED_AGENT_MODEL_CATALOG_KEY)
         }
     }
 

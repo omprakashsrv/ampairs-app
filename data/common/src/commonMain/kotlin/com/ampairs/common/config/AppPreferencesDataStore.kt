@@ -146,15 +146,6 @@ interface AppPreferencesDataStore {
     suspend fun setSelectedLlmModelId(modelId: String?)
 
     /**
-     * The last-known on-device AI model catalog (the backend manifest JSON), persisted after each
-     * successful pull. Lets the app recognize, select, and load already-downloaded server models when
-     * the backend is unreachable — the bundled fallback catalog uses different ids/file names, so
-     * without this an offline device can't match a downloaded model to a descriptor. App-wide.
-     */
-    fun getCachedAgentModelCatalog(): Flow<String?>
-    suspend fun setCachedAgentModelCatalog(json: String?)
-
-    /**
      * The assistant speech adapter the user picked in settings, by adapter id (e.g. "native" /
      * "whisper"). `null` = use the platform default (first registered). App-wide (the available
      * adapters differ per platform, so this effectively selects per platform).

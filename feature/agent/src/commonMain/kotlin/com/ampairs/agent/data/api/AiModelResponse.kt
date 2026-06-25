@@ -1,5 +1,6 @@
 package com.ampairs.agent.data.api
 
+import com.ampairs.agent.data.db.entity.AiModelEntity
 import com.ampairs.agent.llm.LlmParams
 import com.ampairs.agent.llm.ModelDescriptor
 import com.ampairs.agent.llm.ModelRole
@@ -46,4 +47,34 @@ fun AiModelResponse.toDescriptor(): ModelDescriptor = ModelDescriptor(
     sha256 = sha256,
     recommended = recommended,
     defaultParams = LlmParams(temperature = 0.3f, topK = 40, topP = 0.95f, maxTokens = 512),
+)
+
+/** Persist a manifest entry to the app-scoped catalog DB (platforms comma-joined). */
+fun AiModelResponse.toEntity(): AiModelEntity = AiModelEntity(
+    id = id,
+    name = name,
+    family = family,
+    parameterLabel = parameterLabel,
+    fileName = fileName,
+    sizeBytes = sizeBytes,
+    sha256 = sha256,
+    requiredRamMb = requiredRamMb,
+    backendId = backendId,
+    platforms = platforms.joinToString(","),
+    recommended = recommended,
+)
+
+/** Rebuild the manifest entry from its persisted row, so [toDescriptor] stays the single mapper. */
+fun AiModelEntity.toResponse(): AiModelResponse = AiModelResponse(
+    id = id,
+    name = name,
+    family = family,
+    parameterLabel = parameterLabel,
+    fileName = fileName,
+    sizeBytes = sizeBytes,
+    sha256 = sha256,
+    requiredRamMb = requiredRamMb,
+    backendId = backendId,
+    platforms = platforms.split(",").filter { it.isNotBlank() }.toSet(),
+    recommended = recommended,
 )

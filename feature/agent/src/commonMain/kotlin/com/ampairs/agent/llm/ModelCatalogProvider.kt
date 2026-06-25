@@ -1,29 +1,29 @@
 package com.ampairs.agent.llm
 
-import com.ampairs.agent.data.api.AiModelResponse
 import com.ampairs.agent.data.api.ModelCatalogApi
 import com.ampairs.agent.data.api.toDescriptor
-import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.agent.data.api.toEntity
+import com.ampairs.agent.data.api.toResponse
+import com.ampairs.agent.data.db.dao.AiModelDao
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlin.concurrent.Volatile
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.json.Json
 
 /**
  * Source of truth for the on-device model catalog. The catalog is **server-driven** (pulled from
  * the backend manifest `GET /api/agent/v1/models`) — the app never hardcodes model files. The bundled
  * [ModelCatalog] is only the very-first-launch fallback (before any successful pull).
  *
- * Each successful pull is **persisted** (the raw manifest JSON, via [AppPreferencesDataStore]) so the
- * exact server descriptors (id, file name, RAM gate, proxy URL) are available offline. A model is
+ * Each successful pull is **persisted** to the app-scoped [AgentCatalogDatabase] (via [AiModelDao]) so
+ * the exact server descriptors (id, file name, RAM gate, proxy URL) are available offline. A model is
  * downloaded under its *server* id/file name, so when the backend is unreachable the app reuses the
  * persisted server catalog to recognize, select, and load it; the bundled catalog uses different
- * ids/file names and would make a downloaded model look absent or unselectable.
+ * ids/file names and would make a downloaded model look absent or unselectable. The catalog DB is
+ * app-scoped (global), matching the global model-file directory — the same catalog applies to every
+ * workspace, so a model downloaded in one workspace is recognized offline in all of them.
  *
  * Cached in-memory for the process lifetime; [all] lazily refreshes on first use. App-scoped
  * singleton so the cache survives across screens (and workspace switches reuse the same cache —
@@ -33,10 +33,9 @@ import kotlinx.serialization.json.Json
 @SingleIn(AppScope::class)
 class ModelCatalogProvider(
     private val api: ModelCatalogApi,
-    private val appPreferences: AppPreferencesDataStore,
+    private val aiModelDao: AiModelDao,
 ) {
     private val mutex = Mutex()
-    private val json = Json { ignoreUnknownKeys = true }
 
     @Volatile
     private var cached: List<ModelDescriptor>? = null
@@ -48,13 +47,9 @@ class ModelCatalogProvider(
         if (data != null && response.error == null) {
             val models = data.map { it.toDescriptor() }
             mutex.withLock { cached = models }
-            // Persist the raw manifest so already-downloaded server models stay selectable + loadable
+            // Persist the manifest so already-downloaded server models stay selectable + loadable
             // when offline (the bundled fallback uses different ids/file names — see class KDoc).
-            runCatching {
-                appPreferences.setCachedAgentModelCatalog(
-                    json.encodeToString(ListSerializer(AiModelResponse.serializer()), data),
-                )
-            }
+            runCatching { aiModelDao.replaceAll(data.map { it.toEntity() }) }
             return Result.success(models.size)
         }
         return Result.failure(IllegalStateException("Failed to load model catalog"))
@@ -76,14 +71,11 @@ class ModelCatalogProvider(
         return ModelCatalog.all
     }
 
-    /** Deserialize the last persisted manifest into descriptors, or null if absent/unparseable. */
-    private suspend fun loadPersisted(): List<ModelDescriptor>? {
-        val raw = runCatching { appPreferences.getCachedAgentModelCatalog().first() }
-            .getOrNull()?.takeIf { it.isNotBlank() } ?: return null
-        return runCatching {
-            json.decodeFromString(ListSerializer(AiModelResponse.serializer()), raw)
-        }.getOrNull()?.takeIf { it.isNotEmpty() }?.map { it.toDescriptor() }
-    }
+    /** Map the persisted catalog rows into descriptors, or null if none stored. */
+    private suspend fun loadPersisted(): List<ModelDescriptor>? =
+        runCatching { aiModelDao.getAll() }.getOrNull()
+            ?.takeIf { it.isNotEmpty() }
+            ?.map { it.toResponse().toDescriptor() }
 
     suspend fun byId(id: String): ModelDescriptor? = all().firstOrNull { it.id == id }
 
