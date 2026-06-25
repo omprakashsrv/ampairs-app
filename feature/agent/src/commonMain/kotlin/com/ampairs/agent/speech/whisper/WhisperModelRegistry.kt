@@ -39,6 +39,13 @@ class WhisperModelRegistry(
     fun selectedId(): Flow<String?> = prefs.getSelectedWhisperModelId()
     suspend fun setSelected(id: String) = prefs.setSelectedWhisperModelId(id)
 
+    /** The id actually in effect for a given persisted value (persisted → recommended → first). */
+    fun resolveSelectedId(selectedId: String?): String? = resolve(selectedId)?.id
+
+    /** Ids whose model file is present on disk (filesystem truth, for the settings picker). */
+    suspend fun installedIds(): Set<String> =
+        models.filter { modelManager.localPathOrNull(it) != null }.map { it.id }.toSet()
+
     /** The chosen model (persisted id → recommended → first), or null when the platform has none. */
     private fun resolve(selectedId: String?): ModelDescriptor? =
         models.firstOrNull { it.id == selectedId }

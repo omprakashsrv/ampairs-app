@@ -267,8 +267,12 @@ fun ChatScreen(
                 selectedSttId = uiState.selectedSttId,
                 selectedTtsId = uiState.selectedTtsId,
                 modelName = uiState.modelBar.modelName,
+                whisperModels = uiState.whisperModels,
                 onSelectStt = viewModel::onSelectSttAdapter,
                 onSelectTts = viewModel::onSelectTtsAdapter,
+                onSelectWhisperModel = viewModel::onSelectWhisperModel,
+                onDownloadWhisperModel = viewModel::onDownloadWhisperModel,
+                onDeleteWhisperModel = viewModel::onDeleteWhisperModel,
                 onManageModels = {
                     viewModel.closeSettings()
                     viewModel.openModelManager()
@@ -631,8 +635,12 @@ private fun AssistantSettingsSheet(
     selectedSttId: String?,
     selectedTtsId: String?,
     modelName: String,
+    whisperModels: List<WhisperModelUi>,
     onSelectStt: (String) -> Unit,
     onSelectTts: (String) -> Unit,
+    onSelectWhisperModel: (String) -> Unit,
+    onDownloadWhisperModel: (String) -> Unit,
+    onDeleteWhisperModel: (String) -> Unit,
     onManageModels: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -648,12 +656,22 @@ private fun AssistantSettingsSheet(
         ) {
             Text(stringResource(Res.string.agent_settings_title), style = MaterialTheme.typography.headlineSmall)
 
+            val effectiveSttId = selectedSttId ?: sttOptions.firstOrNull()?.id
             AdapterSection(
                 title = stringResource(Res.string.agent_settings_stt),
                 options = sttOptions,
-                selectedId = selectedSttId ?: sttOptions.firstOrNull()?.id,
+                selectedId = effectiveSttId,
                 onSelect = onSelectStt,
             )
+            // Whisper size picker — only when the Whisper STT engine is the active choice.
+            if (effectiveSttId == "whisper" && whisperModels.isNotEmpty()) {
+                WhisperModelSection(
+                    models = whisperModels,
+                    onSelect = onSelectWhisperModel,
+                    onDownload = onDownloadWhisperModel,
+                    onDelete = onDeleteWhisperModel,
+                )
+            }
             AdapterSection(
                 title = stringResource(Res.string.agent_settings_tts),
                 options = ttsOptions,
@@ -706,6 +724,63 @@ private fun AdapterSection(
             }
         }
     }
+}
+
+/** Whisper model-size rows: select the active size, and download/delete each one. */
+@Composable
+private fun WhisperModelSection(
+    models: List<WhisperModelUi>,
+    onSelect: (String) -> Unit,
+    onDownload: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(Res.string.agent_settings_whisper_model), style = MaterialTheme.typography.titleMedium)
+        models.forEach { model ->
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { onSelect(model.id) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = model.isSelected, onClick = { onSelect(model.id) })
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(model.label, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = whisperStatusText(model),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                when (model.status) {
+                    is ModelItemStatus.Downloading -> CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    ModelItemStatus.Installed -> TextButton(onClick = { onDelete(model.id) }) {
+                        Text(stringResource(Res.string.agent_model_delete))
+                    }
+                    is ModelItemStatus.Failed -> TextButton(onClick = { onDownload(model.id) }) {
+                        Text(stringResource(Res.string.agent_model_retry))
+                    }
+                    ModelItemStatus.NotInstalled -> TextButton(onClick = { onDownload(model.id) }) {
+                        Text(stringResource(Res.string.agent_model_download_action))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Secondary line under a Whisper size row: size + install state. */
+@Composable
+private fun whisperStatusText(model: WhisperModelUi): String {
+    val state = when (val s = model.status) {
+        is ModelItemStatus.Downloading ->
+            stringResource(Res.string.agent_model_status_downloading, (s.progress * 100).toInt())
+        ModelItemStatus.Installed -> stringResource(Res.string.agent_model_status_installed)
+        is ModelItemStatus.Failed -> stringResource(Res.string.agent_model_status_failed)
+        ModelItemStatus.NotInstalled -> stringResource(Res.string.agent_model_status_not_installed)
+    }
+    return "${model.sizeText} · $state"
 }
 
 /** Localized display name for a speech adapter, by id, falling back to the registered label. */

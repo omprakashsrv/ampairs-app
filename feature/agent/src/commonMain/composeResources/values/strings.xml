@@ -72,4 +72,5 @@
     <string name="agent_settings_manage_models">Manage models</string>
     <string name="agent_adapter_device">Device (built-in)</string>
     <string name="agent_adapter_whisper">Whisper (offline)</string>
+    <string name="agent_settings_whisper_model">Whisper model size</string>
 </resources>

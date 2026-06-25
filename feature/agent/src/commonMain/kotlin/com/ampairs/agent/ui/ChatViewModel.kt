@@ -27,6 +27,7 @@ import com.ampairs.agent.speech.SpeechAdapterRegistry
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
 import com.ampairs.agent.speech.TextToSpeech
+import com.ampairs.agent.speech.whisper.WhisperModelRegistry
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.config.AppPreferencesDataStore
@@ -45,6 +46,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -85,6 +87,18 @@ data class ChatUiState(
     /** Currently selected STT/TTS adapter ids (null → platform default = first option). */
     val selectedSttId: String? = null,
     val selectedTtsId: String? = null,
+    /** Downloadable Whisper model sizes (e.g. tiny/base); empty on platforms with no Whisper engine. */
+    val whisperModels: List<WhisperModelUi> = emptyList(),
+)
+
+/** One Whisper model-size row in the settings sheet (shown only when the Whisper STT engine is active). */
+data class WhisperModelUi(
+    val id: String,
+    val label: String,
+    val sizeText: String,
+    val status: ModelItemStatus,
+    /** True when this size is the active selection (the one a Whisper transcription will use). */
+    val isSelected: Boolean,
 )
 
 /** State of the hands-free voice conversation overlay: the loop phase plus what's on screen now. */
@@ -191,6 +205,7 @@ sealed interface LlmDownloadPrompt {
 class ChatViewModel(
     private val orchestrator: AgentOrchestrator,
     private val speechAdapters: SpeechAdapterRegistry,
+    private val whisperRegistry: WhisperModelRegistry,
     private val micPermission: MicPermissionController,
     private val providerRegistry: ProviderRegistry,
     private val modelManager: ModelManager,
@@ -238,8 +253,51 @@ class ChatViewModel(
         speechAdapters.selectedTtsId()
             .onEach { id -> _uiState.update { it.copy(selectedTtsId = id) } }
             .launchIn(viewModelScope)
+        observeWhisperModels()
         initModelManager()
         maybeOfferModelDownload()
+    }
+
+    /** Keep the settings Whisper-size rows live (selection + per-size download state). Inert when none. */
+    private fun observeWhisperModels() {
+        if (!whisperRegistry.hasModels) return
+        combine(
+            whisperRegistry.selectedId(),
+            whisperRegistry.statuses,
+        ) { selected, statuses -> selected to statuses }
+            .onEach { (selected, statuses) -> rebuildWhisperUi(selected, statuses) }
+            .launchIn(viewModelScope)
+    }
+
+    private suspend fun rebuildWhisperUi(selectedId: String?, statuses: Map<String, ModelInstallStatus>) {
+        val installed = whisperRegistry.installedIds()
+        val effective = whisperRegistry.resolveSelectedId(selectedId)
+        val items = whisperRegistry.options.map { o ->
+            val live = statuses[o.id]
+            val status = when {
+                live is ModelInstallStatus.Downloading -> ModelItemStatus.Downloading(live.fraction)
+                o.id in installed -> ModelItemStatus.Installed
+                live is ModelInstallStatus.Failed -> ModelItemStatus.Failed(live.message)
+                else -> ModelItemStatus.NotInstalled
+            }
+            WhisperModelUi(o.id, o.label, formatModelSize(o.sizeBytes), status, o.id == effective)
+        }
+        _uiState.update { it.copy(whisperModels = items) }
+    }
+
+    /** Pick the Whisper model size (persisted); the next transcription downloads it if needed. */
+    fun onSelectWhisperModel(id: String) {
+        viewModelScope.launch { whisperRegistry.setSelected(id) }
+    }
+
+    /** Start downloading a Whisper model size now, from the settings sheet. */
+    fun onDownloadWhisperModel(id: String) {
+        whisperRegistry.download(id)
+    }
+
+    /** Remove a downloaded Whisper model size to reclaim space. */
+    fun onDeleteWhisperModel(id: String) {
+        viewModelScope.launch { whisperRegistry.delete(id) }
     }
 
     // ---- Assistant settings (switchable speech/LLM adapters) ----
