@@ -35,6 +35,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/versions/9/previous-compilation-data.bin"
         }
+        jniLibs {
+            // Both litert and litertlm-android bundle their own copy of libLiteRt.so.
+            // They are the same LiteRT runtime, so keep the first occurrence.
+            pickFirsts += "**/libLiteRt.so"
+        }
     }
 
     defaultConfig {
@@ -62,7 +67,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.4:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.3:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
 
