@@ -49,6 +49,7 @@ play-services-location = "21.3.0"
 maps-compose = "8.3.0"
 accompanist-permissions = "0.37.3"
 litertlm = "0.13.1"
+litertlm-desktop = "0.11.0"
 litert = "2.1.0"
 whisper-jni = "1.7.1"
 kotlinx-io = "0.9.0"
@@ -122,6 +123,7 @@ uuid = { group = "com.benasher44", name = "uuid", version.ref = "uuid" }
 grant-core = { module = "dev.brewkits:grant-core", version.ref = "grant" }
 grant-bluetooth = { module = "dev.brewkits:grant-bluetooth", version.ref = "grant" }
 litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
+litertlm-desktop = { module = "com.google.ai.edge:litertlm", version.ref = "litertlm-desktop" }
 litert = { module = "com.google.ai.edge.litert:litert", version.ref = "litert" }
 whisper-jni = { module = "io.github.givimad:whisper-jni", version.ref = "whisper-jni" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
