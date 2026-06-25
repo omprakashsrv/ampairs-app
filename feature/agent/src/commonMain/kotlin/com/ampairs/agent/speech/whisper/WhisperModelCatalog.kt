@@ -31,6 +31,10 @@ object WhisperModelCatalog {
 
     private const val HF_GGML = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main"
 
+    // Canonical mirror of the vilassn/whisper_android assets (the reference impl the LiteRT path is
+    // based on): all-in-one multilingual whisper.tflite graphs + the mel/vocab companion.
+    private const val HF_TFLITE = "https://huggingface.co/DocWolle/whisper_tflite_models/resolve/main"
+
     /** ggml models for whisper.cpp / `whisper-jni` (Desktop). */
     val ggml: List<ModelDescriptor> = listOf(
         ModelDescriptor(
@@ -58,7 +62,7 @@ object WhisperModelCatalog {
         ),
     )
 
-    /** LiteRT `.tflite` models (Android/iOS). URLs provisional — confirmed when the LiteRT engine lands. */
+    /** LiteRT all-in-one `.tflite` graphs (Android/iOS), from the DocWolle whisper_tflite mirror. */
     val tflite: List<ModelDescriptor> = listOf(
         ModelDescriptor(
             id = "whisper-base",
@@ -66,7 +70,7 @@ object WhisperModelCatalog {
             role = ModelRole.FALLBACK,
             backendId = "whisper-litert",
             fileName = "whisper-base.tflite",
-            downloadUrl = "https://huggingface.co/whisper-base.tflite", // provisional — confirm
+            downloadUrl = "$HF_TFLITE/whisper-base.tflite",
             sizeBytes = 75_000_000L,
             estimatedPeakMemoryBytes = 400_000_000L,
             recommended = true,
@@ -78,7 +82,7 @@ object WhisperModelCatalog {
             role = ModelRole.FALLBACK,
             backendId = "whisper-litert",
             fileName = "whisper-tiny.tflite",
-            downloadUrl = "https://huggingface.co/whisper-tiny.tflite", // provisional — confirm
+            downloadUrl = "$HF_TFLITE/whisper-tiny.tflite",
             sizeBytes = 45_000_000L,
             estimatedPeakMemoryBytes = 250_000_000L,
             defaultParams = LlmParams(),
@@ -88,7 +92,7 @@ object WhisperModelCatalog {
     /**
      * Mel-filterbank + BPE vocab companion for the `.tflite` path (shared by both sizes). The LiteRT
      * graph emits token ids, so the app needs this to compute the log-mel input and detokenize the
-     * output. Downloaded once via the same `ModelManager`. URL provisional — confirm on device.
+     * output. Downloaded once via the same `ModelManager`, from the DocWolle whisper_tflite mirror.
      */
     val tfliteFilters: ModelDescriptor = ModelDescriptor(
         id = "whisper-filters",
@@ -96,7 +100,7 @@ object WhisperModelCatalog {
         role = ModelRole.FALLBACK,
         backendId = "whisper-litert",
         fileName = "filters_vocab_multilingual.bin",
-        downloadUrl = "https://huggingface.co/filters_vocab_multilingual.bin", // provisional — confirm
+        downloadUrl = "$HF_TFLITE/filters_vocab_multilingual.bin",
         sizeBytes = 1_500_000L,
         estimatedPeakMemoryBytes = 16_000_000L,
         defaultParams = LlmParams(),
