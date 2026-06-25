@@ -30,6 +30,14 @@ class ChatHistoryRepository(private val dao: ChatMessageDao) {
 
     suspend fun clear() = dao.clear()
 
+    /**
+     * Launch-time cleanup: prune the stored thread down to the most recent [limit] messages so the
+     * table can't grow unbounded across sessions (e.g. data written by an older build).
+     */
+    suspend fun cleanup(limit: Int) {
+        if (dao.count() > limit) dao.trimToLast(limit)
+    }
+
     private fun ChatMessage.toEntity(seq: Int) = ChatMessageEntity(
         seq = seq,
         id = id,

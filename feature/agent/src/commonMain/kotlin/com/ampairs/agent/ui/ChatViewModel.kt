@@ -886,9 +886,13 @@ class ChatViewModel(
 
     // ---- Transcript persistence (per-workspace, capped; restored on open so the chat continues) ----
 
-    /** Restore the saved transcript on open (only if nothing's in memory yet) from the Room DB. */
+    /**
+     * On launch: prune the stored thread to the cap (housekeeping), then restore it (only if nothing's
+     * in memory yet) from the Room DB so the conversation resumes where it left off.
+     */
     private fun loadPersistedHistory() {
         viewModelScope.launch {
+            runCatching { chatHistoryRepository.cleanup(MAX_PERSISTED_MESSAGES) }
             val restored = runCatching { chatHistoryRepository.load(MAX_PERSISTED_MESSAGES) }.getOrNull().orEmpty()
             if (restored.isEmpty()) return@launch
             _uiState.update { st -> if (st.messages.isEmpty()) st.copy(messages = restored) else st }
