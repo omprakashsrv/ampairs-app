@@ -27,6 +27,7 @@ import com.ampairs.agent.speech.SpeechAdapterRegistry
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
 import com.ampairs.agent.speech.TextToSpeech
+import com.ampairs.agent.speech.whisper.AudioInputDeviceProvider
 import com.ampairs.agent.speech.whisper.WhisperModelRegistry
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
@@ -89,6 +90,10 @@ data class ChatUiState(
     val selectedTtsId: String? = null,
     /** Downloadable Whisper model sizes (e.g. tiny/base); empty on platforms with no Whisper engine. */
     val whisperModels: List<WhisperModelUi> = emptyList(),
+    /** Selectable mic input devices (Desktop only); empty elsewhere → the settings section is hidden. */
+    val micDevices: List<SpeechAdapterOption> = emptyList(),
+    /** Selected mic device id (the mixer name); null → system default. */
+    val selectedMicId: String? = null,
 )
 
 /** One Whisper model-size row in the settings sheet (shown only when the Whisper STT engine is active). */
@@ -206,6 +211,7 @@ class ChatViewModel(
     private val orchestrator: AgentOrchestrator,
     private val speechAdapters: SpeechAdapterRegistry,
     private val whisperRegistry: WhisperModelRegistry,
+    private val audioInputDevices: AudioInputDeviceProvider,
     private val micPermission: MicPermissionController,
     private val providerRegistry: ProviderRegistry,
     private val modelManager: ModelManager,
@@ -254,8 +260,26 @@ class ChatViewModel(
             .onEach { id -> _uiState.update { it.copy(selectedTtsId = id) } }
             .launchIn(viewModelScope)
         observeWhisperModels()
+        observeMicDevices()
         initModelManager()
         maybeOfferModelDownload()
+    }
+
+    /** Load the selectable mic devices + track the selection (Desktop only; inert elsewhere). */
+    private fun observeMicDevices() {
+        if (!audioInputDevices.isSupported) return
+        viewModelScope.launch {
+            val devices = audioInputDevices.devices().map { SpeechAdapterOption(it.id, it.label) }
+            _uiState.update { it.copy(micDevices = devices) }
+        }
+        audioInputDevices.selectedId()
+            .onEach { id -> _uiState.update { it.copy(selectedMicId = id) } }
+            .launchIn(viewModelScope)
+    }
+
+    /** Pick the mic input device (Desktop); the next capture opens that device. */
+    fun onSelectMicDevice(id: String) {
+        viewModelScope.launch { audioInputDevices.setSelected(id) }
     }
 
     /** Keep the settings Whisper-size rows live (selection + per-size download state). Inert when none. */
@@ -864,11 +888,16 @@ class ChatViewModel(
                 val reply = runAssistantTurn(utterance)
                 if (!isActive || _uiState.value.voiceMode == null) break
                 if (!reply.isNullOrBlank()) {
+                    // Surface the reply in the overlay regardless of TTS; speak it only if a TTS engine
+                    // exists. Desktop has no TTS — without setting lastReply here the answer was computed
+                    // but never shown, so the overlay looked stuck on "Thinking".
+                    updateVoice { it.copy(phase = VoicePhase.Speaking, lastReply = reply) }
                     val tts = speechAdapters.tts()
                     if (tts != null) {
                         ttsInUse = tts
-                        updateVoice { it.copy(phase = VoicePhase.Speaking, lastReply = reply) }
                         runCatching { tts.speak(reply) } // suspends until spoken (or stop()/cancel)
+                    } else {
+                        delay(REPLY_READ_GAP_MS) // no TTS: keep the reply on screen long enough to read
                     }
                 }
                 delay(MIC_REARM_GAP_MS) // let the TTS tail settle before re-opening the mic
@@ -952,6 +981,9 @@ class ChatViewModel(
         /** Pause after the assistant finishes speaking before re-opening the mic, so the recognizer
          *  doesn't pick up the tail of the spoken reply. */
         const val MIC_REARM_GAP_MS = 350L
+
+        /** With no TTS (e.g. Desktop), how long the spoken-reply text stays on screen before re-listening. */
+        const val REPLY_READ_GAP_MS = 3500L
 
         /** How many recent messages are persisted/restored for the chat thread (resume on reopen). */
         const val MAX_PERSISTED_MESSAGES = 50

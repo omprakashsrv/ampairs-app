@@ -10,6 +10,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.nio.file.Paths
 import kotlin.concurrent.Volatile
+import kotlin.time.measureTimedValue
 
 /**
  * Desktop Whisper inference via **whisper.cpp** (`whisper-jni`, native libs embedded in the jar for
@@ -36,17 +37,27 @@ class DesktopWhisperTranscriber : WhisperTranscriber {
             mutex.withLock {
                 val jni = ensureLibrary()
                 val ctx = contextFor(jni, modelPath)
-                // No-arg params = greedy decode with auto language detection (multilingual model).
-                val params = WhisperFullParams()
-                val result = jni.full(ctx, params, pcm, pcm.size)
-                if (result != 0) {
-                    Logger.w(tag = LOG_TAG) { "whisper.cpp full() returned $result" }
-                    return@withLock ""
+                // Greedy decode, auto language detection. Use most of the desktop's cores — the default
+                // is a single thread, which makes inference far slower than the machine is capable of.
+                val params = WhisperFullParams().apply {
+                    nThreads = Runtime.getRuntime().availableProcessors().coerceIn(2, MAX_THREADS)
                 }
-                val segments = jni.fullNSegments(ctx)
-                buildString {
-                    for (i in 0 until segments) append(jni.fullGetSegmentText(ctx, i))
-                }.trim()
+                val (text, dur) = measureTimedValue {
+                    val result = jni.full(ctx, params, pcm, pcm.size)
+                    if (result != 0) {
+                        Logger.w(tag = LOG_TAG) { "whisper.cpp full() returned $result" }
+                        ""
+                    } else {
+                        val segments = jni.fullNSegments(ctx)
+                        buildString {
+                            for (i in 0 until segments) append(jni.fullGetSegmentText(ctx, i))
+                        }.trim()
+                    }
+                }
+                Logger.i(tag = LOG_TAG) {
+                    "Inference took $dur for ${pcm.size} samples (~${pcm.size / 16_000}s audio, threads=${params.nThreads})"
+                }
+                text
             }
         }
 
@@ -74,5 +85,6 @@ class DesktopWhisperTranscriber : WhisperTranscriber {
 
     private companion object {
         const val LOG_TAG = "AgentWhisper"
+        const val MAX_THREADS = 8
     }
 }

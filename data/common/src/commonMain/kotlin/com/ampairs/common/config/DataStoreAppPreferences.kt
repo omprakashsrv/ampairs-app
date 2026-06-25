@@ -30,6 +30,7 @@ class DataStoreAppPreferences(
         private val SELECTED_STT_ADAPTER_ID_KEY = stringPreferencesKey("selected_stt_adapter_id")
         private val SELECTED_TTS_ADAPTER_ID_KEY = stringPreferencesKey("selected_tts_adapter_id")
         private val SELECTED_WHISPER_MODEL_ID_KEY = stringPreferencesKey("selected_whisper_model_id")
+        private val SELECTED_AUDIO_INPUT_DEVICE_ID_KEY = stringPreferencesKey("selected_audio_input_device_id")
 
         // Workspace-aware preference keys
         // Note: These keys include workspace slug to maintain separate state per workspace
@@ -321,6 +322,16 @@ class DataStoreAppPreferences(
         dataStore.edit { preferences ->
             if (id != null) preferences[SELECTED_WHISPER_MODEL_ID_KEY] = id
             else preferences.remove(SELECTED_WHISPER_MODEL_ID_KEY)
+        }
+    }
+
+    override fun getSelectedAudioInputDeviceId(): Flow<String?> =
+        dataStore.data.map { it[SELECTED_AUDIO_INPUT_DEVICE_ID_KEY] }
+
+    override suspend fun setSelectedAudioInputDeviceId(id: String?) {
+        dataStore.edit { preferences ->
+            if (id != null) preferences[SELECTED_AUDIO_INPUT_DEVICE_ID_KEY] = id
+            else preferences.remove(SELECTED_AUDIO_INPUT_DEVICE_ID_KEY)
         }
     }
 }

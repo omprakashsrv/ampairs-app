@@ -268,6 +268,9 @@ fun ChatScreen(
                 selectedTtsId = uiState.selectedTtsId,
                 modelName = uiState.modelBar.modelName,
                 whisperModels = uiState.whisperModels,
+                micDevices = uiState.micDevices,
+                selectedMicId = uiState.selectedMicId,
+                onSelectMicDevice = viewModel::onSelectMicDevice,
                 onSelectStt = viewModel::onSelectSttAdapter,
                 onSelectTts = viewModel::onSelectTtsAdapter,
                 onSelectWhisperModel = viewModel::onSelectWhisperModel,
@@ -636,6 +639,9 @@ private fun AssistantSettingsSheet(
     selectedTtsId: String?,
     modelName: String,
     whisperModels: List<WhisperModelUi>,
+    micDevices: List<SpeechAdapterOption>,
+    selectedMicId: String?,
+    onSelectMicDevice: (String) -> Unit,
     onSelectStt: (String) -> Unit,
     onSelectTts: (String) -> Unit,
     onSelectWhisperModel: (String) -> Unit,
@@ -670,6 +676,15 @@ private fun AssistantSettingsSheet(
                     onSelect = onSelectWhisperModel,
                     onDownload = onDownloadWhisperModel,
                     onDelete = onDeleteWhisperModel,
+                )
+            }
+            // Mic input device picker — Desktop only (the list is empty elsewhere).
+            if (micDevices.isNotEmpty()) {
+                AdapterSection(
+                    title = stringResource(Res.string.agent_settings_mic),
+                    options = micDevices,
+                    selectedId = selectedMicId ?: micDevices.firstOrNull()?.id,
+                    onSelect = onSelectMicDevice,
                 )
             }
             AdapterSection(

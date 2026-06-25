@@ -1,9 +1,11 @@
 package com.ampairs.agent.speech.whisper
 
+import com.ampairs.common.config.AppPreferencesDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.concurrent.Volatile
@@ -16,8 +18,13 @@ import javax.sound.sampled.TargetDataLine
  * Desktop mic capture over `javax.sound.sampled` — opens a [TargetDataLine] at **16 kHz, 16-bit, mono,
  * signed little-endian**, reads on [Dispatchers.IO], and emits normalized float chunks. [stop] ends the
  * read loop, which completes the [callbackFlow]; `awaitClose` releases the line.
+ *
+ * The input device is the user's persisted choice (Assistant settings → Microphone, stored as the
+ * mixer name); null/unknown falls back to the system default line.
  */
-class DesktopAudioCapture : AudioCapture {
+class DesktopAudioCapture(
+    private val prefs: AppPreferencesDataStore,
+) : AudioCapture {
 
     private val format = AudioFormat(16_000f, 16, 1, true, false)
 
@@ -31,7 +38,7 @@ class DesktopAudioCapture : AudioCapture {
 
     override fun stream(): Flow<FloatArray> = callbackFlow {
         val info = DataLine.Info(TargetDataLine::class.java, format)
-        val dataLine = (AudioSystem.getLine(info) as TargetDataLine).apply {
+        val dataLine = openSelectedLine(info).apply {
             open(format)
             start()
         }
@@ -61,6 +68,22 @@ class DesktopAudioCapture : AudioCapture {
             }
             line = null
         }
+    }
+
+    /**
+     * Open the [TargetDataLine] for the user-selected mixer (by name), falling back to the system
+     * default line when nothing is selected or the saved device is gone (unplugged).
+     */
+    private suspend fun openSelectedLine(info: DataLine.Info): TargetDataLine {
+        val selectedName = runCatching { prefs.getSelectedAudioInputDeviceId().first() }.getOrNull()
+        if (!selectedName.isNullOrBlank()) {
+            val mixerInfo = AudioSystem.getMixerInfo().firstOrNull { it.name == selectedName }
+            if (mixerInfo != null) {
+                runCatching { AudioSystem.getTargetDataLine(format, mixerInfo) }
+                    .getOrNull()?.let { return it }
+            }
+        }
+        return AudioSystem.getLine(info) as TargetDataLine
     }
 
     override fun stop() {

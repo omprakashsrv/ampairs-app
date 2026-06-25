@@ -163,6 +163,13 @@ interface AppPreferencesDataStore {
      */
     fun getSelectedWhisperModelId(): Flow<String?>
     suspend fun setSelectedWhisperModelId(id: String?)
+
+    /**
+     * Selected microphone input device id (Desktop only — the mixer name). Null → system default.
+     * Other platforms ignore it (the OS picks the mic).
+     */
+    fun getSelectedAudioInputDeviceId(): Flow<String?>
+    suspend fun setSelectedAudioInputDeviceId(id: String?)
 }
 
 /**

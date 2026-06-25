@@ -3,6 +3,8 @@ package com.ampairs.agent.speech
 import android.content.Context
 import com.ampairs.agent.speech.whisper.AndroidAudioCapture
 import com.ampairs.agent.speech.whisper.AndroidWhisperCppTranscriber
+import com.ampairs.agent.speech.whisper.AudioInputDeviceProvider
+import com.ampairs.agent.speech.whisper.NoopAudioInputDeviceProvider
 import com.ampairs.agent.speech.whisper.WhisperModelCatalog
 import com.ampairs.agent.speech.whisper.WhisperModelRegistry
 import com.ampairs.agent.speech.whisper.WhisperModelSet
@@ -27,6 +29,11 @@ interface SpeechAndroidModule {
         @Provides
         @SingleIn(AppScope::class)
         fun provideWhisperModelSet(): WhisperModelSet = WhisperModelSet(WhisperModelCatalog.ggml)
+
+        // Android lets the OS pick the mic — no in-app device selection.
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideAudioInputDeviceProvider(): AudioInputDeviceProvider = NoopAudioInputDeviceProvider()
 
         @Provides
         @SingleIn(AppScope::class)
