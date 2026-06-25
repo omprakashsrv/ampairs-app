@@ -19,12 +19,29 @@ data class PriceResolutionInput(
 )
 
 /**
+ * Outcome of a price resolution (spec 009 US3). [unitPrice] is the major-unit price the caller bills
+ * with; the remaining fields are the resolution snapshot persisted verbatim onto the order/invoice
+ * line and pushed on `/sync` for audit (the backend never re-resolves). All fields are plain types so
+ * this port stays free of any pricing-module dependency.
+ */
+data class ResolvedPrice(
+    val unitPrice: Double,
+    val resolvedUnitPriceMinor: Long? = null,
+    val currency: String? = null,
+    val priceSource: String? = null,
+    val matchedPriceListUid: String? = null,
+    val appliedTierMinQty: Double? = null,
+    val belowMoq: Boolean = false,
+)
+
+/**
  * Client-side price-resolution seam (spec 009 / 010). The merchant order/invoice line build resolves
  * the effective unit price through this port instead of reading `product.sellingPrice` directly.
  *
  * The pricing-aware implementation (feature:pricing) applies the local price-list read model; when no
- * list matches it returns [PriceResolutionInput.fallbackUnitPrice]. Resolution is local/offline.
+ * list matches it returns [PriceResolutionInput.fallbackUnitPrice] as a CATALOG_FALLBACK. Resolution
+ * is local/offline.
  */
 interface PriceResolver {
-    suspend fun resolveUnitPrice(input: PriceResolutionInput): Double
+    suspend fun resolve(input: PriceResolutionInput): ResolvedPrice
 }

@@ -60,3 +60,15 @@ val ORDER_MIGRATION_4_5 = object : Migration(4, 5) {
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN seller_place_of_supply TEXT DEFAULT NULL")
     }
 }
+
+/** Order schema v5 -> v6 (spec 009): client-resolved pricing snapshot on each line, pushed verbatim on /sync. */
+val ORDER_MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN resolved_unit_price_minor INTEGER DEFAULT NULL")
+        connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN currency TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN price_source TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN matched_price_list_uid TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN applied_tier_min_qty REAL DEFAULT NULL")
+        connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN below_moq INTEGER NOT NULL DEFAULT 0")
+    }
+}

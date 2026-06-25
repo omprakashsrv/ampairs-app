@@ -5,8 +5,10 @@ import com.ampairs.pricing.data.repository.PriceListRepository
 import com.ampairs.pricing.domain.model.SalesChannel
 import com.ampairs.product.data.PriceResolutionInput
 import com.ampairs.product.data.PriceResolver
+import com.ampairs.product.data.ResolvedPrice
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
+import kotlin.math.roundToLong
 
 /**
  * Pricing-backed [PriceResolver] (spec 009 US3). Resolves the effective unit price from the local
@@ -22,15 +24,27 @@ import dev.zacsweers.metro.Inject
 class PricingPriceResolver(
     private val repository: PriceListRepository,
 ) : PriceResolver {
-    override suspend fun resolveUnitPrice(input: PriceResolutionInput): Double = repository.resolve(
-        channel = if (input.channel.equals("WHOLESALE", ignoreCase = true)) SalesChannel.WHOLESALE else SalesChannel.RETAIL,
-        productId = input.productId,
-        quantity = input.quantity,
-        fallbackUnitPrice = input.fallbackUnitPrice,
-        variantSku = input.variantSku,
-        customerId = input.customerId,
-        customerGroupId = input.customerGroupId,
-        customerType = input.customerType,
-        pincode = input.pincode,
-    ).effectiveUnitPrice
+    override suspend fun resolve(input: PriceResolutionInput): ResolvedPrice {
+        val resolution = repository.resolve(
+            channel = if (input.channel.equals("WHOLESALE", ignoreCase = true)) SalesChannel.WHOLESALE else SalesChannel.RETAIL,
+            productId = input.productId,
+            quantity = input.quantity,
+            fallbackUnitPrice = input.fallbackUnitPrice,
+            variantSku = input.variantSku,
+            customerId = input.customerId,
+            customerGroupId = input.customerGroupId,
+            customerType = input.customerType,
+            pincode = input.pincode,
+        )
+        return ResolvedPrice(
+            unitPrice = resolution.effectiveUnitPrice,
+            // Minor units (2 dp) — what the backend snapshot column stores; mirrors MoneyDto.amount_minor.
+            resolvedUnitPriceMinor = (resolution.effectiveUnitPrice * 100).roundToLong(),
+            currency = resolution.currency,
+            priceSource = resolution.source.name,
+            matchedPriceListUid = resolution.matchedPriceListUid,
+            appliedTierMinQty = resolution.appliedTierMinQty,
+            belowMoq = resolution.belowMoq,
+        )
+    }
 }

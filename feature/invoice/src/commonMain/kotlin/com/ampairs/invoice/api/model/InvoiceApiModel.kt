@@ -146,6 +146,12 @@ fun InvoiceItemEntity.toApiModel(): InvoiceItemApiModel = InvoiceItemApiModel(
     softDeleted = soft_deleted == 1L,
     discount = discount.decodeDiscounts(),
     taxInfoApiModels = tax_info.decodeTaxInfos() ?: arrayListOf(),
+    resolvedUnitPriceMinor = resolved_unit_price_minor,
+    currency = currency,
+    priceSource = price_source,
+    matchedPriceListUid = matched_price_list_uid,
+    appliedTierMinQty = applied_tier_min_qty,
+    belowMoq = below_moq == 1,
 )
 
 fun InvoiceEntity.toApiModel(items: List<InvoiceItemEntity>): InvoiceApiModel = InvoiceApiModel(

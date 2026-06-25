@@ -367,7 +367,7 @@ class OrderViewModel(
             // customer + channel context. Walk-in => RETAIL, a named customer => WHOLESALE. Falls back
             // to product.sellingPrice when no price list matches.
             val orderCustomer = order.customer
-            val resolvedPrice = priceResolver.resolveUnitPrice(
+            val resolved = priceResolver.resolve(
                 PriceResolutionInput(
                     productId = product.id,
                     variantSku = null,
@@ -383,14 +383,21 @@ class OrderViewModel(
             item.product = product
             item.productId = product.id
             item.description = product.name + " " + product.code
-            item.productPrice = resolvedPrice
+            item.productPrice = resolved.unitPrice
             item.priceOverridden = false
             item.variantSku = null
+            // Capture the resolution snapshot so it persists to Room and pushes verbatim on /sync.
+            item.resolvedUnitPriceMinor = resolved.resolvedUnitPriceMinor
+            item.currency = resolved.currency
+            item.priceSource = resolved.priceSource
+            item.matchedPriceListUid = resolved.matchedPriceListUid
+            item.appliedTierMinQty = resolved.appliedTierMinQty
+            item.belowMoq = resolved.belowMoq
             val base = engine.unitsFor(product).firstOrNull()
             if (base != null) {
                 item.selectUnit(base.unitId, base.name, base.multiplier)
             } else {
-                item.price = resolvedPrice
+                item.price = resolved.unitPrice
                 item.updateTotal()
             }
             order.updateTotalCost()

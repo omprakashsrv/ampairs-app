@@ -27,6 +27,13 @@ data class InvoiceItemApiModel(
     @SerialName("soft_deleted") var softDeleted: Boolean,
     @SerialName("discount") var discount: List<Discount>? = null,
     @SerialName("tax_infos") val taxInfoApiModels: List<TaxInfoApiModel> = arrayListOf(),
+    // 009 pricing snapshot — persisted verbatim by the backend (no re-resolution)
+    @SerialName("resolved_unit_price_minor") var resolvedUnitPriceMinor: Long? = null,
+    @SerialName("currency") var currency: String? = null,
+    @SerialName("price_source") var priceSource: String? = null,
+    @SerialName("matched_price_list_uid") var matchedPriceListUid: String? = null,
+    @SerialName("applied_tier_min_qty") var appliedTierMinQty: Double? = null,
+    @SerialName("below_moq") var belowMoq: Boolean? = null,
 )
 
 fun List<InvoiceItem>.toApiModel(invoice: Invoice): List<InvoiceItemApiModel> {
@@ -48,7 +55,13 @@ fun List<InvoiceItem>.toApiModel(invoice: Invoice): List<InvoiceItemApiModel> {
             taxInfoApiModels = it.taxInfos.toApiModel(),
             active = it.active,
             softDeleted = it.softDeleted,
-            discount = it.discount
+            discount = it.discount,
+            resolvedUnitPriceMinor = it.resolvedUnitPriceMinor,
+            currency = it.currency,
+            priceSource = it.priceSource,
+            matchedPriceListUid = it.matchedPriceListUid,
+            appliedTierMinQty = it.appliedTierMinQty,
+            belowMoq = it.belowMoq,
         )
     }
 }
