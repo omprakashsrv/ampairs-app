@@ -1,0 +1,10 @@
+# Kotlin/Native cinterop bindings for whisper.cpp (ggml) — used by the iOS offline Whisper STT
+# engine (IosWhisperTranscriber). whisper.cpp exposes a plain C API (whisper.h), so no Swift wrapper
+# is needed; we bind whisper_init_from_file / whisper_full / whisper_full_get_segment_text directly.
+#
+# Headers come from the prebuilt whisper.xcframework (downloaded by the :feature:agent Gradle
+# `downloadWhisperXcframework` task); includeDirs are set per-target in build.gradle.kts. The static
+# library itself is linked later in the iOS app/framework build (device-side), not at klib generation.
+package = whisper.cpp
+language = C
+headers = whisper.h

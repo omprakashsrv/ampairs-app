@@ -10,6 +10,27 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+// whisper.cpp prebuilt xcframework (ggml) for the iOS offline Whisper STT cinterop. Downloaded once
+// into build/whisper-xcframework; cinterop binds whisper.h from the per-arch framework Headers. The
+// static lib is linked later in the iOS app/framework build (device-side), not at klib generation.
+val whisperXcframeworkDir = layout.buildDirectory.dir("whisper-xcframework")
+val downloadWhisperXcframework = tasks.register("downloadWhisperXcframework") {
+    val outDir = whisperXcframeworkDir.get().asFile
+    val version = libs.versions.whisper.cpp.xcframework.get()
+    outputs.dir(outDir)
+    onlyIf { !outDir.resolve("whisper.xcframework").exists() }
+    doLast {
+        outDir.mkdirs()
+        val zip = outDir.resolve("whisper.zip")
+        val url = "https://github.com/ggml-org/whisper.cpp/releases/download/v$version/whisper-v$version-xcframework.zip"
+        java.net.URI(url).toURL().openStream().use { input -> zip.outputStream().use { input.copyTo(it) } }
+        copy {
+            from(zipTree(zip))
+            into(outDir)
+        }
+    }
+}
+
 kotlin {
     jvmToolchain(21)
 
@@ -20,8 +41,20 @@ kotlin {
         androidResources.enable = true
     }
     jvm("desktop")
-    iosArm64()
-    iosSimulatorArm64()
+    iosArm64 {
+        compilations.getByName("main").cinterops.create("whisper") {
+            defFile(project.file("src/nativeInterop/cinterop/whisper.def"))
+            includeDirs(whisperXcframeworkDir.get().asFile.resolve("whisper.xcframework/ios-arm64/whisper.framework/Headers"))
+            tasks.named(interopProcessingTaskName).configure { dependsOn(downloadWhisperXcframework) }
+        }
+    }
+    iosSimulatorArm64 {
+        compilations.getByName("main").cinterops.create("whisper") {
+            defFile(project.file("src/nativeInterop/cinterop/whisper.def"))
+            includeDirs(whisperXcframeworkDir.get().asFile.resolve("whisper.xcframework/ios-arm64_x86_64-simulator/whisper.framework/Headers"))
+            tasks.named(interopProcessingTaskName).configure { dependsOn(downloadWhisperXcframework) }
+        }
+    }
 
     sourceSets {
         commonMain {
