@@ -61,6 +61,9 @@ kotlin {
                 // adapter (T025); loads the `litert-lm` Gemma models (FunctionGemma-270m,
                 // Gemma 3n E2B/E4B). Android-only; iOS/Desktop fall back to llama.cpp (T027).
                 implementation(libs.litertlm.android)
+                // Cactus — on-device Whisper STT engine (selectable speech adapter). Android+iOS only
+                // (no JVM target), so it's added per-platform, not in commonMain.
+                implementation(libs.cactus)
             }
         }
         commonTest {
