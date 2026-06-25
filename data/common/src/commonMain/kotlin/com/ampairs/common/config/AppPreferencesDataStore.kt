@@ -144,15 +144,6 @@ interface AppPreferencesDataStore {
      */
     fun getSelectedLlmModelId(): Flow<String?>
     suspend fun setSelectedLlmModelId(modelId: String?)
-
-    /**
-     * Persisted assistant chat transcript for a workspace, serialized as a JSON message list (the app
-     * caps it to the most recent N). `null` = nothing saved yet. Per-workspace so switching tenants
-     * keeps separate threads and reopening the chat continues the same conversation/context.
-     */
-    fun getChatHistory(workspaceId: String): Flow<String?>
-    suspend fun setChatHistory(workspaceId: String, json: String)
-    suspend fun clearChatHistory(workspaceId: String)
 }
 
 /**

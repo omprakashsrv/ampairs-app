@@ -15,6 +15,7 @@ import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.AgentStreamEvent
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.AgentResponse
+import com.ampairs.agent.data.repository.ChatHistoryRepository
 import com.ampairs.agent.llm.LlmEngine
 import com.ampairs.agent.llm.ModelCatalogProvider
 import com.ampairs.agent.llm.ModelDescriptor
@@ -33,7 +34,6 @@ import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.common.di.WorkspaceScope
-import com.ampairs.common.workspace.WorkspaceConfig
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -51,8 +51,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.getString
 
 data class ChatUiState(
@@ -197,11 +195,8 @@ class ChatViewModel(
     private val modelCatalog: ModelCatalogProvider,
     private val appPreferences: AppPreferencesDataStore,
     private val actionRegistry: ActionRegistry,
-    private val workspaceConfig: WorkspaceConfig,
+    private val chatHistoryRepository: ChatHistoryRepository,
 ) : ViewModel() {
-
-    /** JSON codec for the persisted transcript; tolerant of fields added in future versions. */
-    private val json = Json { ignoreUnknownKeys = true }
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -886,36 +881,25 @@ class ChatViewModel(
         streamJob = null
         voiceNoteController.stopPlayback()
         _uiState.update { it.copy(messages = emptyList(), isProcessing = false, streamingThought = null) }
-        viewModelScope.launch { runCatching { appPreferences.clearChatHistory(workspaceConfig.workspaceId) } }
+        viewModelScope.launch { runCatching { chatHistoryRepository.clear() } }
     }
 
     // ---- Transcript persistence (per-workspace, capped; restored on open so the chat continues) ----
 
-    /** Restore the saved transcript for this workspace on open (only if nothing's in memory yet). */
+    /** Restore the saved transcript on open (only if nothing's in memory yet) from the Room DB. */
     private fun loadPersistedHistory() {
         viewModelScope.launch {
-            val saved = runCatching { appPreferences.getChatHistory(workspaceConfig.workspaceId).first() }.getOrNull()
-                ?: return@launch
-            val restored = runCatching {
-                json.decodeFromString(ListSerializer(ChatMessage.serializer()), saved)
-            }.getOrNull().orEmpty()
+            val restored = runCatching { chatHistoryRepository.load(MAX_PERSISTED_MESSAGES) }.getOrNull().orEmpty()
             if (restored.isEmpty()) return@launch
-            _uiState.update { st ->
-                if (st.messages.isEmpty()) st.copy(messages = restored.takeLast(MAX_PERSISTED_MESSAGES)) else st
-            }
+            _uiState.update { st -> if (st.messages.isEmpty()) st.copy(messages = restored) else st }
         }
     }
 
-    /** Persist the most recent [MAX_PERSISTED_MESSAGES] messages for this workspace (fire-and-forget). */
+    /** Persist the most recent [MAX_PERSISTED_MESSAGES] messages to the Room DB (fire-and-forget). */
     private fun persistHistory() {
-        val snapshot = _uiState.value.messages.takeLast(MAX_PERSISTED_MESSAGES)
+        val snapshot = _uiState.value.messages
         viewModelScope.launch {
-            runCatching {
-                appPreferences.setChatHistory(
-                    workspaceConfig.workspaceId,
-                    json.encodeToString(ListSerializer(ChatMessage.serializer()), snapshot),
-                )
-            }
+            runCatching { chatHistoryRepository.save(snapshot, MAX_PERSISTED_MESSAGES) }
         }
     }
 
