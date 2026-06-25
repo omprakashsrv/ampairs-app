@@ -9,8 +9,9 @@
 >
 > **Must be built where an Android NDK is available** (local Android Studio auto-installs it; a plain
 > Kotlin compile / the PR CI does not invoke the NDK). First native build in this repo. The legacy
-> LiteRT `.tflite` path (`AndroidWhisperTranscriber` + `litert` dep + the tflite mel/vocab front-end) is
-> now dead and slated for removal in a follow-up.
+> LiteRT `.tflite` path (`AndroidWhisperTranscriber` + the `litert` dep + the tflite mel/vocab
+> front-end: `WhisperFeatureExtractor`/`WhisperTokenizer`/`WhisperAssets` + tests) has now been
+> **removed** — whisper.cpp does mel + decode natively, so no app-side front-end is needed.
 >
 > The section below is the original recipe, kept for reference; the actual wiring differs slightly
 > (single `libwhisper_jni.so` built via FetchContent rather than a vendored whisper.cpp checkout, and

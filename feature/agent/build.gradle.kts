@@ -119,9 +119,6 @@ kotlin {
                 // adapter (T025); loads the `litert-lm` Gemma models (FunctionGemma-270m,
                 // Gemma 3n E2B/E4B). Android-only; iOS/Desktop fall back to llama.cpp (T027).
                 implementation(libs.litertlm.android)
-                // LiteRT (TFLite runtime, prebuilt AAR with native .so) — runs the Whisper `.tflite`
-                // graph for the offline Whisper STT adapter (AndroidWhisperTranscriber). Android-only.
-                implementation(libs.litert)
                 // whisper.cpp JNI bridge (CMake/NDK native build via FetchContent) — runs the offline
                 // Whisper STT adapter on Android (AndroidWhisperCppTranscriber, ggml models). Separate
                 // com.android.library module because the KMP android plugin can't run externalNativeBuild.

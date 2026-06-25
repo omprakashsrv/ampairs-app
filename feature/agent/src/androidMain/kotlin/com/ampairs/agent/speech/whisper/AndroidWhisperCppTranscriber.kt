@@ -12,8 +12,7 @@ import kotlin.concurrent.Volatile
 /**
  * Android Whisper inference via **whisper.cpp** (ggml `.bin`), through the `:whispercpp` JNI module.
  * whisper.cpp computes the log-mel + runs the encoder/decoder + detokenizes natively, so this takes the
- * finished 16 kHz mono PCM floats directly — the shared [WhisperFeatureExtractor]/[WhisperTokenizer]
- * (the old LiteRT `.tflite` front-end) are not used on this path.
+ * finished 16 kHz mono PCM floats directly (no app-side mel/vocab front-end).
  *
  * The native context is loaded once per model-file path (cached) and reused; calls are serialized with
  * a [Mutex] since a whisper.cpp context is single-threaded. Mirrors [DesktopWhisperTranscriber].

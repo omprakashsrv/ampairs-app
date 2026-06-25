@@ -14,7 +14,7 @@ import kotlin.concurrent.Volatile
 /**
  * Desktop Whisper inference via **whisper.cpp** (`whisper-jni`, native libs embedded in the jar for
  * Win/Mac/Linux). whisper.cpp does its own mel + tokenization, so this takes the raw 16 kHz PCM floats
- * directly — the shared [WhisperFeatureExtractor]/tokenizer (used by the LiteRT path) are not needed here.
+ * directly.
  *
  * The model context is loaded once per model file path (cached) and reused; transcription is serialized
  * with a [Mutex] since a `WhisperContext` is single-threaded. Library load failures (unsupported OS)
