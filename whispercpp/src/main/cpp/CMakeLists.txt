@@ -14,6 +14,14 @@ if (NOT DEFINED WHISPER_CPP_TAG)
 endif ()
 message(STATUS "Building whisper.cpp ${WHISPER_CPP_TAG} via FetchContent")
 
+# CRITICAL: always optimize the native lib, even in the app's *debug* build type. AGP passes
+# -DCMAKE_BUILD_TYPE=Debug for debug installs, whose default flags are -O0 — and ggml/whisper at -O0
+# is 10-30x slower, making on-device inference time out (a ~2s clip can exceed 45s). Force -O3 for the
+# Debug config so a normal `assembleDebug` is usable; release builds are already -O3. (-DNDEBUG also
+# drops ggml's asserts, matching release.)
+set(CMAKE_C_FLAGS_DEBUG   "-O3 -DNDEBUG" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "-O3 -DNDEBUG" CACHE STRING "" FORCE)
+
 # Build a single self-contained libwhisper_jni.so: whisper + ggml are linked statically into it, so
 # there are no transitive .so load-order concerns at runtime. Trim everything we don't ship on mobile.
 set(BUILD_SHARED_LIBS      OFF CACHE BOOL "" FORCE)
