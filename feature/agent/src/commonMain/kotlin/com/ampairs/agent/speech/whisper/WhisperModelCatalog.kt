@@ -57,5 +57,30 @@ object WhisperModelCatalog {
             estimatedPeakMemoryBytes = 300_000_000L,
             defaultParams = LlmParams(),
         ),
+        // Higher-accuracy options (opt-in, not default). Small is still usable on a phone (a few
+        // seconds/utterance); large-v3-turbo is the newest, most accurate Whisper but is really only
+        // practical on Desktop given its size + compute. Both download on demand via the same picker.
+        ModelDescriptor(
+            id = "whisper-small",
+            displayName = "Whisper Small (multilingual, more accurate)",
+            role = ModelRole.FALLBACK,
+            backendId = "whisper-cpp",
+            fileName = "ggml-small-q5_1.bin",
+            downloadUrl = "$HF_GGML/ggml-small-q5_1.bin",
+            sizeBytes = 190_000_000L,
+            estimatedPeakMemoryBytes = 700_000_000L,
+            defaultParams = LlmParams(),
+        ),
+        ModelDescriptor(
+            id = "whisper-large-v3-turbo",
+            displayName = "Whisper Large v3 Turbo (best — Desktop)",
+            role = ModelRole.FALLBACK,
+            backendId = "whisper-cpp",
+            fileName = "ggml-large-v3-turbo-q5_0.bin",
+            downloadUrl = "$HF_GGML/ggml-large-v3-turbo-q5_0.bin",
+            sizeBytes = 574_000_000L,
+            estimatedPeakMemoryBytes = 1_600_000_000L,
+            defaultParams = LlmParams(),
+        ),
     )
 }
