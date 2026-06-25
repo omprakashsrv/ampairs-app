@@ -2,7 +2,7 @@ package com.ampairs.agent.speech.whisper
 
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
-import kotlinx.coroutines.Dispatchers
+import com.ampairs.common.coroutines.DispatcherProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -73,7 +73,7 @@ class WhisperSttEngine(
             if (text.isBlank()) SttEvent.Error("Didn't catch that — please try again.")
             else SttEvent.Final(text.trim()),
         )
-    }.flowOn(Dispatchers.IO)
+    }.flowOn(DispatcherProvider.io)
 
     override fun stop() = audio.stop()
 
