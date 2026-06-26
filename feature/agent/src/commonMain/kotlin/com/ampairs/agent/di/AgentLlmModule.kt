@@ -8,6 +8,7 @@ import com.ampairs.agent.llm.ProviderRegistry
 import com.ampairs.agent.offline.CompositeOfflineResolver
 import com.ampairs.agent.offline.LlmIntentResolver
 import com.ampairs.agent.offline.RuleBasedIntentResolver
+import com.ampairs.common.agent.ModuleQuerySchema
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Multibinds
@@ -45,10 +46,12 @@ interface AgentLlmModule {
             providerRegistry: ProviderRegistry,
             actionRegistry: ActionRegistry,
             ruleBased: RuleBasedIntentResolver,
+            querySchemas: Map<String, ModuleQuerySchema>,
         ): IntentResolver {
             val llm = LlmIntentResolver(
                 actionRegistry = actionRegistry,
                 engineProvider = { providerRegistry.engineOrNull() },
+                querySchemas = querySchemas,
             )
             return CompositeOfflineResolver(
                 llm = llm,

@@ -12,7 +12,10 @@ import com.ampairs.common.agent.ActionParameter
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
+import com.ampairs.common.agent.ColumnSchema
+import com.ampairs.common.agent.ModuleQuerySchema
 import com.ampairs.common.agent.ParameterType
+import com.ampairs.common.agent.TableSchema
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -131,6 +134,40 @@ class LlmIntentResolverTest {
         )
         val intent = resolver.resolve("hi", emptyList(), registry.getAllActions())
         assertTrue(intent is ResolvedIntent.Conversation)
+    }
+
+    private val querySchemas = mapOf(
+        "customer" to ModuleQuerySchema(
+            "customer",
+            listOf(TableSchema("customers", listOf(ColumnSchema("id", "TEXT"), ColumnSchema("name", "TEXT")))),
+        ),
+    )
+
+    private fun resolverWithSchemas(vararg responses: String): LlmIntentResolver {
+        val engine = FakeEngine(ArrayDeque(responses.toList()))
+        return LlmIntentResolver(registry, engineProvider = { engine }, querySchemas = querySchemas)
+    }
+
+    @Test
+    fun queryIntent_forKnownModule_becomesSafeQuery() = runTest {
+        val resolver = resolverWithSchemas(
+            """{"intent":"query","moduleName":"customer","sql":"SELECT COUNT(*) AS count FROM customers"}""",
+        )
+        val intent = resolver.resolve("how many customers do I have", emptyList(), registry.getAllActions())
+        assertTrue(intent is ResolvedIntent.SafeQuery)
+        intent as ResolvedIntent.SafeQuery
+        assertEquals("customer", intent.moduleName)
+        assertTrue(intent.sql.contains("COUNT(*)"))
+    }
+
+    @Test
+    fun queryIntent_forUnknownModule_doesNotBecomeSafeQuery() = runTest {
+        // A module with no curated schema must never reach the SAFE_QUERY executor.
+        val resolver = resolverWithSchemas(
+            """{"intent":"query","moduleName":"spaceship","sql":"SELECT * FROM warpcores","reply":"hmm"}""",
+        )
+        val intent = resolver.resolve("warp speed", emptyList(), registry.getAllActions())
+        assertTrue(intent !is ResolvedIntent.SafeQuery)
     }
 
     @Test

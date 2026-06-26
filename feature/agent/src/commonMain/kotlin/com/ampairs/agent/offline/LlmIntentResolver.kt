@@ -9,6 +9,7 @@ import com.ampairs.agent.llm.LlmEngine
 import com.ampairs.common.agent.ActionDescriptor
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.ActionType
+import com.ampairs.common.agent.ModuleQuerySchema
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -26,6 +27,7 @@ import kotlinx.serialization.json.Json
 class LlmIntentResolver(
     private val actionRegistry: ActionRegistry,
     private val engineProvider: suspend () -> LlmEngine?,
+    private val querySchemas: Map<String, ModuleQuerySchema> = emptyMap(),
     private val json: Json = DEFAULT_JSON,
 ) : IntentResolver {
 
@@ -38,9 +40,9 @@ class LlmIntentResolver(
         val engine = engineProvider()
             ?: return ResolvedIntent.Clarification("The assistant model isn't ready yet. Try again in a moment.")
 
-        val schema = AgentSchemaBuilder.build(actions)
+        val schema = AgentSchemaBuilder.build(actions, querySchemas)
         val prompt = buildString {
-            append(AgentSchemaBuilder.systemPrompt(actions))
+            append(AgentSchemaBuilder.systemPrompt(actions, querySchemas))
             append("\n\n")
             conversationHistory.takeLast(HISTORY_TURNS).forEach { msg ->
                 append(if (msg.isFromUser) "User: " else "Assistant: ").append(msg.text).append('\n')
@@ -76,6 +78,7 @@ class LlmIntentResolver(
                 parsed.reply?.ifBlank { null } ?: stripJsonObject(raw).ifBlank { null } ?: "How can I help?",
             )
             "clarify" -> return ResolvedIntent.Clarification(parsed.reply?.ifBlank { null } ?: "Could you give me a bit more detail?")
+            "query" -> return toQueryIntent(parsed, raw)
         }
 
         // intent == "action" (or unspecified) → try to build a valid, registered action. If any
@@ -97,6 +100,22 @@ class LlmIntentResolver(
         }
 
         return ResolvedIntent.Action(AgentAction(actionType, module, parsed.params))
+    }
+
+    /**
+     * intent == "query": the model proposed a read-only SELECT for one module. Route it to the
+     * SAFE_QUERY path (validated + executed read-only downstream by `SafeQueryService`). Only accept a
+     * module we actually have a curated schema for; otherwise treat the model's words as chat so the
+     * user still gets a response instead of a dead end.
+     */
+    private fun toQueryIntent(parsed: RawIntent, raw: String): ResolvedIntent {
+        val module = parsed.moduleName?.takeIf { it.isNotBlank() && querySchemas.containsKey(it) }
+        val sql = parsed.sql?.trim()?.takeIf { it.isNotEmpty() }
+        return if (module != null && sql != null) {
+            ResolvedIntent.SafeQuery(module, sql)
+        } else {
+            conversationOrClarify(parsed, raw)
+        }
     }
 
     /** No valid action could be built: prefer the model's reply/prose as chat, else a gentle clarify. */
@@ -137,6 +156,8 @@ class LlmIntentResolver(
         val actionType: String? = null,
         val moduleName: String? = null,
         val params: Map<String, String> = emptyMap(),
+        /** Read-only SELECT for intent=query (SAFE_QUERY path). */
+        val sql: String? = null,
         /** Optional model text for conversation/clarify intents. */
         val reply: String? = null,
     )

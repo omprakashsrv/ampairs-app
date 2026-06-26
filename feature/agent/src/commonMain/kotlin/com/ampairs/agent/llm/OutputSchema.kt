@@ -25,7 +25,9 @@ data class OutputSchema(
                 "intent": { "type": "string", "enum": [${enumArr(intents)}] },
                 "actionType": { "type": "string", "enum": [${enumArr(actionTypes)}] },
                 "moduleName": { "type": "string", "enum": [${enumArr(modules)}] },
-                "params": { "type": "object", "additionalProperties": { "type": "string" } }
+                "params": { "type": "object", "additionalProperties": { "type": "string" } },
+                "sql": { "type": "string" },
+                "reply": { "type": "string" }
               },
               "required": ["intent"]
             }
@@ -46,11 +48,13 @@ data class OutputSchema(
         fun alt(values: List<String>) = values.joinToString(" | ") { lit(it) }
         return buildString {
             appendLine("root ::= \"{\" ws kv (\",\" ws kv)* ws \"}\"")
-            appendLine("kv ::= intentkv | actionkv | modulekv | paramskv")
+            appendLine("kv ::= intentkv | actionkv | modulekv | paramskv | sqlkv | replykv")
             appendLine("intentkv ::= ${key("intent")} ws \":\" ws intent")
             appendLine("actionkv ::= ${key("actionType")} ws \":\" ws actionType")
             appendLine("modulekv ::= ${key("moduleName")} ws \":\" ws moduleName")
             appendLine("paramskv ::= ${key("params")} ws \":\" ws object")
+            appendLine("sqlkv ::= ${key("sql")} ws \":\" ws str")
+            appendLine("replykv ::= ${key("reply")} ws \":\" ws str")
             appendLine("intent ::= ${alt(intents)}")
             appendLine("actionType ::= ${alt(actionTypes)}")
             appendLine("moduleName ::= ${alt(modules)}")

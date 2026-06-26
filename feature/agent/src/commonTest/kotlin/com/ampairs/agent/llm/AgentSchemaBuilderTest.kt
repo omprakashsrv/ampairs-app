@@ -3,7 +3,10 @@ package com.ampairs.agent.llm
 import com.ampairs.common.agent.ActionDescriptor
 import com.ampairs.common.agent.ActionParameter
 import com.ampairs.common.agent.ActionType
+import com.ampairs.common.agent.ColumnSchema
+import com.ampairs.common.agent.ModuleQuerySchema
 import com.ampairs.common.agent.ParameterType
+import com.ampairs.common.agent.TableSchema
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -65,6 +68,40 @@ class AgentSchemaBuilderTest {
         assertTrue(prompt.contains("CREATE"))
         assertTrue(prompt.contains("customer*"), "required params marked with *")
         assertTrue(prompt.contains("intent=action"))
+    }
+
+    private val querySchemas = mapOf(
+        "customer" to ModuleQuerySchema(
+            "customer",
+            listOf(TableSchema("customers", listOf(ColumnSchema("id", "TEXT"), ColumnSchema("name", "TEXT")))),
+        ),
+    )
+
+    @Test
+    fun querySchemas_enableQueryIntentModuleAndSqlField() {
+        val schema = AgentSchemaBuilder.build(actions, querySchemas)
+        // "query" intent only appears when queryable schemas exist
+        assertTrue(schema.intents.contains("query"))
+        // queryable module is in the moduleName enum even without a typed action of its own
+        assertTrue(schema.modules.contains("customer"))
+        // the constrained output now allows an "sql" field
+        assertTrue(schema.toJsonSchema().contains("\"sql\""))
+    }
+
+    @Test
+    fun systemPrompt_includesQueryableSchemaAndExample_whenSchemasGiven() {
+        val prompt = AgentSchemaBuilder.systemPrompt(actions, querySchemas)
+        assertTrue(prompt.contains("intent=query"))
+        assertTrue(prompt.contains("Queryable data"))
+        assertTrue(prompt.contains("customers("), "table+columns rendered for the LLM")
+        assertTrue(prompt.contains("SELECT COUNT(*)"), "worked example present")
+    }
+
+    @Test
+    fun noQuerySchemas_keepsQueryIntentOff() {
+        val schema = AgentSchemaBuilder.build(actions)
+        assertTrue(!schema.intents.contains("query"))
+        assertTrue(!AgentSchemaBuilder.systemPrompt(actions).contains("intent=query"))
     }
 
     @Test
