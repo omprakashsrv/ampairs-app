@@ -126,34 +126,6 @@ interface ProductDao {
     @Query("SELECT count(*) FROM productEntity")
     suspend fun countProducts(): Int
 
-    // ── Assistant stock reports ─────────────────────────────────────────────────────────────────
-    // Only products that actually track stock count: low_stock_alert / stock_quantity must be set
-    // (a NULL stock_quantity means "not tracked", never "zero"), so untracked items aren't reported
-    // as out-of-stock or low-stock.
-
-    /** Count of stock-tracked products at or below their configured low-stock alert level. */
-    @Query(
-        "SELECT count(*) FROM productEntity WHERE active = 1 AND low_stock_alert IS NOT NULL " +
-            "AND low_stock_alert > 0 AND stock_quantity IS NOT NULL AND stock_quantity <= low_stock_alert",
-    )
-    suspend fun countLowStock(): Int
-
-    /** Lowest-stock products at or below their alert level (most urgent first). */
-    @Query(
-        "SELECT * FROM productEntity WHERE active = 1 AND low_stock_alert IS NOT NULL " +
-            "AND low_stock_alert > 0 AND stock_quantity IS NOT NULL AND stock_quantity <= low_stock_alert " +
-            "ORDER BY stock_quantity ASC LIMIT :limit",
-    )
-    suspend fun lowStockProducts(limit: Int): List<ProductEntity>
-
-    /** Count of stock-tracked products with zero (or negative) on-hand quantity. */
-    @Query("SELECT count(*) FROM productEntity WHERE active = 1 AND stock_quantity IS NOT NULL AND stock_quantity <= 0")
-    suspend fun countOutOfStock(): Int
-
-    /** Total stock valuation at cost (Σ on-hand × cost price) across stock-tracked products. */
-    @Query("SELECT COALESCE(SUM(stock_quantity * dp), 0) FROM productEntity WHERE active = 1 AND stock_quantity IS NOT NULL")
-    suspend fun inventoryValueAtCost(): Double
-
     @Query("SELECT * FROM productEntity ORDER BY name LIMIT :limit OFFSET :offset")
     suspend fun products(limit: Long, offset: Long): List<ProductEntity>
 

@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.first
 @ActionHandlerKey("product")
 class ProductActionHandler(
     private val productRepository: ProductRepository,
+    private val agentDao: ProductAgentDao,
 ) : ActionHandler {
 
     override val moduleName = "product"
@@ -46,8 +47,8 @@ class ProductActionHandler(
 
     private suspend fun reportLowStock(params: Map<String, String>): ActionResult {
         val limit = params["limit"]?.trim()?.toIntOrNull()?.coerceIn(1, 20) ?: 10
-        val total = productRepository.countLowStock()
-        val items = productRepository.lowStockProducts(limit)
+        val total = agentDao.countLowStock()
+        val items = agentDao.lowStockProducts(limit)
         return if (items.isEmpty()) {
             ActionResult.Success("No products are low on stock.")
         } else {
@@ -58,12 +59,12 @@ class ProductActionHandler(
     }
 
     private suspend fun reportOutOfStock(): ActionResult {
-        val count = productRepository.countOutOfStock()
+        val count = agentDao.countOutOfStock()
         return ActionResult.Success("$count product(s) are out of stock.")
     }
 
     private suspend fun reportInventoryValue(): ActionResult {
-        val value = productRepository.inventoryValueAtCost()
+        val value = agentDao.inventoryValueAtCost()
         return ActionResult.Success(summary = "Total inventory value (at cost).", amount = value)
     }
 

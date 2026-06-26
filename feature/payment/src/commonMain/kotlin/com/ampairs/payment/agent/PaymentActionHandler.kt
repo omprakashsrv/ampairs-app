@@ -12,7 +12,6 @@ import com.ampairs.common.agent.ParameterType
 import com.ampairs.common.agent.ReportPeriod
 import com.ampairs.common.agent.ReportRow
 import com.ampairs.common.di.WorkspaceScope
-import com.ampairs.payment.data.db.dao.PaymentVoucherDao
 import com.ampairs.payment.domain.OutstandingService
 import com.ampairs.payment.domain.PaymentDirection
 import dev.zacsweers.metro.ContributesIntoMap
@@ -28,7 +27,7 @@ import dev.zacsweers.metro.Inject
 @ActionHandlerKey("payment")
 class PaymentActionHandler(
     private val outstandingService: OutstandingService,
-    private val voucherDao: PaymentVoucherDao,
+    private val agentDao: PaymentAgentDao,
 ) : ActionHandler {
 
     override val moduleName = "payment"
@@ -65,10 +64,10 @@ class PaymentActionHandler(
         val period = resolvePeriod(params)
         val direction = PaymentDirection.RECEIVED.name
         val minor = if (period.range == null) {
-            voucherDao.sumByDirection(direction)
+            agentDao.sumByDirection(direction)
         } else {
             // voucher_date is an ISO-8601 instant string, so bounds must be ISO too (Instant.toString()).
-            voucherDao.sumByDirectionBetween(
+            agentDao.sumByDirectionBetween(
                 direction,
                 period.range.startInclusive.toString(),
                 period.range.endExclusive.toString(),

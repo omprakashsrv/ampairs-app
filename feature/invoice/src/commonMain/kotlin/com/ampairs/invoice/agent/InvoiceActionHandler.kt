@@ -43,6 +43,7 @@ import com.ampairs.tax.calculation.document.TaxScenario
 @ActionHandlerKey("invoice")
 class InvoiceActionHandler(
     private val invoiceRepository: InvoiceRepository,
+    private val agentDao: InvoiceAgentDao,
     private val taxRateProvider: TaxRateProvider,
     private val storeSettings: StoreSettingsProvider,
     private val draft: DraftDocumentStore,
@@ -69,24 +70,22 @@ class InvoiceActionHandler(
 
     private suspend fun reportTotalSales(params: Map<String, String>): ActionResult {
         val period = resolvePeriod(params)
-        val dao = invoiceRepository.invoiceDao
         val total = if (period.range == null) {
-            dao.getTotalInvoiceValue()
+            agentDao.sumSales()
         } else {
             val (start, end) = bounds(period.range)
-            dao.sumSalesBetween(start, end)
+            agentDao.sumSalesBetween(start, end)
         }
         return ActionResult.Success(summary = "Total sales${period.label}.", amount = total ?: 0.0)
     }
 
     private suspend fun reportAverageInvoice(params: Map<String, String>): ActionResult {
         val period = resolvePeriod(params)
-        val dao = invoiceRepository.invoiceDao
         val avg = if (period.range == null) {
-            dao.averageInvoiceValue()
+            agentDao.averageInvoiceValue()
         } else {
             val (start, end) = bounds(period.range)
-            dao.averageInvoiceValueBetween(start, end)
+            agentDao.averageInvoiceValueBetween(start, end)
         }
         return if (avg == null) {
             ActionResult.Success("No invoices yet${period.label}, so there's no average to show.")
@@ -98,12 +97,11 @@ class InvoiceActionHandler(
     private suspend fun reportTopCustomers(params: Map<String, String>): ActionResult {
         val period = resolvePeriod(params)
         val limit = resolveLimit(params)
-        val dao = invoiceRepository.invoiceDao
         val rows = if (period.range == null) {
-            dao.topCustomers(limit)
+            agentDao.topCustomers(limit)
         } else {
             val (start, end) = bounds(period.range)
-            dao.topCustomersBetween(start, end, limit)
+            agentDao.topCustomersBetween(start, end, limit)
         }.map { ReportRow(label = it.label?.ifBlank { "Unnamed customer" } ?: "Unnamed customer", amount = it.total) }
         return if (rows.isEmpty()) {
             ActionResult.Success("No sales recorded${period.label}.")
@@ -115,12 +113,11 @@ class InvoiceActionHandler(
     private suspend fun reportTopProducts(params: Map<String, String>): ActionResult {
         val period = resolvePeriod(params)
         val limit = resolveLimit(params)
-        val dao = invoiceRepository.invoiceDao
         val rows = if (period.range == null) {
-            dao.topProducts(limit)
+            agentDao.topProducts(limit)
         } else {
             val (start, end) = bounds(period.range)
-            dao.topProductsBetween(start, end, limit)
+            agentDao.topProductsBetween(start, end, limit)
         }.map { ReportRow(label = it.label?.ifBlank { "Unnamed item" } ?: "Unnamed item", amount = it.total) }
         return if (rows.isEmpty()) {
             ActionResult.Success("No product sales recorded${period.label}.")
