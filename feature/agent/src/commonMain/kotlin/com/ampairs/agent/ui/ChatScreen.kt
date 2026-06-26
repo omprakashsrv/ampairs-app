@@ -122,6 +122,7 @@ import ampairsapp.feature.agent.generated.resources.agent_voice_mode_cd
 import ampairsapp.feature.agent.generated.resources.agent_thinking
 import ampairsapp.feature.agent.generated.resources.agent_title
 import ampairsapp.feature.agent.generated.resources.agent_adapter_device
+import ampairsapp.feature.agent.generated.resources.agent_adapter_vosk
 import ampairsapp.feature.agent.generated.resources.agent_adapter_whisper
 import ampairsapp.feature.agent.generated.resources.agent_settings_cd
 import ampairsapp.feature.agent.generated.resources.agent_settings_llm
@@ -135,6 +136,7 @@ import ampairsapp.feature.agent.generated.resources.agent_settings_telemetry
 import ampairsapp.feature.agent.generated.resources.agent_settings_telemetry_desc
 import ampairsapp.feature.agent.generated.resources.agent_settings_title
 import ampairsapp.feature.agent.generated.resources.agent_settings_tts
+import ampairsapp.feature.agent.generated.resources.agent_stt_models_title
 import com.ampairs.agent.speech.SpeechAdapterOption
 import com.ampairs.agent.ui.components.MessageBubble
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -304,7 +306,7 @@ fun ChatScreen(
                 selectedSttId = uiState.selectedSttId,
                 selectedTtsId = uiState.selectedTtsId,
                 modelName = uiState.modelBar.modelName,
-                whisperModels = uiState.whisperModels,
+                sttModels = uiState.sttModels,
                 micDevices = uiState.micDevices,
                 selectedMicId = uiState.selectedMicId,
                 telemetryEnabled = uiState.telemetryEnabled,
@@ -314,9 +316,9 @@ fun ChatScreen(
                 onSelectMicDevice = viewModel::onSelectMicDevice,
                 onSelectStt = viewModel::onSelectSttAdapter,
                 onSelectTts = viewModel::onSelectTtsAdapter,
-                onSelectWhisperModel = viewModel::onSelectWhisperModel,
-                onDownloadWhisperModel = viewModel::onDownloadWhisperModel,
-                onDeleteWhisperModel = viewModel::onDeleteWhisperModel,
+                onSelectSttModel = viewModel::onSelectSttModel,
+                onDownloadSttModel = viewModel::onDownloadSttModel,
+                onDeleteSttModel = viewModel::onDeleteSttModel,
                 onManageModels = {
                     viewModel.closeSettings()
                     viewModel.openModelManager()
@@ -699,7 +701,7 @@ private fun AssistantSettingsSheet(
     selectedSttId: String?,
     selectedTtsId: String?,
     modelName: String,
-    whisperModels: List<WhisperModelUi>,
+    sttModels: List<SttModelUi>,
     micDevices: List<SpeechAdapterOption>,
     selectedMicId: String?,
     telemetryEnabled: Boolean,
@@ -709,9 +711,9 @@ private fun AssistantSettingsSheet(
     onSelectMicDevice: (String) -> Unit,
     onSelectStt: (String) -> Unit,
     onSelectTts: (String) -> Unit,
-    onSelectWhisperModel: (String) -> Unit,
-    onDownloadWhisperModel: (String) -> Unit,
-    onDeleteWhisperModel: (String) -> Unit,
+    onSelectSttModel: (String) -> Unit,
+    onDownloadSttModel: (String) -> Unit,
+    onDeleteSttModel: (String) -> Unit,
     onManageModels: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -734,13 +736,14 @@ private fun AssistantSettingsSheet(
                 selectedId = effectiveSttId,
                 onSelect = onSelectStt,
             )
-            // Whisper size picker — only when the Whisper STT engine is the active choice.
-            if (effectiveSttId == "whisper" && whisperModels.isNotEmpty()) {
-                WhisperModelSection(
-                    models = whisperModels,
-                    onSelect = onSelectWhisperModel,
-                    onDownload = onDownloadWhisperModel,
-                    onDelete = onDeleteWhisperModel,
+            // Downloadable-model picker for the active STT engine (Whisper sizes, Vosk languages, …).
+            // The VM only populates sttModels for the selected engine that has downloadable models.
+            if (sttModels.isNotEmpty()) {
+                SttModelSection(
+                    models = sttModels,
+                    onSelect = onSelectSttModel,
+                    onDownload = onDownloadSttModel,
+                    onDelete = onDeleteSttModel,
                 )
             }
             // Mic input device picker — Desktop only (the list is empty elsewhere).
@@ -838,17 +841,16 @@ private fun AdapterSection(
     }
 }
 
-/** Whisper model-size rows: select the active size, and download/delete each one. */
+/** Downloadable-model rows for the active STT engine: select one, and download/delete each. */
 @Composable
-private fun WhisperModelSection(
-    models: List<WhisperModelUi>,
+private fun SttModelSection(
+    models: List<SttModelUi>,
     onSelect: (String) -> Unit,
     onDownload: (String) -> Unit,
     onDelete: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        // Heading reuses the existing Whisper adapter label (no new string resource needed).
-        Text(stringResource(Res.string.agent_adapter_whisper), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(Res.string.agent_stt_models_title), style = MaterialTheme.typography.titleMedium)
         models.forEach { model ->
             Row(
                 modifier = Modifier.fillMaxWidth().clickable { onSelect(model.id) },
@@ -858,7 +860,7 @@ private fun WhisperModelSection(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(model.label, style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        text = whisperStatusText(model),
+                        text = sttModelStatusText(model),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -886,9 +888,9 @@ private fun WhisperModelSection(
     }
 }
 
-/** Secondary line under a Whisper size row: size + install state. */
+/** Secondary line under an STT model row: size + install state. */
 @Composable
-private fun whisperStatusText(model: WhisperModelUi): String {
+private fun sttModelStatusText(model: SttModelUi): String {
     val state = when (val s = model.status) {
         is ModelItemStatus.Downloading ->
             stringResource(Res.string.agent_model_status_downloading, (s.progress * 100).toInt())
@@ -906,6 +908,7 @@ private fun whisperStatusText(model: WhisperModelUi): String {
 private fun adapterLabel(option: SpeechAdapterOption): String = when (option.id) {
     "native" -> stringResource(Res.string.agent_adapter_device)
     "whisper" -> stringResource(Res.string.agent_adapter_whisper)
+    "vosk" -> stringResource(Res.string.agent_adapter_vosk)
     else -> option.label
 }
 

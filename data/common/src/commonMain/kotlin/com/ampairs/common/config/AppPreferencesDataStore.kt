@@ -179,6 +179,14 @@ interface AppPreferencesDataStore {
     suspend fun setSelectedWhisperModelId(id: String?)
 
     /**
+     * Generic per-engine selected-model id, namespaced (e.g. "vosk"). Lets any downloadable-model STT
+     * engine persist its model choice without a dedicated key — the pluggable counterpart to the
+     * Whisper-specific keys above. `null` = use the catalog default (first entry). App-wide.
+     */
+    fun getSelectedModelId(namespace: String): Flow<String?>
+    suspend fun setSelectedModelId(namespace: String, id: String?)
+
+    /**
      * Selected microphone input device id (Desktop only — the mixer name). Null → system default.
      * Other platforms ignore it (the OS picks the mic).
      */

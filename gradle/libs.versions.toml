@@ -51,6 +51,14 @@ accompanist-permissions = "0.37.3"
 litertlm = "0.13.1"
 whisper-jni = "1.7.1"
 whisper-cpp-xcframework = "1.9.1"
+# 0.3.38, not the newer 0.3.45: the 0.3.45 jar bundles a stale 2022 libvosk native that lacks
+# functions its own Java bindings declare (vosk_recognizer_set_grm, set_endpointer_*, text_processor_*),
+# so JNA's Native.register fails at init on macOS/arm64. 0.3.38's Java↔native are self-consistent
+# (universal arm64+x86_64 dylib) and expose every symbol VoskSpeechToText uses. (Desktop/JVM.)
+vosk = "0.3.38"
+# vosk-android ships a self-consistent AAR (matched Java + per-ABI .so for arm64-v8a/armeabi-v7a/x86/
+# x86_64, pulls net.java.dev.jna:jna automatically) — none of the desktop arm64 native problems apply.
+vosk-android = "0.3.75"
 kotlinx-io = "0.9.0"
 kotlincrypto-sha2 = "0.8.0"
 play-services-coroutines = "1.11.0"
@@ -124,6 +132,8 @@ grant-bluetooth = { module = "dev.brewkits:grant-bluetooth", version.ref = "gran
 litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
 litertlm-jvm = { module = "com.google.ai.edge.litertlm:litertlm-jvm", version.ref = "litertlm" }
 whisper-jni = { module = "io.github.givimad:whisper-jni", version.ref = "whisper-jni" }
+vosk = { module = "com.alphacephei:vosk", version.ref = "vosk" }
+vosk-android = { module = "com.alphacephei:vosk-android", version.ref = "vosk-android" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
 kotlincrypto-sha2 = { module = "org.kotlincrypto.hash:sha2", version.ref = "kotlincrypto-sha2" }
 material3-adaptive = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive", version.ref = "adaptive" }

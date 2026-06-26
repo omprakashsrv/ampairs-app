@@ -8,6 +8,7 @@ import com.ampairs.agent.speech.whisper.WhisperModelCatalog
 import com.ampairs.agent.speech.whisper.WhisperModelRegistry
 import com.ampairs.agent.speech.whisper.WhisperModelSet
 import com.ampairs.agent.speech.whisper.WhisperSttEngine
+import com.ampairs.agent.speech.vosk.VoskModelSet
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -25,6 +26,11 @@ interface SpeechIosModule {
         @Provides
         @SingleIn(AppScope::class)
         fun provideWhisperModelSet(): WhisperModelSet = WhisperModelSet(WhisperModelCatalog.ggml)
+
+        // No Vosk engine on iOS — empty set keeps VoskModelRegistry resolvable but inert.
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideVoskModelSet(): VoskModelSet = VoskModelSet(emptyList())
 
         // iOS lets the OS pick the mic — no in-app device selection.
         @Provides

@@ -24,5 +24,10 @@ interface ModelStorageIosModule {
                 return "$documents/${ModelStorage.DIR_NAME}"
             }
         }
+
+        /** No directory-model (archive) STT engines on iOS yet → no extractors. */
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideArchiveExtractors(): List<ArchiveExtractor> = emptyList()
     }
 }

@@ -16,5 +16,10 @@ interface ModelStorageDesktopModule {
             override fun modelsDirectoryPath(): String =
                 File(System.getProperty("user.home"), ".ampairs/${ModelStorage.DIR_NAME}").absolutePath
         }
+
+        /** Archive extractors for directory models (Vosk zips). Desktop ships the JVM zip extractor. */
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideArchiveExtractors(): List<ArchiveExtractor> = listOf(JvmZipArchiveExtractor())
     }
 }

@@ -21,6 +21,13 @@ data class ModelDescriptor(
     val sha256: String? = null,
     /** Server-flagged preferred model for its tier (from the manifest); breaks ties in selection. */
     val recommended: Boolean = false,
+    /**
+     * When non-null the download is an archive that's extracted into a **directory** named [fileName]
+     * (the model is then a folder, not a file) — see [ModelManager]. null = a plain single file (the
+     * default for LLM/Whisper models). [downloadUrl] points at the archive; [sizeBytes]/[sha256] still
+     * validate the downloaded archive before extraction.
+     */
+    val archiveFormat: ArchiveFormat? = null,
     val defaultParams: LlmParams = LlmParams(),
     /**
      * Cloud transport adapter id for online models (`backendId == "cloud"`) — selects the

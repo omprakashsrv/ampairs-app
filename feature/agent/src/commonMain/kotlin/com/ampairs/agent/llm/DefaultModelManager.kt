@@ -53,6 +53,11 @@ class DefaultModelManager(
     engine: HttpClientEngine,
     private val storage: ModelStorage,
     private val tokenRepository: TokenRepository,
+    /**
+     * Platform-contributed archive extractors (zip, …) — empty on platforms with no directory models.
+     * Enables the generic "download archive → install as directory" path (`ModelDescriptor.archiveFormat`).
+     */
+    private val archiveExtractors: List<ArchiveExtractor> = emptyList(),
 ) : ModelManager {
 
     private val scope = CoroutineScope(SupervisorJob() + DispatcherProvider.io)
@@ -82,10 +87,15 @@ class DefaultModelManager(
     private fun sizeOf(path: Path): Long? = SystemFileSystem.metadataOrNull(path)?.size
 
     override fun localPathOrNull(model: ModelDescriptor): String? {
-        val size = sizeOf(filePath(model)) ?: return null
-        // A file only reaches its final path after finalizeDownload validated it (against the
-        // server Content-Length), so presence ⇒ installed. Don't re-check the catalog estimate here.
-        return if (size > 0L) filePath(model).toString() else null
+        val path = filePath(model)
+        val meta = SystemFileSystem.metadataOrNull(path) ?: return null
+        // Both file and directory installs only reach their final path after finalizeDownload
+        // validated/extracted them, so presence ⇒ installed. Archive models install as a directory.
+        return when {
+            model.archiveFormat != null -> if (meta.isDirectory) path.toString() else null
+            (meta.size ?: 0L) > 0L -> path.toString()
+            else -> null
+        }
     }
 
     override suspend fun refresh() = withContext(DispatcherProvider.io) {
@@ -212,7 +222,7 @@ class DefaultModelManager(
         finalizeDownload(model, part, expectedTotal)
     }
 
-    private fun finalizeDownload(model: ModelDescriptor, part: Path, expectedTotal: Long?) {
+    private suspend fun finalizeDownload(model: ModelDescriptor, part: Path, expectedTotal: Long?) {
         val size = sizeOf(part) ?: 0L
         if (size <= 0L) {
             SystemFileSystem.delete(part, mustExist = false)
@@ -234,10 +244,67 @@ class DefaultModelManager(
                 return
             }
         }
+        val format = model.archiveFormat
+        if (format != null) {
+            finalizeArchive(model, part, format, size)
+            return
+        }
         val dest = filePath(model)
         SystemFileSystem.delete(dest, mustExist = false)
         SystemFileSystem.atomicMove(part, dest)
         set(model.id, ModelInstallStatus.Installed(size))
+    }
+
+    /**
+     * Install an archive model: extract the validated `.part` into a temp dir via the matching
+     * [ArchiveExtractor], unwrap a single top-level folder if present (Vosk-style archives nest one),
+     * then atomically swap it into [filePath]. The archive + temp dir are removed on success or failure.
+     */
+    private suspend fun finalizeArchive(model: ModelDescriptor, part: Path, format: ArchiveFormat, archiveSize: Long) {
+        val extractor = archiveExtractors.firstOrNull { it.supports(format) }
+        if (extractor == null) {
+            SystemFileSystem.delete(part, mustExist = false)
+            set(model.id, ModelInstallStatus.Failed("No $format extractor available on this platform"))
+            return
+        }
+        // Keep the UI at ~100% while we unpack — extraction is the brief tail of the install.
+        set(model.id, ModelInstallStatus.Downloading(archiveSize, archiveSize))
+        val dest = filePath(model)
+        val tmp = Path(dir(), model.fileName + EXTRACT_SUFFIX)
+        deleteRecursively(tmp)
+        try {
+            extractor.extract(part.toString(), tmp.toString(), format)
+            val root = singleChildDirOrSelf(tmp)
+            deleteRecursively(dest)
+            SystemFileSystem.atomicMove(root, dest)
+        } catch (c: CancellationException) {
+            throw c
+        } catch (e: Exception) {
+            deleteRecursively(tmp)
+            deleteRecursively(dest)
+            SystemFileSystem.delete(part, mustExist = false)
+            set(model.id, ModelInstallStatus.Failed(e.message ?: "Extraction failed"))
+            return
+        }
+        deleteRecursively(tmp)
+        SystemFileSystem.delete(part, mustExist = false)
+        set(model.id, ModelInstallStatus.Installed(archiveSize))
+    }
+
+    /** When [dir] holds exactly one entry and it's a directory, return it (the archive's wrapper folder). */
+    private fun singleChildDirOrSelf(dir: Path): Path {
+        val children = runCatching { SystemFileSystem.list(dir) }.getOrDefault(emptyList())
+        val only = children.singleOrNull() ?: return dir
+        return if (SystemFileSystem.metadataOrNull(only)?.isDirectory == true) only else dir
+    }
+
+    /** Recursively delete a file or directory tree (kotlinx-io's delete only handles empty dirs). */
+    private fun deleteRecursively(path: Path) {
+        val meta = SystemFileSystem.metadataOrNull(path) ?: return
+        if (meta.isDirectory) {
+            for (child in SystemFileSystem.list(path)) deleteRecursively(child)
+        }
+        SystemFileSystem.delete(path, mustExist = false)
     }
 
     override fun cancel(modelId: String) {
@@ -251,8 +318,9 @@ class DefaultModelManager(
     override suspend fun delete(model: ModelDescriptor) {
         jobs.remove(model.id)?.cancel()
         withContext(DispatcherProvider.io) {
-            SystemFileSystem.delete(filePath(model), mustExist = false)
+            deleteRecursively(filePath(model)) // handles both file and directory (archive) installs
             SystemFileSystem.delete(partPath(model), mustExist = false)
+            deleteRecursively(Path(dir(), model.fileName + EXTRACT_SUFFIX)) // stray temp, if any
         }
         set(model.id, ModelInstallStatus.NotInstalled)
     }
@@ -287,6 +355,7 @@ class DefaultModelManager(
 
     private companion object {
         const val PART_SUFFIX = ".part"
+        const val EXTRACT_SUFFIX = ".extract" // temp dir an archive is unpacked into before the atomic swap
         /** HTTP statuses that won't resolve on retry — surfaced immediately instead of resumed. */
         val TERMINAL_STATUSES = setOf(401, 403, 404, 502)
         const val DOWNLOAD_CHUNK = 64L * 1024

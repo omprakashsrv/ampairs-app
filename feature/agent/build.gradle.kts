@@ -125,6 +125,10 @@ kotlin {
                 // Whisper STT adapter on Android (AndroidWhisperCppTranscriber, ggml models). Separate
                 // com.android.library module because the KMP android plugin can't run externalNativeBuild.
                 implementation(projects.whispercpp)
+                // Vosk (Kaldi) STT — Android AAR with matched per-ABI native .so (arm64-v8a/armeabi-v7a/
+                // x86/x86_64) and JNA pulled transitively. Streams live partials; its model is a zip
+                // directory downloaded on demand via the shared archive-aware ModelManager. Android only.
+                implementation(libs.vosk.android)
             }
         }
         commonTest {
@@ -142,6 +146,11 @@ kotlin {
                 // whisper.cpp via JNI (native libs embedded for Win/Mac/Linux) — offline Whisper STT
                 // engine on Desktop, which has no platform recognizer. Desktop/JVM only.
                 implementation(libs.whisper.jni)
+                // Vosk (Kaldi) — a second offline STT engine on Desktop. JNA-based; native libs for
+                // Win/Mac/Linux are embedded in the jar. Unlike Whisper (one-shot), Vosk streams live
+                // partials and self-endpoints on silence. Needs a language model dir on disk (see
+                // VoskModelProvider). Desktop/JVM only.
+                implementation(libs.vosk)
                 // LiteRT-LM unified Kotlin API (JVM build) — on-device LLM with GPU/NPU acceleration
                 // for the desktop LiteRtLmEngine (mirrors the Android engine; same 0.13.1 API). The
                 // native GPU plugins (WebGPU/Dawn on Linux/Windows, Metal on macOS) ship as separate

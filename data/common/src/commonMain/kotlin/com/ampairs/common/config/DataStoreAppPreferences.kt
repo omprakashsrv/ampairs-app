@@ -341,6 +341,16 @@ class DataStoreAppPreferences(
         }
     }
 
+    override fun getSelectedModelId(namespace: String): Flow<String?> =
+        dataStore.data.map { it[stringPreferencesKey("selected_model_id_$namespace")] }
+
+    override suspend fun setSelectedModelId(namespace: String, id: String?) {
+        val key = stringPreferencesKey("selected_model_id_$namespace")
+        dataStore.edit { preferences ->
+            if (id != null) preferences[key] = id else preferences.remove(key)
+        }
+    }
+
     override fun getSelectedWhisperModelId(): Flow<String?> =
         dataStore.data.map { it[SELECTED_WHISPER_MODEL_ID_KEY] }
 

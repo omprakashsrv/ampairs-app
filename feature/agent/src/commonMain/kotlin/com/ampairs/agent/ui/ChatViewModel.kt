@@ -25,6 +25,7 @@ import com.ampairs.agent.llm.formatModelSize
 import com.ampairs.agent.permission.MicPermissionController
 import com.ampairs.agent.speech.SpeechAdapterOption
 import com.ampairs.agent.speech.SpeechAdapterRegistry
+import com.ampairs.agent.speech.DownloadableModelRegistry
 import com.ampairs.agent.speech.SpeechToText
 import com.ampairs.agent.speech.SttEvent
 import com.ampairs.agent.speech.TextToSpeech
@@ -41,6 +42,7 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.Job
@@ -53,6 +55,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -92,8 +96,12 @@ data class ChatUiState(
     /** Currently selected STT/TTS adapter ids (null → platform default = first option). */
     val selectedSttId: String? = null,
     val selectedTtsId: String? = null,
-    /** Downloadable Whisper model sizes (e.g. tiny/base); empty on platforms with no Whisper engine. */
-    val whisperModels: List<WhisperModelUi> = emptyList(),
+    /**
+     * Downloadable models for the **currently selected** STT engine (Whisper sizes, Vosk languages, …);
+     * empty when that engine has no downloadable models. Engine-agnostic — driven by the selected
+     * engine's [DownloadableModelRegistry].
+     */
+    val sttModels: List<SttModelUi> = emptyList(),
     /** Selectable mic input devices (Desktop only); empty elsewhere → the settings section is hidden. */
     val micDevices: List<SpeechAdapterOption> = emptyList(),
     /** Selected mic device id (the mixer name); null → system default. */
@@ -104,13 +112,13 @@ data class ChatUiState(
     val reasoningEnabled: Boolean = true,
 )
 
-/** One Whisper model-size row in the settings sheet (shown only when the Whisper STT engine is active). */
-data class WhisperModelUi(
+/** One downloadable-model row in the settings sheet for the active STT engine (Whisper size, Vosk language, …). */
+data class SttModelUi(
     val id: String,
     val label: String,
     val sizeText: String,
     val status: ModelItemStatus,
-    /** True when this size is the active selection (the one a Whisper transcription will use). */
+    /** True when this model is the active selection (the one the next transcription will use). */
     val isSelected: Boolean,
 )
 
@@ -224,7 +232,8 @@ sealed interface LlmDownloadPrompt {
 class ChatViewModel(
     private val orchestrator: AgentOrchestrator,
     private val speechAdapters: SpeechAdapterRegistry,
-    private val whisperRegistry: WhisperModelRegistry,
+    /** STT engines' downloadable-model registries, keyed by STT adapter id ("whisper"/"vosk"/…). */
+    private val sttModelRegistries: Map<String, DownloadableModelRegistry>,
     private val audioInputDevices: AudioInputDeviceProvider,
     private val micPermission: MicPermissionController,
     private val providerRegistry: ProviderRegistry,
@@ -285,7 +294,7 @@ class ChatViewModel(
         speechAdapters.selectedTtsId()
             .onEach { id -> _uiState.update { it.copy(selectedTtsId = id) } }
             .launchIn(viewModelScope)
-        observeWhisperModels()
+        observeSttModels()
         observeMicDevices()
         initModelManager()
         maybeOfferModelDownload()
@@ -320,21 +329,47 @@ class ChatViewModel(
         viewModelScope.launch { audioInputDevices.setSelected(id) }
     }
 
-    /** Keep the settings Whisper-size rows live (selection + per-size download state). Inert when none. */
-    private fun observeWhisperModels() {
-        if (!whisperRegistry.hasModels) return
-        combine(
-            whisperRegistry.selectedId(),
-            whisperRegistry.statuses,
-        ) { selected, statuses -> selected to statuses }
-            .onEach { (selected, statuses) -> rebuildWhisperUi(selected, statuses) }
+    /**
+     * Keep the settings model rows live for the **selected** STT engine (selection + per-model download
+     * state), re-binding whenever the user switches STT engine. Engine-agnostic: any engine with a
+     * [DownloadableModelRegistry] in [sttModelRegistries] is handled the same. Inert when none.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeSttModels() {
+        if (sttModelRegistries.isEmpty()) return
+        speechAdapters.selectedSttId()
+            .flatMapLatest { selected ->
+                val registry = activeSttRegistry(selected)
+                if (registry == null || !registry.hasModels) {
+                    flowOf(Triple(null as DownloadableModelRegistry?, null as String?, emptyMap<String, ModelInstallStatus>()))
+                } else {
+                    combine(registry.selectedId(), registry.statuses) { sel, statuses ->
+                        Triple(registry, sel, statuses)
+                    }
+                }
+            }
+            .onEach { (registry, sel, statuses) -> rebuildSttModelUi(registry, sel, statuses) }
             .launchIn(viewModelScope)
     }
 
-    private suspend fun rebuildWhisperUi(selectedId: String?, statuses: Map<String, ModelInstallStatus>) {
-        val installed = whisperRegistry.installedIds()
-        val effective = whisperRegistry.resolveSelectedId(selectedId)
-        val items = whisperRegistry.options.map { o ->
+    /** The registry for the selected STT engine (persisted id → first registered), or null when none. */
+    private fun activeSttRegistry(selectedSttId: String?): DownloadableModelRegistry? {
+        val id = selectedSttId ?: speechAdapters.sttOptions.firstOrNull()?.id
+        return id?.let { sttModelRegistries[it] }
+    }
+
+    private suspend fun rebuildSttModelUi(
+        registry: DownloadableModelRegistry?,
+        selectedId: String?,
+        statuses: Map<String, ModelInstallStatus>,
+    ) {
+        if (registry == null) {
+            _uiState.update { it.copy(sttModels = emptyList()) }
+            return
+        }
+        val installed = registry.installedIds()
+        val effective = registry.resolveSelectedId(selectedId)
+        val items = registry.options.map { o ->
             val live = statuses[o.id]
             val status = when {
                 live is ModelInstallStatus.Downloading -> ModelItemStatus.Downloading(live.fraction)
@@ -342,24 +377,26 @@ class ChatViewModel(
                 live is ModelInstallStatus.Failed -> ModelItemStatus.Failed(live.message)
                 else -> ModelItemStatus.NotInstalled
             }
-            WhisperModelUi(o.id, o.label, formatModelSize(o.sizeBytes), status, o.id == effective)
+            SttModelUi(o.id, o.label, formatModelSize(o.sizeBytes), status, o.id == effective)
         }
-        _uiState.update { it.copy(whisperModels = items) }
+        _uiState.update { it.copy(sttModels = items) }
     }
 
-    /** Pick the Whisper model size (persisted); the next transcription downloads it if needed. */
-    fun onSelectWhisperModel(id: String) {
-        viewModelScope.launch { whisperRegistry.setSelected(id) }
+    /** Pick the active model for the selected STT engine (persisted); next transcription downloads it. */
+    fun onSelectSttModel(id: String) {
+        val registry = activeSttRegistry(_uiState.value.selectedSttId) ?: return
+        viewModelScope.launch { registry.setSelected(id) }
     }
 
-    /** Start downloading a Whisper model size now, from the settings sheet. */
-    fun onDownloadWhisperModel(id: String) {
-        whisperRegistry.download(id)
+    /** Start downloading a model for the selected STT engine now, from the settings sheet. */
+    fun onDownloadSttModel(id: String) {
+        activeSttRegistry(_uiState.value.selectedSttId)?.download(id)
     }
 
-    /** Remove a downloaded Whisper model size to reclaim space. */
-    fun onDeleteWhisperModel(id: String) {
-        viewModelScope.launch { whisperRegistry.delete(id) }
+    /** Remove a downloaded model for the selected STT engine to reclaim space. */
+    fun onDeleteSttModel(id: String) {
+        val registry = activeSttRegistry(_uiState.value.selectedSttId) ?: return
+        viewModelScope.launch { registry.delete(id) }
     }
 
     // ---- Assistant settings (switchable speech/LLM adapters) ----

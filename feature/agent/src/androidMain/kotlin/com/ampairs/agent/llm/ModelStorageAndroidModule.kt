@@ -20,5 +20,10 @@ interface ModelStorageAndroidModule {
             override fun modelsDirectoryPath(): String =
                 File(context.filesDir, ModelStorage.DIR_NAME).absolutePath
         }
+
+        /** Zip extractor for directory models (Vosk) on Android. */
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideArchiveExtractors(): List<ArchiveExtractor> = listOf(JvmZipArchiveExtractor())
     }
 }

@@ -79,4 +79,6 @@
     <string name="agent_settings_reasoning_desc">Show the model\'s thinking while it works out a reply. On by default.</string>
     <string name="agent_adapter_device">Device (built-in)</string>
     <string name="agent_adapter_whisper">Whisper (offline)</string>
+    <string name="agent_adapter_vosk">Vosk (offline)</string>
+    <string name="agent_stt_models_title">Speech recognition models</string>
 </resources>

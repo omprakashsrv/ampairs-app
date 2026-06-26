@@ -9,6 +9,9 @@ import com.ampairs.agent.speech.whisper.WhisperModelCatalog
 import com.ampairs.agent.speech.whisper.WhisperModelRegistry
 import com.ampairs.agent.speech.whisper.WhisperModelSet
 import com.ampairs.agent.speech.whisper.WhisperSttEngine
+import com.ampairs.agent.speech.vosk.VoskModelCatalog
+import com.ampairs.agent.speech.vosk.VoskModelRegistry
+import com.ampairs.agent.speech.vosk.VoskModelSet
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -30,6 +33,11 @@ interface SpeechAndroidModule {
         @SingleIn(AppScope::class)
         fun provideWhisperModelSet(): WhisperModelSet = WhisperModelSet(WhisperModelCatalog.ggml)
 
+        // Vosk model catalog (zip directory models, downloaded on demand) for the Android Vosk adapter.
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideVoskModelSet(): VoskModelSet = VoskModelSet(VoskModelCatalog.models)
+
         // Android lets the OS pick the mic — no in-app device selection.
         @Provides
         @SingleIn(AppScope::class)
@@ -39,13 +47,21 @@ interface SpeechAndroidModule {
         @SingleIn(AppScope::class)
         fun provideSttAdapters(
             context: Context,
-            registry: WhisperModelRegistry,
+            whisperRegistry: WhisperModelRegistry,
+            voskRegistry: VoskModelRegistry,
         ): List<SttAdapterEntry> = listOf(
             SttAdapterEntry(id = "native", label = "Device", engine = AndroidSpeechToText(context)),
             SttAdapterEntry(
                 id = "whisper",
                 label = "Whisper (offline)",
-                engine = WhisperSttEngine(registry, AndroidWhisperCppTranscriber(), AndroidAudioCapture()),
+                engine = WhisperSttEngine(whisperRegistry, AndroidWhisperCppTranscriber(), AndroidAudioCapture()),
+            ),
+            // Vosk (offline): streams live partials, self-endpoints on silence. Model is a zip dir
+            // downloaded on demand via VoskModelRegistry. Uses its own AndroidAudioCapture instance.
+            SttAdapterEntry(
+                id = "vosk",
+                label = "Vosk (offline)",
+                engine = VoskSpeechToText(voskRegistry, AndroidAudioCapture()),
             ),
         )
 
