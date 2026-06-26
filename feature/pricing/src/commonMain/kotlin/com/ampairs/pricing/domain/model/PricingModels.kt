@@ -132,3 +132,29 @@ data class PriceResolution(
     val appliedTierMinQty: Double? = null,
     val belowMoq: Boolean = false,
 )
+
+/**
+ * One active price list considered during resolution, with the verdict the Price Tester's
+ * "Explain — why this price won" panel renders. [reason] is a short, plain-language sentence.
+ */
+data class PriceCandidate(
+    val uid: String,
+    val name: String,
+    val channel: SalesChannel,
+    val matched: Boolean,
+    val won: Boolean,
+    val hasItemForProduct: Boolean,
+    val specificity: Int,
+    val priority: Int,
+    val reason: String,
+)
+
+/**
+ * A resolution plus the ranked candidate trace behind it — the data model for the Price Tester.
+ * [candidates] are ordered exactly as the resolver ranks them (specificity → priority).
+ */
+data class PriceResolutionTrace(
+    val resolution: PriceResolution,
+    val candidates: List<PriceCandidate>,
+    val evaluatedCount: Int,
+)

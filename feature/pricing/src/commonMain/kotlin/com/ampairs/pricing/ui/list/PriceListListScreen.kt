@@ -49,6 +49,7 @@ import ampairsapp.feature.pricing.generated.resources.pricing_error_title
 import ampairsapp.feature.pricing.generated.resources.pricing_list_create
 import ampairsapp.feature.pricing.generated.resources.pricing_list_title
 import ampairsapp.feature.pricing.generated.resources.pricing_manage_geo_zones
+import ampairsapp.feature.pricing.generated.resources.pricing_tester_open
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +57,7 @@ fun PriceListListScreen(
     onPriceListClick: (String) -> Unit,
     onAddPriceList: () -> Unit,
     onManageGeoZones: () -> Unit,
+    onOpenTester: () -> Unit,
     viewModel: PriceListListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -87,8 +89,13 @@ fun PriceListListScreen(
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )
-                    TextButton(onClick = onManageGeoZones) {
-                        Text(stringResource(Res.string.pricing_manage_geo_zones))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(onClick = onOpenTester) {
+                            Text(stringResource(Res.string.pricing_tester_open))
+                        }
+                        TextButton(onClick = onManageGeoZones) {
+                            Text(stringResource(Res.string.pricing_manage_geo_zones))
+                        }
                     }
                 }
             }

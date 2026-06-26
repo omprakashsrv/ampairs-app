@@ -7,10 +7,12 @@ import com.ampairs.pricing.ui.GeoZoneFormRoute
 import com.ampairs.pricing.ui.GeoZoneListRoute
 import com.ampairs.pricing.ui.PriceListFormRoute
 import com.ampairs.pricing.ui.PriceListListRoute
+import com.ampairs.pricing.ui.PriceTesterRoute
 import com.ampairs.pricing.ui.form.PriceListFormScreen
 import com.ampairs.pricing.ui.geozone.GeoZoneFormScreen
 import com.ampairs.pricing.ui.geozone.GeoZoneListScreen
 import com.ampairs.pricing.ui.list.PriceListListScreen
+import com.ampairs.pricing.ui.tester.PriceTesterScreen
 
 /**
  * Entry provider for Pricing module routes in Navigation 3.
@@ -25,8 +27,13 @@ fun pricingEntryProvider(
             onPriceListClick = { id -> backStack.add(PriceListFormRoute(id)) },
             onAddPriceList = { backStack.add(PriceListFormRoute()) },
             onManageGeoZones = { backStack.add(GeoZoneListRoute) },
+            onOpenTester = { backStack.add(PriceTesterRoute) },
             modifier = Modifier,
         )
+    }
+
+    is PriceTesterRoute -> NavEntry(key) {
+        PriceTesterScreen(modifier = Modifier)
     }
 
     is PriceListFormRoute -> NavEntry(key) {

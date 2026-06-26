@@ -50,4 +50,29 @@
     <string name="pricing_geo_add_range">Add range</string>
     <string name="pricing_cancel">Cancel</string>
     <string name="pricing_save">Save</string>
+
+    <!-- Price Tester / resolution simulator -->
+    <string name="pricing_tester_title">Price Tester</string>
+    <string name="pricing_tester_open">Test a price</string>
+    <string name="pricing_tester_context">Resolution context</string>
+    <string name="pricing_tester_channel_wholesale">Wholesale</string>
+    <string name="pricing_tester_channel_retail">Retail</string>
+    <string name="pricing_tester_search_product">Search products</string>
+    <string name="pricing_tester_change">Change</string>
+    <string name="pricing_tester_quantity">Quantity</string>
+    <string name="pricing_tester_pincode">Delivery pincode (optional)</string>
+    <string name="pricing_tester_no_product">Pick a product to see its resolved price and why.</string>
+    <string name="pricing_tester_effective">Effective unit price</string>
+    <string name="pricing_tester_line_total">Line total · %1$s</string>
+    <string name="pricing_tester_units">%1$s units</string>
+    <string name="pricing_tester_source_list">Price list</string>
+    <string name="pricing_tester_source_fallback">Catalog fallback</string>
+    <string name="pricing_tester_tier_base">Base price</string>
+    <string name="pricing_tester_tier_applied">%1$s+ tier</string>
+    <string name="pricing_tester_moq_ok">Meets MOQ</string>
+    <string name="pricing_tester_moq_below">Below MOQ</string>
+    <string name="pricing_tester_explain">Explain — why this price won</string>
+    <string name="pricing_tester_explain_subtitle">Ranked by specificity → priority. %1$d active list(s) evaluated.</string>
+    <string name="pricing_cd_increment">Increase quantity</string>
+    <string name="pricing_cd_decrement">Decrease quantity</string>
 </resources>

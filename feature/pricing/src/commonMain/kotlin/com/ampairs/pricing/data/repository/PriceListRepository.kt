@@ -8,10 +8,12 @@ import com.ampairs.pricing.data.db.entity.toGeoZone
 import com.ampairs.pricing.data.db.entity.toPriceList
 import com.ampairs.pricing.data.db.entity.toPriceListItem
 import com.ampairs.pricing.domain.model.GeoZone
+import com.ampairs.pricing.domain.model.PriceCandidate
 import com.ampairs.pricing.domain.model.PriceList
 import com.ampairs.pricing.domain.model.PriceListAggregate
 import com.ampairs.pricing.domain.model.PriceListItem
 import com.ampairs.pricing.domain.model.PriceResolution
+import com.ampairs.pricing.domain.model.PriceResolutionTrace
 import com.ampairs.pricing.domain.model.PriceSource
 import com.ampairs.pricing.domain.model.SalesChannel
 import com.ampairs.pricing.util.PricingLogger
@@ -173,6 +175,52 @@ class PriceListRepository(
         )
     }
 
+    /**
+     * Like [resolve], but also returns the ranked candidate trace for the Price Tester's
+     * "why this price won" panel. The winning list (if any) is reused from [resolve] so the trace
+     * never diverges from the real resolution.
+     */
+    suspend fun resolveWithTrace(
+        channel: SalesChannel,
+        productId: String,
+        quantity: Double,
+        fallbackUnitPrice: Double,
+        currency: String = "INR",
+        variantSku: String? = null,
+        customerId: String? = null,
+        customerGroupId: String? = null,
+        customerType: String? = null,
+        pincode: String? = null,
+    ): PriceResolutionTrace {
+        val resolution = resolve(
+            channel, productId, quantity, fallbackUnitPrice, currency,
+            variantSku, customerId, customerGroupId, customerType, pincode,
+        )
+        val zoneId = pincode?.let { zoneIdForPincode(it) }
+        val active = priceListDao.getActivePriceLists()
+            .map { it.toPriceList() }
+            .filter { it.channel == channel }
+            .sortedWith(compareByDescending<PriceList> { it.specificity() }.thenByDescending { it.priority })
+
+        val candidates = active.map { list ->
+            val matches = list.matchesTargeting(customerId, customerGroupId, customerType, zoneId)
+            val hasItem = matches && bestItemFor(list.uid, productId, variantSku) != null
+            val won = list.uid == resolution.matchedPriceListUid
+            PriceCandidate(
+                uid = list.uid,
+                name = list.name,
+                channel = list.channel,
+                matched = matches,
+                won = won,
+                hasItemForProduct = hasItem,
+                specificity = list.specificity(),
+                priority = list.priority,
+                reason = candidateReason(list, matches, hasItem, won),
+            )
+        }
+        return PriceResolutionTrace(resolution, candidates, active.size)
+    }
+
     private suspend fun zoneIdForPincode(pincode: String): String? =
         geoZoneDao.getActiveGeoZones().map { it.toGeoZone() }.firstOrNull { it.members.contains(pincode) }?.uid
 
@@ -229,3 +277,24 @@ internal fun PriceListItem.priceMinorForQuantity(quantity: Double): Long {
 
 internal fun PriceListItem.appliedTierMinQty(quantity: Double): Double? =
     tiers.filter { it.minQty <= quantity }.maxByOrNull { it.minQty }?.minQty
+
+/** Most specific targeting dimension set on this list, in plain language (for the Explain trace). */
+internal fun PriceList.mostSpecificDimension(): String = when {
+    !customerId.isNullOrBlank() -> "this customer"
+    !customerGroupId.isNullOrBlank() -> "customer group"
+    !productGroupId.isNullOrBlank() -> "product group"
+    !brandId.isNullOrBlank() -> "brand"
+    !categoryId.isNullOrBlank() -> "category"
+    !geoZoneId.isNullOrBlank() -> "geo zone"
+    !customerType.isNullOrBlank() -> "customer type"
+    attributePredicates.isNotEmpty() -> "attribute rules"
+    else -> "channel default"
+}
+
+/** Short, plain-language verdict for one candidate list in the resolution trace. */
+internal fun candidateReason(list: PriceList, matched: Boolean, hasItem: Boolean, won: Boolean): String = when {
+    won -> "Won — most specific match (${list.mostSpecificDimension()})."
+    matched && !hasItem -> "Matches, but has no price for this product."
+    matched -> "Matches, but a more specific list won."
+    else -> "Excluded — targeting doesn't match this context."
+}
