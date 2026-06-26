@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.agent.llm.OutputSchema
 import com.ampairs.agent.llm.ProviderRegistry
+import com.ampairs.agent.permission.MicPermissionController
+import com.ampairs.agent.speech.SpeechAdapterRegistry
+import com.ampairs.agent.speech.SpeechToText
+import com.ampairs.agent.speech.SttEvent
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.form.data.repository.ConfigRepository
 import com.ampairs.form.domain.FieldDataType
@@ -14,12 +18,14 @@ import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -46,9 +52,13 @@ class FormAgentViewModel(
     @Assisted private val entityType: String,
     private val providerRegistry: ProviderRegistry,
     private val configRepository: ConfigRepository,
+    private val speechAdapters: SpeechAdapterRegistry,
+    private val micPermission: MicPermissionController,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(FormAgentUiState())
+    private val _uiState = MutableStateFlow(
+        FormAgentUiState(voiceAvailable = speechAdapters.sttOptions.isNotEmpty()),
+    )
     val uiState: StateFlow<FormAgentUiState> = _uiState.asStateFlow()
 
     /**
@@ -57,6 +67,50 @@ class FormAgentViewModel(
      */
     private val _fills = MutableSharedFlow<FormFieldFill>(extraBufferCapacity = 64)
     val fills: SharedFlow<FormFieldFill> = _fills.asSharedFlow()
+
+    private var listenJob: Job? = null
+    private var sttInUse: SpeechToText? = null
+
+    /**
+     * Start voice capture: stream the recognizer's partials into the UI and, on the final transcript,
+     * hand the whole utterance to [submit] — which predicts values for every field the user mentioned
+     * (name, phone, PAN, address, …) and fills them in one shot. Errors fall back to text input.
+     */
+    fun startVoice() {
+        if (_uiState.value.isListening) return
+        listenJob?.cancel()
+        listenJob = viewModelScope.launch {
+            val stt = speechAdapters.stt()
+            if (stt == null) {
+                appendAssistant("Voice input isn't available here — type the details instead.")
+                return@launch
+            }
+            if (!micPermission.ensureMicGranted()) {
+                appendAssistant("Microphone access is needed for voice input. You can also type the details.")
+                return@launch
+            }
+            sttInUse = stt
+            _uiState.update { it.copy(isListening = true, partialTranscript = "") }
+            var finalText: String? = null
+            stt.listen()
+                .catch { /* surfaced as null below → user can retry or type */ }
+                .collect { event ->
+                    when (event) {
+                        is SttEvent.Partial -> _uiState.update { it.copy(partialTranscript = event.text) }
+                        is SttEvent.Final -> finalText = event.text.trim()
+                        is SttEvent.Error -> { /* finalText stays null */ }
+                        SttEvent.EndOfSpeech -> { /* keep collecting until Final/Error */ }
+                    }
+                }
+            _uiState.update { it.copy(isListening = false, partialTranscript = "") }
+            finalText?.takeIf { it.isNotBlank() }?.let { submit(it) }
+        }
+    }
+
+    /** Stop an in-progress recognition early; whatever was heard so far is committed and submitted. */
+    fun stopVoice() {
+        sttInUse?.stop()
+    }
 
     /** Submit a conversation turn (typed, or a finalized voice transcript). */
     fun submit(message: String) {
@@ -222,6 +276,11 @@ class FormAgentViewModel(
         return raw.replace(obj, "").trim()
     }
 
+    override fun onCleared() {
+        listenJob?.cancel()
+        sttInUse?.stop()
+    }
+
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
     @ContributesIntoMap(WorkspaceScope::class)
@@ -256,4 +315,10 @@ data class FormChatMessage(
 data class FormAgentUiState(
     val messages: List<FormChatMessage> = emptyList(),
     val isProcessing: Boolean = false,
+    /** True while the microphone is open and streaming the live transcript. */
+    val isListening: Boolean = false,
+    /** Live (interim) speech transcript shown while listening. */
+    val partialTranscript: String = "",
+    /** Whether this platform has any speech-to-text engine (false on Desktop). */
+    val voiceAvailable: Boolean = false,
 )

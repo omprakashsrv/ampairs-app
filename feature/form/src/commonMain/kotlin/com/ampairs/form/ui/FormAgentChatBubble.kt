@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -43,9 +45,13 @@ import ampairsapp.feature.form.generated.resources.form_agent_close_cd
 import ampairsapp.feature.form.generated.resources.form_agent_editing
 import ampairsapp.feature.form.generated.resources.form_agent_empty
 import ampairsapp.feature.form.generated.resources.form_agent_input_hint
+import ampairsapp.feature.form.generated.resources.form_agent_listening
 import ampairsapp.feature.form.generated.resources.form_agent_open_cd
 import ampairsapp.feature.form.generated.resources.form_agent_processing
 import ampairsapp.feature.form.generated.resources.form_agent_send_cd
+import ampairsapp.feature.form.generated.resources.form_agent_tap_to_speak
+import ampairsapp.feature.form.generated.resources.form_agent_voice_listen
+import ampairsapp.feature.form.generated.resources.form_agent_voice_stop
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -94,8 +100,10 @@ fun FormAgentChatBubble(
 }
 
 /**
- * The assistant chat as a modal dialog. Public so a host screen can trigger it from a TopAppBar action
- * while owning the [viewModel] (obtained via [assistedMetroViewModel]) and the fill collection.
+ * The assistant chat as a modal **voice** dialog. On open it starts listening; the user speaks all the
+ * details ("name … phone … PAN … address …") and every matching field is filled in one shot. A text box
+ * is kept as a fallback when speech is unavailable or the user prefers typing. Public so a host screen
+ * can trigger it from a TopAppBar action while owning the [viewModel] and the fill collection.
  */
 @Composable
 fun FormAgentChatDialog(
@@ -107,8 +115,18 @@ fun FormAgentChatDialog(
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
+    // Start listening as soon as the voice assistant opens (the whole point: tap → speak → fill).
+    LaunchedEffect(Unit) {
+        if (state.voiceAvailable) viewModel.startVoice()
+    }
+
     LaunchedEffect(state.messages.size) {
         if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.lastIndex)
+    }
+
+    fun dismiss() {
+        viewModel.stopVoice()
+        onDismiss()
     }
 
     fun send() {
@@ -118,7 +136,7 @@ fun FormAgentChatDialog(
         input = ""
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = { dismiss() }) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -138,7 +156,7 @@ fun FormAgentChatDialog(
                         text = stringResource(Res.string.form_agent_chat_title),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    IconButton(onClick = onDismiss) {
+                    IconButton(onClick = { dismiss() }) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.form_agent_close_cd))
                     }
                 }
@@ -149,11 +167,54 @@ fun FormAgentChatDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
+                // Voice control — the primary interaction.
+                if (state.voiceAvailable) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FloatingActionButton(
+                            onClick = { if (state.isListening) viewModel.stopVoice() else viewModel.startVoice() },
+                            modifier = Modifier.size(72.dp),
+                            containerColor = if (state.isListening) {
+                                MaterialTheme.colorScheme.errorContainer
+                            } else {
+                                MaterialTheme.colorScheme.primaryContainer
+                            },
+                        ) {
+                            Icon(
+                                imageVector = if (state.isListening) Icons.Default.Stop else Icons.Default.Mic,
+                                contentDescription = stringResource(
+                                    if (state.isListening) Res.string.form_agent_voice_stop
+                                    else Res.string.form_agent_voice_listen,
+                                ),
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                        Text(
+                            text = stringResource(
+                                if (state.isListening) Res.string.form_agent_listening
+                                else Res.string.form_agent_tap_to_speak,
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (state.partialTranscript.isNotBlank()) {
+                            Text(
+                                text = state.partialTranscript,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
+
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 120.dp, max = 280.dp)
+                        .heightIn(min = 80.dp, max = 220.dp)
                         .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                         .padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -170,6 +231,22 @@ fun FormAgentChatDialog(
                     items(state.messages) { message -> ChatMessageBubble(message) }
                 }
 
+                if (state.isProcessing) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Text(
+                            text = stringResource(Res.string.form_agent_processing),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                // Typed fallback (also used on platforms without speech).
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -181,32 +258,17 @@ fun FormAgentChatDialog(
                         modifier = Modifier.weight(1f),
                         placeholder = { Text(stringResource(Res.string.form_agent_input_hint)) },
                         singleLine = true,
-                        enabled = !state.isProcessing,
+                        enabled = !state.isProcessing && !state.isListening,
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Send),
                         keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { send() }),
                     )
-                    if (state.isProcessing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
+                    IconButton(onClick = { send() }, enabled = input.isNotBlank() && !state.isProcessing) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = stringResource(Res.string.form_agent_send_cd),
+                            tint = MaterialTheme.colorScheme.primary,
                         )
-                    } else {
-                        IconButton(onClick = { send() }, enabled = input.isNotBlank()) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = stringResource(Res.string.form_agent_send_cd),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
                     }
-                }
-
-                if (state.isProcessing) {
-                    Text(
-                        text = stringResource(Res.string.form_agent_processing),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
         }

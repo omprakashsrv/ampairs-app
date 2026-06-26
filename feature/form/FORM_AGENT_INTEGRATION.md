@@ -117,9 +117,12 @@ inline errors a manual edit would show also apply to assistant fills.
   isn't ready instead of failing. The user can download a model from the AI assistant screen.
 - Prediction quality tracks model size; the schema grounding + per-type validation keep results safe
   regardless (only known field keys, only valid options/types are ever applied).
-- Voice: the bubble currently takes typed conversation. STT (the agent module's `SpeechToText`
-  adapters / Whisper) can feed `FormAgentViewModel.submit(transcript)` to add hands-free filling — the
-  prediction path is unchanged.
+- Voice is the primary input: opening the dialog starts the mic (`FormAgentViewModel.startVoice()`),
+  streams the live transcript, and on the final utterance feeds the same multi-field prediction — speak
+  "name … phone … PAN … address …" and every matching field fills in one shot. STT comes from the agent
+  module's `SpeechAdapterRegistry` (device recognizer when online, Whisper offline); on platforms with
+  no recognizer (Desktop) the dialog falls back to the text box. Mic access is gated by
+  `MicPermissionController`.
 
 ## The global `FormActionHandler`
 

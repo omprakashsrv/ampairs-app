@@ -243,4 +243,6 @@
     <string name="form_agent_send_cd">Send</string>
     <string name="form_agent_empty">Describe the record in plain words and I\'ll fill the matching fields. For example: \"Acme Traders in Mumbai, phone 9876543210\".</string>
     <string name="form_agent_done">Done</string>
+    <string name="form_agent_listening">Listening… speak the details</string>
+    <string name="form_agent_tap_to_speak">Tap the mic, then say the details — name, phone, PAN, address…</string>
 </resources>
