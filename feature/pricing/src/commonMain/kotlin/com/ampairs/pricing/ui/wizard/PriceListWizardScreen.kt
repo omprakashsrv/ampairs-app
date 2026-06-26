@@ -87,6 +87,7 @@ import ampairsapp.feature.pricing.generated.resources.pricing_wizard_review_prod
 import ampairsapp.feature.pricing.generated.resources.pricing_wizard_review_sync_note
 import ampairsapp.feature.pricing.generated.resources.pricing_wizard_review_where
 import ampairsapp.feature.pricing.generated.resources.pricing_wizard_save_activate
+import ampairsapp.feature.pricing.generated.resources.pricing_wizard_where_hint
 import ampairsapp.feature.pricing.generated.resources.pricing_wizard_status_draft
 import ampairsapp.feature.pricing.generated.resources.pricing_wizard_status_label
 import ampairsapp.feature.pricing.generated.resources.pricing_wizard_step0_title
