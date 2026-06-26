@@ -9,7 +9,9 @@ import com.ampairs.pricing.ui.PriceListDetailRoute
 import com.ampairs.pricing.ui.PriceListFormRoute
 import com.ampairs.pricing.ui.PriceListListRoute
 import com.ampairs.pricing.ui.PriceTesterRoute
+import com.ampairs.pricing.ui.PricingHomeRoute
 import com.ampairs.pricing.ui.detail.PriceListDetailScreen
+import com.ampairs.pricing.ui.overview.PricingOverviewScreen
 import com.ampairs.pricing.ui.form.PriceListFormScreen
 import com.ampairs.pricing.ui.geozone.GeoZoneFormScreen
 import com.ampairs.pricing.ui.geozone.GeoZoneListScreen
@@ -24,6 +26,15 @@ fun pricingEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>,
 ): NavEntry<NavKey>? = when (key) {
+    is PricingHomeRoute -> NavEntry(key) {
+        PricingOverviewScreen(
+            onOpenTester = { backStack.add(PriceTesterRoute) },
+            onOpenLists = { backStack.add(PriceListListRoute) },
+            onOpenZones = { backStack.add(GeoZoneListRoute) },
+            modifier = Modifier,
+        )
+    }
+
     is PriceListListRoute -> NavEntry(key) {
         PriceListListScreen(
             onPriceListClick = { id -> backStack.add(PriceListDetailRoute(id)) },

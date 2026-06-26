@@ -97,4 +97,21 @@
     <string name="pricing_target_category">Category</string>
     <string name="pricing_target_product_group">Product group</string>
     <string name="pricing_target_geo_zone">Geo zone</string>
+
+    <!-- Overview / dashboard -->
+    <string name="pricing_overview_title">Pricing &amp; Offers</string>
+    <string name="pricing_overview_hero_badge">RESOLUTION ENGINE</string>
+    <string name="pricing_overview_hero_title">What price would a customer pay?</string>
+    <string name="pricing_overview_hero_sub">Pick a product and customer — see the exact price and why.</string>
+    <string name="pricing_overview_hero_cta">Test a Price</string>
+    <string name="pricing_overview_tile_active_lists">Active price lists</string>
+    <string name="pricing_overview_tile_geo_zones">Geo zones</string>
+    <string name="pricing_overview_channel_split">Channel split</string>
+    <string name="pricing_overview_active_lists_count">%1$d active lists</string>
+    <string name="pricing_overview_retail">Retail</string>
+    <string name="pricing_overview_wholesale">Wholesale</string>
+    <string name="pricing_overview_quick_lists">Price Lists</string>
+    <string name="pricing_overview_quick_lists_sub">Create and manage price lists</string>
+    <string name="pricing_overview_quick_zones">Geo Zones</string>
+    <string name="pricing_overview_quick_zones_sub">Reusable geographies</string>
 </resources>
