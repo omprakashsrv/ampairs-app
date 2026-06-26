@@ -5,6 +5,7 @@ import com.ampairs.agent.di.OnlineIntentResolver
 import com.ampairs.agent.query.SafeQueryService
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
+import com.ampairs.common.agent.ReportRow
 import dev.zacsweers.metro.Inject
 
 /**
@@ -88,6 +89,7 @@ class AgentOrchestrator(
             // Surfaced so the ViewModel can render confirm/cancel and re-dispatch on confirm.
             pendingConfirmation = (result as? ActionResult.Confirm)?.pendingAction,
             amount = (result as? ActionResult.Confirm)?.amount ?: (result as? ActionResult.Success)?.amount,
+            rows = (result as? ActionResult.Success)?.rows,
         )
 }
 
@@ -99,4 +101,6 @@ data class AgentResponse(
     val pendingConfirmation: AgentAction? = null,
     /** Money total for the UI to format via `formatMoney(LocalAppLocale.current)` (FR-013). */
     val amount: Double? = null,
+    /** Ranked report lines for the UI to format per-row via `formatMoney(LocalAppLocale.current)`. */
+    val rows: List<ReportRow>? = null,
 )

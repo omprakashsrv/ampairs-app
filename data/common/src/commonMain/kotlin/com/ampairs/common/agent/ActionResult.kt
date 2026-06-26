@@ -8,6 +8,12 @@ sealed class ActionResult {
         val navigationTarget: NavigationTarget? = null,
         /** Optional money total for the UI to render via `formatMoney(LocalAppLocale.current)`. */
         val amount: Double? = null,
+        /**
+         * Optional ranked report lines (e.g. top customers/products/debtors). The bubble renders
+         * each row's [ReportRow.amount] via `formatMoney(LocalAppLocale.current)` so currency follows
+         * the active workspace — handlers never format money into text themselves.
+         */
+        val rows: List<ReportRow>? = null,
     ) : ActionResult()
 
     data class Error(val message: String) : ActionResult()

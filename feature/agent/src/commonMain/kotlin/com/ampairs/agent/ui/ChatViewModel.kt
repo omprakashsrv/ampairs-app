@@ -702,6 +702,7 @@ class ChatViewModel(
                                     isFromUser = false,
                                     actionResult = summary,
                                     amount = success?.amount,
+                                    rows = success?.rows,
                                 ),
                             )
                         }
@@ -783,6 +784,7 @@ class ChatViewModel(
             actionResult = actionSummary,
             isError = response.actionResult is ActionResult.Error,
             amount = response.amount,
+            rows = response.rows,
         )
         _uiState.update { state ->
             state.copy(

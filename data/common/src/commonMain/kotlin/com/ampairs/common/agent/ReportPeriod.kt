@@ -9,6 +9,8 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /** A half-open instant range `[startInclusive, endExclusive)` for a report's time filter. */
 data class DateRange(val startInclusive: Instant, val endExclusive: Instant)
@@ -23,6 +25,15 @@ data class DateRange(val startInclusive: Instant, val endExclusive: Instant)
  * Pure and dependency-free so it is unit-tested; the caller supplies `now` (e.g. `Clock.System.now()`).
  */
 object ReportPeriod {
+
+    /**
+     * Convenience for non-composable callers (action handlers): resolves [now] from the system clock
+     * and defaults to the device time zone. Use the device zone because syncable date columns are
+     * stored device-local (`DateTimeAdapter.toDateTimeString`), so filtering must use the same zone.
+     */
+    @OptIn(ExperimentalTime::class)
+    fun current(raw: String?, timeZone: TimeZone = TimeZone.currentSystemDefault()): DateRange? =
+        parse(raw, timeZone, Clock.System.now())
 
     fun parse(raw: String?, timeZone: TimeZone, now: Instant): DateRange? {
         val key = raw?.trim()?.lowercase()?.replace(' ', '_')?.replace('-', '_') ?: return null

@@ -10,9 +10,13 @@ import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
 import com.ampairs.common.agent.ActionHandlerKey
 import com.ampairs.common.agent.CONFIRMED_PARAM
+import com.ampairs.common.agent.DateRange
 import com.ampairs.common.agent.DraftDocumentStore
+import com.ampairs.common.agent.ReportPeriod
+import com.ampairs.common.agent.ReportRow
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
+import com.ampairs.common.model.DateTimeAdapter
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import com.ampairs.customer.domain.Customer
@@ -54,8 +58,100 @@ class InvoiceActionHandler(
         ActionType.READ -> getInvoice(action.params)
         ActionType.COUNT -> countInvoices()
         ActionType.LIST -> listInvoices(action.params)
+        ActionType.TOTAL_SALES -> reportTotalSales(action.params)
+        ActionType.AVERAGE_INVOICE -> reportAverageInvoice(action.params)
+        ActionType.TOP_CUSTOMERS -> reportTopCustomers(action.params)
+        ActionType.TOP_PRODUCTS -> reportTopProducts(action.params)
         else -> ActionResult.Error("Unsupported action: ${action.actionType}")
     }
+
+    // ── Curated reports (deterministic; preferred over free SQL) ─────────────────────────────────
+
+    private suspend fun reportTotalSales(params: Map<String, String>): ActionResult {
+        val period = resolvePeriod(params)
+        val dao = invoiceRepository.invoiceDao
+        val total = if (period.range == null) {
+            dao.getTotalInvoiceValue()
+        } else {
+            val (start, end) = bounds(period.range)
+            dao.sumSalesBetween(start, end)
+        }
+        return ActionResult.Success(summary = "Total sales${period.label}.", amount = total ?: 0.0)
+    }
+
+    private suspend fun reportAverageInvoice(params: Map<String, String>): ActionResult {
+        val period = resolvePeriod(params)
+        val dao = invoiceRepository.invoiceDao
+        val avg = if (period.range == null) {
+            dao.averageInvoiceValue()
+        } else {
+            val (start, end) = bounds(period.range)
+            dao.averageInvoiceValueBetween(start, end)
+        }
+        return if (avg == null) {
+            ActionResult.Success("No invoices yet${period.label}, so there's no average to show.")
+        } else {
+            ActionResult.Success(summary = "Average invoice value${period.label}.", amount = avg)
+        }
+    }
+
+    private suspend fun reportTopCustomers(params: Map<String, String>): ActionResult {
+        val period = resolvePeriod(params)
+        val limit = resolveLimit(params)
+        val dao = invoiceRepository.invoiceDao
+        val rows = if (period.range == null) {
+            dao.topCustomers(limit)
+        } else {
+            val (start, end) = bounds(period.range)
+            dao.topCustomersBetween(start, end, limit)
+        }.map { ReportRow(label = it.label?.ifBlank { "Unnamed customer" } ?: "Unnamed customer", amount = it.total) }
+        return if (rows.isEmpty()) {
+            ActionResult.Success("No sales recorded${period.label}.")
+        } else {
+            ActionResult.Success(summary = "Top ${rows.size} customers by sales${period.label}:", rows = rows)
+        }
+    }
+
+    private suspend fun reportTopProducts(params: Map<String, String>): ActionResult {
+        val period = resolvePeriod(params)
+        val limit = resolveLimit(params)
+        val dao = invoiceRepository.invoiceDao
+        val rows = if (period.range == null) {
+            dao.topProducts(limit)
+        } else {
+            val (start, end) = bounds(period.range)
+            dao.topProductsBetween(start, end, limit)
+        }.map { ReportRow(label = it.label?.ifBlank { "Unnamed item" } ?: "Unnamed item", amount = it.total) }
+        return if (rows.isEmpty()) {
+            ActionResult.Success("No product sales recorded${period.label}.")
+        } else {
+            ActionResult.Success(summary = "Top ${rows.size} products by sales${period.label}:", rows = rows)
+        }
+    }
+
+    /** Resolved period: a half-open range (null = all time) plus a human label like " (this month)". */
+    private data class ResolvedPeriod(val range: DateRange?, val label: String)
+
+    private fun resolvePeriod(params: Map<String, String>): ResolvedPeriod {
+        val raw = (params["period"] ?: params["range"] ?: params["duration"])?.trim()
+        val range = ReportPeriod.current(raw)
+        val label = if (range != null && !raw.isNullOrBlank()) {
+            " (" + raw.lowercase().replace('_', ' ').replace('-', ' ') + ")"
+        } else {
+            ""
+        }
+        return ResolvedPeriod(range, label)
+    }
+
+    private fun resolveLimit(params: Map<String, String>): Int =
+        params["limit"]?.trim()?.toIntOrNull()?.coerceIn(1, 20) ?: 5
+
+    /**
+     * Half-open period bounds as device-local "yyyy-MM-dd HH:mm:ss" strings — matches the stored
+     * `invoice_date` format so lexical comparison (`>= start AND < end`) is correct.
+     */
+    private fun bounds(range: DateRange): Pair<String, String> =
+        DateTimeAdapter.toDateTimeString(range.startInclusive) to DateTimeAdapter.toDateTimeString(range.endExclusive)
 
     /**
      * Create a DRAFT invoice for a named customer, optionally with a single line item — in two phases
@@ -402,6 +498,44 @@ class InvoiceActionHandler(
                     ActionParameter("status", ParameterType.STRING, required = false, "Invoice status filter"),
                 ),
             ),
+            ActionDescriptor(
+                actionType = ActionType.TOTAL_SALES,
+                moduleName = "invoice",
+                description = "Total sales / revenue (sum of invoice totals). Use for \"how much did we sell\", \"total sales\", \"revenue this month\".",
+                parameters = listOf(PERIOD_PARAM),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.AVERAGE_INVOICE,
+                moduleName = "invoice",
+                description = "Average invoice/bill value. Use for \"average invoice\", \"average sale value\".",
+                parameters = listOf(PERIOD_PARAM),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.TOP_CUSTOMERS,
+                moduleName = "invoice",
+                description = "Highest-revenue customers ranked by total sales. Use for \"top customers\", \"best customers\", \"who buys the most\".",
+                parameters = listOf(PERIOD_PARAM, LIMIT_PARAM),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.TOP_PRODUCTS,
+                moduleName = "invoice",
+                description = "Best-selling products ranked by sales value. Use for \"top products\", \"best sellers\", \"what sells most\".",
+                parameters = listOf(PERIOD_PARAM, LIMIT_PARAM),
+            ),
+        )
+
+        /** Shared report params: an optional time window and an optional result cap. */
+        private val PERIOD_PARAM = ActionParameter(
+            "period",
+            ParameterType.STRING,
+            required = false,
+            "Time window: today, yesterday, this_week, last_week, this_month, last_month, this_year, last_year. Omit for all time.",
+        )
+        private val LIMIT_PARAM = ActionParameter(
+            "limit",
+            ParameterType.NUMBER,
+            required = false,
+            "How many to return (default 5, max 20).",
         )
     }
 }

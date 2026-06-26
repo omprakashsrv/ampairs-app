@@ -79,6 +79,59 @@ interface InvoiceDao {
     @Query("SELECT SUM(total_tax) FROM invoiceEntity WHERE invoice_date BETWEEN :startDate AND :endDate AND active = 1")
     suspend fun getTotalTaxValueByDateRange(startDate: String, endDate: String): Double?
 
+    // ── Curated assistant reports ───────────────────────────────────────────────────────────────
+    // Period bounds are half-open device-local "yyyy-MM-dd HH:mm:ss" strings (see ReportPeriod +
+    // DateTimeAdapter.toDateTimeString); `invoice_date` is stored in that same format, so lexical
+    // comparison is correct. `>= start AND < end` avoids the off-by-one of BETWEEN at the boundary.
+
+    /** Total sales (sum of invoice totals) within a half-open period. */
+    @Query("SELECT SUM(total_cost) FROM invoiceEntity WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end")
+    suspend fun sumSalesBetween(start: String, end: String): Double?
+
+    /** Average invoice value, all time. */
+    @Query("SELECT AVG(total_cost) FROM invoiceEntity WHERE active = 1")
+    suspend fun averageInvoiceValue(): Double?
+
+    /** Average invoice value within a half-open period. */
+    @Query("SELECT AVG(total_cost) FROM invoiceEntity WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end")
+    suspend fun averageInvoiceValueBetween(start: String, end: String): Double?
+
+    /** Invoice count within a half-open period (denominator / context for the period reports). */
+    @Query("SELECT COUNT(*) FROM invoiceEntity WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end")
+    suspend fun countInvoicesBetween(start: String, end: String): Int
+
+    /** Highest-revenue customers, all time. */
+    @Query(
+        "SELECT customer_name AS label, SUM(total_cost) AS total FROM invoiceEntity " +
+            "WHERE active = 1 GROUP BY customer_id ORDER BY total DESC LIMIT :limit",
+    )
+    suspend fun topCustomers(limit: Int): List<InvoiceCustomerSalesRow>
+
+    /** Highest-revenue customers within a half-open period. */
+    @Query(
+        "SELECT customer_name AS label, SUM(total_cost) AS total FROM invoiceEntity " +
+            "WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end " +
+            "GROUP BY customer_id ORDER BY total DESC LIMIT :limit",
+    )
+    suspend fun topCustomersBetween(start: String, end: String, limit: Int): List<InvoiceCustomerSalesRow>
+
+    /** Best-selling products by sales value, all time (invoice-item ⨝ invoice). */
+    @Query(
+        "SELECT ii.description AS label, SUM(ii.total_cost) AS total FROM invoiceItemEntity ii " +
+            "JOIN invoiceEntity i ON ii.invoice_id = i.id " +
+            "WHERE i.active = 1 AND ii.active = 1 GROUP BY ii.product_id ORDER BY total DESC LIMIT :limit",
+    )
+    suspend fun topProducts(limit: Int): List<InvoiceProductSalesRow>
+
+    /** Best-selling products by sales value within a half-open period. */
+    @Query(
+        "SELECT ii.description AS label, SUM(ii.total_cost) AS total FROM invoiceItemEntity ii " +
+            "JOIN invoiceEntity i ON ii.invoice_id = i.id " +
+            "WHERE i.active = 1 AND ii.active = 1 AND i.invoice_date >= :start AND i.invoice_date < :end " +
+            "GROUP BY ii.product_id ORDER BY total DESC LIMIT :limit",
+    )
+    suspend fun topProductsBetween(start: String, end: String, limit: Int): List<InvoiceProductSalesRow>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(invoice: InvoiceEntity)
 

@@ -61,6 +61,20 @@ fun MessageBubble(
                         color = onColor,
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                    // Ranked report lines (top customers/products/debtors). Each amount is rendered in
+                    // the active workspace's business currency here, in the composable layer (FR-013) —
+                    // handlers never bake a currency symbol into text.
+                    message.rows?.takeIf { it.isNotEmpty() }?.let { rows ->
+                        Column(modifier = Modifier.padding(top = 4.dp)) {
+                            rows.forEachIndexed { index, row ->
+                                Text(
+                                    text = "${index + 1}. ${row.label} — ${formatMoney(row.amount, LocalAppLocale.current)}",
+                                    color = onColor,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                        }
+                    }
                     // Money total rendered in the active workspace's business currency (FR-013).
                     message.amount?.let { amount ->
                         Text(
