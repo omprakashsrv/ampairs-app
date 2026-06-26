@@ -29,6 +29,9 @@ class CloudLlmEngine(
     @Volatile private var model: ModelDescriptor? = null
     @Volatile private var params: LlmParams = LlmParams()
 
+    /** Hosted tier — the resolver uses this to send the online-optimized system prompt. */
+    override val isCloud: Boolean = true
+
     override suspend fun load(model: ModelDescriptor, params: LlmParams) {
         val transportId = model.transportId
             ?: throw IllegalStateException("Cloud model '${model.id}' has no transportId")

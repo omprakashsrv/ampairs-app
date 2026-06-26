@@ -31,6 +31,14 @@ interface LlmEngine {
     val supportsToolCalling: Boolean get() = false
 
     /**
+     * True when this engine runs **server-side** (the hosted cloud tier) rather than on-device. The
+     * resolver uses this to pick an online-optimized system prompt: capable cloud models get a clear
+     * identity + task framing instead of the terse JSON-only prompt the tiny on-device models need.
+     * Default: false (on-device).
+     */
+    val isCloud: Boolean get() = false
+
+    /**
      * Stream a Gallery-style tool-calling turn: emits [AgentStreamEvent.TextDelta]s as the model
      * types, and dispatches tool calls through [dispatch], emitting [AgentStreamEvent.ActionProposed]
      * / [AgentStreamEvent.ActionExecuted]. [recentHistory] is pre-rendered "User:"/"Assistant:" lines

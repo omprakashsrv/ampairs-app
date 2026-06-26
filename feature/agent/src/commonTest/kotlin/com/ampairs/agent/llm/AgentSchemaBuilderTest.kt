@@ -105,6 +105,27 @@ class AgentSchemaBuilderTest {
     }
 
     @Test
+    fun systemPrompt_online_usesAmpairsIdentityNotOffline_andKeepsContract() {
+        val prompt = AgentSchemaBuilder.systemPrompt(actions, querySchemas, online = true)
+        // Identity fix: the cloud prompt must NOT tell the model it is "offline".
+        assertTrue(!prompt.contains("offline", ignoreCase = true), "online prompt must drop the offline framing")
+        assertTrue(prompt.contains("Ampairs Assistant"), "online prompt gives a real identity")
+        // Same JSON contract + shared sections so the downstream parser is unchanged.
+        assertTrue(prompt.contains("\"intent\""))
+        assertTrue(prompt.contains("Supported actions:"))
+        assertTrue(prompt.contains("Module \"invoice\""))
+        assertTrue(prompt.contains("customer*"), "required params still marked with *")
+        assertTrue(prompt.contains("Queryable data"))
+        assertTrue(prompt.contains("SELECT COUNT(*)"))
+    }
+
+    @Test
+    fun systemPrompt_offlineDefault_stillUsesOfflineFraming() {
+        // The on-device prompt is intentionally unchanged (tiny models are tuned for it).
+        assertTrue(AgentSchemaBuilder.systemPrompt(actions).contains("offline assistant"))
+    }
+
+    @Test
     fun emptyActions_produceEmptyEnumsWithoutThrowing() {
         val schema = AgentSchemaBuilder.build(emptyList())
         assertTrue(schema.actionTypes.isEmpty())

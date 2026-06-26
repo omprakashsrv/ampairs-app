@@ -42,7 +42,7 @@ class LlmIntentResolver(
 
         val schema = AgentSchemaBuilder.build(actions, querySchemas)
         val prompt = buildString {
-            append(AgentSchemaBuilder.systemPrompt(actions, querySchemas))
+            append(AgentSchemaBuilder.systemPrompt(actions, querySchemas, online = engine.isCloud))
             append("\n\n")
             conversationHistory.takeLast(HISTORY_TURNS).forEach { msg ->
                 append(if (msg.isFromUser) "User: " else "Assistant: ").append(msg.text).append('\n')

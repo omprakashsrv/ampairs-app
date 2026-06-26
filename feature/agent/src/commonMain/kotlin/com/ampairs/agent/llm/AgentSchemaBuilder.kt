@@ -40,16 +40,30 @@ object AgentSchemaBuilder {
         )
     }
 
+    /**
+     * @param online when true, emit the **cloud-optimized** prompt — a clear identity + task framing
+     *   tuned for capable hosted models. When false (default), emit the terse JSON-only prompt the tiny
+     *   on-device models are tuned for (kept byte-for-byte to avoid regressing them). Both variants
+     *   share the SAME JSON contract + action/query sections so the downstream parser is unchanged.
+     */
     fun systemPrompt(
         actions: List<ActionDescriptor>,
         querySchemas: Map<String, ModuleQuerySchema> = emptyMap(),
+        online: Boolean = false,
     ): String = buildString {
+        if (online) appendOnlineHeader(querySchemas.isNotEmpty())
+        else appendOfflineHeader(querySchemas.isNotEmpty())
+        appendActionsAndQueries(actions, querySchemas)
+    }
+
+    /** Terse, example-driven prompt the on-device tiny models need (unchanged behavior). */
+    private fun StringBuilder.appendOfflineHeader(hasQuerySchemas: Boolean) {
         appendLine("You are an offline assistant for a business management app.")
         appendLine("Convert the user's message into exactly ONE JSON object, and output JSON only:")
         appendLine("""{"intent": "action|conversation|clarify|query", "actionType": "<TYPE>", "moduleName": "<MODULE>", "params": { ... }, "sql": "<SELECT ...>", "reply": "<message to the user>"}""")
         appendLine("Rules:")
         appendLine("- intent=action for ANY request a supported action below can satisfy — INCLUDING data questions like counts/totals when a matching action exists (e.g. a COUNT action). Pick its exact actionType and moduleName, and prefer a supported action whenever one fits.")
-        if (querySchemas.isNotEmpty()) {
+        if (hasQuerySchemas) {
             appendLine("- intent=query is a LAST RESORT — use it ONLY for a data question that NO supported action above can answer. If an action fits (e.g. a COUNT action for that module), use intent=action instead, never query. When you do use query, set \"moduleName\" to the queried module and put a single read-only SQLite SELECT in \"sql\", using ONLY the tables/columns under \"Queryable data\" for THAT module (match the module to the entity: products→product tables, customers→customer tables — never count a foreign-key column in another module's table). You may use COUNT, SUM, AVG, MIN, MAX, GROUP BY, WHERE, ORDER BY, LIMIT. One module per query.")
         }
         appendLine("- intent=clarify when the request is ambiguous or a required parameter is missing — put the question in \"reply\".")
@@ -57,6 +71,37 @@ object AgentSchemaBuilder {
         appendLine("- ALWAYS fill \"reply\" for conversation and clarify with the exact text to show the user.")
         appendLine("- params values are strings; include only what the user provided.")
         appendLine()
+    }
+
+    /**
+     * Cloud-optimized prompt: gives the capable model a real identity and a clear explanation of what
+     * it is doing (route the user's request into one structured turn), without the "offline" framing or
+     * the terse imperative tone the tiny models needed. Same JSON contract so parsing is unchanged.
+     */
+    private fun StringBuilder.appendOnlineHeader(hasQuerySchemas: Boolean) {
+        appendLine("You are Ampairs Assistant, the AI assistant built into the Ampairs business management app.")
+        appendLine("You help the user run and ask questions about their business — customers, products, orders, invoices, inventory, units, taxes and more — by turning each message into one structured instruction the app executes.")
+        appendLine()
+        appendLine("For every user message, reply with EXACTLY ONE JSON object and nothing else (no prose outside it, no markdown fences):")
+        appendLine("""{"intent": "action|conversation|clarify|query", "actionType": "<TYPE>", "moduleName": "<MODULE>", "params": { ... }, "sql": "<SELECT ...>", "reply": "<message shown to the user>"}""")
+        appendLine()
+        appendLine("Pick the intent that fits the request:")
+        appendLine("- \"action\": the request matches one of the Supported actions below — including data questions a matching COUNT/total action already answers. Set actionType, moduleName and any params the user gave. Prefer an action whenever one fits.")
+        if (hasQuerySchemas) {
+            appendLine("- \"query\": a data question that NO supported action covers. Put a single read-only SQLite SELECT in \"sql\" against ONE module's tables from \"Queryable data\" (match the module to the entity — products→product tables, customers→customer tables). COUNT/SUM/AVG/MIN/MAX/GROUP BY/WHERE/ORDER BY/LIMIT are allowed. One module per query. Prefer an action over a query when both fit.")
+        }
+        appendLine("- \"clarify\": the request is ambiguous or missing a required parameter — ask for exactly what you need in \"reply\".")
+        appendLine("- \"conversation\": greetings, small talk, or any question not covered above — write a genuinely helpful, complete answer in \"reply\".")
+        appendLine()
+        appendLine("Guidelines: always write \"reply\" as the exact, friendly, concise text to show the user (required for conversation and clarify). Keep params values as strings and include only what the user actually provided. Answer in the user's language.")
+        appendLine()
+    }
+
+    /** Shared action catalog + queryable-data sections, identical across both prompt variants. */
+    private fun StringBuilder.appendActionsAndQueries(
+        actions: List<ActionDescriptor>,
+        querySchemas: Map<String, ModuleQuerySchema>,
+    ) {
         appendLine("Supported actions:")
         actions.groupBy { it.moduleName }.toList().sortedBy { it.first }.forEach { (module, list) ->
             appendLine("Module \"$module\":")
