@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDownload
@@ -72,6 +73,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ampairsapp.feature.agent.generated.resources.Res
+import ampairsapp.feature.agent.generated.resources.agent_back_cd
 import ampairsapp.feature.agent.generated.resources.agent_cancel
 import ampairsapp.feature.agent.generated.resources.agent_clear_chat_cd
 import ampairsapp.feature.agent.generated.resources.agent_confirm
@@ -134,6 +136,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ChatScreen(
     onNavigateToRoute: (Map<String, String>) -> Unit = {},
+    onNavigateBack: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel = metroViewModel(),
 ) {
@@ -153,6 +156,14 @@ fun ChatScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(stringResource(Res.string.agent_title)) },
+            navigationIcon = {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(Res.string.agent_back_cd),
+                    )
+                }
+            },
             actions = {
                 ModelStatusChip(
                     state = uiState.modelBar,

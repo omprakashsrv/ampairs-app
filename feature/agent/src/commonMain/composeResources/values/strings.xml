@@ -1,6 +1,7 @@
 <resources>
     <!-- Assistant chat UI (feature 002) -->
     <string name="agent_title">Assistant</string>
+    <string name="agent_back_cd">Back</string>
     <string name="agent_clear_chat_cd">Clear chat</string>
     <string name="agent_empty_title">How can I help you?</string>
     <string name="agent_empty_hint">Try: \"add customer John\" or \"search products\"</string>

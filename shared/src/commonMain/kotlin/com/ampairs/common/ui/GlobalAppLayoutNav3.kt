@@ -122,6 +122,18 @@ fun GlobalAppLayoutNav3(
     val navigationService by globalNavManager.navigationService.collectAsState()
 
     when {
+        // ── Full-screen routes (AI assistant chat): no app chrome (no bottom nav / rail /
+        // header) so the conversation + keyboard get the whole screen. A bare Scaffold still
+        // supplies the OS status/navigation-bar insets (and IME is handled once on NavDisplay in
+        // AppNavigationNav3), and the screen renders its own top bar with a back button. ────────
+        currentRoute is Route.Agent && hasActiveWorkspace -> {
+            Scaffold(modifier = modifier) { paddingValues ->
+                CompositionLocalProvider(LocalShowScreenBackButton provides true) {
+                    content(paddingValues)
+                }
+            }
+        }
+
         // ── Mobile: NavigationBar at bottom, no top bar ─────────────────────
         navigationPattern == NavigationPattern.SIDE_DRAWER && hasActiveWorkspace -> {
             // True while the soft keyboard is open. We hide the bottom nav then so the focused
