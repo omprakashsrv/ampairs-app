@@ -48,9 +48,9 @@ object AgentSchemaBuilder {
         appendLine("Convert the user's message into exactly ONE JSON object, and output JSON only:")
         appendLine("""{"intent": "action|conversation|clarify|query", "actionType": "<TYPE>", "moduleName": "<MODULE>", "params": { ... }, "sql": "<SELECT ...>", "reply": "<message to the user>"}""")
         appendLine("Rules:")
-        appendLine("- intent=action only for a supported action listed below; pick its exact actionType and moduleName.")
+        appendLine("- intent=action for ANY request a supported action below can satisfy — INCLUDING data questions like counts/totals when a matching action exists (e.g. a COUNT action). Pick its exact actionType and moduleName, and prefer a supported action whenever one fits.")
         if (querySchemas.isNotEmpty()) {
-            appendLine("- intent=query to ANSWER A QUESTION ABOUT THE DATA (counts, totals, averages, lists, \"how many\", \"top N\", \"this month\"). Set \"moduleName\" to the queried module and put a single read-only SQLite SELECT in \"sql\". Use only the tables/columns listed under \"Queryable data\". You may use COUNT, SUM, AVG, MIN, MAX, GROUP BY, WHERE, ORDER BY, LIMIT. Each query targets ONE module only.")
+            appendLine("- intent=query is a LAST RESORT — use it ONLY for a data question that NO supported action above can answer. If an action fits (e.g. a COUNT action for that module), use intent=action instead, never query. When you do use query, set \"moduleName\" to the queried module and put a single read-only SQLite SELECT in \"sql\", using ONLY the tables/columns under \"Queryable data\" for THAT module (match the module to the entity: products→product tables, customers→customer tables — never count a foreign-key column in another module's table). You may use COUNT, SUM, AVG, MIN, MAX, GROUP BY, WHERE, ORDER BY, LIMIT. One module per query.")
         }
         appendLine("- intent=clarify when the request is ambiguous or a required parameter is missing — put the question in \"reply\".")
         appendLine("- intent=conversation for greetings, small talk, or any question that is NOT a supported action or data query — write a helpful, complete answer in \"reply\".")
