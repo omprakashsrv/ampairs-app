@@ -44,6 +44,9 @@ import kotlin.time.ExperimentalTime
  * Writes (create/update/delete) persist to Room as unsynced and mark PRODUCT as PENDING_PUSH;
  * CentralSyncService's reactive observer then runs the automatic bulk push.
  */
+/** A low-stock product line for the assistant's LOW_STOCK report (name + on-hand quantity). */
+data class LowStockProduct(val name: String, val quantity: Double)
+
 @OptIn(ExperimentalTime::class)
 @Inject
 class ProductRepository(
@@ -271,6 +274,17 @@ class ProductRepository(
     suspend fun getProductCount(): Int {
         return productDao.countProducts()
     }
+
+    // ── Assistant stock reports ──────────────────────────────────────────────────────────────────
+    suspend fun countLowStock(): Int = productDao.countLowStock()
+
+    suspend fun countOutOfStock(): Int = productDao.countOutOfStock()
+
+    suspend fun inventoryValueAtCost(): Double = productDao.inventoryValueAtCost()
+
+    /** Lowest-stock products at/below their alert level, mapped to (name, on-hand qty) for display. */
+    suspend fun lowStockProducts(limit: Int): List<LowStockProduct> =
+        productDao.lowStockProducts(limit).map { LowStockProduct(it.name, it.stock_quantity ?: 0.0) }
 
     // Extension functions for data conversion
     private fun Product.toEntity(): ProductEntity {

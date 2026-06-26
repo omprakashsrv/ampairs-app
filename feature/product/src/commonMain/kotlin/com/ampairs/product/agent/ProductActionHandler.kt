@@ -36,8 +36,39 @@ class ProductActionHandler(
         ActionType.UPDATE -> updateProduct(action.params)
         ActionType.DELETE -> deleteProduct(action.params)
         ActionType.COUNT -> countProducts()
+        ActionType.LOW_STOCK -> reportLowStock(action.params)
+        ActionType.OUT_OF_STOCK -> reportOutOfStock()
+        ActionType.INVENTORY_VALUE -> reportInventoryValue()
         else -> ActionResult.Error("Unsupported action: ${action.actionType}")
     }
+
+    // ── Curated stock reports (deterministic; preferred over free SQL) ────────────────────────────
+
+    private suspend fun reportLowStock(params: Map<String, String>): ActionResult {
+        val limit = params["limit"]?.trim()?.toIntOrNull()?.coerceIn(1, 20) ?: 10
+        val total = productRepository.countLowStock()
+        val items = productRepository.lowStockProducts(limit)
+        return if (items.isEmpty()) {
+            ActionResult.Success("No products are low on stock.")
+        } else {
+            val lines = items.joinToString("\n") { "• ${it.name} — ${formatQty(it.quantity)} left" }
+            val more = if (total > items.size) "\n… and ${total - items.size} more" else ""
+            ActionResult.Success("$total product(s) low on stock:\n$lines$more")
+        }
+    }
+
+    private suspend fun reportOutOfStock(): ActionResult {
+        val count = productRepository.countOutOfStock()
+        return ActionResult.Success("$count product(s) are out of stock.")
+    }
+
+    private suspend fun reportInventoryValue(): ActionResult {
+        val value = productRepository.inventoryValueAtCost()
+        return ActionResult.Success(summary = "Total inventory value (at cost).", amount = value)
+    }
+
+    private fun formatQty(value: Double): String =
+        if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
 
     private suspend fun createProduct(params: Map<String, String>): ActionResult {
         val name = params["name"]
@@ -247,6 +278,26 @@ class ProductActionHandler(
                 actionType = ActionType.COUNT,
                 moduleName = "product",
                 description = "Get total product count",
+                parameters = emptyList(),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.LOW_STOCK,
+                moduleName = "product",
+                description = "Products at or below their low-stock alert level. Use for \"low stock\", \"running low\", \"what needs reordering\".",
+                parameters = listOf(
+                    ActionParameter("limit", ParameterType.NUMBER, required = false, "How many to list (default 10, max 20)."),
+                ),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.OUT_OF_STOCK,
+                moduleName = "product",
+                description = "Count of products with zero on-hand stock. Use for \"out of stock\", \"sold out items\".",
+                parameters = emptyList(),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.INVENTORY_VALUE,
+                moduleName = "product",
+                description = "Total inventory valuation at cost (Σ on-hand × cost price). Use for \"inventory value\", \"stock value\", \"worth of stock\".",
                 parameters = emptyList(),
             ),
         )
