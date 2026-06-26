@@ -245,4 +245,5 @@
     <string name="form_agent_done">Done</string>
     <string name="form_agent_listening">Listening… speak the details</string>
     <string name="form_agent_tap_to_speak">Tap the mic, then say the details — name, phone, PAN, address…</string>
+    <string name="form_agent_voice_unavailable">Voice input isn\'t available on this device.</string>
 </resources>

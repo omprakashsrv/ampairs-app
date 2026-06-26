@@ -199,7 +199,9 @@ data class CustomerFormUiState(
     val isImportingContact: Boolean = false,
     val contactImportError: String? = null,
     /** Bumped on each successful contact import so config-driven fields re-seed (spec 011). */
-    val contactImportCount: Int = 0
+    val contactImportCount: Int = 0,
+    /** Bumped on each assistant field-fill so the schema-driven renderer re-seeds from formState. */
+    val agentFillCount: Int = 0
 )
 
 @AssistedInject
@@ -384,7 +386,12 @@ class CustomerFormViewModel(
             "status" -> current.copy(status = value)
             else -> current.copy(attributes = current.attributes + (fieldKey to value))
         }
-        _uiState.update { it.copy(formState = validateForm(updated), error = null) }
+        // Bump the reseed counter so the schema-driven renderer (CustomerStandardFields) rebuilds its
+        // FormValueState from the updated formState — otherwise the assistant-filled values are stored
+        // but the input fields keep showing the old (empty) values.
+        _uiState.update {
+            it.copy(formState = validateForm(updated), error = null, agentFillCount = it.agentFillCount + 1)
+        }
     }
 
     fun saveCustomer(onSuccess: () -> Unit) {

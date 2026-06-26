@@ -146,7 +146,7 @@ class FormAgentViewModel(
             return
         }
 
-        val prompt = buildPrompt(userMessage, fields, _uiState.value.messages)
+        val prompt = buildPrompt(userMessage, fields)
         val output = buildOutputSchema(fields)
         val raw = engine.generateConstrained(prompt, output)
 
@@ -210,45 +210,29 @@ class FormAgentViewModel(
         _uiState.update { it.copy(messages = it.messages + FormChatMessage(text = text, isUser = false)) }
     }
 
-    /** Build the grounding prompt: the form's fields + recent conversation + the new turn. */
-    private fun buildPrompt(
-        userMessage: String,
-        fields: List<FormField>,
-        history: List<FormChatMessage>,
-    ): String = buildString {
-        appendLine("You fill in a \"$entityType\" form from what the user says.")
-        appendLine(
-            "Reply with EXACTLY ONE JSON object and nothing else: " +
-                "{\"intent\":\"action\",\"actionType\":\"UPDATE\",\"moduleName\":\"$entityType\"," +
-                "\"params\":{\"<field_key>\":\"<value>\"},\"reply\":\"<short confirmation>\"}",
-        )
-        appendLine("Rules:")
-        appendLine("- In \"params\", use ONLY the field keys listed below, and include a key ONLY when the user clearly gave a value for it. Omit everything else.")
-        appendLine("- For choice fields, the value MUST be exactly one of the listed options.")
-        appendLine("- For boolean fields use \"true\" or \"false\". Keep numbers as plain digits.")
-        appendLine("- Do not invent values. \"reply\" is a one-line confirmation of what you filled.")
-        appendLine()
-        appendLine("Fields (key — label [type]):")
+    /**
+     * Minimal, memory-free prompt: just the allowed field keys (+ a short label and choice options)
+     * and the single utterance. No conversation history, no verbose rules — smaller prompt = faster
+     * on-device inference. The constrained [OutputSchema] guarantees valid JSON, so we don't spend
+     * tokens describing the JSON shape beyond one example line.
+     */
+    private fun buildPrompt(userMessage: String, fields: List<FormField>): String = buildString {
+        append("Extract ").append(entityType).appendLine(" details the user states. Output ONE JSON object only:")
+        appendLine("{\"params\":{\"field_key\":\"value\"}}")
+        appendLine("Use only these keys; include a key only if the user said its value:")
         fields.forEach { field ->
-            append("- ").append(field.fieldKey).append(" — ").append(field.displayName)
-            append(" [").append(field.dataType.name.lowercase()).append(']')
-            if (field.mandatory) append(" (required)")
+            append("- ").append(field.fieldKey).append(" (").append(field.displayName).append(')')
             if (field.dataType.isChoice) {
                 val options = field.enumValues.orEmpty()
-                if (options.isNotEmpty()) append(" options: ").append(options.joinToString(", "))
+                if (options.isNotEmpty()) append(" = one of [").append(options.joinToString(", ")).append(']')
             }
             appendLine()
         }
-        appendLine()
-        history.takeLast(HISTORY_TURNS).forEach { msg ->
-            append(if (msg.isUser) "User: " else "Assistant: ").appendLine(msg.text)
-        }
-        append("User: ").appendLine(userMessage)
-        append("JSON:")
+        append("User: ").append(userMessage)
     }
 
     private fun buildOutputSchema(fields: List<FormField>): OutputSchema = OutputSchema(
-        intents = listOf("action", "conversation"),
+        intents = listOf("action"),
         actionTypes = listOf("UPDATE"),
         modules = listOf(entityType),
         paramsByModule = mapOf(entityType to fields.map { it.fieldKey }),
@@ -295,7 +279,6 @@ class FormAgentViewModel(
     )
 
     private companion object {
-        const val HISTORY_TURNS = 6
         val JSON = Json { ignoreUnknownKeys = true; isLenient = true }
     }
 }

@@ -243,7 +243,7 @@ fun CustomerFormScreen(
                             widgetRegistry = viewModel.widgetRegistry,
                             formState = uiState.formState,
                             onFormChange = viewModel::updateForm,
-                            reseedKey = uiState.contactImportCount,
+                            reseedKey = uiState.contactImportCount + uiState.agentFillCount,
                         )
                     },
                     showCustomerImages = uiState.showCustomerImages,

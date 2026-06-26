@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
@@ -24,7 +23,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,14 +41,13 @@ import ampairsapp.feature.form.generated.resources.form_agent_chat_title
 import ampairsapp.feature.form.generated.resources.form_agent_close_cd
 import ampairsapp.feature.form.generated.resources.form_agent_editing
 import ampairsapp.feature.form.generated.resources.form_agent_empty
-import ampairsapp.feature.form.generated.resources.form_agent_input_hint
 import ampairsapp.feature.form.generated.resources.form_agent_listening
 import ampairsapp.feature.form.generated.resources.form_agent_open_cd
 import ampairsapp.feature.form.generated.resources.form_agent_processing
-import ampairsapp.feature.form.generated.resources.form_agent_send_cd
 import ampairsapp.feature.form.generated.resources.form_agent_tap_to_speak
 import ampairsapp.feature.form.generated.resources.form_agent_voice_listen
 import ampairsapp.feature.form.generated.resources.form_agent_voice_stop
+import ampairsapp.feature.form.generated.resources.form_agent_voice_unavailable
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -112,7 +108,6 @@ fun FormAgentChatDialog(
     onDismiss: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
     // Start listening as soon as the voice assistant opens (the whole point: tap → speak → fill).
@@ -127,13 +122,6 @@ fun FormAgentChatDialog(
     fun dismiss() {
         viewModel.stopVoice()
         onDismiss()
-    }
-
-    fun send() {
-        val text = input.trim()
-        if (text.isBlank()) return
-        viewModel.submit(text)
-        input = ""
     }
 
     Dialog(onDismissRequest = { dismiss() }) {
@@ -246,29 +234,12 @@ fun FormAgentChatDialog(
                     }
                 }
 
-                // Typed fallback (also used on platforms without speech).
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    OutlinedTextField(
-                        value = input,
-                        onValueChange = { input = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text(stringResource(Res.string.form_agent_input_hint)) },
-                        singleLine = true,
-                        enabled = !state.isProcessing && !state.isListening,
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Send),
-                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { send() }),
+                if (!state.voiceAvailable) {
+                    Text(
+                        text = stringResource(Res.string.form_agent_voice_unavailable),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
                     )
-                    IconButton(onClick = { send() }, enabled = input.isNotBlank() && !state.isProcessing) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(Res.string.form_agent_send_cd),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
                 }
             }
         }
