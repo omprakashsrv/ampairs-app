@@ -100,6 +100,8 @@ data class ChatUiState(
     val selectedMicId: String? = null,
     /** Opt-in: upload chat transcripts to the backend for quality improvement (default OFF). */
     val telemetryEnabled: Boolean = false,
+    /** Whether the model's transient "thinking" (reasoning) text is shown while it reasons (default ON). */
+    val reasoningEnabled: Boolean = true,
 )
 
 /** One Whisper model-size row in the settings sheet (shown only when the Whisper STT engine is active). */
@@ -235,6 +237,10 @@ class ChatViewModel(
     @Volatile
     private var telemetryEnabled: Boolean = false
 
+    /** Mirror of the reasoning-display preference, read in the stream collector without suspending. */
+    @Volatile
+    private var reasoningEnabled: Boolean = true
+
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
@@ -281,6 +287,12 @@ class ChatViewModel(
             .onEach { enabled ->
                 telemetryEnabled = enabled
                 _uiState.update { it.copy(telemetryEnabled = enabled) }
+            }
+            .launchIn(viewModelScope)
+        appPreferences.getAssistantReasoningEnabled()
+            .onEach { enabled ->
+                reasoningEnabled = enabled
+                _uiState.update { it.copy(reasoningEnabled = enabled) }
             }
             .launchIn(viewModelScope)
     }
@@ -652,6 +664,11 @@ class ChatViewModel(
         viewModelScope.launch { appPreferences.setChatTelemetryEnabled(enabled) }
     }
 
+    /** Toggle whether the model's "thinking" (reasoning) text is shown (Assistant settings). */
+    fun onToggleReasoning(enabled: Boolean) {
+        viewModelScope.launch { appPreferences.setAssistantReasoningEnabled(enabled) }
+    }
+
     /** Stop an in-flight streaming reply: cancels the flow, whose awaitClose calls cancelProcess(). */
     fun stopGeneration() {
         streamJob?.cancel()
@@ -698,8 +715,11 @@ class ChatViewModel(
             engine.chatStream(text, history, actionRegistry::dispatch).collect { event ->
                 when (event) {
                     is AgentStreamEvent.ThoughtDelta -> {
-                        thought.append(event.text)
-                        _uiState.update { it.copy(streamingThought = thought.toString()) }
+                        // Reasoning display is opt-out (Assistant settings); drop thoughts when off.
+                        if (reasoningEnabled) {
+                            thought.append(event.text)
+                            _uiState.update { it.copy(streamingThought = thought.toString()) }
+                        }
                     }
 
                     is AgentStreamEvent.TextDelta -> {

@@ -92,8 +92,9 @@ class LiteRtLmEngine(
         if (engine != null) return
         val modelFile = File(modelDir, model.fileName)
         check(modelFile.exists()) { "LiteRT-LM model not found: ${modelFile.absolutePath}" }
+        val contextTokens = params.contextTokens.coerceAtLeast(MIN_CONTEXT_TOKENS)
         withContext(Dispatchers.IO) {
-            engine = initEngine(modelFile)
+            engine = initEngine(modelFile, contextTokens)
             samplerConfig = SamplerConfig(
                 topK = params.topK,
                 topP = params.topP.toDouble(),
@@ -109,7 +110,7 @@ class LiteRtLmEngine(
      * fail on a text-only model, which is what previously forced the slow CPU path. If GPU init throws
      * it propagates to [load] → [ProviderRegistry] logs it and stays rule-based — never silent CPU.
      */
-    private fun initEngine(modelFile: File): Engine =
+    private fun initEngine(modelFile: File, contextTokens: Int): Engine =
         Engine(
             EngineConfig(
                 modelPath = modelFile.absolutePath,
@@ -118,13 +119,14 @@ class LiteRtLmEngine(
                 visionBackend = null, // text model — must be null or GPU init fails
                 audioBackend = null,
                 // Bound total context (prompt + generation). litertlm 0.13.1 has no per-response
-                // output-token cap; this caps the KV-cache / total tokens — keep it above the built
-                // prompt size so the intent JSON is never truncated.
-                maxNumTokens = MAX_NUM_TOKENS,
+                // output-token cap; this caps the KV-cache / total tokens. Sourced per-model from
+                // LlmParams.contextTokens (chat models 4096, intent 2048) and floored at
+                // MIN_CONTEXT_TOKENS so it can never drop below the built prompt size.
+                maxNumTokens = contextTokens,
             ),
         ).also {
             it.initialize()
-            Logger.i(tag = LOG_TAG) { "LiteRT-LM engine initialized on GPU (maxNumTokens=$MAX_NUM_TOKENS)" }
+            Logger.i(tag = LOG_TAG) { "LiteRT-LM engine initialized on GPU (maxNumTokens=$contextTokens)" }
         }
 
     override fun isLoaded(): Boolean = engine != null && samplerConfig != null
@@ -309,7 +311,8 @@ class LiteRtLmEngine(
     private companion object {
         const val LOG_TAG = "AgentLlm"
         const val INFERENCE_TIMEOUT_MS = 60_000L
-        // Total-token bound (prompt + generation). Above our built prompt so intent JSON isn't cut.
-        const val MAX_NUM_TOKENS = 2048
+        // Floor for the per-model context budget (LlmParams.contextTokens). Above our built prompt so
+        // intent JSON / system prompt + tools are never truncated even if a descriptor under-sizes it.
+        const val MIN_CONTEXT_TOKENS = 2048
     }
 }

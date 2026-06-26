@@ -27,6 +27,7 @@ class DataStoreAppPreferences(
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
         private val LLM_MODEL_DOWNLOAD_CONSENT_KEY = booleanPreferencesKey("llm_model_download_consent")
         private val CHAT_TELEMETRY_ENABLED_KEY = booleanPreferencesKey("chat_telemetry_enabled")
+        private val ASSISTANT_REASONING_ENABLED_KEY = booleanPreferencesKey("assistant_reasoning_enabled")
         private val SELECTED_LLM_MODEL_ID_KEY = stringPreferencesKey("selected_llm_model_id")
         private val SELECTED_STT_ADAPTER_ID_KEY = stringPreferencesKey("selected_stt_adapter_id")
         private val SELECTED_TTS_ADAPTER_ID_KEY = stringPreferencesKey("selected_tts_adapter_id")
@@ -289,6 +290,18 @@ class DataStoreAppPreferences(
     override suspend fun setChatTelemetryEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[CHAT_TELEMETRY_ENABLED_KEY] = enabled
+        }
+    }
+
+    override fun getAssistantReasoningEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[ASSISTANT_REASONING_ENABLED_KEY] ?: true
+        }
+    }
+
+    override suspend fun setAssistantReasoningEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ASSISTANT_REASONING_ENABLED_KEY] = enabled
         }
     }
 

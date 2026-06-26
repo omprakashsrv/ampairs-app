@@ -56,7 +56,15 @@ fun AiModelResponse.toDescriptor(): ModelDescriptor = ModelDescriptor(
     estimatedPeakMemoryBytes = requiredRamMb.toLong() * 1_000_000L,
     sha256 = sha256,
     recommended = recommended,
-    defaultParams = LlmParams(temperature = 0.3f, topK = 40, topP = 0.95f, maxTokens = 512),
+    // Manifest models are chat models by default (roleFromManifest), so give them the larger
+    // context window; the intent tool-caller keeps the LlmParams default (2048).
+    defaultParams = LlmParams(
+        temperature = 0.3f,
+        topK = 40,
+        topP = 0.95f,
+        maxTokens = 512,
+        contextTokens = if (roleFromManifest(role) == ModelRole.INTENT) 2048 else 4096,
+    ),
 )
 
 /** Persist a manifest entry to the app-scoped catalog DB (platforms comma-joined). */

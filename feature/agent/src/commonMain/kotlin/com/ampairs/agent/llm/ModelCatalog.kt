@@ -35,7 +35,7 @@ object ModelCatalog {
         downloadUrl = "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm/resolve/main/gemma-3n-E2B-it-int4.litertlm",
         sizeBytes = 3_655_827_456L,
         estimatedPeakMemoryBytes = 4_100_000_000L,
-        defaultParams = LlmParams(temperature = 1.0f, topK = 64, topP = 0.95f, maxTokens = 4096),
+        defaultParams = LlmParams(temperature = 1.0f, topK = 64, topP = 0.95f, maxTokens = 4096, contextTokens = 4096),
     )
 
     /** Conversational answers — higher-RAM tier. Multimodal (text/vision/audio). */
@@ -48,7 +48,7 @@ object ModelCatalog {
         downloadUrl = "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/main/gemma-3n-E4B-it-int4.litertlm",
         sizeBytes = 4_919_541_760L,
         estimatedPeakMemoryBytes = 5_500_000_000L,
-        defaultParams = LlmParams(temperature = 1.0f, topK = 64, topP = 0.95f, maxTokens = 4096),
+        defaultParams = LlmParams(temperature = 1.0f, topK = 64, topP = 0.95f, maxTokens = 4096, contextTokens = 4096),
     )
 
     /**
@@ -64,7 +64,7 @@ object ModelCatalog {
         downloadUrl = "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
         sizeBytes = 1_597_931_520L,
         estimatedPeakMemoryBytes = 1_900_000_000L,
-        defaultParams = LlmParams(temperature = 0.7f, topK = 20, topP = 0.8f, maxTokens = 4096),
+        defaultParams = LlmParams(temperature = 0.7f, topK = 20, topP = 0.8f, maxTokens = 4096, contextTokens = 4096),
     )
 
     val all: List<ModelDescriptor> = listOf(FUNCTION_GEMMA_270M, GEMMA_3N_E2B, GEMMA_3N_E4B, QWEN2_5_1_5B)

@@ -53,8 +53,9 @@ class LiteRtLmEngine(
         if (engine != null) return
         val modelFile = File(storage.modelsDirectoryPath(), model.fileName)
         check(modelFile.exists()) { "LiteRT-LM model not found: ${modelFile.absolutePath}" }
+        val contextTokens = params.contextTokens.coerceAtLeast(MIN_CONTEXT_TOKENS)
         withContext(Dispatchers.IO) {
-            engine = initEngine(modelFile)
+            engine = initEngine(modelFile, contextTokens)
             samplerConfig = SamplerConfig(
                 topK = params.topK,
                 topP = params.topP.toDouble(),
@@ -64,7 +65,7 @@ class LiteRtLmEngine(
     }
 
     /** GPU-only init (no CPU fallback); `vision`/`audioBackend` null for the text model — see Android. */
-    private fun initEngine(modelFile: File): Engine =
+    private fun initEngine(modelFile: File, contextTokens: Int): Engine =
         Engine(
             EngineConfig(
                 modelPath = modelFile.absolutePath,
@@ -72,11 +73,12 @@ class LiteRtLmEngine(
                 backend = Backend.GPU(),
                 visionBackend = null,
                 audioBackend = null,
-                maxNumTokens = MAX_NUM_TOKENS,
+                // Per-model context budget (LlmParams.contextTokens), floored — see Android.
+                maxNumTokens = contextTokens,
             ),
         ).also {
             it.initialize()
-            Logger.i(tag = LOG_TAG) { "LiteRT-LM (desktop) engine initialized on GPU (maxNumTokens=$MAX_NUM_TOKENS)" }
+            Logger.i(tag = LOG_TAG) { "LiteRT-LM (desktop) engine initialized on GPU (maxNumTokens=$contextTokens)" }
         }
 
     override fun isLoaded(): Boolean = engine != null && samplerConfig != null
@@ -139,6 +141,7 @@ class LiteRtLmEngine(
     private companion object {
         const val LOG_TAG = "AgentLlm"
         const val INFERENCE_TIMEOUT_MS = 60_000L
-        const val MAX_NUM_TOKENS = 2048
+        // Floor for the per-model context budget (LlmParams.contextTokens) — see Android.
+        const val MIN_CONTEXT_TOKENS = 2048
     }
 }

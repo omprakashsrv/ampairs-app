@@ -297,6 +297,8 @@ fun ChatScreen(
                 selectedMicId = uiState.selectedMicId,
                 telemetryEnabled = uiState.telemetryEnabled,
                 onToggleTelemetry = viewModel::onToggleTelemetry,
+                reasoningEnabled = uiState.reasoningEnabled,
+                onToggleReasoning = viewModel::onToggleReasoning,
                 onSelectMicDevice = viewModel::onSelectMicDevice,
                 onSelectStt = viewModel::onSelectSttAdapter,
                 onSelectTts = viewModel::onSelectTtsAdapter,
@@ -670,6 +672,8 @@ private fun AssistantSettingsSheet(
     selectedMicId: String?,
     telemetryEnabled: Boolean,
     onToggleTelemetry: (Boolean) -> Unit,
+    reasoningEnabled: Boolean,
+    onToggleReasoning: (Boolean) -> Unit,
     onSelectMicDevice: (String) -> Unit,
     onSelectStt: (String) -> Unit,
     onSelectTts: (String) -> Unit,
@@ -752,6 +756,22 @@ private fun AssistantSettingsSheet(
                     )
                 }
                 Switch(checked = telemetryEnabled, onCheckedChange = onToggleTelemetry)
+            }
+
+            // Show the model's transient "thinking" (reasoning) text while it reasons (default ON).
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(Res.string.agent_settings_reasoning),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        stringResource(Res.string.agent_settings_reasoning_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = reasoningEnabled, onCheckedChange = onToggleReasoning)
             }
         }
     }
