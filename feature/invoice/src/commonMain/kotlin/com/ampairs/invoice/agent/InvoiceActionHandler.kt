@@ -456,6 +456,20 @@ class InvoiceActionHandler(
     }
 
     companion object {
+        /** Shared report params: an optional time window and an optional result cap. */
+        private val PERIOD_PARAM = ActionParameter(
+            "period",
+            ParameterType.STRING,
+            required = false,
+            "Time window: today, yesterday, this_week, last_week, this_month, last_month, this_year, last_year. Omit for all time.",
+        )
+        private val LIMIT_PARAM = ActionParameter(
+            "limit",
+            ParameterType.NUMBER,
+            required = false,
+            "How many to return (default 5, max 20).",
+        )
+
         val ACTIONS = listOf(
             ActionDescriptor(
                 actionType = ActionType.CREATE,
@@ -522,20 +536,6 @@ class InvoiceActionHandler(
                 description = "Best-selling products ranked by sales value. Use for \"top products\", \"best sellers\", \"what sells most\".",
                 parameters = listOf(PERIOD_PARAM, LIMIT_PARAM),
             ),
-        )
-
-        /** Shared report params: an optional time window and an optional result cap. */
-        private val PERIOD_PARAM = ActionParameter(
-            "period",
-            ParameterType.STRING,
-            required = false,
-            "Time window: today, yesterday, this_week, last_week, this_month, last_month, this_year, last_year. Omit for all time.",
-        )
-        private val LIMIT_PARAM = ActionParameter(
-            "limit",
-            ParameterType.NUMBER,
-            required = false,
-            "How many to return (default 5, max 20).",
         )
     }
 }
