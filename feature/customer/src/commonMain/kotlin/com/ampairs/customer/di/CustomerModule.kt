@@ -1,6 +1,7 @@
 package com.ampairs.customer.di
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.customer.agent.CustomerAgentDao
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.db.CustomerDao
@@ -28,5 +29,8 @@ interface CustomerDaoModule {
 
         @Provides
         fun provideCustomerDataService(repo: CustomerRepository): CustomerDataService = repo
+
+        @Provides
+        fun provideCustomerAgentDao(db: CustomerDatabase): CustomerAgentDao = db.customerAgentDao()
     }
 }

@@ -37,6 +37,7 @@ import dev.zacsweers.metro.Inject
 @ActionHandlerKey("order")
 class OrderActionHandler(
     private val orderRepository: OrderRepository,
+    private val agentDao: OrderAgentDao,
     private val taxRateProvider: TaxRateProvider,
     private val storeSettings: StoreSettingsProvider,
     private val draft: DraftDocumentStore,
@@ -307,7 +308,7 @@ class OrderActionHandler(
     }
 
     private suspend fun countOrders(): ActionResult {
-        val count = orderRepository.orderDao.countOrders()
+        val count = agentDao.countActive()
         return ActionResult.Success("You have $count order(s).")
     }
 

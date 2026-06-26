@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.first
 @ActionHandlerKey("customer")
 class CustomerActionHandler(
     private val customerRepository: CustomerRepository,
+    private val agentDao: CustomerAgentDao,
     private val syncService: CentralSyncService,
 ) : ActionHandler {
 
@@ -192,7 +193,7 @@ class CustomerActionHandler(
     }
 
     private suspend fun countCustomers(): ActionResult {
-        val count = customerRepository.getCustomerCount()
+        val count = agentDao.countActive()
         return ActionResult.Success("You have $count customer(s).")
     }
 

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.first
 class InventoryActionHandler(
     private val inventoryItemRepository: InventoryItemRepository,
     private val inventoryDataService: InventoryDataService,
+    private val agentDao: InventoryAgentDao,
 ) : ActionHandler {
 
     override val moduleName = "inventory"
@@ -49,12 +50,12 @@ class InventoryActionHandler(
 
     private suspend fun countInventory(params: Map<String, String>): ActionResult {
         val query = params["query"]
-        val items = if (query != null) {
-            inventoryItemRepository.searchItems(query).first()
+        val count = if (query != null) {
+            inventoryItemRepository.searchItems(query).first().size
         } else {
-            inventoryItemRepository.observeItems().first()
+            agentDao.countActive()
         }
-        return ActionResult.Success("Total inventory items: ${items.size}")
+        return ActionResult.Success("Total inventory items: $count")
     }
 
     private suspend fun getProductInventory(params: Map<String, String>): ActionResult {
