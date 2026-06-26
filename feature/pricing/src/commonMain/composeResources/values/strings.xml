@@ -114,4 +114,6 @@
     <string name="pricing_overview_quick_lists_sub">Create and manage price lists</string>
     <string name="pricing_overview_quick_zones">Geo Zones</string>
     <string name="pricing_overview_quick_zones_sub">Reusable geographies</string>
+    <string name="pricing_overview_quick_offers">Offers</string>
+    <string name="pricing_overview_quick_offers_sub">Promotions &amp; discounts</string>
 </resources>

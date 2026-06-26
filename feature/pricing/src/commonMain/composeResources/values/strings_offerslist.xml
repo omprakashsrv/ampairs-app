@@ -1,0 +1,20 @@
+<resources>
+    <string name="pricing_offerslist_title">Offers</string>
+    <string name="pricing_offerslist_new_offer">New Offer</string>
+    <string name="pricing_offerslist_empty_title">No offers yet</string>
+    <string name="pricing_offerslist_empty_create">Create offer</string>
+    <string name="pricing_offerslist_error_title">Couldn't load offers</string>
+    <string name="pricing_offerslist_cd_delete">Delete offer</string>
+    <string name="pricing_offerslist_reward_percent">%1$s%% off</string>
+    <string name="pricing_offerslist_reward_percent_cap">%1$s%% off, max %2$s</string>
+    <string name="pricing_offerslist_reward_flat">%1$s off</string>
+    <string name="pricing_offerslist_reward_bogo">Buy %1$d get %2$d</string>
+    <string name="pricing_offerslist_reward_free_shipping">Free shipping</string>
+    <string name="pricing_offerslist_reward_free_gift">Free gift</string>
+    <string name="pricing_offerslist_reward_tiered">Tiered reward</string>
+    <string name="pricing_offerslist_reward_none">No reward</string>
+    <string name="pricing_offerslist_usage">%1$d/%2$d used</string>
+    <string name="pricing_offerslist_usage_unlimited">%1$d used</string>
+    <string name="pricing_offerslist_window_open_ended">No end date</string>
+    <string name="pricing_offerslist_window_anytime">Anytime</string>
+</resources>

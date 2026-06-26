@@ -6,6 +6,9 @@ import androidx.navigation3.runtime.NavKey
 import com.ampairs.pricing.ui.GeoZoneFormRoute
 import com.ampairs.pricing.ui.GeoZoneListRoute
 import com.ampairs.pricing.ui.ItemEditorRoute
+import com.ampairs.pricing.ui.OfferBuilderRoute
+import com.ampairs.pricing.ui.OfferPreviewRoute
+import com.ampairs.pricing.ui.OffersListRoute
 import com.ampairs.pricing.ui.PriceListDetailRoute
 import com.ampairs.pricing.ui.PriceListFormRoute
 import com.ampairs.pricing.ui.PriceListListRoute
@@ -19,6 +22,9 @@ import com.ampairs.pricing.ui.geozone.GeoZoneFormScreen
 import com.ampairs.pricing.ui.geozone.GeoZoneListScreen
 import com.ampairs.pricing.ui.itemeditor.ItemEditorScreen
 import com.ampairs.pricing.ui.list.PriceListListScreen
+import com.ampairs.pricing.ui.offers.OfferBuilderScreen
+import com.ampairs.pricing.ui.offers.OfferPreviewScreen
+import com.ampairs.pricing.ui.offers.OffersListScreen
 import com.ampairs.pricing.ui.tester.PriceTesterScreen
 import com.ampairs.pricing.ui.wizard.PriceListWizardScreen
 
@@ -35,6 +41,30 @@ fun pricingEntryProvider(
             onOpenTester = { backStack.add(PriceTesterRoute) },
             onOpenLists = { backStack.add(PriceListListRoute) },
             onOpenZones = { backStack.add(GeoZoneListRoute) },
+            onOpenOffers = { backStack.add(OffersListRoute) },
+            modifier = Modifier,
+        )
+    }
+
+    is OffersListRoute -> NavEntry(key) {
+        OffersListScreen(
+            onOfferClick = { id -> backStack.add(OfferPreviewRoute(id)) },
+            onAddOffer = { backStack.add(OfferBuilderRoute()) },
+            modifier = Modifier,
+        )
+    }
+
+    is OfferBuilderRoute -> NavEntry(key) {
+        OfferBuilderScreen(
+            offerId = key.offerId,
+            onSaved = { backStack.removeLastOrNull() },
+            modifier = Modifier,
+        )
+    }
+
+    is OfferPreviewRoute -> NavEntry(key) {
+        OfferPreviewScreen(
+            offerId = key.offerId,
             modifier = Modifier,
         )
     }

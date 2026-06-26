@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material3.Card
@@ -47,6 +48,8 @@ import ampairsapp.feature.pricing.generated.resources.pricing_overview_hero_sub
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_hero_title
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_quick_lists
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_quick_lists_sub
+import ampairsapp.feature.pricing.generated.resources.pricing_overview_quick_offers
+import ampairsapp.feature.pricing.generated.resources.pricing_overview_quick_offers_sub
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_quick_zones
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_quick_zones_sub
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_retail
@@ -60,6 +63,7 @@ fun PricingOverviewScreen(
     onOpenTester: () -> Unit,
     onOpenLists: () -> Unit,
     onOpenZones: () -> Unit,
+    onOpenOffers: () -> Unit,
     viewModel: PricingOverviewViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -103,6 +107,14 @@ fun PricingOverviewScreen(
                 title = stringResource(Res.string.pricing_overview_quick_lists),
                 subtitle = stringResource(Res.string.pricing_overview_quick_lists_sub),
                 onClick = onOpenLists,
+            )
+        }
+        item {
+            QuickNavRow(
+                icon = Icons.Filled.LocalOffer,
+                title = stringResource(Res.string.pricing_overview_quick_offers),
+                subtitle = stringResource(Res.string.pricing_overview_quick_offers_sub),
+                onClick = onOpenOffers,
             )
         }
         item {

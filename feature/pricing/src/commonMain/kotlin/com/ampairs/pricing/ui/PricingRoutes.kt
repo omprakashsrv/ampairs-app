@@ -29,3 +29,12 @@ data object PriceListWizardRoute : NavKey
 
 @Serializable
 data class ItemEditorRoute(val priceListId: String, val itemId: String? = null) : NavKey
+
+@Serializable
+data object OffersListRoute : NavKey
+
+@Serializable
+data class OfferBuilderRoute(val offerId: String? = null) : NavKey
+
+@Serializable
+data class OfferPreviewRoute(val offerId: String) : NavKey
