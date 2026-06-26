@@ -57,6 +57,7 @@ interface AgentLlmModule {
                 llm = llm,
                 rule = ruleBased,
                 isLlmReady = { providerRegistry.isLlmReady() },
+                isLlmSelected = { providerRegistry.selectedChatModel() != null },
             )
         }
     }

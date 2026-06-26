@@ -159,6 +159,11 @@ fun ChatScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         viewModel.onEnterBackground()
     }
+    // Re-warm the engine on return so the chip recovers from LOADING and the model is ready before the
+    // next message (the retained ViewModel does not re-run its init on foreground).
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        viewModel.onEnterForeground()
+    }
 
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(uiState.messages.size) {

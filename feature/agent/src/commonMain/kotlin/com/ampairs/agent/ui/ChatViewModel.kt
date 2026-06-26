@@ -482,6 +482,17 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * Foreground hook (called from the screen's ON_START). Re-warms the engine after a background
+     * unload so the chip recovers from LOADING → READY and the model is ready before the user's next
+     * message. The retained ViewModel does NOT re-run [initModelManager] on return, so without this the
+     * chip stayed stuck at LOADING. [ensureEngineLoaded] no-ops when already READY/LOADING, retries a
+     * prior FAILED, and reloads when the background policy reset us to UNKNOWN.
+     */
+    fun onEnterForeground() {
+        viewModelScope.launch { ensureEngineLoaded() }
+    }
+
     /** Recompute the chip + sheet rows from the catalog, the active model, and live install status. */
     private fun rebuildModelUi(statuses: Map<String, ModelInstallStatus>) {
         val active = activeModel
