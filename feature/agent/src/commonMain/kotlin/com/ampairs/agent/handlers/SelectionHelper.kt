@@ -30,7 +30,7 @@ object SelectionHelper {
      * - **Multiple matches:** returns Selection for the user to pick
      * - **No matches:** returns NeedsInput asking for clarification
      */
-    fun <T> resolveWithSelection(
+    fun resolveWithSelection(
         candidates: List<SelectionOption>,
         question: String,
         paramName: String,
