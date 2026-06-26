@@ -72,6 +72,8 @@
     <string name="agent_settings_llm">AI model</string>
     <string name="agent_settings_none">Not available on this platform</string>
     <string name="agent_settings_manage_models">Manage models</string>
+    <string name="agent_settings_telemetry">Improve the assistant</string>
+    <string name="agent_settings_telemetry_desc">Share your chats with us to improve the assistant. Off by default.</string>
     <string name="agent_adapter_device">Device (built-in)</string>
     <string name="agent_adapter_whisper">Whisper (offline)</string>
 </resources>

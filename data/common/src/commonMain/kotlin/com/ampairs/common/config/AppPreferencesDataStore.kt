@@ -138,6 +138,13 @@ interface AppPreferencesDataStore {
     suspend fun setLlmModelDownloadConsent(granted: Boolean)
 
     /**
+     * Whether the user opted in to uploading assistant chat transcripts to the backend for quality
+     * improvement. Defaults **false** (opt-in). App-wide (not per-workspace).
+     */
+    fun getChatTelemetryEnabled(): Flow<Boolean>
+    suspend fun setChatTelemetryEnabled(enabled: Boolean)
+
+    /**
      * The on-device AI model the user explicitly chose in the model manager, by
      * `ModelDescriptor.id`. `null` = no explicit choice; selection falls back to the RAM-gated
      * auto-pick. App-wide (not per-workspace).

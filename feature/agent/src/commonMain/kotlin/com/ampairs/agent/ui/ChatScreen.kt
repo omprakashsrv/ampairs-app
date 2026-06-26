@@ -48,6 +48,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -125,6 +126,8 @@ import ampairsapp.feature.agent.generated.resources.agent_settings_manage_models
 import ampairsapp.feature.agent.generated.resources.agent_settings_mic
 import ampairsapp.feature.agent.generated.resources.agent_settings_none
 import ampairsapp.feature.agent.generated.resources.agent_settings_stt
+import ampairsapp.feature.agent.generated.resources.agent_settings_telemetry
+import ampairsapp.feature.agent.generated.resources.agent_settings_telemetry_desc
 import ampairsapp.feature.agent.generated.resources.agent_settings_title
 import ampairsapp.feature.agent.generated.resources.agent_settings_tts
 import com.ampairs.agent.speech.SpeechAdapterOption
@@ -292,6 +295,8 @@ fun ChatScreen(
                 whisperModels = uiState.whisperModels,
                 micDevices = uiState.micDevices,
                 selectedMicId = uiState.selectedMicId,
+                telemetryEnabled = uiState.telemetryEnabled,
+                onToggleTelemetry = viewModel::onToggleTelemetry,
                 onSelectMicDevice = viewModel::onSelectMicDevice,
                 onSelectStt = viewModel::onSelectSttAdapter,
                 onSelectTts = viewModel::onSelectTtsAdapter,
@@ -663,6 +668,8 @@ private fun AssistantSettingsSheet(
     whisperModels: List<WhisperModelUi>,
     micDevices: List<SpeechAdapterOption>,
     selectedMicId: String?,
+    telemetryEnabled: Boolean,
+    onToggleTelemetry: (Boolean) -> Unit,
     onSelectMicDevice: (String) -> Unit,
     onSelectStt: (String) -> Unit,
     onSelectTts: (String) -> Unit,
@@ -729,6 +736,22 @@ private fun AssistantSettingsSheet(
                         Text(stringResource(Res.string.agent_settings_manage_models))
                     }
                 }
+            }
+
+            // Opt-in chat telemetry (default OFF): upload transcripts to improve the assistant.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(Res.string.agent_settings_telemetry),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        stringResource(Res.string.agent_settings_telemetry_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = telemetryEnabled, onCheckedChange = onToggleTelemetry)
             }
         }
     }

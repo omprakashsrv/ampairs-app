@@ -13,6 +13,7 @@ import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.AgentStreamEvent
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.AgentResponse
+import com.ampairs.agent.data.api.ChatLogRequest
 import com.ampairs.agent.data.repository.ChatHistoryRepository
 import com.ampairs.agent.llm.LlmEngine
 import com.ampairs.agent.llm.ModelCatalogProvider
@@ -29,6 +30,7 @@ import com.ampairs.agent.speech.SttEvent
 import com.ampairs.agent.speech.TextToSpeech
 import com.ampairs.agent.speech.whisper.AudioInputDeviceProvider
 import com.ampairs.agent.speech.whisper.WhisperModelRegistry
+import com.ampairs.agent.telemetry.ChatTelemetryRecorder
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.config.AppPreferencesDataStore
@@ -39,6 +41,8 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -94,6 +98,8 @@ data class ChatUiState(
     val micDevices: List<SpeechAdapterOption> = emptyList(),
     /** Selected mic device id (the mixer name); null → system default. */
     val selectedMicId: String? = null,
+    /** Opt-in: upload chat transcripts to the backend for quality improvement (default OFF). */
+    val telemetryEnabled: Boolean = false,
 )
 
 /** One Whisper model-size row in the settings sheet (shown only when the Whisper STT engine is active). */
@@ -219,7 +225,15 @@ class ChatViewModel(
     private val appPreferences: AppPreferencesDataStore,
     private val actionRegistry: ActionRegistry,
     private val chatHistoryRepository: ChatHistoryRepository,
+    private val telemetryRecorder: ChatTelemetryRecorder,
 ) : ViewModel() {
+
+    /** Stable id grouping this chat session's telemetry turns (opt-in). */
+    private val telemetrySessionId: String = UidGenerator.generateUid("SESS")
+
+    /** Mirror of the opt-in telemetry preference, read in [recordTelemetry] without suspending. */
+    @Volatile
+    private var telemetryEnabled: Boolean = false
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -263,6 +277,12 @@ class ChatViewModel(
         observeMicDevices()
         initModelManager()
         maybeOfferModelDownload()
+        appPreferences.getChatTelemetryEnabled()
+            .onEach { enabled ->
+                telemetryEnabled = enabled
+                _uiState.update { it.copy(telemetryEnabled = enabled) }
+            }
+            .launchIn(viewModelScope)
     }
 
     /** Load the selectable mic devices + track the selection (Desktop only; inert elsewhere). */
@@ -603,8 +623,33 @@ class ChatViewModel(
      */
     private suspend fun runAssistantTurn(text: String): String? {
         val engine = runCatching { providerRegistry.engineOrNull() }.getOrNull()
-        return if (engine != null && engine.supportsToolCalling) streamChat(text, engine)
+        val reply = if (engine != null && engine.supportsToolCalling) streamChat(text, engine)
         else processWithOrchestrator(text)
+        recordTelemetry(text, reply)
+        return reply
+    }
+
+    /**
+     * Opt-in telemetry: record one completed turn (user + assistant reply) for backend upload. Gated
+     * by the user's preference (default OFF); fire-and-forget via the AppScope recorder. Error/empty
+     * turns (null reply) are skipped. Shared by the text and voice paths (both call [runAssistantTurn]).
+     */
+    @OptIn(ExperimentalTime::class)
+    private fun recordTelemetry(userText: String, assistantText: String?) {
+        if (!telemetryEnabled || assistantText.isNullOrBlank()) return
+        val entry = ChatLogRequest(
+            sessionId = telemetrySessionId,
+            userMessage = userText,
+            assistantMessage = assistantText,
+            modelId = _uiState.value.modelBar.modelName.ifBlank { null },
+            clientTimestamp = Clock.System.now().toEpochMilliseconds(),
+        )
+        viewModelScope.launch { telemetryRecorder.record(entry) }
+    }
+
+    /** Toggle the opt-in chat-telemetry preference (Assistant settings). */
+    fun onToggleTelemetry(enabled: Boolean) {
+        viewModelScope.launch { appPreferences.setChatTelemetryEnabled(enabled) }
     }
 
     /** Stop an in-flight streaming reply: cancels the flow, whose awaitClose calls cancelProcess(). */
