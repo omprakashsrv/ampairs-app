@@ -77,3 +77,55 @@ App KMP build requires a **JetBrains-vendor JDK toolchain** that the egress poli
   tests pass, so a green coverage comment = the build/tests passed.
 - **Backend** (`ampairs`): builds + tests locally with the system JDK 21 — run
   `./gradlew :agent:compileKotlin :agent:test` before pushing.
+
+---
+
+## Rule 7: The assistant's data-query (text-to-SQL) path — how it works + how to extend it
+
+The assistant answers data questions ("how many customers", "total sales this month", "top products")
+via a **SAFE_QUERY** path: the on-device LLM emits a read-only `SELECT` for ONE module, which is
+validated and run on a Room **reader** connection. Two intent kinds reach the DB:
+- **Actions** (`ResolvedIntent.Action`) — a fixed set of named CRUD/COUNT handlers per module.
+- **Queries** (`ResolvedIntent.SafeQuery`) — free-form SELECT for arbitrary counts/sums/averages/
+  filters/group-by. This is what gives "very large" coverage.
+
+**Pipeline:** `LlmIntentResolver` (intent=query → `SafeQuery`) → `AgentOrchestrator` →
+`SafeQueryService` (looks up the module's `ModuleQuerySchema`, validates with `SafeSqlValidator`
+— SELECT-only, single-statement, allow-listed tables, enforced LIMIT — then runs the module's
+`ModuleQueryExecutor.executeReadOnly` on a reader connection). Files: `feature/agent/.../query/*`,
+`feature/agent/.../offline/LlmIntentResolver.kt`, `feature/agent/.../llm/{AgentSchemaBuilder,OutputSchema}.kt`.
+
+**The trap that hid this for a long time:** the whole engine existed but was **dead code** — nothing
+emitted `SafeQuery`. The LLM's `OutputSchema`/prompt only allowed `intent=action|conversation|clarify`
+(no `query` intent, no `sql` field), so it could never request a query. Activating it required adding
+the `query` intent + `sql` field to `OutputSchema` (JSON-schema **and** GBNF), rendering each module's
+table/column schema into `AgentSchemaBuilder.systemPrompt`, parsing `intent=query` in
+`LlmIntentResolver`, and injecting the `Map<String, ModuleQuerySchema>` into the resolver via
+`AgentLlmModule`. Lesson: a query path is only as live as what the model is *told it can emit* — the
+constrained `OutputSchema` + system prompt are the gate, not just the executor map.
+
+**To make a NEW module queryable (mechanical, ~2 files, no central wiring):**
+1. `feature/{m}/.../agent/{M}QueryExecutor.kt` — `@Inject @ContributesIntoMap(WorkspaceScope::class)
+   @QueryExecutorKey("{m}")`, inject the module's Room DB, copy the `useReaderConnection { usePrepared }`
+   body verbatim from `CustomerQueryExecutor`.
+2. `feature/{m}/.../agent/{M}QuerySchemaModule.kt` — `@ContributesTo(WorkspaceScope::class)` +
+   `@Provides @IntoMap @QuerySchemaKey("{m}")` returning a `ModuleQuerySchema` of curated tables/columns.
+The injected schema map auto-feeds the prompt + moduleName enum — no edit to AgentSchemaBuilder/
+SafeQueryService needed. Reference: customer/product/invoice/inventory (original 4) + order, payment,
+unit, tax, business, subscription, ecom (added together).
+
+**Schema-authoring rules (each is a real failure mode):**
+- Use the **exact Room column name** (the `@ColumnInfo(name=...)` value, else the property name). The
+  validator only checks *table* names, so a wrong/omitted column isn't caught until runtime → the
+  executor throws "no such column" → `SafeQueryOutcome.Failed`. Source columns from the actual `@Entity`.
+- **Omit** internal columns (`synced`, `active`/soft-delete, audit) and JSON blobs — keeps the prompt
+  small and stops the model querying plumbing.
+- Document **units in the column description** when storage ≠ display (e.g. payment `*_minor` is paise →
+  divide by 100); the model reads these descriptions.
+- Each query hits **one module's DB** — cross-module joins are impossible by construction. "Sales by
+  customer name" (invoice⨝customer) can't be one query.
+
+**Hard dependency:** SQL is generated **only** by the LLM resolver — the rule-based fallback can't.
+So the data-query path needs a chat model loaded (RAM ≥ 3 GB per `RamTiers`). With no model, only the
+hardcoded named actions work. Accuracy also tracks model size (tiny models write iffy SQL); the
+SELECT-only + allow-list + LIMIT + reader-connection guardrails keep it *safe* regardless.
