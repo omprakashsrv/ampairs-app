@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Voice input for the assistant (FR-008). Merged into the host app manifest. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+      LiteRT-LM (T025) declares minSdk 31, but the app stays minSdk 24. The on-device LLM is an
+      optional, capability-gated enhancement: LiteRtLmBackend.supports() requires API >= 31 at
+      runtime, so the litert-lm engine is never instantiated on older devices (they fall back to the
+      rule-based resolver). overrideLibrary lets the manifest merge succeed without raising the app
+      floor; the native lib simply ships unused on Android < 12.
+    -->
+    <uses-sdk tools:overrideLibrary="com.google.ai.edge.litertlm" />
+
+    <!--
+      On-device LLM GPU acceleration (LiteRT-LM). On Android 12+ (API 31+) the dynamic linker blocks
+      access to vendor native libraries unless the app declares them here. Without libOpenCL.so the
+      GPU delegate can't reach OpenCL ("OpenCL not supported on this platform"), falls back to the
+      OpenGL delegate, and engine init fails — so the model never loads on GPU. Declaring these (all
+      required="false", matching Google's AI Edge Gallery) lets LiteRT-LM use the OpenCL GPU backend
+      where present; on devices/Android versions without them they're simply ignored.
+    -->
+    <application>
+        <uses-native-library android:name="libvndksupport.so" android:required="false" />
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
+        <uses-native-library android:name="libcdsprpc.so" android:required="false" />
+        <uses-native-library android:name="libedgetpu_litert.so" android:required="false" />
+    </application>
+</manifest>

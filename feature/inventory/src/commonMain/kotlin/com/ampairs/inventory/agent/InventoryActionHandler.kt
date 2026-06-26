@@ -7,15 +7,21 @@ import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.ParameterType
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import com.ampairs.inventory.data.InventoryDataService
 import com.ampairs.inventory.data.repository.InventoryItemRepository
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.first
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("inventory")
 class InventoryActionHandler(
     private val inventoryItemRepository: InventoryItemRepository,
     private val inventoryDataService: InventoryDataService,
+    private val agentDao: InventoryAgentDao,
 ) : ActionHandler {
 
     override val moduleName = "inventory"
@@ -44,12 +50,12 @@ class InventoryActionHandler(
 
     private suspend fun countInventory(params: Map<String, String>): ActionResult {
         val query = params["query"]
-        val items = if (query != null) {
-            inventoryItemRepository.searchItems(query).first()
+        val count = if (query != null) {
+            inventoryItemRepository.searchItems(query).first().size
         } else {
-            inventoryItemRepository.observeItems().first()
+            agentDao.countActive()
         }
-        return ActionResult.Success("Total inventory items: ${items.size}")
+        return ActionResult.Success("Total inventory items: $count")
     }
 
     private suspend fun getProductInventory(params: Map<String, String>): ActionResult {

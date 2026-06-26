@@ -1,48 +1,44 @@
 package com.ampairs.agent.core
 
 import com.ampairs.common.agent.ActionDescriptor
-import com.ampairs.common.agent.ActionHandlerProvider
+import com.ampairs.common.agent.ActionHandler
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
 import dev.zacsweers.metro.Inject
 
 /**
- * Central registry that collects all ActionHandlerProviders.
+ * Central registry of all module [ActionHandler]s.
  *
- * DI-agnostic: this class has zero imports from any DI framework.
- * Modules register via [register] — works from Koin, Dagger, or manual init.
+ * Handlers are contributed via Metro multibinding — each handler is annotated
+ * `@ContributesIntoMap(WorkspaceScope::class)` + `@ActionHandlerKey("<module>")`, and Metro
+ * assembles them into the `Map<String, ActionHandler>` injected here. Adding a new module's handler
+ * therefore requires no change to this class.
  *
- * Handlers are instantiated lazily — only when their module is first dispatched.
+ * Resolved inside the WorkspaceScope graph (its handlers depend on workspace-scoped repositories),
+ * so a fresh registry with the current workspace's handlers is created per workspace session.
  */
 @Inject
-class ActionRegistry {
+class ActionRegistry(
+    private val handlers: Map<String, ActionHandler>,
+) {
 
-    private val providers = mutableMapOf<String, ActionHandlerProvider>()
-
-    fun register(provider: ActionHandlerProvider) {
-        providers[provider.moduleName] = provider
-    }
-
-    /** All supported actions across all modules (metadata only, no instantiation). */
+    /** All supported actions across all registered modules. */
     fun getAllActions(): List<ActionDescriptor> =
-        providers.values.flatMap { it.supportedActions }
+        handlers.values.flatMap { it.supportedActions }
 
     /** All registered module names. */
-    fun getModuleNames(): List<String> = providers.keys.toList()
+    fun getModuleNames(): List<String> = handlers.keys.toList()
 
-    /** Find the provider for a specific module. */
-    fun getProvider(moduleName: String): ActionHandlerProvider? = providers[moduleName]
+    /** Find the handler for a specific module, if registered. */
+    fun getHandler(moduleName: String): ActionHandler? = handlers[moduleName]
 
-    /**
-     * Execute an action by routing to the correct handler.
-     * The handler is lazily instantiated on first use.
-     */
+    /** Execute an action by routing to the correct handler. */
     suspend fun dispatch(action: AgentAction): ActionResult {
-        val provider = providers[action.moduleName]
+        val handler = handlers[action.moduleName]
             ?: return ActionResult.Error("Module '${action.moduleName}' is not available.")
 
         return try {
-            provider.handler.execute(action)
+            handler.execute(action)
         } catch (e: Exception) {
             ActionResult.Error(
                 "Failed to execute ${action.actionType} on ${action.moduleName}: ${e.message}"
@@ -50,20 +46,15 @@ class ActionRegistry {
         }
     }
 
-    /** Evict a cached handler to free memory. */
-    fun unloadModule(moduleName: String) {
-        providers.remove(moduleName)
-    }
-
     /**
-     * Generate a capabilities summary for the LLM system prompt.
-     * This tells the LLM what actions are available.
+     * Capabilities summary for an LLM system prompt — tells the model which actions are available.
+     * Consumed by the on-device intent resolver (Phase 2).
      */
     fun generateCapabilitiesPrompt(): String = buildString {
         appendLine("Available actions:")
-        providers.values.forEach { provider ->
-            appendLine("\nModule: ${provider.moduleName}")
-            provider.supportedActions.forEach { action ->
+        handlers.values.forEach { handler ->
+            appendLine("\nModule: ${handler.moduleName}")
+            handler.supportedActions.forEach { action ->
                 appendLine("  - ${action.actionType}: ${action.description}")
                 action.parameters.forEach { param ->
                     val req = if (param.required) "required" else "optional"

@@ -16,6 +16,7 @@ fun agentEntryProvider(
 ): NavEntry<NavKey>? = when (key) {
     is Route.Agent -> NavEntry(key) {
         ChatScreen(
+            onNavigateBack = { backStack.removeLastOrNull() },
             onNavigateToRoute = { routeData ->
                 when {
                     routeData.containsKey("customerId") -> {

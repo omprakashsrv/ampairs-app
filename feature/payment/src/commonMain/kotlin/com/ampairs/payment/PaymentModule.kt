@@ -1,6 +1,7 @@
 package com.ampairs.payment
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.payment.agent.PaymentAgentDao
 import com.ampairs.payment.data.db.PaymentRoomDatabase
 import com.ampairs.payment.data.db.dao.AdjustmentVoucherDao
 import com.ampairs.payment.data.db.dao.LedgerEntryDao
@@ -27,5 +28,8 @@ interface PaymentDaoModule {
 
         @Provides
         fun provideAdjustmentVoucherDao(db: PaymentRoomDatabase): AdjustmentVoucherDao = db.adjustmentVoucherDao()
+
+        @Provides
+        fun providePaymentAgentDao(db: PaymentRoomDatabase): PaymentAgentDao = db.paymentAgentDao()
     }
 }

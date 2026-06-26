@@ -25,10 +25,8 @@ annotation class OnlineIntentResolver
 @ContributesTo(AppScope::class)
 interface AgentModule {
     companion object {
-        @Provides
-        @OfflineIntentResolver
-        fun provideOfflineIntentResolver(): IntentResolver = RuleBasedIntentResolver()
-
+        // @OfflineIntentResolver is bound in WorkspaceScope (AgentLlmModule) — it composes the
+        // on-device LlmIntentResolver (via ProviderRegistry) with the rule-based fallback (T030).
         @Provides
         @OnlineIntentResolver
         fun provideOnlineIntentResolver(): IntentResolver = RuleBasedIntentResolver()

@@ -1,6 +1,7 @@
 package com.ampairs.product
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.product.agent.ProductAgentDao
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.db.ProductRoomDatabase
@@ -19,6 +20,9 @@ interface ProductDaoModule {
     companion object {
         @Provides
         fun provideProductDao(db: ProductRoomDatabase): ProductDao = db.productDao()
+
+        @Provides
+        fun provideProductAgentDao(db: ProductRoomDatabase): ProductAgentDao = db.productAgentDao()
 
         @Provides
         fun provideProductVariantDao(db: ProductRoomDatabase): ProductVariantDao = db.productVariantDao()

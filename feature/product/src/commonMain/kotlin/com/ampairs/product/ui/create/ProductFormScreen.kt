@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -25,6 +26,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.form.render.ConfigAttributesSection
+import com.ampairs.form.ui.FormAgentChatDialog
+import com.ampairs.form.ui.FormAgentViewModel
 import androidx.window.core.layout.WindowSizeClass
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import com.ampairs.product.domain.Group
@@ -50,6 +53,13 @@ fun ProductFormScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // AI form assistant: speak the product details and let the on-device model fill the fields.
+    val formAgent = assistedMetroViewModel<FormAgentViewModel, FormAgentViewModel.Factory>(key = "product") { create("product") }
+    var showAssistant by remember { mutableStateOf(false) }
+    LaunchedEffect(formAgent) {
+        formAgent.fills.collect { fill -> viewModel.updateField(fill.fieldKey, fill.value) }
+    }
+
     LaunchedEffect(productId) {
         if (productId != null) {
             viewModel.loadProduct()
@@ -63,6 +73,12 @@ fun ProductFormScreen(
         TopAppBar(
             title = { Text(if (productId == null) newProductTitle else editProductTitle) },
             actions = {
+                IconButton(onClick = { showAssistant = true }) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = stringResource(Res.string.prod_ai_fill),
+                    )
+                }
                 TextButton(
                     onClick = { viewModel.saveProduct { onSaveSuccess() } },
                     enabled = uiState.canSave && !uiState.isSaving
@@ -75,6 +91,14 @@ fun ProductFormScreen(
                 }
             }
         )
+
+        if (showAssistant) {
+            FormAgentChatDialog(
+                entityType = "product",
+                viewModel = formAgent,
+                onDismiss = { showAssistant = false },
+            )
+        }
 
         when {
             uiState.isLoading -> {
