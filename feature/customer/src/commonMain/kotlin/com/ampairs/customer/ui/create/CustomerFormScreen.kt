@@ -130,6 +130,7 @@ import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.formwidgets.location.LocationService
 import com.ampairs.formwidgets.widget.LocalContactImportHandler
 import com.ampairs.form.render.LocalFormEntityUid
+import com.ampairs.form.ui.FormAgentChatBubble
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_GROUP
 import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
@@ -177,6 +178,7 @@ fun CustomerFormScreen(
             }
         )
 
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
         when {
             uiState.isLoading -> {
                 Box(
@@ -239,6 +241,15 @@ fun CustomerFormScreen(
                 )
                 }
             }
+        }
+
+        // AI assistant: describe the customer in plain words and let the on-device model
+        // predict values for the matching form fields (spec 011 / agentic form fill).
+        FormAgentChatBubble(
+            entityType = "customer",
+            onFieldFill = { fieldKey, value -> viewModel.updateField(fieldKey, value) },
+            modifier = Modifier.align(Alignment.TopEnd),
+        )
         }
     }
 }

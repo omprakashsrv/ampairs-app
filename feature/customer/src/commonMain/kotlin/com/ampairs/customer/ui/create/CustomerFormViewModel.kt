@@ -354,6 +354,39 @@ class CustomerFormViewModel(
         }
     }
 
+    /**
+     * Apply a single field value predicted by the form assistant (keyed by the form-schema `fieldKey`).
+     * Standard keys map to entity columns; anything else is stored as a custom attribute. Accepts both
+     * camelCase and snake_case keys so it is robust to the schema's serialized naming. Reuses
+     * [validateForm] so assistant fills get the same inline validation as manual edits.
+     */
+    fun updateField(fieldKey: String, value: String) {
+        val current = _uiState.value.formState
+        val updated = when (fieldKey) {
+            "name" -> current.copy(name = value)
+            "email" -> current.copy(email = value)
+            "phone" -> current.copy(phone = value)
+            "landline" -> current.copy(landline = value)
+            "refId", "ref_id" -> current.copy(refId = value)
+            "gstNumber", "gst_number" -> current.copy(gstNumber = value)
+            "panNumber", "pan_number" -> current.copy(panNumber = value)
+            "creditLimit", "credit_limit" -> current.copy(creditLimit = value.toDoubleOrNull() ?: current.creditLimit)
+            "creditDays", "credit_days" -> current.copy(creditDays = value.toIntOrNull() ?: current.creditDays)
+            "customerType", "customer_type" -> current.copy(customerType = value, customerTypeName = value)
+            "customerGroup", "customer_group" -> current.copy(customerGroup = value, customerGroupName = value)
+            "address" -> current.copy(address = value)
+            "street" -> current.copy(street = value)
+            "street2" -> current.copy(street2 = value)
+            "city" -> current.copy(city = value)
+            "state" -> current.copy(state = value)
+            "pincode" -> current.copy(pincode = value)
+            "country" -> current.copy(country = value)
+            "status" -> current.copy(status = value)
+            else -> current.copy(attributes = current.attributes + (fieldKey to value))
+        }
+        _uiState.update { it.copy(formState = validateForm(updated), error = null) }
+    }
+
     fun saveCustomer(onSuccess: () -> Unit) {
         val currentFormState = _uiState.value.formState
 
