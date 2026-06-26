@@ -5,6 +5,7 @@
     <string name="pricing_offerslist_empty_create">Create offer</string>
     <string name="pricing_offerslist_error_title">Couldn't load offers</string>
     <string name="pricing_offerslist_cd_delete">Delete offer</string>
+    <string name="pricing_offerslist_cd_preview">Preview offer</string>
     <string name="pricing_offerslist_reward_percent">%1$s%% off</string>
     <string name="pricing_offerslist_reward_percent_cap">%1$s%% off, max %2$s</string>
     <string name="pricing_offerslist_reward_flat">%1$s off</string>

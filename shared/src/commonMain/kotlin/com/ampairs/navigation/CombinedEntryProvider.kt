@@ -46,6 +46,7 @@ import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.pricing.ui.PriceListListRoute
 import com.ampairs.pricing.ui.PricingHomeRoute
+import com.ampairs.pricing.ui.PricingShellRoute
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 
@@ -178,11 +179,11 @@ private fun mainRouteEntryProvider(
         }
     }
 
-    // Route.Pricing redirects to the Pricing overview dashboard
+    // Route.Pricing redirects to the Pricing & Offers 5-tab shell
     is Route.Pricing -> NavEntry(key) {
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
-            backStack.add(PricingHomeRoute)
+            backStack.add(PricingShellRoute)
         }
     }
 

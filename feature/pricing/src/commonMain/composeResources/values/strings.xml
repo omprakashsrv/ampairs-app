@@ -116,4 +116,11 @@
     <string name="pricing_overview_quick_zones_sub">Reusable geographies</string>
     <string name="pricing_overview_quick_offers">Offers</string>
     <string name="pricing_overview_quick_offers_sub">Promotions &amp; discounts</string>
+
+    <!-- 5-tab shell -->
+    <string name="pricing_shell_tab_overview">Overview</string>
+    <string name="pricing_shell_tab_lists">Lists</string>
+    <string name="pricing_shell_tab_offers">Offers</string>
+    <string name="pricing_shell_tab_zones">Zones</string>
+    <string name="pricing_shell_tab_tester">Tester</string>
 </resources>

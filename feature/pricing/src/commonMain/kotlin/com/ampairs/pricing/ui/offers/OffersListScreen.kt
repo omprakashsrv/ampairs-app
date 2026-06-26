@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -46,6 +47,7 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.pricing.generated.resources.Res
 import ampairsapp.feature.pricing.generated.resources.pricing_offerslist_cd_delete
+import ampairsapp.feature.pricing.generated.resources.pricing_offerslist_cd_preview
 import ampairsapp.feature.pricing.generated.resources.pricing_offerslist_empty_create
 import ampairsapp.feature.pricing.generated.resources.pricing_offerslist_empty_title
 import ampairsapp.feature.pricing.generated.resources.pricing_offerslist_error_title
@@ -67,6 +69,7 @@ import ampairsapp.feature.pricing.generated.resources.pricing_offerslist_window_
 fun OffersListScreen(
     onOfferClick: (String) -> Unit,
     onAddOffer: () -> Unit,
+    onPreview: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: OffersListViewModel = metroViewModel(),
 ) {
@@ -130,6 +133,7 @@ fun OffersListScreen(
                         OfferCard(
                             offer = offer,
                             onClick = { onOfferClick(offer.uid) },
+                            onPreview = { onPreview(offer.uid) },
                             onDelete = { viewModel.deleteOffer(offer.uid) },
                         )
                     }
@@ -144,6 +148,7 @@ fun OffersListScreen(
 private fun OfferCard(
     offer: Offer,
     onClick: () -> Unit,
+    onPreview: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -172,6 +177,14 @@ private fun OfferCard(
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                IconButton(onClick = onPreview, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Default.Science,
+                        contentDescription = stringResource(Res.string.pricing_offerslist_cd_preview),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {

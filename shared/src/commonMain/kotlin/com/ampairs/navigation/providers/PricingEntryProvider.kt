@@ -15,6 +15,7 @@ import com.ampairs.pricing.ui.PriceListListRoute
 import com.ampairs.pricing.ui.PriceListWizardRoute
 import com.ampairs.pricing.ui.PriceTesterRoute
 import com.ampairs.pricing.ui.PricingHomeRoute
+import com.ampairs.pricing.ui.PricingShellRoute
 import com.ampairs.pricing.ui.detail.PriceListDetailScreen
 import com.ampairs.pricing.ui.overview.PricingOverviewScreen
 import com.ampairs.pricing.ui.form.PriceListFormScreen
@@ -25,6 +26,7 @@ import com.ampairs.pricing.ui.list.PriceListListScreen
 import com.ampairs.pricing.ui.offers.OfferBuilderScreen
 import com.ampairs.pricing.ui.offers.OfferPreviewScreen
 import com.ampairs.pricing.ui.offers.OffersListScreen
+import com.ampairs.pricing.ui.shell.PricingShellScreen
 import com.ampairs.pricing.ui.tester.PriceTesterScreen
 import com.ampairs.pricing.ui.wizard.PriceListWizardScreen
 
@@ -36,6 +38,19 @@ fun pricingEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>,
 ): NavEntry<NavKey>? = when (key) {
+    is PricingShellRoute -> NavEntry(key) {
+        PricingShellScreen(
+            onPriceListClick = { id -> backStack.add(PriceListDetailRoute(id)) },
+            onAddPriceList = { backStack.add(PriceListWizardRoute) },
+            onZoneClick = { id -> backStack.add(GeoZoneFormRoute(id)) },
+            onAddZone = { backStack.add(GeoZoneFormRoute()) },
+            onOfferClick = { id -> backStack.add(OfferBuilderRoute(id)) },
+            onAddOffer = { backStack.add(OfferBuilderRoute()) },
+            onOfferPreview = { id -> backStack.add(OfferPreviewRoute(id)) },
+            modifier = Modifier,
+        )
+    }
+
     is PricingHomeRoute -> NavEntry(key) {
         PricingOverviewScreen(
             onOpenTester = { backStack.add(PriceTesterRoute) },
@@ -48,8 +63,9 @@ fun pricingEntryProvider(
 
     is OffersListRoute -> NavEntry(key) {
         OffersListScreen(
-            onOfferClick = { id -> backStack.add(OfferPreviewRoute(id)) },
+            onOfferClick = { id -> backStack.add(OfferBuilderRoute(id)) },
             onAddOffer = { backStack.add(OfferBuilderRoute()) },
+            onPreview = { id -> backStack.add(OfferPreviewRoute(id)) },
             modifier = Modifier,
         )
     }
