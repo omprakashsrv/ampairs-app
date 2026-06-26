@@ -5,6 +5,7 @@ import com.ampairs.common.database.createDatabase
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
+import com.ampairs.pricing.data.db.OffersDatabase
 import com.ampairs.pricing.data.db.PricingDatabase
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -21,6 +22,17 @@ interface PricingDesktopModule {
             closableRegistry: WorkspaceClosableRegistry,
         ): PricingDatabase = factory.createDatabase<PricingDatabase>(
             moduleName = "pricing",
+            workspaceSlug = config.workspaceSlug,
+        ).also { closableRegistry.register { it.close() } }
+
+        @Provides
+        @SingleIn(WorkspaceScope::class)
+        fun provideOffersDatabase(
+            factory: WorkspaceAwareDatabaseFactory,
+            config: WorkspaceConfig,
+            closableRegistry: WorkspaceClosableRegistry,
+        ): OffersDatabase = factory.createDatabase<OffersDatabase>(
+            moduleName = "offers",
             workspaceSlug = config.workspaceSlug,
         ).also { closableRegistry.register { it.close() } }
     }

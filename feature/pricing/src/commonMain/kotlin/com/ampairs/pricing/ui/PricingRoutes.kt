@@ -23,3 +23,9 @@ data class GeoZoneFormRoute(val geoZoneId: String? = null) : NavKey
 
 @Serializable
 data object PriceTesterRoute : NavKey
+
+@Serializable
+data object PriceListWizardRoute : NavKey
+
+@Serializable
+data class ItemEditorRoute(val priceListId: String, val itemId: String? = null) : NavKey

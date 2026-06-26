@@ -1,8 +1,10 @@
 package com.ampairs.pricing.di
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.pricing.data.db.OffersDatabase
 import com.ampairs.pricing.data.db.PricingDatabase
 import com.ampairs.pricing.data.db.dao.GeoZoneDao
+import com.ampairs.pricing.data.db.dao.OfferDao
 import com.ampairs.pricing.data.db.dao.PriceListDao
 import com.ampairs.pricing.data.db.dao.PriceListItemDao
 import dev.zacsweers.metro.ContributesTo
@@ -19,6 +21,9 @@ interface PricingDaoModule {
 
         @Provides
         fun provideGeoZoneDao(db: PricingDatabase): GeoZoneDao = db.geoZoneDao()
+
+        @Provides
+        fun provideOfferDao(db: OffersDatabase): OfferDao = db.offerDao()
     }
 }
 

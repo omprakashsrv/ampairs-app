@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pricing_geob_zone_name">Zone name</string>
+    <string name="pricing_geob_pincodes">Pincodes</string>
+    <string name="pricing_geob_pincodes_hint">paste many</string>
+    <string name="pricing_geob_add_pincode">Pincode</string>
+    <string name="pricing_geob_add">Add</string>
+    <string name="pricing_geob_states">States</string>
+    <string name="pricing_geob_add_state">Add state</string>
+    <string name="pricing_geob_state_hint">e.g. MH</string>
+    <string name="pricing_geob_test_title">Test a pincode</string>
+    <string name="pricing_geob_test_hint">Enter a pincode</string>
+    <string name="pricing_geob_in_zone">In zone</string>
+    <string name="pricing_geob_not_in_zone">Not in zone</string>
+    <string name="pricing_geob_test_in_msg">This pincode falls inside the zone.</string>
+    <string name="pricing_geob_test_out_msg">This pincode is not covered by the zone.</string>
+    <string name="pricing_geob_members_count">≈ %1$d members</string>
+    <string name="pricing_geob_cd_remove_pincode">Remove pincode</string>
+    <string name="pricing_geob_cd_remove_state">Remove state</string>
+    <string name="pricing_geob_cd_remove_range">Remove range</string>
+    <string name="pricing_geob_cancel">Cancel</string>
+    <string name="pricing_geob_save_zone">Save zone</string>
+    <string name="pricing_geob_not_found">Geo zone not found</string>
+    <string name="pricing_geob_name_required">Name is required</string>
+    <string name="pricing_geob_save_failed">Failed to save</string>
+</resources>

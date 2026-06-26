@@ -6,6 +6,7 @@ import com.ampairs.common.database.createAndroidDatabase
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
+import com.ampairs.pricing.data.db.OffersDatabase
 import com.ampairs.pricing.data.db.PricingDatabase
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -26,6 +27,20 @@ interface PricingAndroidModule {
             context = context,
             queryDispatcher = Dispatchers.IO,
             moduleName = "pricing",
+            workspaceSlug = config.workspaceSlug,
+        ).also { closableRegistry.register { it.close() } }
+
+        @Provides
+        @SingleIn(WorkspaceScope::class)
+        fun provideOffersDatabase(
+            factory: WorkspaceAwareDatabaseFactory,
+            context: Context,
+            config: WorkspaceConfig,
+            closableRegistry: WorkspaceClosableRegistry,
+        ): OffersDatabase = factory.createAndroidDatabase<OffersDatabase>(
+            context = context,
+            queryDispatcher = Dispatchers.IO,
+            moduleName = "offers",
             workspaceSlug = config.workspaceSlug,
         ).also { closableRegistry.register { it.close() } }
     }
