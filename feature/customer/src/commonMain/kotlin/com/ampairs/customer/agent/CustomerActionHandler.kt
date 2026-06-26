@@ -110,7 +110,7 @@ class CustomerActionHandler(
                     // Multiple matches: offer selection UI instead of asking user to type ID
                     val candidates = results.take(5).map { c ->
                         SelectionOption(
-                            id = c.uid,
+                            id = c.id,
                             label = c.name,
                             secondaryLabel = c.phone ?: c.city,
                         )

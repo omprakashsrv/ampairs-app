@@ -114,6 +114,7 @@ class AmpairsAgentToolSet(
                 mapOf("status" to "success", "result" to result.summary)
             }
             is ActionResult.NeedsInput -> mapOf("status" to "needs_input", "question" to result.question)
+            is ActionResult.Selection -> mapOf("status" to "needs_selection", "question" to result.question)
             is ActionResult.Error -> {
                 Logger.w(tag = "AgentLlm") { "Tool '${action.actionType}/${action.moduleName}' failed: ${result.message}" }
                 mapOf("status" to "error", "error" to result.message)
