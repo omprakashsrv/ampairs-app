@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.pricing.data.repository.OfferRepository
 import com.ampairs.pricing.domain.model.Offer
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -20,6 +24,7 @@ import kotlinx.coroutines.launch
 data class OffersListUiState(
     val offers: List<Offer> = emptyList(),
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
 )
 
@@ -28,6 +33,7 @@ data class OffersListUiState(
 @Inject
 class OffersListViewModel(
     private val repository: OfferRepository,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OffersListUiState())
@@ -35,6 +41,14 @@ class OffersListViewModel(
 
     init {
         observeOffers()
+        syncService.observeEntity(SyncEntity.OFFER)
+            .onEach { state -> _uiState.update { it.copy(isRefreshing = state?.status is SyncStatus.Syncing) } }
+            .launchIn(viewModelScope)
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.OFFER))
+    }
+
+    fun refresh() {
+        syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.OFFER))
     }
 
     fun deleteOffer(id: String) {

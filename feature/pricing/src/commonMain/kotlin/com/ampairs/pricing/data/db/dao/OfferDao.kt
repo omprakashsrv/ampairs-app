@@ -16,6 +16,9 @@ interface OfferDao {
     @Query("SELECT * FROM offers WHERE id = :id")
     suspend fun getOfferById(id: String): OfferEntity?
 
+    @Query("SELECT * FROM offers WHERE synced = 0")
+    suspend fun getUnsyncedOffers(): List<OfferEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOffer(offer: OfferEntity)
 

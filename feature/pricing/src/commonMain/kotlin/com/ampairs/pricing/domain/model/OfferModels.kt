@@ -1,5 +1,6 @@
 package com.ampairs.pricing.domain.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** Lifecycle of an offer/promotion. */
@@ -15,12 +16,12 @@ enum class OfferConditionType { NONE, CART_MIN, QUANTITY_MIN, FIRST_ORDER, COUPO
 enum class OfferRewardType { PERCENT, FLAT, BOGO, FREE_SHIPPING, FREE_GIFT, TIERED }
 
 /**
- * A promotion/offer that applies on top of resolved prices. Mirrors the design's offer builder.
+ * A promotion/offer that applies on top of resolved prices. Mirrors the design's offer builder and
+ * the backend `OfferResponse` field-for-field (global SNAKE_CASE on the wire → `@SerialName` here).
  *
- * NOTE: there is no backend offer resource yet, so offers are **local-only** (persisted in the
- * workspace-scoped OffersDatabase, no sync delegate). Money is held in minor units (paise/cents),
- * consistent with the price-list model. When the backend lands, add @SerialName mappings + a
- * SyncEntity.OFFER delegate; the domain shape is already wire-friendly.
+ * Serialized directly as both the pull row and the push body (the backend `OfferRequest` ignores the
+ * extra `created_at`/`updated_at`). Money is held in minor units (paise/cents), consistent with the
+ * price-list model. Synced via `SyncEntity.OFFER` / `OfferSyncDelegate`.
  */
 @Serializable
 data class Offer(
@@ -29,34 +30,34 @@ data class Offer(
     val channel: SalesChannel = SalesChannel.RETAIL,
     val status: OfferStatus = OfferStatus.DRAFT,
     val priority: Int = 0,
-    val startsAt: String? = null,
-    val endsAt: String? = null,
+    @SerialName("starts_at") val startsAt: String? = null,
+    @SerialName("ends_at") val endsAt: String? = null,
     // Targeting — same dimensions as a price list.
-    val customerGroupId: String? = null,
-    val customerType: String? = null,
-    val brandId: String? = null,
-    val categoryId: String? = null,
-    val geoZoneId: String? = null,
+    @SerialName("customer_group_id") val customerGroupId: String? = null,
+    @SerialName("customer_type") val customerType: String? = null,
+    @SerialName("brand_id") val brandId: String? = null,
+    @SerialName("category_id") val categoryId: String? = null,
+    @SerialName("geo_zone_id") val geoZoneId: String? = null,
     // Trigger / condition.
-    val conditionType: OfferConditionType = OfferConditionType.NONE,
-    val cartMinMinor: Long? = null,
-    val quantityMin: Double? = null,
-    val couponCode: String? = null,
-    val couponLimit: Int? = null,
+    @SerialName("condition_type") val conditionType: OfferConditionType = OfferConditionType.NONE,
+    @SerialName("cart_min_minor") val cartMinMinor: Long? = null,
+    @SerialName("quantity_min") val quantityMin: Double? = null,
+    @SerialName("coupon_code") val couponCode: String? = null,
+    @SerialName("coupon_limit") val couponLimit: Int? = null,
     // Reward.
-    val rewardType: OfferRewardType = OfferRewardType.PERCENT,
-    val rewardPercent: Double? = null,
-    val rewardFlatMinor: Long? = null,
-    val rewardCapMinor: Long? = null,
-    val bogoBuyQty: Int? = null,
-    val bogoGetQty: Int? = null,
+    @SerialName("reward_type") val rewardType: OfferRewardType = OfferRewardType.PERCENT,
+    @SerialName("reward_percent") val rewardPercent: Double? = null,
+    @SerialName("reward_flat_minor") val rewardFlatMinor: Long? = null,
+    @SerialName("reward_cap_minor") val rewardCapMinor: Long? = null,
+    @SerialName("bogo_buy_qty") val bogoBuyQty: Int? = null,
+    @SerialName("bogo_get_qty") val bogoGetQty: Int? = null,
     // Stacking & limits.
     val stackable: Boolean = false,
     val exclusive: Boolean = false,
-    val perCustomerLimit: Int? = null,
-    val totalLimit: Int? = null,
-    val usedCount: Int = 0,
+    @SerialName("per_customer_limit") val perCustomerLimit: Int? = null,
+    @SerialName("total_limit") val totalLimit: Int? = null,
+    @SerialName("used_count") val usedCount: Int = 0,
     val active: Boolean = true,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
 )

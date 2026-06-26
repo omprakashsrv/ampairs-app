@@ -2,6 +2,7 @@ package com.ampairs.pricing.data.api
 
 import com.ampairs.common.model.PageResponse
 import com.ampairs.pricing.domain.model.GeoZone
+import com.ampairs.pricing.domain.model.Offer
 import com.ampairs.pricing.domain.model.PriceList
 
 /**
@@ -43,4 +44,15 @@ interface PricingApi {
     ): PageResponse<GeoZone>
 
     suspend fun bulkUpdateGeoZones(geoZones: List<GeoZone>): List<GeoZone>
+
+    // ── offers / promotions ───────────────────────────────────────────────────────────────
+    suspend fun getOffersSync(
+        lastSync: String,
+        page: Int = 0,
+        size: Int = 100,
+        sortBy: String = "updatedAt",
+        sortDir: String = "ASC",
+    ): PageResponse<Offer>
+
+    suspend fun bulkUpdateOffers(offers: List<Offer>): List<Offer>
 }

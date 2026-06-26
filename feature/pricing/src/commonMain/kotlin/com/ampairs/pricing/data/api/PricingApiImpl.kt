@@ -9,6 +9,7 @@ import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 import com.ampairs.common.post
 import com.ampairs.pricing.domain.model.GeoZone
+import com.ampairs.pricing.domain.model.Offer
 import com.ampairs.pricing.domain.model.PriceList
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -102,5 +103,23 @@ class PricingApiImpl(
             client, ApiUrlBuilder.pricingUrl("v1/geo-zones/sync"), geoZones,
         )
         return response.data ?: throw Exception("Failed to bulk update geo zones")
+    }
+
+    override suspend fun getOffersSync(
+        lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String,
+    ): PageResponse<Offer> {
+        val response: Response<PageResponse<Offer>> = get(
+            client, ApiUrlBuilder.pricingUrl("v1/offers/sync"),
+            syncParams(lastSync, page, size, sortBy, sortDir),
+        )
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateOffers(offers: List<Offer>): List<Offer> {
+        val response: Response<List<Offer>> = post(
+            client, ApiUrlBuilder.pricingUrl("v1/offers/sync"), offers,
+        )
+        return response.data ?: throw Exception("Failed to bulk update offers")
     }
 }

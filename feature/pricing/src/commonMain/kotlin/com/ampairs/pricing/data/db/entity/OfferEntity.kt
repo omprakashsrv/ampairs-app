@@ -10,7 +10,8 @@ import com.ampairs.pricing.domain.model.SalesChannel
 
 /**
  * Room entity for an offer/promotion. The full [Offer] is stored as JSON in `payload_json`; a few
- * columns are denormalized for querying/sorting. Local-only (no sync) until a backend exists.
+ * columns are denormalized for querying/sorting. `synced = false` flags a local write that the
+ * [com.ampairs.pricing.sync.OfferSyncDelegate] still has to push to the server.
  */
 @Entity(
     tableName = "offers",
@@ -22,6 +23,7 @@ data class OfferEntity(
     @ColumnInfo(name = "channel") val channel: String,
     @ColumnInfo(name = "status") val status: String,
     @ColumnInfo(name = "active") val active: Boolean = true,
+    @ColumnInfo(name = "synced") val synced: Boolean = false,
     @ColumnInfo(name = "updated_at") val updatedAt: String? = null,
     @ColumnInfo(name = "payload_json") val payloadJson: String,
 )
