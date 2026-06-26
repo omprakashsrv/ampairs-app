@@ -27,7 +27,7 @@ paging-common = "3.5.0"
 image-loader = "1.10.0"
 splash-screen = "1.2.0"
 uuid = "0.8.4"
-grant = "2.2.0"
+grant = "2.2.1"
 adaptive = "1.2.0"
 kermit = "2.1.0"
 # Navigation 3 (new paradigm with user-owned back stack)
