@@ -759,11 +759,20 @@ class ChatViewModel(
         viewModelScope.launch { appPreferences.setAssistantReasoningEnabled(enabled) }
     }
 
-    /** Stop an in-flight streaming reply: cancels the flow, whose awaitClose calls cancelProcess(). */
+    /**
+     * Stop an in-flight reply. Cancelling the job tears down the flow (whose awaitClose calls
+     * cancelProcess) and aborts a cloud HTTP request. But some on-device runtimes don't honor coroutine
+     * cancellation of the native decode loop, so the model could keep generating ("offline never
+     * stops"). We therefore also force an immediate engine-level abort via [LlmEngine.resetChat], which
+     * cancels the in-flight generation and tears the conversation down. No-op for the cloud engine.
+     */
     fun stopGeneration() {
         streamJob?.cancel()
         streamJob = null
         _uiState.update { it.copy(isProcessing = false, streamingThought = null) }
+        providerRegistry.currentEngineOrNull()?.let { eng ->
+            viewModelScope.launch { runCatching { eng.resetChat() } }
+        }
     }
 
     private suspend fun processWithOrchestrator(text: String): String? {

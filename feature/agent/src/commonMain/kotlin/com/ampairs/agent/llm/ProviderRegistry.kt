@@ -133,6 +133,12 @@ class ProviderRegistry(
     fun hasLlmBackend(): Boolean = backends.isNotEmpty()
 
     /**
+     * The already-created engine, if any, **without** triggering a load. For abort/stop paths that must
+     * act on whatever is currently running (user tapped Stop) and must never kick off a fresh load.
+     */
+    fun currentEngineOrNull(): LlmEngine? = engine
+
+    /**
      * Drop the cached engine (closing it) so the next [engineOrNull] re-resolves [selectedChatModel]
      * and loads afresh. Called when the user switches/deletes the active model in the model manager.
      */
