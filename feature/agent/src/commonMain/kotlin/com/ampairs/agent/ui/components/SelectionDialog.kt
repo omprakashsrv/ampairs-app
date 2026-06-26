@@ -85,7 +85,7 @@ fun SelectionDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                itemsIndexed(options, key = { _, it -> it.id }) { index, option ->
+                itemsIndexed(options, key = { index, option -> option.id }) { index, option ->
                     SelectionOptionRow(
                         number = index + 1,
                         option = option,
