@@ -285,7 +285,7 @@ fun ChatScreen(
         // Selection dialog for ambiguous parameters (FR-017): user picks one option, action continues
         uiState.pendingSelection?.let { selection ->
             SelectionDialog(
-                question = selection.paramName,  // e.g. "Which customer?"
+                question = selection.question,  // e.g. "Which customer?"
                 options = selection.options,
                 onSelect = viewModel::selectOption,
                 onDismiss = viewModel::cancelSelection,

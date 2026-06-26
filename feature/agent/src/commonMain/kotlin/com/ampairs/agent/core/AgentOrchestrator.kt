@@ -107,7 +107,7 @@ class AgentOrchestrator(
             pendingConfirmation = (result as? ActionResult.Confirm)?.pendingAction,
             // Surfaced so the ViewModel can render selection UI (buttons/list/voice prompt).
             pendingSelection = (result as? ActionResult.Selection)?.let {
-                PendingSelection(it.paramName, it.pendingAction, it.options)
+                PendingSelection(it.question, it.paramName, it.pendingAction, it.options)
             },
             amount = (result as? ActionResult.Confirm)?.amount ?: (result as? ActionResult.Success)?.amount,
             rows = (result as? ActionResult.Success)?.rows,
@@ -129,6 +129,7 @@ data class AgentResponse(
 )
 
 data class PendingSelection(
+    val question: String,  // e.g. "Which customer?"
     val paramName: String,  // e.g. "customer_id", "product_id"
     val pendingAction: AgentAction,  // The incomplete action awaiting selection
     val options: List<SelectionOption>,  // Candidates to choose from
