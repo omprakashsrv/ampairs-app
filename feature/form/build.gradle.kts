@@ -81,6 +81,10 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+compose.resources {
+    packageOfResClass = "ampairsapp.feature.form.generated.resources"
+}
+
 dependencies {
     add("kspAndroid", libs.room.compiler)
     add("kspDesktop", libs.room.compiler)
