@@ -110,6 +110,18 @@ interface PaymentVoucherDao {
     @Query("SELECT * FROM payment_voucher WHERE synced = 0")
     suspend fun getUnsynced(): List<PaymentVoucherEntity>
 
+    // Assistant reports: total payments by direction ("RECEIVED"/"PAID"), optionally within a
+    // half-open period. `voucher_date` is stored as an ISO-8601 instant (Instant.toString()), so the
+    // period bounds must also be ISO instants — lexical comparison over ISO-8601 UTC is correct order.
+    @Query("SELECT COALESCE(SUM(total_minor), 0) FROM payment_voucher WHERE direction = :direction AND active = 1")
+    suspend fun sumByDirection(direction: String): Long
+
+    @Query(
+        "SELECT COALESCE(SUM(total_minor), 0) FROM payment_voucher " +
+            "WHERE direction = :direction AND active = 1 AND voucher_date >= :start AND voucher_date < :end",
+    )
+    suspend fun sumByDirectionBetween(direction: String, start: String, end: String): Long
+
     @Query("UPDATE payment_voucher SET synced = 1 WHERE uid = :uid")
     suspend fun markSynced(uid: String)
 
