@@ -3,7 +3,9 @@ package com.ampairs.pricing.ui.overview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.pricing.data.repository.OfferRepository
 import com.ampairs.pricing.data.repository.PriceListRepository
+import com.ampairs.pricing.domain.model.OfferStatus
 import com.ampairs.pricing.domain.model.PriceListStatus
 import com.ampairs.pricing.domain.model.SalesChannel
 import dev.zacsweers.metro.ContributesIntoMap
@@ -28,6 +30,7 @@ data class PricingOverviewUiState(
     val retailActiveCount: Int = 0,
     val wholesaleActiveCount: Int = 0,
     val geoZoneCount: Int = 0,
+    val activeOfferCount: Int = 0,
 )
 
 @ContributesIntoMap(WorkspaceScope::class)
@@ -35,13 +38,18 @@ data class PricingOverviewUiState(
 @Inject
 class PricingOverviewViewModel(
     private val repository: PriceListRepository,
+    private val offerRepository: OfferRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PricingOverviewUiState())
     val uiState: StateFlow<PricingOverviewUiState> = _uiState.asStateFlow()
 
     init {
-        combine(repository.observePriceLists(), repository.observeGeoZones()) { lists, zones ->
+        combine(
+            repository.observePriceLists(),
+            repository.observeGeoZones(),
+            offerRepository.observeOffers(),
+        ) { lists, zones, offers ->
             val active = lists.filter { it.status == PriceListStatus.ACTIVE }
             PricingOverviewUiState(
                 isLoading = false,
@@ -50,6 +58,7 @@ class PricingOverviewViewModel(
                 retailActiveCount = active.count { it.channel == SalesChannel.RETAIL },
                 wholesaleActiveCount = active.count { it.channel == SalesChannel.WHOLESALE },
                 geoZoneCount = zones.size,
+                activeOfferCount = offers.count { it.status == OfferStatus.ACTIVE },
             )
         }
             .onEach { state -> _uiState.update { state } }

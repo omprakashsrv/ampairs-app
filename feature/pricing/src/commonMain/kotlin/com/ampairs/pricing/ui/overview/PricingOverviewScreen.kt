@@ -55,6 +55,7 @@ import ampairsapp.feature.pricing.generated.resources.pricing_overview_quick_zon
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_retail
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_tile_active_lists
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_tile_geo_zones
+import ampairsapp.feature.pricing.generated.resources.pricing_overview_tile_offers
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_title
 import ampairsapp.feature.pricing.generated.resources.pricing_overview_wholesale
 
@@ -89,6 +90,13 @@ fun PricingOverviewScreen(
                     value = state.activeListCount,
                     label = stringResource(Res.string.pricing_overview_tile_active_lists),
                     onClick = onOpenLists,
+                    modifier = Modifier.weight(1f),
+                )
+                SummaryTile(
+                    icon = Icons.Filled.LocalOffer,
+                    value = state.activeOfferCount,
+                    label = stringResource(Res.string.pricing_overview_tile_offers),
+                    onClick = onOpenOffers,
                     modifier = Modifier.weight(1f),
                 )
                 SummaryTile(

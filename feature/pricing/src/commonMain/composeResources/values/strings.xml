@@ -106,6 +106,7 @@
     <string name="pricing_overview_hero_cta">Test a Price</string>
     <string name="pricing_overview_tile_active_lists">Active price lists</string>
     <string name="pricing_overview_tile_geo_zones">Geo zones</string>
+    <string name="pricing_overview_tile_offers">Active offers</string>
     <string name="pricing_overview_channel_split">Channel split</string>
     <string name="pricing_overview_active_lists_count">%1$d active lists</string>
     <string name="pricing_overview_retail">Retail</string>
