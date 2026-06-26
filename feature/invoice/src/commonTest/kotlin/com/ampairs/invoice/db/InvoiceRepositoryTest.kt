@@ -6,7 +6,9 @@ import com.ampairs.auth.domain.DeviceInfo
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerListItem
+import com.ampairs.invoice.db.dao.InvoiceCustomerSalesRow
 import com.ampairs.invoice.db.dao.InvoiceDao
+import com.ampairs.invoice.db.dao.InvoiceProductSalesRow
 import com.ampairs.invoice.db.dao.InvoiceItemDao
 import com.ampairs.invoice.db.entity.InvoiceEntity
 import com.ampairs.invoice.db.entity.InvoiceItemEntity
@@ -446,6 +448,14 @@ private class FakeInvoiceDao : InvoiceDao {
     override suspend fun getTotalTaxValue(): Double? = null
     override suspend fun getTotalTaxValueByCustomer(customerId: String): Double? = null
     override suspend fun getTotalTaxValueByDateRange(startDate: String, endDate: String): Double? = null
+    override suspend fun sumSalesBetween(start: String, end: String): Double? = null
+    override suspend fun averageInvoiceValue(): Double? = null
+    override suspend fun averageInvoiceValueBetween(start: String, end: String): Double? = null
+    override suspend fun countInvoicesBetween(start: String, end: String): Int = 0
+    override suspend fun topCustomers(limit: Int): List<InvoiceCustomerSalesRow> = emptyList()
+    override suspend fun topCustomersBetween(start: String, end: String, limit: Int): List<InvoiceCustomerSalesRow> = emptyList()
+    override suspend fun topProducts(limit: Int): List<InvoiceProductSalesRow> = emptyList()
+    override suspend fun topProductsBetween(start: String, end: String, limit: Int): List<InvoiceProductSalesRow> = emptyList()
     override suspend fun markAsSynced(id: String) {}
     override suspend fun updateStatus(id: String, status: String) {}
     override suspend fun softDelete(id: String) {}

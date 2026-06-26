@@ -428,6 +428,11 @@ private class FakeProductDao : ProductDao {
 
     override suspend fun countProducts(): Int = rows.value.size
 
+    override suspend fun countLowStock(): Int = 0
+    override suspend fun lowStockProducts(limit: Int): List<ProductEntity> = emptyList()
+    override suspend fun countOutOfStock(): Int = 0
+    override suspend fun inventoryValueAtCost(): Double = 0.0
+
     override suspend fun products(limit: Long, offset: Long): List<ProductEntity> = rows.value.values.toList()
 
     override suspend fun unSyncedProducts(): List<ProductEntity> = rows.value.values.filter { it.synced == 0 }
