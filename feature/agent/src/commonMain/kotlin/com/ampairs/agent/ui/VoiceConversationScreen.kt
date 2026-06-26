@@ -1,7 +1,9 @@
 package com.ampairs.agent.ui
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -128,7 +130,10 @@ fun VoiceConversationScreen(
     }
 }
 
-/** The mic orb: pulses while listening/speaking, spins while thinking, static otherwise. */
+/** Number of radiating sound-wave rings shown around the orb while listening/speaking. */
+private const val SOUND_WAVE_RINGS = 3
+
+/** The mic orb: radiates sound waves while listening/speaking, spins while thinking, static otherwise. */
 @Composable
 private fun MicOrb(phase: VoicePhase) {
     val active = phase == VoicePhase.Listening || phase == VoicePhase.Speaking
@@ -154,6 +159,27 @@ private fun MicOrb(phase: VoicePhase) {
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     Box(contentAlignment = Alignment.Center) {
+        // Radiating "sound wave" rings while the assistant is actually speaking (or the mic is open):
+        // three concentric circles expand outward and fade, so the orb visibly reacts to voice instead
+        // of only gently pulsing. Restarts staggered so a steady stream of waves emanates.
+        if (active) {
+            repeat(SOUND_WAVE_RINGS) { i ->
+                val ring by transition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(durationMillis = 1600, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart,
+                        initialStartOffset = StartOffset(i * (1600 / SOUND_WAVE_RINGS)),
+                    ),
+                )
+                Surface(
+                    shape = CircleShape,
+                    color = container.copy(alpha = (1f - ring) * 0.30f),
+                    modifier = Modifier.size(140.dp).scale(1f + ring * 0.9f),
+                ) {}
+            }
+        }
         Surface(
             shape = CircleShape,
             color = container,

@@ -139,6 +139,7 @@ import ampairsapp.feature.agent.generated.resources.agent_settings_tts
 import ampairsapp.feature.agent.generated.resources.agent_stt_models_title
 import com.ampairs.agent.speech.SpeechAdapterOption
 import com.ampairs.agent.ui.components.MessageBubble
+import com.ampairs.common.navigation.PlatformBackHandler
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -345,6 +346,10 @@ fun ChatScreen(
 
         // Full-screen hands-free voice conversation overlay (covers the chat while active).
         uiState.voiceMode?.let { voice ->
+            // System back closes only the overlay (returns to the chat) and stops any in-progress
+            // speech/mic — exitVoiceMode() cancels the loop and calls tts.stop()/stt.stop(). Without
+            // this, back popped the whole chat off the nav stack while the assistant kept talking.
+            PlatformBackHandler(enabled = true) { viewModel.exitVoiceMode() }
             VoiceConversationScreen(
                 state = voice,
                 onPauseToggle = viewModel::toggleVoicePause,
