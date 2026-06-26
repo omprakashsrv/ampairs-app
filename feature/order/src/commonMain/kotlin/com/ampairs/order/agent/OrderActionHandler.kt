@@ -11,7 +11,9 @@ import com.ampairs.common.agent.CONFIRMED_PARAM
 import com.ampairs.common.agent.DraftDocumentStore
 import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
+import com.ampairs.common.agent.SelectionOption
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.agent.handlers.SelectionHelper
 import com.ampairs.customer.domain.Customer
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.domain.Order
@@ -132,10 +134,27 @@ class OrderActionHandler(
         }
         val picked = candidates.firstOrNull { it.name.equals(customerName, ignoreCase = true) }
             ?: candidates.singleOrNull()
-            ?: return ActionResult.NeedsInput(
-                "Which customer did you mean? " + candidates.take(5).joinToString(", ") { it.name },
-                listOf("customer"),
-            )
+            ?: run {
+                // Multiple matches: offer selection UI
+                val options = candidates.take(5).map { c ->
+                    SelectionOption(
+                        id = c.id,
+                        label = c.name,
+                        secondaryLabel = c.phone,
+                    )
+                }
+                return SelectionHelper.resolveWithSelection(
+                    candidates = options,
+                    question = "Which customer?",
+                    paramName = "customerId",
+                    action = AgentAction(
+                        moduleName = "order",
+                        actionType = ActionType.CREATE,
+                        params = params,
+                    ),
+                    fallbackNeedsInput = "Which customer did you mean?",
+                )
+            }
         val customer = orderRepository.customerDataService.getById(picked.id)
             ?: return ActionResult.Error("Couldn't load customer \"${picked.name}\".")
 
@@ -150,10 +169,27 @@ class OrderActionHandler(
             if (products.isEmpty()) return ActionResult.Error("No product matching \"$productName\".")
             val product = products.firstOrNull { it.name.equals(productName, ignoreCase = true) }
                 ?: products.singleOrNull()
-                ?: return ActionResult.NeedsInput(
-                    "Which product did you mean? " + products.take(5).joinToString(", ") { it.name },
-                    listOf("product"),
-                )
+                ?: run {
+                    // Multiple product matches: offer selection UI
+                    val options = products.take(5).map { p ->
+                        SelectionOption(
+                            id = p.id,
+                            label = p.name,
+                            secondaryLabel = p.category,
+                        )
+                    }
+                    return SelectionHelper.resolveWithSelection(
+                        candidates = options,
+                        question = "Which product?",
+                        paramName = "productId",
+                        action = AgentAction(
+                            moduleName = "order",
+                            actionType = ActionType.CREATE,
+                            params = params + mapOf("customerId" to picked.id),
+                        ),
+                        fallbackNeedsInput = "Which product did you mean?",
+                    )
+                }
             resolvedProduct = product
             OrderItem(product).apply { quantity = resolvedQty }
         }

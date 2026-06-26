@@ -139,6 +139,7 @@ import ampairsapp.feature.agent.generated.resources.agent_settings_tts
 import ampairsapp.feature.agent.generated.resources.agent_stt_models_title
 import com.ampairs.agent.speech.SpeechAdapterOption
 import com.ampairs.agent.ui.components.MessageBubble
+import com.ampairs.agent.ui.components.SelectionDialog
 import com.ampairs.common.navigation.PlatformBackHandler
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -278,6 +279,16 @@ fun ChatScreen(
             ConfirmActionBar(
                 onConfirm = viewModel::confirmPending,
                 onCancel = viewModel::cancelPending,
+            )
+        }
+
+        // Selection dialog for ambiguous parameters (FR-017): user picks one option, action continues
+        uiState.pendingSelection?.let { selection ->
+            SelectionDialog(
+                question = selection.paramName,  // e.g. "Which customer?"
+                options = selection.options,
+                onSelect = viewModel::selectOption,
+                onDismiss = viewModel::cancelSelection,
             )
         }
 

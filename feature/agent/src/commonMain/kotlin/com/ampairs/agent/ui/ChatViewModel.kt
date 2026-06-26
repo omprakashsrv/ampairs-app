@@ -13,6 +13,7 @@ import com.ampairs.agent.core.AgentOrchestrator
 import com.ampairs.agent.core.AgentStreamEvent
 import com.ampairs.agent.core.ChatMessage
 import com.ampairs.agent.core.AgentResponse
+import com.ampairs.agent.core.PendingSelection
 import com.ampairs.agent.data.api.ChatLogRequest
 import com.ampairs.agent.data.repository.ChatHistoryRepository
 import com.ampairs.agent.llm.LlmEngine
@@ -71,6 +72,8 @@ data class ChatUiState(
     val error: String? = null,
     /** A money/destructive action awaiting explicit confirm/cancel before it persists (FR-006). */
     val pendingConfirmation: AgentAction? = null,
+    /** An ambiguous action parameter waiting for user to pick one option (FR-017). */
+    val pendingSelection: PendingSelection? = null,
     /** When true, assistant replies are not read aloud (TTS, FR-009). */
     val isTtsMuted: Boolean = false,
     /** First-use on-device model download prompt (consent → progress → failure); null when nothing to show. */
@@ -927,6 +930,40 @@ class ChatViewModel(
         }
     }
 
+    /** User picked one option from a pending selection (FR-017) — continue with the selected ID. */
+    fun selectOption(selectedId: String) {
+        val selection = _uiState.value.pendingSelection ?: return
+        _uiState.update { it.copy(pendingSelection = null, isProcessing = true) }
+        viewModelScope.launch {
+            try {
+                val response = orchestrator.selectOption(
+                    selection.pendingAction,
+                    selection.paramName,
+                    selectedId
+                )
+                appendAgentResponse(response)
+                if (response.actionResult !is ActionResult.Error) speakText(response.text)
+            } catch (e: Exception) {
+                appendError(errorText(e))
+            }
+        }
+    }
+
+    /** User dismissed a selection dialog without picking — discard the pending action. */
+    fun cancelSelection() {
+        if (_uiState.value.pendingSelection == null) return
+        _uiState.update { it.copy(pendingSelection = null) }
+        viewModelScope.launch {
+            val message = ChatMessage(
+                id = UidGenerator.generateUid("MSG"),
+                text = getString(Res.string.agent_cancelled),
+                isFromUser = false,
+            )
+            _uiState.update { it.copy(messages = it.messages + message) }
+            persistHistory()
+        }
+    }
+
     private suspend fun errorText(e: Exception): String =
         getString(Res.string.agent_error_generic) + (e.message?.let { ": $it" } ?: "")
 
@@ -955,6 +992,7 @@ class ChatViewModel(
                 messages = state.messages + agentMessage,
                 isProcessing = false,
                 pendingConfirmation = response.pendingConfirmation,
+                pendingSelection = response.pendingSelection,
             )
         }
         persistHistory()

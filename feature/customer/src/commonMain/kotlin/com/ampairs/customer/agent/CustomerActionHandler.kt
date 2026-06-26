@@ -9,6 +9,7 @@ import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
 import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.agent.SelectionOption
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -16,6 +17,7 @@ import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.util.CustomerConstants
+import com.ampairs.agent.handlers.SelectionHelper
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
@@ -105,8 +107,25 @@ class CustomerActionHandler(
                 val results = customerRepository.searchCustomers(searchName).first()
                 if (results.isEmpty()) return ActionResult.Success("No customer found matching '$searchName'.")
                 if (results.size > 1) {
-                    val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
-                    return ActionResult.Success("Multiple customers found:\n$listing\nPlease specify the customer ID.")
+                    // Multiple matches: offer selection UI instead of asking user to type ID
+                    val candidates = results.take(5).map { c ->
+                        SelectionOption(
+                            id = c.uid,
+                            label = c.name,
+                            secondaryLabel = c.phone ?: c.city,
+                        )
+                    }
+                    return SelectionHelper.resolveWithSelection(
+                        candidates = candidates,
+                        question = "Which customer?",
+                        paramName = "customerId",
+                        action = AgentAction(
+                            moduleName = "customer",
+                            actionType = ActionType.READ,
+                            params = params,
+                        ),
+                        fallbackNeedsInput = "Which customer? (found ${results.size} matches)",
+                    )
                 }
                 customerRepository.getCustomer(results.first().id)
             }
@@ -142,8 +161,25 @@ class CustomerActionHandler(
                 val results = customerRepository.searchCustomers(searchName).first()
                 if (results.isEmpty()) return ActionResult.Error("No customer found matching '$searchName'.")
                 if (results.size > 1) {
-                    val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
-                    return ActionResult.NeedsInput("Multiple customers found:\n$listing\nWhich customer ID?", listOf("customerId"))
+                    // Multiple matches: offer selection UI
+                    val candidates = results.take(5).map { c ->
+                        SelectionOption(
+                            id = c.uid,
+                            label = c.name,
+                            secondaryLabel = c.phone ?: c.city,
+                        )
+                    }
+                    return SelectionHelper.resolveWithSelection(
+                        candidates = candidates,
+                        question = "Which customer do you want to update?",
+                        paramName = "customerId",
+                        action = AgentAction(
+                            moduleName = "customer",
+                            actionType = ActionType.UPDATE,
+                            params = params,
+                        ),
+                        fallbackNeedsInput = "Which customer? (found ${results.size} matches)",
+                    )
                 }
                 customerRepository.getCustomer(results.first().id)
             }
@@ -176,8 +212,25 @@ class CustomerActionHandler(
                 val results = customerRepository.searchCustomers(searchName).first()
                 if (results.isEmpty()) return ActionResult.Error("No customer found matching '$searchName'.")
                 if (results.size > 1) {
-                    val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
-                    return ActionResult.NeedsInput("Multiple customers found:\n$listing\nWhich customer ID?", listOf("customerId"))
+                    // Multiple matches: offer selection UI
+                    val candidates = results.take(5).map { c ->
+                        SelectionOption(
+                            id = c.uid,
+                            label = c.name,
+                            secondaryLabel = c.phone ?: c.city,
+                        )
+                    }
+                    return SelectionHelper.resolveWithSelection(
+                        candidates = candidates,
+                        question = "Which customer do you want to delete?",
+                        paramName = "customerId",
+                        action = AgentAction(
+                            moduleName = "customer",
+                            actionType = ActionType.DELETE,
+                            params = params,
+                        ),
+                        fallbackNeedsInput = "Which customer? (found ${results.size} matches)",
+                    )
                 }
                 results.first().id
             }

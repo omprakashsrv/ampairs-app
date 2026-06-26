@@ -6,6 +6,7 @@ import com.ampairs.agent.query.SafeQueryService
 import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.ReportRow
+import com.ampairs.common.agent.SelectionOption
 import dev.zacsweers.metro.Inject
 
 /**
@@ -76,18 +77,38 @@ class AgentOrchestrator(
     suspend fun confirmAction(pendingAction: AgentAction): AgentResponse =
         respondToResult(actionRegistry.dispatch(pendingAction), pendingAction)
 
+    /**
+     * Process a user's selection from a [ActionResult.Selection] (FR-017). The pending action
+     * has an ambiguous parameter; after user picks one option, fill in the ID and re-dispatch.
+     */
+    suspend fun selectOption(
+        pendingAction: AgentAction,
+        paramName: String,
+        selectedId: String,
+    ): AgentResponse {
+        val updatedAction = pendingAction.copy(
+            params = pendingAction.params + mapOf(paramName to selectedId)
+        )
+        return respondToResult(actionRegistry.dispatch(updatedAction), updatedAction)
+    }
+
     private fun respondToResult(result: ActionResult, action: AgentAction): AgentResponse =
         AgentResponse(
             text = when (result) {
                 is ActionResult.Success -> result.summary
                 is ActionResult.Error -> result.message
                 is ActionResult.NeedsInput -> result.question
+                is ActionResult.Selection -> result.question
                 is ActionResult.Confirm -> result.summary
             },
             actionResult = result,
             resolvedAction = action,
             // Surfaced so the ViewModel can render confirm/cancel and re-dispatch on confirm.
             pendingConfirmation = (result as? ActionResult.Confirm)?.pendingAction,
+            // Surfaced so the ViewModel can render selection UI (buttons/list/voice prompt).
+            pendingSelection = (result as? ActionResult.Selection)?.let {
+                PendingSelection(it.paramName, it.pendingAction, it.options)
+            },
             amount = (result as? ActionResult.Confirm)?.amount ?: (result as? ActionResult.Success)?.amount,
             rows = (result as? ActionResult.Success)?.rows,
         )
@@ -99,8 +120,16 @@ data class AgentResponse(
     val resolvedAction: AgentAction? = null,
     /** Non-null when the action needs explicit user confirmation before it will persist (FR-006). */
     val pendingConfirmation: AgentAction? = null,
+    /** Non-null when an action parameter is ambiguous and user must pick one option (FR-017). */
+    val pendingSelection: PendingSelection? = null,
     /** Money total for the UI to format via `formatMoney(LocalAppLocale.current)` (FR-013). */
     val amount: Double? = null,
     /** Ranked report lines for the UI to format per-row via `formatMoney(LocalAppLocale.current)`. */
     val rows: List<ReportRow>? = null,
+)
+
+data class PendingSelection(
+    val paramName: String,  // e.g. "customer_id", "product_id"
+    val pendingAction: AgentAction,  // The incomplete action awaiting selection
+    val options: List<SelectionOption>,  // Candidates to choose from
 )
