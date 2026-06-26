@@ -230,4 +230,10 @@
         <item quantity="one">%1$d option</item>
         <item quantity="other">%1$d options</item>
     </plurals>
+
+    <!-- Form agent chat bubble -->
+    <string name="form_agent_chat_title">AI Form Assistant</string>
+    <string name="form_agent_voice_listen">Start listening</string>
+    <string name="form_agent_voice_stop">Stop listening</string>
+    <string name="form_agent_processing">Processing…</string>
 </resources>

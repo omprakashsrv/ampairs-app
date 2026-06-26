@@ -28,6 +28,7 @@ kotlin {
                 api(projects.feature.formApi)
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
+                implementation(projects.feature.agent)
                 implementation(libs.kermit)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
