@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.form.generated.resources.Res
 import ampairsapp.feature.form.generated.resources.form_agent_chat_title
@@ -49,14 +50,10 @@ import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Chat bubble FAB for AI-assisted form filling. Sits in the top-right of an edit screen (customer,
- * product, etc.). On tap it opens a chat where the user describes the record in plain words and the
- * on-device assistant predicts values for the matching form fields — each prediction is delivered to
- * [onFieldFill] so the host screen can update its form state.
- *
- * @param entityType the entity being edited (e.g., "customer", "product") — also the form-schema key.
- * @param onFieldFill called once per predicted field with (fieldKey, value).
- * @param modifier optional Modifier for positioning.
+ * Floating bubble entry point for AI-assisted form filling: a FAB plus the assistant dialog. Use this
+ * when a screen wants an overlay trigger. Screens that already have a TopAppBar should prefer a toolbar
+ * action that opens [FormAgentChatDialog] directly, for a guaranteed top-right affordance (see
+ * CustomerFormScreen).
  */
 @Composable
 fun FormAgentChatBubble(
@@ -69,14 +66,13 @@ fun FormAgentChatBubble(
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
-    // Apply every predicted fill to the host form, regardless of whether the dialog is open.
     LaunchedEffect(viewModel) {
         viewModel.fills.collect { fill -> onFieldFill(fill.fieldKey, fill.value) }
     }
 
     Box(modifier = modifier.fillMaxWidth().padding(end = 16.dp, top = 8.dp)) {
         FloatingActionButton(
-            onClick = { showDialog = !showDialog },
+            onClick = { showDialog = true },
             modifier = Modifier.align(Alignment.TopEnd),
             containerColor = MaterialTheme.colorScheme.primary,
         ) {
@@ -97,12 +93,15 @@ fun FormAgentChatBubble(
     }
 }
 
+/**
+ * The assistant chat as a modal dialog. Public so a host screen can trigger it from a TopAppBar action
+ * while owning the [viewModel] (obtained via [assistedMetroViewModel]) and the fill collection.
+ */
 @Composable
-private fun FormAgentChatDialog(
+fun FormAgentChatDialog(
     entityType: String,
     viewModel: FormAgentViewModel,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var input by remember { mutableStateOf("") }
@@ -119,94 +118,96 @@ private fun FormAgentChatDialog(
         input = ""
     }
 
-    Surface(
-        modifier = modifier.fillMaxWidth(0.95f).padding(16.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = stringResource(Res.string.form_agent_chat_title),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.form_agent_close_cd))
-                }
-            }
-
-            Text(
-                text = stringResource(Res.string.form_agent_editing, entityType),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 120.dp, max = 240.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (state.messages.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(Res.string.form_agent_empty),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                items(state.messages) { message -> ChatMessageBubble(message) }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text(stringResource(Res.string.form_agent_input_hint)) },
-                    singleLine = true,
-                    enabled = !state.isProcessing,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { send() }),
-                )
-                if (state.isProcessing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp,
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.form_agent_chat_title),
+                        style = MaterialTheme.typography.titleMedium,
                     )
-                } else {
-                    IconButton(onClick = { send() }, enabled = input.isNotBlank()) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(Res.string.form_agent_send_cd),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.form_agent_close_cd))
                     }
                 }
-            }
 
-            if (state.isProcessing) {
                 Text(
-                    text = stringResource(Res.string.form_agent_processing),
-                    style = MaterialTheme.typography.labelSmall,
+                    text = stringResource(Res.string.form_agent_editing, entityType),
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp, max = 280.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (state.messages.isEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(Res.string.form_agent_empty),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    items(state.messages) { message -> ChatMessageBubble(message) }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text(stringResource(Res.string.form_agent_input_hint)) },
+                        singleLine = true,
+                        enabled = !state.isProcessing,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSend = { send() }),
+                    )
+                    if (state.isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        IconButton(onClick = { send() }, enabled = input.isNotBlank()) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = stringResource(Res.string.form_agent_send_cd),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+
+                if (state.isProcessing) {
+                    Text(
+                        text = stringResource(Res.string.form_agent_processing),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

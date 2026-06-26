@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
@@ -56,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.customer.generated.resources.Res
 import ampairsapp.feature.customer.generated.resources.customer_form_title_new
 import ampairsapp.feature.customer.generated.resources.customer_form_title_edit
+import ampairsapp.feature.customer.generated.resources.customer_ai_fill
 import ampairsapp.feature.customer.generated.resources.customer_save
 import ampairsapp.feature.customer.generated.resources.customer_saving
 import ampairsapp.feature.customer.generated.resources.customer_import_contact
@@ -130,7 +132,8 @@ import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import com.ampairs.formwidgets.location.LocationService
 import com.ampairs.formwidgets.widget.LocalContactImportHandler
 import com.ampairs.form.render.LocalFormEntityUid
-import com.ampairs.form.ui.FormAgentChatBubble
+import com.ampairs.form.ui.FormAgentChatDialog
+import com.ampairs.form.ui.FormAgentViewModel
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_GROUP
 import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
@@ -150,6 +153,13 @@ fun CustomerFormScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val formSchema by viewModel.formSchema.collectAsStateWithLifecycle()
 
+    // AI form assistant: predicts field values from a plain-language description and applies them.
+    val formAgent = assistedMetroViewModel<FormAgentViewModel, FormAgentViewModel.Factory>(key = "customer") { create("customer") }
+    var showAssistant by remember { mutableStateOf(false) }
+    LaunchedEffect(formAgent) {
+        formAgent.fills.collect { fill -> viewModel.updateField(fill.fieldKey, fill.value) }
+    }
+
     LaunchedEffect(customerId) {
         if (customerId != null) {
             viewModel.loadCustomer()
@@ -160,6 +170,12 @@ fun CustomerFormScreen(
         TopAppBar(
             title = { Text(if (customerId == null) stringResource(Res.string.customer_form_title_new) else stringResource(Res.string.customer_form_title_edit)) },
             actions = {
+                IconButton(onClick = { showAssistant = true }) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = stringResource(Res.string.customer_ai_fill),
+                    )
+                }
                 TextButton(
                     onClick = {
                         viewModel.saveCustomer { onSaveSuccess() }
@@ -243,13 +259,17 @@ fun CustomerFormScreen(
             }
         }
 
+        }
+
         // AI assistant: describe the customer in plain words and let the on-device model
-        // predict values for the matching form fields (spec 011 / agentic form fill).
-        FormAgentChatBubble(
-            entityType = "customer",
-            onFieldFill = { fieldKey, value -> viewModel.updateField(fieldKey, value) },
-            modifier = Modifier.align(Alignment.TopEnd),
-        )
+        // predict values for the matching form fields (spec 011 / agentic form fill). Triggered
+        // from the TopAppBar action above; fills are collected into the form via updateField.
+        if (showAssistant) {
+            FormAgentChatDialog(
+                entityType = "customer",
+                viewModel = formAgent,
+                onDismiss = { showAssistant = false },
+            )
         }
     }
 }
