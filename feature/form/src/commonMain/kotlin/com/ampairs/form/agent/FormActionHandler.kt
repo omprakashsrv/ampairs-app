@@ -49,7 +49,7 @@ class FormActionHandler(
         val entityType = params["entityType"]
             ?: return ActionResult.NeedsInput("Which entity type? (e.g., 'customer', 'product')", listOf("entityType"))
 
-        val schema = configRepository.getFormSchema(entityType).first()
+        val schema = configRepository.observeSchema(entityType).first()
         return if (schema != null) {
             val fieldSummary = buildString {
                 appendLine("Available fields for $entityType:")
@@ -76,7 +76,7 @@ class FormActionHandler(
         val value = params["value"]
             ?: return ActionResult.NeedsInput("What value?", listOf("value"))
 
-        val schema = configRepository.getFormSchema(entityType).first()
+        val schema = configRepository.observeSchema(entityType).first()
         if (schema == null) {
             return ActionResult.Error("Form schema not found for entity type '$entityType'.")
         }
@@ -111,7 +111,7 @@ class FormActionHandler(
         val entityType = params["entityType"]
             ?: return ActionResult.NeedsInput("Which entity type?", listOf("entityType"))
 
-        val schema = configRepository.getFormSchema(entityType).first()
+        val schema = configRepository.observeSchema(entityType).first()
         return if (schema != null) {
             val mandatory = schema.mandatoryFields()
             val summary = if (mandatory.isEmpty()) {
