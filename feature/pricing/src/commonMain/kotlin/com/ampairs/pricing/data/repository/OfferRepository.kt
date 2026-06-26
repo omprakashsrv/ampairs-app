@@ -10,7 +10,7 @@ import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Local-only data access for offers/promotions. Writes are persisted to the workspace-scoped
