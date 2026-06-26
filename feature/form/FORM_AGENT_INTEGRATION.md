@@ -117,7 +117,7 @@ The FormActionHandler returns field fill requests with metadata:
 // Example response from FormActionHandler.fillField()
 ActionResult.Success(
     summary = "Filled field 'Customer Name' with value 'John'.",
-    metadata = mapOf(
+    data = mapOf(
         "entityType" to "customer",
         "fieldKey" to "name",
         "fieldValue" to "John",

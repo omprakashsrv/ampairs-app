@@ -94,7 +94,7 @@ class FormActionHandler(
         // The actual field binding happens via FormFieldFillIntent on the composable side.
         return ActionResult.Success(
             summary = "Filled field '${field.displayName}' with value '$value'.",
-            metadata = mapOf(
+            data = mapOf(
                 "entityType" to entityType,
                 "fieldKey" to fieldKey,
                 "fieldValue" to value,
