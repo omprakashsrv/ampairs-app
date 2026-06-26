@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
 data object PriceListListRoute : NavKey
 
 @Serializable
+data class PriceListDetailRoute(val priceListId: String) : NavKey
+
+@Serializable
 data class PriceListFormRoute(val priceListId: String? = null) : NavKey
 
 @Serializable

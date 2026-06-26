@@ -75,4 +75,26 @@
     <string name="pricing_tester_explain_subtitle">Ranked by specificity → priority. %1$d active list(s) evaluated.</string>
     <string name="pricing_cd_increment">Increase quantity</string>
     <string name="pricing_cd_decrement">Decrease quantity</string>
+
+    <!-- Price List Detail -->
+    <string name="pricing_detail_targets_title">Who gets this price?</string>
+    <string name="pricing_detail_edit">Edit</string>
+    <string name="pricing_detail_test_list">Test this list</string>
+    <string name="pricing_detail_test_list_sub">Resolve a price using this list\'s context</string>
+    <string name="pricing_detail_applies_everyone">Applies to everyone on %1$s.</string>
+    <string name="pricing_detail_items">Items</string>
+    <string name="pricing_detail_add_item">Add Item</string>
+    <string name="pricing_detail_no_items">No items yet — add a product to price.</string>
+    <string name="pricing_detail_tier_count">%1$d tiers</string>
+    <string name="pricing_detail_base_price">Base price</string>
+    <string name="pricing_detail_moq">MOQ %1$s</string>
+    <string name="pricing_detail_not_found">Price list not found</string>
+    <string name="pricing_detail_priority">Priority %1$d</string>
+    <string name="pricing_target_customer_group">Customer group</string>
+    <string name="pricing_target_customer_type">Customer type</string>
+    <string name="pricing_target_customer">Customer</string>
+    <string name="pricing_target_brand">Brand</string>
+    <string name="pricing_target_category">Category</string>
+    <string name="pricing_target_product_group">Product group</string>
+    <string name="pricing_target_geo_zone">Geo zone</string>
 </resources>
