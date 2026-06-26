@@ -31,6 +31,7 @@
     <string name="prod_retry">Retry</string>
     <string name="prod_cancel">Cancel</string>
     <string name="prod_save">Save</string>
+    <string name="prod_ai_fill">Fill with AI</string>
     <string name="prod_ok">OK</string>
     <string name="prod_manage_variants">Manage Variants</string>
 
