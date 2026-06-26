@@ -428,6 +428,23 @@ class ChatViewModel(
         rebuildModelUi(modelManager.statuses.value)
     }
 
+    /**
+     * Background-unload hook (called from the screen's ON_STOP). Asks [ProviderRegistry] to apply the
+     * policy ([AssistantConfig.unloadOnBackground]) — freeing on-device native memory / dropping the
+     * cloud session — and resets the chip to LOADING-on-next-use. The engine reloads lazily on return
+     * (via [ensureEngineLoaded] when the screen restarts), so this is safe to call on every background.
+     */
+    fun onEnterBackground() {
+        viewModelScope.launch {
+            val unloaded = runCatching { providerRegistry.onAppBackgrounded() }.getOrDefault(false)
+            // Only reflect an unload if the policy ran AND an engine was actually loaded.
+            if (unloaded && engineLoad == EngineLoad.READY) {
+                engineLoad = EngineLoad.UNKNOWN
+                rebuildModelUi(modelManager.statuses.value)
+            }
+        }
+    }
+
     /** Recompute the chip + sheet rows from the catalog, the active model, and live install status. */
     private fun rebuildModelUi(statuses: Map<String, ModelInstallStatus>) {
         val active = activeModel

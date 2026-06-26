@@ -54,6 +54,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -148,6 +150,13 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+
+    // Background-unload policy: when the assistant leaves the foreground (app backgrounded or the user
+    // navigates away), free the loaded model's native memory / drop the cloud session. It lazily
+    // reloads on return. Gated by AssistantConfig.unloadOnBackground inside the ViewModel/registry.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        viewModel.onEnterBackground()
+    }
 
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(uiState.messages.size) {

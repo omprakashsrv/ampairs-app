@@ -93,6 +93,8 @@ kotlin {
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.lifecycle.viewmodel)
                 implementation(libs.lifecycle.viewmodel.navigation3)
+                // LifecycleEventEffect (ON_STOP) — drives the background model-unload policy.
+                implementation(libs.lifecycle.runtime.compose)
                 implementation(libs.bundles.ktor.common)
                 // Compose
                 implementation(libs.compose.runtime)

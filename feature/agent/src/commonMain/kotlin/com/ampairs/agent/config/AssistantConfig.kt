@@ -24,6 +24,12 @@ data class AssistantConfig(
     val safeQueryEnabled: Boolean = false,
     /** Read responses aloud (TTS) when available. */
     val ttsEnabled: Boolean = false,
+    /**
+     * Unload the loaded LLM engine when the app/chat goes to the background, freeing on-device native
+     * memory (and dropping the cloud session). The engine lazily reloads the same model on return.
+     * Default on — the model is only needed while the assistant is in use.
+     */
+    val unloadOnBackground: Boolean = true,
 ) {
     companion object {
         val Default = AssistantConfig()

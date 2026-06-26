@@ -146,6 +146,19 @@ class ProviderRegistry(
     }
 
     /**
+     * Lifecycle hook for the background-unload policy: when [AssistantConfig.unloadOnBackground] is on,
+     * unload the engine so backgrounding the app frees on-device native memory (and drops the cloud
+     * session). No-op when the policy is off or nothing is loaded. The next [engineOrNull] reloads the
+     * same model lazily, so this is safe to call on every background transition. Returns true when the
+     * policy is on (so the caller can reflect the unload in its UI), false when it's a no-op.
+     */
+    suspend fun onAppBackgrounded(): Boolean {
+        if (!config.unloadOnBackground) return false
+        unloadIfLoaded()
+        return true
+    }
+
+    /**
      * Unload the loaded engine (closing it) **without** changing the model selection — the next
      * [engineOrNull] call lazily reloads the same model. Drives the background/idle unload policy:
      * frees on-device native memory and cancels cloud sessions when the app is backgrounded. No-op
