@@ -3,6 +3,9 @@ package com.ampairs.common.agent
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /** One resolved line in the conversational document draft (cart). */
 data class DraftLine(
@@ -35,6 +38,9 @@ class DraftDocumentStore {
     var customerName: String? = null
         private set
 
+    private val _state = MutableStateFlow(this)
+    val state: StateFlow<DraftDocumentStore> = _state.asStateFlow()
+
     val isEmpty: Boolean get() = _lines.isEmpty()
     val itemCount: Int get() = _lines.size
     val totalQuantity: Double get() = _lines.sumOf { it.quantity }
@@ -44,19 +50,26 @@ class DraftDocumentStore {
 
     fun addLine(line: DraftLine) {
         _lines.add(line)
+        _state.value = this
     }
 
     fun setCustomer(id: String, name: String) {
         customerId = id
         customerName = name
+        _state.value = this
     }
 
     /** Remove the most recently added line, or null when the cart is already empty. */
-    fun removeLast(): DraftLine? = if (_lines.isEmpty()) null else _lines.removeAt(_lines.lastIndex)
+    fun removeLast(): DraftLine? {
+        val result = if (_lines.isEmpty()) null else _lines.removeAt(_lines.lastIndex)
+        if (result != null) _state.value = this
+        return result
+    }
 
     fun clear() {
         _lines.clear()
         customerId = null
         customerName = null
+        _state.value = this
     }
 }

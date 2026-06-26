@@ -99,6 +99,8 @@ data class ChatUiState(
     /** Currently selected STT/TTS adapter ids (null → platform default = first option). */
     val selectedSttId: String? = null,
     val selectedTtsId: String? = null,
+    /** Current draft cart state for sticky display in the chat (order/invoice building). */
+    val draftCart: DraftCartDisplay = DraftCartDisplay(),
     /**
      * Downloadable models for the **currently selected** STT engine (Whisper sizes, Vosk languages, …);
      * empty when that engine has no downloadable models. Engine-agnostic — driven by the selected
@@ -246,6 +248,7 @@ class ChatViewModel(
     private val actionRegistry: ActionRegistry,
     private val chatHistoryRepository: ChatHistoryRepository,
     private val telemetryRecorder: ChatTelemetryRecorder,
+    private val draftDocumentStore: com.ampairs.common.agent.DraftDocumentStore,
 ) : ViewModel() {
 
     /** Stable id grouping this chat session's telemetry turns (opt-in). */
@@ -312,6 +315,9 @@ class ChatViewModel(
                 reasoningEnabled = enabled
                 _uiState.update { it.copy(reasoningEnabled = enabled) }
             }
+            .launchIn(viewModelScope)
+        draftDocumentStore.state
+            .onEach { draft -> _uiState.update { it.copy(draftCart = DraftCartDisplay.from(draft)) } }
             .launchIn(viewModelScope)
     }
 
