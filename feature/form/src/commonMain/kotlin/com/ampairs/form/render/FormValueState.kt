@@ -56,6 +56,21 @@ class FormValueState internal constructor(
         revalidate(field)
     }
 
+    /**
+     * Apply a value predicted by the form assistant (keyed by `fieldKey`). Routes to the correct slot
+     * (single vs MULTI_CHOICE) and revalidates. Unknown keys are ignored, so a stray prediction can
+     * never corrupt the form. The assistant has already validated the value against the field's
+     * type/options, so this just stores it. Wire `FormAgentChatBubble.onFieldFill` to this.
+     */
+    fun applyAgentFill(fieldKey: String, value: String) {
+        val field = schema.fields.firstOrNull { it.fieldKey == fieldKey } ?: return
+        if (field.dataType == FieldDataType.MULTI_CHOICE) {
+            if (value !in multiValues[field.fieldKey].orEmpty()) toggleMulti(field, value)
+        } else {
+            setText(field, value)
+        }
+    }
+
     private fun revalidate(field: FormField) {
         val msg = errorFor(field)
         if (msg == null) errors.remove(field.fieldKey) else errors[field.fieldKey] = msg
