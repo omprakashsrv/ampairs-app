@@ -129,6 +129,10 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
+                // ReportPeriodTest constructs kotlinx.datetime TimeZone/LocalDateTime values to assert
+                // ReportPeriod (data/common) boundaries; datetime is only a transitive impl dep of
+                // data/common, so it must be on the agent test classpath explicitly.
+                implementation(libs.kotlinx.dateTime)
             }
         }
         val desktopMain by getting {
