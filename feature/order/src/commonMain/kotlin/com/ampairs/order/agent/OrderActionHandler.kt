@@ -175,7 +175,7 @@ class OrderActionHandler(
                         SelectionOption(
                             id = p.id,
                             label = p.name,
-                            secondaryLabel = p.category,
+                            secondaryLabel = p.categoryName,
                         )
                     }
                     return SelectionHelper.resolveWithSelection(
