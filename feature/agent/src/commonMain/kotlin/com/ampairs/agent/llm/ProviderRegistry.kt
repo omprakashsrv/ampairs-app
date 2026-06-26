@@ -69,8 +69,17 @@ class ProviderRegistry(
             all.firstOrNull { it.id == chosenId }?.let { return it }
         }
         val ram = DeviceCapability.totalRamBytes()
-        if (!RamTiers.canRunLlm(ram)) return null
-        val candidates = all.filter { it.role == ModelRole.CHAT && it.estimatedPeakMemoryBytes <= ram }
+        // Candidate = a CHAT model that (a) has a backend on THIS platform that can run it, and
+        // (b) either runs in the cloud (no RAM gate) or fits this device's RAM. The backend check is
+        // what keeps an on-device (e.g. litert-lm) model off iOS/Desktop — where only the cloud
+        // backend is registered — so we never auto-pick or offer a multi-GB download that can't load.
+        // Folding the RAM gate into the per-candidate filter (not an early return) is what lets a
+        // sub-3GB device still pick a cloud model.
+        val candidates = all.filter { model ->
+            model.role == ModelRole.CHAT &&
+                backends.any { it.supports(model) } &&
+                (model.isCloud || (RamTiers.canRunLlm(ram) && model.estimatedPeakMemoryBytes <= ram))
+        }
         return candidates.filter { it.recommended }.maxByOrNull { it.estimatedPeakMemoryBytes }
             ?: candidates.maxByOrNull { it.estimatedPeakMemoryBytes }
     }
@@ -115,9 +124,11 @@ class ProviderRegistry(
     suspend fun isLlmReady(): Boolean = engineOrNull()?.isLoaded() == true
 
     /**
-     * True when this platform has at least one LLM engine backend registered. Today only Android
-     * contributes one (LiteRT-LM); Desktop/iOS have none until a llama.cpp backend lands, so the
-     * model manager uses this to show "Android only" instead of offering un-loadable downloads.
+     * True when this platform has at least one LLM engine backend registered. Now that the cloud
+     * backend ([CloudLlmBackend]) is contributed in commonMain, this is true on every platform —
+     * Android adds the native LiteRT-LM backend on top. The real "is anything runnable here" gate is
+     * [selectedChatModel], which is backend-aware (an on-device model with no backend on this platform
+     * is never selected/offered), so the model manager relies on that rather than this coarse flag.
      */
     fun hasLlmBackend(): Boolean = backends.isNotEmpty()
 
@@ -126,6 +137,22 @@ class ProviderRegistry(
      * and loads afresh. Called when the user switches/deletes the active model in the model manager.
      */
     suspend fun reload() {
+        val toClose = mutex.withLock {
+            val current = engine
+            engine = null
+            current
+        }
+        toClose?.let { runCatching { it.close() } }
+    }
+
+    /**
+     * Unload the loaded engine (closing it) **without** changing the model selection — the next
+     * [engineOrNull] call lazily reloads the same model. Drives the background/idle unload policy:
+     * frees on-device native memory and cancels cloud sessions when the app is backgrounded. No-op
+     * when nothing is loaded. (Functionally the same teardown as [reload]; named for the lifecycle
+     * call site so intent is clear.)
+     */
+    suspend fun unloadIfLoaded() {
         val toClose = mutex.withLock {
             val current = engine
             engine = null

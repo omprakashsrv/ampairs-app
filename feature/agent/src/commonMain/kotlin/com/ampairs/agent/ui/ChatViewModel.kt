@@ -198,6 +198,12 @@ sealed interface ModelItemStatus {
     data class Downloading(val progress: Float) : ModelItemStatus
     data object Installed : ModelItemStatus
     data class Failed(val message: String) : ModelItemStatus
+
+    /**
+     * A cloud-hosted model — runs server-side, so it has no download/delete and is always
+     * "available". The row only offers "Use" (select it); there is no on-disk footprint to manage.
+     */
+    data object Cloud : ModelItemStatus
 }
 
 /** UI state for the one-time on-device AI model download flow (FR: first-use consent + auto-download). */
@@ -411,7 +417,9 @@ class ChatViewModel(
     /** Load the engine for the active model if its file is present and we haven't loaded it yet. */
     private suspend fun ensureEngineLoaded() {
         val active = activeModel ?: return
-        if (modelManager.localPathOrNull(active) == null) return
+        // Cloud models have no local file — skip the on-disk presence gate (their "load" just
+        // resolves the transport). On-device models still require the file to be present.
+        if (!active.isCloud && modelManager.localPathOrNull(active) == null) return
         if (engineLoad == EngineLoad.READY || engineLoad == EngineLoad.LOADING) return
         engineLoad = EngineLoad.LOADING
         rebuildModelUi(modelManager.statuses.value)
@@ -426,6 +434,10 @@ class ChatViewModel(
         val items = catalog.map { m ->
             val live = statuses[m.id]
             val status = when {
+                // Cloud models run server-side: no download, no file, always available. Decided
+                // first so they never fall through to the filesystem checks (which would show a
+                // bogus "Download" for a file-less model).
+                m.isCloud -> ModelItemStatus.Cloud
                 live is ModelInstallStatus.Downloading -> ModelItemStatus.Downloading(live.fraction)
                 // Filesystem truth: a present file ⇒ installed, even when `statuses` hasn't been
                 // reconciled for this server-catalog id (e.g. right after an app restart, where the
@@ -451,6 +463,15 @@ class ChatViewModel(
     private fun computeChip(active: ModelDescriptor?, statuses: Map<String, ModelInstallStatus>): ModelBarState {
         if (!llmSupported) return ModelBarState(phase = ModelPhase.UNSUPPORTED)
         if (active == null) return ModelBarState(phase = ModelPhase.RULE_BASED)
+        if (active.isCloud) {
+            // Cloud models have no download phase — go straight to load state (the engine "load"
+            // just resolves the transport; readiness is driven by engineLoad like any other engine).
+            return when (engineLoad) {
+                EngineLoad.READY -> ModelBarState(active.displayName, ModelPhase.READY)
+                EngineLoad.FAILED -> ModelBarState(active.displayName, ModelPhase.FAILED)
+                else -> ModelBarState(active.displayName, ModelPhase.LOADING)
+            }
+        }
         val status = statuses[active.id]
         if (status is ModelInstallStatus.Downloading) {
             return ModelBarState(active.displayName, ModelPhase.DOWNLOADING, status.fraction)
@@ -497,7 +518,8 @@ class ChatViewModel(
             activeModel = model
             engineLoad = EngineLoad.UNKNOWN
             providerRegistry.reload()
-            if (modelManager.localPathOrNull(model) == null) {
+            // Cloud models run server-side — nothing to download. On-device models download on first use.
+            if (!model.isCloud && modelManager.localPathOrNull(model) == null) {
                 appPreferences.setLlmModelDownloadConsent(true)
                 modelManager.download(model)
             }
@@ -535,6 +557,9 @@ class ChatViewModel(
             if (!providerRegistry.hasLlmBackend()) return@launch
             val model = providerRegistry.selectedChatModel() ?: return@launch
             offeredModel = model
+            // Cloud models run server-side — there is nothing to download or consent to. The engine
+            // is brought up by initModelManager's ensureEngineLoaded(); no prompt here.
+            if (model.isCloud) return@launch
             // Filesystem truth (survives restarts even before statuses are refreshed).
             if (modelManager.localPathOrNull(model) != null) return@launch
 

@@ -67,7 +67,29 @@ object ModelCatalog {
         defaultParams = LlmParams(temperature = 0.7f, topK = 20, topP = 0.8f, maxTokens = 4096, contextTokens = 4096),
     )
 
-    val all: List<ModelDescriptor> = listOf(FUNCTION_GEMMA_270M, GEMMA_3N_E2B, GEMMA_3N_E4B, QWEN2_5_1_5B)
+    /**
+     * Online (cloud-hosted) chat model — runs server-side via the Ampairs backend proxy
+     * (`AmpairsProxyTransport`), so it has no local file, no download, and no device-RAM gate. Works on
+     * every platform (including iOS/Desktop, which have no native engine). This bundled entry is the
+     * cold-start fallback; once the backend manifest is pulled it replaces the bundled list and is the
+     * real source of cloud models (add/remove without an app release).
+     */
+    val CLOUD_AMPAIRS_CHAT = ModelDescriptor(
+        id = "cloud-ampairs-chat",
+        displayName = "Ampairs Cloud",
+        role = ModelRole.CHAT,
+        backendId = ModelDescriptor.BACKEND_CLOUD,
+        fileName = "", // server-side — no local file
+        downloadUrl = "", // not downloadable
+        sizeBytes = 0L,
+        estimatedPeakMemoryBytes = 0L, // runs in the cloud — no on-device footprint / RAM gate
+        transportId = "ampairs",
+        remoteModelId = "claude-sonnet-4-6",
+        defaultParams = LlmParams(temperature = 0.3f, topK = 40, topP = 0.95f, maxTokens = 1024, contextTokens = 8192),
+    )
+
+    val all: List<ModelDescriptor> =
+        listOf(FUNCTION_GEMMA_270M, GEMMA_3N_E2B, GEMMA_3N_E4B, QWEN2_5_1_5B, CLOUD_AMPAIRS_CHAT)
 
     fun byId(id: String): ModelDescriptor? = all.firstOrNull { it.id == id }
 

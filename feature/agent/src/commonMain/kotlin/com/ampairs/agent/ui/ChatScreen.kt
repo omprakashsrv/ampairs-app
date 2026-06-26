@@ -106,6 +106,7 @@ import ampairsapp.feature.agent.generated.resources.agent_model_manager_title
 import ampairsapp.feature.agent.generated.resources.agent_model_recommended
 import ampairsapp.feature.agent.generated.resources.agent_model_retry
 import ampairsapp.feature.agent.generated.resources.agent_model_role_size
+import ampairsapp.feature.agent.generated.resources.agent_model_status_cloud
 import ampairsapp.feature.agent.generated.resources.agent_model_status_downloading
 import ampairsapp.feature.agent.generated.resources.agent_model_status_failed
 import ampairsapp.feature.agent.generated.resources.agent_model_status_installed
@@ -590,12 +591,32 @@ private fun ModelRow(
                 }
             }
             Text(
-                text = stringResource(Res.string.agent_model_role_size, item.role, item.sizeText),
+                // Cloud models have no on-disk size — show just the role rather than "CHAT · ".
+                text = if (item.sizeText.isBlank()) {
+                    item.role
+                } else {
+                    stringResource(Res.string.agent_model_role_size, item.role, item.sizeText)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             when (val status = item.status) {
+                ModelItemStatus.Cloud -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.agent_model_status_cloud),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (!item.isActive) {
+                        Button(onClick = onUse) { Text(stringResource(Res.string.agent_model_use)) }
+                    }
+                }
+
                 is ModelItemStatus.Downloading -> {
                     if (status.progress > 0f) {
                         LinearProgressIndicator(progress = { status.progress }, modifier = Modifier.fillMaxWidth())
@@ -847,6 +868,9 @@ private fun WhisperModelSection(
                     ModelItemStatus.NotInstalled -> TextButton(onClick = { onDownload(model.id) }) {
                         Text(stringResource(Res.string.agent_model_download_action))
                     }
+                    // Whisper STT models are always on-device files — never cloud. Branch only for
+                    // exhaustiveness over the shared ModelItemStatus.
+                    ModelItemStatus.Cloud -> Unit
                 }
             }
         }
@@ -862,6 +886,8 @@ private fun whisperStatusText(model: WhisperModelUi): String {
         ModelItemStatus.Installed -> stringResource(Res.string.agent_model_status_installed)
         is ModelItemStatus.Failed -> stringResource(Res.string.agent_model_status_failed)
         ModelItemStatus.NotInstalled -> stringResource(Res.string.agent_model_status_not_installed)
+        // Whisper STT models are always on-device — never cloud (branch for exhaustiveness only).
+        ModelItemStatus.Cloud -> stringResource(Res.string.agent_model_status_cloud)
     }
     return "${model.sizeText} · $state"
 }

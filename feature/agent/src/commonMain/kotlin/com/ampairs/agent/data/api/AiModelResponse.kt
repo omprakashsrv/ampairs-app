@@ -27,6 +27,10 @@ data class AiModelResponse(
     val sha256: String? = null,
     @SerialName("required_ram_mb") val requiredRamMb: Int,
     @SerialName("backend_id") val backendId: String,
+    /** Cloud transport adapter id (when `backend_id == "cloud"`); blank for on-device models. */
+    @SerialName("transport") val transport: String = "",
+    /** Provider-side model id the cloud transport sends (e.g. "claude-sonnet-4-6"); blank on-device. */
+    @SerialName("remote_model_id") val remoteModelId: String = "",
     val platforms: Set<String> = emptySet(),
     val recommended: Boolean = false,
 )
@@ -56,6 +60,8 @@ fun AiModelResponse.toDescriptor(): ModelDescriptor = ModelDescriptor(
     estimatedPeakMemoryBytes = requiredRamMb.toLong() * 1_000_000L,
     sha256 = sha256,
     recommended = recommended,
+    transportId = transport.ifBlank { null },
+    remoteModelId = remoteModelId.ifBlank { null },
     // Manifest models are chat models by default (roleFromManifest), so give them the larger
     // context window; the intent tool-caller keeps the LlmParams default (2048).
     defaultParams = LlmParams(
@@ -79,6 +85,8 @@ fun AiModelResponse.toEntity(): AiModelEntity = AiModelEntity(
     sha256 = sha256,
     requiredRamMb = requiredRamMb,
     backendId = backendId,
+    transport = transport,
+    remoteModelId = remoteModelId,
     platforms = platforms.joinToString(","),
     recommended = recommended,
 )
@@ -95,6 +103,8 @@ fun AiModelEntity.toResponse(): AiModelResponse = AiModelResponse(
     sha256 = sha256,
     requiredRamMb = requiredRamMb,
     backendId = backendId,
+    transport = transport,
+    remoteModelId = remoteModelId,
     platforms = platforms.split(",").filter { it.isNotBlank() }.toSet(),
     recommended = recommended,
 )

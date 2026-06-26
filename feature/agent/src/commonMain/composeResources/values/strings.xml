@@ -49,6 +49,7 @@
     <string name="agent_model_status_not_installed">Not downloaded</string>
     <string name="agent_model_status_failed">Download failed</string>
     <string name="agent_model_status_downloading">Downloading %1$d%%</string>
+    <string name="agent_model_status_cloud">Runs in the cloud · no download</string>
     <string name="agent_model_role_size">%1$s · %2$s</string>
     <!-- Full-screen hands-free voice conversation mode -->
     <string name="agent_voice_mode_cd">Start voice conversation</string>

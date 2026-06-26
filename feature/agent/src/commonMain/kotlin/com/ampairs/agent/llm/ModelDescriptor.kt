@@ -22,4 +22,26 @@ data class ModelDescriptor(
     /** Server-flagged preferred model for its tier (from the manifest); breaks ties in selection. */
     val recommended: Boolean = false,
     val defaultParams: LlmParams = LlmParams(),
-)
+    /**
+     * Cloud transport adapter id for online models (`backendId == "cloud"`) — selects the
+     * [com.ampairs.agent.llm.transport.LlmTransport] that owns the wire protocol. `null` for
+     * on-device models (which load a local file via their native backend).
+     */
+    val transportId: String? = null,
+    /**
+     * Provider-side model id the cloud transport sends (e.g. `"claude-sonnet-4-6"`). `null` for
+     * on-device models.
+     */
+    val remoteModelId: String? = null,
+) {
+    /**
+     * True when this model runs **server-side** via a cloud transport — no local file to download and
+     * no device-RAM gate (the inference happens in the cloud). Discriminated by [backendId].
+     */
+    val isCloud: Boolean get() = backendId == BACKEND_CLOUD
+
+    companion object {
+        /** [backendId] value that routes a model through the cloud transport tier. */
+        const val BACKEND_CLOUD: String = "cloud"
+    }
+}
