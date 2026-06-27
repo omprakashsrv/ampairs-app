@@ -388,6 +388,24 @@ private class FakeProductDao : ProductDao {
             it.active == 1 && (it.name.contains(term) || it.code.contains(term) || it.tax_code.startsWith(term))
         }.sortedBy { it.name }.take(limit.toInt())
 
+    override suspend fun searchByWords(term: String, limit: Long): List<ProductEntity> =
+        rows.value.values.filter {
+            it.active == 1 && (
+                it.name.lowercase().contains(term.lowercase()) ||
+                    it.code.lowercase().startsWith(term.lowercase()) ||
+                    it.tax_code.lowercase().startsWith(term.lowercase())
+                )
+        }.sortedBy { it.name }.take(limit.toInt())
+
+    override suspend fun searchByWord(word: String, limit: Long): List<ProductEntity> =
+        rows.value.values.filter {
+            it.active == 1 && (
+                it.name.lowercase().contains(word.lowercase()) ||
+                    it.code.lowercase().startsWith(word.lowercase()) ||
+                    it.tax_code.lowercase().startsWith(word.lowercase())
+                )
+        }.sortedBy { it.name }.take(limit.toInt())
+
     override suspend fun headProducts(limit: Long): List<ProductEntity> =
         rows.value.values.filter { it.active == 1 }.sortedBy { it.name }.take(limit.toInt())
 
