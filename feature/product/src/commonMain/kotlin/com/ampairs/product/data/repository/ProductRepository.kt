@@ -162,9 +162,20 @@ class ProductRepository(
         val entities = if (term.isBlank()) {
             productDao.headProducts(limit.toLong())
         } else {
-            productDao.searchForEntry(term.trim(), limit.toLong())
+            val normalizedTerm = normalizeWhitespace(term)
+            // Try word-based search first, fall back to substring search
+            val wordResults = productDao.searchByWords(normalizedTerm, limit.toLong())
+            if (wordResults.isNotEmpty()) {
+                wordResults
+            } else {
+                productDao.searchForEntry(normalizedTerm, limit.toLong())
+            }
         }
         return entities.map { it.asDomainModel().toSummary() }
+    }
+
+    private fun normalizeWhitespace(text: String): String {
+        return text.trim().replace(Regex("\\s+"), " ")
     }
 
     override suspend fun variantsForProduct(productId: String): List<VariantOption> =

@@ -68,18 +68,33 @@ interface ProductDao {
     )
     suspend fun getDistinctGroupIds(): List<String>
 
-    // Fast-entry composer lookup (spec 010 v2): name/code/tax-code partial word search.
+    // Fast-entry composer lookup (spec 010 v2): name/code/tax-code partial substring search.
+    // Handles normalized whitespace (no double spaces).
     @Query(
         """
         SELECT * FROM productEntity
         WHERE active = 1
-          AND (name LIKE '%' || :term || '%'
+          AND (REPLACE(REPLACE(REPLACE(REPLACE(name, '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE '%' || :term || '%'
                OR code LIKE '%' || :term || '%'
                OR tax_code LIKE '%' || :term || '%')
         ORDER BY name ASC LIMIT :limit
         """
     )
     suspend fun searchForEntry(term: String, limit: Long): List<ProductEntity>
+
+    // Word-based search: normalize whitespace and search across name/code/tax_code.
+    // Prioritizes products where the search term appears as normalized text (case-insensitive prefix/contains).
+    @Query(
+        """
+        SELECT * FROM productEntity
+        WHERE active = 1
+          AND (REPLACE(REPLACE(REPLACE(REPLACE(LOWER(name), '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE '%' || LOWER(:term) || '%'
+               OR REPLACE(REPLACE(REPLACE(REPLACE(LOWER(code), '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE LOWER(:term) || '%'
+               OR REPLACE(REPLACE(REPLACE(REPLACE(LOWER(tax_code), '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE LOWER(:term) || '%')
+        ORDER BY name ASC LIMIT :limit
+        """
+    )
+    suspend fun searchByWords(term: String, limit: Long): List<ProductEntity>
 
     @Query("SELECT * FROM productEntity WHERE active = 1 ORDER BY name ASC LIMIT :limit")
     suspend fun headProducts(limit: Long): List<ProductEntity>
