@@ -68,9 +68,7 @@ class ProductRepository(
         if (query.isBlank()) {
             observeProductsJoined(productDao.observeAllProducts())
         } else {
-            // Normalize whitespace: collapse multiple spaces to single space
-            val normalizedQuery = normalizeWhitespace(query)
-            observeProductsJoined(productDao.observeProductsByName(normalizedQuery))
+            observeProductsJoined(productDao.observeProductsByName(query))
         }
 
     /** Combined search + multi-select filter (brand / category / sub-category / group). Empty list = no filter. */
@@ -164,32 +162,9 @@ class ProductRepository(
         val entities = if (term.isBlank()) {
             productDao.headProducts(limit.toLong())
         } else {
-            val normalizedTerm = normalizeWhitespace(term)
-            // 1. Try exact word-based search (handles "AB WASER" with any spaces)
-            var results = productDao.searchByWords(normalizedTerm, limit.toLong())
-
-            // 2. Fallback to substring search (handles partial matches)
-            if (results.isEmpty()) {
-                results = productDao.searchForEntry(normalizedTerm, limit.toLong())
-            }
-
-            // 3. If still no results, split into individual words and search for any word match
-            // This helps with spelling mistakes: "ABB WASER" searches for products with "ABB" OR "WASER"
-            if (results.isEmpty()) {
-                val words = normalizedTerm.split("\\s+".toRegex()).filter { it.isNotBlank() }
-                if (words.size > 1) {
-                    // Multiple words: search for products matching any word
-                    results = productDao.searchByAnyWord(words, limit.toLong())
-                }
-            }
-
-            results
+            productDao.searchForEntry(term.trim(), limit.toLong())
         }
         return entities.map { it.asDomainModel().toSummary() }
-    }
-
-    private fun normalizeWhitespace(text: String): String {
-        return text.trim().replace(Regex("\\s+"), " ")
     }
 
     override suspend fun variantsForProduct(productId: String): List<VariantOption> =

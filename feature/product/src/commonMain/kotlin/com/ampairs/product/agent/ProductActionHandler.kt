@@ -16,8 +16,6 @@ import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.Product
-import com.ampairs.product.domain.ProductListItem
-import kotlinx.coroutines.flow.first
 
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
@@ -104,27 +102,7 @@ class ProductActionHandler(
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What should I search for?", listOf("query"))
 
-        var products = productRepository.searchProducts(query).first()
-
-        // Fallback: if no results found, try searching for individual words (handles spelling mistakes)
-        if (products.isEmpty() && query.contains(" ")) {
-            val words = query.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
-            if (words.size > 1) {
-                // Search for products matching any individual word and combine results
-                val seenIds = mutableSetOf<String>()
-                val wordMatches = mutableListOf<ProductListItem>()
-                for (word in words) {
-                    productRepository.searchProducts(word).first().forEach { p ->
-                        if (!seenIds.contains(p.id)) {
-                            seenIds.add(p.id)
-                            wordMatches.add(p)
-                        }
-                    }
-                    if (wordMatches.size >= 20) break
-                }
-                products = wordMatches
-            }
-        }
+        val products = agentSearch(query, limit = 20)
 
         return if (products.isEmpty()) {
             ActionResult.Success("No products found matching '$query'.")
@@ -142,6 +120,36 @@ class ProductActionHandler(
         }
     }
 
+    /**
+     * Agent product search backed by [ProductAgentDao] (NOT the operational [ProductDao]). Normalizes
+     * whitespace, then: (1) tries the full phrase; (2) if nothing matches and the phrase is multi-word,
+     * falls back to OR-ing per-word matches so typos / word-order / stray double-spaces still resolve.
+     */
+    private suspend fun agentSearch(rawQuery: String, limit: Long): List<ProductSearchHit> {
+        val query = normalizeWhitespace(rawQuery)
+        if (query.isEmpty()) return emptyList()
+
+        val exact = agentDao.searchProducts(query, limit)
+        if (exact.isNotEmpty()) return exact
+
+        val words = query.split(' ').filter { it.isNotBlank() }
+        if (words.size <= 1) return exact
+
+        val seen = mutableSetOf<String>()
+        val merged = mutableListOf<ProductSearchHit>()
+        for (word in words) {
+            for (hit in agentDao.searchProducts(word, limit)) {
+                if (seen.add(hit.id)) merged.add(hit)
+                if (merged.size >= limit) break
+            }
+            if (merged.size >= limit) break
+        }
+        return merged
+    }
+
+    private fun normalizeWhitespace(text: String): String =
+        text.trim().replace(Regex("\\s+"), " ")
+
     private suspend fun getProduct(params: Map<String, String>): ActionResult {
         val productId = params["productId"]
         val searchName = params["searchName"]
@@ -149,7 +157,7 @@ class ProductActionHandler(
         val product = when {
             productId != null -> productRepository.getProduct(productId)
             searchName != null -> {
-                val results = productRepository.searchProducts(searchName).first()
+                val results = agentSearch(searchName, limit = 5)
                 if (results.isEmpty()) return ActionResult.Success("No product found matching '$searchName'.")
                 if (results.size > 1) {
                     val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
@@ -187,7 +195,7 @@ class ProductActionHandler(
         val existing = when {
             productId != null -> productRepository.getProduct(productId)
             searchName != null -> {
-                val results = productRepository.searchProducts(searchName).first()
+                val results = agentSearch(searchName, limit = 5)
                 if (results.isEmpty()) return ActionResult.Error("No product found matching '$searchName'.")
                 if (results.size > 1) {
                     val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
@@ -221,7 +229,7 @@ class ProductActionHandler(
         val resolvedId = when {
             productId != null -> productId
             searchName != null -> {
-                val results = productRepository.searchProducts(searchName).first()
+                val results = agentSearch(searchName, limit = 5)
                 if (results.isEmpty()) return ActionResult.Error("No product found matching '$searchName'.")
                 if (results.size > 1) {
                     val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
