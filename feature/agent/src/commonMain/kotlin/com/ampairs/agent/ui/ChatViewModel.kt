@@ -1208,23 +1208,20 @@ class ChatViewModel(
     }
 
     private fun buildCartContext(draft: DraftCartDisplay): String {
-        if (draft.items.isEmpty() && draft.customerName.isBlank()) return ""
+        if (draft.items.isEmpty() && draft.customerName == null) return ""
         return buildString {
             appendLine("--- Current draft document state ---")
-            if (draft.customerName.isNotBlank()) {
+            if (!draft.customerName.isNullOrBlank()) {
                 appendLine("Customer: ${draft.customerName}")
             }
             if (draft.items.isNotEmpty()) {
                 appendLine("Items in cart:")
                 draft.items.forEach { item ->
-                    val price = formatMoney(item.unitPrice ?: 0.0, LocalAppLocale.current)
-                    val total = formatMoney((item.unitPrice ?: 0.0) * (item.quantity ?: 1.0), LocalAppLocale.current)
-                    appendLine("  - ${item.productName}: ${item.quantity} @ $price = $total")
+                    appendLine("  - ${item.productName}: ${item.quantity} @ ${item.unitPrice} = ${item.unitPrice * item.quantity}")
                 }
             }
             if (draft.subtotal > 0.0) {
-                val subtotalText = formatMoney(draft.subtotal, LocalAppLocale.current)
-                appendLine("Subtotal: $subtotalText")
+                appendLine("Subtotal: ${draft.subtotal}")
             }
             appendLine("Do NOT ask for information already listed above. If the user provides new customer or product changes, update the draft accordingly.")
             appendLine("---")
