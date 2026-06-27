@@ -11,6 +11,7 @@ import com.ampairs.common.database.DatabasePathProvider
 import com.ampairs.common.database.IosDatabasePathProvider
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.di.AppScope
+import com.ampairs.common.firebase.messaging.FirebaseMessaging
 import com.ampairs.formwidgets.contact.ContactPickerService
 import com.ampairs.formwidgets.location.LocationService
 import dev.zacsweers.metro.ContributesTo
@@ -22,6 +23,10 @@ import io.ktor.client.engine.darwin.Darwin
 
 @DependencyGraph(AppScope::class)
 interface IosAppGraph : AppGraph {
+    // Exposed so MainViewController can publish the shared FCM singleton to FcmBridge for the
+    // Swift AppDelegate to forward token/notification events into.
+    val firebaseMessaging: FirebaseMessaging
+
     @DependencyGraph.Factory
     fun interface Factory {
         fun create(): IosAppGraph

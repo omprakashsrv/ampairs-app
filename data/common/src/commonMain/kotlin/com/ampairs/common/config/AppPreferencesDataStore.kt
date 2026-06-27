@@ -192,6 +192,24 @@ interface AppPreferencesDataStore {
      */
     fun getSelectedAudioInputDeviceId(): Flow<String?>
     suspend fun setSelectedAudioInputDeviceId(id: String?)
+
+    // ---- Notification preferences (device-local; no backend API) ----
+
+    /** Master notification switch. When false, no notifications are surfaced. Default true. */
+    fun getNotificationsEnabled(): Flow<Boolean>
+    suspend fun setNotificationsEnabled(enabled: Boolean)
+
+    /** Per-type: order updates. Default true. */
+    fun getNotifyOrderUpdates(): Flow<Boolean>
+    suspend fun setNotifyOrderUpdates(enabled: Boolean)
+
+    /** Per-type: invoice updates. Default true. */
+    fun getNotifyInvoiceUpdates(): Flow<Boolean>
+    suspend fun setNotifyInvoiceUpdates(enabled: Boolean)
+
+    /** Per-type: announcements (also toggles the FCM "announcements" topic subscription). Default true. */
+    fun getNotifyAnnouncements(): Flow<Boolean>
+    suspend fun setNotifyAnnouncements(enabled: Boolean)
 }
 
 /**

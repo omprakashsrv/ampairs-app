@@ -29,6 +29,7 @@ import com.ampairs.navigation.providers.customerEntryProvider
 import com.ampairs.navigation.providers.ecomEntryProvider
 import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
+import com.ampairs.navigation.providers.notificationEntryProvider
 import com.ampairs.navigation.providers.orderEntryProvider
 import com.ampairs.navigation.providers.paymentEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
@@ -43,6 +44,7 @@ import com.ampairs.navigation.providers.workspaceEntryProvider
 import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitListRoute
+import com.ampairs.notification.ui.NotificationListRoute
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 
@@ -79,6 +81,7 @@ fun combinedEntryProvider(
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
         ?: paymentEntryProvider(key, backStack)
+        ?: notificationEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key, backStack)
         ?: agentEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
@@ -219,6 +222,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(PaymentRoute.Dashboard)
+        }
+    }
+
+    // Route.Notifications redirects to NotificationListRoute
+    is Route.Notifications -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(NotificationListRoute)
         }
     }
 

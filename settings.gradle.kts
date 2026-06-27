@@ -65,5 +65,6 @@ include(
     ":feature:order",
     ":feature:invoice",
     ":feature:payment",
+    ":feature:notification",
     ":feature:workspace"
 )
