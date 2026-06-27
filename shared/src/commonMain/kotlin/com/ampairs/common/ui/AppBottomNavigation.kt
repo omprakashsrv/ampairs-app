@@ -52,6 +52,7 @@ import ampairsapp.shared.generated.resources.nav_more_tax_gst
 import ampairsapp.shared.generated.resources.nav_orders
 import ampairsapp.shared.generated.resources.nav_parties
 import ampairsapp.shared.generated.resources.nav_payments
+import ampairsapp.shared.generated.resources.nav_pricing
 import ampairsapp.shared.generated.resources.nav_reports
 import ampairsapp.shared.generated.resources.nav_sales
 import ampairsapp.shared.generated.resources.nav_stock
