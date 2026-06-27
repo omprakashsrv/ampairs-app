@@ -54,6 +54,10 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/customer/$path"
     }
 
+    fun supplierUrl(path: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/api/supplier/$path"
+    }
+
     fun productUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/product/$cleanPath"
@@ -109,6 +113,11 @@ object ApiUrlBuilder {
     fun orderUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/order/$cleanPath"
+    }
+
+    fun purchaseUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/purchase/$cleanPath"
     }
 
     fun invoiceUrl(path: String): String {

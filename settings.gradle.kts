@@ -61,9 +61,11 @@ include(
     ":feature:business",
     ":feature:product",
     ":feature:customer",
+    ":feature:supplier",
     ":feature:inventory",
     ":feature:order",
     ":feature:invoice",
+    ":feature:purchase",
     ":feature:payment",
     ":feature:notification",
     ":feature:workspace"
