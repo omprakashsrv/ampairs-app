@@ -109,23 +109,19 @@ class ProductActionHandler(
         if (products.isEmpty() && query.contains(" ")) {
             val words = query.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
             if (words.size > 1) {
-                // Search for products matching any individual word
-                val wordResults = mutableSetOf<String>()
+                // Search for products matching any individual word and combine results
+                val seenIds = mutableSetOf<String>()
+                val wordMatches = mutableListOf<ProductListItem>()
                 for (word in words) {
-                    val matches = productRepository.searchProducts(word).first()
-                    matches.forEach { p -> wordResults.add(p.id) }
-                    if (wordResults.size >= 20) break
-                }
-                if (wordResults.isNotEmpty()) {
-                    products = productRepository.searchProducts(query).first()
-                        .filter { it.id in wordResults }
-                        .ifEmpty {
-                            // If no products matched exact query but have word matches, fetch those
-                            words.flatMap { word ->
-                                productRepository.searchProducts(word).first().filter { it.id in wordResults }
-                            }.distinctBy { it.id }
+                    productRepository.searchProducts(word).first().forEach { p ->
+                        if (!seenIds.contains(p.id)) {
+                            seenIds.add(p.id)
+                            wordMatches.add(p)
                         }
+                    }
+                    if (wordMatches.size >= 20) break
                 }
+                products = wordMatches
             }
         }
 
