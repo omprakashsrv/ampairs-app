@@ -42,7 +42,7 @@ jobs:
           # not yet have a checksum for; the build uses the root wrapper. Skip wrapper validation.
           validate-wrappers: false
       - name: Cache Kotlin/Native (~/.konan)
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.konan
           key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -109,7 +109,7 @@ jobs:
           # not yet have a checksum for; the build uses the root wrapper. Skip wrapper validation.
           validate-wrappers: false
       - name: Cache Kotlin/Native (~/.konan)
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.konan
           key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
