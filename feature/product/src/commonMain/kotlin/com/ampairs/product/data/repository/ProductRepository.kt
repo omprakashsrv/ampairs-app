@@ -163,13 +163,25 @@ class ProductRepository(
             productDao.headProducts(limit.toLong())
         } else {
             val normalizedTerm = normalizeWhitespace(term)
-            // Try word-based search first, fall back to substring search
-            val wordResults = productDao.searchByWords(normalizedTerm, limit.toLong())
-            if (wordResults.isNotEmpty()) {
-                wordResults
-            } else {
-                productDao.searchForEntry(normalizedTerm, limit.toLong())
+            // 1. Try exact word-based search (handles "AB WASER" with any spaces)
+            var results = productDao.searchByWords(normalizedTerm, limit.toLong())
+
+            // 2. Fallback to substring search (handles partial matches)
+            if (results.isEmpty()) {
+                results = productDao.searchForEntry(normalizedTerm, limit.toLong())
             }
+
+            // 3. If still no results, split into individual words and search for any word match
+            // This helps with spelling mistakes: "ABB WASER" searches for products with "ABB" OR "WASER"
+            if (results.isEmpty()) {
+                val words = normalizedTerm.split("\\s+".toRegex()).filter { it.isNotBlank() }
+                if (words.size > 1) {
+                    // Multiple words: search for products matching any word
+                    results = productDao.searchByAnyWord(words, limit.toLong())
+                }
+            }
+
+            results
         }
         return entities.map { it.asDomainModel().toSummary() }
     }

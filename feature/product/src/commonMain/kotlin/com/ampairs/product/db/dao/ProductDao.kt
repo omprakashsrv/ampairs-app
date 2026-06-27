@@ -96,6 +96,38 @@ interface ProductDao {
     )
     suspend fun searchByWords(term: String, limit: Long): List<ProductEntity>
 
+    // Fallback search for a single word: matches products containing the word in name/code/tax_code.
+    // Used when exact search finds nothing (helps with spelling mistakes and partial word searches).
+    @Query(
+        """
+        SELECT * FROM productEntity
+        WHERE active = 1
+          AND (REPLACE(REPLACE(REPLACE(REPLACE(LOWER(name), '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE '%' || LOWER(:word) || '%'
+               OR REPLACE(REPLACE(REPLACE(REPLACE(LOWER(code), '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE LOWER(:word) || '%'
+               OR REPLACE(REPLACE(REPLACE(REPLACE(LOWER(tax_code), '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE LOWER(:word) || '%')
+        ORDER BY name ASC LIMIT :limit
+        """
+    )
+    suspend fun searchByWord(word: String, limit: Long): List<ProductEntity>
+
+    // Multi-word search by splitting into individual words and searching for any match.
+    // Used as a fallback when exact search finds nothing (handles spelling mistakes).
+    suspend fun searchByAnyWord(words: List<String>, limit: Long): List<ProductEntity> {
+        if (words.isEmpty()) return emptyList()
+
+        // Search for each word and combine results, removing duplicates and limiting total to :limit
+        val resultMap = mutableMapOf<String, ProductEntity>()
+        for (word in words) {
+            val matches = searchByWord(word, limit.toLong())
+            for (product in matches) {
+                if (resultMap.size < limit) {
+                    resultMap.putIfAbsent(product.id, product)
+                }
+            }
+        }
+        return resultMap.values.toList().take(limit.toInt())
+    }
+
     @Query("SELECT * FROM productEntity WHERE active = 1 ORDER BY name ASC LIMIT :limit")
     suspend fun headProducts(limit: Long): List<ProductEntity>
 
