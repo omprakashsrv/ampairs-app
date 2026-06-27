@@ -44,7 +44,7 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
-                implementation(projects.feature.customerApi)
+                implementation(projects.feature.supplier)
                 implementation(projects.feature.productApi)
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)

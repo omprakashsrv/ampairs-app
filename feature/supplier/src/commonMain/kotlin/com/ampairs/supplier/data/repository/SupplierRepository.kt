@@ -9,7 +9,9 @@ import com.ampairs.supplier.data.db.toEntity
 import com.ampairs.supplier.domain.Supplier
 import com.ampairs.supplier.domain.SupplierListItem
 import com.ampairs.supplier.domain.toListItem
+import com.ampairs.supplier.data.SupplierDataService
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -30,7 +32,14 @@ import com.ampairs.supplier.util.SupplierLogger
 class SupplierRepository(
     private val supplierDao: SupplierDao,
     private val syncStateDao: SyncStateDao,
-) : CacheCleanable {
+) : CacheCleanable, SupplierDataService {
+
+    /** [SupplierDataService] — full supplier by uid (used by cross-module pickers, e.g. purchase). */
+    override suspend fun getById(uid: String): Supplier? = getSupplier(uid)
+
+    /** [SupplierDataService] — one-shot lightweight lookup for pickers. */
+    override suspend fun listSuppliers(query: String): List<SupplierListItem> =
+        filterSuppliers(query).first()
 
     fun observeSuppliers(): Flow<List<SupplierListItem>> {
         return supplierDao.getAllSuppliers()

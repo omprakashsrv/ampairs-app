@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.common.model.DateTimeAdapter
-import com.ampairs.customer.data.CustomerDataService
-import com.ampairs.customer.domain.CustomerListItem
+import com.ampairs.supplier.data.SupplierDataService
+import com.ampairs.supplier.domain.SupplierListItem
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.purchase.db.PurchaseRepository
@@ -60,7 +60,7 @@ data class PurchaseFormState(
     val status: PurchaseStatus = PurchaseStatus.DRAFT,
     val items: List<PurchaseItemFormState> = emptyList(),
     // picker results
-    val supplierResults: List<CustomerListItem> = emptyList(),
+    val supplierResults: List<SupplierListItem> = emptyList(),
     val productResults: List<ProductSummary> = emptyList(),
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
@@ -76,7 +76,7 @@ data class PurchaseFormState(
 class PurchaseFormViewModel(
     @Assisted private val purchaseId: String?,
     private val repository: PurchaseRepository,
-    private val supplierDataService: CustomerDataService,
+    private val supplierDataService: SupplierDataService,
     private val productDataService: ProductDataService,
 ) : ViewModel() {
 
@@ -144,14 +144,14 @@ class PurchaseFormViewModel(
 
     fun searchSuppliers(query: String) {
         viewModelScope.launch {
-            val results = runCatching { supplierDataService.listCustomers(query) }
+            val results = runCatching { supplierDataService.listSuppliers(query) }
                 .onFailure { PurchaseLogger.w("PurchaseForm", "supplier search failed", it) }
                 .getOrDefault(emptyList())
             _state.update { it.copy(supplierResults = results) }
         }
     }
 
-    fun selectSupplier(item: CustomerListItem) {
+    fun selectSupplier(item: SupplierListItem) {
         viewModelScope.launch {
             val full = runCatching { supplierDataService.getById(item.id) }.getOrNull()
             _state.update {
