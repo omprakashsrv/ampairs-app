@@ -81,4 +81,16 @@
     <string name="agent_adapter_whisper">Whisper (offline)</string>
     <string name="agent_adapter_vosk">Vosk (offline)</string>
     <string name="agent_stt_models_title">Speech recognition models</string>
+    <!-- Cart / order & invoice creation (FR-024) -->
+    <string name="cart_empty">Cart empty</string>
+    <string name="cart_items">Items</string>
+    <string name="cart_subtotal">Subtotal</string>
+    <string name="customer">Customer</string>
+    <string name="create_order">Create order</string>
+    <string name="create_invoice">Create invoice</string>
+    <string name="clear_cart">Clear cart</string>
+    <string name="confirm_order">Confirm order for %1$s?</string>
+    <string name="confirm_invoice">Confirm invoice for %1$s?</string>
+    <string name="order_created">Order created successfully</string>
+    <string name="invoice_created">Invoice created successfully</string>
 </resources>

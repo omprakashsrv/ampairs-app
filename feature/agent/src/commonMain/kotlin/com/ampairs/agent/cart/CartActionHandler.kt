@@ -10,6 +10,7 @@ import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.DraftDocumentStore
 import com.ampairs.common.agent.DraftLine
 import com.ampairs.common.agent.ParameterType
+import com.ampairs.common.agent.SelectionOption
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.product.data.ProductDataService
@@ -54,10 +55,27 @@ class CartActionHandler(
         }
         val product = products.firstOrNull { it.name.equals(name, ignoreCase = true) }
             ?: products.singleOrNull()
-            ?: return ActionResult.NeedsInput(
-                "Which product did you mean? " + products.take(5).joinToString(", ") { it.name },
-                listOf("product"),
-            )
+            ?: run {
+                // Multiple candidates: return selection dialog instead of text list
+                val options = products.take(10).map { p ->
+                    SelectionOption(
+                        id = p.id,
+                        label = p.name,
+                        secondaryLabel = "${formatNum(p.sellingPrice)} each",
+                    )
+                }
+                val pendingAction = AgentAction(
+                    actionType = ActionType.ADD_ITEM,
+                    moduleName = "cart",
+                    params = params,
+                )
+                return ActionResult.Selection(
+                    question = "Which product did you mean?",
+                    paramName = "product",
+                    options = options,
+                    pendingAction = pendingAction,
+                )
+            }
         val qty = params["quantity"]?.trim()?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 1.0
         val unitPrice = params["price"]?.trim()?.toDoubleOrNull()?.takeIf { it >= 0.0 } ?: product.sellingPrice
         draft.addLine(DraftLine(product.id, product.name, qty, unitPrice))
@@ -79,10 +97,27 @@ class CartActionHandler(
         }
         val picked = candidates.firstOrNull { it.name.equals(name, ignoreCase = true) }
             ?: candidates.singleOrNull()
-            ?: return ActionResult.NeedsInput(
-                "Which customer did you mean? " + candidates.take(5).joinToString(", ") { it.name },
-                listOf("customer"),
-            )
+            ?: run {
+                // Multiple candidates: return selection dialog instead of text list
+                val options = candidates.take(10).map { c ->
+                    SelectionOption(
+                        id = c.id,
+                        label = c.name,
+                        secondaryLabel = c.phone,
+                    )
+                }
+                val pendingAction = AgentAction(
+                    actionType = ActionType.SET_CUSTOMER,
+                    moduleName = "cart",
+                    params = params,
+                )
+                return ActionResult.Selection(
+                    question = "Which customer did you mean?",
+                    paramName = "customer",
+                    options = options,
+                    pendingAction = pendingAction,
+                )
+            }
         draft.setCustomer(picked.id, picked.name)
         val cartPart = if (draft.isEmpty) {
             "Cart is empty — add items like \"add 2 widgets\"."

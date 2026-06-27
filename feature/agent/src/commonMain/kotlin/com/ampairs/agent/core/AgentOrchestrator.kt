@@ -92,6 +92,22 @@ class AgentOrchestrator(
         return respondToResult(actionRegistry.dispatch(updatedAction), updatedAction)
     }
 
+    /**
+     * Process multiple selections from a [ActionResult.Selection] with multi-select enabled.
+     * The pending action parameter accepts a comma-separated list of IDs.
+     */
+    suspend fun selectMultipleOptions(
+        pendingAction: AgentAction,
+        paramName: String,
+        selectedIds: List<String>,
+    ): AgentResponse {
+        val selectedIdString = selectedIds.joinToString(",")
+        val updatedAction = pendingAction.copy(
+            params = pendingAction.params + mapOf(paramName to selectedIdString)
+        )
+        return respondToResult(actionRegistry.dispatch(updatedAction), updatedAction)
+    }
+
     private fun respondToResult(result: ActionResult, action: AgentAction): AgentResponse =
         AgentResponse(
             text = when (result) {
@@ -133,4 +149,5 @@ data class PendingSelection(
     val paramName: String,  // e.g. "customer_id", "product_id"
     val pendingAction: AgentAction,  // The incomplete action awaiting selection
     val options: List<SelectionOption>,  // Candidates to choose from
+    val multiSelect: Boolean = false,  // True for multi-select, false for single-select
 )

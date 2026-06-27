@@ -70,6 +70,7 @@ object AgentSchemaBuilder {
         appendLine("- intent=conversation for greetings, small talk, or any question that is NOT a supported action or data query — write a helpful, complete answer in \"reply\".")
         appendLine("- ALWAYS fill \"reply\" for conversation and clarify with the exact text to show the user.")
         appendLine("- params values are strings; include only what the user provided.")
+        appendLine("- IMPORTANT: if a draft document state is shown above, NEVER ask for information already listed there. If the user updates the information (e.g., 'add X to cart' or 'change customer'), modify params accordingly.")
         appendLine()
     }
 
@@ -94,6 +95,7 @@ object AgentSchemaBuilder {
         appendLine("- \"conversation\": greetings, small talk, or any question not covered above — write a genuinely helpful, complete answer in \"reply\".")
         appendLine()
         appendLine("Guidelines: always write \"reply\" as the exact, friendly, concise text to show the user (required for conversation and clarify). Keep params values as strings and include only what the user actually provided. Answer in the user's language.")
+        appendLine("IMPORTANT: if a draft document state is shown in the conversation, NEVER ask for information already listed there (e.g., don't ask for customer name if already in draft). Batch related questions together (e.g., ask for customer and first product in one turn, not separately).")
         appendLine()
     }
 

@@ -99,6 +99,8 @@ data class ChatUiState(
     /** Currently selected STT/TTS adapter ids (null → platform default = first option). */
     val selectedSttId: String? = null,
     val selectedTtsId: String? = null,
+    /** Current draft cart state for sticky display in the chat (order/invoice building). */
+    val draftCart: DraftCartDisplay = DraftCartDisplay(),
     /**
      * Downloadable models for the **currently selected** STT engine (Whisper sizes, Vosk languages, …);
      * empty when that engine has no downloadable models. Engine-agnostic — driven by the selected
@@ -246,6 +248,7 @@ class ChatViewModel(
     private val actionRegistry: ActionRegistry,
     private val chatHistoryRepository: ChatHistoryRepository,
     private val telemetryRecorder: ChatTelemetryRecorder,
+    private val draftDocumentStore: com.ampairs.common.agent.DraftDocumentStore,
 ) : ViewModel() {
 
     /** Stable id grouping this chat session's telemetry turns (opt-in). */
@@ -312,6 +315,9 @@ class ChatViewModel(
                 reasoningEnabled = enabled
                 _uiState.update { it.copy(reasoningEnabled = enabled) }
             }
+            .launchIn(viewModelScope)
+        draftDocumentStore.state
+            .onEach { draft -> _uiState.update { it.copy(draftCart = DraftCartDisplay.from(draft)) } }
             .launchIn(viewModelScope)
     }
 
@@ -780,9 +786,16 @@ class ChatViewModel(
 
     private suspend fun processWithOrchestrator(text: String): String? {
         return try {
+            val draft = _uiState.value.draftCart
+            val cartContext = buildCartContext(draft)
+            val historyWithContext = if (cartContext.isNotBlank()) {
+                listOf(ChatMessage(id = "CONTEXT", text = cartContext, isFromUser = false)) + _uiState.value.messages
+            } else {
+                _uiState.value.messages
+            }
             val response = orchestrator.processMessage(
                 userMessage = text,
-                conversationHistory = _uiState.value.messages,
+                conversationHistory = historyWithContext,
                 isOnline = _uiState.value.isOnline,
             )
             appendAgentResponse(response)
@@ -800,11 +813,22 @@ class ChatViewModel(
      * orchestrator if the model produced nothing usable or the stream errored.
      */
     private suspend fun streamChat(text: String, engine: LlmEngine): String? {
-        val history = _uiState.value.messages
-            .dropLast(1) // exclude the user message we just added
-            .filter { it.text.isNotBlank() }
-            .takeLast(HISTORY_TURNS)
-            .map { (if (it.isFromUser) "User: " else "Assistant: ") + it.text }
+        val draft = _uiState.value.draftCart
+        val cartContext = buildCartContext(draft)
+
+        val history = mutableListOf<String>().apply {
+            // Include current cart state as context if there's anything in the draft
+            if (cartContext.isNotBlank()) {
+                add(cartContext)
+            }
+            // Then append conversation history
+            _uiState.value.messages
+                .dropLast(1) // exclude the user message we just added
+                .filter { it.text.isNotBlank() }
+                .takeLast(HISTORY_TURNS)
+                .map { (if (it.isFromUser) "User: " else "Assistant: ") + it.text }
+                .forEach { add(it) }
+        }
 
         val streamId = UidGenerator.generateUid("MSG")
         val buffer = StringBuilder()
@@ -940,6 +964,26 @@ class ChatViewModel(
                     selection.pendingAction,
                     selection.paramName,
                     selectedId
+                )
+                appendAgentResponse(response)
+                if (response.actionResult !is ActionResult.Error) speakText(response.text)
+            } catch (e: Exception) {
+                appendError(errorText(e))
+            }
+        }
+    }
+
+    /** User picked multiple options from a pending selection with multi-select enabled. */
+    fun selectMultipleOptions(selectedIds: List<String>) {
+        val selection = _uiState.value.pendingSelection ?: return
+        if (selectedIds.isEmpty()) return
+        _uiState.update { it.copy(pendingSelection = null, isProcessing = true) }
+        viewModelScope.launch {
+            try {
+                val response = orchestrator.selectMultipleOptions(
+                    selection.pendingAction,
+                    selection.paramName,
+                    selectedIds
                 )
                 appendAgentResponse(response)
                 if (response.actionResult !is ActionResult.Error) speakText(response.text)
@@ -1180,6 +1224,27 @@ class ChatViewModel(
         val snapshot = _uiState.value.messages
         viewModelScope.launch {
             runCatching { chatHistoryRepository.save(snapshot, MAX_PERSISTED_MESSAGES) }
+        }
+    }
+
+    private fun buildCartContext(draft: DraftCartDisplay): String {
+        if (draft.items.isEmpty() && draft.customerName == null) return ""
+        return buildString {
+            appendLine("--- Current draft document state ---")
+            if (!draft.customerName.isNullOrBlank()) {
+                appendLine("Customer: ${draft.customerName}")
+            }
+            if (draft.items.isNotEmpty()) {
+                appendLine("Items in cart:")
+                draft.items.forEach { item ->
+                    appendLine("  - ${item.productName}: ${item.quantity} @ ${item.unitPrice} = ${item.unitPrice * item.quantity}")
+                }
+            }
+            if (draft.subtotal > 0.0) {
+                appendLine("Subtotal: ${draft.subtotal}")
+            }
+            appendLine("Do NOT ask for information already listed above. If the user provides new customer or product changes, update the draft accordingly.")
+            appendLine("---")
         }
     }
 
