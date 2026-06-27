@@ -786,9 +786,16 @@ class ChatViewModel(
 
     private suspend fun processWithOrchestrator(text: String): String? {
         return try {
+            val draft = _uiState.value.draftCart
+            val cartContext = buildCartContext(draft)
+            val historyWithContext = if (cartContext.isNotBlank()) {
+                listOf(ChatMessage(id = "CONTEXT", text = cartContext, isFromUser = false)) + _uiState.value.messages
+            } else {
+                _uiState.value.messages
+            }
             val response = orchestrator.processMessage(
                 userMessage = text,
-                conversationHistory = _uiState.value.messages,
+                conversationHistory = historyWithContext,
                 isOnline = _uiState.value.isOnline,
             )
             appendAgentResponse(response)
@@ -806,11 +813,22 @@ class ChatViewModel(
      * orchestrator if the model produced nothing usable or the stream errored.
      */
     private suspend fun streamChat(text: String, engine: LlmEngine): String? {
-        val history = _uiState.value.messages
-            .dropLast(1) // exclude the user message we just added
-            .filter { it.text.isNotBlank() }
-            .takeLast(HISTORY_TURNS)
-            .map { (if (it.isFromUser) "User: " else "Assistant: ") + it.text }
+        val draft = _uiState.value.draftCart
+        val cartContext = buildCartContext(draft)
+
+        val history = mutableListOf<String>().apply {
+            // Include current cart state as context if there's anything in the draft
+            if (cartContext.isNotBlank()) {
+                add(cartContext)
+            }
+            // Then append conversation history
+            _uiState.value.messages
+                .dropLast(1) // exclude the user message we just added
+                .filter { it.text.isNotBlank() }
+                .takeLast(HISTORY_TURNS)
+                .map { (if (it.isFromUser) "User: " else "Assistant: ") + it.text }
+                .forEach { add(it) }
+        }
 
         val streamId = UidGenerator.generateUid("MSG")
         val buffer = StringBuilder()
@@ -1186,6 +1204,30 @@ class ChatViewModel(
         val snapshot = _uiState.value.messages
         viewModelScope.launch {
             runCatching { chatHistoryRepository.save(snapshot, MAX_PERSISTED_MESSAGES) }
+        }
+    }
+
+    private fun buildCartContext(draft: DraftCartDisplay): String {
+        if (draft.items.isEmpty() && draft.customerName.isBlank()) return ""
+        return buildString {
+            appendLine("--- Current draft document state ---")
+            if (draft.customerName.isNotBlank()) {
+                appendLine("Customer: ${draft.customerName}")
+            }
+            if (draft.items.isNotEmpty()) {
+                appendLine("Items in cart:")
+                draft.items.forEach { item ->
+                    val price = formatMoney(item.unitPrice ?: 0.0, LocalAppLocale.current)
+                    val total = formatMoney((item.unitPrice ?: 0.0) * (item.quantity ?: 1.0), LocalAppLocale.current)
+                    appendLine("  - ${item.productName}: ${item.quantity} @ $price = $total")
+                }
+            }
+            if (draft.subtotal > 0.0) {
+                val subtotalText = formatMoney(draft.subtotal, LocalAppLocale.current)
+                appendLine("Subtotal: $subtotalText")
+            }
+            appendLine("Do NOT ask for information already listed above. If the user provides new customer or product changes, update the draft accordingly.")
+            appendLine("---")
         }
     }
 
