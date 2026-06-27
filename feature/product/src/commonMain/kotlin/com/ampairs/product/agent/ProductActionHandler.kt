@@ -103,7 +103,32 @@ class ProductActionHandler(
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What should I search for?", listOf("query"))
 
-        val products = productRepository.searchProducts(query).first()
+        var products = productRepository.searchProducts(query).first()
+
+        // Fallback: if no results found, try searching for individual words (handles spelling mistakes)
+        if (products.isEmpty() && query.contains(" ")) {
+            val words = query.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+            if (words.size > 1) {
+                // Search for products matching any individual word
+                val wordResults = mutableSetOf<String>()
+                for (word in words) {
+                    val matches = productRepository.searchProducts(word).first()
+                    matches.forEach { p -> wordResults.add(p.id) }
+                    if (wordResults.size >= 20) break
+                }
+                if (wordResults.isNotEmpty()) {
+                    products = productRepository.searchProducts(query).first()
+                        .filter { it.id in wordResults }
+                        .ifEmpty {
+                            // If no products matched exact query but have word matches, fetch those
+                            words.flatMap { word ->
+                                productRepository.searchProducts(word).first().filter { it.id in wordResults }
+                            }.distinctBy { it.id }
+                        }
+                }
+            }
+        }
+
         return if (products.isEmpty()) {
             ActionResult.Success("No products found matching '$query'.")
         } else {

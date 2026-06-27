@@ -16,7 +16,16 @@ interface ProductDao {
     @Query("SELECT * FROM productEntity WHERE active = 1 ORDER BY name ASC")
     fun observeAllProducts(): Flow<List<ProductEntity>>
 
-    @Query("SELECT * FROM productEntity WHERE name LIKE '%' || :query || '%' AND active = 1 ORDER BY name ASC")
+    // Observe products by name with normalized whitespace handling.
+    // Normalizes multiple consecutive spaces in product names and search query.
+    @Query(
+        """
+        SELECT * FROM productEntity
+        WHERE active = 1
+          AND REPLACE(REPLACE(REPLACE(REPLACE(LOWER(name), '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE '%' || LOWER(:query) || '%'
+        ORDER BY name ASC
+        """
+    )
     fun observeProductsByName(query: String): Flow<List<ProductEntity>>
 
     /**

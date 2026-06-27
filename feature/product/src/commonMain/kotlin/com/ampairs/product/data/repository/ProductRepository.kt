@@ -68,7 +68,9 @@ class ProductRepository(
         if (query.isBlank()) {
             observeProductsJoined(productDao.observeAllProducts())
         } else {
-            observeProductsJoined(productDao.observeProductsByName(query))
+            // Normalize whitespace: collapse multiple spaces to single space
+            val normalizedQuery = normalizeWhitespace(query)
+            observeProductsJoined(productDao.observeProductsByName(normalizedQuery))
         }
 
     /** Combined search + multi-select filter (brand / category / sub-category / group). Empty list = no filter. */
