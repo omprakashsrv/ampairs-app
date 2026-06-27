@@ -141,6 +141,15 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/subscription/$cleanPath"
     }
 
+    /**
+     * On-device AI model endpoints (manifest + download proxy), served by the backend `agent` module.
+     * e.g. agentUrl("v1/models"), agentUrl("v1/models/{id}/download")
+     */
+    fun agentUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/agent/$cleanPath"
+    }
+
     fun notificationUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/notification/$cleanPath"

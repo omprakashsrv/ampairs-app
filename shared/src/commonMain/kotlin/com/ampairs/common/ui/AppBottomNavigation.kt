@@ -11,6 +11,7 @@ import Route
 import WorkspaceRoute
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Dashboard
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation3.runtime.NavKey
 import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.nav_alerts
+import ampairsapp.shared.generated.resources.nav_assistant
 import ampairsapp.shared.generated.resources.nav_dashboard
 import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_inventory
@@ -97,6 +99,7 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.PRINTING -> Route.Printing
     ModuleCodes.PAYMENT_COLLECTION -> Route.Payment
     ModuleCodes.STOREFRONT_MANAGEMENT -> Route.Storefront
+    ModuleCodes.AI_ASSISTANT -> Route.Agent
     else -> null
 }
 
@@ -134,6 +137,7 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
         || currentRoute is PrintQueueRoute -> ModuleCodes.PRINTING
     currentRoute is PaymentRoute || currentRoute is Route.Payment -> ModuleCodes.PAYMENT_COLLECTION
     currentRoute is Route.Storefront -> ModuleCodes.STOREFRONT_MANAGEMENT
+    currentRoute is Route.Agent -> ModuleCodes.AI_ASSISTANT
     else -> null
 }
 
@@ -157,6 +161,7 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.PRINTING -> stringResource(Res.string.nav_printing)
     ModuleCodes.PAYMENT_COLLECTION -> stringResource(Res.string.nav_payments)
     ModuleCodes.STOREFRONT_MANAGEMENT -> stringResource(Res.string.nav_storefront)
+    ModuleCodes.AI_ASSISTANT -> stringResource(Res.string.nav_assistant)
     "business-reporting" -> stringResource(Res.string.nav_reports)
     "business-dashboard" -> stringResource(Res.string.nav_dashboard)
     "notification-system" -> stringResource(Res.string.nav_alerts)
@@ -176,6 +181,7 @@ fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.PRINTING -> Icons.Default.Print
     ModuleCodes.PAYMENT_COLLECTION -> Icons.Default.Payments
     ModuleCodes.STOREFRONT_MANAGEMENT -> Icons.Default.Storefront
+    ModuleCodes.AI_ASSISTANT -> Icons.Default.AutoAwesome
     "business-reporting" -> Icons.Default.Analytics
     "business-dashboard" -> Icons.Default.Dashboard
     "notification-system" -> Icons.Default.Notifications

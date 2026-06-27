@@ -4,6 +4,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import com.ampairs.form.agent.FormAgentDao
 
 /**
  * Unified form schema database (spec 011): aggregate header + section + field tables.
@@ -23,6 +24,7 @@ abstract class FormDatabase : RoomDatabase() {
     abstract fun formSchemaDao(): FormSchemaDao
     abstract fun formSectionDao(): FormSectionDao
     abstract fun formFieldDao(): FormFieldDao
+    abstract fun formAgentDao(): FormAgentDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

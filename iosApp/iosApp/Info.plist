@@ -24,6 +24,10 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Ampairs uses your local network to send print jobs to nearby network and AirPrint printers.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Ampairs uses the microphone for hands-free voice conversations with the assistant.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Ampairs transcribes your speech on-device to understand voice commands for the assistant.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

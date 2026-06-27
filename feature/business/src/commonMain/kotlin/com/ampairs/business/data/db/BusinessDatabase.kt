@@ -4,6 +4,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import com.ampairs.business.agent.BusinessAgentDao
 
 @Database(
     entities = [BusinessEntity::class],
@@ -13,6 +14,9 @@ import androidx.room.RoomDatabaseConstructor
 @ConstructedBy(BusinessDatabaseConstructor::class)
 abstract class BusinessDatabase : RoomDatabase() {
     abstract fun businessDao(): BusinessDao
+
+    /** DAO for assistant report queries. */
+    abstract fun businessAgentDao(): BusinessAgentDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

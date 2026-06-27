@@ -8,17 +8,21 @@ import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.Product
-import kotlinx.coroutines.flow.first
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("product")
 class ProductActionHandler(
     private val productRepository: ProductRepository,
+    private val agentDao: ProductAgentDao,
 ) : ActionHandler {
 
     override val moduleName = "product"
@@ -32,8 +36,39 @@ class ProductActionHandler(
         ActionType.UPDATE -> updateProduct(action.params)
         ActionType.DELETE -> deleteProduct(action.params)
         ActionType.COUNT -> countProducts()
+        ActionType.LOW_STOCK -> reportLowStock(action.params)
+        ActionType.OUT_OF_STOCK -> reportOutOfStock()
+        ActionType.INVENTORY_VALUE -> reportInventoryValue()
         else -> ActionResult.Error("Unsupported action: ${action.actionType}")
     }
+
+    // ── Curated stock reports (deterministic; preferred over free SQL) ────────────────────────────
+
+    private suspend fun reportLowStock(params: Map<String, String>): ActionResult {
+        val limit = params["limit"]?.trim()?.toIntOrNull()?.coerceIn(1, 20) ?: 10
+        val total = agentDao.countLowStock()
+        val items = agentDao.lowStockProducts(limit)
+        return if (items.isEmpty()) {
+            ActionResult.Success("No products are low on stock.")
+        } else {
+            val lines = items.joinToString("\n") { "• ${it.name} — ${formatQty(it.quantity)} left" }
+            val more = if (total > items.size) "\n… and ${total - items.size} more" else ""
+            ActionResult.Success("$total product(s) low on stock:\n$lines$more")
+        }
+    }
+
+    private suspend fun reportOutOfStock(): ActionResult {
+        val count = agentDao.countOutOfStock()
+        return ActionResult.Success("$count product(s) are out of stock.")
+    }
+
+    private suspend fun reportInventoryValue(): ActionResult {
+        val value = agentDao.inventoryValueAtCost()
+        return ActionResult.Success(summary = "Total inventory value (at cost).", amount = value)
+    }
+
+    private fun formatQty(value: Double): String =
+        if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
 
     private suspend fun createProduct(params: Map<String, String>): ActionResult {
         val name = params["name"]
@@ -67,7 +102,8 @@ class ProductActionHandler(
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What should I search for?", listOf("query"))
 
-        val products = productRepository.searchProducts(query).first()
+        val products = agentSearch(query, limit = 20)
+
         return if (products.isEmpty()) {
             ActionResult.Success("No products found matching '$query'.")
         } else {
@@ -84,6 +120,36 @@ class ProductActionHandler(
         }
     }
 
+    /**
+     * Agent product search backed by [ProductAgentDao] (NOT the operational [ProductDao]). Normalizes
+     * whitespace, then: (1) tries the full phrase; (2) if nothing matches and the phrase is multi-word,
+     * falls back to OR-ing per-word matches so typos / word-order / stray double-spaces still resolve.
+     */
+    private suspend fun agentSearch(rawQuery: String, limit: Long): List<ProductSearchHit> {
+        val query = normalizeWhitespace(rawQuery)
+        if (query.isEmpty()) return emptyList()
+
+        val exact = agentDao.searchProducts(query, limit)
+        if (exact.isNotEmpty()) return exact
+
+        val words = query.split(' ').filter { it.isNotBlank() }
+        if (words.size <= 1) return exact
+
+        val seen = mutableSetOf<String>()
+        val merged = mutableListOf<ProductSearchHit>()
+        for (word in words) {
+            for (hit in agentDao.searchProducts(word, limit)) {
+                if (seen.add(hit.id)) merged.add(hit)
+                if (merged.size >= limit) break
+            }
+            if (merged.size >= limit) break
+        }
+        return merged
+    }
+
+    private fun normalizeWhitespace(text: String): String =
+        text.trim().replace(Regex("\\s+"), " ")
+
     private suspend fun getProduct(params: Map<String, String>): ActionResult {
         val productId = params["productId"]
         val searchName = params["searchName"]
@@ -91,7 +157,7 @@ class ProductActionHandler(
         val product = when {
             productId != null -> productRepository.getProduct(productId)
             searchName != null -> {
-                val results = productRepository.searchProducts(searchName).first()
+                val results = agentSearch(searchName, limit = 5)
                 if (results.isEmpty()) return ActionResult.Success("No product found matching '$searchName'.")
                 if (results.size > 1) {
                     val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
@@ -129,7 +195,7 @@ class ProductActionHandler(
         val existing = when {
             productId != null -> productRepository.getProduct(productId)
             searchName != null -> {
-                val results = productRepository.searchProducts(searchName).first()
+                val results = agentSearch(searchName, limit = 5)
                 if (results.isEmpty()) return ActionResult.Error("No product found matching '$searchName'.")
                 if (results.size > 1) {
                     val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
@@ -163,7 +229,7 @@ class ProductActionHandler(
         val resolvedId = when {
             productId != null -> productId
             searchName != null -> {
-                val results = productRepository.searchProducts(searchName).first()
+                val results = agentSearch(searchName, limit = 5)
                 if (results.isEmpty()) return ActionResult.Error("No product found matching '$searchName'.")
                 if (results.size > 1) {
                     val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
@@ -243,6 +309,26 @@ class ProductActionHandler(
                 actionType = ActionType.COUNT,
                 moduleName = "product",
                 description = "Get total product count",
+                parameters = emptyList(),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.LOW_STOCK,
+                moduleName = "product",
+                description = "Products at or below their low-stock alert level. Use for \"low stock\", \"running low\", \"what needs reordering\".",
+                parameters = listOf(
+                    ActionParameter("limit", ParameterType.NUMBER, required = false, "How many to list (default 10, max 20)."),
+                ),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.OUT_OF_STOCK,
+                moduleName = "product",
+                description = "Count of products with zero on-hand stock. Use for \"out of stock\", \"sold out items\".",
+                parameters = emptyList(),
+            ),
+            ActionDescriptor(
+                actionType = ActionType.INVENTORY_VALUE,
+                moduleName = "product",
+                description = "Total inventory valuation at cost (Σ on-hand × cost price). Use for \"inventory value\", \"stock value\", \"worth of stock\".",
                 parameters = emptyList(),
             ),
         )

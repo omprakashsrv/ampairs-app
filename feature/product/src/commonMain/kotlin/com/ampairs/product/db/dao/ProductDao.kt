@@ -68,14 +68,14 @@ interface ProductDao {
     )
     suspend fun getDistinctGroupIds(): List<String>
 
-    // Fast-entry composer lookup (spec 010 v2): name/code substring or tax-code (HSN) prefix.
+    // Fast-entry composer lookup (spec 010 v2): name/code/tax-code partial word search.
     @Query(
         """
         SELECT * FROM productEntity
         WHERE active = 1
           AND (name LIKE '%' || :term || '%'
                OR code LIKE '%' || :term || '%'
-               OR tax_code LIKE :term || '%')
+               OR tax_code LIKE '%' || :term || '%')
         ORDER BY name ASC LIMIT :limit
         """
     )

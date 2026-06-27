@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
+import com.ampairs.tax.agent.TaxAgentDao
 import com.ampairs.tax.data.db.dao.TaxCodeDao
 import com.ampairs.tax.data.db.dao.TaxComponentDao
 import com.ampairs.tax.data.db.dao.TaxComponentTypeDao
@@ -49,6 +50,9 @@ abstract class TaxRoomDatabase : RoomDatabase() {
     abstract fun taxComponentDao(): TaxComponentDao
     abstract fun taxRuleDao(): TaxRuleDao
     abstract fun taxConfigurationDao(): TaxConfigurationDao
+
+    /** DAO for assistant report queries. */
+    abstract fun taxAgentDao(): TaxAgentDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

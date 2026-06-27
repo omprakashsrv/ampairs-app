@@ -129,6 +129,70 @@ interface AppPreferencesDataStore {
     fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
     suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
 
+    /**
+     * The user's decision on downloading the on-device AI assistant model.
+     * `null` = not asked yet (show the consent prompt), `true` = consented (auto-download),
+     * `false` = declined (stay rule-based, never re-prompt). App-wide (not per-workspace).
+     */
+    fun getLlmModelDownloadConsent(): Flow<Boolean?>
+    suspend fun setLlmModelDownloadConsent(granted: Boolean)
+
+    /**
+     * Whether the user opted in to uploading assistant chat transcripts to the backend for quality
+     * improvement. Defaults **false** (opt-in). App-wide (not per-workspace).
+     */
+    fun getChatTelemetryEnabled(): Flow<Boolean>
+    suspend fun setChatTelemetryEnabled(enabled: Boolean)
+
+    /**
+     * Whether the assistant shows the on-device model's transient "thinking" (reasoning) text while
+     * it reasons. Defaults **true** (current behaviour). App-wide (not per-workspace).
+     */
+    fun getAssistantReasoningEnabled(): Flow<Boolean>
+    suspend fun setAssistantReasoningEnabled(enabled: Boolean)
+
+    /**
+     * The on-device AI model the user explicitly chose in the model manager, by
+     * `ModelDescriptor.id`. `null` = no explicit choice; selection falls back to the RAM-gated
+     * auto-pick. App-wide (not per-workspace).
+     */
+    fun getSelectedLlmModelId(): Flow<String?>
+    suspend fun setSelectedLlmModelId(modelId: String?)
+
+    /**
+     * The assistant speech adapter the user picked in settings, by adapter id (e.g. "native" /
+     * "whisper"). `null` = use the platform default (first registered). App-wide (the available
+     * adapters differ per platform, so this effectively selects per platform).
+     */
+    fun getSelectedSttAdapterId(): Flow<String?>
+    suspend fun setSelectedSttAdapterId(id: String?)
+    fun getSelectedTtsAdapterId(): Flow<String?>
+    suspend fun setSelectedTtsAdapterId(id: String?)
+
+    /**
+     * The Whisper model the user picked for the offline Whisper STT adapter, by `ModelDescriptor.id`
+     * (e.g. "whisper-base" / "whisper-tiny"). `null` = use the catalog default (first entry). App-wide;
+     * the available models differ per platform (`.tflite` on mobile, ggml on desktop), so this
+     * effectively selects per platform.
+     */
+    fun getSelectedWhisperModelId(): Flow<String?>
+    suspend fun setSelectedWhisperModelId(id: String?)
+
+    /**
+     * Generic per-engine selected-model id, namespaced (e.g. "vosk"). Lets any downloadable-model STT
+     * engine persist its model choice without a dedicated key — the pluggable counterpart to the
+     * Whisper-specific keys above. `null` = use the catalog default (first entry). App-wide.
+     */
+    fun getSelectedModelId(namespace: String): Flow<String?>
+    suspend fun setSelectedModelId(namespace: String, id: String?)
+
+    /**
+     * Selected microphone input device id (Desktop only — the mixer name). Null → system default.
+     * Other platforms ignore it (the OS picks the mic).
+     */
+    fun getSelectedAudioInputDeviceId(): Flow<String?>
+    suspend fun setSelectedAudioInputDeviceId(id: String?)
+
     // ---- Notification preferences (device-local; no backend API) ----
 
     /** Master notification switch. When false, no notifications are surfaced. Default true. */

@@ -7,15 +7,16 @@ import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.ParameterType
-import com.ampairs.inventory.data.InventoryDataService
-import com.ampairs.inventory.data.repository.InventoryItemRepository
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
-import kotlinx.coroutines.flow.first
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("inventory")
 class InventoryActionHandler(
-    private val inventoryItemRepository: InventoryItemRepository,
-    private val inventoryDataService: InventoryDataService,
+    private val agentDao: InventoryAgentDao,
 ) : ActionHandler {
 
     override val moduleName = "inventory"
@@ -33,7 +34,7 @@ class InventoryActionHandler(
     private suspend fun searchInventory(params: Map<String, String>): ActionResult {
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What product are you looking for?", listOf("query"))
-        val items = inventoryItemRepository.searchItems(query).first()
+        val items = agentDao.search(normalizeWhitespace(query), limit = 50)
         return if (items.isEmpty()) {
             ActionResult.Success("No inventory found matching '$query'.")
         } else {
@@ -44,24 +45,24 @@ class InventoryActionHandler(
 
     private suspend fun countInventory(params: Map<String, String>): ActionResult {
         val query = params["query"]
-        val items = if (query != null) {
-            inventoryItemRepository.searchItems(query).first()
+        val count = if (query != null) {
+            agentDao.countMatching(normalizeWhitespace(query))
         } else {
-            inventoryItemRepository.observeItems().first()
+            agentDao.countActive()
         }
-        return ActionResult.Success("Total inventory items: ${items.size}")
+        return ActionResult.Success("Total inventory items: $count")
     }
 
     private suspend fun getProductInventory(params: Map<String, String>): ActionResult {
         val productId = params["productId"]
             ?: return ActionResult.NeedsInput("Which product's inventory?", listOf("productId"))
-        val stock = inventoryDataService.getStock(productId)
+        val stock = agentDao.stockByProduct(productId)
             ?: return ActionResult.Error("No inventory found for product '$productId'.")
         return ActionResult.Success("Stock for product: ${stock.onHand} (available ${stock.available})")
     }
 
     private suspend fun listLowStock(params: Map<String, String>): ActionResult {
-        val items = inventoryItemRepository.observeLowStock().first()
+        val items = agentDao.lowStock(limit = 50)
         return if (items.isEmpty()) {
             ActionResult.Success("No low-stock items.")
         } else {
@@ -70,6 +71,9 @@ class InventoryActionHandler(
             ActionResult.Success("${items.size} low-stock item(s):\n$summary$more")
         }
     }
+
+    private fun normalizeWhitespace(text: String): String =
+        text.trim().replace(Regex("\\s+"), " ")
 
     companion object {
         val ACTIONS = listOf(

@@ -1,6 +1,7 @@
 package com.ampairs.inventory.di
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.inventory.agent.InventoryAgentDao
 import com.ampairs.inventory.data.db.InventoryDatabase
 import com.ampairs.inventory.data.db.InventoryItemDao
 import com.ampairs.inventory.data.db.InventoryTransactionDao
@@ -16,5 +17,8 @@ interface InventoryDaoModule {
         @Provides
         fun provideInventoryTransactionDao(db: InventoryDatabase): InventoryTransactionDao =
             db.inventoryTransactionDao()
+
+        @Provides
+        fun provideInventoryAgentDao(db: InventoryDatabase): InventoryAgentDao = db.inventoryAgentDao()
     }
 }

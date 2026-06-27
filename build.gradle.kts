@@ -39,4 +39,5 @@ dependencies {
     kover(project(":feature:customer"))
     kover(project(":feature:product"))
     kover(project(":feature:order"))
+    kover(project(":feature:agent"))
 }

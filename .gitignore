@@ -27,3 +27,6 @@ GoogleService-Info.plist
 *.jks
 *.keystore
 ampairs.jks
+
+# Android release build outputs (APK/AAB/baseline profiles — large binaries)
+androidApp/release/

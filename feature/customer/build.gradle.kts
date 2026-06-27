@@ -44,6 +44,7 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
+                implementation(projects.feature.agent)
                 implementation(projects.feature.formApi)
                 implementation(projects.feature.form)
                 implementation(projects.feature.formwidgets)

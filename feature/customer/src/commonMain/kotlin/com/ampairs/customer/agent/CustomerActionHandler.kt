@@ -8,20 +8,26 @@ import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.NavigationTarget
 import com.ampairs.common.agent.ParameterType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.agent.SelectionOption
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.util.CustomerConstants
+import com.ampairs.agent.handlers.SelectionHelper
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
-import kotlinx.coroutines.flow.first
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("customer")
 class CustomerActionHandler(
     private val customerRepository: CustomerRepository,
+    private val agentDao: CustomerAgentDao,
     private val syncService: CentralSyncService,
 ) : ActionHandler {
 
@@ -72,7 +78,7 @@ class CustomerActionHandler(
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What should I search for?", listOf("query"))
 
-        val customers = customerRepository.searchCustomers(query).first()
+        val customers = agentDao.searchCustomers(normalizeWhitespace(query), limit = 20)
         return if (customers.isEmpty()) {
             ActionResult.Success("No customers found matching '$query'.")
         } else {
@@ -97,11 +103,28 @@ class CustomerActionHandler(
         val customer = when {
             customerId != null -> customerRepository.getCustomer(customerId)
             searchName != null -> {
-                val results = customerRepository.searchCustomers(searchName).first()
+                val results = agentDao.searchCustomers(normalizeWhitespace(searchName), limit = 5)
                 if (results.isEmpty()) return ActionResult.Success("No customer found matching '$searchName'.")
                 if (results.size > 1) {
-                    val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
-                    return ActionResult.Success("Multiple customers found:\n$listing\nPlease specify the customer ID.")
+                    // Multiple matches: offer selection UI instead of asking user to type ID
+                    val candidates = results.take(5).map { c ->
+                        SelectionOption(
+                            id = c.id,
+                            label = c.name,
+                            secondaryLabel = c.phone ?: c.city,
+                        )
+                    }
+                    return SelectionHelper.resolveWithSelection(
+                        candidates = candidates,
+                        question = "Which customer?",
+                        paramName = "customerId",
+                        action = AgentAction(
+                            moduleName = "customer",
+                            actionType = ActionType.READ,
+                            params = params,
+                        ),
+                        fallbackNeedsInput = "Which customer? (found ${results.size} matches)",
+                    )
                 }
                 customerRepository.getCustomer(results.first().id)
             }
@@ -134,11 +157,28 @@ class CustomerActionHandler(
         val existing = when {
             customerId != null -> customerRepository.getCustomer(customerId)
             searchName != null -> {
-                val results = customerRepository.searchCustomers(searchName).first()
+                val results = agentDao.searchCustomers(normalizeWhitespace(searchName), limit = 5)
                 if (results.isEmpty()) return ActionResult.Error("No customer found matching '$searchName'.")
                 if (results.size > 1) {
-                    val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
-                    return ActionResult.NeedsInput("Multiple customers found:\n$listing\nWhich customer ID?", listOf("customerId"))
+                    // Multiple matches: offer selection UI
+                    val candidates = results.take(5).map { c ->
+                        SelectionOption(
+                            id = c.id,
+                            label = c.name,
+                            secondaryLabel = c.phone ?: c.city,
+                        )
+                    }
+                    return SelectionHelper.resolveWithSelection(
+                        candidates = candidates,
+                        question = "Which customer do you want to update?",
+                        paramName = "customerId",
+                        action = AgentAction(
+                            moduleName = "customer",
+                            actionType = ActionType.UPDATE,
+                            params = params,
+                        ),
+                        fallbackNeedsInput = "Which customer? (found ${results.size} matches)",
+                    )
                 }
                 customerRepository.getCustomer(results.first().id)
             }
@@ -168,11 +208,28 @@ class CustomerActionHandler(
         val resolvedId = when {
             customerId != null -> customerId
             searchName != null -> {
-                val results = customerRepository.searchCustomers(searchName).first()
+                val results = agentDao.searchCustomers(normalizeWhitespace(searchName), limit = 5)
                 if (results.isEmpty()) return ActionResult.Error("No customer found matching '$searchName'.")
                 if (results.size > 1) {
-                    val listing = results.take(5).joinToString("\n") { "  - ${it.name} (${it.id})" }
-                    return ActionResult.NeedsInput("Multiple customers found:\n$listing\nWhich customer ID?", listOf("customerId"))
+                    // Multiple matches: offer selection UI
+                    val candidates = results.take(5).map { c ->
+                        SelectionOption(
+                            id = c.id,
+                            label = c.name,
+                            secondaryLabel = c.phone ?: c.city,
+                        )
+                    }
+                    return SelectionHelper.resolveWithSelection(
+                        candidates = candidates,
+                        question = "Which customer do you want to delete?",
+                        paramName = "customerId",
+                        action = AgentAction(
+                            moduleName = "customer",
+                            actionType = ActionType.DELETE,
+                            params = params,
+                        ),
+                        fallbackNeedsInput = "Which customer? (found ${results.size} matches)",
+                    )
                 }
                 results.first().id
             }
@@ -188,9 +245,12 @@ class CustomerActionHandler(
     }
 
     private suspend fun countCustomers(): ActionResult {
-        val count = customerRepository.getCustomerCount()
+        val count = agentDao.countActive()
         return ActionResult.Success("You have $count customer(s).")
     }
+
+    private fun normalizeWhitespace(text: String): String =
+        text.trim().replace(Regex("\\s+"), " ")
 
     private fun syncCustomers(): ActionResult {
         // Push + pull are coordinated by CentralSyncService; this just kicks off a full sync.

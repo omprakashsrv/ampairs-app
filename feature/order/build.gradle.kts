@@ -41,6 +41,7 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
+                implementation(projects.feature.agent)
                 implementation(projects.feature.customerApi)
                 implementation(projects.feature.productApi)
                 implementation(projects.feature.taxApi)
