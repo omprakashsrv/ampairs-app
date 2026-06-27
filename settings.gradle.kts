@@ -25,6 +25,7 @@ dependencyResolutionManagement {
 
 include(":shared")
 include(":androidApp")
+include(":whispercpp")
 include(":desktopApp")
 include(":data:common")
 include(":data:sync")

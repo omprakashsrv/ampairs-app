@@ -1,6 +1,7 @@
 package com.ampairs.order
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.order.agent.OrderAgentDao
 import com.ampairs.order.db.OrderRoomDatabase
 import com.ampairs.order.db.dao.OrderDao
 import com.ampairs.order.db.dao.OrderItemDao
@@ -15,5 +16,8 @@ interface OrderDaoModule {
 
         @Provides
         fun provideOrderItemDao(db: OrderRoomDatabase): OrderItemDao = db.orderItemDao()
+
+        @Provides
+        fun provideOrderAgentDao(db: OrderRoomDatabase): OrderAgentDao = db.orderAgentDao()
     }
 }

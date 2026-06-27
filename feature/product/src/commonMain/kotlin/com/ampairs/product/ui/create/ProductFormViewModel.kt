@@ -185,6 +185,51 @@ class ProductFormViewModel(
         )
     }
 
+    /**
+     * Apply a single field value predicted by the form assistant (keyed by the form-schema `fieldKey`).
+     * Standard keys map to [ProductFormState]; relational keys (category/brand/group/sub-category/unit)
+     * resolve the spoken name to its id via the loaded dropdowns; anything else becomes a custom
+     * attribute. Accepts camelCase and snake_case. Reuses [updateForm] for validation. The product
+     * form's standard inputs bind directly to formState, so filled values render immediately.
+     */
+    fun updateField(fieldKey: String, value: String) {
+        val s = _uiState.value
+        val f = s.formState
+        val updated = when (fieldKey) {
+            "name" -> f.copy(name = value)
+            "code" -> f.copy(code = value)
+            "description" -> f.copy(description = value)
+            "taxCode", "tax_code", "hsn", "hsnCode", "hsn_code" -> f.copy(taxCode = value, taxCodeDescription = null)
+            "mrp" -> f.copy(mrp = value.toDoubleOrNull() ?: f.mrp)
+            "dp", "dealerPrice", "dealer_price" -> f.copy(dp = value.toDoubleOrNull() ?: f.dp)
+            "sellingPrice", "selling_price", "price" -> f.copy(sellingPrice = value.toDoubleOrNull() ?: f.sellingPrice)
+            "stockQuantity", "stock_quantity", "stock" -> f.copy(stockQuantity = value.toDoubleOrNull() ?: f.stockQuantity)
+            "lowStockAlert", "low_stock_alert" -> f.copy(lowStockAlert = value.toDoubleOrNull() ?: f.lowStockAlert)
+            "category", "categoryName", "category_name" -> {
+                val m = s.categories.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                f.copy(categoryId = m?.id ?: f.categoryId, categoryName = m?.name ?: value)
+            }
+            "brand", "brandName", "brand_name" -> {
+                val m = s.brands.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                f.copy(brandId = m?.id ?: f.brandId, brandName = m?.name ?: value)
+            }
+            "group", "groupName", "group_name" -> {
+                val m = s.groups.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                f.copy(groupId = m?.id ?: f.groupId, groupName = m?.name ?: value)
+            }
+            "subCategory", "subCategoryName", "sub_category" -> {
+                val m = s.subCategories.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                f.copy(subCategoryId = m?.id ?: f.subCategoryId, subCategoryName = m?.name ?: value)
+            }
+            "unit", "baseUnit", "base_unit", "baseUnitName", "unitName" -> {
+                val m = s.units.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                f.copy(baseUnitId = m?.uid ?: f.baseUnitId, baseUnitName = m?.name ?: value)
+            }
+            else -> f.copy(attributes = f.attributes + (fieldKey to value))
+        }
+        updateForm(updated)
+    }
+
     fun onCategorySelected(category: Group) {
         updateForm(_uiState.value.formState.copy(categoryId = category.id, categoryName = category.name))
     }

@@ -230,4 +230,20 @@
         <item quantity="one">%1$d option</item>
         <item quantity="other">%1$d options</item>
     </plurals>
+
+    <!-- Form agent chat bubble -->
+    <string name="form_agent_chat_title">AI Form Assistant</string>
+    <string name="form_agent_voice_listen">Start listening</string>
+    <string name="form_agent_voice_stop">Stop listening</string>
+    <string name="form_agent_processing">Processing…</string>
+    <string name="form_agent_close_cd">Close</string>
+    <string name="form_agent_open_cd">Fill with AI</string>
+    <string name="form_agent_editing">Editing: %1$s</string>
+    <string name="form_agent_input_hint">Describe the details to fill…</string>
+    <string name="form_agent_send_cd">Send</string>
+    <string name="form_agent_empty">Describe the record in plain words and I\'ll fill the matching fields. For example: \"Acme Traders in Mumbai, phone 9876543210\".</string>
+    <string name="form_agent_done">Done</string>
+    <string name="form_agent_listening">Listening… speak the details</string>
+    <string name="form_agent_tap_to_speak">Tap the mic, then say the details — name, phone, PAN, address…</string>
+    <string name="form_agent_voice_unavailable">Voice input isn\'t available on this device.</string>
 </resources>

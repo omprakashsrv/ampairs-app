@@ -8,7 +8,6 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import coil3.compose.setSingletonImageLoaderFactory
 import com.ampairs.app.update.InAppUpdateManager
@@ -32,13 +31,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Configure edge-to-edge display for Android 15+ (SDK 35) compatibility
-        // This ensures proper handling of system bars and display cutouts
+        // Edge-to-edge: Compose owns the window insets (the app pads via imePadding() and the global
+        // layout's systemBars insets). Do NOT also call setDecorFitsSystemWindows(window, true) — that
+        // makes the window itself ALSO resize for the keyboard, which double-stacks with Compose's
+        // imePadding() and leaves a keyboard-sized gap above the IME on bottom-anchored screens (chat).
         enableEdgeToEdge()
-
-        // For backward compatibility with older Android versions
-        // Ensures window decorFitsSystemWindows is properly configured
-        WindowCompat.setDecorFitsSystemWindows(window, true)
 
         actionBar?.hide()
 

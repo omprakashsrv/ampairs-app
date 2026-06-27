@@ -1,6 +1,7 @@
 package com.ampairs.unit.di
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.unit.agent.UnitAgentDao
 import com.ampairs.unit.data.db.UnitDatabase
 import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
@@ -18,6 +19,9 @@ interface UnitDaoModule {
 
         @Provides
         fun provideUnitConversionDao(db: UnitDatabase): UnitConversionDao = db.unitConversionDao()
+
+        @Provides
+        fun provideUnitAgentDao(db: UnitDatabase): UnitAgentDao = db.unitAgentDao()
 
         @Provides
         fun provideUnitLookup(repo: UnitRepository): UnitLookup = repo

@@ -4,6 +4,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import com.ampairs.product.agent.ProductAgentDao
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
@@ -49,6 +50,7 @@ abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun brandDao(): BrandDao
     abstract fun productVariantDao(): ProductVariantDao
     abstract fun variantAttributeDao(): VariantAttributeDao
+    abstract fun productAgentDao(): ProductAgentDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

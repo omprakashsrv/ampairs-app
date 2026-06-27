@@ -20,7 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ampairsapp.feature.agent.generated.resources.Res
+import ampairsapp.feature.agent.generated.resources.agent_view
 import com.ampairs.agent.core.ActionResultSummary
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ActionResultCard(
@@ -61,7 +64,7 @@ fun ActionResultCard(
             if (result.success && result.navigationRouteData != null && onViewClick != null) {
                 AssistChip(
                     onClick = { onViewClick(result.navigationRouteData) },
-                    label = { Text("View") },
+                    label = { Text(stringResource(Res.string.agent_view)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.OpenInNew,
