@@ -51,10 +51,4 @@ enum class ActionType {
 
     /** Set the customer on the conversational document draft (cart). */
     SET_CUSTOMER,
-
-    /** Create an order from the current draft. */
-    CREATE_ORDER,
-
-    /** Create an invoice from the current draft. */
-    CREATE_INVOICE,
 }
