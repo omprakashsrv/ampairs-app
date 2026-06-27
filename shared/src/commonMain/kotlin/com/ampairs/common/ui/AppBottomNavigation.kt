@@ -97,6 +97,7 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.PRINTING -> Route.Printing
     ModuleCodes.PAYMENT_COLLECTION -> Route.Payment
     ModuleCodes.STOREFRONT_MANAGEMENT -> Route.Storefront
+    ModuleCodes.PRICING_MANAGEMENT -> Route.Pricing
     else -> null
 }
 
@@ -134,6 +135,19 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
         || currentRoute is PrintQueueRoute -> ModuleCodes.PRINTING
     currentRoute is PaymentRoute || currentRoute is Route.Payment -> ModuleCodes.PAYMENT_COLLECTION
     currentRoute is Route.Storefront -> ModuleCodes.STOREFRONT_MANAGEMENT
+    currentRoute is Route.Pricing
+        || currentRoute is com.ampairs.pricing.ui.PricingShellRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListListRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListDetailRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListFormRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListWizardRoute
+        || currentRoute is com.ampairs.pricing.ui.ItemEditorRoute
+        || currentRoute is com.ampairs.pricing.ui.OffersListRoute
+        || currentRoute is com.ampairs.pricing.ui.OfferBuilderRoute
+        || currentRoute is com.ampairs.pricing.ui.OfferPreviewRoute
+        || currentRoute is com.ampairs.pricing.ui.GeoZoneListRoute
+        || currentRoute is com.ampairs.pricing.ui.GeoZoneFormRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceTesterRoute -> ModuleCodes.PRICING_MANAGEMENT
     else -> null
 }
 
@@ -157,6 +171,7 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.PRINTING -> stringResource(Res.string.nav_printing)
     ModuleCodes.PAYMENT_COLLECTION -> stringResource(Res.string.nav_payments)
     ModuleCodes.STOREFRONT_MANAGEMENT -> stringResource(Res.string.nav_storefront)
+    ModuleCodes.PRICING_MANAGEMENT -> stringResource(Res.string.nav_pricing)
     "business-reporting" -> stringResource(Res.string.nav_reports)
     "business-dashboard" -> stringResource(Res.string.nav_dashboard)
     "notification-system" -> stringResource(Res.string.nav_alerts)
