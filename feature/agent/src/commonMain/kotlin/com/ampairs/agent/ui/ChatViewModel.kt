@@ -973,6 +973,26 @@ class ChatViewModel(
         }
     }
 
+    /** User picked multiple options from a pending selection with multi-select enabled. */
+    fun selectMultipleOptions(selectedIds: List<String>) {
+        val selection = _uiState.value.pendingSelection ?: return
+        if (selectedIds.isEmpty()) return
+        _uiState.update { it.copy(pendingSelection = null, isProcessing = true) }
+        viewModelScope.launch {
+            try {
+                val response = orchestrator.selectMultipleOptions(
+                    selection.pendingAction,
+                    selection.paramName,
+                    selectedIds
+                )
+                appendAgentResponse(response)
+                if (response.actionResult !is ActionResult.Error) speakText(response.text)
+            } catch (e: Exception) {
+                appendError(errorText(e))
+            }
+        }
+    }
+
     /** User dismissed a selection dialog without picking — discard the pending action. */
     fun cancelSelection() {
         if (_uiState.value.pendingSelection == null) return
