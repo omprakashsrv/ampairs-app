@@ -16,6 +16,7 @@ import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.repository.ProductRepository
 import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.Product
+import com.ampairs.product.domain.ProductListItem
 import kotlinx.coroutines.flow.first
 
 @Inject
