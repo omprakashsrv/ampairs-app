@@ -70,8 +70,8 @@ class CustomerExporter(
         List<Map<String, String?>> = dao.query(f, sort, includeInactive).map { it.toExportRow() }
 
     // IMPORT: write to Room as unsynced + flag pending — the existing CustomerSyncDelegate push delivers it.
-    override suspend fun writeRows(rows: List<Map<String, String?>>, mode: ImportMode): ImportOutcome {
-        var updated = 0; var skipped = 0; val errors = mutableListOf<RowError>()
+    override suspend fun writeRows(rows: List<Map<String, String?>>, mode: ImportMode, policy: ConflictPolicy): ImportOutcome {
+        var updated = 0; var skipped = 0; var conflicts = 0; val errors = mutableListOf<RowError>()
         rows.forEachIndexed { i, row ->
             val uid = row["uid"]?.takeIf { it.isNotBlank() }
             when {
@@ -79,6 +79,10 @@ class CustomerExporter(
                 else -> {
                     val existing = uid?.let { dao.getCustomerById(it) }
                     if (existing == null && mode == ImportMode.UPDATE_ONLY) { skipped++; return@forEachIndexed }
+                    // FR-024: never silently clobber a pending unsynced local edit.
+                    if (existing != null && !existing.synced && policy == ConflictPolicy.SKIP_WITH_WARNING) {
+                        conflicts++; return@forEachIndexed
+                    }
                     val entity = (existing ?: newCustomerEntity(uid ?: UidGenerator.generateUid("CUS")))
                         .applyExportRow(row)            // validates; throws → errors.add(...)
                         .copy(synced = false)
@@ -87,7 +91,7 @@ class CustomerExporter(
             }
         }
         syncStateDao.markPendingPush(SyncEntity.CUSTOMER, Clock.System.now().toEpochMilliseconds())
-        return ImportOutcome(updated = updated, skipped = skipped, errors = errors)
+        return ImportOutcome(updated = updated, skipped = skipped, conflicts = conflicts, errors = errors)
     }
 }
 ```
@@ -103,7 +107,7 @@ class CustomerExporter(
 | CSV | `commonMain` | RFC-4180 quoting; streamed to a `Sink` in batches. |
 | JSON | `commonMain` | kotlinx.serialization; array of row objects. |
 | XML | `commonMain` | simple `<rows><row><col/></row></rows>`; pure string building. |
-| Excel `.xlsx` | **expect/actual** | `androidMain`/`desktopMain` → Apache POI (`poi-ooxml`, JVM). `iosMain` → minimal pure-Kotlin OOXML writer over a KMP zip, **or** force `GenerationLocation.SERVER` for Excel on iOS (backend POI). CSV/JSON/XML stay offline on iOS regardless. |
+| Excel `.xlsx` | **expect/actual** | `androidMain`/`desktopMain` → Apache POI (`poi-ooxml`, JVM). `iosMain` → **minimal pure-Kotlin OOXML writer over a KMP zip** (the baseline — keeps offline Excel on iOS true to "all formats on the client"). Forcing `GenerationLocation.SERVER` for iOS Excel is the **contingency** only if that writer is deferred. CSV/JSON/XML stay offline on iOS regardless. |
 
 POI is JVM-only, so it may only be referenced from `androidMain`/`desktopMain` — never `commonMain`. See research R4 in the backend spec for the iOS OOXML approach and the SERVER fallback.
 
