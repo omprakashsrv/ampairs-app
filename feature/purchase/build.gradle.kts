@@ -31,6 +31,9 @@ kotlin {
                 implementation(libs.kotlinx.dateTime)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
+                implementation(libs.kermit)
+                implementation(libs.navigation3.ui)
+                implementation(libs.lifecycle.viewmodel.navigation3)
                 implementation(libs.bundles.ktor.common)
                 // Compose
                 implementation(libs.compose.runtime)
