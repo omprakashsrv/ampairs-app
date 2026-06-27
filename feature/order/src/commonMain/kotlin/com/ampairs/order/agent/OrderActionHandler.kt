@@ -320,13 +320,11 @@ class OrderActionHandler(
     private suspend fun searchOrders(params: Map<String, String>): ActionResult {
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What do you want to search for?", listOf("query"))
-        val orders = orderRepository.orderDao.getOrdersByNumber(query) +
-                orderRepository.orderDao.getOrdersByCustomerName(query)
-        val unique = orders.distinctBy { it.id }
+        val unique = agentDao.search(query.trim().replace(Regex("\\s+"), " "), limit = 50)
         return if (unique.isEmpty()) {
             ActionResult.Success("No orders found matching '$query'.")
         } else {
-            val summary = unique.take(5).joinToString("\n") { "• #${it.order_number} — ${it.status}" }
+            val summary = unique.take(5).joinToString("\n") { "• #${it.orderNumber} — ${it.status}" }
             ActionResult.Success("Found ${unique.size} order(s):\n$summary")
         }
     }
@@ -334,11 +332,11 @@ class OrderActionHandler(
     private suspend fun getOrder(params: Map<String, String>): ActionResult {
         val id = params["orderId"] ?: params["searchName"]
             ?: return ActionResult.NeedsInput("Which order? Provide an order number or ID.", listOf("orderId"))
-        val order = orderRepository.orderDao.selectById(id)
-            ?: orderRepository.orderDao.getOrdersByNumber(id).firstOrNull()
+        val order = agentDao.byId(id)
+            ?: agentDao.byNumber(id, limit = 1).firstOrNull()
             ?: return ActionResult.Error("Order '$id' not found.")
         return ActionResult.Success(
-            summary = "Order #${order.order_number}: status=${order.status}",
+            summary = "Order #${order.orderNumber}: status=${order.status}",
             navigationTarget = NavigationTarget("OrderView", mapOf("orderId" to order.id)),
         )
     }
@@ -351,14 +349,14 @@ class OrderActionHandler(
     private suspend fun listOrders(params: Map<String, String>): ActionResult {
         val status = params["status"]
         val orders = if (status != null) {
-            orderRepository.orderDao.getOrdersByStatus(status)
+            agentDao.byStatus(status, limit = 50)
         } else {
-            orderRepository.orderDao.selectAll()
+            agentDao.recent(limit = 50)
         }
         return if (orders.isEmpty()) {
             ActionResult.Success("No orders found.")
         } else {
-            val summary = orders.take(5).joinToString("\n") { "• #${it.order_number} — ${it.status}" }
+            val summary = orders.take(5).joinToString("\n") { "• #${it.orderNumber} — ${it.status}" }
             val more = if (orders.size > 5) "\n… and ${orders.size - 5} more" else ""
             ActionResult.Success("${orders.size} order(s):\n$summary$more")
         }

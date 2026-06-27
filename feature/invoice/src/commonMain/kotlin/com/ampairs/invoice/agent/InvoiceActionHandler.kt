@@ -405,13 +405,11 @@ class InvoiceActionHandler(
     private suspend fun searchInvoices(params: Map<String, String>): ActionResult {
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What do you want to search for?", listOf("query"))
-        val invoices = invoiceRepository.invoiceDao.getInvoicesByNumber(query) +
-                invoiceRepository.invoiceDao.getInvoicesByCustomerName(query)
-        val unique = invoices.distinctBy { it.id }
+        val unique = agentDao.search(query.trim().replace(Regex("\\s+"), " "), limit = 50)
         return if (unique.isEmpty()) {
             ActionResult.Success("No invoices found matching '$query'.")
         } else {
-            val summary = unique.take(5).joinToString("\n") { "• #${it.invoice_number} — ${it.status}" }
+            val summary = unique.take(5).joinToString("\n") { "• #${it.invoiceNumber} — ${it.status}" }
             ActionResult.Success("Found ${unique.size} invoice(s):\n$summary")
         }
     }
@@ -419,11 +417,11 @@ class InvoiceActionHandler(
     private suspend fun getInvoice(params: Map<String, String>): ActionResult {
         val id = params["invoiceId"] ?: params["searchName"]
             ?: return ActionResult.NeedsInput("Which invoice? Provide an invoice number or ID.", listOf("invoiceId"))
-        val invoice = invoiceRepository.invoiceDao.selectById(id)
-            ?: invoiceRepository.invoiceDao.getInvoicesByNumber(id).firstOrNull()
+        val invoice = agentDao.byId(id)
+            ?: agentDao.byNumber(id, limit = 1).firstOrNull()
             ?: return ActionResult.Error("Invoice '$id' not found.")
         return ActionResult.Success(
-            summary = "Invoice #${invoice.invoice_number}: status=${invoice.status}",
+            summary = "Invoice #${invoice.invoiceNumber}: status=${invoice.status}",
             navigationTarget = NavigationTarget(
                 routeDescription = "InvoiceView",
                 routeData = mapOf("invoiceId" to invoice.id),
@@ -432,21 +430,21 @@ class InvoiceActionHandler(
     }
 
     private suspend fun countInvoices(): ActionResult {
-        val count = invoiceRepository.invoiceDao.countInvoices()
+        val count = agentDao.countInvoices()
         return ActionResult.Success("You have $count invoice(s).")
     }
 
     private suspend fun listInvoices(params: Map<String, String>): ActionResult {
         val status = params["status"]
         val invoices = if (status != null) {
-            invoiceRepository.invoiceDao.getInvoicesByStatus(status)
+            agentDao.byStatus(status, limit = 50)
         } else {
-            invoiceRepository.invoiceDao.selectAll()
+            agentDao.recent(limit = 50)
         }
         return if (invoices.isEmpty()) {
             ActionResult.Success("No invoices found.")
         } else {
-            val summary = invoices.take(5).joinToString("\n") { "• #${it.invoice_number} — ${it.status}" }
+            val summary = invoices.take(5).joinToString("\n") { "• #${it.invoiceNumber} — ${it.status}" }
             val more = if (invoices.size > 5) "\n… and ${invoices.size - 5} more" else ""
             ActionResult.Success("${invoices.size} invoice(s):\n$summary$more")
         }
