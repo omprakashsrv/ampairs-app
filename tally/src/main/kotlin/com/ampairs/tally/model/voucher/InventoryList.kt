@@ -40,9 +40,11 @@ data class InventoryList(
     @XmlSerialName("GODOWNNAME")
     var godownName: String? = null,
 
+    // Nullable + default: Tally omits DISOCUNT on lines without a discount, and a non-null Double
+    // would fail deserialization of the whole inventory list when the element is absent.
     @XmlElement(true)
     @XmlSerialName("DISOCUNT")
-    var discount: Double,
+    var discount: Double? = null,
 
     @XmlElement(true)
     @XmlSerialName("ACCOUNTINGALLOCATIONS.LIST")

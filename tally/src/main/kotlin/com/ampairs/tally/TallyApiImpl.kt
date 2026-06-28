@@ -65,11 +65,17 @@ class TallyApiImpl(engine: HttpClientEngine, private val baseUrl: String = "http
     }
 
     init {
-        // Strip Tally's &#4; control characters once at init — not on every call
+        // Sanitize Tally's response once at init — not on every call:
+        //  1. Strip &#4; control characters Tally injects into text.
+        //  2. Strip the undeclared "UDF:" namespace prefix from User Defined Field elements.
+        //     Tally emits <UDF:Foo>…</UDF:Foo> without ever declaring the UDF namespace, which
+        //     makes the strict XML reader throw "undefined prefix: UDF". Dropping the prefix turns
+        //     them into plain <Foo> elements that IGNORING_UNKNOWN_CHILD_HANDLER then skips.
         client.responsePipeline.intercept(HttpResponsePipeline.Receive) { (type, content) ->
             if (content !is ByteReadChannel) return@intercept
-            val replacing = ReplacingInputStream(content.toInputStream(), "&#4;", "")
-            val byteBuffer = ByteBuffer.wrap(replacing.readAllBytes())
+            val noControlChars = ReplacingInputStream(content.toInputStream(), "&#4;", "")
+            val noUdfPrefix = ReplacingInputStream(noControlChars, "UDF:", "")
+            val byteBuffer = ByteBuffer.wrap(noUdfPrefix.readAllBytes())
             proceedWith(HttpResponseContainer(type, ByteReadChannel(byteBuffer)))
         }
     }
