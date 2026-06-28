@@ -5,6 +5,7 @@ import com.ampairs.unit.agent.UnitAgentDao
 import com.ampairs.unit.data.db.UnitDatabase
 import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
+import com.ampairs.unit.data.repository.UnitConversionSync
 import com.ampairs.unit.data.repository.UnitLookup
 import com.ampairs.unit.data.repository.UnitOptionsLookup
 import com.ampairs.unit.data.repository.UnitRepository
@@ -28,6 +29,9 @@ interface UnitDaoModule {
 
         @Provides
         fun provideUnitOptionsLookup(repo: UnitRepository): UnitOptionsLookup = repo
+
+        @Provides
+        fun provideUnitConversionSync(repo: UnitRepository): UnitConversionSync = repo
     }
 }
 

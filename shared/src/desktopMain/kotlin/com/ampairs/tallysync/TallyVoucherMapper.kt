@@ -271,14 +271,27 @@ internal object TallyVoucherMapper {
         val allocations: List<PaymentAllocation>,
     )
 
+    /**
+     * Maps a Tally Receipt/Payment voucher to a payment voucher (+ allocations) for a customer or
+     * supplier party. The amount and bill allocations are read from the **party's own ledger line**
+     * (matched by [partyName]) — not from whatever carries `ISPARTYLEDGER`, and never from the bank,
+     * tax (CGST/SGST/IGST) or P&L lines in the same voucher. [targetType] + [targetIdByRef] decide
+     * whether bill refs resolve to invoices (customer) or purchases (supplier).
+     */
     fun Voucher.toMappedPayment(
         kind: Kind,
         partyUid: String,
-        invoiceIdByNumber: Map<String, String>,
+        partyName: String,
+        targetType: AllocationTarget,
+        targetIdByRef: Map<String, String>,
     ): MappedPayment? {
         val guid = guid?.takeIf { it.isNotBlank() } ?: return null
         val voucherUid = ID_PREFIX_PAYMENT + sanitize(guid)
-        val partyEntry = partyLedgerEntry()
+        // Use the party's own ledger line for the amount + bill allocations; fall back to the
+        // ISPARTYLEDGER entry only if the named line isn't present.
+        val partyEntry = ledgerEntries().firstOrNull {
+            it.ledgerName?.trim().equals(partyName.trim(), ignoreCase = true)
+        } ?: partyLedgerEntry()
         val total = abs(partyEntry?.amount.parseAmount())
         if (total <= 0.0) return null
 
@@ -308,14 +321,14 @@ internal object TallyVoucherMapper {
 
         val allocations = partyEntry?.billAllocationList.orEmpty().mapIndexedNotNull { idx, bill ->
             val billName = bill.name?.trim()?.takeIf { it.isNotBlank() } ?: return@mapIndexedNotNull null
-            val invoiceId = invoiceIdByNumber[billName] ?: return@mapIndexedNotNull null
+            val targetUid = targetIdByRef[billName] ?: return@mapIndexedNotNull null
             val amount = abs(bill.amount.parseAmount())
             if (amount <= 0.0) return@mapIndexedNotNull null
             PaymentAllocation(
                 uid = ID_PREFIX_ALLOCATION + sanitize(guid) + "_" + idx,
                 paymentVoucherUid = voucherUid,
-                targetType = AllocationTarget.INVOICE,
-                targetUid = invoiceId,
+                targetType = targetType,
+                targetUid = targetUid,
                 amount = Money.fromDouble(amount),
                 active = true,
             )

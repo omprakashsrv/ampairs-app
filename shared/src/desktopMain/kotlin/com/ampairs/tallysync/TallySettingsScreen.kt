@@ -300,6 +300,8 @@ fun TallySettingsScreen(
 
 private fun formatResult(result: TallySyncResult): String =
     if (result.success)
-        "OK — groups=${result.groupsSynced} categories=${result.categoriesSynced} products=${result.productsSynced} units=${result.unitsSynced} · ${result.taxCodesToImport} tax code(s) to import"
+        "OK — groups=${result.groupsSynced} categories=${result.categoriesSynced} products=${result.productsSynced} " +
+            "prices=${result.pricesSynced} costs=${result.standardCostsSynced} conversions=${result.unitConversionsSynced} " +
+            "units=${result.unitsSynced} inventory=${result.inventoryItemsSynced} · ${result.taxCodesToImport} tax code(s) to import"
     else
         "Error: ${result.error}"

@@ -5,14 +5,27 @@ import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.db.CustomerDao
 import com.ampairs.customer.data.db.CustomerGroupDao
+import com.ampairs.inventory.data.db.InventoryItemDao
+import com.ampairs.inventory.data.db.InventoryItemEntity
+import com.ampairs.inventory.data.db.InventoryTransactionDao
+import com.ampairs.inventory.data.db.InventoryTransactionEntity
+import com.ampairs.pricing.data.db.dao.PriceListDao
+import com.ampairs.pricing.data.db.dao.PriceListItemDao
+import com.ampairs.pricing.data.db.entity.PriceListEntity
+import com.ampairs.pricing.data.db.entity.PriceListItemEntity
+import com.ampairs.pricing.domain.model.PriceListStatus
+import com.ampairs.pricing.domain.model.SalesChannel
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.product.db.dao.ProductStandardCostDao
+import com.ampairs.product.db.entity.ProductStandardCostEntity
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
 import com.ampairs.payment.data.repository.PartyBalanceRepository
 import com.ampairs.payment.data.repository.PaymentLedgerPoster
 import com.ampairs.payment.data.repository.PaymentVoucherRepository
+import com.ampairs.payment.domain.AllocationTarget
 import com.ampairs.payment.domain.Direction
 import com.ampairs.payment.domain.Money
 import com.ampairs.payment.domain.PurchaseLedgerPoster
@@ -24,20 +37,29 @@ import com.ampairs.tally.model.master.Group
 import com.ampairs.tallysync.TallyCustomerMapper.ENTITY_ACCOUNT_GROUP
 import com.ampairs.tallysync.TallyCustomerMapper.ENTITY_LEDGER
 import com.ampairs.tallysync.TallyCustomerMapper.ENTITY_SUPPLIER_LEDGER
+import com.ampairs.tallysync.TallyCustomerMapper.LedgerPartyType
 import com.ampairs.tallysync.TallyCustomerMapper.buildGroupParentIndex
-import com.ampairs.tallysync.TallyCustomerMapper.isCreditorGroup
+import com.ampairs.tallysync.TallyCustomerMapper.ledgerPartyType
 import com.ampairs.tallysync.TallyCustomerMapper.toCustomerEntity
 import com.ampairs.tallysync.TallyCustomerMapper.toCustomerGroupEntity
 import com.ampairs.tallysync.TallyCustomerMapper.toSupplierEntity
 import com.ampairs.tallysync.TallyVoucherMapper.toMappedPurchase
+import com.ampairs.tallysync.TallyInventoryMapper.inventoryItemId
+import com.ampairs.tallysync.TallyInventoryMapper.openingMovement
+import com.ampairs.tallysync.TallyInventoryMapper.toInventoryItemEntity
 import com.ampairs.tallysync.TallyProductMapper.ENTITY_STOCK_CATEGORY
 import com.ampairs.tallysync.TallyProductMapper.ENTITY_STOCK_GROUP
 import com.ampairs.tallysync.TallyProductMapper.ENTITY_STOCK_ITEM
 import com.ampairs.tallysync.TallyProductMapper.ENTITY_UNIT
+import com.ampairs.tallysync.TallyProductMapper.TALLY_PRICE_LIST_ID
+import com.ampairs.tallysync.TallyProductMapper.TALLY_PRICE_LIST_NAME
 import com.ampairs.tallysync.TallyProductMapper.parseClosingQty
 import com.ampairs.tallysync.TallyProductMapper.toCategoryEntity
 import com.ampairs.tallysync.TallyProductMapper.toGroupEntity
+import com.ampairs.tallysync.TallyProductMapper.toPriceListItemEntities
 import com.ampairs.tallysync.TallyProductMapper.toProductEntity
+import com.ampairs.tallysync.TallyProductMapper.toStandardCostEntities
+import com.ampairs.tallysync.TallyProductMapper.toUnitConversionEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
 import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
 import com.ampairs.tallysync.TallyVoucherMapper.ENTITY_VOUCHER
@@ -53,7 +75,9 @@ import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
 import com.ampairs.tax.data.repository.TaxConfigurationRepository
 import com.ampairs.tax.data.repository.TaxRuleRepository
+import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
+import com.ampairs.unit.data.db.entity.UnitConversionEntity
 import dev.zacsweers.metro.Inject
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,8 +94,12 @@ data class TallySyncResult(
     val groupsSynced: Int = 0,
     val categoriesSynced: Int = 0,
     val productsSynced: Int = 0,
+    val pricesSynced: Int = 0,
+    val standardCostsSynced: Int = 0,
+    val unitConversionsSynced: Int = 0,
     val unitsSynced: Int = 0,
     val stockBalancesUpdated: Int = 0,
+    val inventoryItemsSynced: Int = 0,
     val customerGroupsSynced: Int = 0,
     val customersSynced: Int = 0,
     val suppliersSynced: Int = 0,
@@ -82,7 +110,7 @@ data class TallySyncResult(
     val taxCodesToImport: Int = 0,
     val error: String? = null,
 ) {
-    val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + unitsSynced + stockBalancesUpdated + customerGroupsSynced + customersSynced + suppliersSynced + invoicesSynced + purchasesSynced + paymentsSynced
+    val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + pricesSynced + standardCostsSynced + unitConversionsSynced + unitsSynced + stockBalancesUpdated + inventoryItemsSynced + customerGroupsSynced + customersSynced + suppliersSynced + invoicesSynced + purchasesSynced + paymentsSynced
     val success get() = error == null
 }
 
@@ -116,7 +144,13 @@ class TallySyncService(
     private val groupDao: GroupDao,
     private val categoryDao: CategoryDao,
     private val productDao: ProductDao,
+    private val productStandardCostDao: ProductStandardCostDao,
+    private val priceListDao: PriceListDao,
+    private val priceListItemDao: PriceListItemDao,
     private val unitDao: UnitDao,
+    private val unitConversionDao: UnitConversionDao,
+    private val inventoryItemDao: InventoryItemDao,
+    private val inventoryTransactionDao: InventoryTransactionDao,
     private val customerDao: CustomerDao,
     private val customerGroupDao: CustomerGroupDao,
     private val supplierDao: SupplierDao,
@@ -251,10 +285,11 @@ class TallySyncService(
             val groupIdByName = buildGroupNameIndex()
             val categoryIdByName = buildCategoryNameIndex()
             val unitIdByName = buildUnitNameIndex()
-            val productsSynced = syncProducts(repo, workspaceSlug, groupIdByName, categoryIdByName, unitIdByName)
-            emit("Products: $productsSynced new")
-            val stockBalancesUpdated = syncStockBalances(repo)
-            emit("Stock balances: $stockBalancesUpdated updated")
+            val productCounts = syncProducts(repo, workspaceSlug, groupIdByName, categoryIdByName, unitIdByName)
+            emit("Products: ${productCounts.products} new")
+            emit("Prices: ${productCounts.prices} effective-dated entries; standard costs: ${productCounts.costs}; unit conversions: ${productCounts.conversions}")
+            val stockCounts = syncStockBalances(repo)
+            emit("Stock balances: ${stockCounts.stockBalancesUpdated} updated; inventory items: ${stockCounts.inventoryItems}")
 
             // Account groups drive both the customer-group catalogue and the debtor/creditor split
             // used to route ledgers to customers vs suppliers. Fetched once and reused.
@@ -285,9 +320,13 @@ class TallySyncService(
             val result = TallySyncResult(
                 groupsSynced = groupsSynced,
                 categoriesSynced = categoriesSynced,
-                productsSynced = productsSynced,
+                productsSynced = productCounts.products,
+                pricesSynced = productCounts.prices,
+                standardCostsSynced = productCounts.costs,
+                unitConversionsSynced = productCounts.conversions,
                 unitsSynced = unitsSynced,
-                stockBalancesUpdated = stockBalancesUpdated,
+                stockBalancesUpdated = stockCounts.stockBalancesUpdated,
+                inventoryItemsSynced = stockCounts.inventoryItems,
                 customerGroupsSynced = customerGroupsSynced,
                 customersSynced = customersSynced,
                 suppliersSynced = suppliersSynced,
@@ -405,15 +444,23 @@ class TallySyncService(
         }
     }
 
+    /** Counts returned by [syncProducts] — products plus the effective-dated child feeds. */
+    private data class ProductSyncCounts(
+        val products: Int = 0,
+        val prices: Int = 0,
+        val costs: Int = 0,
+        val conversions: Int = 0,
+    )
+
     private suspend fun syncProducts(
         repo: TallyRepository,
         workspaceSlug: String,
         groupIdByName: Map<String, String>,
         categoryIdByName: Map<String, String>,
         unitIdByName: Map<String, String>,
-    ): Int {
+    ): ProductSyncCounts {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_STOCK_ITEM).first()
-        val stockItems = repo.getStockItems().body?.data?.collection?.stockItems ?: return 0
+        val stockItems = repo.getStockItems().body?.data?.collection?.stockItems ?: return ProductSyncCounts()
         val filtered = stockItems.filter { it.alterId.toAlterLong() > lastAlterId }
 
         val guids = filtered.mapNotNull { it.guid?.takeIf { it.isNotBlank() } }
@@ -422,16 +469,36 @@ class TallySyncService(
             productDao.getProductsByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByGuid[it] = e.id } }
         }
 
-        var batchNum = 0
-        val entities = filtered.mapNotNull { si ->
+        // Retain the (stockItem, resolved productId) pairing so the effective-dated child records
+        // (price/cost/conversion) reuse the SAME product id we just persisted.
+        val pairs = filtered.mapNotNull { si ->
             val id = si.guid?.takeIf { it.isNotBlank() }?.let { existingIdByGuid[it] } ?: UidGenerator.generateUid("PRD")
-            si.toProductEntity(id, groupIdByName, categoryIdByName, unitIdByName)
+            si.toProductEntity(id, groupIdByName, categoryIdByName, unitIdByName)?.let { si to it }
         }
-        entities.chunked(BATCH_SIZE).forEach { batch ->
+        var batchNum = 0
+        pairs.map { it.second }.chunked(BATCH_SIZE).forEach { batch ->
             productDao.insertAll(batch)
             batchNum++
             log.d { "syncProducts batch $batchNum: inserted ${batch.size}" }
         }
+
+        // Effective-dated standard price → price list items, standard cost → product_standard_cost,
+        // compound unit → product-scoped unit conversion. Built per item using the resolved product id.
+        val priceItems = mutableListOf<PriceListItemEntity>()
+        val costRows = mutableListOf<ProductStandardCostEntity>()
+        val conversions = mutableListOf<UnitConversionEntity>()
+        for ((si, product) in pairs) {
+            priceItems += si.toPriceListItemEntities(product.id)
+            costRows += si.toStandardCostEntities(product.id)
+            si.toUnitConversionEntity(product.id, unitIdByName)?.let { conversions += it }
+        }
+        if (priceItems.isNotEmpty()) {
+            ensureTallyPriceListHeader()
+            priceItems.chunked(BATCH_SIZE).forEach { priceListItemDao.insertItems(it) }
+        }
+        costRows.chunked(BATCH_SIZE).forEach { productStandardCostDao.insertAll(it) }
+        if (conversions.isNotEmpty()) unitConversionDao.insertUnitConversions(conversions)
+
         // Scan the full catalogue (not just alterId-filtered items) so the tax-code panel always
         // reflects every HSN in Tally, even when no products are newly changed this cycle.
         scanTaxCodeCandidates(stockItems)
@@ -439,8 +506,29 @@ class TallySyncService(
 
         val maxAlterId = stockItems.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_ITEM, maxAlterId)
-        log.d { "syncProducts: ${entities.size} new across $batchNum batches" }
-        return entities.size
+        log.d { "syncProducts: ${pairs.size} products, ${priceItems.size} prices, ${costRows.size} costs, ${conversions.size} conversions across $batchNum batches" }
+        return ProductSyncCounts(pairs.size, priceItems.size, costRows.size, conversions.size)
+    }
+
+    /**
+     * Ensures the single workspace-wide "Tally Standard Price" price-list header exists so the
+     * effective-dated [PriceListItemEntity] rows have a parent. RETAIL channel, no targeting → it acts
+     * as the channel default in the offline price resolver. Deterministic id → idempotent (REPLACE).
+     */
+    private suspend fun ensureTallyPriceListHeader() {
+        if (priceListDao.getPriceListById(TALLY_PRICE_LIST_ID) != null) return
+        priceListDao.insertPriceList(
+            PriceListEntity(
+                id = TALLY_PRICE_LIST_ID,
+                name = TALLY_PRICE_LIST_NAME,
+                channel = SalesChannel.RETAIL.name,
+                currency = "INR",
+                priority = 0,
+                status = PriceListStatus.ACTIVE.name,
+                active = true,
+                synced = false,
+            )
+        )
     }
 
     /**
@@ -485,19 +573,42 @@ class TallySyncService(
         }
     }
 
-    private suspend fun syncStockBalances(repo: TallyRepository): Int {
-        val items = repo.getStockBalances().body?.data?.collection?.stockItems ?: return 0
+    /** Counts returned by [syncStockBalances] — product stock updates plus inventory rows. */
+    private data class StockSyncCounts(
+        val stockBalancesUpdated: Int = 0,
+        val inventoryItems: Int = 0,
+    )
+
+    /**
+     * Updates each product's on-hand from the Tally closing balance, and mirrors it into the inventory
+     * module: one [InventoryItemEntity] per product with stock plus a single deterministic opening
+     * [InventoryTransactionEntity] (STOCK_IN / OPENING). Both are id'd from the Tally GUID so re-sync
+     * upserts in place (no duplicates / no accumulation).
+     */
+    private suspend fun syncStockBalances(repo: TallyRepository): StockSyncCounts {
+        val items = repo.getStockBalances().body?.data?.collection?.stockItems ?: return StockSyncCounts()
+        // guid → product (for inventory metadata); products carry the Tally GUID in ref_id.
+        val productByGuid = productDao.getProducts().mapNotNull { p -> p.ref_id?.let { it to p } }.toMap()
+
         var updated = 0
-        items.chunked(BATCH_SIZE).forEach { batch ->
-            batch.forEach { item ->
-                val qty = item.closingBalance?.parseClosingQty() ?: return@forEach
-                val guid = item.guid?.takeIf { it.isNotBlank() } ?: return@forEach
-                productDao.updateStockQuantityByTallyRef(guid, qty)
-                updated++
-            }
+        val invItems = mutableListOf<InventoryItemEntity>()
+        val invMovements = mutableListOf<InventoryTransactionEntity>()
+        items.forEach { item ->
+            val qty = item.closingBalance?.parseClosingQty() ?: return@forEach
+            val guid = item.guid?.takeIf { it.isNotBlank() } ?: return@forEach
+            productDao.updateStockQuantityByTallyRef(guid, qty)
+            updated++
+
+            val product = productByGuid[guid] ?: return@forEach
+            val itemId = inventoryItemId(guid)
+            invItems += product.toInventoryItemEntity(itemId, qty)
+            invMovements += openingMovement(guid, itemId, qty, product.dp)
         }
-        log.d { "syncStockBalances: $updated updated" }
-        return updated
+        invItems.chunked(BATCH_SIZE).forEach { inventoryItemDao.insertItems(it) }
+        invMovements.chunked(BATCH_SIZE).forEach { inventoryTransactionDao.insertMovements(it) }
+
+        log.d { "syncStockBalances: $updated stock updates, ${invItems.size} inventory items" }
+        return StockSyncCounts(updated, invItems.size)
     }
 
     private suspend fun syncCustomerGroups(workspaceSlug: String, groups: List<Group>): Int {
@@ -535,9 +646,10 @@ class TallySyncService(
         val ledgers = repo.getLedgers().body?.data?.collection?.ledgers ?: return 0
         log.d { "syncCustomers: API returned ${ledgers.size} total, lastAlterId=$lastAlterId" }
         val filtered = ledgers
-            .filter { it.isBillWiseOn != "No" }
-            // Creditors (Sundry Creditors lineage) are suppliers, handled by syncSuppliers — not customers.
-            .filter { !isCreditorGroup(it.parent, groupParentIndex) }
+            // Customers are ONLY ledgers whose lineage roots at Sundry Debtors. Non-party ledgers
+            // (bank, cash, Duties & Taxes/GST, Profit & Loss) are OTHER and must be skipped — they
+            // previously leaked in because the old check defaulted unknown lineages to "customer".
+            .filter { ledgerPartyType(it.parent, groupParentIndex) == LedgerPartyType.DEBTOR }
             .filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
 
         val guids = filtered.mapNotNull { it.guid?.takeIf { it.isNotBlank() } }
@@ -575,8 +687,9 @@ class TallySyncService(
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_SUPPLIER_LEDGER).first()
         val ledgers = repo.getLedgers().body?.data?.collection?.ledgers ?: return 0
         val filtered = ledgers
-            .filter { it.isBillWiseOn != "No" }
-            .filter { isCreditorGroup(it.parent, groupParentIndex) }
+            // Suppliers are ONLY ledgers whose lineage roots at Sundry Creditors; everything else
+            // (bank/cash/tax/P&L) is OTHER and skipped.
+            .filter { ledgerPartyType(it.parent, groupParentIndex) == LedgerPartyType.CREDITOR }
             .filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
         log.d { "syncSuppliers: ${ledgers.size} ledgers, ${filtered.size} creditors after filter, lastAlterId=$lastAlterId" }
 
@@ -708,20 +821,29 @@ class TallySyncService(
         }
         if (skippedPurchaseNoParty > 0) emit("Purchases: skipped $skippedPurchaseNoParty (party not a known supplier)")
 
-        // --- Payments (resolve bill refs against all invoices, incl. those just synced) ---
+        // --- Payments / receipts (ONLY for customer or supplier parties) ---
+        // Bill refs resolve against invoices (customer receipts) or purchases (supplier payments).
+        // Receipts/payments against non-party ledgers — bank contras, tax adjustments, P&L/expense
+        // payments like rent or salary — have no customer/supplier party and are skipped here.
         val invoiceIdByNumber = invoiceDao.selectAll().associate { it.invoice_number to it.id }
+        val purchaseIdByNumber = purchaseDao.selectAll().associate { it.purchase_number to it.id }
         var paymentsSynced = 0
         var skippedPaymentNoParty = 0
         for (voucher in filtered) {
             val kind = voucher.classify()
             if (!kind.isPaymentKind) continue
             val partyName = voucher.resolvePartyName()
-            val partyUid = partyName?.let { customerIdByName[it] }
-            if (partyUid == null) {
+            // Customer receipt → allocate against invoices; supplier payment → against purchases.
+            val customerId = partyName?.let { customerIdByName[it] }
+            val supplierId = partyName?.let { supplierIdByName[it] }
+            val partyUid = customerId ?: supplierId
+            if (partyName == null || partyUid == null) {
                 skippedPaymentNoParty++
                 continue
             }
-            val mapped = voucher.toMappedPayment(kind, partyUid, invoiceIdByNumber) ?: continue
+            val targetType = if (customerId != null) AllocationTarget.INVOICE else AllocationTarget.PURCHASE
+            val targetIdByRef = if (customerId != null) invoiceIdByNumber else purchaseIdByNumber
+            val mapped = voucher.toMappedPayment(kind, partyUid, partyName, targetType, targetIdByRef) ?: continue
             // The repository rejects allocations whose sum exceeds the voucher total — drop them
             // defensively (rounding/sign quirks) rather than losing the whole receipt.
             val allocatedSum = mapped.allocations.fold(Money.ZERO) { acc, a -> acc + a.amount }
@@ -735,7 +857,7 @@ class TallySyncService(
                 .onSuccess { paymentsSynced++ }
                 .onFailure { emit("  payment ${mapped.voucher.voucherNo} failed: ${it.message}") }
         }
-        if (skippedPaymentNoParty > 0) emit("Payments: skipped $skippedPaymentNoParty (party not a known customer)")
+        if (skippedPaymentNoParty > 0) emit("Payments: skipped $skippedPaymentNoParty (party not a known customer/supplier)")
 
         val maxAlterId = vouchers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_VOUCHER, maxAlterId)

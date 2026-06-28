@@ -1,6 +1,9 @@
 package com.ampairs.product.sync
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.product.api.model.ProductApiModel
+import com.ampairs.product.api.model.UnitApiModel
+import com.ampairs.product.api.model.UnitConversionApiModel
 import com.ampairs.product.data.api.ProductApi
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.entity.ProductEntity
@@ -12,6 +15,9 @@ import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
 import com.ampairs.sync.SyncResult
 import com.ampairs.sync.db.SyncStateDao
+import com.ampairs.unit.data.repository.UnitConversionData
+import com.ampairs.unit.data.repository.UnitConversionSync
+import com.ampairs.unit.data.repository.UnitLookup
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
@@ -27,6 +33,11 @@ class ProductSyncDelegate(
     private val productApi: ProductApi,
     private val productDao: ProductDao,
     private val syncStateDao: SyncStateDao,
+    // Product-scoped unit conversions ride the product /sync feed — this bridge (impl in feature/unit)
+    // reads them for push and writes server copies back on pull; UnitLookup resolves the nested unit
+    // objects the conversion DTO requires.
+    private val unitConversionSync: UnitConversionSync,
+    private val unitLookup: UnitLookup,
 ) : SyncDelegate {
 
     override val entity: SyncEntity = SyncEntity.PRODUCT
@@ -60,14 +71,20 @@ class ProductSyncDelegate(
 
     private suspend fun pushPending(): Result<Int> = runCatching {
         val unsynced = productDao.unSyncedProducts()
-        if (unsynced.isEmpty()) return@runCatching 0
+        // Conversions ride the product feed, so a product whose only change is a dirty conversion must
+        // also push. Pull those extra (otherwise-synced) products in by id and append them.
+        val unsyncedIds = unsynced.mapTo(mutableSetOf()) { it.id }
+        val extraIds = unitConversionSync.productIdsWithUnsyncedConversions().filter { it !in unsyncedIds }
+        val extras = if (extraIds.isNotEmpty()) productDao.productsByIds(extraIds) else emptyList()
+        val toPush = unsynced + extras
+        if (toPush.isEmpty()) return@runCatching 0
         var pushed = 0
         var failed = 0
         var lastError: Throwable? = null
         // One failed batch must not abort the rest (reference pattern: CustomerSyncDelegate) —
         // remaining batches still push; failed rows stay synced=0 and retry next cycle.
-        for (batch in unsynced.chunked(100)) {
-            val apiModels = batch.map { it.asProductApiModel() }
+        for (batch in toPush.chunked(100)) {
+            val apiModels = batch.map { it.asProductApiModel() }.withConversions()
             productApi.bulkUpdateProducts(apiModels)
                 .onSuccess {
                     batch.forEach { entity ->
@@ -75,6 +92,8 @@ class ProductSyncDelegate(
                         // Active rows just flip to synced.
                         if (entity.soft_deleted == 1) productDao.deleteById(entity.id)
                         else productDao.insert(entity.copy(synced = 1))
+                        // Conversions were carried in the same payload → mark them synced too.
+                        unitConversionSync.markConversionsSynced(entity.id)
                     }
                     pushed += batch.size
                 }
@@ -90,6 +109,23 @@ class ProductSyncDelegate(
             throw lastError ?: Exception("$failed product(s) failed to push — will retry on reconnect")
         }
         pushed
+    }
+
+    /**
+     * Enriches a freshly-mapped [ProductApiModel] (whose `unitConversions` is empty) with this
+     * product's active conversions, resolving the nested base/derived unit objects the DTO requires.
+     * Conversions whose units can't be resolved locally are dropped (can't form a valid payload).
+     */
+    private suspend fun List<ProductApiModel>.withConversions(): List<ProductApiModel> {
+        if (isEmpty()) return this
+        val byProduct = unitConversionSync.conversionsForProducts(map { it.id })
+        if (byProduct.isEmpty()) return this
+        val unitIds = byProduct.values.flatten().flatMapTo(mutableSetOf()) { listOf(it.baseUnitId, it.derivedUnitId) }
+        val units = unitIds.associateWith { id -> unitLookup.getUnitById(id)?.toUnitApiModel() }
+        return map { model ->
+            val convs = byProduct[model.id].orEmpty().mapNotNull { it.toApiModel(units) }
+            if (convs.isEmpty()) model else model.copy(unitConversions = convs)
+        }
     }
 
     private suspend fun pull(): Result<Int> = runCatching {
@@ -114,6 +150,12 @@ class ProductSyncDelegate(
             // Upsert the rest.
             val toUpsert = batch.filter { it.status?.equals("DELETED", ignoreCase = true) != true }
             if (toUpsert.isNotEmpty()) productDao.insertAll(reconcileWithLocal(toUpsert.asDatabaseModel()))
+            // Mirror each product's conversions locally (local-unsynced conversions win; DELETED → cleared).
+            batch.forEach { model ->
+                val deleted = model.status?.equals("DELETED", ignoreCase = true) == true
+                val convs = if (deleted) emptyList() else model.unitConversions.map { it.toConversionData(model.id) }
+                unitConversionSync.replaceConversionsFromServer(model.id, convs)
+            }
             val batchMaxTime = batch.mapNotNull { it.updatedAt?.takeIf { ts -> ts.isNotBlank() } }.maxOrNull() ?: ""
             if (batchMaxTime > maxServerTime) maxServerTime = batchMaxTime
             total += batch.size
@@ -143,6 +185,9 @@ class ProductSyncDelegate(
         productApi.getProduct(productId)
             .onSuccess { model ->
                 productDao.insertAll(reconcileWithLocal(listOf(model).asDatabaseModel()))
+                val deleted = model.status?.equals("DELETED", ignoreCase = true) == true
+                val convs = if (deleted) emptyList() else model.unitConversions.map { it.toConversionData(model.id) }
+                unitConversionSync.replaceConversionsFromServer(model.id, convs)
                 ProductLogger.i("ProductSyncDelegate", "✅ Refreshed product from server: $productId")
             }
             .onFailure { error ->
@@ -150,3 +195,42 @@ class ProductSyncDelegate(
             }
     }
 }
+
+// --- Conversion ↔ DTO mapping ----------------------------------------------------------------
+
+/** unit-api Unit → the product DTO's nested unit object. */
+private fun com.ampairs.unit.domain.model.Unit.toUnitApiModel(): UnitApiModel = UnitApiModel(
+    id = uid,
+    refId = refId,
+    name = name,
+    shortName = shortName,
+    decimalPlaces = decimalPlaces,
+    active = active,
+    softDeleted = false,
+)
+
+/** [UnitConversionData] → push DTO; null when either nested unit couldn't be resolved locally. */
+private fun UnitConversionData.toApiModel(units: Map<String, UnitApiModel?>): UnitConversionApiModel? {
+    val base = units[baseUnitId] ?: return null
+    val derived = units[derivedUnitId] ?: return null
+    return UnitConversionApiModel(
+        id = uid,
+        productId = productId,
+        baseUnit = base,
+        derivedUnit = derived,
+        multiplier = multiplier,
+        active = active,
+        softDeleted = !active,
+    )
+}
+
+/** Pull DTO → [UnitConversionData] (falls back to [fallbackProductId] when the DTO omits it). */
+private fun UnitConversionApiModel.toConversionData(fallbackProductId: String): UnitConversionData =
+    UnitConversionData(
+        uid = id,
+        productId = productId.ifBlank { fallbackProductId },
+        baseUnitId = baseUnit.id,
+        derivedUnitId = derivedUnit.id,
+        multiplier = multiplier,
+        active = active && !softDeleted,
+    )

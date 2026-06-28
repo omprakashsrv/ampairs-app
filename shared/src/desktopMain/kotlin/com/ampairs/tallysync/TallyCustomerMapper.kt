@@ -22,6 +22,14 @@ internal object TallyCustomerMapper {
     private const val SUNDRY_DEBTORS = "Sundry Debtors"
     private const val SUNDRY_CREDITORS = "Sundry Creditors"
 
+    /**
+     * What a Tally ledger represents for party-balance/payment sync, decided by its account-group
+     * lineage: a customer (debtor), a supplier (creditor), or [OTHER] — anything else (bank, cash,
+     * Duties & Taxes / GST, Profit & Loss and other expense/income ledgers). Only DEBTOR/CREDITOR
+     * ledgers carry a party balance and receive payments; OTHER ledgers are skipped entirely.
+     */
+    enum class LedgerPartyType { DEBTOR, CREDITOR, OTHER }
+
     /** name → parent map over Tally account groups, for walking a ledger's group lineage. */
     fun buildGroupParentIndex(groups: List<Group>): Map<String, String> =
         groups.mapNotNull { g ->
@@ -30,19 +38,21 @@ internal object TallyCustomerMapper {
         }.toMap()
 
     /**
-     * True when [groupName]'s lineage roots at "Sundry Creditors" (a supplier/payable), false when it
-     * roots at "Sundry Debtors" or is unknown. Walks parents via [parentIndex]; reserved primaries may
-     * not appear in the groups collection, so the direct name compare on each hop is the real check.
+     * Classifies [groupName]'s lineage as DEBTOR (roots at "Sundry Debtors"), CREDITOR (roots at
+     * "Sundry Creditors"), or OTHER (anything else — bank/cash/tax/P&L). Walks parents via
+     * [parentIndex]; reserved primaries may not appear in the groups collection, so the direct name
+     * compare on each hop is the real check. Defaulting unknown lineages to OTHER (not DEBTOR) is what
+     * keeps non-party ledgers — ICICI Bank, CGST/SGST/IGST, Profit & Loss — out of customers/suppliers.
      */
-    fun isCreditorGroup(groupName: String?, parentIndex: Map<String, String>): Boolean {
+    fun ledgerPartyType(groupName: String?, parentIndex: Map<String, String>): LedgerPartyType {
         var cur = groupName?.trim().orEmpty()
         var guard = 0
         while (cur.isNotBlank() && guard++ < 64) {
-            if (cur.equals(SUNDRY_CREDITORS, ignoreCase = true)) return true
-            if (cur.equals(SUNDRY_DEBTORS, ignoreCase = true)) return false
+            if (cur.equals(SUNDRY_CREDITORS, ignoreCase = true)) return LedgerPartyType.CREDITOR
+            if (cur.equals(SUNDRY_DEBTORS, ignoreCase = true)) return LedgerPartyType.DEBTOR
             cur = parentIndex[cur] ?: break
         }
-        return false
+        return LedgerPartyType.OTHER
     }
 
     // Tally often stores multiple numbers in one field: "9876543210/9123456789" or "9876543210,9123456789"

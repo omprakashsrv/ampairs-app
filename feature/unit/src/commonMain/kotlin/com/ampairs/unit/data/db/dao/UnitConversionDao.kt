@@ -60,6 +60,28 @@ interface UnitConversionDao {
     suspend fun getUnsyncedUnitConversions(): List<UnitConversionEntity>
 
     /**
+     * Active conversions for a set of products (one-time fetch) — used by the product sync delegate
+     * to attach conversions to the product `/sync` push payload.
+     */
+    @Query("SELECT * FROM unit_conversions WHERE product_id IN (:productIds) AND active = 1")
+    suspend fun getActiveByProductIds(productIds: List<String>): List<UnitConversionEntity>
+
+    /**
+     * Distinct product ids that have at least one locally-unsynced conversion — these products must
+     * be pushed (carrying their conversions) even when the product row itself is already synced.
+     */
+    @Query("SELECT DISTINCT product_id FROM unit_conversions WHERE synced = 0")
+    suspend fun productIdsWithUnsyncedConversions(): List<String>
+
+    /** Count of locally-unsynced conversions for a product (local-edits-win guard on pull). */
+    @Query("SELECT COUNT(*) FROM unit_conversions WHERE product_id = :productId AND synced = 0")
+    suspend fun unsyncedCountForProduct(productId: String): Int
+
+    /** Mark every conversion of a product synced (after a successful product push). */
+    @Query("UPDATE unit_conversions SET synced = 1 WHERE product_id = :productId")
+    suspend fun markSyncedByProduct(productId: String)
+
+    /**
      * Get all conversions using a specific base unit
      */
     @Query("SELECT * FROM unit_conversions WHERE base_unit_id = :baseUnitId AND active = 1")
