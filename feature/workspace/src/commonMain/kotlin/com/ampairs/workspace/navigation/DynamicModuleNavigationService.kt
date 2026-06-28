@@ -135,6 +135,7 @@ class DynamicModuleNavigationService {
             ModuleCodes.PAYMENT_COLLECTION -> true
             ModuleCodes.STOREFRONT_MANAGEMENT -> true
             ModuleCodes.AI_ASSISTANT -> true
+            ModuleCodes.COMMUNICATION -> true
             else -> false
         }
     }
