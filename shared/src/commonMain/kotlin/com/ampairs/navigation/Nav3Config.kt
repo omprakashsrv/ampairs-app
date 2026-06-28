@@ -33,6 +33,14 @@ import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.printing.ui.PrintQueueRoute
 import com.ampairs.printing.ui.TemplateEditRoute
 import com.ampairs.printing.ui.TemplateListRoute
+import com.ampairs.communication.ui.CommCampaignListRoute
+import com.ampairs.communication.ui.CommCredentialRoute
+import com.ampairs.communication.ui.CommLogRoute
+import com.ampairs.communication.ui.CommScheduleListRoute
+import com.ampairs.communication.ui.CommTemplateEditRoute
+import com.ampairs.communication.ui.CommTemplateListRoute
+import com.ampairs.communication.ui.CommUsageRoute
+import com.ampairs.communication.ui.CommunicationHomeRoute
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
@@ -63,6 +71,7 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(Route.More::class)
                 subclass(Route.Printing::class)
                 subclass(Route.Payment::class)
+                subclass(Route.Communication::class)
 
                 // Auth Routes
                 subclass(AuthRoute.LoginRoot::class)
@@ -179,6 +188,16 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(PrintQueueRoute::class)
                 subclass(TemplateListRoute::class)
                 subclass(TemplateEditRoute::class)
+
+                // Communication Routes
+                subclass(CommunicationHomeRoute::class)
+                subclass(CommTemplateListRoute::class)
+                subclass(CommTemplateEditRoute::class)
+                subclass(CommScheduleListRoute::class)
+                subclass(CommCampaignListRoute::class)
+                subclass(CommCredentialRoute::class)
+                subclass(CommUsageRoute::class)
+                subclass(CommLogRoute::class)
             }
         }
     }

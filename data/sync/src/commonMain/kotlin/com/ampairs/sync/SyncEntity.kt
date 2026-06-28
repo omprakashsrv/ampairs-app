@@ -28,7 +28,13 @@ enum class SyncEntity(val entityType: String) {
     PAYMENT_VOUCHER("payment_voucher"),
     PAYMENT_ALLOCATION("payment_allocation"),
     ADJUSTMENT("adjustment"),
-    NOTIFICATION("notification_log");
+    NOTIFICATION("notification_log"),
+    COMM_TEMPLATE("comm_template"),
+    COMM_BINDING("comm_binding"),
+    COMM_SCHEDULE("comm_schedule"),
+    COMM_CAMPAIGN("comm_campaign"),
+    COMM_PREFERENCE("comm_preference"),
+    COMM_LOG("comm_log");
 
     companion object {
         fun fromEntityType(type: String): SyncEntity? =

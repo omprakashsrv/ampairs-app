@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="comm_home_title">Communication</string>
+    <string name="comm_home_subtitle">Templates, schedules, campaigns &amp; delivery</string>
+    <string name="comm_card_templates">Templates</string>
+    <string name="comm_card_templates_desc">Author email / SMS / WhatsApp message templates</string>
+    <string name="comm_card_schedules">Schedules</string>
+    <string name="comm_card_schedules_desc">Recurring sends (weekly, monthly…)</string>
+    <string name="comm_card_campaigns">Campaigns</string>
+    <string name="comm_card_campaigns_desc">One-off promotional blasts</string>
+    <string name="comm_card_credentials">Sender identity</string>
+    <string name="comm_card_credentials_desc">Your own provider credentials</string>
+    <string name="comm_card_usage">Usage &amp; billing</string>
+    <string name="comm_card_usage_desc">Messages sent and cost</string>
+    <string name="comm_card_logs">Delivery status</string>
+    <string name="comm_card_logs_desc">Recent message delivery log</string>
+
+    <string name="comm_refresh">Refresh</string>
+    <string name="comm_add">Add</string>
+    <string name="comm_save">Save</string>
+    <string name="comm_delete">Delete</string>
+    <string name="comm_cancel">Cancel</string>
+    <string name="comm_back">Back</string>
+    <string name="comm_empty">Nothing here yet</string>
+
+    <string name="comm_templates_title">Templates</string>
+    <string name="comm_template_new">New template</string>
+    <string name="comm_template_code">Code</string>
+    <string name="comm_template_name">Name</string>
+    <string name="comm_template_category">Category</string>
+    <string name="comm_template_locale">Default locale</string>
+    <string name="comm_template_description">Description</string>
+    <string name="comm_template_variant">Variant</string>
+    <string name="comm_template_channel">Channel</string>
+    <string name="comm_template_subject">Subject</string>
+    <string name="comm_template_html">HTML body</string>
+    <string name="comm_template_text">Text body</string>
+    <string name="comm_template_add_variant">Add variant</string>
+    <string name="comm_template_preview">Preview</string>
+    <string name="comm_template_preview_title">Rendered preview</string>
+    <string name="comm_template_missing_vars">Missing variables</string>
+
+    <string name="comm_schedules_title">Schedules</string>
+    <string name="comm_schedule_pause">Pause</string>
+    <string name="comm_schedule_resume">Resume</string>
+    <string name="comm_schedule_next_run">Next run</string>
+    <string name="comm_schedule_paused">Paused</string>
+
+    <string name="comm_campaigns_title">Campaigns</string>
+    <string name="comm_campaign_start">Start</string>
+    <string name="comm_campaign_pause">Pause</string>
+    <string name="comm_campaign_resume">Resume</string>
+    <string name="comm_campaign_progress">%1$d sent · %2$d delivered · %3$d failed</string>
+
+    <string name="comm_credentials_title">Sender identity</string>
+    <string name="comm_credential_channel">Channel</string>
+    <string name="comm_credential_provider">Provider</string>
+    <string name="comm_credential_sender">Sender reference</string>
+    <string name="comm_credential_display">Display name</string>
+    <string name="comm_credential_secret">Secret / API key</string>
+    <string name="comm_credential_secret_hint">Stored encrypted on the server — never shown again</string>
+    <string name="comm_credential_fallback">Allow platform fallback</string>
+    <string name="comm_credential_validate">Validate</string>
+    <string name="comm_credential_status">Status</string>
+
+    <string name="comm_usage_title">Usage &amp; billing</string>
+    <string name="comm_usage_total">Total messages: %1$d</string>
+    <string name="comm_usage_billing_platform">Platform (billable)</string>
+    <string name="comm_usage_billing_client">Your provider</string>
+
+    <string name="comm_logs_title">Delivery status</string>
+    <string name="comm_log_skipped">Skipped: %1$s</string>
+</resources>
