@@ -6,6 +6,7 @@ import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.pricing.data.repository.OfferRepository
 import com.ampairs.pricing.domain.model.Offer
 import com.ampairs.pricing.domain.model.OfferRewardType
+import com.ampairs.pricing.domain.offer.OfferApplicationEngine
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -88,18 +89,11 @@ class OfferPreviewViewModel(
 
         val subtotalMinor = demoLines.sumOf { (it.unitPriceMinor.toDouble() * it.qty).toLong() }
 
-        // Discount from the offer's reward.
-        val (discountMinor, capHit) = when (offer.rewardType) {
-            OfferRewardType.PERCENT -> {
-                val pct = offer.rewardPercent ?: 0.0
-                val raw = (subtotalMinor.toDouble() * pct / 100.0).toLong()
-                val cap = offer.rewardCapMinor
-                if (cap != null && raw > cap) cap to true else raw to false
-            }
-            OfferRewardType.FLAT -> (offer.rewardFlatMinor ?: 0L) to false
-            else -> 0L to false
-        }
-        val clampedDiscountMinor = discountMinor.coerceIn(0L, subtotalMinor)
+        // Discount from the offer's reward — single-sourced through the shared engine so the
+        // preview math always matches what a real cart would get.
+        val reward = OfferApplicationEngine.previewReward(offer, subtotalMinor)
+        val clampedDiscountMinor = reward.discountMinor.coerceIn(0L, subtotalMinor)
+        val capHit = reward.capHit
         val finalMinor = subtotalMinor - clampedDiscountMinor
 
         return OfferPreviewUiState(
