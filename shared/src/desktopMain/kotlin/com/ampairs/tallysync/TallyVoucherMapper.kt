@@ -2,6 +2,8 @@ package com.ampairs.tallysync
 
 import com.ampairs.invoice.db.entity.InvoiceEntity
 import com.ampairs.invoice.db.entity.InvoiceItemEntity
+import com.ampairs.invoice.db.model.TaxInfoEntity
+import com.ampairs.invoice.domain.TaxSpec
 import com.ampairs.payment.domain.AllocationTarget
 import com.ampairs.payment.domain.ClearanceStatus
 import com.ampairs.payment.domain.EntryType
@@ -13,8 +15,11 @@ import com.ampairs.payment.domain.PaymentMode
 import com.ampairs.payment.domain.PaymentVoucher
 import com.ampairs.purchase.db.entity.PurchaseEntity
 import com.ampairs.purchase.db.entity.PurchaseItemEntity
+import com.ampairs.tally.model.voucher.InventoryList
 import com.ampairs.tally.model.voucher.LedgerEntrie
 import com.ampairs.tally.model.voucher.Voucher
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.math.abs
 
 /**
@@ -120,6 +125,74 @@ internal object TallyVoucherMapper {
             ?: partyLedgerEntry()?.ledgerName?.trim()?.takeIf { it.isNotBlank() }
             ?: partyName?.trim()?.takeIf { it.isNotBlank() }
 
+    // Real GST TAX ledgers are named like "CGST 9%", "SGST 9%", "IGST 18%". The BASE revenue/expense
+    // ledgers "GST Sales", "GST Purchase", "IGST Purchase" also contain these tokens, so they're
+    // excluded by name — otherwise the taxable base gets double-counted as tax (tax ≈ grand total).
+    private val GST_LEDGER_REGEX = Regex("(CGST|SGST|UTGST|IGST|CESS)", RegexOption.IGNORE_CASE)
+
+    /** The party's own ledger line (matched by [partyName]); falls back to the ISPARTYLEDGER entry. */
+    private fun Voucher.partyEntryFor(partyName: String): LedgerEntrie? =
+        ledgerEntries().firstOrNull { it.ledgerName?.trim().equals(partyName.trim(), ignoreCase = true) }
+            ?: partyLedgerEntry()
+
+    /** Tax (GST) ledger lines of the voucher, excluding the party line and the sales/purchase base. */
+    private fun Voucher.taxLedgerEntries(partyName: String): List<LedgerEntrie> =
+        ledgerEntries().filter { e ->
+            val n = e.ledgerName?.trim().orEmpty()
+            n.isNotBlank() &&
+                !n.equals(partyName.trim(), ignoreCase = true) &&
+                GST_LEDGER_REGEX.containsMatchIn(n) &&
+                !n.contains("sales", ignoreCase = true) &&
+                !n.contains("purchase", ignoreCase = true)
+        }
+
+    /** Resolved document money: taxable base, GST-inclusive grand total, tax, and the GST breakdown. */
+    data class DocAmounts(
+        val basePrice: Double,
+        val grandTotal: Double,
+        val totalTax: Double,
+        val taxComponents: List<TaxInfoEntity>,
+    )
+
+    /**
+     * Computes a voucher's money robustly. The grand total is the PARTY ledger amount (the
+     * GST-inclusive document total in Tally) — matched by party name, NOT the unreliable
+     * ISPARTYLEDGER flag — falling back to base + summed GST ledgers, then the line base. Tax is taken
+     * from the actual GST ledger lines (CGST/SGST/IGST), so it never collapses to zero when the lines
+     * carry the real split. INTER (IGST present) vs INTRA (CGST/SGST) drives the component tax spec.
+     */
+    private fun Voucher.computeAmounts(partyName: String, lines: List<InventoryList>): DocAmounts {
+        val basePrice = lines.sumOf { abs(it.amount.parseAmount()) }
+        val taxEntries = taxLedgerEntries(partyName)
+        val taxFromLedgers = taxEntries.sumOf { abs(it.amount.parseAmount()) }
+        val partyAmount = abs(partyEntryFor(partyName)?.amount.parseAmount())
+        // The party ledger line carries the GST-inclusive grand total (the "total sales value"). When
+        // it can't be matched (no name match, no ISPARTYLEDGER flag), fall back to base + GST ledgers,
+        // and finally to the single largest ledger entry — in a sales/purchase voucher that IS the
+        // party line, so the total never silently collapses to the pre-tax base.
+        val maxLedger = ledgerEntries().maxOfOrNull { abs(it.amount.parseAmount()) } ?: 0.0
+        val grandTotal = when {
+            partyAmount > 0.0 -> partyAmount
+            else -> maxOf(basePrice + taxFromLedgers, maxLedger)
+        }
+        val totalTax = if (taxFromLedgers > 0.0) taxFromLedgers else (grandTotal - basePrice).coerceAtLeast(0.0)
+        val spec = if (taxEntries.any { it.ledgerName?.contains("IGST", ignoreCase = true) == true }) {
+            TaxSpec.INTER
+        } else {
+            TaxSpec.INTRA
+        }
+        val components = taxEntries.mapNotNull { e ->
+            val value = abs(e.amount.parseAmount())
+            if (value <= 0.0) return@mapNotNull null
+            val name = e.ledgerName?.trim().orEmpty()
+            TaxInfoEntity(name = name, percentage = 0.0, formattedName = name, taxSpec = spec, value = value)
+        }
+        return DocAmounts(basePrice, grandTotal, totalTax, components)
+    }
+
+    private fun List<TaxInfoEntity>.toJsonOrNull(): String? =
+        if (isEmpty()) null else Json.encodeToString(this)
+
     /** The deterministic local invoice id this voucher maps to (for cross-referencing payments). */
     fun Voucher.invoiceId(): String? = guid?.takeIf { it.isNotBlank() }?.let { ID_PREFIX_INVOICE + sanitize(it) }
 
@@ -135,16 +208,13 @@ internal object TallyVoucherMapper {
         customerId: String,
         customerName: String,
         productIdByName: Map<String, String>,
+        productTaxByName: Map<String, String>,
     ): MappedInvoice? {
         val guid = guid?.takeIf { it.isNotBlank() } ?: return null
         val invoiceId = ID_PREFIX_INVOICE + sanitize(guid)
         val lines = inventoryList.orEmpty()
 
-        val basePrice = lines.sumOf { abs(it.amount.parseAmount()) }
-        val partyAmount = abs(partyLedgerEntry()?.amount.parseAmount())
-        // Party-ledger amount is the GST-inclusive grand total; fall back to the line sum if absent.
-        val grandTotal = if (partyAmount > 0.0) partyAmount else basePrice
-        val totalTax = (grandTotal - basePrice).coerceAtLeast(0.0)
+        val amounts = computeAmounts(customerName, lines)
         val totalQuantity = lines.sumOf { abs(it.actualQty.parseQty()) }
 
         val items = lines.mapIndexed { idx, line ->
@@ -152,16 +222,18 @@ internal object TallyVoucherMapper {
             val qty = abs(line.actualQty.parseQty())
             val rate = line.rate?.substringBefore("/").parseAmount()
             val name = line.stockItemName?.trim().orEmpty()
+            // Distribute the document tax across lines in proportion to their taxable value.
+            val taxShare = if (amounts.basePrice > 0.0) amounts.totalTax * (lineAmount / amounts.basePrice) else 0.0
             InvoiceItemEntity(
                 id = ID_PREFIX_ITEM + sanitize(guid) + "_" + idx,
                 description = name,
                 product_id = name.takeIf { it.isNotBlank() }?.let { productIdByName[it] } ?: "",
-                total_cost = lineAmount,
+                total_cost = lineAmount + taxShare,
                 base_price = lineAmount,
                 product_price = rate,
-                total_tax = 0.0,
+                total_tax = taxShare,
                 invoice_id = invoiceId,
-                tax_code = "",
+                tax_code = name.takeIf { it.isNotBlank() }?.let { productTaxByName[it] }.orEmpty(),
                 quantity = qty,
                 item_no = (idx + 1).toLong(),
                 selling_price = rate,
@@ -181,11 +253,12 @@ internal object TallyVoucherMapper {
             customer_name = customerName,
             customer_gst = partyGstin?.trim().orEmpty(),
             place_of_supply = placeOfSupply?.trim()?.takeIf { it.isNotBlank() } ?: stateName?.trim(),
-            total_cost = grandTotal,
-            total_tax = totalTax,
+            total_cost = amounts.grandTotal,
+            total_tax = amounts.totalTax,
             total_items = items.size.toLong(),
             total_quantity = totalQuantity,
-            base_price = basePrice,
+            base_price = amounts.basePrice,
+            tax_info = amounts.taxComponents.toJsonOrNull(),
             active = 1,
             soft_deleted = 0,
             synced = 0,
@@ -208,15 +281,13 @@ internal object TallyVoucherMapper {
         supplierId: String,
         supplierName: String,
         productIdByName: Map<String, String>,
+        productTaxByName: Map<String, String>,
     ): MappedPurchase? {
         val guid = guid?.takeIf { it.isNotBlank() } ?: return null
         val purchaseId = ID_PREFIX_PURCHASE + sanitize(guid)
         val lines = inventoryList.orEmpty()
 
-        val basePrice = lines.sumOf { abs(it.amount.parseAmount()) }
-        val partyAmount = abs(partyLedgerEntry()?.amount.parseAmount())
-        val grandTotal = if (partyAmount > 0.0) partyAmount else basePrice
-        val totalTax = (grandTotal - basePrice).coerceAtLeast(0.0)
+        val amounts = computeAmounts(supplierName, lines)
         val totalQuantity = lines.sumOf { abs(it.actualQty.parseQty()) }
 
         val items = lines.mapIndexed { idx, line ->
@@ -224,16 +295,17 @@ internal object TallyVoucherMapper {
             val qty = abs(line.actualQty.parseQty())
             val rate = line.rate?.substringBefore("/").parseAmount()
             val name = line.stockItemName?.trim().orEmpty()
+            val taxShare = if (amounts.basePrice > 0.0) amounts.totalTax * (lineAmount / amounts.basePrice) else 0.0
             PurchaseItemEntity(
                 id = ID_PREFIX_PURCHASE_ITEM + sanitize(guid) + "_" + idx,
                 description = name,
                 product_id = name.takeIf { it.isNotBlank() }?.let { productIdByName[it] } ?: "",
-                total_cost = lineAmount,
+                total_cost = lineAmount + taxShare,
                 base_price = lineAmount,
                 product_price = rate,
-                total_tax = 0.0,
+                total_tax = taxShare,
                 purchase_id = purchaseId,
-                tax_code = "",
+                tax_code = name.takeIf { it.isNotBlank() }?.let { productTaxByName[it] }.orEmpty(),
                 quantity = qty,
                 item_no = idx + 1,
                 price = rate,
@@ -254,11 +326,12 @@ internal object TallyVoucherMapper {
             supplier_gst = partyGstin?.trim().orEmpty(),
             supplier_invoice_number = referenceNumber?.trim()?.takeIf { it.isNotBlank() },
             place_of_supply = placeOfSupply?.trim()?.takeIf { it.isNotBlank() } ?: stateName?.trim(),
-            total_cost = grandTotal,
-            total_tax = totalTax,
+            total_cost = amounts.grandTotal,
+            total_tax = amounts.totalTax,
             total_items = items.size.toLong(),
             total_quantity = totalQuantity,
-            base_price = basePrice,
+            base_price = amounts.basePrice,
+            tax_info = amounts.taxComponents.toJsonOrNull(),
             active = 1,
             soft_deleted = 0,
             synced = 0,
@@ -292,7 +365,11 @@ internal object TallyVoucherMapper {
         val partyEntry = ledgerEntries().firstOrNull {
             it.ledgerName?.trim().equals(partyName.trim(), ignoreCase = true)
         } ?: partyLedgerEntry()
+        // The party line carries the full amount received/paid; if it can't be identified, fall back to
+        // the largest ledger entry (the bank/cash counter-leg of a receipt/payment is the same total).
         val total = abs(partyEntry?.amount.parseAmount())
+            .takeIf { it > 0.0 }
+            ?: (ledgerEntries().maxOfOrNull { abs(it.amount.parseAmount()) } ?: 0.0)
         if (total <= 0.0) return null
 
         val bank = ledgerEntries().firstNotNullOfOrNull { it.bankAllocationList?.firstOrNull() }

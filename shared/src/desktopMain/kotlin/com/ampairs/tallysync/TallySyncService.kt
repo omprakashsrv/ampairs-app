@@ -65,12 +65,14 @@ import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
 import com.ampairs.tallysync.TallyVoucherMapper.ENTITY_VOUCHER
 import com.ampairs.tallysync.TallyVoucherMapper.Kind
 import com.ampairs.tallysync.TallyVoucherMapper.classify
+import com.ampairs.tallysync.TallyVoucherMapper.invoiceId
 import com.ampairs.tallysync.TallyVoucherMapper.isInvoiceKind
 import com.ampairs.tallysync.TallyVoucherMapper.isPaymentKind
 import com.ampairs.tallysync.TallyVoucherMapper.resolvePartyName
 import com.ampairs.tallysync.TallyVoucherMapper.toMappedInvoice
 import com.ampairs.tallysync.TallyVoucherMapper.toMappedPayment
 import com.ampairs.tally.model.master.StockItem
+import com.ampairs.tally.model.voucher.Voucher
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
 import com.ampairs.tax.data.repository.TaxConfigurationRepository
@@ -296,12 +298,21 @@ class TallySyncService(
             val accountGroups = repo.getGroups().body?.data?.collection?.groups ?: emptyList<Group>()
             val groupParentIndex = buildGroupParentIndex(accountGroups)
 
+            // Fetch vouchers once (reused for purchase-party detection + the voucher sync). A purchase
+            // voucher's party is a supplier by definition, so its name feeds syncSuppliers — that picks
+            // up real suppliers kept under Sundry Debtors or a custom group, not just Sundry Creditors.
+            val vouchers = repo.getVouchers().body?.data?.collection?.voucher ?: emptyList()
+            val purchaseParties = vouchers
+                .filter { it.classify() == Kind.PURCHASE }
+                .mapNotNull { it.resolvePartyName()?.trim()?.takeIf { n -> n.isNotBlank() } }
+                .toSet()
+
             val customerGroupsSynced = syncCustomerGroups(workspaceSlug, accountGroups)
             emit("Customer groups: $customerGroupsSynced upserted")
             val customerGroupIdByName = buildCustomerGroupNameIndex()
             val customersSynced = syncCustomers(repo, workspaceSlug, customerGroupIdByName, groupParentIndex)
             emit("Customers: $customersSynced upserted")
-            val suppliersSynced = syncSuppliers(repo, workspaceSlug, groupParentIndex)
+            val suppliersSynced = syncSuppliers(repo, workspaceSlug, groupParentIndex, purchaseParties)
             emit("Suppliers: $suppliersSynced upserted")
 
             // Clean up any previously stored invalid values (pre-sanitizer data)
@@ -310,7 +321,7 @@ class TallySyncService(
 
             // Vouchers depend on customers/suppliers (party lookup) and products (line-item lookup),
             // so they run last. Sales → invoices (customers); Purchases → purchases (suppliers).
-            val (invoicesSynced, paymentsSynced, purchasesSynced) = syncVouchers(repo, workspaceSlug)
+            val (invoicesSynced, paymentsSynced, purchasesSynced) = syncVouchers(workspaceSlug, vouchers)
             emit("Invoices: $invoicesSynced upserted")
             emit("Purchases: $purchasesSynced upserted")
             emit("Payments: $paymentsSynced upserted")
@@ -683,15 +694,26 @@ class TallySyncService(
         repo: TallyRepository,
         workspaceSlug: String,
         groupParentIndex: Map<String, String>,
+        purchaseParties: Set<String>,
     ): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_SUPPLIER_LEDGER).first()
         val ledgers = repo.getLedgers().body?.data?.collection?.ledgers ?: return 0
-        val filtered = ledgers
-            // Suppliers are ONLY ledgers whose lineage roots at Sundry Creditors; everything else
-            // (bank/cash/tax/P&L) is OTHER and skipped.
-            .filter { ledgerPartyType(it.parent, groupParentIndex) == LedgerPartyType.CREDITOR }
-            .filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
-        log.d { "syncSuppliers: ${ledgers.size} ledgers, ${filtered.size} creditors after filter, lastAlterId=$lastAlterId" }
+        val filtered = ledgers.filter { l ->
+            // A supplier is any ledger under Sundry Creditors (new/changed since the checkpoint) OR any
+            // ledger that is the party on a purchase voucher — the latter catches real suppliers kept
+            // under Sundry Debtors or a custom group. Purchase parties are always included (idempotent
+            // upsert by GUID) so they're created even when the ledger itself is unchanged.
+            val name = l.name?.trim()
+            val type = ledgerPartyType(l.parent, groupParentIndex)
+            // A purchase party becomes a supplier UNLESS it's a debtor: a debtor is already synced as a
+            // CUSTOMER, and its purchases post onto that same customer record — so the payment module
+            // shows ONE netted party, not a customer + supplier duplicate.
+            val isPurchaseParty = name != null && name in purchaseParties && type != LedgerPartyType.DEBTOR
+            val isNewCreditor = type == LedgerPartyType.CREDITOR &&
+                l.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId }
+            isPurchaseParty || isNewCreditor
+        }
+        log.d { "syncSuppliers: ${ledgers.size} ledgers, ${filtered.size} suppliers after filter (${purchaseParties.size} purchase parties), lastAlterId=$lastAlterId" }
 
         val guids = filtered.mapNotNull { it.guid?.takeIf { it.isNotBlank() } }
         val existingIdByGuid = mutableMapOf<String, String>()
@@ -705,7 +727,9 @@ class TallySyncService(
         }
         val entities = pairs.map { it.second }
         entities.chunked(BATCH_SIZE).forEach { supplierDao.insertSuppliers(it) }
-        // Opening balance per supplier (Cr = payable "To Pay", Dr = advance) → PartyBalance.
+        // Opening balance per supplier (Cr = payable "To Pay", Dr = advance) → PartyBalance. Safe for
+        // all of them: the filter above excludes debtors, so no supplier here is also a customer — there
+        // is no party whose opening could be double-counted across a customer + supplier record.
         for ((ledger, entity) in pairs) syncOpeningBalance(entity.id, ledger.openingBalance)
         if (entities.isNotEmpty()) {
             val maxAlterId = ledgers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
@@ -752,17 +776,23 @@ class TallySyncService(
      *
      * @return Triple(invoicesSynced, paymentsSynced, purchasesSynced)
      */
-    private suspend fun syncVouchers(repo: TallyRepository, workspaceSlug: String): Triple<Int, Int, Int> {
+    private suspend fun syncVouchers(
+        workspaceSlug: String,
+        vouchers: List<Voucher>,
+    ): Triple<Int, Int, Int> {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_VOUCHER).first()
-        val vouchers = repo.getVouchers().body?.data?.collection?.voucher ?: return Triple(0, 0, 0)
-        emit("Vouchers: API returned ${vouchers.size} total, lastAlterId=$lastAlterId")
+        emit("Vouchers: ${vouchers.size} total, lastAlterId=$lastAlterId")
         val filtered = vouchers.filter { it.alterId.toAlterLong() > lastAlterId }
 
         // Sales party matches a synced customer; purchase party matches a synced supplier (both were
-        // synced earlier this cycle). Line items match by stock-item name to a synced product.
+        // synced earlier this cycle — purchase parties are now always synced as suppliers). Line items
+        // match by stock-item name to a synced product.
         val customerIdByName = customerDao.getAllCustomers().first().associate { it.name.trim() to it.id }
         val supplierIdByName = supplierDao.getAllSuppliers().first().associate { it.name.trim() to it.id }
-        val productIdByName = productDao.getProducts().associate { it.name.trim() to it.id }
+        val products = productDao.getProducts()
+        val productIdByName = products.associate { it.name.trim() to it.id }
+        // name → tax_code (HSN) so invoice/purchase line items carry the product's tax code.
+        val productTaxByName = products.associate { it.name.trim() to it.tax_code }
 
         // --- Invoices first (payments reference them by bill number) ---
         var invoicesSynced = 0
@@ -772,12 +802,15 @@ class TallySyncService(
             // PURCHASE is the buy-side and is handled separately (→ purchases + supplier payable).
             if (!kind.isInvoiceKind || kind == Kind.PURCHASE) continue
             val partyName = voucher.resolvePartyName()
-            val customerId = partyName?.let { customerIdByName[it] }
+            // Unified party id (customer wins, else supplier). A party is either a customer or a supplier
+            // record (never both), so a sale to a supplier-party nets onto that ONE record instead of
+            // being dropped — the payment module shows a single ledger for the party, not two.
+            val customerId = partyName?.let { customerIdByName[it] ?: supplierIdByName[it] }
             if (customerId == null) {
                 skippedInvoiceNoParty++
                 continue
             }
-            val mapped = voucher.toMappedInvoice(kind, customerId, partyName, productIdByName) ?: continue
+            val mapped = voucher.toMappedInvoice(kind, customerId, partyName, productIdByName, productTaxByName) ?: continue
             invoiceDao.insert(mapped.entity)
             invoiceItemDao.replaceInvoiceItems(mapped.entity.id, mapped.items)
             // Deterministic LDG_<id> entry — re-posting on a changed voucher upserts in place.
@@ -797,16 +830,31 @@ class TallySyncService(
 
         // --- Purchases (party = supplier; posts the buy-side PURCHASE_BILL payable → "To Pay") ---
         var purchasesSynced = 0
-        var skippedPurchaseNoParty = 0
+        val skippedPurchaseParties = mutableListOf<String>()
         for (voucher in filtered) {
             if (voucher.classify() != Kind.PURCHASE) continue
+            // An earlier app version (before the Purchase module) mapped purchase vouchers as INVOICES.
+            // That stale invoice (deterministic INVTLY<guid>) + its SALES_INVOICE ledger entry still
+            // exist and show as a duplicate on the party. Remove them so only the PURCHASE_BILL remains.
+            voucher.invoiceId()?.let { staleInvoiceId ->
+                val stale = invoiceDao.selectById(staleInvoiceId)
+                if (stale != null) {
+                    invoiceDao.insert(stale.copy(soft_deleted = 1, synced = 0)) // syncs the deletion
+                    invoiceItemDao.softDeleteByInvoiceId(staleInvoiceId)
+                    ledgerPoster.reverseDocumentEntry(staleInvoiceId) // drop SALES_INVOICE + recompute party
+                }
+            }
             val partyName = voucher.resolvePartyName()
-            val supplierId = partyName?.let { supplierIdByName[it] }
+            // Unified party id (customer wins, else supplier) — the SAME rule as the invoice loop, so a
+            // party's sales and purchases always net onto one record. A debtor you also buy from keeps a
+            // single customer balance; a supplier-party keeps a single supplier balance. The payable + its
+            // backfill both post to this id.
+            val supplierId = partyName?.let { customerIdByName[it] ?: supplierIdByName[it] }
             if (supplierId == null) {
-                skippedPurchaseNoParty++
+                skippedPurchaseParties += (partyName ?: "<no party>")
                 continue
             }
-            val mapped = voucher.toMappedPurchase(supplierId, partyName, productIdByName) ?: continue
+            val mapped = voucher.toMappedPurchase(supplierId, partyName, productIdByName, productTaxByName) ?: continue
             purchaseDao.savePurchaseWithItems(mapped.entity, mapped.items)
             // Deterministic LDG_<purchase.id> CR entry — re-posting on a changed voucher upserts in place.
             purchaseLedgerPoster.postForReceivedPurchase(
@@ -819,7 +867,9 @@ class TallySyncService(
             )
             purchasesSynced++
         }
-        if (skippedPurchaseNoParty > 0) emit("Purchases: skipped $skippedPurchaseNoParty (party not a known supplier)")
+        if (skippedPurchaseParties.isNotEmpty()) {
+            emit("Purchases: skipped ${skippedPurchaseParties.size} (party not a known supplier): ${skippedPurchaseParties.distinct().joinToString(", ")}")
+        }
 
         // --- Payments / receipts (ONLY for customer or supplier parties) ---
         // Bill refs resolve against invoices (customer receipts) or purchases (supplier payments).
@@ -833,16 +883,19 @@ class TallySyncService(
             val kind = voucher.classify()
             if (!kind.isPaymentKind) continue
             val partyName = voucher.resolvePartyName()
-            // Customer receipt → allocate against invoices; supplier payment → against purchases.
             val customerId = partyName?.let { customerIdByName[it] }
             val supplierId = partyName?.let { supplierIdByName[it] }
-            val partyUid = customerId ?: supplierId
-            if (partyName == null || partyUid == null) {
+            if (partyName == null || (customerId == null && supplierId == null)) {
                 skippedPaymentNoParty++
                 continue
             }
-            val targetType = if (customerId != null) AllocationTarget.INVOICE else AllocationTarget.PURCHASE
-            val targetIdByRef = if (customerId != null) invoiceIdByNumber else purchaseIdByNumber
+            // One netted balance per party: a dual-role party's purchases post onto its CUSTOMER record,
+            // so route its receipts AND payments there too (customer id wins). Receipt (money IN) settles
+            // a receivable → invoices; Payment (money OUT) settles a payable → purchases.
+            val partyUid = (customerId ?: supplierId)!! // guard above guarantees one is non-null
+            val isPaymentOut = kind == Kind.PAYMENT
+            val targetType = if (isPaymentOut) AllocationTarget.PURCHASE else AllocationTarget.INVOICE
+            val targetIdByRef = if (isPaymentOut) purchaseIdByNumber else invoiceIdByNumber
             val mapped = voucher.toMappedPayment(kind, partyUid, partyName, targetType, targetIdByRef) ?: continue
             // The repository rejects allocations whose sum exceeds the voucher total — drop them
             // defensively (rounding/sign quirks) rather than losing the whole receipt.
