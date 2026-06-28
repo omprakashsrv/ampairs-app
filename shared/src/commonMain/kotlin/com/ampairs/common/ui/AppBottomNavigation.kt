@@ -48,6 +48,7 @@ import ampairsapp.shared.generated.resources.nav_assistant
 import ampairsapp.shared.generated.resources.nav_cb_employees
 import ampairsapp.shared.generated.resources.nav_cb_maintenance
 import ampairsapp.shared.generated.resources.nav_cb_stores
+import ampairsapp.shared.generated.resources.nav_communication
 import ampairsapp.shared.generated.resources.nav_dashboard
 import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_inventory
