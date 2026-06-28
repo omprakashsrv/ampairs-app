@@ -125,6 +125,7 @@ kotlin {
                 api(projects.feature.form)
                 api(projects.feature.formwidgets)
                 api(projects.feature.unit)
+                api(projects.feature.pricing)
                 api(projects.feature.sequence)
                 api(projects.feature.store)
                 api(projects.feature.update)
@@ -154,6 +155,7 @@ kotlin {
                 implementation(libs.compose.components.resources)
 
                 implementation(libs.kotlinx.dateTime)
+                implementation(libs.kermit)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
 

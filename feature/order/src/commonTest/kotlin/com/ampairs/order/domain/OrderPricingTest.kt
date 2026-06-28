@@ -254,4 +254,52 @@ class OrderPricingTest {
         assertTrue(item.id.startsWith(ORDER_ITEM_PREFIX), "id should start with OIT")
         assertFalse(item.priceOverridden)
     }
+
+    // ── spec 009 pricing snapshot (T026) ──
+
+    @Test
+    fun `pricing snapshot round-trips domain to entity to domain verbatim`() {
+        val item = OrderItem(product(id = "PRD1")).apply {
+            quantity = 60.0
+            price = 210.0
+            resolvedUnitPriceMinor = 21_000L
+            currency = "INR"
+            priceSource = "PRICE_LIST"
+            matchedPriceListUid = "PL1"
+            appliedTierMinQty = 50.0
+            belowMoq = false
+        }
+
+        val entity = listOf(item).asDatabaseModel("ORD1").single()
+        assertEquals(21_000L, entity.resolved_unit_price_minor)
+        assertEquals("INR", entity.currency)
+        assertEquals("PRICE_LIST", entity.price_source)
+        assertEquals("PL1", entity.matched_price_list_uid)
+        assertEquals(50.0, entity.applied_tier_min_qty)
+        assertEquals(0, entity.below_moq)
+
+        val back = listOf(entity).asItemsDomainModel().single()
+        assertEquals(21_000L, back.resolvedUnitPriceMinor)
+        assertEquals("INR", back.currency)
+        assertEquals("PRICE_LIST", back.priceSource)
+        assertEquals("PL1", back.matchedPriceListUid)
+        assertEquals(50.0, back.appliedTierMinQty)
+        assertFalse(back.belowMoq)
+    }
+
+    @Test
+    fun `below moq flag survives the entity round-trip`() {
+        val item = OrderItem(product()).apply { quantity = 5.0; belowMoq = true }
+        val back = listOf(listOf(item).asDatabaseModel("ORD1").single()).asItemsDomainModel().single()
+        assertTrue(back.belowMoq, "belowMoq true encodes to 1 and decodes back to true")
+    }
+
+    @Test
+    fun `an unresolved line carries a null snapshot through the entity round-trip`() {
+        val item = OrderItem(product())
+        val back = listOf(listOf(item).asDatabaseModel("ORD1").single()).asItemsDomainModel().single()
+        assertNull(back.resolvedUnitPriceMinor)
+        assertNull(back.priceSource)
+        assertFalse(back.belowMoq)
+    }
 }

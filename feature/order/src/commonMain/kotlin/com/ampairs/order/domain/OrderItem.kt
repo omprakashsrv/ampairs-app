@@ -88,6 +88,15 @@ class OrderItem(var product: ProductSummary?) {
     var id: String = ""
     var discountPercent: Double by mutableStateOf(0.0)
 
+    // 009 pricing snapshot — set by the PriceResolver seam at line build; persisted to Room and
+    // pushed verbatim on /sync (the backend never re-resolves). Null when no resolution ran yet.
+    var resolvedUnitPriceMinor: Long? = null
+    var currency: String? = null
+    var priceSource: String? = null
+    var matchedPriceListUid: String? = null
+    var appliedTierMinQty: Double? = null
+    var belowMoq: Boolean = false
+
     init {
         if (id == "") {
             id = IdUtils.generateUniqueId(ORDER_ITEM_PREFIX, 64)
@@ -120,7 +129,13 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
             discount = if (orderItem.discount.isNotEmpty()) Json.encodeToString(orderItem.discount) else null,
             unit_id = orderItem.unitId,
             base_quantity = orderItem.baseQuantity,
-            variant_sku = orderItem.variantSku
+            variant_sku = orderItem.variantSku,
+            resolved_unit_price_minor = orderItem.resolvedUnitPriceMinor,
+            currency = orderItem.currency,
+            price_source = orderItem.priceSource,
+            matched_price_list_uid = orderItem.matchedPriceListUid,
+            applied_tier_min_qty = orderItem.appliedTierMinQty,
+            below_moq = if (orderItem.belowMoq) 1 else 0,
         )
     }
 }
@@ -154,6 +169,12 @@ fun List<OrderItemEntity>.asItemsDomainModel(): List<OrderItem> {
         orderItem1.unitMultiplier =
             if (orderItem.quantity > 0.0 && orderItem.base_quantity > 0.0) orderItem.base_quantity / orderItem.quantity else 1.0
         orderItem1.variantSku = orderItem.variant_sku
+        orderItem1.resolvedUnitPriceMinor = orderItem.resolved_unit_price_minor
+        orderItem1.currency = orderItem.currency
+        orderItem1.priceSource = orderItem.price_source
+        orderItem1.matchedPriceListUid = orderItem.matched_price_list_uid
+        orderItem1.appliedTierMinQty = orderItem.applied_tier_min_qty
+        orderItem1.belowMoq = orderItem.below_moq == 1
         // derive the override flag: price differs from the unit-scaled catalog price
         orderItem1.priceOverridden =
             kotlin.math.abs(orderItem.selling_price - orderItem.product_price * orderItem1.unitMultiplier) > 0.005

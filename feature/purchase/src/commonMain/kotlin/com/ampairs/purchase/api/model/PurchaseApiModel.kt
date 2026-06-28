@@ -1,5 +1,6 @@
 package com.ampairs.purchase.api.model
 
+import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.purchase.db.entity.PurchaseEntity
 import com.ampairs.purchase.domain.Address
 import com.ampairs.purchase.domain.Discount
@@ -7,6 +8,7 @@ import com.ampairs.purchase.domain.PurchaseStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.time.ExperimentalTime
 
 @Serializable
 data class PurchaseApiModel(
@@ -39,11 +41,17 @@ data class PurchaseApiModel(
     @SerialName("tax_infos") val taxInfoApiModels: List<TaxInfoApiModel>? = null,
 )
 
+/** Normalize a stored date string ("yyyy-MM-dd HH:mm:ss" or ISO) to an ISO-8601 Instant the backend
+ *  (`java.time.Instant`) can parse. The entity stores purchase_date space-formatted; sync must send ISO. */
+@OptIn(ExperimentalTime::class)
+private fun String.toIsoInstantOrSelf(): String =
+    if (isBlank()) this else DateTimeAdapter.fromDateTimeString(this)?.toString() ?: this
+
 /** Build the wire parent (without items) from a local row. */
 fun PurchaseEntity.toApiModel(items: List<PurchaseItemApiModel>): PurchaseApiModel {
     return PurchaseApiModel(
         id = this.id,
-        purchaseDate = this.purchase_date,
+        purchaseDate = this.purchase_date.toIsoInstantOrSelf(),
         purchaseNumber = this.purchase_number,
         supplierId = this.supplier_id,
         supplierName = this.supplier_name,

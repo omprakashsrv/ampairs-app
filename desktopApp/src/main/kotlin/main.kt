@@ -33,6 +33,7 @@ import coil3.compose.setSingletonImageLoaderFactory
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.DesktopAppGraph
 import com.ampairs.di.DesktopWorkspaceModule
+import com.ampairs.logging.initAppLogging
 import com.ampairs.tallysync.TallySettingsScreen
 import com.ampairs.tallysync.TallySyncScheduler
 import dev.zacsweers.metro.createGraphFactory
@@ -40,6 +41,7 @@ import org.jetbrains.skia.Image
 import java.awt.Frame
 
 fun main() = application {
+    initAppLogging()
     // Check if data directory is set before initializing the graph
     var showDataDirectoryPicker by remember { mutableStateOf(!DataDirectoryManager.isDataDirectorySet()) }
     var dataDirectoryReady by remember { mutableStateOf(DataDirectoryManager.isDataDirectorySet()) }

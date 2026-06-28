@@ -170,6 +170,10 @@ private class FakeUnitConversionDao : UnitConversionDao {
     ): UnitConversionEntity? = null
     override suspend fun getUnitConversionById(id: String): UnitConversionEntity? = null
     override suspend fun getUnsyncedUnitConversions(): List<UnitConversionEntity> = emptyList()
+    override suspend fun getActiveByProductIds(productIds: List<String>): List<UnitConversionEntity> = emptyList()
+    override suspend fun productIdsWithUnsyncedConversions(): List<String> = emptyList()
+    override suspend fun unsyncedCountForProduct(productId: String): Int = 0
+    override suspend fun markSyncedByProduct(productId: String) {}
     override suspend fun getUnitConversionsByBaseUnit(baseUnitId: String): List<UnitConversionEntity> = emptyList()
     override suspend fun getUnitConversionsByDerivedUnit(derivedUnitId: String): List<UnitConversionEntity> = emptyList()
     override suspend fun insertUnitConversion(unitConversion: UnitConversionEntity) {}

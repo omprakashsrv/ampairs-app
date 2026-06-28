@@ -1,8 +1,6 @@
 package com.ampairs.tally.model.voucher
 
 import com.ampairs.tally.model.master.Address
-import com.ampairs.tally.model.master.VoucherAction
-import com.ampairs.tally.model.master.VoucherName
 import kotlinx.serialization.Serializable
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import nl.adaptivity.xmlutil.serialization.XmlSerialName
@@ -13,13 +11,16 @@ data class Voucher(
     @XmlSerialName("REMOTEID")
     var remoteId: String? = null,
 
+    // VCHTYPE / ACTION are kept as raw strings, not enums: a single VOUCHER collection returns every
+    // voucher type (incl. custom names like "GST Sales") and a strict enum would crash deserialization
+    // on the first unknown value. Classification is done by keyword in TallyVoucherMapper.
     @XmlElement(false)
     @XmlSerialName("VCHTYPE")
-    var vchType: VoucherName,
+    var vchType: String? = null,
 
     @XmlElement(false)
     @XmlSerialName("ACTION")
-    var action: VoucherAction,
+    var action: String? = null,
 
     @XmlElement(true)
     @XmlSerialName("DATE")
@@ -110,9 +111,14 @@ data class Voucher(
     var isInvoice: String? = null,
 
     @XmlElement(true)
+    @XmlSerialName("ALTERID")
+    var alterId: String? = null,
+
+    @XmlElement(true)
     @XmlSerialName("LEDGERENTRIES.LIST")
     var ledgerEntrieList: List<LedgerEntrie>? = null,
 
+    @XmlElement(true)
     @XmlSerialName("ALLLEDGERENTRIES.LIST")
     var allLedgerEntriesList: List<LedgerEntrie>? = null,
 

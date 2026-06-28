@@ -54,6 +54,7 @@ import ampairsapp.shared.generated.resources.nav_parties
 import ampairsapp.shared.generated.resources.nav_purchases
 import ampairsapp.shared.generated.resources.nav_suppliers
 import ampairsapp.shared.generated.resources.nav_payments
+import ampairsapp.shared.generated.resources.nav_pricing
 import ampairsapp.shared.generated.resources.nav_reports
 import ampairsapp.shared.generated.resources.nav_sales
 import ampairsapp.shared.generated.resources.nav_stock
@@ -107,6 +108,7 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.PRINTING -> Route.Printing
     ModuleCodes.PAYMENT_COLLECTION -> Route.Payment
     ModuleCodes.STOREFRONT_MANAGEMENT -> Route.Storefront
+    ModuleCodes.PRICING_MANAGEMENT -> Route.Pricing
     ModuleCodes.AI_ASSISTANT -> Route.Agent
     else -> null
 }
@@ -150,6 +152,19 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
     currentRoute is PaymentRoute || currentRoute is Route.Payment -> ModuleCodes.PAYMENT_COLLECTION
     currentRoute is Route.Storefront -> ModuleCodes.STOREFRONT_MANAGEMENT
     currentRoute is Route.Agent -> ModuleCodes.AI_ASSISTANT
+    currentRoute is Route.Pricing
+        || currentRoute is com.ampairs.pricing.ui.PricingShellRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListListRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListDetailRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListFormRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListWizardRoute
+        || currentRoute is com.ampairs.pricing.ui.ItemEditorRoute
+        || currentRoute is com.ampairs.pricing.ui.OffersListRoute
+        || currentRoute is com.ampairs.pricing.ui.OfferBuilderRoute
+        || currentRoute is com.ampairs.pricing.ui.OfferPreviewRoute
+        || currentRoute is com.ampairs.pricing.ui.GeoZoneListRoute
+        || currentRoute is com.ampairs.pricing.ui.GeoZoneFormRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceTesterRoute -> ModuleCodes.PRICING_MANAGEMENT
     else -> null
 }
 
@@ -176,6 +191,7 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.PAYMENT_COLLECTION -> stringResource(Res.string.nav_payments)
     ModuleCodes.STOREFRONT_MANAGEMENT -> stringResource(Res.string.nav_storefront)
     ModuleCodes.AI_ASSISTANT -> stringResource(Res.string.nav_assistant)
+    ModuleCodes.PRICING_MANAGEMENT -> stringResource(Res.string.nav_pricing)
     "business-reporting" -> stringResource(Res.string.nav_reports)
     "business-dashboard" -> stringResource(Res.string.nav_dashboard)
     "notification-system" -> stringResource(Res.string.nav_alerts)

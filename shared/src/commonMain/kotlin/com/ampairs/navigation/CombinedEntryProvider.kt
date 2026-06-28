@@ -43,12 +43,16 @@ import com.ampairs.navigation.providers.storefrontEntryProvider
 import com.ampairs.navigation.providers.subscriptionEntryProvider
 import com.ampairs.navigation.providers.taxEntryProvider
 import com.ampairs.navigation.providers.unitEntryProvider
+import com.ampairs.navigation.providers.pricingEntryProvider
 import com.ampairs.navigation.providers.printingEntryProvider
 import com.ampairs.navigation.providers.workspaceEntryProvider
 import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.notification.ui.NotificationListRoute
+import com.ampairs.pricing.ui.PriceListListRoute
+import com.ampairs.pricing.ui.PricingHomeRoute
+import com.ampairs.pricing.ui.PricingShellRoute
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 
@@ -81,6 +85,7 @@ fun combinedEntryProvider(
         ?: businessEntryProvider(key, backStack)
         ?: subscriptionEntryProvider(key, backStack)
         ?: unitEntryProvider(key, backStack)
+        ?: pricingEntryProvider(key, backStack)
         ?: printingEntryProvider(key, backStack)
         ?: storeEntryProvider(key, backStack)
         ?: sequenceEntryProvider(key, backStack)
@@ -188,6 +193,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(UnitListRoute)
+        }
+    }
+
+    // Route.Pricing redirects to the Pricing & Offers 5-tab shell
+    is Route.Pricing -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(PricingShellRoute)
         }
     }
 

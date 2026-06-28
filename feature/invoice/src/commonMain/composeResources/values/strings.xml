@@ -102,6 +102,7 @@
     <string name="doc_stepper_minus_cd">Decrease quantity</string>
     <string name="doc_stepper_plus_cd">Increase quantity</string>
     <string name="doc_line_none">—</string>
+    <string name="doc_line_below_moq">Below MOQ</string>
 
     <!-- Per-line editor sheet -->
     <string name="doc_sheet_title">Edit line</string>

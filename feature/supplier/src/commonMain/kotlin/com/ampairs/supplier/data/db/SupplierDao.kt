@@ -54,6 +54,10 @@ interface SupplierDao {
     @Query("SELECT * FROM suppliers WHERE synced = 0")
     suspend fun getUnsyncedSuppliers(): List<SupplierEntity>
 
+    /** Existing suppliers matched by their Tally GUID (ref_id) — used by the Tally importer to reuse ids. */
+    @Query("SELECT * FROM suppliers WHERE ref_id IN (:refIds)")
+    suspend fun getSuppliersByTallyRefIds(refIds: List<String>): List<SupplierEntity>
+
     @Query("SELECT COUNT(*) FROM suppliers WHERE synced = 0")
     fun observeUnsyncedCount(): Flow<Int>
 

@@ -1,0 +1,13 @@
+<resources>
+    <string name="pricing_offerp_title">Offer preview</string>
+    <string name="pricing_offerp_sample_cart">Sample cart</string>
+    <string name="pricing_offerp_sample_context">Demo cart — preview only</string>
+    <string name="pricing_offerp_line_qty">%1$s @ %2$s</string>
+    <string name="pricing_offerp_applied_offer">Applied offer</string>
+    <string name="pricing_offerp_reward">Reward: %1$s</string>
+    <string name="pricing_offerp_subtotal">Subtotal</string>
+    <string name="pricing_offerp_discount">Total discount</string>
+    <string name="pricing_offerp_final">Final total</string>
+    <string name="pricing_offerp_cap_note">Cap reached — discount limited by the reward cap</string>
+    <string name="pricing_offerp_not_found">Offer not found</string>
+</resources>

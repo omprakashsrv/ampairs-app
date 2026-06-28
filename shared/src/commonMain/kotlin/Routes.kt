@@ -44,6 +44,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object Unit : Route
 
+    /** Pricing / price-list management (admin). */
+    @Serializable
+    data object Pricing : Route
+
     /** Merchant-side online-store (ecom storefront) setup & configuration. */
     @Serializable
     data object Storefront : Route

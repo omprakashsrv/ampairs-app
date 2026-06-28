@@ -5,6 +5,7 @@ import cocoapods.FirebaseCore.FIRApp
 import com.ampairs.FcmBridge
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.IosAppGraph
+import com.ampairs.logging.initAppLogging
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.cinterop.ExperimentalForeignApi
 
@@ -14,6 +15,7 @@ fun MainViewController() = ComposeUIViewController {
         FIRApp.configure()
     }
 
+    initAppLogging()
     initializeSentry()
 
     val appGraph = remember { createGraphFactory<IosAppGraph.Factory>().create() }
