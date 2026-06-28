@@ -44,6 +44,7 @@ import androidx.navigation3.runtime.NavKey
 import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.nav_alerts
 import ampairsapp.shared.generated.resources.nav_assistant
+import ampairsapp.shared.generated.resources.nav_communication
 import ampairsapp.shared.generated.resources.nav_dashboard
 import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_inventory
