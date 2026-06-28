@@ -31,6 +31,7 @@ enum class Type(var type: String, var id: String, var nativeMethods: List<String
         listOf(
             "GUID", "PARENT",
             "LEDGERMOBILE", "LEDGERPHONE", "PARTYGSTIN",
+            "OPENINGBALANCE",
             "ADDRESS.LIST",
             "LEDMAILINGDETAILS.LIST",
             "LEDGSTREGDETAILS.LIST",

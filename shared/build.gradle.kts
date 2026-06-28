@@ -154,6 +154,7 @@ kotlin {
                 implementation(libs.compose.components.resources)
 
                 implementation(libs.kotlinx.dateTime)
+                implementation(libs.kermit)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
 

@@ -39,7 +39,9 @@ class PartyBalanceSyncDelegate(
     // party balance — keeps server-side recompute ordering correct.
     override val pushDependencies: List<SyncEntity> = listOf(
         SyncEntity.CUSTOMER,
+        SyncEntity.SUPPLIER,
         SyncEntity.INVOICE,
+        SyncEntity.PURCHASE,
         SyncEntity.LEDGER_ENTRY,
         SyncEntity.PAYMENT_VOUCHER,
         SyncEntity.ADJUSTMENT,

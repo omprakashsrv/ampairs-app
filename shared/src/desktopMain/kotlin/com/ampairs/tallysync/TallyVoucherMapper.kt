@@ -11,6 +11,8 @@ import com.ampairs.payment.domain.PaymentAllocation
 import com.ampairs.payment.domain.PaymentDirection
 import com.ampairs.payment.domain.PaymentMode
 import com.ampairs.payment.domain.PaymentVoucher
+import com.ampairs.purchase.db.entity.PurchaseEntity
+import com.ampairs.purchase.db.entity.PurchaseItemEntity
 import com.ampairs.tally.model.voucher.LedgerEntrie
 import com.ampairs.tally.model.voucher.Voucher
 import kotlin.math.abs
@@ -34,6 +36,8 @@ internal object TallyVoucherMapper {
     private const val ID_PREFIX_ITEM = "IITTLY"
     private const val ID_PREFIX_PAYMENT = "PVCHTLY"
     private const val ID_PREFIX_ALLOCATION = "PALTLY"
+    private const val ID_PREFIX_PURCHASE = "PURTLY"
+    private const val ID_PREFIX_PURCHASE_ITEM = "PITTLY"
 
     enum class Kind { SALES, CREDIT_NOTE, PURCHASE, DEBIT_NOTE, RECEIPT, PAYMENT, OTHER }
 
@@ -187,6 +191,79 @@ internal object TallyVoucherMapper {
             synced = 0,
         )
         return MappedInvoice(entity, items, kind.ledgerEntryType(), kind.ledgerSourceType())
+    }
+
+    data class MappedPurchase(
+        val entity: PurchaseEntity,
+        val items: List<PurchaseItemEntity>,
+    )
+
+    /**
+     * Maps a Tally Purchase voucher to a [PurchaseEntity] (+ items), the buy-side mirror of
+     * [toMappedInvoice]. The id is derived deterministically from the Tally GUID so re-syncing a
+     * changed voucher upserts in place. Status is RECEIVED so the buy-side ledger poster records the
+     * supplier payable ("To Pay"). The party ledger amount is the GST-inclusive grand total.
+     */
+    fun Voucher.toMappedPurchase(
+        supplierId: String,
+        supplierName: String,
+        productIdByName: Map<String, String>,
+    ): MappedPurchase? {
+        val guid = guid?.takeIf { it.isNotBlank() } ?: return null
+        val purchaseId = ID_PREFIX_PURCHASE + sanitize(guid)
+        val lines = inventoryList.orEmpty()
+
+        val basePrice = lines.sumOf { abs(it.amount.parseAmount()) }
+        val partyAmount = abs(partyLedgerEntry()?.amount.parseAmount())
+        val grandTotal = if (partyAmount > 0.0) partyAmount else basePrice
+        val totalTax = (grandTotal - basePrice).coerceAtLeast(0.0)
+        val totalQuantity = lines.sumOf { abs(it.actualQty.parseQty()) }
+
+        val items = lines.mapIndexed { idx, line ->
+            val lineAmount = abs(line.amount.parseAmount())
+            val qty = abs(line.actualQty.parseQty())
+            val rate = line.rate?.substringBefore("/").parseAmount()
+            val name = line.stockItemName?.trim().orEmpty()
+            PurchaseItemEntity(
+                id = ID_PREFIX_PURCHASE_ITEM + sanitize(guid) + "_" + idx,
+                description = name,
+                product_id = name.takeIf { it.isNotBlank() }?.let { productIdByName[it] } ?: "",
+                total_cost = lineAmount,
+                base_price = lineAmount,
+                product_price = rate,
+                total_tax = 0.0,
+                purchase_id = purchaseId,
+                tax_code = "",
+                quantity = qty,
+                item_no = idx + 1,
+                price = rate,
+                mrp = rate,
+                dp = rate,
+                unit_id = "",
+                base_quantity = qty,
+            )
+        }
+
+        val entity = PurchaseEntity(
+            id = purchaseId,
+            purchase_number = voucherNumber?.trim()?.takeIf { it.isNotBlank() } ?: sanitize(guid).takeLast(10),
+            purchase_date = date.tallyDateToIso(),
+            status = "RECEIVED",
+            supplier_id = supplierId,
+            supplier_name = supplierName,
+            supplier_gst = partyGstin?.trim().orEmpty(),
+            supplier_invoice_number = referenceNumber?.trim()?.takeIf { it.isNotBlank() },
+            place_of_supply = placeOfSupply?.trim()?.takeIf { it.isNotBlank() } ?: stateName?.trim(),
+            total_cost = grandTotal,
+            total_tax = totalTax,
+            total_items = items.size.toLong(),
+            total_quantity = totalQuantity,
+            base_price = basePrice,
+            active = 1,
+            soft_deleted = 0,
+            synced = 0,
+        )
+        return MappedPurchase(entity, items)
     }
 
     data class MappedPayment(

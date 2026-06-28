@@ -10,15 +10,26 @@ import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
+import com.ampairs.payment.data.repository.PartyBalanceRepository
 import com.ampairs.payment.data.repository.PaymentLedgerPoster
 import com.ampairs.payment.data.repository.PaymentVoucherRepository
+import com.ampairs.payment.domain.Direction
 import com.ampairs.payment.domain.Money
+import com.ampairs.payment.domain.PurchaseLedgerPoster
+import com.ampairs.purchase.db.dao.PurchaseDao
+import com.ampairs.supplier.data.db.SupplierDao
 import com.ampairs.tally.TallyApiImpl
 import com.ampairs.tally.TallyRepository
+import com.ampairs.tally.model.master.Group
 import com.ampairs.tallysync.TallyCustomerMapper.ENTITY_ACCOUNT_GROUP
 import com.ampairs.tallysync.TallyCustomerMapper.ENTITY_LEDGER
+import com.ampairs.tallysync.TallyCustomerMapper.ENTITY_SUPPLIER_LEDGER
+import com.ampairs.tallysync.TallyCustomerMapper.buildGroupParentIndex
+import com.ampairs.tallysync.TallyCustomerMapper.isCreditorGroup
 import com.ampairs.tallysync.TallyCustomerMapper.toCustomerEntity
 import com.ampairs.tallysync.TallyCustomerMapper.toCustomerGroupEntity
+import com.ampairs.tallysync.TallyCustomerMapper.toSupplierEntity
+import com.ampairs.tallysync.TallyVoucherMapper.toMappedPurchase
 import com.ampairs.tallysync.TallyProductMapper.ENTITY_STOCK_CATEGORY
 import com.ampairs.tallysync.TallyProductMapper.ENTITY_STOCK_GROUP
 import com.ampairs.tallysync.TallyProductMapper.ENTITY_STOCK_ITEM
@@ -30,6 +41,7 @@ import com.ampairs.tallysync.TallyProductMapper.toProductEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
 import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
 import com.ampairs.tallysync.TallyVoucherMapper.ENTITY_VOUCHER
+import com.ampairs.tallysync.TallyVoucherMapper.Kind
 import com.ampairs.tallysync.TallyVoucherMapper.classify
 import com.ampairs.tallysync.TallyVoucherMapper.isInvoiceKind
 import com.ampairs.tallysync.TallyVoucherMapper.isPaymentKind
@@ -51,6 +63,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.math.abs
 import kotlin.time.Clock
 
 data class TallySyncResult(
@@ -61,13 +74,15 @@ data class TallySyncResult(
     val stockBalancesUpdated: Int = 0,
     val customerGroupsSynced: Int = 0,
     val customersSynced: Int = 0,
+    val suppliersSynced: Int = 0,
     val invoicesSynced: Int = 0,
+    val purchasesSynced: Int = 0,
     val paymentsSynced: Int = 0,
     val taxCodesFound: Int = 0,
     val taxCodesToImport: Int = 0,
     val error: String? = null,
 ) {
-    val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + unitsSynced + stockBalancesUpdated + customerGroupsSynced + customersSynced + invoicesSynced + paymentsSynced
+    val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + unitsSynced + stockBalancesUpdated + customerGroupsSynced + customersSynced + suppliersSynced + invoicesSynced + purchasesSynced + paymentsSynced
     val success get() = error == null
 }
 
@@ -104,9 +119,13 @@ class TallySyncService(
     private val unitDao: UnitDao,
     private val customerDao: CustomerDao,
     private val customerGroupDao: CustomerGroupDao,
+    private val supplierDao: SupplierDao,
+    private val purchaseDao: PurchaseDao,
     private val invoiceDao: InvoiceDao,
     private val invoiceItemDao: InvoiceItemDao,
     private val ledgerPoster: PaymentLedgerPoster,
+    private val purchaseLedgerPoster: PurchaseLedgerPoster,
+    private val partyBalanceRepository: PartyBalanceRepository,
     private val paymentVoucherRepository: PaymentVoucherRepository,
     private val taxCodeRepository: TaxCodeRepository,
     private val taxRuleRepository: TaxRuleRepository,
@@ -237,19 +256,28 @@ class TallySyncService(
             val stockBalancesUpdated = syncStockBalances(repo)
             emit("Stock balances: $stockBalancesUpdated updated")
 
-            val customerGroupsSynced = syncCustomerGroups(repo, workspaceSlug)
+            // Account groups drive both the customer-group catalogue and the debtor/creditor split
+            // used to route ledgers to customers vs suppliers. Fetched once and reused.
+            val accountGroups = repo.getGroups().body?.data?.collection?.groups ?: emptyList<Group>()
+            val groupParentIndex = buildGroupParentIndex(accountGroups)
+
+            val customerGroupsSynced = syncCustomerGroups(workspaceSlug, accountGroups)
             emit("Customer groups: $customerGroupsSynced upserted")
             val customerGroupIdByName = buildCustomerGroupNameIndex()
-            val customersSynced = syncCustomers(repo, workspaceSlug, customerGroupIdByName)
+            val customersSynced = syncCustomers(repo, workspaceSlug, customerGroupIdByName, groupParentIndex)
             emit("Customers: $customersSynced upserted")
+            val suppliersSynced = syncSuppliers(repo, workspaceSlug, groupParentIndex)
+            emit("Suppliers: $suppliersSynced upserted")
 
             // Clean up any previously stored invalid values (pre-sanitizer data)
             customerDao.nullifyInvalidPhones()
             customerDao.nullifyInvalidPincodes()
 
-            // Vouchers depend on customers (party lookup) and products (line-item lookup), so they run last.
-            val (invoicesSynced, paymentsSynced) = syncVouchers(repo, workspaceSlug)
+            // Vouchers depend on customers/suppliers (party lookup) and products (line-item lookup),
+            // so they run last. Sales → invoices (customers); Purchases → purchases (suppliers).
+            val (invoicesSynced, paymentsSynced, purchasesSynced) = syncVouchers(repo, workspaceSlug)
             emit("Invoices: $invoicesSynced upserted")
+            emit("Purchases: $purchasesSynced upserted")
             emit("Payments: $paymentsSynced upserted")
 
             val candidates = _taxCodeCandidates.value
@@ -262,7 +290,9 @@ class TallySyncService(
                 stockBalancesUpdated = stockBalancesUpdated,
                 customerGroupsSynced = customerGroupsSynced,
                 customersSynced = customersSynced,
+                suppliersSynced = suppliersSynced,
                 invoicesSynced = invoicesSynced,
+                purchasesSynced = purchasesSynced,
                 paymentsSynced = paymentsSynced,
                 taxCodesFound = candidates.size,
                 taxCodesToImport = toImport,
@@ -470,9 +500,8 @@ class TallySyncService(
         return updated
     }
 
-    private suspend fun syncCustomerGroups(repo: TallyRepository, workspaceSlug: String): Int {
+    private suspend fun syncCustomerGroups(workspaceSlug: String, groups: List<Group>): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_ACCOUNT_GROUP).first()
-        val groups = repo.getGroups().body?.data?.collection?.groups ?: return 0
         log.d { "syncCustomerGroups: API returned ${groups.size} total, lastAlterId=$lastAlterId" }
         val filtered = groups.filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
 
@@ -500,12 +529,15 @@ class TallySyncService(
         repo: TallyRepository,
         workspaceSlug: String,
         customerGroupIdByName: Map<String, String>,
+        groupParentIndex: Map<String, String>,
     ): Int {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_LEDGER).first()
         val ledgers = repo.getLedgers().body?.data?.collection?.ledgers ?: return 0
         log.d { "syncCustomers: API returned ${ledgers.size} total, lastAlterId=$lastAlterId" }
         val filtered = ledgers
             .filter { it.isBillWiseOn != "No" }
+            // Creditors (Sundry Creditors lineage) are suppliers, handled by syncSuppliers — not customers.
+            .filter { !isCreditorGroup(it.parent, groupParentIndex) }
             .filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
 
         val guids = filtered.mapNotNull { it.guid?.takeIf { it.isNotBlank() } }
@@ -514,11 +546,14 @@ class TallySyncService(
             customerDao.getCustomersByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByGuid[it] = e.id } }
         }
 
-        val entities = filtered.mapNotNull { l ->
+        val pairs = filtered.mapNotNull { l ->
             val id = l.guid?.takeIf { it.isNotBlank() }?.let { existingIdByGuid[it] } ?: UidGenerator.generateUid("CUS")
-            l.toCustomerEntity(id, customerGroupIdByName)
+            l.toCustomerEntity(id, customerGroupIdByName)?.let { l to it }
         }
+        val entities = pairs.map { it.second }
         entities.chunked(BATCH_SIZE).forEach { customerDao.insertCustomers(it) }
+        // Opening balance per party (Dr = receivable, Cr = payable) → PartyBalance, recomputed locally.
+        for ((ledger, entity) in pairs) syncOpeningBalance(entity.id, ledger.openingBalance)
         if (entities.isNotEmpty()) {
             val maxAlterId = ledgers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
             if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_LEDGER, maxAlterId)
@@ -528,23 +563,92 @@ class TallySyncService(
     }
 
     /**
+     * Syncs Tally creditor ledgers (Sundry Creditors lineage) into suppliers — the buy-side mirror of
+     * [syncCustomers]. Keeps its own [ENTITY_SUPPLIER_LEDGER] alterId checkpoint so it stays
+     * independent of the customer ledger checkpoint (both read the same getLedgers() collection).
+     */
+    private suspend fun syncSuppliers(
+        repo: TallyRepository,
+        workspaceSlug: String,
+        groupParentIndex: Map<String, String>,
+    ): Int {
+        val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_SUPPLIER_LEDGER).first()
+        val ledgers = repo.getLedgers().body?.data?.collection?.ledgers ?: return 0
+        val filtered = ledgers
+            .filter { it.isBillWiseOn != "No" }
+            .filter { isCreditorGroup(it.parent, groupParentIndex) }
+            .filter { it.alterId.toAlterLong().let { id -> id == 0L || id > lastAlterId } }
+        log.d { "syncSuppliers: ${ledgers.size} ledgers, ${filtered.size} creditors after filter, lastAlterId=$lastAlterId" }
+
+        val guids = filtered.mapNotNull { it.guid?.takeIf { it.isNotBlank() } }
+        val existingIdByGuid = mutableMapOf<String, String>()
+        for (chunk in guids.chunked(BATCH_SIZE)) {
+            supplierDao.getSuppliersByTallyRefIds(chunk).forEach { e -> e.ref_id?.let { existingIdByGuid[it] = e.id } }
+        }
+
+        val pairs = filtered.mapNotNull { l ->
+            val id = l.guid?.takeIf { it.isNotBlank() }?.let { existingIdByGuid[it] } ?: UidGenerator.generateUid("SUP")
+            l.toSupplierEntity(id)?.let { l to it }
+        }
+        val entities = pairs.map { it.second }
+        entities.chunked(BATCH_SIZE).forEach { supplierDao.insertSuppliers(it) }
+        // Opening balance per supplier (Cr = payable "To Pay", Dr = advance) → PartyBalance.
+        for ((ledger, entity) in pairs) syncOpeningBalance(entity.id, ledger.openingBalance)
+        if (entities.isNotEmpty()) {
+            val maxAlterId = ledgers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
+            if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_SUPPLIER_LEDGER, maxAlterId)
+        }
+        log.d { "syncSuppliers: ${entities.size} upserted" }
+        return entities.size
+    }
+
+    /**
+     * Sets a party's (customer or supplier) opening balance from its Tally ledger opening figure.
+     * Tally sign convention: positive = Debit (receivable → [Direction.DR]), negative = Credit
+     * (payable → [Direction.CR]). No-op when zero/blank. Idempotent per party (the repository reuses
+     * the existing PartyBalance row by party), recomputes the closing balance, and flags it for push.
+     */
+    private suspend fun syncOpeningBalance(partyUid: String, openingBalanceRaw: String?) {
+        val amount = openingBalanceRaw.parseTallyAmount()
+        if (amount == 0.0) return
+        partyBalanceRepository.setOpeningBalance(
+            partyUid = partyUid,
+            uid = UidGenerator.generateUid("PBL"),
+            openingBalance = Money.fromDouble(abs(amount)),
+            openingDirection = if (amount >= 0.0) Direction.DR else Direction.CR,
+            openingAsOf = "",
+        ).onFailure { log.w { "Opening balance for $partyUid failed: ${it.message}" } }
+    }
+
+    /** Tally amount strings: "-15000.00", " 1250.50 " — keep digits, sign and decimal point. */
+    private fun String?.parseTallyAmount(): Double {
+        val cleaned = this?.trim()?.filter { it.isDigit() || it == '.' || it == '-' } ?: return 0.0
+        return cleaned.toDoubleOrNull() ?: 0.0
+    }
+
+    /**
      * Syncs Tally vouchers into invoices + payments. Sales/Purchase/Credit-Note/Debit-Note become
      * [com.ampairs.invoice.db.entity.InvoiceEntity] (with line items and a ledger posting via
      * [ledgerPoster]); Receipt/Payment become payment vouchers (via [paymentVoucherRepository], which
      * posts the money-movement ledger entry and recomputes the party balance). Invoices are processed
      * first so payments can match their bill references to the just-synced invoice ids.
      *
-     * @return invoicesSynced to paymentsSynced
+     * Purchase vouchers become [com.ampairs.purchase.db.entity.PurchaseEntity] (status RECEIVED) keyed
+     * to a synced supplier, with a buy-side PURCHASE_BILL ledger posting that surfaces the supplier
+     * payable ("To Pay") via [purchaseLedgerPoster].
+     *
+     * @return Triple(invoicesSynced, paymentsSynced, purchasesSynced)
      */
-    private suspend fun syncVouchers(repo: TallyRepository, workspaceSlug: String): Pair<Int, Int> {
+    private suspend fun syncVouchers(repo: TallyRepository, workspaceSlug: String): Triple<Int, Int, Int> {
         val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_VOUCHER).first()
-        val vouchers = repo.getVouchers().body?.data?.collection?.voucher ?: return 0 to 0
+        val vouchers = repo.getVouchers().body?.data?.collection?.voucher ?: return Triple(0, 0, 0)
         emit("Vouchers: API returned ${vouchers.size} total, lastAlterId=$lastAlterId")
         val filtered = vouchers.filter { it.alterId.toAlterLong() > lastAlterId }
 
-        // Party is matched by name to a synced customer (bill-wise ledgers became customers earlier in
-        // this cycle); line items match by stock-item name to a synced product.
+        // Sales party matches a synced customer; purchase party matches a synced supplier (both were
+        // synced earlier this cycle). Line items match by stock-item name to a synced product.
         val customerIdByName = customerDao.getAllCustomers().first().associate { it.name.trim() to it.id }
+        val supplierIdByName = supplierDao.getAllSuppliers().first().associate { it.name.trim() to it.id }
         val productIdByName = productDao.getProducts().associate { it.name.trim() to it.id }
 
         // --- Invoices first (payments reference them by bill number) ---
@@ -552,7 +656,8 @@ class TallySyncService(
         var skippedInvoiceNoParty = 0
         for (voucher in filtered) {
             val kind = voucher.classify()
-            if (!kind.isInvoiceKind) continue
+            // PURCHASE is the buy-side and is handled separately (→ purchases + supplier payable).
+            if (!kind.isInvoiceKind || kind == Kind.PURCHASE) continue
             val partyName = voucher.resolvePartyName()
             val customerId = partyName?.let { customerIdByName[it] }
             if (customerId == null) {
@@ -576,6 +681,32 @@ class TallySyncService(
             invoicesSynced++
         }
         if (skippedInvoiceNoParty > 0) emit("Invoices: skipped $skippedInvoiceNoParty (party not a known customer)")
+
+        // --- Purchases (party = supplier; posts the buy-side PURCHASE_BILL payable → "To Pay") ---
+        var purchasesSynced = 0
+        var skippedPurchaseNoParty = 0
+        for (voucher in filtered) {
+            if (voucher.classify() != Kind.PURCHASE) continue
+            val partyName = voucher.resolvePartyName()
+            val supplierId = partyName?.let { supplierIdByName[it] }
+            if (supplierId == null) {
+                skippedPurchaseNoParty++
+                continue
+            }
+            val mapped = voucher.toMappedPurchase(supplierId, partyName, productIdByName) ?: continue
+            purchaseDao.savePurchaseWithItems(mapped.entity, mapped.items)
+            // Deterministic LDG_<purchase.id> CR entry — re-posting on a changed voucher upserts in place.
+            purchaseLedgerPoster.postForReceivedPurchase(
+                purchaseUid = mapped.entity.id,
+                partyUid = supplierId,
+                purchaseNumber = mapped.entity.purchase_number,
+                purchaseDate = mapped.entity.purchase_date,
+                totalCost = mapped.entity.total_cost,
+                status = mapped.entity.status,
+            )
+            purchasesSynced++
+        }
+        if (skippedPurchaseNoParty > 0) emit("Purchases: skipped $skippedPurchaseNoParty (party not a known supplier)")
 
         // --- Payments (resolve bill refs against all invoices, incl. those just synced) ---
         val invoiceIdByNumber = invoiceDao.selectAll().associate { it.invoice_number to it.id }
@@ -608,8 +739,8 @@ class TallySyncService(
 
         val maxAlterId = vouchers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_VOUCHER, maxAlterId)
-        log.d { "syncVouchers: $invoicesSynced invoices, $paymentsSynced payments" }
-        return invoicesSynced to paymentsSynced
+        log.d { "syncVouchers: $invoicesSynced invoices, $purchasesSynced purchases, $paymentsSynced payments" }
+        return Triple(invoicesSynced, paymentsSynced, purchasesSynced)
     }
 
     private suspend fun buildGroupNameIndex(): Map<String, String> =

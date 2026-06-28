@@ -10,6 +10,7 @@ import com.ampairs.common.config.PlatformConfig
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.AndroidAppGraph
 import com.ampairs.di.AppGraphHolder
+import com.ampairs.logging.initAppLogging
 import dev.zacsweers.metro.createGraphFactory
 
 class MainApp : Application() {
@@ -19,6 +20,7 @@ class MainApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        initAppLogging()
         CurrentActivity.init(this)
 
         val isDebug = BuildConfig.DEBUG
