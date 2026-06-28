@@ -8,6 +8,7 @@ import com.ampairs.payment.data.db.dao.LedgerEntryDao
 import com.ampairs.payment.data.db.dao.PartyBalanceDao
 import com.ampairs.payment.data.repository.PaymentLedgerPoster
 import com.ampairs.payment.domain.InvoiceLedgerPoster
+import com.ampairs.payment.domain.PurchaseLedgerPoster
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
@@ -33,6 +34,7 @@ class LedgerEntrySyncDelegate(
     private val partyBalanceDao: PartyBalanceDao,
     private val poster: PaymentLedgerPoster,
     private val invoiceLedgerPoster: InvoiceLedgerPoster,
+    private val purchaseLedgerPoster: PurchaseLedgerPoster,
     private val syncStateDao: SyncStateDao,
 ) : SyncDelegate {
 
@@ -41,7 +43,7 @@ class LedgerEntrySyncDelegate(
     // pushDependencies so the PUSH (not just pull) sends parents first — a ledger entry references a
     // customer (party) and its source invoice/order, which the server expects to already exist.
     override val pushDependencies: List<SyncEntity> =
-        listOf(SyncEntity.CUSTOMER, SyncEntity.INVOICE, SyncEntity.ORDER)
+        listOf(SyncEntity.CUSTOMER, SyncEntity.SUPPLIER, SyncEntity.INVOICE, SyncEntity.ORDER, SyncEntity.PURCHASE)
 
     override suspend fun pullFromServer(): SyncResult =
         pull().fold({ SyncResult.Success(it) }, { SyncResult.Failure(it) })
@@ -54,6 +56,7 @@ class LedgerEntrySyncDelegate(
 
     private suspend fun pushPending(): Result<Int> = try {
         invoiceLedgerPoster.backfillFinalizedInvoices()
+        purchaseLedgerPoster.backfillReceivedPurchases()
         val unsynced = ledgerEntryDao.getUnsynced()
         if (unsynced.isEmpty()) return Result.success(0)
         var synced = 0

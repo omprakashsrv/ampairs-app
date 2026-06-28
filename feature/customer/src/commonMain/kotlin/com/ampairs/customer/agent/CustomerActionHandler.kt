@@ -21,7 +21,6 @@ import com.ampairs.agent.handlers.SelectionHelper
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
-import kotlinx.coroutines.flow.first
 
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
@@ -79,7 +78,7 @@ class CustomerActionHandler(
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What should I search for?", listOf("query"))
 
-        val customers = customerRepository.searchCustomers(query).first()
+        val customers = agentDao.searchCustomers(normalizeWhitespace(query), limit = 20)
         return if (customers.isEmpty()) {
             ActionResult.Success("No customers found matching '$query'.")
         } else {
@@ -104,7 +103,7 @@ class CustomerActionHandler(
         val customer = when {
             customerId != null -> customerRepository.getCustomer(customerId)
             searchName != null -> {
-                val results = customerRepository.searchCustomers(searchName).first()
+                val results = agentDao.searchCustomers(normalizeWhitespace(searchName), limit = 5)
                 if (results.isEmpty()) return ActionResult.Success("No customer found matching '$searchName'.")
                 if (results.size > 1) {
                     // Multiple matches: offer selection UI instead of asking user to type ID
@@ -158,7 +157,7 @@ class CustomerActionHandler(
         val existing = when {
             customerId != null -> customerRepository.getCustomer(customerId)
             searchName != null -> {
-                val results = customerRepository.searchCustomers(searchName).first()
+                val results = agentDao.searchCustomers(normalizeWhitespace(searchName), limit = 5)
                 if (results.isEmpty()) return ActionResult.Error("No customer found matching '$searchName'.")
                 if (results.size > 1) {
                     // Multiple matches: offer selection UI
@@ -209,7 +208,7 @@ class CustomerActionHandler(
         val resolvedId = when {
             customerId != null -> customerId
             searchName != null -> {
-                val results = customerRepository.searchCustomers(searchName).first()
+                val results = agentDao.searchCustomers(normalizeWhitespace(searchName), limit = 5)
                 if (results.isEmpty()) return ActionResult.Error("No customer found matching '$searchName'.")
                 if (results.size > 1) {
                     // Multiple matches: offer selection UI
@@ -249,6 +248,9 @@ class CustomerActionHandler(
         val count = agentDao.countActive()
         return ActionResult.Success("You have $count customer(s).")
     }
+
+    private fun normalizeWhitespace(text: String): String =
+        text.trim().replace(Regex("\\s+"), " ")
 
     private fun syncCustomers(): ActionResult {
         // Push + pull are coordinated by CentralSyncService; this just kicks off a full sync.

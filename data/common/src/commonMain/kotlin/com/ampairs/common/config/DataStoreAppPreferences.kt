@@ -61,6 +61,12 @@ class DataStoreAppPreferences(
         private fun getTallyPortKey(ws: String) = intPreferencesKey("tally_port_$ws")
         private fun getTallyAlterIdKey(ws: String, entity: String) =
             longPreferencesKey("tally_alter_id_${entity}_$ws")
+
+        // Notification preferences (device-local)
+        private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
+        private val NOTIFY_ORDER_UPDATES_KEY = booleanPreferencesKey("notif_order_updates")
+        private val NOTIFY_INVOICE_UPDATES_KEY = booleanPreferencesKey("notif_invoice_updates")
+        private val NOTIFY_ANNOUNCEMENTS_KEY = booleanPreferencesKey("notif_announcements")
     }
 
     override fun getThemePreference(): Flow<ThemePreference> {
@@ -369,5 +375,35 @@ class DataStoreAppPreferences(
             if (id != null) preferences[SELECTED_AUDIO_INPUT_DEVICE_ID_KEY] = id
             else preferences.remove(SELECTED_AUDIO_INPUT_DEVICE_ID_KEY)
         }
+    }
+
+    // ---- Notification preferences (device-local; default ON) ----
+
+    override fun getNotificationsEnabled(): Flow<Boolean> =
+        dataStore.data.map { it[NOTIFICATIONS_ENABLED_KEY] ?: true }
+
+    override suspend fun setNotificationsEnabled(enabled: Boolean) {
+        dataStore.edit { it[NOTIFICATIONS_ENABLED_KEY] = enabled }
+    }
+
+    override fun getNotifyOrderUpdates(): Flow<Boolean> =
+        dataStore.data.map { it[NOTIFY_ORDER_UPDATES_KEY] ?: true }
+
+    override suspend fun setNotifyOrderUpdates(enabled: Boolean) {
+        dataStore.edit { it[NOTIFY_ORDER_UPDATES_KEY] = enabled }
+    }
+
+    override fun getNotifyInvoiceUpdates(): Flow<Boolean> =
+        dataStore.data.map { it[NOTIFY_INVOICE_UPDATES_KEY] ?: true }
+
+    override suspend fun setNotifyInvoiceUpdates(enabled: Boolean) {
+        dataStore.edit { it[NOTIFY_INVOICE_UPDATES_KEY] = enabled }
+    }
+
+    override fun getNotifyAnnouncements(): Flow<Boolean> =
+        dataStore.data.map { it[NOTIFY_ANNOUNCEMENTS_KEY] ?: true }
+
+    override suspend fun setNotifyAnnouncements(enabled: Boolean) {
+        dataStore.edit { it[NOTIFY_ANNOUNCEMENTS_KEY] = enabled }
     }
 }

@@ -18,6 +18,7 @@ import com.ampairs.common.database.AndroidDatabasePathProvider
 import com.ampairs.common.database.DatabasePathProvider
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.di.AppScope
+import com.ampairs.common.firebase.messaging.FirebaseMessaging
 import com.ampairs.common.httpClient
 import com.ampairs.formwidgets.contact.ContactPickerService
 import com.ampairs.formwidgets.location.LocationService
@@ -33,6 +34,10 @@ import okio.Path.Companion.toOkioPath
 @DependencyGraph(AppScope::class)
 interface AndroidAppGraph : AppGraph {
     val centralSyncService: CentralSyncService
+
+    // Exposed so AmpairsFirebaseMessagingService (an Android system-instantiated service, outside
+    // Metro) can forward onNewToken / onMessageReceived to the shared AppScope singleton.
+    val firebaseMessaging: FirebaseMessaging
 
     @DependencyGraph.Factory
     fun interface Factory {

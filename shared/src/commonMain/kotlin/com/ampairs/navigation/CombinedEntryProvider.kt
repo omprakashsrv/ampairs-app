@@ -20,15 +20,20 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.CustomerListRoute
+import com.ampairs.supplier.ui.SupplierListRoute
+import com.ampairs.purchase.ui.PurchaseRoute
 import com.ampairs.form.ui.FormConfigScreen
 import com.ampairs.form.ui.FormConfigHubScreen
 import com.ampairs.navigation.providers.agentEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
 import com.ampairs.navigation.providers.customerEntryProvider
+import com.ampairs.navigation.providers.supplierEntryProvider
+import com.ampairs.navigation.providers.purchaseEntryProvider
 import com.ampairs.navigation.providers.ecomEntryProvider
 import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
+import com.ampairs.navigation.providers.notificationEntryProvider
 import com.ampairs.navigation.providers.orderEntryProvider
 import com.ampairs.navigation.providers.paymentEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
@@ -44,6 +49,7 @@ import com.ampairs.navigation.providers.workspaceEntryProvider
 import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitListRoute
+import com.ampairs.notification.ui.NotificationListRoute
 import com.ampairs.pricing.ui.PriceListListRoute
 import com.ampairs.pricing.ui.PricingHomeRoute
 import com.ampairs.pricing.ui.PricingShellRoute
@@ -70,6 +76,8 @@ fun combinedEntryProvider(
     return authEntryProvider(key, backStack, onLoginSuccess, sharedViewModelStoreOwner)
         ?: workspaceEntryProvider(key, backStack, onNavigationServiceReady)
         ?: customerEntryProvider(key, backStack)
+        ?: supplierEntryProvider(key, backStack)
+        ?: purchaseEntryProvider(key, backStack)
         ?: storefrontEntryProvider(key, backStack)
         ?: ecomEntryProvider(key, backStack)
         ?: productEntryProvider(key, backStack)
@@ -84,6 +92,7 @@ fun combinedEntryProvider(
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
         ?: paymentEntryProvider(key, backStack)
+        ?: notificationEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key, backStack)
         ?: agentEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
@@ -121,6 +130,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(CustomerListRoute)
+        }
+    }
+
+    // Route.Supplier redirects to SupplierListRoute
+    is Route.Supplier -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(SupplierListRoute)
         }
     }
 
@@ -219,6 +236,14 @@ private fun mainRouteEntryProvider(
         }
     }
 
+    // Route.Purchase redirects to PurchaseRoute.PurchaseListRoute
+    is Route.Purchase -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(PurchaseRoute.PurchaseListRoute)
+        }
+    }
+
     // Route.Inventory redirects to InventoryRoute.Dashboard
     is Route.Inventory -> NavEntry(key) {
         LaunchedEffect(Unit) {
@@ -232,6 +257,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(PaymentRoute.Dashboard)
+        }
+    }
+
+    // Route.Notifications redirects to NotificationListRoute
+    is Route.Notifications -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(NotificationListRoute)
         }
     }
 

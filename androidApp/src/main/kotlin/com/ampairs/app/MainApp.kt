@@ -1,6 +1,9 @@
 package com.ampairs.app
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
 import com.ampairs.app.BuildConfig
 import com.ampairs.common.CurrentActivity
 import com.ampairs.common.config.PlatformConfig
@@ -29,6 +32,25 @@ class MainApp : Application() {
 
         appGraph = createGraphFactory<AndroidAppGraph.Factory>().create(this)
         AppGraphHolder.graph = appGraph
+
+        createNotificationChannels()
+    }
+
+    /**
+     * Creates the default FCM notification channel (required for Android 8.0+ to display
+     * notifications). The id must match the `default_notification_channel_id` meta-data in the
+     * manifest so FCM "notification" messages land here when the app is backgrounded.
+     */
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                getString(R.string.default_notification_channel_id),
+                getString(R.string.default_notification_channel_name),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(channel)
+        }
     }
 
     private fun initializeSentry(isDebug: Boolean) {

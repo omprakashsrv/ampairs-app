@@ -1,6 +1,7 @@
 package com.ampairs.form.di
 
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.form.agent.FormAgentDao
 import com.ampairs.form.data.db.FormDatabase
 import com.ampairs.form.data.db.FormFieldDao
 import com.ampairs.form.data.db.FormSchemaDao
@@ -24,5 +25,8 @@ interface FormDaoModule {
 
         @Provides
         fun provideFormFieldDao(db: FormDatabase): FormFieldDao = db.formFieldDao()
+
+        @Provides
+        fun provideFormAgentDao(db: FormDatabase): FormAgentDao = db.formAgentDao()
     }
 }

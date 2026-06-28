@@ -11,8 +11,6 @@ import com.ampairs.common.agent.ActionHandlerKey
 import com.ampairs.common.di.WorkspaceScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
-import com.ampairs.form.data.repository.ConfigRepository
-import kotlinx.coroutines.flow.first
 
 /**
  * Form-agnostic action handler for voice-to-form field filling. Enables users to say
@@ -27,7 +25,7 @@ import kotlinx.coroutines.flow.first
 @ContributesIntoMap(WorkspaceScope::class)
 @ActionHandlerKey("form")
 class FormActionHandler(
-    private val configRepository: ConfigRepository,
+    private val agentDao: FormAgentDao,
 ) : ActionHandler {
 
     override val moduleName = "form"
@@ -49,11 +47,11 @@ class FormActionHandler(
         val entityType = params["entityType"]
             ?: return ActionResult.NeedsInput("Which entity type? (e.g., 'customer', 'product')", listOf("entityType"))
 
-        val schema = configRepository.observeSchema(entityType).first()
-        return if (schema != null) {
+        val fields = agentDao.visibleFields(entityType)
+        return if (fields.isNotEmpty()) {
             val fieldSummary = buildString {
                 appendLine("Available fields for $entityType:")
-                schema.visibleFields().forEach { field ->
+                fields.forEach { field ->
                     val mandatory = if (field.mandatory) "[required]" else ""
                     appendLine("  - ${field.fieldKey}: ${field.dataType} $mandatory (${field.displayName})")
                 }
@@ -76,12 +74,7 @@ class FormActionHandler(
         val value = params["value"]
             ?: return ActionResult.NeedsInput("What value?", listOf("value"))
 
-        val schema = configRepository.observeSchema(entityType).first()
-        if (schema == null) {
-            return ActionResult.Error("Form schema not found for entity type '$entityType'.")
-        }
-
-        val field = schema.fields.find { it.fieldKey == fieldKey }
+        val field = agentDao.fieldByKey(entityType, fieldKey)
         if (field == null) {
             return ActionResult.Error("Field '$fieldKey' not found in '$entityType' form.")
         }
@@ -111,9 +104,9 @@ class FormActionHandler(
         val entityType = params["entityType"]
             ?: return ActionResult.NeedsInput("Which entity type?", listOf("entityType"))
 
-        val schema = configRepository.observeSchema(entityType).first()
-        return if (schema != null) {
-            val mandatory = schema.mandatoryFields()
+        val fields = agentDao.visibleFields(entityType)
+        return if (fields.isNotEmpty()) {
+            val mandatory = fields.filter { it.mandatory }
             val summary = if (mandatory.isEmpty()) {
                 "No required fields for $entityType."
             } else {

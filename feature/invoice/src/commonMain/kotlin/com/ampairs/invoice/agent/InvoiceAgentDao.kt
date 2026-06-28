@@ -16,6 +16,13 @@ data class InvoiceProductSalesRow(
     @ColumnInfo(name = "total") val total: Double,
 )
 
+/** An invoice hit for the assistant's chat search/list (id + number + status). */
+data class InvoiceSummaryRow(
+    @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "invoice_number") val invoiceNumber: String,
+    @ColumnInfo(name = "status") val status: String,
+)
+
 /**
  * Read-only aggregate queries that back the assistant's curated invoice reports — kept **separate**
  * from the operational [com.ampairs.invoice.db.dao.InvoiceDao] so report concerns don't leak into the
@@ -75,4 +82,40 @@ interface InvoiceAgentDao {
             "GROUP BY ii.product_id ORDER BY total DESC LIMIT :limit",
     )
     suspend fun topProductsBetween(start: String, end: String, limit: Int): List<InvoiceProductSalesRow>
+
+    /** Count of active invoices. */
+    @Query("SELECT count(*) FROM invoiceEntity WHERE active = 1")
+    suspend fun countInvoices(): Int
+
+    /** Chat search by invoice number or (whitespace-normalized, case-insensitive) customer name. */
+    @Query(
+        """
+        SELECT id, invoice_number, status FROM invoiceEntity
+        WHERE active = 1
+          AND (invoice_number LIKE '%' || :term || '%'
+               OR REPLACE(REPLACE(REPLACE(REPLACE(LOWER(customer_name), '    ', ' '), '   ', ' '), '  ', ' '), '  ', ' ') LIKE '%' || LOWER(:term) || '%')
+        ORDER BY invoice_date DESC LIMIT :limit
+        """,
+    )
+    suspend fun search(term: String, limit: Long): List<InvoiceSummaryRow>
+
+    /** Resolve a single invoice by exact id (for the READ action). */
+    @Query("SELECT id, invoice_number, status FROM invoiceEntity WHERE id = :id AND active = 1 LIMIT 1")
+    suspend fun byId(id: String): InvoiceSummaryRow?
+
+    /** Resolve invoices by (partial) invoice number (READ fallback). */
+    @Query(
+        "SELECT id, invoice_number, status FROM invoiceEntity WHERE invoice_number LIKE '%' || :number || '%' AND active = 1 ORDER BY invoice_date DESC LIMIT :limit",
+    )
+    suspend fun byNumber(number: String, limit: Long): List<InvoiceSummaryRow>
+
+    /** List invoices filtered by status (most recent first). */
+    @Query(
+        "SELECT id, invoice_number, status FROM invoiceEntity WHERE status = :status AND active = 1 ORDER BY invoice_date DESC LIMIT :limit",
+    )
+    suspend fun byStatus(status: String, limit: Long): List<InvoiceSummaryRow>
+
+    /** List most recent active invoices. */
+    @Query("SELECT id, invoice_number, status FROM invoiceEntity WHERE active = 1 ORDER BY invoice_date DESC LIMIT :limit")
+    suspend fun recent(limit: Long): List<InvoiceSummaryRow>
 }

@@ -1,20 +1,21 @@
 package com.ampairs.form.agent
 
-import com.ampairs.common.di.WorkspaceScope
-import dev.zacsweers.metro.Inject
-import com.ampairs.form.data.db.FormDatabase
+import androidx.room.Dao
+import androidx.room.Query
+import com.ampairs.form.data.db.FormFieldEntity
 
 /**
- * Agent-facing DAO for form queries. Provides quick access to form metadata
- * without going through the full repository layer.
- *
- * Currently minimal as form operations are mostly driven by the client.
- * Extend as needed for more agent-driven form discovery/analysis.
+ * Agent-facing read-only DAO for form-schema introspection — separate from ConfigRepository's full
+ * aggregate assembly. Backs the assistant's form actions (schema lookup, field fill, field suggestion)
+ * directly over the `form_field` table (no schema impact).
  */
-@Inject
-class FormAgentDao(
-    private val db: FormDatabase,
-) {
-    // Placeholder for future queries; form operations are mostly driven by voice intent
-    // and don't require bulk form discovery at this time.
+@Dao
+interface FormAgentDao {
+    /** Visible fields for an entity type, in display order. */
+    @Query("SELECT * FROM form_field WHERE entityType = :entityType AND visible = 1 ORDER BY displayOrder ASC")
+    suspend fun visibleFields(entityType: String): List<FormFieldEntity>
+
+    /** A single field by its key within an entity type (visible or not — caller checks). */
+    @Query("SELECT * FROM form_field WHERE entityType = :entityType AND fieldKey = :fieldKey LIMIT 1")
+    suspend fun fieldByKey(entityType: String, fieldKey: String): FormFieldEntity?
 }
