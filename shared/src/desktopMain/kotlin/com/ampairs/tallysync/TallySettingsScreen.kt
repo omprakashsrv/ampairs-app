@@ -130,6 +130,8 @@ fun TallySettingsScreen(
                     enabled = !isSyncing,
                     onClick = {
                         scope.launch {
+                            // Every per-entity alterId checkpoint must be cleared, or that entity's
+                            // already-synced records (alterId <= checkpoint) won't be re-fetched/re-mapped.
                             val entityTypes = listOf(
                                 TallyProductMapper.ENTITY_STOCK_GROUP,
                                 TallyProductMapper.ENTITY_STOCK_CATEGORY,
@@ -137,6 +139,8 @@ fun TallySettingsScreen(
                                 TallyProductMapper.ENTITY_UNIT,
                                 TallyCustomerMapper.ENTITY_ACCOUNT_GROUP,
                                 TallyCustomerMapper.ENTITY_LEDGER,
+                                TallyCustomerMapper.ENTITY_SUPPLIER_LEDGER,
+                                TallyVoucherMapper.ENTITY_VOUCHER,
                             )
                             entityTypes.forEach { entity ->
                                 dataStore.setTallyLastAlterId(workspaceSlug, entity, 0L)
