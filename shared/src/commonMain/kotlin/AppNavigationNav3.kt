@@ -206,6 +206,7 @@ fun navigateToMenuItemNav3(
         route == "pricing" -> backStack.add(Route.Pricing)
         route == "analytics" || route == "dashboard" -> backStack.add(Route.Analytics)
         route == "business-dashboard" || route == "business-reporting" -> backStack.add(Route.Analytics)
+        route == "communication" -> backStack.add(Route.Communication)
 
         route.startsWith("/analytics") || route.startsWith("/dashboard") || route.startsWith("/reports") ->
             backStack.add(Route.Analytics)

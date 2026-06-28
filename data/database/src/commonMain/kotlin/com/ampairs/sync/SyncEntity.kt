@@ -66,7 +66,14 @@ enum class SyncEntity(val entityType: String, val moduleCode: String? = null) {
     SFA_PLANNED_VISIT("sfa_planned_visit", "field-sales-management"),
     SFA_FIELD_ORDER("sfa_field_order", "field-sales-management"),
     SFA_LEAVE("sfa_leave", "field-sales-management"),
-    SFA_VISIT_SURVEY("sfa_visit_survey", "field-sales-management");
+    SFA_VISIT_SURVEY("sfa_visit_survey", "field-sales-management"),
+    // communication — templates, schedules, campaigns, delivery logs
+    COMM_TEMPLATE("comm_template", "communication-management"),
+    COMM_BINDING("comm_binding", "communication-management"),
+    COMM_SCHEDULE("comm_schedule", "communication-management"),
+    COMM_CAMPAIGN("comm_campaign", "communication-management"),
+    COMM_PREFERENCE("comm_preference", "communication-management"),
+    COMM_LOG("comm_log", "communication-management");
 
     companion object {
         fun fromEntityType(type: String): SyncEntity? =

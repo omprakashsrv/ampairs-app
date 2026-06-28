@@ -79,6 +79,7 @@ private fun getModuleNavigationPath(moduleCode: String): String {
         ModuleCodes.BUSINESS_PROFILE -> "business"
         ModuleCodes.UNIT_MANAGEMENT -> "unit"
         ModuleCodes.AI_ASSISTANT -> "agent"
+        ModuleCodes.COMMUNICATION -> "communication"
         else -> "unknown"
     }
 }

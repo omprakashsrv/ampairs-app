@@ -83,5 +83,6 @@ include(
     ":feature:cb-store-api",
     ":feature:cb-store",
     ":feature:cb-maintenance-api",
-    ":feature:cb-maintenance"
+    ":feature:cb-maintenance",
+    ":feature:communication"
 )

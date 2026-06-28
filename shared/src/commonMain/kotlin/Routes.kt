@@ -94,6 +94,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object Analytics : Route
 
+    /** Customer/business messaging — templates, schedules, campaigns, credentials, delivery logs. */
+    @Serializable
+    data object Communication : Route
+
     @Serializable
     data object More : Route
 }

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Dashboard
@@ -90,6 +91,14 @@ import com.ampairs.printing.ui.PrintQueueRoute
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.printing.ui.TemplateEditRoute
 import com.ampairs.printing.ui.TemplateListRoute
+import com.ampairs.communication.ui.CommCampaignListRoute
+import com.ampairs.communication.ui.CommCredentialRoute
+import com.ampairs.communication.ui.CommLogRoute
+import com.ampairs.communication.ui.CommScheduleListRoute
+import com.ampairs.communication.ui.CommTemplateEditRoute
+import com.ampairs.communication.ui.CommTemplateListRoute
+import com.ampairs.communication.ui.CommUsageRoute
+import com.ampairs.communication.ui.CommunicationHomeRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.navigation.ModuleCodes
@@ -120,6 +129,7 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.BUSINESS_DASHBOARD -> Route.Analytics
     "business-reporting" -> Route.Analytics
     ModuleCodes.FIELD_SALES_MANAGEMENT -> Route.Sfa
+    ModuleCodes.COMMUNICATION -> Route.Communication
     else -> null
 }
 
@@ -187,6 +197,15 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
         || currentRoute is com.ampairs.pricing.ui.GeoZoneFormRoute
         || currentRoute is com.ampairs.pricing.ui.PriceTesterRoute -> ModuleCodes.PRICING_MANAGEMENT
     currentRoute is Route.Analytics -> ModuleCodes.BUSINESS_DASHBOARD
+    currentRoute is Route.Communication
+        || currentRoute is CommunicationHomeRoute
+        || currentRoute is CommTemplateListRoute
+        || currentRoute is CommTemplateEditRoute
+        || currentRoute is CommScheduleListRoute
+        || currentRoute is CommCampaignListRoute
+        || currentRoute is CommCredentialRoute
+        || currentRoute is CommUsageRoute
+        || currentRoute is CommLogRoute -> ModuleCodes.COMMUNICATION
     else -> null
 }
 
@@ -217,6 +236,7 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.STOREFRONT_MANAGEMENT -> stringResource(Res.string.nav_storefront)
     ModuleCodes.AI_ASSISTANT -> stringResource(Res.string.nav_assistant)
     ModuleCodes.PRICING_MANAGEMENT -> stringResource(Res.string.nav_pricing)
+    ModuleCodes.COMMUNICATION -> stringResource(Res.string.nav_communication)
     "business-reporting" -> stringResource(Res.string.nav_reports)
     "business-dashboard" -> stringResource(Res.string.nav_dashboard)
     "notification-system" -> stringResource(Res.string.nav_alerts)
@@ -242,6 +262,7 @@ fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.PAYMENT_COLLECTION -> Icons.Default.Payments
     ModuleCodes.STOREFRONT_MANAGEMENT -> Icons.Default.Storefront
     ModuleCodes.AI_ASSISTANT -> Icons.Default.AutoAwesome
+    ModuleCodes.COMMUNICATION -> Icons.Default.Campaign
     "business-reporting" -> Icons.Default.Analytics
     "business-dashboard" -> Icons.Default.Dashboard
     "notification-system" -> Icons.Default.Notifications

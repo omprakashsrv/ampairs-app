@@ -59,6 +59,7 @@ import com.ampairs.cbmaintenance.ui.CbPmDueListRoute
 import com.ampairs.navigation.providers.sfaEntryProvider
 import com.ampairs.navigation.providers.pricingEntryProvider
 import com.ampairs.navigation.providers.printingEntryProvider
+import com.ampairs.navigation.providers.communicationEntryProvider
 import com.ampairs.navigation.providers.workspaceEntryProvider
 import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
@@ -69,6 +70,7 @@ import com.ampairs.pricing.ui.PriceListListRoute
 import com.ampairs.pricing.ui.PricingHomeRoute
 import com.ampairs.pricing.ui.PricingShellRoute
 import com.ampairs.printing.ui.PrinterListRoute
+import com.ampairs.communication.ui.CommunicationHomeRoute
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 
 /**
@@ -107,6 +109,7 @@ fun combinedEntryProvider(
         ?: sfaEntryProvider(key, backStack)
         ?: pricingEntryProvider(key, backStack)
         ?: printingEntryProvider(key, backStack)
+        ?: communicationEntryProvider(key, backStack)
         ?: storeEntryProvider(key, backStack)
         ?: sequenceEntryProvider(key, backStack)
         ?: orderEntryProvider(key, backStack)
@@ -270,6 +273,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(PrinterListRoute)
+        }
+    }
+
+    // Route.Communication redirects to the communication hub
+    is Route.Communication -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(CommunicationHomeRoute)
         }
     }
 
