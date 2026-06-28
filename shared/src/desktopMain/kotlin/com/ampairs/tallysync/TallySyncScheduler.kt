@@ -60,6 +60,19 @@ class TallySyncScheduler(
                 centralSyncService.markPendingPush(SyncEntity.PRODUCT)
             if (result.groupsSynced > 0 || result.categoriesSynced > 0)
                 centralSyncService.markPendingPush(SyncEntity.PRODUCT_CATALOG)
+            if (result.invoicesSynced > 0)
+                centralSyncService.markPendingPush(SyncEntity.INVOICE)
+            // Payments: the repository + ledger poster already flag these inside save()/postDocumentEntry;
+            // marking again is harmless and keeps the scheduler self-documenting.
+            if (result.paymentsSynced > 0) {
+                centralSyncService.markPendingPush(SyncEntity.PAYMENT_VOUCHER)
+                centralSyncService.markPendingPush(SyncEntity.PAYMENT_ALLOCATION)
+            }
+            // Invoice + payment postings both write ledger entries and recompute party balances.
+            if (result.invoicesSynced > 0 || result.paymentsSynced > 0) {
+                centralSyncService.markPendingPush(SyncEntity.LEDGER_ENTRY)
+                centralSyncService.markPendingPush(SyncEntity.PARTY_BALANCE)
+            }
         }
 
         return result

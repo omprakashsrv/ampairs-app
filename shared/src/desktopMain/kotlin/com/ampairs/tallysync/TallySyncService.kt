@@ -8,6 +8,11 @@ import com.ampairs.customer.data.db.CustomerGroupDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.invoice.db.dao.InvoiceDao
+import com.ampairs.invoice.db.dao.InvoiceItemDao
+import com.ampairs.payment.data.repository.PaymentLedgerPoster
+import com.ampairs.payment.data.repository.PaymentVoucherRepository
+import com.ampairs.payment.domain.Money
 import com.ampairs.tally.TallyApiImpl
 import com.ampairs.tally.TallyRepository
 import com.ampairs.tallysync.TallyCustomerMapper.ENTITY_ACCOUNT_GROUP
@@ -24,6 +29,13 @@ import com.ampairs.tallysync.TallyProductMapper.toGroupEntity
 import com.ampairs.tallysync.TallyProductMapper.toProductEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
 import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
+import com.ampairs.tallysync.TallyVoucherMapper.ENTITY_VOUCHER
+import com.ampairs.tallysync.TallyVoucherMapper.classify
+import com.ampairs.tallysync.TallyVoucherMapper.isInvoiceKind
+import com.ampairs.tallysync.TallyVoucherMapper.isPaymentKind
+import com.ampairs.tallysync.TallyVoucherMapper.resolvePartyName
+import com.ampairs.tallysync.TallyVoucherMapper.toMappedInvoice
+import com.ampairs.tallysync.TallyVoucherMapper.toMappedPayment
 import com.ampairs.tally.model.master.StockItem
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.data.repository.TaxComponentRepository
@@ -49,11 +61,13 @@ data class TallySyncResult(
     val stockBalancesUpdated: Int = 0,
     val customerGroupsSynced: Int = 0,
     val customersSynced: Int = 0,
+    val invoicesSynced: Int = 0,
+    val paymentsSynced: Int = 0,
     val taxCodesFound: Int = 0,
     val taxCodesToImport: Int = 0,
     val error: String? = null,
 ) {
-    val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + unitsSynced + stockBalancesUpdated + customerGroupsSynced + customersSynced
+    val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + unitsSynced + stockBalancesUpdated + customerGroupsSynced + customersSynced + invoicesSynced + paymentsSynced
     val success get() = error == null
 }
 
@@ -90,6 +104,10 @@ class TallySyncService(
     private val unitDao: UnitDao,
     private val customerDao: CustomerDao,
     private val customerGroupDao: CustomerGroupDao,
+    private val invoiceDao: InvoiceDao,
+    private val invoiceItemDao: InvoiceItemDao,
+    private val ledgerPoster: PaymentLedgerPoster,
+    private val paymentVoucherRepository: PaymentVoucherRepository,
     private val taxCodeRepository: TaxCodeRepository,
     private val taxRuleRepository: TaxRuleRepository,
     private val taxComponentRepository: TaxComponentRepository,
@@ -229,6 +247,11 @@ class TallySyncService(
             customerDao.nullifyInvalidPhones()
             customerDao.nullifyInvalidPincodes()
 
+            // Vouchers depend on customers (party lookup) and products (line-item lookup), so they run last.
+            val (invoicesSynced, paymentsSynced) = syncVouchers(repo, workspaceSlug)
+            emit("Invoices: $invoicesSynced upserted")
+            emit("Payments: $paymentsSynced upserted")
+
             val candidates = _taxCodeCandidates.value
             val toImport = candidates.count { !it.alreadySubscribed }
             val result = TallySyncResult(
@@ -239,6 +262,8 @@ class TallySyncService(
                 stockBalancesUpdated = stockBalancesUpdated,
                 customerGroupsSynced = customerGroupsSynced,
                 customersSynced = customersSynced,
+                invoicesSynced = invoicesSynced,
+                paymentsSynced = paymentsSynced,
                 taxCodesFound = candidates.size,
                 taxCodesToImport = toImport,
             )
@@ -500,6 +525,91 @@ class TallySyncService(
         }
         log.d { "syncCustomers: ${entities.size} upserted" }
         return entities.size
+    }
+
+    /**
+     * Syncs Tally vouchers into invoices + payments. Sales/Purchase/Credit-Note/Debit-Note become
+     * [com.ampairs.invoice.db.entity.InvoiceEntity] (with line items and a ledger posting via
+     * [ledgerPoster]); Receipt/Payment become payment vouchers (via [paymentVoucherRepository], which
+     * posts the money-movement ledger entry and recomputes the party balance). Invoices are processed
+     * first so payments can match their bill references to the just-synced invoice ids.
+     *
+     * @return invoicesSynced to paymentsSynced
+     */
+    private suspend fun syncVouchers(repo: TallyRepository, workspaceSlug: String): Pair<Int, Int> {
+        val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_VOUCHER).first()
+        val vouchers = repo.getVouchers().body?.data?.collection?.voucher ?: return 0 to 0
+        emit("Vouchers: API returned ${vouchers.size} total, lastAlterId=$lastAlterId")
+        val filtered = vouchers.filter { it.alterId.toAlterLong() > lastAlterId }
+
+        // Party is matched by name to a synced customer (bill-wise ledgers became customers earlier in
+        // this cycle); line items match by stock-item name to a synced product.
+        val customerIdByName = customerDao.getAllCustomers().first().associate { it.name.trim() to it.id }
+        val productIdByName = productDao.getProducts().associate { it.name.trim() to it.id }
+
+        // --- Invoices first (payments reference them by bill number) ---
+        var invoicesSynced = 0
+        var skippedInvoiceNoParty = 0
+        for (voucher in filtered) {
+            val kind = voucher.classify()
+            if (!kind.isInvoiceKind) continue
+            val partyName = voucher.resolvePartyName()
+            val customerId = partyName?.let { customerIdByName[it] }
+            if (customerId == null) {
+                skippedInvoiceNoParty++
+                continue
+            }
+            val mapped = voucher.toMappedInvoice(kind, customerId, partyName, productIdByName) ?: continue
+            invoiceDao.insert(mapped.entity)
+            invoiceItemDao.replaceInvoiceItems(mapped.entity.id, mapped.items)
+            // Deterministic LDG_<id> entry — re-posting on a changed voucher upserts in place.
+            ledgerPoster.postDocumentEntry(
+                partyUid = customerId,
+                sourceType = mapped.sourceType,
+                sourceUid = mapped.entity.id,
+                entryType = mapped.entryType,
+                direction = mapped.entryType.naturalDirection,
+                amount = Money.fromDouble(mapped.entity.total_cost),
+                entryDate = mapped.entity.invoice_date,
+                voucherNo = mapped.entity.invoice_number,
+            )
+            invoicesSynced++
+        }
+        if (skippedInvoiceNoParty > 0) emit("Invoices: skipped $skippedInvoiceNoParty (party not a known customer)")
+
+        // --- Payments (resolve bill refs against all invoices, incl. those just synced) ---
+        val invoiceIdByNumber = invoiceDao.selectAll().associate { it.invoice_number to it.id }
+        var paymentsSynced = 0
+        var skippedPaymentNoParty = 0
+        for (voucher in filtered) {
+            val kind = voucher.classify()
+            if (!kind.isPaymentKind) continue
+            val partyName = voucher.resolvePartyName()
+            val partyUid = partyName?.let { customerIdByName[it] }
+            if (partyUid == null) {
+                skippedPaymentNoParty++
+                continue
+            }
+            val mapped = voucher.toMappedPayment(kind, partyUid, invoiceIdByNumber) ?: continue
+            // The repository rejects allocations whose sum exceeds the voucher total — drop them
+            // defensively (rounding/sign quirks) rather than losing the whole receipt.
+            val allocatedSum = mapped.allocations.fold(Money.ZERO) { acc, a -> acc + a.amount }
+            val allocations = if (allocatedSum > mapped.voucher.totalAmount) {
+                emit("  payment ${mapped.voucher.voucherNo}: allocations exceed total — recording without allocations")
+                emptyList()
+            } else {
+                mapped.allocations
+            }
+            paymentVoucherRepository.save(mapped.voucher, allocations)
+                .onSuccess { paymentsSynced++ }
+                .onFailure { emit("  payment ${mapped.voucher.voucherNo} failed: ${it.message}") }
+        }
+        if (skippedPaymentNoParty > 0) emit("Payments: skipped $skippedPaymentNoParty (party not a known customer)")
+
+        val maxAlterId = vouchers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
+        if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_VOUCHER, maxAlterId)
+        log.d { "syncVouchers: $invoicesSynced invoices, $paymentsSynced payments" }
+        return invoicesSynced to paymentsSynced
     }
 
     private suspend fun buildGroupNameIndex(): Map<String, String> =

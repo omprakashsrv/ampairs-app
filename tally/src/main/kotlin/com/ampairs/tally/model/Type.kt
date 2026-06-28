@@ -44,6 +44,17 @@ enum class Type(var type: String, var id: String, var nativeMethods: List<String
         listOf("GUID", "PARENT", "ALTERID"),
     ),
     STOCK_BALANCE("STOCKITEM", "STOCKBALANCECOL"),
+    VOUCHER(
+        "VOUCHER", "CUSTOMVOUCHERCOL",
+        listOf(
+            "DATE", "GUID", "ALTERID",
+            "VOUCHERTYPENAME", "VOUCHERNUMBER", "REFERENCE", "REFERENCEDATE",
+            "PARTYLEDGERNAME", "PARTYNAME", "PARTYGSTIN",
+            "PLACEOFSUPPLY", "STATENAME", "NARRATION", "ISINVOICE",
+            "ALLLEDGERENTRIES.LIST",
+            "ALLINVENTORYENTRIES.LIST",
+        ),
+    ),
 }
 
 fun Type.toTallyXML(): TallyXML {
