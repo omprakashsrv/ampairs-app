@@ -140,6 +140,7 @@ kotlin {
                 api(projects.feature.payment)
                 api(projects.feature.notification)
                 api(projects.feature.workspace)
+                api(projects.feature.analytics)
                 api(projects.feature.fileApi)
                 api(projects.feature.file)
 
