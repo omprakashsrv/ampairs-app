@@ -11,18 +11,26 @@ sealed interface Route : NavKey {
     
     @Serializable
     data object Customer : Route
-    
+
+    /** Buy-side counterparty master (suppliers/vendors). */
+    @Serializable
+    data object Supplier : Route
+
     @Serializable
     data object Product : Route
-    
+
     @Serializable
     data object Inventory : Route
-    
+
     @Serializable
     data object Order : Route
-    
+
     @Serializable
     data object Invoice : Route
+
+    /** Buy-side purchase document (mirrors Order). */
+    @Serializable
+    data object Purchase : Route
 
     @Serializable
     data object Tax : Route

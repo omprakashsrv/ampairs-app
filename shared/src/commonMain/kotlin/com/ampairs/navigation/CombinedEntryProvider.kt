@@ -20,12 +20,16 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.CustomerListRoute
+import com.ampairs.supplier.ui.SupplierListRoute
+import com.ampairs.purchase.ui.PurchaseRoute
 import com.ampairs.form.ui.FormConfigScreen
 import com.ampairs.form.ui.FormConfigHubScreen
 import com.ampairs.navigation.providers.agentEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
 import com.ampairs.navigation.providers.customerEntryProvider
+import com.ampairs.navigation.providers.supplierEntryProvider
+import com.ampairs.navigation.providers.purchaseEntryProvider
 import com.ampairs.navigation.providers.ecomEntryProvider
 import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
@@ -68,6 +72,8 @@ fun combinedEntryProvider(
     return authEntryProvider(key, backStack, onLoginSuccess, sharedViewModelStoreOwner)
         ?: workspaceEntryProvider(key, backStack, onNavigationServiceReady)
         ?: customerEntryProvider(key, backStack)
+        ?: supplierEntryProvider(key, backStack)
+        ?: purchaseEntryProvider(key, backStack)
         ?: storefrontEntryProvider(key, backStack)
         ?: ecomEntryProvider(key, backStack)
         ?: productEntryProvider(key, backStack)
@@ -119,6 +125,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(CustomerListRoute)
+        }
+    }
+
+    // Route.Supplier redirects to SupplierListRoute
+    is Route.Supplier -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(SupplierListRoute)
         }
     }
 
@@ -206,6 +220,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(InvoiceRoute.Invoices)
+        }
+    }
+
+    // Route.Purchase redirects to PurchaseRoute.PurchaseListRoute
+    is Route.Purchase -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(PurchaseRoute.PurchaseListRoute)
         }
     }
 
