@@ -1,6 +1,7 @@
 package com.ampairs.pricing
 
 import com.ampairs.pricing.data.repository.appliedTierMinQty
+import com.ampairs.pricing.data.repository.isEffectiveAt
 import com.ampairs.pricing.data.repository.matchesTargeting
 import com.ampairs.pricing.data.repository.priceMinorForQuantity
 import com.ampairs.pricing.data.repository.specificity
@@ -14,6 +15,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /**
  * Pure-logic tests for the offline price resolver helpers (no Room/DI). Mirrors the backend US1
@@ -86,6 +89,35 @@ class PriceResolutionLogicTest {
         // An untargeted list matches any context.
         val anyList = PriceList(name = "L")
         assertTrue(anyList.matchesTargeting(null, null, null, null))
+    }
+
+    @OptIn(ExperimentalTime::class)
+    @Test
+    fun `effective window includes from (inclusive) and excludes to (exclusive)`() {
+        val item = PriceListItem(
+            productId = "PRD1",
+            unitPriceMinor = 24_000L,
+            effectiveFrom = "2026-03-01T00:00:00Z",
+            effectiveTo = "2026-06-01T00:00:00Z",
+        )
+        assertFalse(item.isEffectiveAt(Instant.parse("2026-02-28T23:59:59Z")), "before from -> dormant")
+        assertTrue(item.isEffectiveAt(Instant.parse("2026-03-01T00:00:00Z")), "exactly at from -> effective (inclusive)")
+        assertTrue(item.isEffectiveAt(Instant.parse("2026-04-15T10:00:00Z")), "inside window")
+        assertFalse(item.isEffectiveAt(Instant.parse("2026-06-01T00:00:00Z")), "exactly at to -> not effective (exclusive)")
+        assertFalse(item.isEffectiveAt(Instant.parse("2026-07-01T00:00:00Z")), "after to -> expired")
+    }
+
+    @OptIn(ExperimentalTime::class)
+    @Test
+    fun `null effective bounds mean always effective (legacy rows)`() {
+        val legacy = PriceListItem(productId = "PRD1", unitPriceMinor = 18_000L)
+        assertTrue(legacy.isEffectiveAt(Instant.parse("2000-01-01T00:00:00Z")))
+        assertTrue(legacy.isEffectiveAt(Instant.parse("2099-12-31T23:59:59Z")))
+
+        // Open-ended (no `to`) item: effective from `from` onward forever.
+        val openEnded = PriceListItem(productId = "PRD1", unitPriceMinor = 22_500L, effectiveFrom = "2026-03-01T00:00:00Z")
+        assertFalse(openEnded.isEffectiveAt(Instant.parse("2026-02-01T00:00:00Z")), "before from")
+        assertTrue(openEnded.isEffectiveAt(Instant.parse("2030-01-01T00:00:00Z")), "open-ended stays current")
     }
 
     @Test

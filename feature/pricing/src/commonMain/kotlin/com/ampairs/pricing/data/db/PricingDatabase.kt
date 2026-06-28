@@ -14,7 +14,7 @@ import com.ampairs.pricing.data.db.entity.PriceListItemEntity
 /**
  * Pricing Room Database — workspace-isolated store for price lists, their items, and geo zones.
  *
- * Version: 1 (initial)
+ * Version: 2 (v1→v2: added effective_from/effective_to to price_list_items — effective-dated pricing)
  */
 @Database(
     entities = [
@@ -22,7 +22,7 @@ import com.ampairs.pricing.data.db.entity.PriceListItemEntity
         PriceListItemEntity::class,
         GeoZoneEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @ConstructedBy(PricingDatabaseConstructor::class)

@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /**
  * Local-only data access for price lists, items, and geo zones. The [PricingApi] lives in the
@@ -136,6 +137,10 @@ class PriceListRepository(
      * Resolve the effective unit price offline from the local read model. Mirrors backend precedence
      * (per-customer > group/channel > product-group/brand/category > geo-zone/type > predicate),
      * tie-broken by `priority`. Returns major units; falls back to [fallbackUnitPrice] (CATALOG_FALLBACK).
+     *
+     * [asOfDate] is the document date the price is resolved "as of" (the order/invoice date for
+     * billing, Tally's "Applicable From"): items effective after it are dormant, and the most-recent
+     * applicable version at that instant wins. Null/blank => now. ISO-8601 (UTC).
      */
     suspend fun resolve(
         channel: SalesChannel,
@@ -148,7 +153,9 @@ class PriceListRepository(
         customerGroupId: String? = null,
         customerType: String? = null,
         pincode: String? = null,
+        asOfDate: String? = null,
     ): PriceResolution {
+        val asOf = parseInstantOrNull(asOfDate) ?: Clock.System.now()
         val zoneId = pincode?.let { zoneIdForPincode(it) }
         val candidates = priceListDao.getActivePriceLists()
             .map { it.toPriceList() }
@@ -156,7 +163,7 @@ class PriceListRepository(
             .sortedWith(compareByDescending<PriceList> { it.specificity() }.thenByDescending { it.priority })
 
         for (list in candidates) {
-            val item = bestItemFor(list.uid, productId, variantSku) ?: continue
+            val item = bestItemFor(list.uid, productId, variantSku, asOf) ?: continue
             val tierMinor = item.priceMinorForQuantity(quantity)
             val belowMoq = item.moq?.let { quantity < it } ?: false
             return PriceResolution(
@@ -191,11 +198,13 @@ class PriceListRepository(
         customerGroupId: String? = null,
         customerType: String? = null,
         pincode: String? = null,
+        asOfDate: String? = null,
     ): PriceResolutionTrace {
         val resolution = resolve(
             channel, productId, quantity, fallbackUnitPrice, currency,
-            variantSku, customerId, customerGroupId, customerType, pincode,
+            variantSku, customerId, customerGroupId, customerType, pincode, asOfDate,
         )
+        val asOf = parseInstantOrNull(asOfDate) ?: Clock.System.now()
         val zoneId = pincode?.let { zoneIdForPincode(it) }
         val active = priceListDao.getActivePriceLists()
             .map { it.toPriceList() }
@@ -204,7 +213,7 @@ class PriceListRepository(
 
         val candidates = active.map { list ->
             val matches = list.matchesTargeting(customerId, customerGroupId, customerType, zoneId)
-            val hasItem = matches && bestItemFor(list.uid, productId, variantSku) != null
+            val hasItem = matches && bestItemFor(list.uid, productId, variantSku, asOf) != null
             val won = list.uid == resolution.matchedPriceListUid
             PriceCandidate(
                 uid = list.uid,
@@ -224,14 +233,22 @@ class PriceListRepository(
     private suspend fun zoneIdForPincode(pincode: String): String? =
         geoZoneDao.getActiveGeoZones().map { it.toGeoZone() }.firstOrNull { it.members.contains(pincode) }?.uid
 
-    private suspend fun bestItemFor(priceListId: String, productId: String, variantSku: String?): PriceListItem? {
+    private suspend fun bestItemFor(
+        priceListId: String,
+        productId: String,
+        variantSku: String?,
+        asOf: Instant,
+    ): PriceListItem? {
         val items = priceListItemDao.getItemsForPriceList(priceListId)
             .map { it.toPriceListItem() }
-            .filter { it.productId == productId }
+            .filter { it.productId == productId && it.isEffectiveAt(asOf) }
         if (items.isEmpty()) return null
-        return items.firstOrNull { variantSku != null && it.variantSku == variantSku }
-            ?: items.firstOrNull { it.variantSku == null }
-            ?: items.first()
+        // Variant > base > any, then the most-recently-effective version at [asOf]
+        // (mirrors backend PricingResolutionServiceImpl.pickItem).
+        val variantMatches = if (variantSku != null) items.filter { it.variantSku == variantSku } else emptyList()
+        val baseMatches = items.filter { it.variantSku == null }
+        val pool = variantMatches.ifEmpty { baseMatches.ifEmpty { items } }
+        return pool.maxByOrNull { parseInstantOrNull(it.effectiveFrom) ?: Instant.DISTANT_PAST }
     }
 
     private suspend fun markPending(entity: SyncEntity) {
@@ -277,6 +294,23 @@ internal fun PriceListItem.priceMinorForQuantity(quantity: Double): Long {
 
 internal fun PriceListItem.appliedTierMinQty(quantity: Double): Double? =
     tiers.filter { it.minQty <= quantity }.maxByOrNull { it.minQty }?.minQty
+
+/**
+ * True when this item's effective window contains [asOf]: from `effectiveFrom` (inclusive) up to
+ * `effectiveTo` (exclusive). A null/blank bound is open on that side, so a legacy item with no
+ * effective dates is always effective. Unparseable bounds are treated as open (fail-open).
+ */
+@OptIn(ExperimentalTime::class)
+internal fun PriceListItem.isEffectiveAt(asOf: Instant): Boolean {
+    parseInstantOrNull(effectiveFrom)?.let { if (asOf < it) return false }
+    parseInstantOrNull(effectiveTo)?.let { if (asOf >= it) return false }
+    return true
+}
+
+/** Parse an ISO-8601 instant string, or null when blank/unparseable. */
+@OptIn(ExperimentalTime::class)
+internal fun parseInstantOrNull(iso: String?): Instant? =
+    if (iso.isNullOrBlank()) null else runCatching { Instant.parse(iso) }.getOrNull()
 
 /** Most specific targeting dimension set on this list, in plain language (for the Explain trace). */
 internal fun PriceList.mostSpecificDimension(): String = when {

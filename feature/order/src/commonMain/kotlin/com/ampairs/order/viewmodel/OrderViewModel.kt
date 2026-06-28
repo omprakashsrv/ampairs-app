@@ -378,6 +378,8 @@ class OrderViewModel(
                     customerGroupId = orderCustomer?.customerGroup,
                     customerType = orderCustomer?.customerType,
                     pincode = orderCustomer?.pincode,
+                    // Resolve the price as of the order's document date (effective-dated pricing).
+                    asOfDate = order.orderDate.toString(),
                 ),
             )
             item.product = product

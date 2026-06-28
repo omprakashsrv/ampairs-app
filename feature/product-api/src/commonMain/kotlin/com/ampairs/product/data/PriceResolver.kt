@@ -16,6 +16,12 @@ data class PriceResolutionInput(
     val customerGroupId: String? = null,
     val customerType: String? = null,
     val pincode: String? = null,
+    /**
+     * The document date the price is resolved "as of" — the order/invoice date for billing (Tally's
+     * "Applicable From"). The resolver picks the price version effective at this instant. ISO-8601
+     * (UTC); null => now. Plain String to keep this port free of any date-library type.
+     */
+    val asOfDate: String? = null,
 )
 
 /**

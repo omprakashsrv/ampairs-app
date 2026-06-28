@@ -7,6 +7,7 @@ import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.pricing.data.db.OffersDatabase
 import com.ampairs.pricing.data.db.PricingDatabase
+import com.ampairs.pricing.data.db.migrations.PRICING_MIGRATION_1_2
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -23,6 +24,7 @@ interface PricingIosModule {
         ): PricingDatabase = factory.createDatabase<PricingDatabase>(
             moduleName = "pricing",
             workspaceSlug = config.workspaceSlug,
+            migrations = listOf(PRICING_MIGRATION_1_2),
         ).also { closableRegistry.register { it.close() } }
 
         @Provides

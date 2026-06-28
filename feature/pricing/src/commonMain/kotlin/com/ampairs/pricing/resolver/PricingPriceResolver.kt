@@ -35,6 +35,7 @@ class PricingPriceResolver(
             customerGroupId = input.customerGroupId,
             customerType = input.customerType,
             pincode = input.pincode,
+            asOfDate = input.asOfDate,
         )
         return ResolvedPrice(
             unitPrice = resolution.effectiveUnitPrice,

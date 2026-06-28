@@ -76,6 +76,10 @@ data class PriceListItem(
     val currency: String? = null,
     val moq: Double? = null,
     val tiers: List<PriceTier> = emptyList(),
+    /** Effective from this instant (ISO-8601, UTC); null = effective from the beginning (back-compat). */
+    val effectiveFrom: String? = null,
+    /** Effective until this instant (ISO-8601, UTC, exclusive); null = open-ended (the current price). */
+    val effectiveTo: String? = null,
     val active: Boolean = true,
     val createdAt: String? = null,
     val updatedAt: String? = null,

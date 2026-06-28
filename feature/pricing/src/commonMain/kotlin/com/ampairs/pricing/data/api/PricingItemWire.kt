@@ -29,6 +29,8 @@ data class PriceListItemResponse(
     @SerialName("unit_price") val unitPrice: MoneyDto,
     val moq: Double? = null,
     val tiers: List<PriceTierResponse> = emptyList(),
+    @SerialName("effective_from") val effectiveFrom: String? = null,
+    @SerialName("effective_to") val effectiveTo: String? = null,
     val active: Boolean = true,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
@@ -50,6 +52,8 @@ data class PriceListItemPush(
     @SerialName("unit_price_minor") val unitPriceMinor: Long,
     val moq: Double? = null,
     val tiers: List<PriceTierPush> = emptyList(),
+    @SerialName("effective_from") val effectiveFrom: String? = null,
+    @SerialName("effective_to") val effectiveTo: String? = null,
     val active: Boolean = true,
 )
 
@@ -63,6 +67,8 @@ fun PriceListItemResponse.toDomain(): PriceListItem = PriceListItem(
     currency = unitPrice.currency,
     moq = moq,
     tiers = tiers.map { PriceTier(minQty = it.minQty, unitPriceMinor = it.unitPrice.amountMinor) },
+    effectiveFrom = effectiveFrom,
+    effectiveTo = effectiveTo,
     active = active,
     createdAt = createdAt,
     updatedAt = updatedAt,
@@ -77,5 +83,7 @@ fun PriceListItem.toPush(): PriceListItemPush = PriceListItemPush(
     unitPriceMinor = unitPriceMinor,
     moq = moq,
     tiers = tiers.map { PriceTierPush(minQty = it.minQty, unitPriceMinor = it.unitPriceMinor) },
+    effectiveFrom = effectiveFrom,
+    effectiveTo = effectiveTo,
     active = active,
 )

@@ -370,6 +370,8 @@ class InvoiceViewModel(
                     customerGroupId = invoiceCustomer?.customerGroup,
                     customerType = invoiceCustomer?.customerType,
                     pincode = invoiceCustomer?.pincode,
+                    // Resolve the price as of the invoice's document date (effective-dated pricing).
+                    asOfDate = invoice.invoiceDate.toString(),
                 ),
             )
             item.product = product
