@@ -9,6 +9,7 @@ import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.product.db.dao.ProductStandardCostDao
 import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.dao.VariantAttributeDao
@@ -41,6 +42,10 @@ interface ProductDaoModule {
 
         @Provides
         fun provideSubCategoryDao(db: ProductRoomDatabase): SubCategoryDao = db.subCategoryDao()
+
+        @Provides
+        fun provideProductStandardCostDao(db: ProductRoomDatabase): ProductStandardCostDao =
+            db.productStandardCostDao()
 
         @Provides
         fun provideProductDataService(repo: ProductRepository): ProductDataService = repo

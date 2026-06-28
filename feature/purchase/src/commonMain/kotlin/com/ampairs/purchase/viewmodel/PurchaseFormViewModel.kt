@@ -8,6 +8,7 @@ import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.supplier.data.SupplierDataService
 import com.ampairs.supplier.domain.SupplierListItem
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.data.PurchaseCostResolver
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.purchase.db.PurchaseRepository
 import com.ampairs.purchase.db.entity.PurchaseEntity
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /**
  * One editable line. Stores backend IDs as Strings (never product object references) per the form
@@ -49,8 +51,12 @@ data class PurchaseItemFormState(
     val lineTotal: Double get() = quantity * price
 }
 
+@OptIn(ExperimentalTime::class)
 data class PurchaseFormState(
     val purchaseId: String,
+    // The purchase voucher (document) date — the as-of instant the standard cost is resolved at.
+    // Defaults to now for a new voucher; reloaded from the persisted purchase_date when editing.
+    val purchaseDate: Instant = Clock.System.now(),
     val purchaseNumber: String = "",
     val supplierId: String = "",
     val supplierName: String = "",
@@ -78,6 +84,7 @@ class PurchaseFormViewModel(
     private val repository: PurchaseRepository,
     private val supplierDataService: SupplierDataService,
     private val productDataService: ProductDataService,
+    private val purchaseCostResolver: PurchaseCostResolver,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -108,6 +115,8 @@ class PurchaseFormViewModel(
             if (parent != null) {
                 _state.update {
                     it.copy(
+                        purchaseDate = DateTimeAdapter.fromDateTimeString(parent.purchase_date)
+                            ?: it.purchaseDate,
                         purchaseNumber = parent.purchase_number,
                         supplierId = parent.supplier_id,
                         supplierName = parent.supplier_name,
@@ -182,22 +191,39 @@ class PurchaseFormViewModel(
         }
     }
 
-    /** Add a line from a catalog product, seeding the cost price from DP (fallback selling price). */
+    /**
+     * Add a line from a catalog product. The line rate is seeded from the effective-dated standard
+     * purchase cost resolved as of the voucher date; when no standard cost applies it falls back to
+     * DP (else selling price). Resolution is local/offline.
+     */
     fun addProduct(product: ProductSummary) {
-        val line = PurchaseItemFormState(
-            id = UidGenerator.generateUid(PurchaseConstants.ITEM_UID_PREFIX),
-            productId = product.id,
-            name = product.name,
-            code = product.code,
-            taxCode = product.taxCode,
-            taxPercent = 0.0,
-            quantity = 1.0,
-            price = if (product.dp > 0.0) product.dp else product.sellingPrice,
-            mrp = product.mrp,
-            dp = product.dp,
-            unitId = product.baseUnitId ?: "",
-        )
-        _state.update { it.copy(items = it.items + line, productResults = emptyList()) }
+        viewModelScope.launch {
+            val asOf = _state.value.purchaseDate
+            val resolvedCost = runCatching {
+                purchaseCostResolver.resolve(
+                    productId = product.id,
+                    variantSku = null,
+                    asOfDate = asOf.toString(),
+                )
+            }.onFailure {
+                PurchaseLogger.w("PurchaseForm", "standard cost resolve failed", it)
+            }.getOrNull()
+            val catalogFallback = if (product.dp > 0.0) product.dp else product.sellingPrice
+            val line = PurchaseItemFormState(
+                id = UidGenerator.generateUid(PurchaseConstants.ITEM_UID_PREFIX),
+                productId = product.id,
+                name = product.name,
+                code = product.code,
+                taxCode = product.taxCode,
+                taxPercent = 0.0,
+                quantity = 1.0,
+                price = resolvedCost ?: catalogFallback,
+                mrp = product.mrp,
+                dp = product.dp,
+                unitId = product.baseUnitId ?: "",
+            )
+            _state.update { it.copy(items = it.items + line, productResults = emptyList()) }
+        }
     }
 
     fun updateQuantity(itemId: String, quantity: Double) = _state.update { s ->
@@ -234,7 +260,7 @@ class PurchaseFormViewModel(
         seq_id = 0,
         id = s.purchaseId,
         purchase_number = s.purchaseNumber.takeIf { it.startsWith("PUR-") } ?: "",
-        purchase_date = DateTimeAdapter.toDateTimeString(Clock.System.now()),
+        purchase_date = DateTimeAdapter.toDateTimeString(s.purchaseDate),
         status = s.status.name,
         supplier_id = s.supplierId,
         supplier_name = s.supplierName,
