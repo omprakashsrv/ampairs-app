@@ -28,6 +28,8 @@
     <string name="nav_parties">Parties</string>
     <string name="nav_stock">Stock</string>
     <string name="nav_orders">Orders</string>
+    <string name="nav_suppliers">Suppliers</string>
+    <string name="nav_purchases">Purchases</string>
     <string name="nav_inventory">Inventory</string>
     <string name="nav_tax">Tax</string>
     <string name="nav_units">Units</string>
