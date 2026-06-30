@@ -35,9 +35,9 @@ val VISIT_OUTCOMES = listOf("PRODUCTIVE", "NO_ORDER", "OUTLET_CLOSED")
 @AssistedInject
 class VisitCaptureViewModel(
     private val sfaRepository: SfaRepository,
-    @Assisted("plannedVisitUid") private val plannedVisitUid: String?,
-    @Assisted("customerUid") private val customerUid: String,
-    @Assisted("repMemberUid") private val repMemberUid: String,
+    @Assisted private val plannedVisitUid: String?,
+    @Assisted private val customerUid: String,
+    @Assisted private val repMemberUid: String,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -45,9 +45,9 @@ class VisitCaptureViewModel(
     @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(
-            @Assisted("plannedVisitUid") plannedVisitUid: String?,
-            @Assisted("customerUid") customerUid: String,
-            @Assisted("repMemberUid") repMemberUid: String,
+            plannedVisitUid: String?,
+            customerUid: String,
+            repMemberUid: String,
         ): VisitCaptureViewModel
     }
 
