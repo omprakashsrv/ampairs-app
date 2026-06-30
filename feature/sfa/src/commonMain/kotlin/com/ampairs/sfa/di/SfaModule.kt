@@ -6,7 +6,10 @@ import com.ampairs.sfa.data.db.dao.AttendanceDao
 import com.ampairs.sfa.data.db.dao.BeatDao
 import com.ampairs.sfa.data.db.dao.BeatOutletDao
 import com.ampairs.sfa.data.db.dao.JourneyPlanDao
+import com.ampairs.sfa.data.db.dao.FieldOrderDao
+import com.ampairs.sfa.data.db.dao.LeaveDao
 import com.ampairs.sfa.data.db.dao.PlannedVisitDao
+import com.ampairs.sfa.data.db.dao.VisitSurveyResponseDao
 import com.ampairs.sfa.data.db.dao.VisitDao
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -31,5 +34,14 @@ interface SfaDaoModule {
 
         @Provides
         fun providePlannedVisitDao(db: SfaDatabase): PlannedVisitDao = db.plannedVisitDao()
+
+        @Provides
+        fun provideFieldOrderDao(db: SfaDatabase): FieldOrderDao = db.fieldOrderDao()
+
+        @Provides
+        fun provideLeaveDao(db: SfaDatabase): LeaveDao = db.leaveDao()
+
+        @Provides
+        fun provideVisitSurveyResponseDao(db: SfaDatabase): VisitSurveyResponseDao = db.visitSurveyResponseDao()
     }
 }

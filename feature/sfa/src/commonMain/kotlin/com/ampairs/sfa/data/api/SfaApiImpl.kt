@@ -11,9 +11,12 @@ import com.ampairs.common.post
 import com.ampairs.sfa.domain.model.Attendance
 import com.ampairs.sfa.domain.model.Beat
 import com.ampairs.sfa.domain.model.BeatOutlet
+import com.ampairs.sfa.domain.model.FieldOrder
+import com.ampairs.sfa.domain.model.Leave
 import com.ampairs.sfa.domain.model.JourneyPlan
 import com.ampairs.sfa.domain.model.PlannedVisit
 import com.ampairs.sfa.domain.model.Visit
+import com.ampairs.sfa.domain.model.VisitSurveyResponse
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -107,5 +110,38 @@ class SfaApiImpl(
     override suspend fun bulkUpdatePlannedVisits(rows: List<PlannedVisit>): List<PlannedVisit> {
         val response: Response<List<PlannedVisit>> = post(client, ApiUrlBuilder.sfaUrl("v1/planned-visits/sync"), rows)
         return response.data ?: throw Exception("Failed to bulk update planned visits")
+    }
+
+    override suspend fun getFieldOrdersSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<FieldOrder> {
+        val response: Response<PageResponse<FieldOrder>> = get(client, ApiUrlBuilder.sfaUrl("v1/field-orders/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateFieldOrders(rows: List<FieldOrder>): List<FieldOrder> {
+        val response: Response<List<FieldOrder>> = post(client, ApiUrlBuilder.sfaUrl("v1/field-orders/sync"), rows)
+        return response.data ?: throw Exception("Failed to bulk update field orders")
+    }
+
+    override suspend fun getLeavesSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<Leave> {
+        val response: Response<PageResponse<Leave>> = get(client, ApiUrlBuilder.sfaUrl("v1/leaves/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateLeaves(rows: List<Leave>): List<Leave> {
+        val response: Response<List<Leave>> = post(client, ApiUrlBuilder.sfaUrl("v1/leaves/sync"), rows)
+        return response.data ?: throw Exception("Failed to bulk update leaves")
+    }
+
+    override suspend fun getVisitSurveysSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<VisitSurveyResponse> {
+        val response: Response<PageResponse<VisitSurveyResponse>> = get(client, ApiUrlBuilder.sfaUrl("v1/visit-surveys/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateVisitSurveys(rows: List<VisitSurveyResponse>): List<VisitSurveyResponse> {
+        val response: Response<List<VisitSurveyResponse>> = post(client, ApiUrlBuilder.sfaUrl("v1/visit-surveys/sync"), rows)
+        return response.data ?: throw Exception("Failed to bulk update visit surveys")
     }
 }
