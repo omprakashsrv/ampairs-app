@@ -9,3 +9,6 @@ data object SfaBeatListRoute : NavKey
 
 @Serializable
 data class BeatFormRoute(val beatId: String? = null) : NavKey
+
+@Serializable
+data object SfaPlannedVisitListRoute : NavKey

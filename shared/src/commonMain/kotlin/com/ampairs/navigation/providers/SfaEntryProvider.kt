@@ -5,8 +5,10 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.sfa.ui.BeatFormRoute
 import com.ampairs.sfa.ui.SfaBeatListRoute
+import com.ampairs.sfa.ui.SfaPlannedVisitListRoute
 import com.ampairs.sfa.ui.beat.BeatFormScreen
 import com.ampairs.sfa.ui.beat.BeatListScreen
+import com.ampairs.sfa.ui.plannedvisit.PlannedVisitListScreen
 
 /**
  * Entry provider for SFA (field-sales) module routes in Navigation 3.
@@ -20,6 +22,14 @@ fun sfaEntryProvider(
         BeatListScreen(
             onBeatClick = { beatId -> backStack.add(BeatFormRoute(beatId)) },
             onAddBeat = { backStack.add(BeatFormRoute()) },
+            onOpenPlannedVisits = { backStack.add(SfaPlannedVisitListRoute) },
+            modifier = Modifier,
+        )
+    }
+
+    is SfaPlannedVisitListRoute -> NavEntry(key) {
+        PlannedVisitListScreen(
+            onBack = { backStack.removeLastOrNull() },
             modifier = Modifier,
         )
     }

@@ -11,11 +11,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,6 +33,7 @@ import ampairsapp.feature.sfa.generated.resources.Res
 import ampairsapp.feature.sfa.generated.resources.sfa_add_beat
 import ampairsapp.feature.sfa.generated.resources.sfa_beats_empty
 import ampairsapp.feature.sfa.generated.resources.sfa_beats_title
+import ampairsapp.feature.sfa.generated.resources.sfa_open_planned_visits
 import com.ampairs.sfa.domain.model.Beat
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -40,6 +43,7 @@ import org.jetbrains.compose.resources.stringResource
 fun BeatListScreen(
     onBeatClick: (String) -> Unit,
     onAddBeat: () -> Unit,
+    onOpenPlannedVisits: () -> Unit,
     viewModel: BeatListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -47,7 +51,16 @@ fun BeatListScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text(stringResource(Res.string.sfa_beats_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(Res.string.sfa_beats_title)) },
+                actions = {
+                    IconButton(onClick = onOpenPlannedVisits) {
+                        Icon(Icons.Default.DateRange, contentDescription = stringResource(Res.string.sfa_open_planned_visits))
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onAddBeat,
