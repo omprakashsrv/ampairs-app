@@ -10,6 +10,9 @@ import com.ampairs.common.model.Response
 import com.ampairs.common.post
 import com.ampairs.sfa.domain.model.Attendance
 import com.ampairs.sfa.domain.model.Beat
+import com.ampairs.sfa.domain.model.BeatOutlet
+import com.ampairs.sfa.domain.model.JourneyPlan
+import com.ampairs.sfa.domain.model.PlannedVisit
 import com.ampairs.sfa.domain.model.Visit
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -71,5 +74,38 @@ class SfaApiImpl(
     override suspend fun bulkUpdateAttendance(records: List<Attendance>): List<Attendance> {
         val response: Response<List<Attendance>> = post(client, ApiUrlBuilder.sfaUrl("v1/attendance/sync"), records)
         return response.data ?: throw Exception("Failed to bulk update attendance")
+    }
+
+    override suspend fun getBeatOutletsSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<BeatOutlet> {
+        val response: Response<PageResponse<BeatOutlet>> = get(client, ApiUrlBuilder.sfaUrl("v1/beat-outlets/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateBeatOutlets(rows: List<BeatOutlet>): List<BeatOutlet> {
+        val response: Response<List<BeatOutlet>> = post(client, ApiUrlBuilder.sfaUrl("v1/beat-outlets/sync"), rows)
+        return response.data ?: throw Exception("Failed to bulk update beat outlets")
+    }
+
+    override suspend fun getJourneyPlansSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<JourneyPlan> {
+        val response: Response<PageResponse<JourneyPlan>> = get(client, ApiUrlBuilder.sfaUrl("v1/journey-plans/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateJourneyPlans(rows: List<JourneyPlan>): List<JourneyPlan> {
+        val response: Response<List<JourneyPlan>> = post(client, ApiUrlBuilder.sfaUrl("v1/journey-plans/sync"), rows)
+        return response.data ?: throw Exception("Failed to bulk update journey plans")
+    }
+
+    override suspend fun getPlannedVisitsSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<PlannedVisit> {
+        val response: Response<PageResponse<PlannedVisit>> = get(client, ApiUrlBuilder.sfaUrl("v1/planned-visits/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdatePlannedVisits(rows: List<PlannedVisit>): List<PlannedVisit> {
+        val response: Response<List<PlannedVisit>> = post(client, ApiUrlBuilder.sfaUrl("v1/planned-visits/sync"), rows)
+        return response.data ?: throw Exception("Failed to bulk update planned visits")
     }
 }
