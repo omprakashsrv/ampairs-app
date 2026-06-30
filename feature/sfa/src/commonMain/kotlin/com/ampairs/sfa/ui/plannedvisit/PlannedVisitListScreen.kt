@@ -1,5 +1,6 @@
 package com.ampairs.sfa.ui.plannedvisit
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun PlannedVisitListScreen(
     onBack: () -> Unit,
+    onVisitClick: (PlannedVisit) -> Unit,
     viewModel: PlannedVisitListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -62,7 +64,7 @@ fun PlannedVisitListScreen(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(uiState.plannedVisits, key = { it.uid }) { pv ->
-                        PlannedVisitRow(pv)
+                        PlannedVisitRow(pv, onClick = { onVisitClick(pv) })
                         HorizontalDivider()
                     }
                 }
@@ -72,9 +74,9 @@ fun PlannedVisitListScreen(
 }
 
 @Composable
-private fun PlannedVisitRow(pv: PlannedVisit) {
+private fun PlannedVisitRow(pv: PlannedVisit, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -12,4 +12,7 @@
     <string name="sfa_planned_visits_title">Today's route</string>
     <string name="sfa_planned_visits_empty">No planned visits</string>
     <string name="sfa_open_planned_visits">Planned visits</string>
+    <string name="sfa_visit_title">Record visit</string>
+    <string name="sfa_visit_outcome">Outcome</string>
+    <string name="sfa_visit_notes">Notes</string>
 </resources>
