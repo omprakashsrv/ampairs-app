@@ -56,12 +56,14 @@ import com.ampairs.navigation.providers.cbMaintenanceEntryProvider
 import com.ampairs.cbemployee.ui.CbEmployeeListRoute
 import com.ampairs.cbstore.ui.CbStoreListRoute
 import com.ampairs.cbmaintenance.ui.CbPmDueListRoute
+import com.ampairs.navigation.providers.sfaEntryProvider
 import com.ampairs.navigation.providers.pricingEntryProvider
 import com.ampairs.navigation.providers.printingEntryProvider
 import com.ampairs.navigation.providers.workspaceEntryProvider
 import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitListRoute
+import com.ampairs.sfa.ui.SfaBeatListRoute
 import com.ampairs.notification.ui.NotificationListRoute
 import com.ampairs.pricing.ui.PriceListListRoute
 import com.ampairs.pricing.ui.PricingHomeRoute
@@ -102,6 +104,7 @@ fun combinedEntryProvider(
         ?: cbEmployeeEntryProvider(key, backStack)
         ?: cbStoreEntryProvider(key, backStack)
         ?: cbMaintenanceEntryProvider(key, backStack)
+        ?: sfaEntryProvider(key, backStack)
         ?: pricingEntryProvider(key, backStack)
         ?: printingEntryProvider(key, backStack)
         ?: storeEntryProvider(key, backStack)
@@ -235,6 +238,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(CbPmDueListRoute)
+        }
+    }
+
+    // Route.Sfa redirects to the beats list
+    is Route.Sfa -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(SfaBeatListRoute)
         }
     }
 

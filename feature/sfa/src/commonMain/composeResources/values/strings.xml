@@ -1,0 +1,5 @@
+<resources>
+    <string name="sfa_beats_title">Beats</string>
+    <string name="sfa_beats_empty">No beats yet</string>
+    <string name="sfa_add_beat">Add Beat</string>
+</resources>

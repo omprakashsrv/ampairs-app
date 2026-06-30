@@ -140,6 +140,7 @@ kotlin {
                 api(projects.feature.cbEmployee)
                 api(projects.feature.cbStore)
                 api(projects.feature.cbMaintenance)
+                api(projects.feature.sfa)
                 api(projects.feature.pricing)
                 api(projects.feature.sequence)
                 api(projects.feature.store)

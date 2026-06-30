@@ -57,6 +57,7 @@ include(
     ":feature:form",
     ":feature:formwidgets",
     ":feature:unit",
+    ":feature:sfa",
     ":feature:pricing",
     ":feature:sequence",
     ":feature:store",

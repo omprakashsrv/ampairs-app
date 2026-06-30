@@ -1,0 +1,75 @@
+package com.ampairs.sfa.data.api
+
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.di.AppScope
+import com.ampairs.common.get
+import com.ampairs.common.httpClient
+import com.ampairs.common.model.PageResponse
+import com.ampairs.common.model.Response
+import com.ampairs.common.post
+import com.ampairs.sfa.domain.model.Attendance
+import com.ampairs.sfa.domain.model.Beat
+import com.ampairs.sfa.domain.model.Visit
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import io.ktor.client.engine.HttpClientEngine
+
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
+class SfaApiImpl(
+    engine: HttpClientEngine,
+    tokenRepository: TokenRepository,
+) : SfaApi {
+
+    private val client = httpClient(engine, tokenRepository)
+
+    private fun syncParams(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): MutableMap<String, Any> {
+        val params = mutableMapOf<String, Any>(
+            "page" to page,
+            "size" to size,
+            "sort_by" to sortBy,
+            "sort_dir" to sortDir,
+        )
+        if (lastSync.isNotBlank()) params["last_sync"] = lastSync
+        return params
+    }
+
+    private fun <T> emptyPage(page: Int, size: Int): PageResponse<T> = PageResponse(
+        content = emptyList(), pageNumber = page, pageSize = size, totalPages = 0,
+        totalElements = 0L, hasNext = false, hasPrevious = false, first = true, last = true,
+    )
+
+    override suspend fun getBeatsSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<Beat> {
+        val response: Response<PageResponse<Beat>> = get(client, ApiUrlBuilder.sfaUrl("v1/beats/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateBeats(beats: List<Beat>): List<Beat> {
+        val response: Response<List<Beat>> = post(client, ApiUrlBuilder.sfaUrl("v1/beats/sync"), beats)
+        return response.data ?: throw Exception("Failed to bulk update beats")
+    }
+
+    override suspend fun getVisitsSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<Visit> {
+        val response: Response<PageResponse<Visit>> = get(client, ApiUrlBuilder.sfaUrl("v1/visits/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateVisits(visits: List<Visit>): List<Visit> {
+        val response: Response<List<Visit>> = post(client, ApiUrlBuilder.sfaUrl("v1/visits/sync"), visits)
+        return response.data ?: throw Exception("Failed to bulk update visits")
+    }
+
+    override suspend fun getAttendanceSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<Attendance> {
+        val response: Response<PageResponse<Attendance>> = get(client, ApiUrlBuilder.sfaUrl("v1/attendance/sync"), syncParams(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
+    }
+
+    override suspend fun bulkUpdateAttendance(records: List<Attendance>): List<Attendance> {
+        val response: Response<List<Attendance>> = post(client, ApiUrlBuilder.sfaUrl("v1/attendance/sync"), records)
+        return response.data ?: throw Exception("Failed to bulk update attendance")
+    }
+}
