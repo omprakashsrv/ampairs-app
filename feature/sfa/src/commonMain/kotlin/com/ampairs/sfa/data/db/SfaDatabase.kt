@@ -6,9 +6,15 @@ import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import com.ampairs.sfa.data.db.dao.AttendanceDao
 import com.ampairs.sfa.data.db.dao.BeatDao
+import com.ampairs.sfa.data.db.dao.BeatOutletDao
+import com.ampairs.sfa.data.db.dao.JourneyPlanDao
+import com.ampairs.sfa.data.db.dao.PlannedVisitDao
 import com.ampairs.sfa.data.db.dao.VisitDao
 import com.ampairs.sfa.data.db.entity.AttendanceEntity
 import com.ampairs.sfa.data.db.entity.BeatEntity
+import com.ampairs.sfa.data.db.entity.BeatOutletEntity
+import com.ampairs.sfa.data.db.entity.JourneyPlanEntity
+import com.ampairs.sfa.data.db.entity.PlannedVisitEntity
 import com.ampairs.sfa.data.db.entity.VisitEntity
 
 /**
@@ -18,6 +24,9 @@ import com.ampairs.sfa.data.db.entity.VisitEntity
 @Database(
     entities = [
         BeatEntity::class,
+        BeatOutletEntity::class,
+        JourneyPlanEntity::class,
+        PlannedVisitEntity::class,
         VisitEntity::class,
         AttendanceEntity::class,
     ],
@@ -27,6 +36,9 @@ import com.ampairs.sfa.data.db.entity.VisitEntity
 @ConstructedBy(SfaDatabaseConstructor::class)
 abstract class SfaDatabase : RoomDatabase() {
     abstract fun beatDao(): BeatDao
+    abstract fun beatOutletDao(): BeatOutletDao
+    abstract fun journeyPlanDao(): JourneyPlanDao
+    abstract fun plannedVisitDao(): PlannedVisitDao
     abstract fun visitDao(): VisitDao
     abstract fun attendanceDao(): AttendanceDao
 }

@@ -4,6 +4,9 @@ import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sfa.data.db.SfaDatabase
 import com.ampairs.sfa.data.db.dao.AttendanceDao
 import com.ampairs.sfa.data.db.dao.BeatDao
+import com.ampairs.sfa.data.db.dao.BeatOutletDao
+import com.ampairs.sfa.data.db.dao.JourneyPlanDao
+import com.ampairs.sfa.data.db.dao.PlannedVisitDao
 import com.ampairs.sfa.data.db.dao.VisitDao
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -19,5 +22,14 @@ interface SfaDaoModule {
 
         @Provides
         fun provideAttendanceDao(db: SfaDatabase): AttendanceDao = db.attendanceDao()
+
+        @Provides
+        fun provideBeatOutletDao(db: SfaDatabase): BeatOutletDao = db.beatOutletDao()
+
+        @Provides
+        fun provideJourneyPlanDao(db: SfaDatabase): JourneyPlanDao = db.journeyPlanDao()
+
+        @Provides
+        fun providePlannedVisitDao(db: SfaDatabase): PlannedVisitDao = db.plannedVisitDao()
     }
 }

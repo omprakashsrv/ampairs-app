@@ -60,7 +60,10 @@ enum class SyncEntity(val entityType: String, val moduleCode: String? = null) {
     // sfa — field-sales automation
     SFA_BEAT("sfa_beat", "field-sales-management"),
     SFA_VISIT("sfa_visit", "field-sales-management"),
-    SFA_ATTENDANCE("sfa_attendance", "field-sales-management");
+    SFA_ATTENDANCE("sfa_attendance", "field-sales-management"),
+    SFA_BEAT_OUTLET("sfa_beat_outlet", "field-sales-management"),
+    SFA_JOURNEY_PLAN("sfa_journey_plan", "field-sales-management"),
+    SFA_PLANNED_VISIT("sfa_planned_visit", "field-sales-management");
 
     companion object {
         fun fromEntityType(type: String): SyncEntity? =
