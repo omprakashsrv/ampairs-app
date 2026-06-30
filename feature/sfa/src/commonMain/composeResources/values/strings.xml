@@ -9,4 +9,7 @@
     <string name="sfa_beat_rep">Field rep ID</string>
     <string name="sfa_beat_scheduled_days">Scheduled days</string>
     <string name="sfa_save">Save</string>
+    <string name="sfa_planned_visits_title">Today's route</string>
+    <string name="sfa_planned_visits_empty">No planned visits</string>
+    <string name="sfa_open_planned_visits">Planned visits</string>
 </resources>
