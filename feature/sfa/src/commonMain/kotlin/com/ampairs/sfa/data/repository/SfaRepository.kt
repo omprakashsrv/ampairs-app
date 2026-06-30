@@ -3,21 +3,30 @@ package com.ampairs.sfa.data.repository
 import com.ampairs.sfa.data.db.dao.AttendanceDao
 import com.ampairs.sfa.data.db.dao.BeatDao
 import com.ampairs.sfa.data.db.dao.BeatOutletDao
+import com.ampairs.sfa.data.db.dao.FieldOrderDao
+import com.ampairs.sfa.data.db.dao.LeaveDao
 import com.ampairs.sfa.data.db.dao.JourneyPlanDao
 import com.ampairs.sfa.data.db.dao.PlannedVisitDao
+import com.ampairs.sfa.data.db.dao.VisitSurveyResponseDao
 import com.ampairs.sfa.data.db.dao.VisitDao
 import com.ampairs.sfa.data.db.entity.toAttendance
 import com.ampairs.sfa.data.db.entity.toBeat
 import com.ampairs.sfa.data.db.entity.toBeatOutlet
+import com.ampairs.sfa.data.db.entity.toFieldOrder
+import com.ampairs.sfa.data.db.entity.toLeave
 import com.ampairs.sfa.data.db.entity.toEntity
 import com.ampairs.sfa.data.db.entity.toJourneyPlan
 import com.ampairs.sfa.data.db.entity.toPlannedVisit
+import com.ampairs.sfa.data.db.entity.toVisitSurveyResponse
 import com.ampairs.sfa.data.db.entity.toVisit
 import com.ampairs.sfa.domain.model.Attendance
 import com.ampairs.sfa.domain.model.Beat
 import com.ampairs.sfa.domain.model.BeatOutlet
+import com.ampairs.sfa.domain.model.FieldOrder
+import com.ampairs.sfa.domain.model.Leave
 import com.ampairs.sfa.domain.model.JourneyPlan
 import com.ampairs.sfa.domain.model.PlannedVisit
+import com.ampairs.sfa.domain.model.VisitSurveyResponse
 import com.ampairs.sfa.domain.model.Visit
 import com.ampairs.sfa.util.SfaLogger
 import com.ampairs.sync.SyncEntity
@@ -40,6 +49,9 @@ class SfaRepository(
     private val beatOutletDao: BeatOutletDao,
     private val journeyPlanDao: JourneyPlanDao,
     private val plannedVisitDao: PlannedVisitDao,
+    private val fieldOrderDao: FieldOrderDao,
+    private val leaveDao: LeaveDao,
+    private val visitSurveyResponseDao: VisitSurveyResponseDao,
     private val visitDao: VisitDao,
     private val attendanceDao: AttendanceDao,
     private val syncStateDao: SyncStateDao,
@@ -144,6 +156,45 @@ class SfaRepository(
         markPending(SyncEntity.SFA_PLANNED_VISIT)
         row
     }.onFailure { SfaLogger.e("SfaRepository", "savePlannedVisit failed", it) }
+
+    // ----- FieldOrders -----
+    fun observeFieldOrders(): Flow<List<FieldOrder>> = fieldOrderDao.getAllFieldOrders().map { rows -> rows.map { it.toFieldOrder() } }
+
+    suspend fun saveFieldOrder(row: FieldOrder): Result<FieldOrder> = runCatching {
+        require(row.uid.isNotBlank()) { "FieldOrder uid must be set by the ViewModel" }
+        fieldOrderDao.insertFieldOrder(row.toEntity().copy(synced = false))
+        markPending(SyncEntity.SFA_FIELD_ORDER)
+        row
+    }.onFailure { SfaLogger.e("SfaRepository", "saveFieldOrder failed", it) }
+
+    // ----- Leaves -----
+    fun observeLeaves(): Flow<List<Leave>> = leaveDao.getAllLeaves().map { rows -> rows.map { it.toLeave() } }
+
+    suspend fun saveLeave(row: Leave): Result<Leave> = runCatching {
+        require(row.uid.isNotBlank()) { "Leave uid must be set by the ViewModel" }
+        leaveDao.insertLeave(row.toEntity().copy(synced = false))
+        markPending(SyncEntity.SFA_LEAVE)
+        row
+    }.onFailure { SfaLogger.e("SfaRepository", "saveLeave failed", it) }
+
+    suspend fun deleteLeave(id: String): Result<Unit> = runCatching {
+        val existing = leaveDao.getLeaveById(id)
+        if (existing != null) {
+            leaveDao.insertLeave(existing.copy(active = false, synced = false))
+            markPending(SyncEntity.SFA_LEAVE)
+        }
+        Unit
+    }.onFailure { SfaLogger.e("SfaRepository", "deleteLeave failed", it) }
+
+    // ----- Visit surveys -----
+    fun observeVisitSurveys(): Flow<List<VisitSurveyResponse>> = visitSurveyResponseDao.getAllVisitSurveyResponses().map { rows -> rows.map { it.toVisitSurveyResponse() } }
+
+    suspend fun saveVisitSurvey(row: VisitSurveyResponse): Result<VisitSurveyResponse> = runCatching {
+        require(row.uid.isNotBlank()) { "VisitSurveyResponse uid must be set by the ViewModel" }
+        visitSurveyResponseDao.insertVisitSurveyResponse(row.toEntity().copy(synced = false))
+        markPending(SyncEntity.SFA_VISIT_SURVEY)
+        row
+    }.onFailure { SfaLogger.e("SfaRepository", "saveVisitSurvey failed", it) }
 
     private suspend fun markPending(entity: SyncEntity) {
         syncStateDao.markPendingPush(entity, Clock.System.now().toEpochMilliseconds())
