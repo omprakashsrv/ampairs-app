@@ -2,4 +2,11 @@
     <string name="sfa_beats_title">Beats</string>
     <string name="sfa_beats_empty">No beats yet</string>
     <string name="sfa_add_beat">Add Beat</string>
+    <string name="sfa_beat_form_title_new">New Beat</string>
+    <string name="sfa_beat_form_title_edit">Edit Beat</string>
+    <string name="sfa_beat_name">Name</string>
+    <string name="sfa_beat_description">Description</string>
+    <string name="sfa_beat_rep">Field rep ID</string>
+    <string name="sfa_beat_scheduled_days">Scheduled days</string>
+    <string name="sfa_save">Save</string>
 </resources>

@@ -3,7 +3,9 @@ package com.ampairs.navigation.providers
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.sfa.ui.BeatFormRoute
 import com.ampairs.sfa.ui.SfaBeatListRoute
+import com.ampairs.sfa.ui.beat.BeatFormScreen
 import com.ampairs.sfa.ui.beat.BeatListScreen
 
 /**
@@ -16,8 +18,17 @@ fun sfaEntryProvider(
 ): NavEntry<NavKey>? = when (key) {
     is SfaBeatListRoute -> NavEntry(key) {
         BeatListScreen(
-            onBeatClick = { /* beat detail — added in a later increment */ },
-            onAddBeat = { /* beat form — added in a later increment */ },
+            onBeatClick = { beatId -> backStack.add(BeatFormRoute(beatId)) },
+            onAddBeat = { backStack.add(BeatFormRoute()) },
+            modifier = Modifier,
+        )
+    }
+
+    is BeatFormRoute -> NavEntry(key) {
+        BeatFormScreen(
+            beatId = key.beatId,
+            onSaveSuccess = { backStack.removeLastOrNull() },
+            onBack = { backStack.removeLastOrNull() },
             modifier = Modifier,
         )
     }
