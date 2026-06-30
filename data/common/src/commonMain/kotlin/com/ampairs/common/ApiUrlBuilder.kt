@@ -63,6 +63,11 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/product/$cleanPath"
     }
 
+    fun sfaUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/sfa/$cleanPath"
+    }
+
     fun unitUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/unit/$cleanPath"
