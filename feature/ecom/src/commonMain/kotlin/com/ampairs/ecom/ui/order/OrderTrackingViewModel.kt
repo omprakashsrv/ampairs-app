@@ -57,12 +57,11 @@ class OrderTrackingViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OrderTrackingUiState())
 
     init {
-        session.activeSlug?.let { slug ->
-            viewModelScope.launch { orderRepository.refreshOrder(slug, orderRef) }
-        }
+        refresh()
     }
 
     fun refresh() {
+        if (orderRef.isBlank()) return
         session.activeSlug?.let { slug ->
             viewModelScope.launch { orderRepository.refreshOrder(slug, orderRef) }
         }

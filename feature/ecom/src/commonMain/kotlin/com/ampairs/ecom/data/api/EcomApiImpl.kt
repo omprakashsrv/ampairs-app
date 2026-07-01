@@ -149,9 +149,16 @@ class EcomApiImpl(
         get<Response<PageResponse<EcomOrderResponse>>>(client, ApiUrlBuilder.ecomUrl("account/orders"), params)
     }
 
-    override suspend fun getOrder(slug: String, ecomOrderRef: String): Result<EcomOrderResponse> = call {
-        val params = mapOf<String, Any>("storefront_slug" to slug)
-        get<Response<EcomOrderResponse>>(client, ApiUrlBuilder.ecomUrl("account/orders/$ecomOrderRef"), params)
+    override suspend fun getOrder(slug: String, ecomOrderRef: String): Result<EcomOrderResponse> {
+        // A blank ref would build "account/orders/" — a trailing-slash URL that matches no route on
+        // Spring Boot 3 (trailing-slash matching removed) and 500s. Fail fast before hitting the network.
+        if (ecomOrderRef.isBlank()) {
+            return Result.failure(IllegalArgumentException("ecomOrderRef must not be blank"))
+        }
+        return call {
+            val params = mapOf<String, Any>("storefront_slug" to slug)
+            get<Response<EcomOrderResponse>>(client, ApiUrlBuilder.ecomUrl("account/orders/$ecomOrderRef"), params)
+        }
     }
 
     // ── Store access gate (future API — see plan §11.1) ──
