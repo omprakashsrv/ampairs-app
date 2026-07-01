@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -35,6 +36,7 @@ import ampairsapp.feature.sfa.generated.resources.sfa_add_beat
 import ampairsapp.feature.sfa.generated.resources.sfa_beats_empty
 import ampairsapp.feature.sfa.generated.resources.sfa_beats_title
 import ampairsapp.feature.sfa.generated.resources.sfa_open_attendance
+import ampairsapp.feature.sfa.generated.resources.sfa_open_leaves
 import ampairsapp.feature.sfa.generated.resources.sfa_open_planned_visits
 import com.ampairs.sfa.domain.model.Beat
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -47,6 +49,7 @@ fun BeatListScreen(
     onAddBeat: () -> Unit,
     onOpenPlannedVisits: () -> Unit,
     onOpenAttendance: () -> Unit,
+    onOpenLeaves: () -> Unit,
     viewModel: BeatListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -60,6 +63,9 @@ fun BeatListScreen(
                 actions = {
                     IconButton(onClick = onOpenAttendance) {
                         Icon(Icons.Default.CheckCircle, contentDescription = stringResource(Res.string.sfa_open_attendance))
+                    }
+                    IconButton(onClick = onOpenLeaves) {
+                        Icon(Icons.Default.EventBusy, contentDescription = stringResource(Res.string.sfa_open_leaves))
                     }
                     IconButton(onClick = onOpenPlannedVisits) {
                         Icon(Icons.Default.DateRange, contentDescription = stringResource(Res.string.sfa_open_planned_visits))
