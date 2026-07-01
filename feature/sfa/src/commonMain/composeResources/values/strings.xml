@@ -15,4 +15,13 @@
     <string name="sfa_visit_title">Record visit</string>
     <string name="sfa_visit_outcome">Outcome</string>
     <string name="sfa_visit_notes">Notes</string>
+    <string name="sfa_open_attendance">Attendance</string>
+    <string name="sfa_attendance_title">Attendance</string>
+    <string name="sfa_attendance_checked_in">Checked in</string>
+    <string name="sfa_attendance_not_checked_in">Not checked in</string>
+    <string name="sfa_attendance_since">Since %1$s</string>
+    <string name="sfa_attendance_check_in">Check in</string>
+    <string name="sfa_attendance_check_out">Check out</string>
+    <string name="sfa_attendance_recent">Recent</string>
+    <string name="sfa_attendance_open">In progress</string>
 </resources>

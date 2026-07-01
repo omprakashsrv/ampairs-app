@@ -4,9 +4,11 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.sfa.ui.BeatFormRoute
+import com.ampairs.sfa.ui.SfaAttendanceRoute
 import com.ampairs.sfa.ui.SfaBeatListRoute
 import com.ampairs.sfa.ui.SfaPlannedVisitListRoute
 import com.ampairs.sfa.ui.VisitCaptureRoute
+import com.ampairs.sfa.ui.attendance.AttendanceScreen
 import com.ampairs.sfa.ui.beat.BeatFormScreen
 import com.ampairs.sfa.ui.beat.BeatListScreen
 import com.ampairs.sfa.ui.plannedvisit.PlannedVisitListScreen
@@ -25,6 +27,14 @@ fun sfaEntryProvider(
             onBeatClick = { beatId -> backStack.add(BeatFormRoute(beatId)) },
             onAddBeat = { backStack.add(BeatFormRoute()) },
             onOpenPlannedVisits = { backStack.add(SfaPlannedVisitListRoute) },
+            onOpenAttendance = { backStack.add(SfaAttendanceRoute) },
+            modifier = Modifier,
+        )
+    }
+
+    is SfaAttendanceRoute -> NavEntry(key) {
+        AttendanceScreen(
+            onBack = { backStack.removeLastOrNull() },
             modifier = Modifier,
         )
     }
