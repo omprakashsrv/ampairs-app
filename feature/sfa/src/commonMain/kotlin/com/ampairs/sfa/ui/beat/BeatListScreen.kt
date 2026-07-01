@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +34,7 @@ import ampairsapp.feature.sfa.generated.resources.Res
 import ampairsapp.feature.sfa.generated.resources.sfa_add_beat
 import ampairsapp.feature.sfa.generated.resources.sfa_beats_empty
 import ampairsapp.feature.sfa.generated.resources.sfa_beats_title
+import ampairsapp.feature.sfa.generated.resources.sfa_open_attendance
 import ampairsapp.feature.sfa.generated.resources.sfa_open_planned_visits
 import com.ampairs.sfa.domain.model.Beat
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -44,6 +46,7 @@ fun BeatListScreen(
     onBeatClick: (String) -> Unit,
     onAddBeat: () -> Unit,
     onOpenPlannedVisits: () -> Unit,
+    onOpenAttendance: () -> Unit,
     viewModel: BeatListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -55,6 +58,9 @@ fun BeatListScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.sfa_beats_title)) },
                 actions = {
+                    IconButton(onClick = onOpenAttendance) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = stringResource(Res.string.sfa_open_attendance))
+                    }
                     IconButton(onClick = onOpenPlannedVisits) {
                         Icon(Icons.Default.DateRange, contentDescription = stringResource(Res.string.sfa_open_planned_visits))
                     }

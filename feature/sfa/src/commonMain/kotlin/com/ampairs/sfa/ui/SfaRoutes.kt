@@ -14,6 +14,9 @@ data class BeatFormRoute(val beatId: String? = null) : NavKey
 data object SfaPlannedVisitListRoute : NavKey
 
 @Serializable
+data object SfaAttendanceRoute : NavKey
+
+@Serializable
 data class VisitCaptureRoute(
     val plannedVisitUid: String? = null,
     val customerUid: String = "",
