@@ -24,4 +24,16 @@
     <string name="sfa_attendance_check_out">Check out</string>
     <string name="sfa_attendance_recent">Recent</string>
     <string name="sfa_attendance_open">In progress</string>
+    <string name="sfa_open_leaves">Leave</string>
+    <string name="sfa_leaves_title">Leave</string>
+    <string name="sfa_leaves_empty">No leave records</string>
+    <string name="sfa_add_leave">Add leave</string>
+    <string name="sfa_leave_delete">Delete</string>
+    <string name="sfa_leave_form_title_new">New leave</string>
+    <string name="sfa_leave_form_title_edit">Edit leave</string>
+    <string name="sfa_leave_date">Date</string>
+    <string name="sfa_leave_reason">Reason</string>
+    <string name="sfa_pick_date">Pick date</string>
+    <string name="sfa_ok">OK</string>
+    <string name="sfa_cancel">Cancel</string>
 </resources>

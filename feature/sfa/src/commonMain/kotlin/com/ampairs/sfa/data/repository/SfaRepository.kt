@@ -169,6 +169,7 @@ class SfaRepository(
 
     // ----- Leaves -----
     fun observeLeaves(): Flow<List<Leave>> = leaveDao.getAllLeaves().map { rows -> rows.map { it.toLeave() } }
+    suspend fun getLeaveById(id: String): Leave? = leaveDao.getLeaveById(id)?.toLeave()
 
     suspend fun saveLeave(row: Leave): Result<Leave> = runCatching {
         require(row.uid.isNotBlank()) { "Leave uid must be set by the ViewModel" }

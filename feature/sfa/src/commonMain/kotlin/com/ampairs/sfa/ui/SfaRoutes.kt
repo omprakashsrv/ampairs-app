@@ -17,6 +17,12 @@ data object SfaPlannedVisitListRoute : NavKey
 data object SfaAttendanceRoute : NavKey
 
 @Serializable
+data object SfaLeaveListRoute : NavKey
+
+@Serializable
+data class LeaveFormRoute(val leaveId: String? = null) : NavKey
+
+@Serializable
 data class VisitCaptureRoute(
     val plannedVisitUid: String? = null,
     val customerUid: String = "",
