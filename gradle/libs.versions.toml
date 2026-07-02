@@ -6,7 +6,7 @@ android-targetSdk = "36"
 androidx-activity = "1.13.0"
 # androidx.core 1.18.0+ requires compileSdk 37; this project targets compileSdk 36 (Android 16),
 # so pin to the 1.17.x line which is built against API 36. Bump together with android-compileSdk.
-androidx-core = "1.17.0"
+androidx-core = "1.19.0"
 
 compose-tooling = "1.7.6"
 compose-plugin = "1.11.1"
@@ -15,7 +15,7 @@ compose-material-icons = "1.7.3"
 kotlin = "2.4.0"
 ksp = "2.3.9"
 androidx-room = "2.8.4"
-androidx-sqlite-bundled = "2.6.2"
+androidx-sqlite-bundled = "2.7.0"
 coil = "3.5.0"
 
 kotlinx-dateTime = "0.8.0"
