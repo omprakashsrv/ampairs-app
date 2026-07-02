@@ -45,7 +45,7 @@ jmapviewer = "2.25"
 # OpenJFX (desktop-only): JavaFX WebView powers the high-fidelity page-template preview + print.
 openjfx = "21.0.5"
 filekit = "0.14.2"
-play-services-location = "21.3.0"
+play-services-location = "21.4.0"
 maps-compose = "8.3.0"
 accompanist-permissions = "0.37.3"
 litertlm = "0.13.1"
