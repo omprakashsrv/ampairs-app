@@ -63,3 +63,15 @@ val INVOICE_MIGRATION_4_5 = object : Migration(4, 5) {
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN seller_place_of_supply TEXT DEFAULT NULL")
     }
 }
+
+/** Invoice schema v5 -> v6 (spec 009): client-resolved pricing snapshot on each line, pushed verbatim on /sync. */
+val INVOICE_MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN resolved_unit_price_minor INTEGER DEFAULT NULL")
+        connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN currency TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN price_source TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN matched_price_list_uid TEXT DEFAULT NULL")
+        connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN applied_tier_min_qty REAL DEFAULT NULL")
+        connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN below_moq INTEGER NOT NULL DEFAULT 0")
+    }
+}

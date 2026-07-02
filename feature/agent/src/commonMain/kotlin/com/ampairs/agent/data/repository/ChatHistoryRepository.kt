@@ -1,0 +1,63 @@
+package com.ampairs.agent.data.repository
+
+import com.ampairs.agent.core.ActionResultSummary
+import com.ampairs.agent.core.ChatMessage
+import com.ampairs.agent.data.db.dao.ChatMessageDao
+import com.ampairs.agent.data.db.entity.ChatMessageEntity
+import dev.zacsweers.metro.Inject
+import kotlinx.serialization.json.Json
+
+/**
+ * Local-only persistence for the assistant chat thread (Room). Restores the recent transcript on
+ * open and rewrites it (capped) at each turn boundary so the conversation resumes where it left off.
+ * Workspace isolation comes from the workspace-scoped [ChatDatabase], so this is unscoped `@Inject`
+ * like other repositories.
+ */
+@Inject
+class ChatHistoryRepository(private val dao: ChatMessageDao) {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    /** Restore the most recent [limit] messages, oldest-first. */
+    suspend fun load(limit: Int): List<ChatMessage> =
+        dao.getAll().takeLast(limit).map { it.toMessage() }
+
+    /** Persist the most recent [limit] messages, replacing the stored thread. */
+    suspend fun save(messages: List<ChatMessage>, limit: Int) {
+        val capped = messages.takeLast(limit)
+        dao.replaceAll(capped.mapIndexed { index, message -> message.toEntity(index) })
+    }
+
+    suspend fun clear() = dao.clear()
+
+    /**
+     * Launch-time cleanup: prune the stored thread down to the most recent [limit] messages so the
+     * table can't grow unbounded across sessions (e.g. data written by an older build).
+     */
+    suspend fun cleanup(limit: Int) {
+        if (dao.count() > limit) dao.trimToLast(limit)
+    }
+
+    private fun ChatMessage.toEntity(seq: Int) = ChatMessageEntity(
+        seq = seq,
+        id = id,
+        text = text,
+        isFromUser = isFromUser,
+        timestamp = timestamp,
+        isError = isError,
+        amount = amount,
+        actionResultJson = actionResult?.let { json.encodeToString(ActionResultSummary.serializer(), it) },
+    )
+
+    private fun ChatMessageEntity.toMessage() = ChatMessage(
+        id = id,
+        text = text,
+        isFromUser = isFromUser,
+        timestamp = timestamp,
+        isError = isError,
+        amount = amount,
+        actionResult = actionResultJson?.let {
+            runCatching { json.decodeFromString(ActionResultSummary.serializer(), it) }.getOrNull()
+        },
+    )
+}

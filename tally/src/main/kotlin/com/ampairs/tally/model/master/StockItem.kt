@@ -66,13 +66,16 @@ data class StockItem(
     @XmlSerialName("TAXABILITY")
     var taxability: String? = null,
 
+    // Tally exposes the standard cost/price as a DATED HISTORY (one .LIST element per "Applicable
+    // From" date), so these are lists — mirror of gstDetailList below. The newest-dated entry is the
+    // current rate; the full list drives effective-dated price/cost sync.
     @XmlElement(true)
     @XmlSerialName("STANDARDCOSTLIST.LIST")
-    var standardCost: StandardCost? = null,
+    var standardCost: List<StandardCost>? = null,
 
     @XmlElement(true)
     @XmlSerialName("STANDARDPRICELIST.LIST")
-    var standardPrice: StandardPrice? = null,
+    var standardPrice: List<StandardPrice>? = null,
 
     @XmlElement(true)
     @XmlSerialName("GSTDETAILS.LIST")

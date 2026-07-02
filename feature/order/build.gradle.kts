@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.metro)
+    alias(libs.plugins.kover)
 }
 
 kotlin {
@@ -40,6 +41,7 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
+                implementation(projects.feature.agent)
                 implementation(projects.feature.customerApi)
                 implementation(projects.feature.productApi)
                 implementation(projects.feature.taxApi)
@@ -58,6 +60,13 @@ kotlin {
                 implementation(libs.material3.adaptive)
                 implementation(libs.material3.adaptive.layout)
                 implementation(libs.material3.adaptive.navigation)
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
             }
         }
         androidMain {

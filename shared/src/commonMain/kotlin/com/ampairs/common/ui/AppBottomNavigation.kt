@@ -11,6 +11,7 @@ import Route
 import WorkspaceRoute
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Dashboard
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation3.runtime.NavKey
 import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.nav_alerts
+import ampairsapp.shared.generated.resources.nav_assistant
 import ampairsapp.shared.generated.resources.nav_dashboard
 import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_inventory
@@ -49,7 +51,10 @@ import ampairsapp.shared.generated.resources.nav_more_business
 import ampairsapp.shared.generated.resources.nav_more_tax_gst
 import ampairsapp.shared.generated.resources.nav_orders
 import ampairsapp.shared.generated.resources.nav_parties
+import ampairsapp.shared.generated.resources.nav_purchases
+import ampairsapp.shared.generated.resources.nav_suppliers
 import ampairsapp.shared.generated.resources.nav_payments
+import ampairsapp.shared.generated.resources.nav_pricing
 import ampairsapp.shared.generated.resources.nav_reports
 import ampairsapp.shared.generated.resources.nav_sales
 import ampairsapp.shared.generated.resources.nav_stock
@@ -66,6 +71,10 @@ import com.ampairs.customer.ui.CustomerListRoute
 import com.ampairs.customer.ui.CustomerTypeCreateRoute
 import com.ampairs.customer.ui.CustomerTypeListRoute
 import com.ampairs.customer.ui.StateListRoute
+import com.ampairs.supplier.ui.SupplierCreateRoute
+import com.ampairs.supplier.ui.SupplierDetailsRoute
+import com.ampairs.supplier.ui.SupplierListRoute
+import com.ampairs.purchase.ui.PurchaseRoute
 import com.ampairs.tax.ui.navigation.MyTaxCodesRoute
 import com.ampairs.tax.ui.navigation.TaxCalculatorRoute
 import com.ampairs.tax.ui.navigation.TaxCodeDetailRoute
@@ -87,8 +96,10 @@ import org.jetbrains.compose.resources.stringResource
 
 fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.CUSTOMER_MANAGEMENT -> Route.Customer
+    ModuleCodes.SUPPLIER_MANAGEMENT -> Route.Supplier
     ModuleCodes.PRODUCT_MANAGEMENT -> Route.Product
     ModuleCodes.ORDER_MANAGEMENT -> Route.Order
+    ModuleCodes.PURCHASE_MANAGEMENT -> Route.Purchase
     ModuleCodes.INVOICE_BILLING -> Route.Invoice
     ModuleCodes.INVENTORY_MANAGEMENT -> Route.Inventory
     ModuleCodes.TAX_CODE_MANAGEMENT -> Route.Tax
@@ -97,6 +108,8 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.PRINTING -> Route.Printing
     ModuleCodes.PAYMENT_COLLECTION -> Route.Payment
     ModuleCodes.STOREFRONT_MANAGEMENT -> Route.Storefront
+    ModuleCodes.PRICING_MANAGEMENT -> Route.Pricing
+    ModuleCodes.AI_ASSISTANT -> Route.Agent
     else -> null
 }
 
@@ -112,10 +125,14 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
         || currentRoute is CustomerTypeCreateRoute
         || currentRoute is CustomerGroupListRoute
         || currentRoute is CustomerGroupCreateRoute -> ModuleCodes.CUSTOMER_MANAGEMENT
+    currentRoute is SupplierListRoute
+        || currentRoute is SupplierDetailsRoute
+        || currentRoute is SupplierCreateRoute -> ModuleCodes.SUPPLIER_MANAGEMENT
     currentRoute is ProductRoute -> ModuleCodes.PRODUCT_MANAGEMENT
     currentRoute is InvoiceRoute -> ModuleCodes.INVOICE_BILLING
     currentRoute is InventoryRoute -> ModuleCodes.INVENTORY_MANAGEMENT
     currentRoute is OrderRoute -> ModuleCodes.ORDER_MANAGEMENT
+    currentRoute is PurchaseRoute -> ModuleCodes.PURCHASE_MANAGEMENT
     currentRoute is Route.Tax
         || currentRoute is TaxListRoute
         || currentRoute is TaxConfigurationRoute
@@ -134,6 +151,20 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
         || currentRoute is PrintQueueRoute -> ModuleCodes.PRINTING
     currentRoute is PaymentRoute || currentRoute is Route.Payment -> ModuleCodes.PAYMENT_COLLECTION
     currentRoute is Route.Storefront -> ModuleCodes.STOREFRONT_MANAGEMENT
+    currentRoute is Route.Agent -> ModuleCodes.AI_ASSISTANT
+    currentRoute is Route.Pricing
+        || currentRoute is com.ampairs.pricing.ui.PricingShellRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListListRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListDetailRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListFormRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceListWizardRoute
+        || currentRoute is com.ampairs.pricing.ui.ItemEditorRoute
+        || currentRoute is com.ampairs.pricing.ui.OffersListRoute
+        || currentRoute is com.ampairs.pricing.ui.OfferBuilderRoute
+        || currentRoute is com.ampairs.pricing.ui.OfferPreviewRoute
+        || currentRoute is com.ampairs.pricing.ui.GeoZoneListRoute
+        || currentRoute is com.ampairs.pricing.ui.GeoZoneFormRoute
+        || currentRoute is com.ampairs.pricing.ui.PriceTesterRoute -> ModuleCodes.PRICING_MANAGEMENT
     else -> null
 }
 
@@ -147,8 +178,10 @@ fun navigateToModule(backStack: MutableList<NavKey>, moduleCode: String) {
 @Composable
 fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.CUSTOMER_MANAGEMENT -> stringResource(Res.string.nav_parties)
+    ModuleCodes.SUPPLIER_MANAGEMENT -> stringResource(Res.string.nav_suppliers)
     ModuleCodes.PRODUCT_MANAGEMENT -> stringResource(Res.string.nav_stock)
     ModuleCodes.ORDER_MANAGEMENT -> stringResource(Res.string.nav_orders)
+    ModuleCodes.PURCHASE_MANAGEMENT -> stringResource(Res.string.nav_purchases)
     ModuleCodes.INVOICE_BILLING -> stringResource(Res.string.nav_sales)
     ModuleCodes.INVENTORY_MANAGEMENT -> stringResource(Res.string.nav_inventory)
     ModuleCodes.TAX_CODE_MANAGEMENT -> stringResource(Res.string.nav_tax)
@@ -157,6 +190,8 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.PRINTING -> stringResource(Res.string.nav_printing)
     ModuleCodes.PAYMENT_COLLECTION -> stringResource(Res.string.nav_payments)
     ModuleCodes.STOREFRONT_MANAGEMENT -> stringResource(Res.string.nav_storefront)
+    ModuleCodes.AI_ASSISTANT -> stringResource(Res.string.nav_assistant)
+    ModuleCodes.PRICING_MANAGEMENT -> stringResource(Res.string.nav_pricing)
     "business-reporting" -> stringResource(Res.string.nav_reports)
     "business-dashboard" -> stringResource(Res.string.nav_dashboard)
     "notification-system" -> stringResource(Res.string.nav_alerts)
@@ -166,8 +201,10 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
 
 fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.CUSTOMER_MANAGEMENT -> Icons.Default.Group
+    ModuleCodes.SUPPLIER_MANAGEMENT -> Icons.Default.Business
     ModuleCodes.PRODUCT_MANAGEMENT -> Icons.Default.Inventory
     ModuleCodes.ORDER_MANAGEMENT -> Icons.Default.ShoppingCart
+    ModuleCodes.PURCHASE_MANAGEMENT -> Icons.Default.Warehouse
     ModuleCodes.INVOICE_BILLING -> Icons.Default.Receipt
     ModuleCodes.INVENTORY_MANAGEMENT -> Icons.Default.Warehouse
     ModuleCodes.TAX_CODE_MANAGEMENT -> Icons.Default.Calculate
@@ -176,6 +213,7 @@ fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.PRINTING -> Icons.Default.Print
     ModuleCodes.PAYMENT_COLLECTION -> Icons.Default.Payments
     ModuleCodes.STOREFRONT_MANAGEMENT -> Icons.Default.Storefront
+    ModuleCodes.AI_ASSISTANT -> Icons.Default.AutoAwesome
     "business-reporting" -> Icons.Default.Analytics
     "business-dashboard" -> Icons.Default.Dashboard
     "notification-system" -> Icons.Default.Notifications

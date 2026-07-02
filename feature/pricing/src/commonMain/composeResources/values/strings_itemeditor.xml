@@ -1,0 +1,39 @@
+<resources>
+    <string name="pricing_itemed_title">Item &amp; tiers</string>
+
+    <!-- product picker -->
+    <string name="pricing_itemed_product_section">Product</string>
+    <string name="pricing_itemed_product_variant_label">Product · variant SKU</string>
+    <string name="pricing_itemed_search_product">Search a product</string>
+    <string name="pricing_itemed_change">Change</string>
+    <string name="pricing_itemed_no_product">Pick a product to price.</string>
+    <string name="pricing_itemed_variant_sku">Variant SKU (optional)</string>
+
+    <!-- base price + moq -->
+    <string name="pricing_itemed_base_unit_price">Base unit price</string>
+    <string name="pricing_itemed_moq">MOQ (units)</string>
+    <string name="pricing_itemed_moq_hint">Minimum units per order. Below MOQ the price still shows but is flagged.</string>
+
+    <!-- tier editor -->
+    <string name="pricing_itemed_tiers_section">Quantity tiers</string>
+    <string name="pricing_itemed_valid_ladder">Valid ladder</string>
+    <string name="pricing_itemed_col_min_qty">Min quantity</string>
+    <string name="pricing_itemed_col_unit_price">Unit price</string>
+    <string name="pricing_itemed_min_qty">Min quantity</string>
+    <string name="pricing_itemed_unit_price">Unit price</string>
+    <string name="pricing_itemed_add_tier">Add tier</string>
+    <string name="pricing_itemed_tiers_hint">Tiers must be strictly ascending. Prices usually decrease with volume — we won’t block you if they don’t.</string>
+    <string name="pricing_itemed_range_plus">%1$s+</string>
+    <string name="pricing_itemed_remove_tier">Remove tier</string>
+
+    <!-- inline tester -->
+    <string name="pricing_itemed_tester_prefix">At</string>
+    <string name="pricing_itemed_tester_units">%1$s units</string>
+    <string name="pricing_itemed_tester_pays">a customer pays</string>
+    <string name="pricing_itemed_tester_won_base">Base unit price</string>
+    <string name="pricing_itemed_tester_won_tier">Tier %1$s+ applied</string>
+
+    <!-- save bar -->
+    <string name="pricing_itemed_cancel">Cancel</string>
+    <string name="pricing_itemed_save">Save item</string>
+</resources>

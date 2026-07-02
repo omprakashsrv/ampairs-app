@@ -46,6 +46,8 @@ data class DocLineUi(
     val taxable: Double,
     val totalTax: Double,
     val lineTotal: Double,
+    /** spec 009: line quantity is below the matched price list's MOQ — warn (B2B rep), do not block. */
+    val belowMoq: Boolean = false,
 ) {
     val exempt: Boolean get() = (gstRatePercent ?: 0.0) <= 0.0
 }

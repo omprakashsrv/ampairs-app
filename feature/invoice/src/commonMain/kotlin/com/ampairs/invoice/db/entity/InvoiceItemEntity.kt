@@ -32,5 +32,12 @@ data class InvoiceItemEntity(
     // spec 010: unit of measure + base-unit quantity (FR-014) and selected variant
     val unit_id: String = "",
     val base_quantity: Double = 0.0,
-    val variant_sku: String? = null
+    val variant_sku: String? = null,
+    // spec 009: client-resolved pricing snapshot, pushed verbatim on /sync
+    val resolved_unit_price_minor: Long? = null,
+    val currency: String? = null,
+    val price_source: String? = null,
+    val matched_price_list_uid: String? = null,
+    val applied_tier_min_qty: Double? = null,
+    val below_moq: Int = 0,
 )

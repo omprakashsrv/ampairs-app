@@ -85,6 +85,15 @@ class InvoiceItem(var product: ProductSummary?) {
     var id: String = ""
     var discountPercent: Double by mutableStateOf(0.0)
 
+    // 009 pricing snapshot — set by the PriceResolver seam at line build; persisted to Room and
+    // pushed verbatim on /sync (the backend never re-resolves). Null when no resolution ran yet.
+    var resolvedUnitPriceMinor: Long? = null
+    var currency: String? = null
+    var priceSource: String? = null
+    var matchedPriceListUid: String? = null
+    var appliedTierMinQty: Double? = null
+    var belowMoq: Boolean = false
+
     init {
         if (id == "") {
             id = IdUtils.generateUniqueId(INVOICE_ITEM_PREFIX, 64)
@@ -117,7 +126,13 @@ fun List<InvoiceItem>.asDatabaseModel(invoiceId: String): List<InvoiceItemEntity
             discount = if (invoiceItem.discount.size > 0) Json.encodeToString(invoiceItem.discount) else null,
             unit_id = invoiceItem.unitId,
             base_quantity = invoiceItem.baseQuantity,
-            variant_sku = invoiceItem.variantSku
+            variant_sku = invoiceItem.variantSku,
+            resolved_unit_price_minor = invoiceItem.resolvedUnitPriceMinor,
+            currency = invoiceItem.currency,
+            price_source = invoiceItem.priceSource,
+            matched_price_list_uid = invoiceItem.matchedPriceListUid,
+            applied_tier_min_qty = invoiceItem.appliedTierMinQty,
+            below_moq = if (invoiceItem.belowMoq) 1 else 0,
         )
     }
 }

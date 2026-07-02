@@ -25,6 +25,14 @@ class DataStoreAppPreferences(
         private val LAST_UPDATE_CHECK_TIME_KEY = longPreferencesKey("last_update_check_time")
         private val LAST_WORKSPACE_ID_KEY = stringPreferencesKey("last_workspace_id")
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
+        private val LLM_MODEL_DOWNLOAD_CONSENT_KEY = booleanPreferencesKey("llm_model_download_consent")
+        private val CHAT_TELEMETRY_ENABLED_KEY = booleanPreferencesKey("chat_telemetry_enabled")
+        private val ASSISTANT_REASONING_ENABLED_KEY = booleanPreferencesKey("assistant_reasoning_enabled")
+        private val SELECTED_LLM_MODEL_ID_KEY = stringPreferencesKey("selected_llm_model_id")
+        private val SELECTED_STT_ADAPTER_ID_KEY = stringPreferencesKey("selected_stt_adapter_id")
+        private val SELECTED_TTS_ADAPTER_ID_KEY = stringPreferencesKey("selected_tts_adapter_id")
+        private val SELECTED_WHISPER_MODEL_ID_KEY = stringPreferencesKey("selected_whisper_model_id")
+        private val SELECTED_AUDIO_INPUT_DEVICE_ID_KEY = stringPreferencesKey("selected_audio_input_device_id")
 
         // Workspace-aware preference keys
         // Note: These keys include workspace slug to maintain separate state per workspace
@@ -53,6 +61,12 @@ class DataStoreAppPreferences(
         private fun getTallyPortKey(ws: String) = intPreferencesKey("tally_port_$ws")
         private fun getTallyAlterIdKey(ws: String, entity: String) =
             longPreferencesKey("tally_alter_id_${entity}_$ws")
+
+        // Notification preferences (device-local)
+        private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
+        private val NOTIFY_ORDER_UPDATES_KEY = booleanPreferencesKey("notif_order_updates")
+        private val NOTIFY_INVOICE_UPDATES_KEY = booleanPreferencesKey("notif_invoice_updates")
+        private val NOTIFY_ANNOUNCEMENTS_KEY = booleanPreferencesKey("notif_announcements")
     }
 
     override fun getThemePreference(): Flow<ThemePreference> {
@@ -259,5 +273,137 @@ class DataStoreAppPreferences(
         dataStore.edit { preferences ->
             preferences[getTallyAlterIdKey(workspaceSlug, entityType)] = alterId
         }
+    }
+
+    override fun getLlmModelDownloadConsent(): Flow<Boolean?> {
+        return dataStore.data.map { preferences ->
+            preferences[LLM_MODEL_DOWNLOAD_CONSENT_KEY]
+        }
+    }
+
+    override suspend fun setLlmModelDownloadConsent(granted: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[LLM_MODEL_DOWNLOAD_CONSENT_KEY] = granted
+        }
+    }
+
+    override fun getChatTelemetryEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[CHAT_TELEMETRY_ENABLED_KEY] ?: false
+        }
+    }
+
+    override suspend fun setChatTelemetryEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[CHAT_TELEMETRY_ENABLED_KEY] = enabled
+        }
+    }
+
+    override fun getAssistantReasoningEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[ASSISTANT_REASONING_ENABLED_KEY] ?: true
+        }
+    }
+
+    override suspend fun setAssistantReasoningEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ASSISTANT_REASONING_ENABLED_KEY] = enabled
+        }
+    }
+
+    override fun getSelectedLlmModelId(): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[SELECTED_LLM_MODEL_ID_KEY]
+        }
+    }
+
+    override suspend fun setSelectedLlmModelId(modelId: String?) {
+        dataStore.edit { preferences ->
+            if (modelId != null) {
+                preferences[SELECTED_LLM_MODEL_ID_KEY] = modelId
+            } else {
+                preferences.remove(SELECTED_LLM_MODEL_ID_KEY)
+            }
+        }
+    }
+
+    override fun getSelectedSttAdapterId(): Flow<String?> =
+        dataStore.data.map { it[SELECTED_STT_ADAPTER_ID_KEY] }
+
+    override suspend fun setSelectedSttAdapterId(id: String?) {
+        dataStore.edit { preferences ->
+            if (id != null) preferences[SELECTED_STT_ADAPTER_ID_KEY] = id
+            else preferences.remove(SELECTED_STT_ADAPTER_ID_KEY)
+        }
+    }
+
+    override fun getSelectedTtsAdapterId(): Flow<String?> =
+        dataStore.data.map { it[SELECTED_TTS_ADAPTER_ID_KEY] }
+
+    override suspend fun setSelectedTtsAdapterId(id: String?) {
+        dataStore.edit { preferences ->
+            if (id != null) preferences[SELECTED_TTS_ADAPTER_ID_KEY] = id
+            else preferences.remove(SELECTED_TTS_ADAPTER_ID_KEY)
+        }
+    }
+
+    override fun getSelectedModelId(namespace: String): Flow<String?> =
+        dataStore.data.map { it[stringPreferencesKey("selected_model_id_$namespace")] }
+
+    override suspend fun setSelectedModelId(namespace: String, id: String?) {
+        val key = stringPreferencesKey("selected_model_id_$namespace")
+        dataStore.edit { preferences ->
+            if (id != null) preferences[key] = id else preferences.remove(key)
+        }
+    }
+
+    override fun getSelectedWhisperModelId(): Flow<String?> =
+        dataStore.data.map { it[SELECTED_WHISPER_MODEL_ID_KEY] }
+
+    override suspend fun setSelectedWhisperModelId(id: String?) {
+        dataStore.edit { preferences ->
+            if (id != null) preferences[SELECTED_WHISPER_MODEL_ID_KEY] = id
+            else preferences.remove(SELECTED_WHISPER_MODEL_ID_KEY)
+        }
+    }
+
+    override fun getSelectedAudioInputDeviceId(): Flow<String?> =
+        dataStore.data.map { it[SELECTED_AUDIO_INPUT_DEVICE_ID_KEY] }
+
+    override suspend fun setSelectedAudioInputDeviceId(id: String?) {
+        dataStore.edit { preferences ->
+            if (id != null) preferences[SELECTED_AUDIO_INPUT_DEVICE_ID_KEY] = id
+            else preferences.remove(SELECTED_AUDIO_INPUT_DEVICE_ID_KEY)
+        }
+    }
+
+    // ---- Notification preferences (device-local; default ON) ----
+
+    override fun getNotificationsEnabled(): Flow<Boolean> =
+        dataStore.data.map { it[NOTIFICATIONS_ENABLED_KEY] ?: true }
+
+    override suspend fun setNotificationsEnabled(enabled: Boolean) {
+        dataStore.edit { it[NOTIFICATIONS_ENABLED_KEY] = enabled }
+    }
+
+    override fun getNotifyOrderUpdates(): Flow<Boolean> =
+        dataStore.data.map { it[NOTIFY_ORDER_UPDATES_KEY] ?: true }
+
+    override suspend fun setNotifyOrderUpdates(enabled: Boolean) {
+        dataStore.edit { it[NOTIFY_ORDER_UPDATES_KEY] = enabled }
+    }
+
+    override fun getNotifyInvoiceUpdates(): Flow<Boolean> =
+        dataStore.data.map { it[NOTIFY_INVOICE_UPDATES_KEY] ?: true }
+
+    override suspend fun setNotifyInvoiceUpdates(enabled: Boolean) {
+        dataStore.edit { it[NOTIFY_INVOICE_UPDATES_KEY] = enabled }
+    }
+
+    override fun getNotifyAnnouncements(): Flow<Boolean> =
+        dataStore.data.map { it[NOTIFY_ANNOUNCEMENTS_KEY] ?: true }
+
+    override suspend fun setNotifyAnnouncements(enabled: Boolean) {
+        dataStore.edit { it[NOTIFY_ANNOUNCEMENTS_KEY] = enabled }
     }
 }

@@ -1,0 +1,67 @@
+package com.ampairs.agent.speech.whisper
+
+import co.touchlab.kermit.Logger
+import com.whispercpp.whisper.WhisperContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlin.concurrent.Volatile
+import kotlin.time.measureTimedValue
+
+/**
+ * Android Whisper inference via **whisper.cpp** (ggml `.bin`), through the `:whispercpp` JNI module.
+ * whisper.cpp computes the log-mel + runs the encoder/decoder + detokenizes natively, so this takes the
+ * finished 16 kHz mono PCM floats directly (no app-side mel/vocab front-end).
+ *
+ * The native context is loaded once per model-file path (cached) and reused; calls are serialized with
+ * a [Mutex] since a whisper.cpp context is single-threaded. Mirrors [DesktopWhisperTranscriber].
+ */
+class AndroidWhisperCppTranscriber : WhisperTranscriber {
+
+    private val mutex = Mutex()
+
+    @Volatile private var context: WhisperContext? = null
+    @Volatile private var contextPath: String? = null
+
+    // The JNI lib loads lazily on first context creation; treat the engine as available and surface any
+    // load failure as a transcription error (so the voice loop falls back to text for that turn).
+    override val isAvailable: Boolean = true
+
+    override suspend fun transcribe(pcm: FloatArray, modelPath: String, languageTag: String?): String =
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                val ctx = contextFor(modelPath)
+                // BCP-47 (e.g. "hi-IN") → whisper ISO 639-1 ("hi"); null/blank → auto-detect, so the
+                // transcript stays in the spoken language (Hindi → Hindi) and is never translated.
+                val lang = languageTag?.substringBefore('-')?.lowercase()?.takeIf { it.isNotBlank() }
+                val (text, dur) = measureTimedValue { ctx.transcribeData(pcm, lang) }
+                Logger.i(LOG_TAG) { "Inference took $dur for ${pcm.size} samples (~${pcm.size / 16_000}s audio, lang=${lang ?: "auto"})" }
+                text.trim()
+            }
+        }
+
+    private suspend fun contextFor(modelPath: String): WhisperContext {
+        context?.let { if (contextPath == modelPath) return it }
+        context?.let { runCatching { it.release() } }
+        // First call pays the model-file load (tens of MB) before any inference — log it so a slow
+        // first utterance is visibly the load, not a hang. Subsequent calls reuse this cached context.
+        val (ctx, dur) = measureTimedValue { WhisperContext.createContextFromFile(modelPath) }
+        context = ctx
+        contextPath = modelPath
+        Logger.i(LOG_TAG) { "Loaded whisper.cpp model in $dur: $modelPath" }
+        return ctx
+    }
+
+    override fun release() {
+        val ctx = context ?: return
+        context = null
+        contextPath = null
+        runBlocking { runCatching { ctx.release() } }
+    }
+
+    private companion object {
+        const val LOG_TAG = "AgentWhisper"
+    }
+}

@@ -1,0 +1,270 @@
+/*
+ * Ampairs Design System — Foundations
+ * ──────────────────────────────────────────────────────────────────────
+ * The Ampairs apps (Angular web + Compose Multiplatform mobile/desktop)
+ * are built on Material Design 3. This stylesheet exposes the brand-layer
+ * resolution of those M3 tokens so that mockups and prototypes outside the
+ * production codebase render with the same surfaces, palette, and type
+ * ramp as the real product.
+ *
+ * Source of truth:
+ *   web   → src/theme/{palettes,colors,fonts,variables}.scss
+ *   app   → MaterialTheme.colorScheme (Material Kolor-driven)
+ *
+ * Light theme is the default. Add class `dark` on <html> or <body> for dark.
+ */
+
+/*  FONTS — production stack
+ *  ─────────────────────────────────────────────────────────────────────
+ *  Ampairs ships Material's default Roboto on both platforms. We follow
+ *  that on the brand layer too:
+ *
+ *    • Roboto             →  display, headline, title, body, label
+ *    • Noto Sans Devanagari →  Devanagari (the app's values-hi locale)
+ *    • Roboto Mono        →  currency tables, code blocks, GST numbers
+ *
+ *  All three are Google Fonts and load identically on web (Angular
+ *  Material brand-family) and on Compose Multiplatform (drop the .ttf
+ *  files into `shared/src/commonMain/composeResources/font/`). Roboto
+ *  has no Devanagari glyphs — Noto Sans Devanagari handles `lang="hi"`.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,200..700,0..1,-50..200');
+
+:root {
+  /* ════════════════════════════════════════════════════════════════════
+   * COLOR — M3 KEY-COLOR PALETTE (LIGHT)  ★ brand-derived
+   * Seeds taken from the Ampairs logo:
+   *   primary  #4F1B7E (inner triangle, violet)
+   *   secondary #F38A1C → #FFB400 (outer gradient, amber-orange)
+   * NOTE: this differs from the legacy palette in /src/theme/palettes.scss
+   * (which is generated from #667eea / #764ba2 / #4caf50). The codebase
+   * still ships those values — when this brand layer is adopted, swap
+   * the `mat.define-theme` seeds and Material Kolor's dynamic-seed to
+   * match the values below.
+   * ════════════════════════════════════════════════════════════════════ */
+
+  /* Primary — violet (logo) */
+  --primary:                    #7026B5;
+  --on-primary:                 #FFFFFF;
+  --primary-container:          #EEDBFF;
+  --on-primary-container:       #25005C;
+  --primary-fixed:              #EEDBFF;
+  --primary-fixed-dim:          #DAB1FF;
+
+  /* Secondary — amber-orange (logo) */
+  --secondary:                  #8B5300;
+  --on-secondary:               #FFFFFF;
+  --secondary-container:        #FFDDB4;
+  --on-secondary-container:     #2D1600;
+
+  /* Tertiary — supportive deep indigo, used for "default" / selection accents */
+  --tertiary:                   #5156A9;
+  --on-tertiary:                #FFFFFF;
+  --tertiary-container:         #E0E0FF;
+  --on-tertiary-container:      #060764;
+
+  /* Error */
+  --error:                      #BA1A1A;
+  --on-error:                   #FFFFFF;
+  --error-container:            #FFDAD6;
+  --on-error-container:         #410002;
+
+  /* Neutrals — surface ramp (M3 light, neutral palette tones) */
+  --background:                 #FEFBFF;
+  --on-background:              #1C1B1B;
+  --surface:                    #FEFBFF;
+  --surface-dim:                #DCD9DD;
+  --surface-bright:             #FDF8F8;
+  --surface-container-lowest:   #FFFFFF;
+  --surface-container-low:      #F6F2F7;
+  --surface-container:          #F0EDF1;
+  --surface-container-high:     #EBE7EB;
+  --surface-container-highest:  #E5E2E1;
+  --on-surface:                 #1C1B1B;
+  --on-surface-variant:         #5F5E5F;
+  --inverse-surface:            #313030;
+  --inverse-on-surface:         #F4F0EF;
+
+  /* Outline */
+  --outline:                    #797676;
+  --outline-variant:            #C9C6C5;
+
+  /* Semantic (legacy compatibility, see /src/theme/colors.scss) */
+  --success:                    #2E7D32;   /* tertiary 30 - green family */
+  --warning:                    #FF9800;
+  --info:                       #2196F3;
+
+  /* Elevation shadows (M3-style) */
+  --shadow-1: 0 1px 2px rgba(28,27,27,.30), 0 1px 3px 1px rgba(28,27,27,.15);
+  --shadow-2: 0 1px 2px rgba(28,27,27,.30), 0 2px 6px 2px rgba(28,27,27,.15);
+  --shadow-3: 0 4px 8px 3px rgba(28,27,27,.15), 0 1px 3px rgba(28,27,27,.30);
+  --shadow-4: 0 6px 10px 4px rgba(28,27,27,.15), 0 2px 3px rgba(28,27,27,.30);
+
+  /* ════════════════════════════════════════════════════════════════════
+   * BRAND MARK COLORS — seed swatches behind the M3 palette above.
+   * Use these direct values for the logo, splash, illustrations, and
+   * marketing surfaces; use the tonal --primary / --secondary tokens
+   * for in-app fills so everything stays M3-correct.
+   * ════════════════════════════════════════════════════════════════════ */
+  --brand-orange:               #F38A1C;
+  --brand-amber:                #FFB400;
+  --brand-violet:               #4F1B7E;
+
+  /* ════════════════════════════════════════════════════════════════════
+   * TYPE — M3 typography ramp (Roboto, matching production)
+   * Sizes mirror `.font-m` density from /src/theme/fonts.scss; the
+   * family stays on Material's default Roboto to keep the design system
+   * 1-for-1 with what the apps ship. Hindi falls back to Noto Sans
+   * Devanagari (Roboto static has no Devanagari glyphs).
+   * ════════════════════════════════════════════════════════════════════ */
+  --font-sans: 'Roboto', 'Noto Sans Devanagari', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-icon: 'Material Symbols Outlined', 'Material Icons';
+
+  /* Per-script overrides — opt-in: add lang="hi" / class="hi" where needed */
+
+  /* Display */
+  --display-large:    400 3.562rem/4rem    var(--font-sans);
+  --display-medium:   400 2.812rem/3.25rem var(--font-sans);
+  --display-small:    400 2.25rem/2.75rem  var(--font-sans);
+
+  /* Headline */
+  --headline-large:   400 2rem/2.5rem      var(--font-sans);
+  --headline-medium:  400 1.75rem/2.25rem  var(--font-sans);
+  --headline-small:   400 1.5rem/2rem      var(--font-sans);
+
+  /* Title */
+  --title-large:      400 1.075rem/1.45rem var(--font-sans);
+  --title-medium:     500 1rem/1.5rem      var(--font-sans);
+  --title-small:      500 .875rem/1.25rem  var(--font-sans);
+
+  /* Body */
+  --body-large:       400 1rem/1.5rem      var(--font-sans);
+  --body-medium:      400 .875rem/1.25rem  var(--font-sans);
+  --body-small:       400 .75rem/1rem      var(--font-sans);
+
+  /* Label (used by buttons, chips, captions) */
+  --label-large:      500 .875rem/1.25rem  var(--font-sans);
+  --label-medium:     500 .75rem/1rem      var(--font-sans);
+  --label-small:      500 .688rem/1rem     var(--font-sans);
+
+  /* ════════════════════════════════════════════════════════════════════
+   * SHAPE & SPACING (M3 corner + spacing tokens)
+   * ════════════════════════════════════════════════════════════════════ */
+  --corner-none:        0;
+  --corner-xs:          4px;       /* mat-sys-corner-extra-small */
+  --corner-sm:          8px;       /* mat-sys-corner-small */
+  --corner-md:          12px;      /* mat-sys-corner-medium */
+  --corner-lg:          16px;      /* mat-sys-corner-large */
+  --corner-xl:          28px;      /* mat-sys-corner-extra-large */
+  --corner-full:        9999px;
+
+  --space-xs:           4px;
+  --space-sm:           8px;
+  --space-md:           12px;
+  --space-lg:           16px;
+  --space-xl:           24px;
+  --space-2xl:          32px;
+  --space-3xl:          48px;
+
+  /* M3 motion */
+  --motion-fast:        150ms cubic-bezier(.2, 0, 0, 1);
+  --motion-standard:    300ms cubic-bezier(.4, 0, .2, 1);
+  --motion-emphasized:  500ms cubic-bezier(.05, .7, .1, 1);
+}
+
+/* Devanagari opt-in. Apply `lang="hi"` or class `.hi` to any subtree
+ * that should render Hindi using Noto Sans Devanagari (full Devanagari
+ * coverage) while keeping Latin glyphs on Roboto for the rest. */
+[lang="hi"], .hi {
+  font-family: 'Noto Sans Devanagari', 'Roboto', sans-serif;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * DARK THEME — Add class `dark` on a wrapper or `<html>`.
+ * Values resolved from M3 dark-theme tokens.
+ * ──────────────────────────────────────────────────────────────────── */
+.dark, .dark-theme {
+  --primary:                    #ADC6FF;
+  --on-primary:                 #002E69;
+  --primary-container:          #004493;
+  --on-primary-container:       #D8E2FF;
+
+  --secondary:                  #ADC6FF;
+  --on-secondary:               #002E68;
+  --secondary-container:        #0D448E;
+  --on-secondary-container:     #D8E2FF;
+
+  --tertiary:                   #BFC2FF;
+  --on-tertiary:                #212578;
+  --tertiary-container:         #393D8F;
+  --on-tertiary-container:      #E0E0FF;
+
+  --error:                      #FFB4AB;
+  --on-error:                   #690005;
+  --error-container:            #93000A;
+  --on-error-container:         #FFDAD6;
+
+  --background:                 #131316;
+  --on-background:              #E5E2E1;
+  --surface:                    #131316;
+  --surface-dim:                #131316;
+  --surface-bright:             #3A393C;
+  --surface-container-lowest:   #0E0E11;
+  --surface-container-low:      #1C1B1B;
+  --surface-container:          #201F22;
+  --surface-container-high:     #2A292D;
+  --surface-container-highest:  #353438;
+  --on-surface:                 #E5E2E1;
+  --on-surface-variant:         #C9C6C6;
+  --inverse-surface:            #E5E2E1;
+  --inverse-on-surface:         #313030;
+
+  --outline:                    #939090;
+  --outline-variant:            #484646;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * SEMANTIC ALIASES — element-level styles
+ * Optional; mirrors `.font-common` weights and lets HTML render natively.
+ * ──────────────────────────────────────────────────────────────────── */
+html, body {
+  font: var(--body-medium);
+  color: var(--on-background);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1 { font: var(--headline-large); margin: 0; color: var(--on-surface); }
+h2 { font: var(--headline-medium); margin: 0; color: var(--on-surface); }
+h3 { font: var(--headline-small); margin: 0; color: var(--on-surface); }
+h4 { font: var(--title-large); margin: 0; color: var(--on-surface); }
+h5 { font: var(--title-medium); margin: 0; color: var(--on-surface); }
+h6 { font: var(--title-small); margin: 0; color: var(--on-surface); }
+
+p     { font: var(--body-medium); margin: 0; color: var(--on-surface); }
+small { font: var(--label-medium); color: var(--on-surface-variant); }
+code, pre { font-family: var(--font-mono); }
+
+/* M3 material symbols / icons baseline */
+.material-icons,
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}

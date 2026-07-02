@@ -37,6 +37,7 @@
     <!-- Customer form screen -->
     <string name="customer_form_title_new">New Customer</string>
     <string name="customer_form_title_edit">Edit Customer</string>
+    <string name="customer_ai_fill">Fill with AI</string>
     <string name="customer_import_contact">Import from Contact</string>
     <string name="customer_importing">Importing…</string>
     <string name="customer_save_action">Save Customer</string>

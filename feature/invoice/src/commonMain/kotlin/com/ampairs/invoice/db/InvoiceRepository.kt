@@ -175,6 +175,13 @@ class InvoiceRepository(
             item.unitMultiplier =
                 if (itemEntity.quantity > 0.0 && itemEntity.base_quantity > 0.0) itemEntity.base_quantity / itemEntity.quantity else 1.0
             item.variantSku = itemEntity.variant_sku
+            // restore the spec 009 pricing snapshot so it survives an edit round-trip and re-push
+            item.resolvedUnitPriceMinor = itemEntity.resolved_unit_price_minor
+            item.currency = itemEntity.currency
+            item.priceSource = itemEntity.price_source
+            item.matchedPriceListUid = itemEntity.matched_price_list_uid
+            item.appliedTierMinQty = itemEntity.applied_tier_min_qty
+            item.belowMoq = itemEntity.below_moq == 1
             item.priceOverridden =
                 kotlin.math.abs(itemEntity.selling_price - itemEntity.product_price * item.unitMultiplier) > 0.005
             item

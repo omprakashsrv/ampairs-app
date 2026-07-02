@@ -4,6 +4,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import com.ampairs.order.agent.OrderAgentDao
 import com.ampairs.order.db.dao.OrderDao
 import com.ampairs.order.db.dao.OrderItemDao
 import com.ampairs.order.db.entity.OrderEntity
@@ -14,13 +15,14 @@ import com.ampairs.order.db.entity.OrderItemEntity
         OrderEntity::class,
         OrderItemEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @ConstructedBy(OrderRoomDatabaseConstructor::class)
 abstract class OrderRoomDatabase : RoomDatabase() {
     abstract fun orderDao(): OrderDao
     abstract fun orderItemDao(): OrderItemDao
+    abstract fun orderAgentDao(): OrderAgentDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

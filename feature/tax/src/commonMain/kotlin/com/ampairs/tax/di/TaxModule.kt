@@ -10,6 +10,7 @@ import com.ampairs.tax.calculation.strategy.EUVATStrategy
 import com.ampairs.tax.calculation.strategy.IndiaGSTStrategy
 import com.ampairs.tax.calculation.strategy.UKVATStrategy
 import com.ampairs.tax.calculation.strategy.USASalesTaxStrategy
+import com.ampairs.tax.agent.TaxAgentDao
 import com.ampairs.tax.data.db.TaxRoomDatabase
 import com.ampairs.tax.data.db.dao.TaxCodeDao
 import com.ampairs.tax.data.db.dao.TaxComponentDao
@@ -52,6 +53,9 @@ interface TaxDaoModule {
 
         @Provides
         fun provideTaxConfigurationDao(db: TaxRoomDatabase): TaxConfigurationDao = db.taxConfigurationDao()
+
+        @Provides
+        fun provideTaxAgentDao(db: TaxRoomDatabase): TaxAgentDao = db.taxAgentDao()
     }
 }
 

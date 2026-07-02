@@ -1,6 +1,6 @@
 # Ampairs Mobile Application
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-orange.svg)](LICENSE.md)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-blue)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.11.1-brightgreen)
 ![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20iOS%20%7C%20Desktop-orange)
@@ -334,7 +334,11 @@ SomeLogger.w("Tag", "message", exception)                         // logger: w/e
 
 ## License
 
-Apache License 2.0 — see LICENSE file for details.
+**Source-available, noncommercial** — licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md).
+
+You may use, modify, and share this software for any **noncommercial** purpose. **Commercial use is not permitted** — including use by or for a business to generate revenue, sell the software, or charge customers for products or services built with it. This is *not* an OSI-approved open-source license (it restricts commercial use).
+
+For a commercial license, contact the copyright holder. Copyright © 2026 Om Prakash.
 
 ---
 

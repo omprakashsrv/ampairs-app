@@ -214,6 +214,19 @@ class SubscriptionApiImpl(
         return response.data?.get("accessMode") ?: SubscriptionAccessMode.FULL_ACCESS
     }
 
+    override suspend fun updatePushToken(deviceId: String, pushToken: String, pushTokenType: String) {
+        val response: Response<Map<String, Boolean>> = post(
+            client,
+            ApiUrlBuilder.subscriptionUrl(
+                "v1/devices/$deviceId/push-token?pushToken=$pushToken&pushTokenType=$pushTokenType"
+            ),
+            emptyMap<String, String>(),
+        )
+        if (response.error != null) {
+            throw SubscriptionApiException(response.error?.message ?: "Failed to update push token")
+        }
+    }
+
     override suspend fun deactivateDevice(deviceUid: String, reason: String?) {
         val url = if (reason != null) {
             ApiUrlBuilder.subscriptionUrl("v1/devices/$deviceUid?reason=$reason")

@@ -130,6 +130,8 @@ fun TallySettingsScreen(
                     enabled = !isSyncing,
                     onClick = {
                         scope.launch {
+                            // Every per-entity alterId checkpoint must be cleared, or that entity's
+                            // already-synced records (alterId <= checkpoint) won't be re-fetched/re-mapped.
                             val entityTypes = listOf(
                                 TallyProductMapper.ENTITY_STOCK_GROUP,
                                 TallyProductMapper.ENTITY_STOCK_CATEGORY,
@@ -137,6 +139,8 @@ fun TallySettingsScreen(
                                 TallyProductMapper.ENTITY_UNIT,
                                 TallyCustomerMapper.ENTITY_ACCOUNT_GROUP,
                                 TallyCustomerMapper.ENTITY_LEDGER,
+                                TallyCustomerMapper.ENTITY_SUPPLIER_LEDGER,
+                                TallyVoucherMapper.ENTITY_VOUCHER,
                             )
                             entityTypes.forEach { entity ->
                                 dataStore.setTallyLastAlterId(workspaceSlug, entity, 0L)
@@ -300,6 +304,8 @@ fun TallySettingsScreen(
 
 private fun formatResult(result: TallySyncResult): String =
     if (result.success)
-        "OK — groups=${result.groupsSynced} categories=${result.categoriesSynced} products=${result.productsSynced} units=${result.unitsSynced} · ${result.taxCodesToImport} tax code(s) to import"
+        "OK — groups=${result.groupsSynced} categories=${result.categoriesSynced} products=${result.productsSynced} " +
+            "prices=${result.pricesSynced} costs=${result.standardCostsSynced} conversions=${result.unitConversionsSynced} " +
+            "units=${result.unitsSynced} inventory=${result.inventoryItemsSynced} · ${result.taxCodesToImport} tax code(s) to import"
     else
         "Error: ${result.error}"

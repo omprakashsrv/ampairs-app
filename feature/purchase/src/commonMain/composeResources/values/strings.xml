@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- List -->
+    <string name="pur_list_title">Purchases</string>
+    <string name="pur_list_count">%1$d purchases</string>
+    <string name="pur_list_new">New Purchase</string>
+    <string name="pur_list_items">%1$d items</string>
+    <string name="pur_list_retry">Retry</string>
+    <string name="pur_list_empty_title">No purchases yet</string>
+    <string name="pur_list_empty_desc">Record your first purchase to start tracking what you buy.</string>
+    <string name="pur_list_empty_cta">New Purchase</string>
+
+    <!-- Details -->
+    <string name="pur_detail_title">Purchase</string>
+    <string name="pur_detail_edit">Edit</string>
+    <string name="pur_detail_delete">Delete</string>
+    <string name="pur_detail_supplier">Supplier</string>
+    <string name="pur_detail_supplier_invoice">Supplier invoice: %1$s</string>
+    <string name="pur_detail_items">Items (%1$d)</string>
+    <string name="pur_detail_total">Total</string>
+
+    <!-- Form -->
+    <string name="pur_form_create_title">New Purchase</string>
+    <string name="pur_form_edit_title">Edit Purchase</string>
+    <string name="pur_form_save">Save</string>
+    <string name="pur_form_supplier">Supplier</string>
+    <string name="pur_form_supplier_search">Search suppliers</string>
+    <string name="pur_form_supplier_invoice">Supplier invoice number</string>
+    <string name="pur_form_status">Status</string>
+    <string name="pur_form_add_item">Add item</string>
+    <string name="pur_form_product_search">Search products</string>
+    <string name="pur_form_items">Items (%1$d)</string>
+    <string name="pur_form_qty">Qty</string>
+    <string name="pur_form_price">Cost price</string>
+    <string name="pur_form_total">Total</string>
+    <string name="pur_form_cd_remove_item">Remove item</string>
+</resources>

@@ -35,14 +35,19 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/versions/9/previous-compilation-data.bin"
         }
+        jniLibs {
+            // Both litert and litertlm-android bundle their own copy of libLiteRt.so.
+            // They are the same LiteRT runtime, so keep the first occurrence.
+            pickFirsts += "**/libLiteRt.so"
+        }
     }
 
     defaultConfig {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 100015
-        versionName = "1.0.15"
+        versionCode = 100017
+        versionName = "1.0.17"
 
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
@@ -62,7 +67,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.4:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.3:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
 
@@ -119,4 +124,10 @@ dependencies {
 
     // Ktor OkHttp engine for Android
     implementation(libs.ktor.client.okHttp)
+
+    // FCM push notifications: AmpairsFirebaseMessagingService + NotificationCompat.
+    // `shared` depends on firebase-messaging via `implementation` (not `api`), so the service
+    // base class isn't visible transitively — declare it directly here.
+    implementation(libs.google.firebase.messaging)
+    implementation(libs.androidx.core)
 }

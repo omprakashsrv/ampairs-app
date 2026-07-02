@@ -4,6 +4,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import com.ampairs.payment.agent.PaymentAgentDao
 import com.ampairs.payment.data.db.dao.AdjustmentVoucherDao
 import com.ampairs.payment.data.db.dao.LedgerEntryDao
 import com.ampairs.payment.data.db.dao.PartyBalanceDao
@@ -33,6 +34,7 @@ abstract class PaymentRoomDatabase : RoomDatabase() {
     abstract fun paymentVoucherDao(): PaymentVoucherDao
     abstract fun paymentAllocationDao(): PaymentAllocationDao
     abstract fun adjustmentVoucherDao(): AdjustmentVoucherDao
+    abstract fun paymentAgentDao(): PaymentAgentDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

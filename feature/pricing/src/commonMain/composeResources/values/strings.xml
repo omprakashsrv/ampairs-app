@@ -1,0 +1,127 @@
+<resources>
+    <!-- Price list — list screen -->
+    <string name="pricing_list_title">Price Lists</string>
+    <string name="pricing_add">Add Price List</string>
+    <string name="pricing_empty_title">No price lists yet</string>
+    <string name="pricing_list_create">Create Price List</string>
+    <string name="pricing_cd_delete">Delete</string>
+    <string name="pricing_error_title">Error</string>
+    <string name="pricing_retry">Retry</string>
+
+    <!-- Price list — form screen -->
+    <string name="pricing_form_new_title">New Price List</string>
+    <string name="pricing_form_edit_title">Edit Price List</string>
+    <string name="pricing_form_name">Name</string>
+    <string name="pricing_form_channel">Channel</string>
+    <string name="pricing_form_status">Status</string>
+    <string name="pricing_form_currency">Currency (3-letter code)</string>
+    <string name="pricing_form_priority">Priority</string>
+    <string name="pricing_form_customer_group">Customer group ID (optional)</string>
+    <string name="pricing_form_active">Active</string>
+    <string name="pricing_form_items_count">%1$d item(s) — edit items in a follow-up screen</string>
+    <string name="pricing_form_save">Save</string>
+
+    <!-- Price list — item + tier editor -->
+    <string name="pricing_items_section">Items</string>
+    <string name="pricing_add_item">Add item</string>
+    <string name="pricing_remove_item">Remove item</string>
+    <string name="pricing_item_product_id">Product ID</string>
+    <string name="pricing_item_variant">Variant SKU (optional)</string>
+    <string name="pricing_item_unit_price">Unit price</string>
+    <string name="pricing_item_moq">MOQ (optional)</string>
+    <string name="pricing_tiers_label">Quantity tiers</string>
+    <string name="pricing_tier_min_qty">Min qty</string>
+    <string name="pricing_tier_price">Tier price</string>
+    <string name="pricing_add_tier">Add tier</string>
+    <string name="pricing_cd_remove_tier">Remove tier</string>
+
+    <!-- Geo zones -->
+    <string name="pricing_geo_zones_title">Geo Zones</string>
+    <string name="pricing_manage_geo_zones">Geo Zones</string>
+    <string name="pricing_geo_add">Add Geo Zone</string>
+    <string name="pricing_geo_empty">No geo zones yet</string>
+    <string name="pricing_geo_new_title">New Geo Zone</string>
+    <string name="pricing_geo_edit_title">Edit Geo Zone</string>
+    <string name="pricing_geo_pincodes">Pincodes (comma-separated)</string>
+    <string name="pricing_geo_states">States (comma-separated)</string>
+    <string name="pricing_geo_ranges_label">Pincode ranges</string>
+    <string name="pricing_geo_range_from">From</string>
+    <string name="pricing_geo_range_to">To</string>
+    <string name="pricing_geo_add_range">Add range</string>
+    <string name="pricing_cancel">Cancel</string>
+    <string name="pricing_save">Save</string>
+
+    <!-- Price Tester / resolution simulator -->
+    <string name="pricing_tester_title">Price Tester</string>
+    <string name="pricing_tester_open">Test a price</string>
+    <string name="pricing_tester_context">Resolution context</string>
+    <string name="pricing_tester_channel_wholesale">Wholesale</string>
+    <string name="pricing_tester_channel_retail">Retail</string>
+    <string name="pricing_tester_search_product">Search products</string>
+    <string name="pricing_tester_change">Change</string>
+    <string name="pricing_tester_quantity">Quantity</string>
+    <string name="pricing_tester_pincode">Delivery pincode (optional)</string>
+    <string name="pricing_tester_no_product">Pick a product to see its resolved price and why.</string>
+    <string name="pricing_tester_effective">Effective unit price</string>
+    <string name="pricing_tester_line_total">Line total · %1$s</string>
+    <string name="pricing_tester_units">%1$s units</string>
+    <string name="pricing_tester_source_list">Price list</string>
+    <string name="pricing_tester_source_fallback">Catalog fallback</string>
+    <string name="pricing_tester_tier_base">Base price</string>
+    <string name="pricing_tester_tier_applied">%1$s+ tier</string>
+    <string name="pricing_tester_moq_ok">Meets MOQ</string>
+    <string name="pricing_tester_moq_below">Below MOQ</string>
+    <string name="pricing_tester_explain">Explain — why this price won</string>
+    <string name="pricing_tester_explain_subtitle">Ranked by specificity → priority. %1$d active list(s) evaluated.</string>
+    <string name="pricing_cd_increment">Increase quantity</string>
+    <string name="pricing_cd_decrement">Decrease quantity</string>
+
+    <!-- Price List Detail -->
+    <string name="pricing_detail_targets_title">Who gets this price?</string>
+    <string name="pricing_detail_edit">Edit</string>
+    <string name="pricing_detail_test_list">Test this list</string>
+    <string name="pricing_detail_test_list_sub">Resolve a price using this list\'s context</string>
+    <string name="pricing_detail_applies_everyone">Applies to everyone on %1$s.</string>
+    <string name="pricing_detail_items">Items</string>
+    <string name="pricing_detail_add_item">Add Item</string>
+    <string name="pricing_detail_no_items">No items yet — add a product to price.</string>
+    <string name="pricing_detail_tier_count">%1$d tiers</string>
+    <string name="pricing_detail_base_price">Base price</string>
+    <string name="pricing_detail_moq">MOQ %1$s</string>
+    <string name="pricing_detail_not_found">Price list not found</string>
+    <string name="pricing_detail_priority">Priority %1$d</string>
+    <string name="pricing_target_customer_group">Customer group</string>
+    <string name="pricing_target_customer_type">Customer type</string>
+    <string name="pricing_target_customer">Customer</string>
+    <string name="pricing_target_brand">Brand</string>
+    <string name="pricing_target_category">Category</string>
+    <string name="pricing_target_product_group">Product group</string>
+    <string name="pricing_target_geo_zone">Geo zone</string>
+
+    <!-- Overview / dashboard -->
+    <string name="pricing_overview_title">Pricing &amp; Offers</string>
+    <string name="pricing_overview_hero_badge">RESOLUTION ENGINE</string>
+    <string name="pricing_overview_hero_title">What price would a customer pay?</string>
+    <string name="pricing_overview_hero_sub">Pick a product and customer — see the exact price and why.</string>
+    <string name="pricing_overview_hero_cta">Test a Price</string>
+    <string name="pricing_overview_tile_active_lists">Active price lists</string>
+    <string name="pricing_overview_tile_geo_zones">Geo zones</string>
+    <string name="pricing_overview_tile_offers">Active offers</string>
+    <string name="pricing_overview_channel_split">Channel split</string>
+    <string name="pricing_overview_active_lists_count">%1$d active lists</string>
+    <string name="pricing_overview_retail">Retail</string>
+    <string name="pricing_overview_wholesale">Wholesale</string>
+    <string name="pricing_overview_quick_lists">Price Lists</string>
+    <string name="pricing_overview_quick_lists_sub">Create and manage price lists</string>
+    <string name="pricing_overview_quick_zones">Geo Zones</string>
+    <string name="pricing_overview_quick_zones_sub">Reusable geographies</string>
+    <string name="pricing_overview_quick_offers">Offers</string>
+    <string name="pricing_overview_quick_offers_sub">Promotions &amp; discounts</string>
+
+    <!-- 5-tab shell -->
+    <string name="pricing_shell_tab_overview">Overview</string>
+    <string name="pricing_shell_tab_lists">Lists</string>
+    <string name="pricing_shell_tab_offers">Offers</string>
+    <string name="pricing_shell_tab_zones">Zones</string>
+    <string name="pricing_shell_tab_tester">Tester</string>
+</resources>

@@ -1,0 +1,61 @@
+<resources>
+    <!-- List screen -->
+    <string name="supplier_list_title">Suppliers</string>
+    <string name="supplier_list_search_hint">Search suppliers</string>
+    <string name="supplier_list_add_btn">New Supplier</string>
+    <string name="supplier_list_add_cd">Add supplier</string>
+    <string name="supplier_list_empty">No suppliers yet</string>
+    <string name="supplier_list_empty_desc">Add your first supplier to get started</string>
+    <string name="supplier_list_error_title">Something went wrong</string>
+    <string name="supplier_list_refreshing">Refreshing…</string>
+    <string name="supplier_list_col_name">Name</string>
+    <string name="supplier_list_col_city">City</string>
+    <string name="supplier_list_col_phone">Phone</string>
+    <string name="supplier_retry">Retry</string>
+
+    <!-- Details screen -->
+    <string name="supplier_details_title">Supplier Details</string>
+    <string name="supplier_details_edit">Edit</string>
+    <string name="supplier_details_delete">Delete</string>
+    <string name="supplier_details_back">Back</string>
+    <string name="supplier_details_not_found">Supplier not found</string>
+    <string name="supplier_details_contact">Contact</string>
+    <string name="supplier_details_address">Address</string>
+    <string name="supplier_details_tax">Tax</string>
+    <string name="supplier_details_phone">Phone</string>
+    <string name="supplier_details_email">Email</string>
+    <string name="supplier_details_landline">Landline</string>
+    <string name="supplier_details_gst">GST Number</string>
+    <string name="supplier_details_pan">PAN Number</string>
+    <string name="supplier_details_credit_limit">Credit Limit</string>
+    <string name="supplier_details_credit_days">Credit Days</string>
+    <string name="supplier_details_outstanding">Outstanding</string>
+    <string name="supplier_delete_confirm_title">Delete supplier?</string>
+    <string name="supplier_delete_confirm_msg">This supplier will be removed.</string>
+    <string name="supplier_delete_confirm">Delete</string>
+    <string name="supplier_delete_cancel">Cancel</string>
+
+    <!-- Form screen -->
+    <string name="supplier_form_title_create">New Supplier</string>
+    <string name="supplier_form_title_edit">Edit Supplier</string>
+    <string name="supplier_form_save">Save</string>
+    <string name="supplier_form_field_name">Name</string>
+    <string name="supplier_form_field_ref_id">Reference ID</string>
+    <string name="supplier_form_field_email">Email</string>
+    <string name="supplier_form_field_phone">Phone</string>
+    <string name="supplier_form_field_landline">Landline</string>
+    <string name="supplier_form_field_gst">GST Number</string>
+    <string name="supplier_form_field_pan">PAN Number</string>
+    <string name="supplier_form_field_credit_limit">Credit Limit</string>
+    <string name="supplier_form_field_credit_days">Credit Days</string>
+    <string name="supplier_form_field_address">Address</string>
+    <string name="supplier_form_field_street">Street</string>
+    <string name="supplier_form_field_street2">Street 2</string>
+    <string name="supplier_form_field_city">City</string>
+    <string name="supplier_form_field_state">State</string>
+    <string name="supplier_form_field_pincode">Pincode</string>
+    <string name="supplier_form_field_country">Country</string>
+    <string name="supplier_form_section_contact">Contact</string>
+    <string name="supplier_form_section_address">Address</string>
+    <string name="supplier_form_section_tax">Tax &amp; Credit</string>
+</resources>

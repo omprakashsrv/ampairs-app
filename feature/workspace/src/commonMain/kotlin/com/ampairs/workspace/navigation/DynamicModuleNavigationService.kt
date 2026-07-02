@@ -134,6 +134,8 @@ class DynamicModuleNavigationService {
             ModuleCodes.PRINTING,
             ModuleCodes.PAYMENT_COLLECTION -> true
             ModuleCodes.STOREFRONT_MANAGEMENT -> true
+            ModuleCodes.AI_ASSISTANT -> true
+            ModuleCodes.PRICING_MANAGEMENT -> true
             else -> false
         }
     }

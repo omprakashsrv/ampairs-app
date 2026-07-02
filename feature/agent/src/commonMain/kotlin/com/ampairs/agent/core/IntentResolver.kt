@@ -30,6 +30,14 @@ sealed class ResolvedIntent {
     /** General conversation (not an action request) */
     data class Conversation(val response: String) : ResolvedIntent()
 
+    /**
+     * Read-only, single-module SQL fallback when no typed action matched (FR-016). [sql] is a
+     * model-proposed `SELECT` over [moduleName]'s curated schema; the orchestrator validates it
+     * (`SafeSqlValidator`) before executing on a reader connection. Only an opt-in resolver (the
+     * on-device LLM tier) emits this.
+     */
+    data class SafeQuery(val moduleName: String, val sql: String) : ResolvedIntent()
+
     /** Failed to parse */
     data class Error(val message: String) : ResolvedIntent()
 }

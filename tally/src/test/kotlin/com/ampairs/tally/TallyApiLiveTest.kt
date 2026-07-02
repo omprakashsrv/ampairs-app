@@ -211,13 +211,13 @@ class TallyApiLiveTest {
             val items = result.body?.data?.collection?.stockItems
             println("StockItems count: ${items?.size ?: 0}")
             // Show price/cost fields for first 10 items with non-zero prices
-            items?.filter { it.standardPrice?.rate != null || it.standardCost?.rate != null }
+            items?.filter { !it.standardPrice.isNullOrEmpty() || !it.standardCost.isNullOrEmpty() }
                 ?.take(10)
                 ?.forEach {
                     println(
                         "  Item: ${it.name}\n" +
-                            "    standardPrice.rate=${it.standardPrice?.rate}  (→ mrp / dp / selling_price)\n" +
-                            "    standardCost.rate=${it.standardCost?.rate}    (→ buying_price)\n" +
+                            "    standardPrice=${it.standardPrice?.joinToString { p -> "${p.date}:${p.rate}" }}  (→ price list)\n" +
+                            "    standardCost=${it.standardCost?.joinToString { c -> "${c.date}:${c.rate}" }}    (→ standard cost)\n" +
                             "    baseUnits=${it.baseUnits} | additionalUnits=${it.additionalUnits}\n" +
                             "    gstApplicable=${it.gstApplicable} | taxability=${it.taxability}\n" +
                             "    gstTypeOfSupply=${it.gstTypeOfSupply} | gstRepUOM=${it.gstRepUOM}\n" +

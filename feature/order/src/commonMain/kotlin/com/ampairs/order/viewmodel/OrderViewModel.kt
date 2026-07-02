@@ -31,6 +31,8 @@ import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.domain.asDatabaseModel
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.data.PriceResolver
+import com.ampairs.product.data.PriceResolutionInput
 import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.store.domain.StoreSettingsProvider
@@ -80,6 +82,7 @@ class OrderViewModel(
     val customerDataService: CustomerDataService,
     val orderRepository: OrderRepository,
     val productDataService: ProductDataService,
+    val priceResolver: PriceResolver,
     val tokenRepository: TokenRepository,
     val taxRateProvider: TaxRateProvider,
     val unitOptionsLookup: UnitOptionsLookup,
@@ -360,17 +363,43 @@ class OrderViewModel(
         val item = orderItems.find { it.id == lineId } ?: return
         viewModelScope.launch(DispatcherProvider.io) {
             val product = productDataService.getById(productId) ?: return@launch
+            // Resolve the line price through the PriceResolver seam (spec 009), supplying the order's
+            // customer + channel context. Walk-in => RETAIL, a named customer => WHOLESALE. Falls back
+            // to product.sellingPrice when no price list matches.
+            val orderCustomer = order.customer
+            val resolved = priceResolver.resolve(
+                PriceResolutionInput(
+                    productId = product.id,
+                    variantSku = null,
+                    quantity = item.quantity,
+                    fallbackUnitPrice = product.sellingPrice,
+                    channel = if (customerWalkIn || orderCustomer == null) "RETAIL" else "WHOLESALE",
+                    customerId = orderCustomer?.uid,
+                    customerGroupId = orderCustomer?.customerGroup,
+                    customerType = orderCustomer?.customerType,
+                    pincode = orderCustomer?.pincode,
+                    // Resolve the price as of the order's document date (effective-dated pricing).
+                    asOfDate = order.orderDate.toString(),
+                ),
+            )
             item.product = product
             item.productId = product.id
             item.description = product.name + " " + product.code
-            item.productPrice = product.sellingPrice
+            item.productPrice = resolved.unitPrice
             item.priceOverridden = false
             item.variantSku = null
+            // Capture the resolution snapshot so it persists to Room and pushes verbatim on /sync.
+            item.resolvedUnitPriceMinor = resolved.resolvedUnitPriceMinor
+            item.currency = resolved.currency
+            item.priceSource = resolved.priceSource
+            item.matchedPriceListUid = resolved.matchedPriceListUid
+            item.appliedTierMinQty = resolved.appliedTierMinQty
+            item.belowMoq = resolved.belowMoq
             val base = engine.unitsFor(product).firstOrNull()
             if (base != null) {
                 item.selectUnit(base.unitId, base.name, base.multiplier)
             } else {
-                item.price = product.sellingPrice
+                item.price = resolved.unitPrice
                 item.updateTotal()
             }
             order.updateTotalCost()
@@ -607,6 +636,7 @@ class OrderViewModel(
                 taxable = item.basePrice,
                 totalTax = item.totalTax,
                 lineTotal = item.totalCost,
+                belowMoq = item.belowMoq,
             )
         }
     }

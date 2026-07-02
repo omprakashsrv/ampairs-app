@@ -47,6 +47,11 @@ class TallyRepository(val tallyApi: TallyApi) {
         return post(Type.GROUP.toTallyXML())
     }
 
+    /** All vouchers (sales, purchase, receipts, payments, credit/debit notes) for invoice + payment sync. */
+    suspend fun getVouchers(): TallyXML {
+        return post(Type.VOUCHER.toTallyXML())
+    }
+
 
     suspend fun post(tallyXML: TallyXML): TallyXML {
         return tallyApi.post(tallyXML)

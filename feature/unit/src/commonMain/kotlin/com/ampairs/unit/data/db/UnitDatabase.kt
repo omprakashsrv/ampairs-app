@@ -4,6 +4,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import com.ampairs.unit.agent.UnitAgentDao
 import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
 import com.ampairs.unit.data.db.entity.UnitConversionEntity
@@ -37,6 +38,9 @@ abstract class UnitDatabase : RoomDatabase() {
      * DAO for unit conversion operations
      */
     abstract fun unitConversionDao(): UnitConversionDao
+
+    /** DAO for assistant report queries. */
+    abstract fun unitAgentDao(): UnitAgentDao
 }
 
 /**

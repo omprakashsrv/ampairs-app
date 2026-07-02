@@ -7,6 +7,8 @@ import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.payment.data.repository.PartyBalanceRepository
 import com.ampairs.payment.domain.AgingSummary
 import com.ampairs.payment.domain.InvoiceLedgerPoster
+import com.ampairs.payment.domain.PurchaseLedgerPoster
+import com.ampairs.supplier.data.SupplierDataService
 import com.ampairs.payment.domain.OutstandingService
 import com.ampairs.payment.domain.PartyBalance
 import dev.zacsweers.metro.ContributesIntoMap
@@ -42,8 +44,10 @@ data class PartyRow(
 class PaymentDashboardViewModel(
     partyBalanceRepository: PartyBalanceRepository,
     private val invoiceLedgerPoster: InvoiceLedgerPoster,
+    private val purchaseLedgerPoster: PurchaseLedgerPoster,
     private val outstandingService: OutstandingService,
     private val customerDataService: CustomerDataService,
+    private val supplierDataService: SupplierDataService,
 ) : ViewModel() {
 
     private val _loading = MutableStateFlow(true)
@@ -55,12 +59,15 @@ class PaymentDashboardViewModel(
             .onEach { _loading.value = false }
             .map { list ->
                 list.map { balance ->
+                    // A party is a customer (sales receivable) or a supplier (purchase payable); the
+                    // ledger sign decides "To Collect" vs "To Pay". Resolve the name from whichever owns it.
                     val customer = customerDataService.getById(balance.partyUid)
-                    val name = customer?.name?.ifBlank { balance.partyUid } ?: balance.partyUid
+                    val supplier = if (customer == null) supplierDataService.getById(balance.partyUid) else null
+                    val resolvedName = (customer?.name ?: supplier?.name)?.ifBlank { null }
                     PartyRow(
                         balance = balance,
-                        name = name,
-                        phone = customer?.phone,
+                        name = resolvedName ?: balance.partyUid,
+                        phone = customer?.phone ?: supplier?.phone,
                         pendingSync = !balance.synced,
                     )
                 }
@@ -90,6 +97,9 @@ class PaymentDashboardViewModel(
         // appear without a server round-trip. Posting is idempotent (deterministic LDG_<invoice.uid>).
         viewModelScope.launch {
             runCatching { invoiceLedgerPoster.backfillFinalizedInvoices() }
+            // Buy side: reconcile received purchases into supplier payables ("To Pay"), same idempotent
+            // deterministic LDG_<purchase.uid> posting so they appear offline without a server round-trip.
+            runCatching { purchaseLedgerPoster.backfillReceivedPurchases() }
         }
     }
 }

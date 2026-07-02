@@ -37,9 +37,10 @@ class LedgerEntrie(
     @XmlSerialName("BANKALLOCATIONS.LIST")
     var bankAllocationList: List<BankAllocation>? = null,
 
+    // A receipt/payment can settle multiple bills, so this is a list (one BILLALLOCATIONS.LIST per bill).
     @XmlElement(true)
     @XmlSerialName("BILLALLOCATIONS.LIST")
-    var billAllocation: BillAllocation? = null,
+    var billAllocationList: List<BillAllocation>? = null,
 
     @XmlElement(true)
     @XmlSerialName("TAXOBJECTALLOCATIONS.LIST")

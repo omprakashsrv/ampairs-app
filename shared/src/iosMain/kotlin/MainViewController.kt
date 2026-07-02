@@ -2,8 +2,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.window.ComposeUIViewController
 import coil3.compose.setSingletonImageLoaderFactory
 import cocoapods.FirebaseCore.FIRApp
+import com.ampairs.FcmBridge
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.IosAppGraph
+import com.ampairs.logging.initAppLogging
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.cinterop.ExperimentalForeignApi
 
@@ -13,9 +15,13 @@ fun MainViewController() = ComposeUIViewController {
         FIRApp.configure()
     }
 
+    initAppLogging()
     initializeSentry()
 
     val appGraph = remember { createGraphFactory<IosAppGraph.Factory>().create() }
+
+    // Publish the shared FCM singleton so AppDelegate (Swift) can forward token/notification events.
+    remember(appGraph) { FcmBridge.register(appGraph.firebaseMessaging); appGraph }
 
     setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
 

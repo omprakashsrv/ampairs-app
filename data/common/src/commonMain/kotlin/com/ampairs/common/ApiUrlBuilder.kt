@@ -54,6 +54,10 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/customer/$path"
     }
 
+    fun supplierUrl(path: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/api/supplier/$path"
+    }
+
     fun productUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/product/$cleanPath"
@@ -62,6 +66,11 @@ object ApiUrlBuilder {
     fun unitUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/unit/$cleanPath"
+    }
+
+    fun pricingUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/pricing/$cleanPath"
     }
 
     fun sequenceUrl(path: String): String {
@@ -111,6 +120,11 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/order/$cleanPath"
     }
 
+    fun purchaseUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/purchase/$cleanPath"
+    }
+
     fun invoiceUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/invoice/$cleanPath"
@@ -139,6 +153,20 @@ object ApiUrlBuilder {
     fun subscriptionUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/subscription/$cleanPath"
+    }
+
+    /**
+     * On-device AI model endpoints (manifest + download proxy), served by the backend `agent` module.
+     * e.g. agentUrl("v1/models"), agentUrl("v1/models/{id}/download")
+     */
+    fun agentUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/agent/$cleanPath"
+    }
+
+    fun notificationUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/notification/$cleanPath"
     }
 
     fun taxUrl(path: String, queryParams: Map<String, String> = emptyMap()): String {

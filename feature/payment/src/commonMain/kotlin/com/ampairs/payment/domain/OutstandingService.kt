@@ -27,6 +27,13 @@ data class OverCreditLimitParty(
     val creditLimit: Money,
 )
 
+/** One ranked debtor for the assistant's "top debtors" report (party name + receivable balance). */
+data class DebtorLine(
+    val partyUid: String,
+    val partyName: String,
+    val balance: Money,
+)
+
 /**
  * Local computation of open bills and aging (US4, spec 013 contracts/payment-actions.md). Open bill
  * outstanding = `invoice.total − Σ active allocations to it`; due date = `invoiceDate + creditDays`;
@@ -112,6 +119,23 @@ class OutstandingService(
             partiesOverCreditLimit = overLimit,
         )
     }
+
+    /**
+     * Parties with the largest outstanding receivable (positive closing balance), highest first,
+     * with their customer name resolved for display. Used by the assistant's TOP_DEBTORS report.
+     */
+    suspend fun topDebtors(limit: Int): List<DebtorLine> =
+        partyBalanceDao.getAll().map { it.toDomain() }
+            .filter { it.cachedClosingBalance.isPositive }
+            .sortedByDescending { it.cachedClosingBalance.minor }
+            .take(limit)
+            .map { balance ->
+                DebtorLine(
+                    partyUid = balance.partyUid,
+                    partyName = customerDataService.getById(balance.partyUid)?.name ?: balance.partyUid,
+                    balance = balance.cachedClosingBalance,
+                )
+            }
 
     /** True when the party's receivable exceeds its configured credit limit (FR-019). */
     suspend fun isOverCreditLimit(partyUid: String): Boolean {

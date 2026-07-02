@@ -4,10 +4,12 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import com.ampairs.product.agent.ProductAgentDao
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
 import com.ampairs.product.db.dao.ProductDao
+import com.ampairs.product.db.dao.ProductStandardCostDao
 import com.ampairs.product.db.dao.ProductVariantDao
 import com.ampairs.product.db.dao.SubCategoryDao
 import com.ampairs.product.db.dao.TaxCodeDao
@@ -17,6 +19,7 @@ import com.ampairs.product.db.entity.BrandEntity
 import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
 import com.ampairs.product.db.entity.ProductEntity
+import com.ampairs.product.db.entity.ProductStandardCostEntity
 import com.ampairs.product.db.entity.ProductVariantEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import com.ampairs.product.db.entity.TaxCodeEntity
@@ -33,9 +36,10 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
         SubCategoryEntity::class,
         BrandEntity::class,
         ProductVariantEntity::class,
-        VariantAttributeEntity::class
+        VariantAttributeEntity::class,
+        ProductStandardCostEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 @ConstructedBy(ProductRoomDatabaseConstructor::class)
@@ -49,6 +53,8 @@ abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun brandDao(): BrandDao
     abstract fun productVariantDao(): ProductVariantDao
     abstract fun variantAttributeDao(): VariantAttributeDao
+    abstract fun productAgentDao(): ProductAgentDao
+    abstract fun productStandardCostDao(): ProductStandardCostDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
