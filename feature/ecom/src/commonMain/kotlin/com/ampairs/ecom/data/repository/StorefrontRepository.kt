@@ -9,6 +9,7 @@ import com.ampairs.ecom.data.db.dao.TaxonomyImageDao
 import com.ampairs.ecom.data.db.entity.StorefrontEntity
 import com.ampairs.ecom.data.db.entity.TaxonomyImageEntity
 import com.ampairs.ecom.domain.EcomLogger
+import com.ampairs.ecom.domain.toAbsoluteImageUrl
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Clock
@@ -53,7 +54,7 @@ class StorefrontRepository(
                 storefront_id = storefrontId,
                 type = TaxonomyType.CATEGORY.name,
                 name = cat.name,
-                image_url = cat.imageUrl,
+                image_url = cat.imageUrl?.toAbsoluteImageUrl(),
                 product_count = cat.productCount,
                 sort_order = cat.sortOrder,
             )
@@ -64,7 +65,7 @@ class StorefrontRepository(
                     type = TaxonomyType.SUBCATEGORY.name,
                     name = sub.name,
                     parent_name = cat.name,
-                    image_url = sub.imageUrl,
+                    image_url = sub.imageUrl?.toAbsoluteImageUrl(),
                     product_count = sub.productCount,
                     sort_order = sub.sortOrder,
                 )
@@ -76,7 +77,7 @@ class StorefrontRepository(
                 storefront_id = storefrontId,
                 type = TaxonomyType.BRAND.name,
                 name = brand.name,
-                image_url = brand.imageUrl,
+                image_url = brand.imageUrl?.toAbsoluteImageUrl(),
                 product_count = brand.productCount,
                 sort_order = brand.sortOrder,
             )

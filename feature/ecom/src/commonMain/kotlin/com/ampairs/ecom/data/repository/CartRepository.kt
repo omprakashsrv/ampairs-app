@@ -8,6 +8,7 @@ import com.ampairs.ecom.data.db.dao.ListedProductDao
 import com.ampairs.ecom.data.db.entity.CartEntity
 import com.ampairs.ecom.data.db.entity.CartItemEntity
 import com.ampairs.ecom.domain.EcomLogger
+import com.ampairs.ecom.domain.toAbsoluteImageUrl
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -78,7 +79,7 @@ class CartRepository(
             unit_price = product.price,
             mrp_at_add = product.mrp,
             quantity = quantity,
-            primary_image_url = decodeImageUrls(product.image_urls).firstOrNull(),
+            primary_image_url = decodeImageUrls(product.image_urls).firstOrNull()?.toAbsoluteImageUrl(),
         )
         cartDao.upsertItem(item)
         return Result.success(Unit)

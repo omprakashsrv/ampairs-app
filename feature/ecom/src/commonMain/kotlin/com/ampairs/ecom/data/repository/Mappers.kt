@@ -15,6 +15,7 @@ import com.ampairs.ecom.data.db.entity.EcomOrderEntity
 import com.ampairs.ecom.data.db.entity.EcomOrderLineItemEntity
 import com.ampairs.ecom.data.db.entity.ListedProductEntity
 import com.ampairs.ecom.data.db.entity.StorefrontEntity
+import com.ampairs.ecom.domain.toAbsoluteImageUrl
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -34,8 +35,8 @@ fun Storefront.toEntity(cachedAt: Long): StorefrontEntity = StorefrontEntity(
     slug = slug,
     name = name,
     description = description,
-    logo_url = logoUrl,
-    banner_url = bannerUrl,
+    logo_url = logoUrl?.toAbsoluteImageUrl(),
+    banner_url = bannerUrl?.toAbsoluteImageUrl(),
     status = status,
     access_mode = accessMode,
     cached_at = cachedAt,
@@ -118,7 +119,7 @@ fun CartItemResponse.toEntity(cartId: String): CartItemEntity = CartItemEntity(
     unit_price = unitPrice,
     mrp_at_add = mrpAtAdd,
     quantity = quantity,
-    primary_image_url = primaryImageUrl,
+    primary_image_url = primaryImageUrl?.toAbsoluteImageUrl(),
 )
 
 // ── Address ──
