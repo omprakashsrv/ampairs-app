@@ -7,8 +7,9 @@ plugins {
     alias(libs.plugins.metro)
 }
 
-// Slim, Android-only shared layer for customer-facing ecom ordering apps (one thin app module per
-// enterprise customer — e.g. :ambikaApp — supplies the pinned workspace slug + branding). Reuses the
+// Slim, Android-only shared layer for customer-facing ecom ordering apps. Two thin app modules build
+// on it: :clientApp (a per-client white-label build pinned to one storefront, selected with
+// -Pclient=<id>) and :marketplaceApp (the common multi-store app with a storefront picker). Reuses the
 // login (auth), data, sync, store and ecom feature modules with its own DI graph and navigation graph
 // — it deliberately does NOT depend on :shared (which aggregates all 25 business modules). Brand-neutral:
 // nothing here is tenant-specific. See CLAUDE.md and the /metro-di + /offline-sync skills.

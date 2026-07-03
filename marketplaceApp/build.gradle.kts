@@ -18,8 +18,12 @@ kotlin {
 val localProperties = Properties()
 rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { localProperties.load(it) }
 
+// ── Common (multi-store) ecom app ───────────────────────────────────────────────
+// Unlike :clientApp (one pinned store per white-label client), this app is NOT pinned to a store.
+// It lists every published storefront and lets the customer pick one (each store's DB is isolated,
+// mirroring the main app's workspace selection). Built on the same :shared-ecom layer as :clientApp.
 android {
-    namespace = "com.ampairs.app.ambika"
+    namespace = "com.ampairs.marketplace"
     compileSdk { version = release(libs.versions.android.compileSdk.get().toInt()) }
 
     compileOptions {
@@ -38,9 +42,9 @@ android {
             excludes += "/META-INF/versions/9/previous-compilation-data.bin"
         }
         jniLibs {
-            // feature:form transitively drags in feature:agent (on-device LLM/STT). The customer
-            // ecom app never opens the agent, so R8 strips its code — but native .so libs aren't
-            // code-shrunk. Drop the ~120 MB of AI runtimes that are never loaded here.
+            // feature:form transitively drags in feature:agent (on-device LLM/STT). This app never
+            // opens the agent, so R8 strips its code — but native .so libs aren't code-shrunk. Drop
+            // the ~120 MB of AI runtimes that are never loaded here. (Do NOT exclude libc++_shared.)
             excludes += listOf(
                 "**/liblitertlm_jni.so",
                 "**/libLiteRt.so",
@@ -52,7 +56,9 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ampairs.app.ambika"
+        // Neutral Ampairs brand. Register this package in Firebase and add its client block to
+        // marketplaceApp/google-services.json (see marketplaceApp/README.md) before building.
+        applicationId = "com.ampairs.app.market"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
@@ -93,7 +99,7 @@ android {
 }
 
 dependencies {
-    // Slim shared layer (login + ecom storefront/order + workspace settings)
+    // Slim shared layer (login + ecom storefront/order + storefront directory + workspace settings)
     implementation(projects.sharedEcom)
 
     // Android Activity + Compose integration

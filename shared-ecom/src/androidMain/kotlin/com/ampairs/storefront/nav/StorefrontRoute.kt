@@ -24,6 +24,9 @@ sealed interface StorefrontRoute : NavKey {
 
     @Serializable data object AccountRestore : StorefrontRoute
 
+    // ── Storefront directory / picker (common multi-store app only) ───────
+    @Serializable data object Directory : StorefrontRoute
+
     // ── Ecom storefront + ordering (feature/ecom) ─────────────────────────
     @Serializable data class Storefront(val slug: String) : StorefrontRoute
 

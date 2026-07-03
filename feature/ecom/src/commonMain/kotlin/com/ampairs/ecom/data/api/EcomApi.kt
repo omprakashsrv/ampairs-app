@@ -24,6 +24,10 @@ import com.ampairs.ecom.api.model.StorefrontUpdateRequest
  */
 interface EcomApi {
 
+    // ── Storefront directory (public discovery — common multi-store app) ──
+    /** Lists published storefronts for the directory/picker. `q` filters by name/slug when non-null. */
+    suspend fun listStorefronts(q: String? = null, page: Int = 0, size: Int = 20): Result<PageResponse<Storefront>>
+
     // ── Storefront bootstrap & catalog (public) ──
     suspend fun getStorefront(slug: String): Result<Storefront>
     suspend fun getCatalogMeta(slug: String): Result<CatalogMeta>

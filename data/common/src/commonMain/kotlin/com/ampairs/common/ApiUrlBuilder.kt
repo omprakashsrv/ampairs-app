@@ -195,6 +195,17 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Public storefront directory (discovery) endpoints — NOT slug-scoped: /api/v1/storefronts/{path}
+     * e.g. storefrontsUrl() → list all published stores, storefrontsUrl("search").
+     * Used by the common (multi-store) app to let the customer pick a storefront.
+     */
+    fun storefrontsUrl(path: String = ""): String {
+        val cleanPath = path.removePrefix("/")
+        val base = "${ConfigurationManager.apiBaseUrl}/api/v1/storefronts"
+        return if (cleanPath.isBlank()) base else "$base/$cleanPath"
+    }
+
+    /**
      * Public storefront endpoints scoped to a slug: /api/v1/store/{slug}/{path}
      * e.g. storeUrl("green-mart", "catalog-meta"), storeUrl("green-mart", "products")
      */

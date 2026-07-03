@@ -43,6 +43,16 @@ class EcomApiImpl(
 
     private val client = httpClient(engine, tokenRepository)
 
+    // ── Storefront directory (public discovery) ──
+
+    override suspend fun listStorefronts(q: String?, page: Int, size: Int): Result<PageResponse<Storefront>> = call {
+        val params = buildMap<String, Any> {
+            put("page", page); put("size", size)
+            q?.takeIf { it.isNotBlank() }?.let { put("q", it) }
+        }
+        get<Response<PageResponse<Storefront>>>(client, ApiUrlBuilder.storefrontsUrl(), params)
+    }
+
     // ── Storefront bootstrap & catalog ──
 
     override suspend fun getStorefront(slug: String): Result<Storefront> = call {

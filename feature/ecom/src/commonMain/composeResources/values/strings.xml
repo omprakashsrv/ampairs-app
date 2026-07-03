@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Storefront directory (common multi-store app) -->
+    <string name="ecom_directory_title">Choose a store</string>
+    <string name="ecom_directory_search">Search stores…</string>
+    <string name="ecom_directory_empty">No stores found</string>
+    <string name="ecom_directory_error">Couldn\'t load stores. Pull to retry.</string>
+    <string name="ecom_directory_retry">Retry</string>
+
     <!-- Gate -->
     <string name="ecom_loading">Loading…</string>
     <string name="ecom_store_unavailable_title">Store not available</string>
