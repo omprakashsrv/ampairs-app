@@ -26,6 +26,7 @@ dependencyResolutionManagement {
 include(":shared")
 include(":androidApp")
 include(":shared-ecom")
+include(":ambikaApp")
 include(":whispercpp")
 include(":desktopApp")
 include(":data:common")
