@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.ui.graphics.Color
 import coil3.compose.setSingletonImageLoaderFactory
 import com.ampairs.storefront.ui.StorefrontRoot
 import io.github.vinceglb.filekit.FileKit
@@ -25,7 +26,11 @@ class ClientMainActivity : ComponentActivity() {
         val appGraph = (application as ClientApplication).appGraph
         setContent {
             setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
-            StorefrontRoot(graph = appGraph, workspaceSlug = BuildConfig.WORKSPACE_SLUG)
+            StorefrontRoot(
+                graph = appGraph,
+                workspaceSlug = BuildConfig.WORKSPACE_SLUG,
+                seedColor = Color(BuildConfig.THEME_COLOR_ARGB),
+            )
         }
     }
 }

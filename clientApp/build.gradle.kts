@@ -78,9 +78,11 @@ android {
         versionCode = client("versionCode").toInt()
         versionName = client("versionName")
 
-        // Consumed by AndroidManifest (android:label) and StorefrontRoot (the pinned workspace).
+        // Consumed by AndroidManifest (android:label) and StorefrontRoot (workspace + brand color).
         manifestPlaceholders["appName"] = client("appName")
         buildConfigField("String", "WORKSPACE_SLUG", "\"${client("workspaceSlug")}\"")
+        // Brand seed color as an ARGB long (e.g. 0xFF1B6C4A) → Compose Color in ClientMainActivity.
+        buildConfigField("long", "THEME_COLOR_ARGB", "${client("themeColorArgb")}L")
     }
 
     // Merge the selected client's icons/overrides on top of the shared res.
