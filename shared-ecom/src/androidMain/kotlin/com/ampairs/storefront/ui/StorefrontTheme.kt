@@ -6,31 +6,30 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 
-private val StorefrontSeed = Color(0xFF1B6C4A)
-
-private val LightColors = lightColorScheme(
-    primary = StorefrontSeed,
-    secondary = Color(0xFF4C6358),
-)
-
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFF7FD6A6),
-    secondary = Color(0xFFB2CCBE),
-)
+/** Fallback brand color when a client build doesn't supply one. */
+val DefaultSeedColor = Color(0xFF1B6C4A)
 
 /**
- * Lightweight Material 3 theme for the Storefront ecom app. The full app's `PlatformAmpairsTheme`
- * (Material Kolor driven) lives in :shared; this slim variant just needs a consistent color scheme
- * for the reused ecom + auth screens, which read `MaterialTheme.colorScheme.*` tokens.
+ * Lightweight Material 3 theme for the customer storefront app, driven by a per-client [seedColor]
+ * (each white-label build passes its own brand color). The reused ecom + auth screens read
+ * `MaterialTheme.colorScheme.*` tokens, so setting `primary` recolors buttons, app bars, selection
+ * and progress across the app. `onPrimary` is chosen by luminance so any client color stays legible.
+ *
+ * Kept dependency-free (no Material Kolor) — a single accent role is enough for white-label branding.
  */
 @Composable
 fun StorefrontTheme(
+    seedColor: Color = DefaultSeedColor,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        content = content,
-    )
+    val onSeed = if (seedColor.luminance() > 0.5f) Color.Black else Color.White
+    val colorScheme = if (darkTheme) {
+        darkColorScheme(primary = seedColor, onPrimary = onSeed)
+    } else {
+        lightColorScheme(primary = seedColor, onPrimary = onSeed)
+    }
+    MaterialTheme(colorScheme = colorScheme, content = content)
 }

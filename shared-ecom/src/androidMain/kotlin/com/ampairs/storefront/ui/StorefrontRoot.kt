@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,11 +47,14 @@ import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
  * reused across enterprise customers, so nothing here is tenant-specific.
  *
  * @param workspaceSlug the storefront/workspace slug this build is pinned to (e.g. "ambika-enterprise").
+ * @param seedColor the client's brand seed color; drives the Material 3 scheme. Defaults to the
+ *   Ampairs green when a build doesn't supply one.
  */
 @Composable
 fun StorefrontRoot(
     graph: StorefrontAppGraph,
     workspaceSlug: String,
+    seedColor: Color = DefaultSeedColor,
 ) {
     val session by graph.workspaceManager.session.collectAsStateWithLifecycle()
 
@@ -75,7 +79,7 @@ fun StorefrontRoot(
         }
     }
 
-    StorefrontTheme {
+    StorefrontTheme(seedColor = seedColor) {
         Box(
             Modifier
                 .background(MaterialTheme.colorScheme.surface)
