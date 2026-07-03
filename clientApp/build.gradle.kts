@@ -18,8 +18,28 @@ kotlin {
 val localProperties = Properties()
 rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { localProperties.load(it) }
 
+// ── Per-client selection ──────────────────────────────────────────────────────
+// One app module builds every white-label client. Pick the client at build time:
+//   ./gradlew :clientApp:assembleDebug            (defaults to 'ambika')
+//   ./gradlew :clientApp:bundleRelease -Pclient=ambika
+// Everything client-specific lives in clients/<id>/ (config.properties + res/ icons); this module
+// and :shared-ecom are 100% shared. Scales to N clients with no new modules/flavors — CI just loops
+// over clients/*/ and uploads each AAB to its own Play listing.
+val clientId = (findProperty("client") as String?) ?: "ambika"
+val clientDir = rootProject.file("clients/$clientId")
+require(clientDir.isDirectory) {
+    "Unknown client '$clientId'. Expected a config dir at ${clientDir.relativeTo(rootDir)}."
+}
+val clientConfig = Properties().apply {
+    clientDir.resolve("config.properties").inputStream().use { load(it) }
+}
+fun client(key: String): String = clientConfig.getProperty(key)
+    ?: error("clients/$clientId/config.properties is missing required key '$key'")
+
 android {
-    namespace = "com.ampairs.app.ambika"
+    // namespace = where R/BuildConfig + relative manifest names resolve. Fixed & generic; the
+    // installed package (applicationId) is what varies per client.
+    namespace = "com.ampairs.clientapp"
     compileSdk { version = release(libs.versions.android.compileSdk.get().toInt()) }
 
     compileOptions {
@@ -52,12 +72,19 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ampairs.app.ambika"
+        applicationId = client("applicationId")
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = client("versionCode").toInt()
+        versionName = client("versionName")
+
+        // Consumed by AndroidManifest (android:label) and StorefrontRoot (the pinned workspace).
+        manifestPlaceholders["appName"] = client("appName")
+        buildConfigField("String", "WORKSPACE_SLUG", "\"${client("workspaceSlug")}\"")
     }
+
+    // Merge the selected client's icons/overrides on top of the shared res.
+    sourceSets["main"].res.srcDirs("src/main/res", rootProject.file("clients/$clientId/res"))
 
     signingConfigs {
         val release by creating {

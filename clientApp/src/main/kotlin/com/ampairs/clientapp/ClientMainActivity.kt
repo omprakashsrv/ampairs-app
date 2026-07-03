@@ -1,4 +1,4 @@
-package com.ampairs.app.ambika
+package com.ampairs.clientapp
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,12 +9,11 @@ import com.ampairs.storefront.ui.StorefrontRoot
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
 
-class AmbikaMainActivity : ComponentActivity() {
-
-    companion object {
-        /** The Ambika build is pinned to this storefront/workspace slug. */
-        private const val WORKSPACE_SLUG = "ambika-enterprise"
-    }
+/**
+ * Single activity for every white-label client. The pinned storefront/workspace slug is injected at
+ * build time from clients/<id>/config.properties → [BuildConfig.WORKSPACE_SLUG].
+ */
+class ClientMainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,10 +22,10 @@ class AmbikaMainActivity : ComponentActivity() {
 
         FileKit.init(this)
 
-        val appGraph = (application as AmbikaApplication).appGraph
+        val appGraph = (application as ClientApplication).appGraph
         setContent {
             setSingletonImageLoaderFactory { _ -> appGraph.imageLoader }
-            StorefrontRoot(graph = appGraph, workspaceSlug = WORKSPACE_SLUG)
+            StorefrontRoot(graph = appGraph, workspaceSlug = BuildConfig.WORKSPACE_SLUG)
         }
     }
 }
