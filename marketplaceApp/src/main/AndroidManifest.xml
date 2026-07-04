@@ -14,7 +14,7 @@
         android:name="com.ampairs.marketplace.MarketApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="Ampairs"
+        android:label="Ampairs Store"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Marketplace"
