@@ -196,7 +196,7 @@ fun authEntryProvider(
         AccountDeletionScreen(
             onDeletionSuccess = {
                 backStack.clear()
-                backStack.add(Route.Login)
+                backStack.add(AuthRoute.UserSelection)
             },
             onNavigateBack = {
                 backStack.removeLastOrNull()
@@ -211,7 +211,7 @@ fun authEntryProvider(
             },
             onLogout = {
                 backStack.clear()
-                backStack.add(Route.Login)
+                backStack.add(AuthRoute.UserSelection)
             }
         )
     }

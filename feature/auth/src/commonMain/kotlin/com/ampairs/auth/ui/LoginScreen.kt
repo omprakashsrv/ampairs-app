@@ -75,10 +75,14 @@ fun LoginScreen(
 ) {
     val scope = rememberCoroutineScope()
     val currentLanguage by localeManager.currentLanguage.collectAsStateWithLifecycle(Language.ENGLISH)
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     var isVisible by remember { mutableStateOf(false) }
-    var showWelcomeScreen by remember { mutableStateOf(false) }
-    var isCheckingLogin by remember { mutableStateOf(true) }
+
+    // isCheckingLogin / showWelcomeScreen live in ViewModel StateFlow so the screen always reads
+    // the current value on first composition — no race with the navEvent SharedFlow subscriber.
+    val isCheckingLogin = state.isCheckingLogin
+    val showWelcomeScreen = state.showWelcomeScreen
 
     LaunchedEffect(Unit) {
         viewModel.navEvent.collectLatest { event ->
@@ -87,18 +91,19 @@ fun LoginScreen(
                 LoginNavEvent.NavigateToWorkspace -> onNavigateToWorkspace()
                 LoginNavEvent.NavigateToUserUpdate -> onNavigateToUserUpdate()
                 LoginNavEvent.NavigateToAuthRoute -> onNavigateToAuthRoute()
-                LoginNavEvent.NotLoggedIn -> {
-                    isCheckingLogin = false
-                    showWelcomeScreen = true
-                    isVisible = true
-                }
                 else -> {}
             }
         }
     }
 
+    // Trigger the check whenever the welcome screen is about to be shown.
     LaunchedEffect(Unit) {
         viewModel.checkUserLogin()
+    }
+
+    // Fade in the welcome screen once the ViewModel signals it's ready.
+    LaunchedEffect(showWelcomeScreen) {
+        if (showWelcomeScreen) isVisible = true
     }
 
     val alpha by animateFloatAsState(

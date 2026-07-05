@@ -57,7 +57,7 @@ fun GlobalAppLayoutNav3(
             when (event) {
                 GlobalAppLayoutViewModel.NavEvent.NavigateToLogin -> {
                     backStack.clear()
-                    backStack.add(Route.Login)
+                    backStack.add(AuthRoute.UserSelection)
                 }
                 GlobalAppLayoutViewModel.NavEvent.NavigateToWorkspace -> {
                     backStack.clear()
@@ -91,7 +91,7 @@ fun GlobalAppLayoutNav3(
     BackNavigationHandlerNav3(
         backStack = backStack,
         enabled = shouldShowHeader,
-        fallbackRoute = if (isWorkspaceSelection) Route.Login else Route.Workspace
+        fallbackRoute = if (isWorkspaceSelection) AuthRoute.UserSelection else Route.Workspace
     )
 
     if (!shouldShowHeader) {

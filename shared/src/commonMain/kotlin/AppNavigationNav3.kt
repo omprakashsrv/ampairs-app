@@ -1,3 +1,4 @@
+import AuthRoute
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.imePadding
@@ -61,7 +62,7 @@ fun AppNavigationNav3(
     val startDestination: NavKey = if (shouldAutoResume && lastWorkspaceId != null && lastWorkspaceSlug != null) {
         WorkspaceRoute.Modules(lastWorkspaceId, lastWorkspaceSlug)
     } else {
-        Route.Login
+        AuthRoute.UserSelection
     }
 
     // Create Nav3 SavedStateConfiguration for polymorphic serialization
@@ -85,7 +86,7 @@ fun AppNavigationNav3(
                 val modulesRoute = currentRoute as? WorkspaceRoute.Modules
                 if (modulesRoute != null && modulesRoute.workspaceSlug.isNotBlank()) {
                     onWorkspaceEntered?.invoke(modulesRoute.workspaceSlug)
-                } else if (currentRoute is Route.Login) {
+                } else if (currentRoute is Route.Login || currentRoute is AuthRoute.UserSelection) {
                     onWorkspaceLeft?.invoke()
                 }
             }
@@ -95,7 +96,7 @@ fun AppNavigationNav3(
     LaunchedEffect(Unit) {
         viewModel.logoutEvent.collectLatest {
             backStack.clear()
-            backStack.add(Route.Login)
+            backStack.add(AuthRoute.UserSelection)
         }
     }
 
