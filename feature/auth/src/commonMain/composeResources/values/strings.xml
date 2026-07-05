@@ -75,7 +75,7 @@
     <string name="otp_verifying">Verifying...</string>
     <string name="otp_enter_code">Enter the code sent to your phone</string>
     <string name="otp_waiting_for_auto_verification">Waiting for automatic verification...</string>
-    <string name="otp_auto_verification_desc">We\'re checking if your device can be verified automatically.\nThis usually takes a few seconds.</string>
+    <string name="otp_auto_verification_desc">We're checking if your device can be verified automatically.\nThis usually takes a few seconds.</string>
     <string name="otp_enter_manually">Enter code manually</string>
     
     <!-- Customer Screen -->
@@ -184,7 +184,7 @@
     <string name="desktop_auth_sign_in_with_browser">Sign in with Browser</string>
     <string name="desktop_auth_waiting_for_authentication">Waiting for authentication...</string>
     <string name="desktop_auth_complete_in_browser">Complete the authentication in your browser.\nThis window will automatically update when done.</string>
-    <string name="desktop_auth_browser_no_deep_links">Browser doesn\'t support deep links? Paste tokens here</string>
+    <string name="desktop_auth_browser_no_deep_links">Browser doesn't support deep links? Paste tokens here</string>
     <string name="desktop_auth_cancel">Cancel</string>
     <string name="desktop_auth_paste_tokens">Paste Authentication Tokens</string>
     <string name="desktop_auth_paste_instructions">After completing authentication in your browser, copy the JSON tokens and paste them below.</string>
@@ -216,13 +216,13 @@
 
     <!-- OTP Screen -->
     <string name="otp_enter_verification_code">Enter Verification Code</string>
-    <string name="otp_code_sent_with_phone">We\'ve sent a 6-digit code to\n+91 %1$s</string>
-    <string name="otp_code_sent_no_phone">We\'ve sent a 6-digit code to your phone</string>
+    <string name="otp_code_sent_with_phone">We've sent a 6-digit code to\n+91 %1$s</string>
+    <string name="otp_code_sent_no_phone">We've sent a 6-digit code to your phone</string>
     <string name="otp_resend_timer">Resend code in %1$ds</string>
     <string name="otp_resend_with_timer">Resend code (%1$ds)</string>
     <string name="otp_cd_verification">Verification</string>
     <string name="otp_cd_timer">Timer</string>
-    <string name="otp_help_text">Didn\'t receive the code? Check your messages or request a new one</string>
+    <string name="otp_help_text">Didn't receive the code? Check your messages or request a new one</string>
 
     <!-- User Selection Screen -->
     <string name="user_selection_loading">Loading users…</string>
@@ -280,7 +280,7 @@
     <string name="auth_account_pending_deletion">Account Pending Deletion</string>
     <string name="auth_account_scheduled_permanent">Your account is scheduled for permanent deletion</string>
     <string name="auth_what_happens_next">What happens next?</string>
-    <string name="auth_deletion_consequences">• Your account will be permanently deleted after the grace period\n• All your data will be irreversibly removed\n• You won\'t be able to recover your account</string>
+    <string name="auth_deletion_consequences">• Your account will be permanently deleted after the grace period\n• All your data will be irreversibly removed\n• You won't be able to recover your account</string>
     <string name="auth_days_label">days\nremaining</string>
     <string name="auth_restoring_account">Restoring Account…</string>
     <string name="auth_cd_restore">Restore</string>

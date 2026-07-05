@@ -98,7 +98,14 @@ class UserRepository(
     }
 
     suspend fun getToken(): UserToken? {
-        return userTokenDao.selectById()?.asDomainModel()
+        val currentUserId = tokenRepository.getCurrentUserId()
+        return if (currentUserId != null) {
+            // Session-aware: look up by the active user's ID so stale legacy tokens
+            // (id="1", user_id mismatch) are not mistaken for a valid session.
+            userTokenDao.selectByUserId(currentUserId)?.asDomainModel()
+        } else {
+            userTokenDao.selectById()?.asDomainModel()
+        }
     }
 
     suspend fun getUser(): UserEntity? {

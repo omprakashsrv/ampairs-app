@@ -77,7 +77,7 @@
     <string name="payment_filter_settled">Settled</string>
     <string name="payment_search_hint">Search name or phone</string>
     <string name="payment_empty_title">No dues to track yet</string>
-    <string name="payment_empty_body">When you finalise an invoice or record a payment, the customer\'s balance shows up here.</string>
+    <string name="payment_empty_body">When you finalise an invoice or record a payment, the customer's balance shows up here.</string>
     <string name="payment_record_a_payment">Record a payment</string>
     <string name="payment_set_opening_balance_cta">Set an opening balance</string>
     <string name="payment_new_entry">New entry</string>

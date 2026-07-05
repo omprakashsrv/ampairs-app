@@ -80,7 +80,7 @@
     <string name="pricing_detail_targets_title">Who gets this price?</string>
     <string name="pricing_detail_edit">Edit</string>
     <string name="pricing_detail_test_list">Test this list</string>
-    <string name="pricing_detail_test_list_sub">Resolve a price using this list\'s context</string>
+    <string name="pricing_detail_test_list_sub">Resolve a price using this list's context</string>
     <string name="pricing_detail_applies_everyone">Applies to everyone on %1$s.</string>
     <string name="pricing_detail_items">Items</string>
     <string name="pricing_detail_add_item">Add Item</string>

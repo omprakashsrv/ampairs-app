@@ -30,6 +30,7 @@ import com.ampairs.ecom.ui.catalog.DrillDownScreen
 import com.ampairs.ecom.ui.catalog.ProductDetailScreen
 import com.ampairs.ecom.ui.checkout.CheckoutScreen
 import com.ampairs.ecom.ui.checkout.OrderPlacedScreen
+import com.ampairs.ecom.ui.directory.StorefrontDirectoryScreen
 import com.ampairs.ecom.ui.order.OrderTrackingScreen
 import com.ampairs.ecom.ui.order.OrdersListScreen
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -45,6 +46,8 @@ fun storefrontEntryProvider(
     backStack: MutableList<NavKey>,
     authStoreOwner: ViewModelStoreOwner,
     onAuthenticated: () -> Unit,
+    onStorefrontSelected: (slug: String, brandColorArgb: Long?) -> Unit,
+    onExitStore: (() -> Unit)?,
 ): NavEntry<NavKey>? = when (key) {
 
     // ── Login ─────────────────────────────────────────────────────────────
@@ -118,6 +121,11 @@ fun storefrontEntryProvider(
         )
     }
 
+    // ── Storefront directory / picker (common multi-store app) ────────────
+    is StorefrontRoute.Directory -> NavEntry(key) {
+        StorefrontDirectoryScreen(onStorefrontSelected = onStorefrontSelected)
+    }
+
     // ── Storefront + ordering ─────────────────────────────────────────────
     is StorefrontRoute.Storefront -> NavEntry(key) {
         EcomStorefrontScreen(
@@ -134,6 +142,7 @@ fun storefrontEntryProvider(
             },
             onOpenOrder = { backStack.add(StorefrontRoute.OrderTracking(it)) },
             onOpenAddresses = { backStack.add(StorefrontRoute.Addresses) },
+            onExitStore = onExitStore,
         )
     }
 

@@ -11,17 +11,17 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
-        android:name="com.ampairs.app.ambika.AmbikaApplication"
+        android:name="com.ampairs.marketplace.MarketApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:label="Ampairs Store"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Ambika"
+        android:theme="@style/Theme.Marketplace"
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name="com.ampairs.app.ambika.AmbikaMainActivity"
+            android:name="com.ampairs.marketplace.MarketMainActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|fontScale|fontWeightAdjustment|keyboard|layoutDirection|locale|mcc|navigation|smallestScreenSize|touchscreen|uiMode"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">

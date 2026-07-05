@@ -15,6 +15,10 @@ data class Storefront(
     @SerialName("logo_url") val logoUrl: String? = null,
     @SerialName("banner_url") val bannerUrl: String? = null,
     @SerialName("status") val status: String = StorefrontStatus.UNKNOWN.name,
+    // Brand seed color as an ARGB long (e.g. 4279650378 == 0xFF1B6C4A). Served by the storefront
+    // directory + bootstrap so the common (multi-store) app themes per store instead of at build time.
+    // Nullable → the client falls back to the neutral Ampairs seed when absent.
+    @SerialName("brand_color_argb") val brandColorArgb: Long? = null,
     // Optional fields the backend may add for the access gate (plan §11). Nullable so the
     // client tolerates their absence and falls back to a local config flag.
     @SerialName("access_mode") val accessMode: String? = null,
