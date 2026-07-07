@@ -35,6 +35,15 @@ enum class SyncEntity(val entityType: String) {
     PAYMENT_VOUCHER("payment_voucher"),
     PAYMENT_ALLOCATION("payment_allocation"),
     ADJUSTMENT("adjustment"),
+    SFA_BEAT("sfa_beat"),
+    SFA_VISIT("sfa_visit"),
+    SFA_ATTENDANCE("sfa_attendance"),
+    SFA_BEAT_OUTLET("sfa_beat_outlet"),
+    SFA_JOURNEY_PLAN("sfa_journey_plan"),
+    SFA_PLANNED_VISIT("sfa_planned_visit"),
+    SFA_FIELD_ORDER("sfa_field_order"),
+    SFA_LEAVE("sfa_leave"),
+    SFA_VISIT_SURVEY("sfa_visit_survey"),
     NOTIFICATION("notification_log");
 
     companion object {
