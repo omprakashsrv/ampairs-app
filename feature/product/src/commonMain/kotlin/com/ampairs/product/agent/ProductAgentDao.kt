@@ -1,8 +1,8 @@
 package com.ampairs.product.agent
 
-import androidx.room.ColumnInfo
-import androidx.room.Dao
-import androidx.room.Query
+import androidx.room3.ColumnInfo
+import androidx.room3.Dao
+import androidx.room3.Query
 
 /** A low-stock product line for the assistant's LOW_STOCK report (name + on-hand quantity). */
 data class LowStockProduct(

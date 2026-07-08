@@ -1,6 +1,6 @@
 package com.ampairs.payment.agent
 
-import androidx.room.useReaderConnection
+import androidx.room3.useReaderConnection
 import com.ampairs.common.agent.ModuleQueryExecutor
 import com.ampairs.common.agent.QueryExecutorKey
 import com.ampairs.common.agent.QueryResultSet

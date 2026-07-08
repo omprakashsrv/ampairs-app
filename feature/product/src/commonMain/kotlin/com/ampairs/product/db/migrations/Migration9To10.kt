@@ -1,6 +1,6 @@
 package com.ampairs.product.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -10,7 +10,7 @@ import androidx.sqlite.execSQL
  * names declared on [com.ampairs.product.db.entity.ProductEntity] so Room's schema validation passes.
  */
 val MIGRATION_9_10 = object : Migration(9, 10) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("CREATE INDEX IF NOT EXISTS `product_brand_idx` ON `productEntity` (`brand_id`)")
         connection.execSQL("CREATE INDEX IF NOT EXISTS `product_category_idx` ON `productEntity` (`category_id`)")
         connection.execSQL("CREATE INDEX IF NOT EXISTS `product_sub_category_idx` ON `productEntity` (`sub_category_id`)")

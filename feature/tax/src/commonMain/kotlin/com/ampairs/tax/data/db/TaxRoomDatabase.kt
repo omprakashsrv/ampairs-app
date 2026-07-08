@@ -1,10 +1,10 @@
 package com.ampairs.tax.data.db
 
-import androidx.room.ConstructedBy
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
-import androidx.room.TypeConverters
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
+import androidx.room3.ColumnTypeConverters
 import com.ampairs.tax.agent.TaxAgentDao
 import com.ampairs.tax.data.db.dao.TaxCodeDao
 import com.ampairs.tax.data.db.dao.TaxComponentDao
@@ -42,7 +42,7 @@ import com.ampairs.tax.data.db.entity.TaxRuleEntity
     version = 3,  // v2→v3: added custom_name to tax_codes
     exportSchema = true
 )
-@TypeConverters(TaxInstantConverters::class)
+@ColumnTypeConverters(TaxInstantConverters::class)
 @ConstructedBy(TaxRoomDatabaseConstructor::class)
 abstract class TaxRoomDatabase : RoomDatabase() {
     abstract fun taxCodeDao(): TaxCodeDao

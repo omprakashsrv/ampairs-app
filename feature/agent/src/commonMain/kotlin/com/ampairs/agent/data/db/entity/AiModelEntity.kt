@@ -1,7 +1,7 @@
 package com.ampairs.agent.data.db.entity
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.PrimaryKey
 
 /**
  * One persisted on-device model catalog entry (the backend manifest row). Stored in the **app-scoped**

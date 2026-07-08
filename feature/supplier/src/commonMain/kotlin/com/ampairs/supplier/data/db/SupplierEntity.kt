@@ -1,8 +1,8 @@
 package com.ampairs.supplier.data.db
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.Index
+import androidx.room3.PrimaryKey
 import com.ampairs.supplier.domain.Supplier
 import com.ampairs.supplier.domain.SupplierAddress
 import kotlinx.serialization.json.Json

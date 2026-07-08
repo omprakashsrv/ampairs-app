@@ -1,9 +1,9 @@
 package com.ampairs.purchase.db
 
-import androidx.room.ConstructedBy
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
 import com.ampairs.purchase.db.dao.PurchaseDao
 import com.ampairs.purchase.db.entity.PurchaseEntity
 import com.ampairs.purchase.db.entity.PurchaseItemEntity

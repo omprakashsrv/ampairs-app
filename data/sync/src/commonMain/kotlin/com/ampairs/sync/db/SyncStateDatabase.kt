@@ -1,14 +1,12 @@
 package com.ampairs.sync.db
 
-import androidx.room.ConstructedBy
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
-import androidx.room.TypeConverters
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
 
 @Database(entities = [SyncStateEntity::class], version = 2)
 @ConstructedBy(SyncStateDatabaseConstructor::class)
-@TypeConverters(SyncStateConverters::class)
 abstract class SyncStateDatabase : RoomDatabase() {
     abstract fun syncStateDao(): SyncStateDao
 }

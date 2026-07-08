@@ -1,6 +1,6 @@
 package com.ampairs.order.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -10,7 +10,7 @@ import androidx.sqlite.execSQL
  * documents default to tax-exclusive / post-tax-reduction (preserving prior behavior).
  */
 val ORDER_MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN price_mode TEXT NOT NULL DEFAULT 'TAX_EXCLUSIVE'")
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN overall_discount_mode TEXT NOT NULL DEFAULT 'POST_TAX_REDUCTION'")
 
@@ -27,7 +27,7 @@ val ORDER_MIGRATION_1_2 = object : Migration(1, 2) {
  * to_customer_* columns, then drops the six from/to columns (bundled SQLite supports DROP COLUMN).
  */
 val ORDER_MIGRATION_2_3 = object : Migration(2, 3) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN customer_id TEXT NOT NULL DEFAULT ''")
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN customer_name TEXT NOT NULL DEFAULT ''")
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN customer_gst TEXT NOT NULL DEFAULT ''")
@@ -46,7 +46,7 @@ val ORDER_MIGRATION_2_3 = object : Migration(2, 3) {
 
 /** Order schema v3 -> v4: snapshot the seller (issuing business) identity onto the document. */
 val ORDER_MIGRATION_3_4 = object : Migration(3, 4) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN seller_name TEXT DEFAULT NULL")
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN seller_address TEXT DEFAULT NULL")
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN seller_gst TEXT DEFAULT NULL")
@@ -56,14 +56,14 @@ val ORDER_MIGRATION_3_4 = object : Migration(3, 4) {
 
 /** Order schema v4 -> v5: seller's place of supply (origin state) for the IGST-vs-CGST/SGST decision. */
 val ORDER_MIGRATION_4_5 = object : Migration(4, 5) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE orderEntity ADD COLUMN seller_place_of_supply TEXT DEFAULT NULL")
     }
 }
 
 /** Order schema v5 -> v6 (spec 009): client-resolved pricing snapshot on each line, pushed verbatim on /sync. */
 val ORDER_MIGRATION_5_6 = object : Migration(5, 6) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN resolved_unit_price_minor INTEGER DEFAULT NULL")
         connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN currency TEXT DEFAULT NULL")
         connection.execSQL("ALTER TABLE orderItemEntity ADD COLUMN price_source TEXT DEFAULT NULL")

@@ -1,6 +1,6 @@
 package com.ampairs.product.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -13,7 +13,7 @@ import androidx.sqlite.execSQL
  * 3. Create variant_attributes table for searchable attributes
  */
 val MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         // 1. Add new columns to productEntity table
         connection.execSQL(
             """

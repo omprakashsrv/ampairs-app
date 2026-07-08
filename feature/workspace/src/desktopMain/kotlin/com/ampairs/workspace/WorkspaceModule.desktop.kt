@@ -1,6 +1,6 @@
 package com.ampairs.workspace
 
-import androidx.room.Room
+import androidx.room3.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ampairs.common.desktop.DataDirectoryManager
 import com.ampairs.common.di.AppScope

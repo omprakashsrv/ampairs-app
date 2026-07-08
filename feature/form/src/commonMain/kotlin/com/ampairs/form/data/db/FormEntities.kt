@@ -1,7 +1,7 @@
 package com.ampairs.form.data.db
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.PrimaryKey
 
 /**
  * Local mirror of the unified form aggregate (spec 011). Three tables joined on `entityType`:

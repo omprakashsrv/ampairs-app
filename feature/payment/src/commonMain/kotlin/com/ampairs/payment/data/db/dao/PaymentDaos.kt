@@ -1,9 +1,9 @@
 package com.ampairs.payment.data.db.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
+import androidx.room3.Query
 import com.ampairs.payment.data.db.entity.AdjustmentVoucherEntity
 import com.ampairs.payment.data.db.entity.LedgerEntryEntity
 import com.ampairs.payment.data.db.entity.PartyBalanceEntity

@@ -1,7 +1,7 @@
 package com.ampairs.payment.agent
 
-import androidx.room.Dao
-import androidx.room.Query
+import androidx.room3.Dao
+import androidx.room3.Query
 
 /**
  * Read-only aggregate queries that back the assistant's curated payment reports — kept **separate**
