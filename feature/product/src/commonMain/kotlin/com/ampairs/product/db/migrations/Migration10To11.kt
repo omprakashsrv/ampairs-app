@@ -1,6 +1,6 @@
 package com.ampairs.product.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -9,10 +9,10 @@ import androidx.sqlite.execSQL
  * ([com.ampairs.product.db.entity.ProductStandardCostEntity]). New table, so this CREATEs it
  * (matching Room's generated shape: TEXT for String, REAL for Double, INTEGER for Boolean; String
  * primary key on `id`) plus the unique id index and the product_id lookup index. Index names match
- * the [androidx.room.Index] names declared on the entity so Room's schema validation passes.
+ * the [androidx.room3.Index] names declared on the entity so Room's schema validation passes.
  */
 val MIGRATION_10_11 = object : Migration(10, 11) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL(
             "CREATE TABLE IF NOT EXISTS `product_standard_cost` (" +
                 "`id` TEXT NOT NULL, " +

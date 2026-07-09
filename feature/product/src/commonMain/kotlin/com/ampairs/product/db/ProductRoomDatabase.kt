@@ -1,9 +1,11 @@
 package com.ampairs.product.db
 
-import androidx.room.ConstructedBy
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.DaoReturnTypeConverters
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
+import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import com.ampairs.product.agent.ProductAgentDao
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
@@ -42,6 +44,7 @@ import com.ampairs.product.db.entity.VariantAttributeEntity
     version = 11,
     exportSchema = true
 )
+@DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
 @ConstructedBy(ProductRoomDatabaseConstructor::class)
 abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao

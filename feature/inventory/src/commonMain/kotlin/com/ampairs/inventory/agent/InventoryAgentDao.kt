@@ -1,8 +1,8 @@
 package com.ampairs.inventory.agent
 
-import androidx.room.ColumnInfo
-import androidx.room.Dao
-import androidx.room.Query
+import androidx.room3.ColumnInfo
+import androidx.room3.Dao
+import androidx.room3.Query
 
 /** An inventory item hit for the assistant's chat search/low-stock list. */
 data class InventorySearchRow(

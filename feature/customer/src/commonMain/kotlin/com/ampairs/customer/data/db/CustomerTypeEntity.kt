@@ -1,7 +1,7 @@
 package com.ampairs.customer.data.db
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.PrimaryKey
 import com.ampairs.customer.domain.CustomerType
 
 @Entity(tableName = "customer_types")

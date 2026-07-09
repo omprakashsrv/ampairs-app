@@ -1,6 +1,6 @@
 package com.ampairs.customer.data.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -10,7 +10,7 @@ import androidx.sqlite.execSQL
  * [com.ampairs.customer.data.db.CustomerEntity] so Room's schema validation passes on open.
  */
 val CUSTOMER_MIGRATION_9_10 = object : Migration(9, 10) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("CREATE INDEX IF NOT EXISTS `customer_state_idx` ON `customers` (`state`)")
         connection.execSQL("CREATE INDEX IF NOT EXISTS `customer_type_idx` ON `customers` (`customer_type`)")
         connection.execSQL("CREATE INDEX IF NOT EXISTS `customer_group_idx` ON `customers` (`customer_group`)")

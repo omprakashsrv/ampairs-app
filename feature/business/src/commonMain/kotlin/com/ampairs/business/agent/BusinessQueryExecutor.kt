@@ -1,6 +1,6 @@
 package com.ampairs.business.agent
 
-import androidx.room.useReaderConnection
+import androidx.room3.useReaderConnection
 import com.ampairs.business.data.db.BusinessDatabase
 import com.ampairs.common.agent.ModuleQueryExecutor
 import com.ampairs.common.agent.QueryExecutorKey

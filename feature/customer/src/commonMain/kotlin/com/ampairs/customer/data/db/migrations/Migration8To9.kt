@@ -1,6 +1,6 @@
 package com.ampairs.customer.data.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -10,7 +10,7 @@ import androidx.sqlite.execSQL
  * on the Room round-trip (edit reload / sync push read from the entity).
  */
 val CUSTOMER_MIGRATION_8_9 = object : Migration(8, 9) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE `customers` ADD COLUMN `attributes_json` TEXT")
     }
 }

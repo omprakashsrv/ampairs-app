@@ -1,6 +1,6 @@
 package com.ampairs.workspace.db.dao
 
-import androidx.room.*
+import androidx.room3.*
 import com.ampairs.workspace.db.entity.WorkspacePermissionEntity
 import kotlinx.coroutines.flow.Flow
 

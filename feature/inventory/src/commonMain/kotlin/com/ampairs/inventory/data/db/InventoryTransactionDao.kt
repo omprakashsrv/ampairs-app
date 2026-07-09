@@ -1,7 +1,7 @@
 package com.ampairs.inventory.data.db
 
 import androidx.paging.PagingSource
-import androidx.room.*
+import androidx.room3.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao

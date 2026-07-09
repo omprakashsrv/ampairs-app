@@ -1,7 +1,7 @@
 package com.ampairs.form.agent
 
-import androidx.room.Dao
-import androidx.room.Query
+import androidx.room3.Dao
+import androidx.room3.Query
 import com.ampairs.form.data.db.FormFieldEntity
 
 /**

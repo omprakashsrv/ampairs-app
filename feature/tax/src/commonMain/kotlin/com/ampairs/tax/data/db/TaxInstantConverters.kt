@@ -1,6 +1,6 @@
 package com.ampairs.tax.data.db
 
-import androidx.room.TypeConverter
+import androidx.room3.ColumnTypeConverter
 import kotlin.time.Instant
 
 /**
@@ -12,9 +12,9 @@ import kotlin.time.Instant
  */
 object TaxInstantConverters {
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun instantToEpochMillis(instant: Instant?): Long? = instant?.toEpochMilliseconds()
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun epochMillisToInstant(millis: Long?): Instant? = millis?.let { Instant.fromEpochMilliseconds(it) }
 }

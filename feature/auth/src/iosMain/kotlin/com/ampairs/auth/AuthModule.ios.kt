@@ -1,7 +1,7 @@
 package com.ampairs.auth
 
-import androidx.room.Room
-import androidx.room.migration.Migration
+import androidx.room3.Room
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
@@ -17,7 +17,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 
 val AUTH_MIGRATION_2_3 = object : Migration(2, 3) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE userEntity ADD COLUMN profile_picture_url TEXT")
         connection.execSQL("ALTER TABLE userEntity ADD COLUMN profile_picture_thumbnail_url TEXT")
     }

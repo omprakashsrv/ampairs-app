@@ -1,8 +1,8 @@
 package com.ampairs.order.agent
 
-import androidx.room.ColumnInfo
-import androidx.room.Dao
-import androidx.room.Query
+import androidx.room3.ColumnInfo
+import androidx.room3.Dao
+import androidx.room3.Query
 
 /** An order hit for the assistant's chat search/list (id + number + status). */
 data class OrderSummaryRow(

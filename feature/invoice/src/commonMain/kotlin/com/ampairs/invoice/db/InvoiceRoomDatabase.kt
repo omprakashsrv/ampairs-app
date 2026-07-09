@@ -1,9 +1,11 @@
 package com.ampairs.invoice.db
 
-import androidx.room.ConstructedBy
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.DaoReturnTypeConverters
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
+import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import com.ampairs.invoice.agent.InvoiceAgentDao
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
@@ -18,6 +20,7 @@ import com.ampairs.invoice.db.entity.InvoiceItemEntity
     version = 6,
     exportSchema = true
 )
+@DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
 @ConstructedBy(InvoiceRoomDatabaseConstructor::class)
 abstract class InvoiceRoomDatabase : RoomDatabase() {
     abstract fun invoiceDao(): InvoiceDao

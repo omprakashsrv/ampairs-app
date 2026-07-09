@@ -1,8 +1,8 @@
 package com.ampairs.invoice.agent
 
-import androidx.room.ColumnInfo
-import androidx.room.Dao
-import androidx.room.Query
+import androidx.room3.ColumnInfo
+import androidx.room3.Dao
+import androidx.room3.Query
 
 /** One row of the "top customers by sales" report. */
 data class InvoiceCustomerSalesRow(
