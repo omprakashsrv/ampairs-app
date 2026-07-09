@@ -21,6 +21,13 @@ interface InvoiceItemDao {
     @Query("SELECT * FROM invoiceItemEntity WHERE invoice_id = :invoiceId AND active = 1 ORDER BY item_no ASC")
     suspend fun getInvoiceItems(invoiceId: String): List<InvoiceItemEntity>
 
+    /**
+     * All rows for an invoice, INCLUDING soft-deleted ones — used to diff removed lines at save and
+     * to push those deletions to the server (the push must carry active = 0 rows).
+     */
+    @Query("SELECT * FROM invoiceItemEntity WHERE invoice_id = :invoiceId ORDER BY item_no ASC")
+    suspend fun getAllInvoiceItemsRaw(invoiceId: String): List<InvoiceItemEntity>
+
     @Query("SELECT * FROM invoiceItemEntity WHERE product_id = :productId AND active = 1 ORDER BY item_no ASC")
     suspend fun getItemsByProduct(productId: String): List<InvoiceItemEntity>
 
@@ -101,6 +108,14 @@ interface InvoiceItemDao {
 
     @Query("DELETE FROM invoiceItemEntity WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    // Hard-delete line items the server reports removed (active = 0) on pull, and clean up locally
+    // soft-deleted lines once the invoice push has confirmed the deletion on the server.
+    @Query("DELETE FROM invoiceItemEntity WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
+
+    @Query("DELETE FROM invoiceItemEntity WHERE invoice_id = :invoiceId AND active = 0")
+    suspend fun deleteInactiveByInvoice(invoiceId: String)
 
     @Query("DELETE FROM invoiceItemEntity WHERE invoice_id = :invoiceId")
     suspend fun deleteByInvoiceId(invoiceId: String)

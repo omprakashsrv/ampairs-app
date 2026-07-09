@@ -74,7 +74,11 @@ class OrderSyncDelegate(
             for (batch in apiModels.chunked(100)) {
                 try {
                     orderApi.bulkUpdateOrders(batch)
-                    batch.forEach { orderDao.markAsSynced(it.id) }
+                    batch.forEach {
+                        orderDao.markAsSynced(it.id)
+                        // The soft-deleted lines have now reached the server — drop them locally.
+                        orderDao.deleteInactiveOrderItems(it.id)
+                    }
                     synced += batch.size
                 } catch (e: Exception) {
                     ErrorTracking.captureException(e, "OrderSyncDelegate.pushPending")
@@ -119,7 +123,12 @@ class OrderSyncDelegate(
                         }
                     }
                     if (toUpsert.isNotEmpty()) {
-                        orderDao.updateOrders(toUpsert.asDatabaseModel(), toUpsert.asItemDatabaseModel())
+                        // Server-removed lines arrive as active = 0 — hard-delete them locally instead
+                        // of upserting hidden rows; upsert the rest as synced.
+                        val (activeItems, inactiveItems) = toUpsert.asItemDatabaseModel().partition { it.active == 1 }
+                        orderDao.updateOrders(toUpsert.asDatabaseModel(), activeItems)
+                        val inactiveIds = inactiveItems.map { it.id }
+                        if (inactiveIds.isNotEmpty()) orderDao.deleteOrderItemsByIds(inactiveIds)
                     }
                     val batchMax = content
                         .mapNotNull { it.updatedAt?.takeIf { s -> s.isNotBlank() } }

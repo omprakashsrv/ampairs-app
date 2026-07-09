@@ -42,7 +42,14 @@ class OrderRepository(
     suspend fun saveOrder(orderEntity: OrderEntity, orderItems: List<OrderItemEntity>) {
         val numbered = if (orderEntity.order_number.isBlank()) assignOrderNumber(orderEntity) else orderEntity
         orderDao.insert(numbered.copy(synced = 0))
-        orderItemDao.insertAll(orderItems)
+        // Lines the user removed in the editor are no longer in [orderItems]. Soft-delete the ones
+        // that still exist in Room (active = 0) and keep them so the deletion rides along on the next
+        // order /sync push (in-band delete); the backend then propagates it to every device.
+        val currentIds = orderItems.map { it.id }.toSet()
+        val removed = orderItemDao.getAllOrderItemsRaw(orderEntity.id)
+            .filter { it.id !in currentIds && it.active == 1 }
+            .map { it.copy(active = 0, soft_deleted = 1) }
+        orderItemDao.insertAll(orderItems + removed)
         markPending()
     }
 
@@ -93,6 +100,9 @@ class OrderRepository(
 
         // Map the full aggregate (order + items) — the OrderEntity-only mapper sets items = empty.
         val orderDomain = orderWithItems.asDomainModel()
+        // Drop soft-deleted lines: the editor/view must never show a removed item (the raw @Relation
+        // includes inactive rows so they still ride along on the push).
+        orderDomain.items = orderDomain.items.filter { it.active }.toMutableList()
         // Re-attach the buyer from the catalog (keeps the snapshot when the row is gone).
         orderDomain.customer =
             orderDomain.customer?.uid?.takeIf { it.isNotBlank() }?.let { customerDataService.getById(it) }

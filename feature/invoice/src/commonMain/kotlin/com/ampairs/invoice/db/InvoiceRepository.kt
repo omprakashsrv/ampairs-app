@@ -57,7 +57,14 @@ class InvoiceRepository(
     @Transaction
     private suspend fun persist(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
         invoiceDao.insert(invoiceEntity.copy(synced = 0))
-        invoiceItemDao.insertAll(invoiceItems)
+        // Lines the user removed while billing are no longer in [invoiceItems]. Soft-delete the ones
+        // that still exist in Room (active = 0) and keep them so the deletion rides along on the next
+        // invoice /sync push (in-band delete); the backend then propagates it to every device.
+        val currentIds = invoiceItems.map { it.id }.toSet()
+        val removed = invoiceItemDao.getAllInvoiceItemsRaw(invoiceEntity.id)
+            .filter { it.id !in currentIds && it.active == 1L }
+            .map { it.copy(active = 0, soft_deleted = 1) }
+        invoiceItemDao.insertAll(invoiceItems + removed)
     }
 
     /**

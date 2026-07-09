@@ -97,6 +97,14 @@ interface OrderDao {
     @Query("DELETE FROM orderEntity WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    // Hard-delete line items the server reports removed (active = 0) on pull, and clean up locally
+    // soft-deleted lines once the order push has confirmed the deletion on the server.
+    @Query("DELETE FROM orderItemEntity WHERE id IN (:ids)")
+    suspend fun deleteOrderItemsByIds(ids: List<String>)
+
+    @Query("DELETE FROM orderItemEntity WHERE order_id = :orderId AND active = 0")
+    suspend fun deleteInactiveOrderItems(orderId: String)
+
     @Query("DELETE FROM orderEntity")
     suspend fun deleteAll()
 
