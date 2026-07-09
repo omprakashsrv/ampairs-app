@@ -470,6 +470,8 @@ private class FakeInvoiceItemDao : InvoiceItemDao {
     override suspend fun insertAll(invoiceItems: List<InvoiceItemEntity>) { invoiceItems.forEach { rows[it.id] = it } }
     override suspend fun getInvoiceItems(invoiceId: String): List<InvoiceItemEntity> =
         rows.values.filter { it.invoice_id == invoiceId && it.active == 1L }.sortedBy { it.item_no }
+    override suspend fun getAllInvoiceItemsRaw(invoiceId: String): List<InvoiceItemEntity> =
+        rows.values.filter { it.invoice_id == invoiceId }.sortedBy { it.item_no }
 
     override suspend fun selectById(id: String): InvoiceItemEntity? = rows[id]
     override suspend fun selectAll(): List<InvoiceItemEntity> = rows.values.toList()
@@ -499,6 +501,10 @@ private class FakeInvoiceItemDao : InvoiceItemDao {
     override suspend fun softDelete(id: String) {}
     override suspend fun softDeleteByInvoiceId(invoiceId: String) {}
     override suspend fun deleteById(id: String) { rows.remove(id) }
+    override suspend fun deleteByIds(ids: List<String>) { ids.forEach { rows.remove(it) } }
+    override suspend fun deleteInactiveByInvoice(invoiceId: String) {
+        rows.values.filter { it.invoice_id == invoiceId && it.active == 0L }.forEach { rows.remove(it.id) }
+    }
     override suspend fun deleteByInvoiceId(invoiceId: String) {
         rows.values.filter { it.invoice_id == invoiceId }.forEach { rows.remove(it.id) }
     }
