@@ -787,6 +787,14 @@ class OrderViewModel(
                 order = orderRepository.getOrder(id)
                 customer = order.customer
                 orderItems.addAll(order.items)
+                // unitName is transient (display-only, not persisted) — restore it from the unit
+                // catalog so re-opened lines show their unit even when the catalog product isn't
+                // attached (publishLineUis otherwise resolves the name only via the product's units).
+                orderItems.forEach { item ->
+                    if (item.unitName.isBlank() && item.unitId.isNotBlank()) {
+                        unitLookup.getUnitById(item.unitId)?.let { u -> item.unitName = u.shortName.ifBlank { u.name } }
+                    }
+                }
             } else {
                 customer = customerId?.let { customerDataService.getById(it) }
                 order.customer = customer
