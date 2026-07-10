@@ -180,4 +180,41 @@ class ProductTest {
         assertEquals(listOf("A", "B"), entities.asProductDomainModel().map { it.id })
         assertEquals(listOf("A", "B"), entities.asProductApiModel().map { it.id })
     }
+
+    // ---- base unit resolution on pull (base_unit_id / unit_id fallback) ----
+
+    private fun apiModel(
+        id: String = "P1",
+        baseUnitId: String? = null,
+        unitId: String? = null,
+    ) = com.ampairs.product.api.model.ProductApiModel(
+        id = id,
+        name = "Widget",
+        code = "C1",
+        groupId = null,
+        brandId = null,
+        categoryId = null,
+        subCategoryId = null,
+        mrp = 100.0,
+        dp = 80.0,
+        sellingPrice = 90.0,
+        taxCode = "HSN1",
+        unitId = unitId,
+        baseUnitId = baseUnitId,
+        baseUnit = null,
+        unitConversions = emptyList(),
+        images = emptyList(),
+    )
+
+    @Test
+    fun `asDatabaseModel prefers base_unit_id when present`() {
+        val e = listOf(apiModel(baseUnitId = "U_BASE", unitId = "U_UNIT")).asDatabaseModel().single()
+        assertEquals("U_BASE", e.base_unit, "base_unit_id wins over unit_id")
+    }
+
+    @Test
+    fun `asDatabaseModel falls back to unit_id when base_unit_id is blank`() {
+        assertEquals("U_UNIT", listOf(apiModel(baseUnitId = null, unitId = "U_UNIT")).asDatabaseModel().single().base_unit)
+        assertEquals("U_UNIT", listOf(apiModel(baseUnitId = "", unitId = "U_UNIT")).asDatabaseModel().single().base_unit)
+    }
 }

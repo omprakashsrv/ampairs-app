@@ -157,6 +157,9 @@ fun ProductEntity.asProductApiModel(): ProductApiModel {
         dp = this.dp,
         baseUnit = null,
         baseUnitId = this.base_unit,
+        // Mirror the unit into unit_id too so a mobile-side edit keeps the backend's unit_id
+        // consistent (the app treats base_unit as the single canonical unit).
+        unitId = this.base_unit,
         inventory = InventoryApiModel(
             productId = this.id,
             baseUnitId = this.base_unit,
@@ -206,7 +209,12 @@ fun List<ProductApiModel>.asDatabaseModel(): List<ProductEntity> {
             updated_at = it.updatedAt,
             mrp = it.mrp,
             dp = it.dp,
-            base_unit = it.baseUnitId ?: it.inventory?.baseUnitId,
+            // Fall back to the product's primary unit_id (and inventory base unit) when the
+            // dedicated base_unit_id is absent — many products carry their unit only in unit_id,
+            // and without this the app resolves no base unit at all (blank unit dropdown).
+            base_unit = it.baseUnitId?.takeIf { id -> id.isNotBlank() }
+                ?: it.unitId?.takeIf { id -> id.isNotBlank() }
+                ?: it.inventory?.baseUnitId,
             stock_quantity = it.inventory?.stock,
             selling_price = it.sellingPrice,
             soft_deleted = if (it.softDeleted) 1 else 0,
