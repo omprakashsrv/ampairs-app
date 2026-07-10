@@ -94,6 +94,13 @@ class UnitRepository(
 
     override suspend fun unitsForProduct(productId: String, baseUnitId: String?): List<UnitOption> {
         val base = baseUnitId?.takeIf { it.isNotBlank() }?.let { unitDao.getUnitById(it)?.toUnit() }
+        // TEMP DIAGNOSTIC (unit-not-selected regression): shows whether the product carries a base
+        // unit id and whether it resolves to a local unit row. Grep logcat for "UNIT_DIAG".
+        UnitLogger.d(
+            "UNIT_DIAG",
+            "unitsForProduct product=$productId baseUnitId='${baseUnitId ?: ""}' " +
+                "baseResolved=${base != null} baseName='${base?.shortName ?: base?.name ?: ""}'",
+        )
         val options = mutableListOf<UnitOption>()
         if (base != null) {
             options.add(
