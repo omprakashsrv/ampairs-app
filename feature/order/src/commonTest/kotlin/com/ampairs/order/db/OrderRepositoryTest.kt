@@ -384,6 +384,8 @@ private class FakeOrderDao : OrderDao {
     override suspend fun updateStatus(id: String, status: String) {}
     override suspend fun softDelete(id: String) {}
     override suspend fun deleteById(id: String) { rows.remove(id) }
+    override suspend fun deleteOrderItemsByIds(ids: List<String>) {}
+    override suspend fun deleteInactiveOrderItems(orderId: String) {}
     override suspend fun deleteAll() { rows.clear() }
     override fun getAllOrdersPagingSource(): PagingSource<Int, OrderEntity> = throw NotImplementedError()
     override fun getOrdersByCustomerPagingSource(customerId: String): PagingSource<Int, OrderEntity> = throw NotImplementedError()
@@ -403,6 +405,8 @@ private class FakeOrderItemDao : OrderItemDao {
     override suspend fun insertAll(orderItems: List<OrderItemEntity>) { orderItems.forEach { rows[it.id] = it } }
     override suspend fun getOrderItems(orderId: String): List<OrderItemEntity> =
         rows.values.filter { it.order_id == orderId && it.active == 1 }.sortedBy { it.item_no }
+    override suspend fun getAllOrderItemsRaw(orderId: String): List<OrderItemEntity> =
+        rows.values.filter { it.order_id == orderId }.sortedBy { it.item_no }
 
     override suspend fun selectById(id: String): OrderItemEntity? = rows[id]
     override suspend fun selectAll(): List<OrderItemEntity> = rows.values.toList()

@@ -24,6 +24,7 @@ class ProductTest {
         serviceType: String? = null,
         stock: Double? = null,
         attributesJson: String? = null,
+        baseUnit: String? = null,
     ) = ProductEntity(
         id = id,
         name = name,
@@ -39,6 +40,7 @@ class ProductTest {
         active = active,
         soft_deleted = softDeleted,
         attributes_json = attributesJson,
+        base_unit = baseUnit,
     )
 
     // ---- computed properties ----
@@ -99,6 +101,14 @@ class ProductTest {
         assertEquals("", domain.groupId, "null group_id maps to empty string")
         assertEquals(90.0, domain.sellingPrice)
         assertEquals(emptyMap(), domain.attributes, "null attributes_json -> empty map")
+    }
+
+    @Test
+    fun `asDomainModel carries base_unit into baseUnitId (composer unit resolution)`() {
+        // Regression: the composer resolves a line's units from ProductSummary.baseUnitId, so
+        // asDomainModel dropping base_unit left every picked product with a blank "(base)" unit.
+        assertEquals("UNT_PCS", entity(baseUnit = "UNT_PCS").asDomainModel().baseUnitId)
+        assertEquals("UNT_PCS", entity(baseUnit = "UNT_PCS").asDomainModel().toSummary().baseUnitId)
     }
 
     @Test
@@ -179,5 +189,42 @@ class ProductTest {
         val entities = listOf(entity(id = "A"), entity(id = "B"))
         assertEquals(listOf("A", "B"), entities.asProductDomainModel().map { it.id })
         assertEquals(listOf("A", "B"), entities.asProductApiModel().map { it.id })
+    }
+
+    // ---- base unit resolution on pull (base_unit_id / unit_id fallback) ----
+
+    private fun apiModel(
+        id: String = "P1",
+        baseUnitId: String? = null,
+        unitId: String? = null,
+    ) = com.ampairs.product.api.model.ProductApiModel(
+        id = id,
+        name = "Widget",
+        code = "C1",
+        groupId = null,
+        brandId = null,
+        categoryId = null,
+        subCategoryId = null,
+        mrp = 100.0,
+        dp = 80.0,
+        sellingPrice = 90.0,
+        taxCode = "HSN1",
+        unitId = unitId,
+        baseUnitId = baseUnitId,
+        baseUnit = null,
+        unitConversions = emptyList(),
+        images = emptyList(),
+    )
+
+    @Test
+    fun `asDatabaseModel prefers base_unit_id when present`() {
+        val e = listOf(apiModel(baseUnitId = "U_BASE", unitId = "U_UNIT")).asDatabaseModel().single()
+        assertEquals("U_BASE", e.base_unit, "base_unit_id wins over unit_id")
+    }
+
+    @Test
+    fun `asDatabaseModel falls back to unit_id when base_unit_id is blank`() {
+        assertEquals("U_UNIT", listOf(apiModel(baseUnitId = null, unitId = "U_UNIT")).asDatabaseModel().single().base_unit)
+        assertEquals("U_UNIT", listOf(apiModel(baseUnitId = "", unitId = "U_UNIT")).asDatabaseModel().single().base_unit)
     }
 }

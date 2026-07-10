@@ -199,15 +199,13 @@ class OrderViewModel(
     }
 
     /**
-     * Merge rule (spec 010 v2): same product + same unit, no price override and no line discount
-     * on either side → increment quantity; otherwise append a new line.
+     * One line per product: if the product is already on the order, increment that line's quantity
+     * instead of appending a duplicate. Matches on the line's product id — including lines reloaded
+     * from Room, where the catalog product isn't attached (product == null) but productId is set.
      */
     private suspend fun commitPreview(preview: EntryPreview) {
         val mergeable = orderItems.find { item ->
-            item.product?.id == preview.product.id &&
-                unitKeyOf(item) == preview.unit.unitId &&
-                !item.priceOverridden && !preview.priceOverridden &&
-                item.discount.isEmpty() && preview.discountPercent == 0.0
+            (item.product?.id ?: item.productId) == preview.product.id
         }
         if (mergeable != null) {
             mergeable.quantity = EntryMatcher.clampToDecimals(mergeable.quantity + preview.quantity, preview.unit.decimalPlaces)
@@ -239,8 +237,6 @@ class OrderViewModel(
         }
         computeTotals()
     }
-
-    private fun unitKeyOf(item: OrderItem): String = item.unitId
 
     private fun trimQty(q: Double): String = if (q % 1.0 == 0.0) "${q.toInt()}" else "$q"
 
@@ -787,6 +783,14 @@ class OrderViewModel(
                 order = orderRepository.getOrder(id)
                 customer = order.customer
                 orderItems.addAll(order.items)
+                // unitName is transient (display-only, not persisted) — restore it from the unit
+                // catalog so re-opened lines show their unit even when the catalog product isn't
+                // attached (publishLineUis otherwise resolves the name only via the product's units).
+                orderItems.forEach { item ->
+                    if (item.unitName.isBlank() && item.unitId.isNotBlank()) {
+                        unitLookup.getUnitById(item.unitId)?.let { u -> item.unitName = u.shortName.ifBlank { u.name } }
+                    }
+                }
             } else {
                 customer = customerId?.let { customerDataService.getById(it) }
                 order.customer = customer

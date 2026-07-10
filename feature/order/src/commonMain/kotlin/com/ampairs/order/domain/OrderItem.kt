@@ -76,6 +76,9 @@ class OrderItem(var product: ProductSummary?) {
     var basePrice: Double = 0.0
     var description: String = (product?.name + " " + product?.code)
     var productId = product?.id
+
+    /** HSN snapshot — kept on the line so it survives without an attached catalog product. */
+    var taxCode: String = product?.taxCode ?: ""
     var productPrice: Double = product?.sellingPrice ?: 0.0
     var dp: Double = product?.dp ?: 0.0
     var totalTax: Double = 0.0
@@ -110,9 +113,12 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
         OrderItemEntity(
             seq_id = 0,
             id = orderItem.id,
-            description = orderItem.product?.name + " " + orderItem.product?.code,
+            // Derive from the catalog product when it's attached, else keep the line's own snapshot.
+            // An untouched line (re-opened order whose product isn't in the local catalog) has a null
+            // product; re-deriving from it would wipe the name to "null null" and blank the product id.
+            description = orderItem.product?.let { "${it.name} ${it.code}" } ?: orderItem.description,
             item_no = 0,
-            product_id = orderItem.product?.id ?: "",
+            product_id = orderItem.product?.id ?: orderItem.productId ?: "",
             total_cost = orderItem.totalCost,
             base_price = orderItem.basePrice,
             product_price = orderItem.productPrice,
@@ -121,7 +127,7 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
             mrp = orderItem.mrp,
             dp = orderItem.dp,
             order_id = orderId,
-            tax_code = orderItem.product?.taxCode ?: "",
+            tax_code = orderItem.product?.taxCode ?: orderItem.taxCode,
             tax_info = Json.encodeToString(orderItem.taxInfos.toDatabaseEntity()),
             total_tax = orderItem.totalTax,
             active = if (orderItem.active) 1 else 0,
@@ -145,6 +151,7 @@ fun List<OrderItemEntity>.asItemsDomainModel(): List<OrderItem> {
         val orderItem1 = OrderItem(null)
         orderItem1.id = orderItem.id
         orderItem1.productId = orderItem.product_id
+        orderItem1.taxCode = orderItem.tax_code
         orderItem1.description = orderItem.description
         orderItem1.quantity = orderItem.quantity
         orderItem1.price = orderItem.selling_price

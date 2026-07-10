@@ -21,6 +21,10 @@ interface OrderItemDao {
     @Query("SELECT * FROM orderItemEntity WHERE order_id = :orderId AND active = 1 ORDER BY item_no ASC")
     suspend fun getOrderItems(orderId: String): List<OrderItemEntity>
 
+    /** All rows for an order, INCLUDING soft-deleted ones — used to diff removed lines at save. */
+    @Query("SELECT * FROM orderItemEntity WHERE order_id = :orderId")
+    suspend fun getAllOrderItemsRaw(orderId: String): List<OrderItemEntity>
+
     @Query("SELECT * FROM orderItemEntity WHERE product_id = :productId AND active = 1 ORDER BY item_no ASC")
     suspend fun getItemsByProduct(productId: String): List<OrderItemEntity>
 

@@ -68,8 +68,9 @@ class InvoiceSyncDelegate(
 
             // Build full api models (invoice + items) straight from the entities (product_id and
             // tax_code are stored on the item entity — no product lookup needed).
+            // Include soft-deleted (active = 0) lines so removed items push as in-band deletes.
             val apiModels = unsynced.map { e ->
-                e.toApiModel(invoiceItemDao.getInvoiceItems(e.id))
+                e.toApiModel(invoiceItemDao.getAllInvoiceItemsRaw(e.id))
             }
 
             var synced = 0
@@ -77,7 +78,11 @@ class InvoiceSyncDelegate(
             for (batch in apiModels.chunked(100)) {
                 try {
                     invoiceApi.bulkUpdateInvoices(batch)
-                    batch.forEach { invoiceDao.markAsSynced(it.id) }
+                    batch.forEach {
+                        invoiceDao.markAsSynced(it.id)
+                        // The soft-deleted lines have now reached the server — drop them locally.
+                        invoiceItemDao.deleteInactiveByInvoice(it.id)
+                    }
                     synced += batch.size
                 } catch (e: Exception) {
                     ErrorTracking.captureException(e, "InvoiceSyncDelegate.pushPending")
@@ -123,8 +128,12 @@ class InvoiceSyncDelegate(
                     }
                     if (toUpsert.isNotEmpty()) {
                         invoiceDao.updateInvoices(toUpsert.asDatabaseModel())
-                        val items = toUpsert.asItemDatabaseModel()
-                        if (items.isNotEmpty()) invoiceItemDao.updateInvoiceItems(items)
+                        // Server-removed lines arrive as active = 0 — hard-delete them locally instead
+                        // of upserting hidden rows; upsert the rest as synced.
+                        val (activeItems, inactiveItems) = toUpsert.asItemDatabaseModel().partition { it.active == 1L }
+                        if (activeItems.isNotEmpty()) invoiceItemDao.updateInvoiceItems(activeItems)
+                        val inactiveIds = inactiveItems.map { it.id }
+                        if (inactiveIds.isNotEmpty()) invoiceItemDao.deleteByIds(inactiveIds)
                     }
                     val batchMax = content
                         .mapNotNull { it.updatedAt?.takeIf { s -> s.isNotBlank() } }

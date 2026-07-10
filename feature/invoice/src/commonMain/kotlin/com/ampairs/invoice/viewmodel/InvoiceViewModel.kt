@@ -197,12 +197,14 @@ class InvoiceViewModel(
         }
     }
 
+    /**
+     * One line per product: if the product is already on the invoice, increment that line's quantity
+     * instead of appending a duplicate. Matches on the line's product id — including lines reloaded
+     * from Room, where the catalog product isn't attached (product == null) but productId is set.
+     */
     private suspend fun commitPreview(preview: EntryPreview) {
         val mergeable = invoiceItems.find { item ->
-            item.product?.id == preview.product.id &&
-                item.unitId == preview.unit.unitId &&
-                !item.priceOverridden && !preview.priceOverridden &&
-                item.discount.isEmpty() && preview.discountPercent == 0.0
+            (item.product?.id ?: item.productId) == preview.product.id
         }
         if (mergeable != null) {
             mergeable.quantity = EntryMatcher.clampToDecimals(mergeable.quantity + preview.quantity, preview.unit.decimalPlaces)
@@ -793,6 +795,14 @@ class InvoiceViewModel(
                 invoice = invoiceRepository.getInvoice(id)
                 customer = invoice.customer
                 invoiceItems.addAll(invoice.items)
+                // unitName is transient (display-only, not persisted) — restore it from the unit
+                // catalog so re-opened lines show their unit even when the catalog product isn't
+                // attached (publishLineUis otherwise resolves the name only via the product's units).
+                invoiceItems.forEach { item ->
+                    if (item.unitName.isBlank() && item.unitId.isNotBlank()) {
+                        unitLookup.getUnitById(item.unitId)?.let { u -> item.unitName = u.shortName.ifBlank { u.name } }
+                    }
+                }
             } else {
                 customer = customerId?.let { customerDataService.getById(it) }
                 invoice.customer = customer
