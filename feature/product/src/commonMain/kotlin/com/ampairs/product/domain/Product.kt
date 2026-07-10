@@ -83,6 +83,10 @@ fun ProductEntity.asDomainModel(): Product {
         mrp = this.mrp,
         dp = this.dp,
         baseUnit = null,
+        // Carry the base unit id through — the fast-entry composer resolves a line's sellable units
+        // from ProductSummary.baseUnitId, so omitting it here left every picked product with a blank
+        // unit (the nameless "(base)" fallback). toDomainProduct() already maps this; keep them in sync.
+        baseUnitId = this.base_unit,
         sellingPrice = this.selling_price,
         description = this.description ?: "",
         stockQuantity = this.stock_quantity,

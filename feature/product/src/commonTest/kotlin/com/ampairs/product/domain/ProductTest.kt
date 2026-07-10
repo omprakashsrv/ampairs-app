@@ -24,6 +24,7 @@ class ProductTest {
         serviceType: String? = null,
         stock: Double? = null,
         attributesJson: String? = null,
+        baseUnit: String? = null,
     ) = ProductEntity(
         id = id,
         name = name,
@@ -39,6 +40,7 @@ class ProductTest {
         active = active,
         soft_deleted = softDeleted,
         attributes_json = attributesJson,
+        base_unit = baseUnit,
     )
 
     // ---- computed properties ----
@@ -99,6 +101,14 @@ class ProductTest {
         assertEquals("", domain.groupId, "null group_id maps to empty string")
         assertEquals(90.0, domain.sellingPrice)
         assertEquals(emptyMap(), domain.attributes, "null attributes_json -> empty map")
+    }
+
+    @Test
+    fun `asDomainModel carries base_unit into baseUnitId (composer unit resolution)`() {
+        // Regression: the composer resolves a line's units from ProductSummary.baseUnitId, so
+        // asDomainModel dropping base_unit left every picked product with a blank "(base)" unit.
+        assertEquals("UNT_PCS", entity(baseUnit = "UNT_PCS").asDomainModel().baseUnitId)
+        assertEquals("UNT_PCS", entity(baseUnit = "UNT_PCS").asDomainModel().toSummary().baseUnitId)
     }
 
     @Test
