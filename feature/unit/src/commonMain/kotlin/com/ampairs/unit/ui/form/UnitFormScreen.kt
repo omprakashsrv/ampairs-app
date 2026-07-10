@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,7 +25,7 @@ fun UnitFormScreen(
     modifier: Modifier = Modifier,
     viewModel: UnitFormViewModel = assistedMetroViewModel<UnitFormViewModel, UnitFormViewModel.Factory> { create(unitId) }
 ) {
-    val formState by viewModel.formState.collectAsState()
+    val formState by viewModel.formState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
 
     val isEditing = unitId != null

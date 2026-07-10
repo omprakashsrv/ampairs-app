@@ -34,7 +34,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -232,7 +232,7 @@ fun AppBottomNavigation(
         globalNavManager.navigationService.flatMapLatest { service ->
             service?.navigationRoutes ?: flowOf(emptyList())
         }
-    }.collectAsState(initial = emptyList())
+    }.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val activeModuleCode = resolveActiveModuleCode(currentRoute)
     // Bottom nav shows Home + up to 3 modules (by navigationIndex) + More

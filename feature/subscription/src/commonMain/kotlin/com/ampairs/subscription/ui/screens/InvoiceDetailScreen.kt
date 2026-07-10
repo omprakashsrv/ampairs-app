@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
@@ -29,11 +30,11 @@ fun InvoiceDetailScreen(
     onNavigateBack: () -> Unit,
     viewModel: InvoiceViewModel = metroViewModel(),
 ) {
-    val invoice by viewModel.selectedInvoice.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isProcessingPayment by viewModel.isProcessingPayment.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val paymentLink by viewModel.paymentLink.collectAsState()
+    val invoice by viewModel.selectedInvoice.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isProcessingPayment by viewModel.isProcessingPayment.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val paymentLink by viewModel.paymentLink.collectAsStateWithLifecycle()
 
     val uriHandler = LocalUriHandler.current
     var showPaymentDialog by remember { mutableStateOf(false) }

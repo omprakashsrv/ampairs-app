@@ -180,6 +180,7 @@ kotlin {
                 implementation(libs.lifecycle.viewmodel)
                 implementation(libs.lifecycle.viewmodel.compose)
                 implementation(libs.lifecycle.viewmodel.navigation3)
+                implementation(libs.lifecycle.runtime.compose)
                 implementation(libs.savedstate)
                 implementation(libs.savedstate.compose)
                 implementation(libs.paging.componse.common)

@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ampairs.business.domain.BusinessImage
 import com.ampairs.business.domain.BusinessImageType
@@ -37,7 +38,7 @@ fun BusinessImagesScreen(
     modifier: Modifier = Modifier,
     viewModel: BusinessImagesViewModel = metroViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Upload dialog state

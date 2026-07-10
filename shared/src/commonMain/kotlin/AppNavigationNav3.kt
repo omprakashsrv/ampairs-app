@@ -7,7 +7,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -49,7 +48,7 @@ fun AppNavigationNav3(
     onWorkspaceLeft: (() -> Unit)? = null,
 ) {
     val viewModel: AppNavigationViewModel = metroViewModel()
-    val autoResumeState by viewModel.autoResumeState.collectAsState()
+    val autoResumeState by viewModel.autoResumeState.collectAsStateWithLifecycle()
     val workspaceSession by viewModel.workspaceSession.collectAsStateWithLifecycle()
 
     // Show loading while checking auto-resume

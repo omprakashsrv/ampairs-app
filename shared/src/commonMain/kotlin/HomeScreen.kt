@@ -43,7 +43,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,9 +75,9 @@ fun HomeScreen(
     badgeViewModel: NotificationBadgeViewModel = metroViewModel()
 ) {
     val globalNavManager = remember { GlobalNavigationManager.getInstance() }
-    val navigationService by globalNavManager.navigationService.collectAsState()
+    val navigationService by globalNavManager.navigationService.collectAsStateWithLifecycle()
     val headerStateManager = remember { AppHeaderStateManager.instance }
-    val headerState by headerStateManager.headerState.collectAsState()
+    val headerState by headerStateManager.headerState.collectAsStateWithLifecycle()
     val unreadCount by badgeViewModel.unreadCount.collectAsStateWithLifecycle()
 
     val userName = headerState.currentUser?.firstName ?: ""

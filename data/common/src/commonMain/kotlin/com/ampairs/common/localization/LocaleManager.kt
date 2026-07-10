@@ -3,7 +3,7 @@ package com.ampairs.common.localization
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -65,7 +65,7 @@ fun LocaleProvider(
     localeManager: LocaleManager,
     content: @Composable () -> Unit
 ) {
-    val languageCode by localeManager.currentLanguageCode.collectAsState()
+    val languageCode by localeManager.currentLanguageCode.collectAsStateWithLifecycle()
 
     PlatformLocaleConfiguration(languageCode) {
         CompositionLocalProvider(

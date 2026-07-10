@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.business.domain.BusinessOverview
 import com.ampairs.business.ui.components.BusinessChecklistItem
 import com.ampairs.business.ui.components.BusinessCompletenessCard
@@ -47,8 +48,8 @@ fun BusinessOverviewScreen(
     modifier: Modifier = Modifier,
     viewModel: BusinessOverviewViewModel = metroViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val hasCustomAttributes by viewModel.hasCustomAttributes.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val hasCustomAttributes by viewModel.hasCustomAttributes.collectAsStateWithLifecycle()
 
     BusinessScreenContent(modifier = modifier) {
             when {
