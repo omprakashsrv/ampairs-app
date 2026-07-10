@@ -1,7 +1,7 @@
 package com.ampairs.invoice.db
 
 import androidx.paging.PagingSource
-import androidx.room.Transaction
+import androidx.room3.Transaction
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao

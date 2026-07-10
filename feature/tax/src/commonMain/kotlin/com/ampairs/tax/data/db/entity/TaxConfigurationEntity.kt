@@ -1,8 +1,8 @@
 package com.ampairs.tax.data.db.entity
 
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import androidx.room3.ColumnInfo
+import androidx.room3.Entity
+import androidx.room3.PrimaryKey
 import com.ampairs.tax.domain.model.TaxCodeType
 import com.ampairs.tax.domain.model.TaxStrategy
 import com.ampairs.tax.domain.model.TaxConfiguration

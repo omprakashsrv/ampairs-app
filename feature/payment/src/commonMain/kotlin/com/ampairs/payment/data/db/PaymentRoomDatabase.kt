@@ -1,9 +1,9 @@
 package com.ampairs.payment.data.db
 
-import androidx.room.ConstructedBy
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
 import com.ampairs.payment.agent.PaymentAgentDao
 import com.ampairs.payment.data.db.dao.AdjustmentVoucherDao
 import com.ampairs.payment.data.db.dao.LedgerEntryDao

@@ -1,6 +1,6 @@
 package com.ampairs.product.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -11,7 +11,7 @@ import androidx.sqlite.execSQL
  * 1. Add description, stock_quantity, low_stock_alert columns to productEntity table
  */
 val MIGRATION_2_3 = object : Migration(2, 3) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         // Add new columns to productEntity table
         connection.execSQL(
             """

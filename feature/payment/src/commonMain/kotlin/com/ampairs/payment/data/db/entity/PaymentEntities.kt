@@ -1,8 +1,8 @@
 package com.ampairs.payment.data.db.entity
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.Index
+import androidx.room3.PrimaryKey
 
 /**
  * Room entities for the party ledger (spec 013). Money stored as [Long] minor units (paise);

@@ -16,6 +16,10 @@ import com.ampairs.product.db.entity.ProductEntity
  */
 internal object TallyInventoryMapper {
 
+    /** Own alterId checkpoint — separate from [com.ampairs.tallysync.TallyProductMapper.ENTITY_STOCK_ITEM]
+     * so filtering stock balances doesn't race with (or get skipped by) the stock-item master checkpoint. */
+    const val ENTITY_STOCK_BALANCE = "stock_balance"
+
     private const val ID_PREFIX_ITEM = "INVTLY"
     private const val ID_PREFIX_TXN = "TXNTLY"
 

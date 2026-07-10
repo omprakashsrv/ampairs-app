@@ -31,7 +31,7 @@ class TallyRepository(val tallyApi: TallyApi) {
     suspend fun getStockBalances(): TallyXML {
         val xml = Type.STOCK_BALANCE.toTallyXML()
         val collection = xml.body?.desc?.tdl?.tdlMessage?.collection!!
-        collection.nativeMethod = listOf("NAME", "GUID", "BASEUNITS")
+        collection.nativeMethod = listOf("NAME", "GUID", "BASEUNITS", "ALTERID")
         collection.compute = listOf(
             "CLOSINGBALANCE : \$CLOSINGBALANCE",
             "CLOSINGVALUE : \$CLOSINGVALUE",

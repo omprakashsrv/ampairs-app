@@ -44,6 +44,7 @@ import com.ampairs.tallysync.TallyCustomerMapper.toCustomerEntity
 import com.ampairs.tallysync.TallyCustomerMapper.toCustomerGroupEntity
 import com.ampairs.tallysync.TallyCustomerMapper.toSupplierEntity
 import com.ampairs.tallysync.TallyVoucherMapper.toMappedPurchase
+import com.ampairs.tallysync.TallyInventoryMapper.ENTITY_STOCK_BALANCE
 import com.ampairs.tallysync.TallyInventoryMapper.inventoryItemId
 import com.ampairs.tallysync.TallyInventoryMapper.openingMovement
 import com.ampairs.tallysync.TallyInventoryMapper.toInventoryItemEntity
@@ -290,7 +291,7 @@ class TallySyncService(
             val productCounts = syncProducts(repo, workspaceSlug, groupIdByName, categoryIdByName, unitIdByName)
             emit("Products: ${productCounts.products} new")
             emit("Prices: ${productCounts.prices} effective-dated entries; standard costs: ${productCounts.costs}; unit conversions: ${productCounts.conversions}")
-            val stockCounts = syncStockBalances(repo)
+            val stockCounts = syncStockBalances(repo, workspaceSlug)
             emit("Stock balances: ${stockCounts.stockBalancesUpdated} updated; inventory items: ${stockCounts.inventoryItems}")
 
             // Account groups drive both the customer-group catalogue and the debtor/creditor split
@@ -595,16 +596,23 @@ class TallySyncService(
      * module: one [InventoryItemEntity] per product with stock plus a single deterministic opening
      * [InventoryTransactionEntity] (STOCK_IN / OPENING). Both are id'd from the Tally GUID so re-sync
      * upserts in place (no duplicates / no accumulation).
+     *
+     * Incremental via the item's own [ENTITY_STOCK_BALANCE] alterId checkpoint (kept separate from
+     * [ENTITY_STOCK_ITEM] so this filter doesn't race with the stock-item master sync). Note this
+     * tracks changes to the stock item object itself; CLOSINGBALANCE is a live aggregate over that
+     * item's voucher postings, so a balance can still move without the item's ALTERID advancing.
      */
-    private suspend fun syncStockBalances(repo: TallyRepository): StockSyncCounts {
+    private suspend fun syncStockBalances(repo: TallyRepository, workspaceSlug: String): StockSyncCounts {
         val items = repo.getStockBalances().body?.data?.collection?.stockItems ?: return StockSyncCounts()
+        val lastAlterId = dataStore.getTallyLastAlterId(workspaceSlug, ENTITY_STOCK_BALANCE).first()
+        val filtered = items.filter { it.alterId.toAlterLong() > lastAlterId }
         // guid → product (for inventory metadata); products carry the Tally GUID in ref_id.
         val productByGuid = productDao.getProducts().mapNotNull { p -> p.ref_id?.let { it to p } }.toMap()
 
         var updated = 0
         val invItems = mutableListOf<InventoryItemEntity>()
         val invMovements = mutableListOf<InventoryTransactionEntity>()
-        items.forEach { item ->
+        filtered.forEach { item ->
             val qty = item.closingBalance?.parseClosingQty() ?: return@forEach
             val guid = item.guid?.takeIf { it.isNotBlank() } ?: return@forEach
             productDao.updateStockQuantityByTallyRef(guid, qty)
@@ -617,6 +625,9 @@ class TallySyncService(
         }
         invItems.chunked(BATCH_SIZE).forEach { inventoryItemDao.insertItems(it) }
         invMovements.chunked(BATCH_SIZE).forEach { inventoryTransactionDao.insertMovements(it) }
+
+        val maxAlterId = items.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
+        if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_BALANCE, maxAlterId)
 
         log.d { "syncStockBalances: $updated stock updates, ${invItems.size} inventory items" }
         return StockSyncCounts(updated, invItems.size)

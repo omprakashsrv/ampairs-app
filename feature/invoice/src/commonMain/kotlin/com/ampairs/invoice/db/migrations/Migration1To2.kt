@@ -1,6 +1,6 @@
 package com.ampairs.invoice.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -11,7 +11,7 @@ import androidx.sqlite.execSQL
  * post-tax-reduction (preserving prior behavior).
  */
 val INVOICE_MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN price_mode TEXT NOT NULL DEFAULT 'TAX_EXCLUSIVE'")
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN overall_discount_mode TEXT NOT NULL DEFAULT 'POST_TAX_REDUCTION'")
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN series TEXT NOT NULL DEFAULT 'DEFAULT'")
@@ -30,7 +30,7 @@ val INVOICE_MIGRATION_1_2 = object : Migration(1, 2) {
  * to_customer_* columns, then drops the six from/to columns (bundled SQLite supports DROP COLUMN).
  */
 val INVOICE_MIGRATION_2_3 = object : Migration(2, 3) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN customer_id TEXT NOT NULL DEFAULT ''")
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN customer_name TEXT NOT NULL DEFAULT ''")
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN customer_gst TEXT NOT NULL DEFAULT ''")
@@ -49,7 +49,7 @@ val INVOICE_MIGRATION_2_3 = object : Migration(2, 3) {
 
 /** Invoice schema v3 -> v4: snapshot the seller (issuing business) identity onto the document. */
 val INVOICE_MIGRATION_3_4 = object : Migration(3, 4) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN seller_name TEXT DEFAULT NULL")
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN seller_address TEXT DEFAULT NULL")
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN seller_gst TEXT DEFAULT NULL")
@@ -59,14 +59,14 @@ val INVOICE_MIGRATION_3_4 = object : Migration(3, 4) {
 
 /** Invoice schema v4 -> v5: seller's place of supply (origin state) for the IGST-vs-CGST/SGST decision. */
 val INVOICE_MIGRATION_4_5 = object : Migration(4, 5) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE invoiceEntity ADD COLUMN seller_place_of_supply TEXT DEFAULT NULL")
     }
 }
 
 /** Invoice schema v5 -> v6 (spec 009): client-resolved pricing snapshot on each line, pushed verbatim on /sync. */
 val INVOICE_MIGRATION_5_6 = object : Migration(5, 6) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN resolved_unit_price_minor INTEGER DEFAULT NULL")
         connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN currency TEXT DEFAULT NULL")
         connection.execSQL("ALTER TABLE invoiceItemEntity ADD COLUMN price_source TEXT DEFAULT NULL")

@@ -1,9 +1,9 @@
 package com.ampairs.agent.data.db
 
-import androidx.room.ConstructedBy
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
 import com.ampairs.agent.data.db.dao.AiModelDao
 import com.ampairs.agent.data.db.entity.AiModelEntity
 

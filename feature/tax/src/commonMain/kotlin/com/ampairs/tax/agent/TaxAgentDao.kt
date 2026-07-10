@@ -1,7 +1,7 @@
 package com.ampairs.tax.agent
 
-import androidx.room.Dao
-import androidx.room.Query
+import androidx.room3.Dao
+import androidx.room3.Query
 
 /**
  * Read-only report queries backing the assistant's tax actions — separate from the operational tax

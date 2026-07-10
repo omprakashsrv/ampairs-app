@@ -1,7 +1,7 @@
 package com.ampairs.order.db
 
 import androidx.paging.PagingSource
-import androidx.room.Transaction
+import androidx.room3.Transaction
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.order.api.OrderApi
 import com.ampairs.order.api.model.toApiModel

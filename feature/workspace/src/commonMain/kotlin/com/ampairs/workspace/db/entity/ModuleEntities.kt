@@ -1,11 +1,11 @@
 package com.ampairs.workspace.db.entity
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.Index
+import androidx.room3.PrimaryKey
 import com.ampairs.common.time.currentTimeMillis
-import androidx.room.Embedded
-import androidx.room.Relation
+import androidx.room3.Embedded
+import androidx.room3.Relation
 
 /**
  * Simple database entities that match the web service models
@@ -78,8 +78,8 @@ data class ModuleMenuItemEntity(
 data class InstalledModuleWithMenuItems(
     @Embedded val module: InstalledModuleEntity,
     @Relation(
-        parentColumn = "id",
-        entityColumn = "moduleId"
+        parentColumns = ["id"],
+        entityColumns = ["moduleId"]
     )
     val menuItems: List<ModuleMenuItemEntity>
 )

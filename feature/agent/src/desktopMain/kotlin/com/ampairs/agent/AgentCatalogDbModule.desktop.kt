@@ -1,6 +1,6 @@
 package com.ampairs.agent
 
-import androidx.room.Room
+import androidx.room3.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ampairs.agent.data.db.AgentCatalogDatabase
 import com.ampairs.common.desktop.DataDirectoryManager

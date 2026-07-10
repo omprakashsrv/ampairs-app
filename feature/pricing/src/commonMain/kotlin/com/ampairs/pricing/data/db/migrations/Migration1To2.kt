@@ -1,6 +1,6 @@
 package com.ampairs.pricing.data.db.migrations
 
-import androidx.room.migration.Migration
+import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
@@ -10,7 +10,7 @@ import androidx.sqlite.execSQL
  * the beginning and open-ended, which preserves current resolution behavior.
  */
 val PRICING_MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(connection: SQLiteConnection) {
+    override suspend fun migrate(connection: SQLiteConnection) {
         connection.execSQL("ALTER TABLE price_list_items ADD COLUMN effective_from TEXT")
         connection.execSQL("ALTER TABLE price_list_items ADD COLUMN effective_to TEXT")
     }
