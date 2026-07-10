@@ -70,6 +70,9 @@ class InvoiceItem(var product: ProductSummary?) {
     var price: Double by mutableStateOf(product?.sellingPrice ?: 0.0)
     var description: String = (product?.name + " " + product?.code)
     var productId = product?.id
+
+    /** HSN snapshot — kept on the line so it survives without an attached catalog product. */
+    var taxCode: String = product?.taxCode ?: ""
     var mrp: Double = product?.mrp ?: 0.0
     var totalCost: Double by mutableStateOf(0.0)
     var basePrice: Double = 0.0
@@ -121,7 +124,7 @@ fun List<InvoiceItem>.asDatabaseModel(invoiceId: String): List<InvoiceItemEntity
             mrp = invoiceItem.mrp,
             dp = invoiceItem.dp,
             invoice_id = invoiceId,
-            tax_code = invoiceItem.product?.taxCode ?: "",
+            tax_code = invoiceItem.product?.taxCode ?: invoiceItem.taxCode,
             tax_info = Json.encodeToString(invoiceItem.taxInfos.toDatabaseEntity()),
             total_tax = invoiceItem.totalTax,
             active = if (invoiceItem.active) 1 else 0,

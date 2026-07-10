@@ -215,6 +215,11 @@ class OrderViewViewModel(
     }
 
     private fun OrderItem.toInvoiceItem(): InvoiceItem = InvoiceItem(this.product).apply {
+        // Carry the line snapshot explicitly — the InvoiceItem(product) constructor derives these
+        // from the product, which is null for lines whose product isn't in the local catalog.
+        description = this@toInvoiceItem.description
+        productId = this@toInvoiceItem.productId
+        taxCode = this@toInvoiceItem.taxCode
         quantity = this@toInvoiceItem.quantity
         price = this@toInvoiceItem.price
         mrp = this@toInvoiceItem.mrp

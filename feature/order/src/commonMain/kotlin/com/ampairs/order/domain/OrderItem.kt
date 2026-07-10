@@ -76,6 +76,9 @@ class OrderItem(var product: ProductSummary?) {
     var basePrice: Double = 0.0
     var description: String = (product?.name + " " + product?.code)
     var productId = product?.id
+
+    /** HSN snapshot — kept on the line so it survives without an attached catalog product. */
+    var taxCode: String = product?.taxCode ?: ""
     var productPrice: Double = product?.sellingPrice ?: 0.0
     var dp: Double = product?.dp ?: 0.0
     var totalTax: Double = 0.0
@@ -124,7 +127,7 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
             mrp = orderItem.mrp,
             dp = orderItem.dp,
             order_id = orderId,
-            tax_code = orderItem.product?.taxCode ?: "",
+            tax_code = orderItem.product?.taxCode ?: orderItem.taxCode,
             tax_info = Json.encodeToString(orderItem.taxInfos.toDatabaseEntity()),
             total_tax = orderItem.totalTax,
             active = if (orderItem.active) 1 else 0,
@@ -148,6 +151,7 @@ fun List<OrderItemEntity>.asItemsDomainModel(): List<OrderItem> {
         val orderItem1 = OrderItem(null)
         orderItem1.id = orderItem.id
         orderItem1.productId = orderItem.product_id
+        orderItem1.taxCode = orderItem.tax_code
         orderItem1.description = orderItem.description
         orderItem1.quantity = orderItem.quantity
         orderItem1.price = orderItem.selling_price

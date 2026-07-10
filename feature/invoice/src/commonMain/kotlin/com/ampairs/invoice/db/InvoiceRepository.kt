@@ -159,6 +159,7 @@ class InvoiceRepository(
             // name as "null null" and the id blank, and re-saving would persist that).
             item.description = itemEntity.description
             item.productId = itemEntity.product_id
+            item.taxCode = itemEntity.tax_code
             item.quantity = itemEntity.quantity
             item.price = itemEntity.selling_price
             item.productPrice = itemEntity.product_price
