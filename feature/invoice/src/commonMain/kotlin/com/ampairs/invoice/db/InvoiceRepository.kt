@@ -154,6 +154,11 @@ class InvoiceRepository(
             val product = products.find { it.id == itemEntity.product_id }
             val item = InvoiceItem(product)
             item.id = itemEntity.id
+            // Restore the stored line snapshot so it survives an edit round-trip even when the
+            // catalog product is absent (otherwise the InvoiceItem(null) constructor leaves the
+            // name as "null null" and the id blank, and re-saving would persist that).
+            item.description = itemEntity.description
+            item.productId = itemEntity.product_id
             item.quantity = itemEntity.quantity
             item.price = itemEntity.selling_price
             item.productPrice = itemEntity.product_price

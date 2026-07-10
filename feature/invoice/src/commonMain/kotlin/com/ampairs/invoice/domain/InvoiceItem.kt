@@ -107,9 +107,12 @@ fun List<InvoiceItem>.asDatabaseModel(invoiceId: String): List<InvoiceItemEntity
         InvoiceItemEntity(
             seq_id = 0,
             id = invoiceItem.id,
-            description = invoiceItem.product?.name + " " + invoiceItem.product?.code,
+            // Derive from the catalog product when it's attached, else keep the line's own snapshot.
+            // An untouched line (re-opened invoice whose product isn't in the local catalog) has a null
+            // product; re-deriving from it would wipe the name to "null null" and blank the product id.
+            description = invoiceItem.product?.let { "${it.name} ${it.code}" } ?: invoiceItem.description,
             item_no = 0,
-            product_id = invoiceItem.product?.id ?: "",
+            product_id = invoiceItem.product?.id ?: invoiceItem.productId ?: "",
             total_cost = invoiceItem.totalCost,
             base_price = invoiceItem.basePrice,
             product_price = invoiceItem.productPrice,

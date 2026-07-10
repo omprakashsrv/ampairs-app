@@ -110,9 +110,12 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
         OrderItemEntity(
             seq_id = 0,
             id = orderItem.id,
-            description = orderItem.product?.name + " " + orderItem.product?.code,
+            // Derive from the catalog product when it's attached, else keep the line's own snapshot.
+            // An untouched line (re-opened order whose product isn't in the local catalog) has a null
+            // product; re-deriving from it would wipe the name to "null null" and blank the product id.
+            description = orderItem.product?.let { "${it.name} ${it.code}" } ?: orderItem.description,
             item_no = 0,
-            product_id = orderItem.product?.id ?: "",
+            product_id = orderItem.product?.id ?: orderItem.productId ?: "",
             total_cost = orderItem.totalCost,
             base_price = orderItem.basePrice,
             product_price = orderItem.productPrice,
