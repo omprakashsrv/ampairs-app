@@ -46,28 +46,35 @@ sync-state (1), tax (5), unit (2) — **~61 tables spread over 23 files**
 
 ---
 
-## 2. Target: 3 databases (down from 26)
+## 2. Target: 2 databases (down from 26)
 
 | # | Database | Scope | File | Contents |
 |---|---|---|---|---|
-| 1 | **`AmpairsAppDatabase`** | `AppScope` | `ampairs_app.db` | auth (3) + workspace registry (9) = 12 tables |
+| 1 | **`AmpairsAppDatabase`** | `AppScope` | `ampairs_app.db` | auth (3) + workspace registry (9) + agent model catalog (1) = 13 tables |
 | 2 | **`AmpairsWorkspaceDatabase`** | `WorkspaceScope` | `workspace_{slug}.db` | all 23 current workspace schemas = ~61 tables |
-| 3 | **`AgentCatalogDatabase`** | `AppScope` | unchanged | 1 table — stays as-is |
 
-### Why 3 and not 1 or 2
+### Why 2 and not 1
 
-- **Not 1:** App-lifetime data (auth/workspace list) and per-workspace data have different
-  lifecycles. The workspace DB must be a separate *file per workspace* so workspace switch stays
-  "close old graph, open new file" and a workspace can be wiped by deleting one file. Merging them
-  would put cross-workspace data behind one file and break the `WorkspaceScope` child-graph model.
-- **Not 2 (folding the agent catalog into the app DB):** `AgentCatalogDatabase` deliberately uses
-  `fallbackToDestructiveMigration(dropAllTables = true)` because it's a re-pullable mirror of the
-  backend model manifest. A destructive cache must never share a file with durable auth/session
-  data — one catalog schema bump would log every user out. Keeping it separate preserves the
-  "bump version, drop everything" convention at the cost of one tiny (1-table) instance.
+App-lifetime data (auth/workspace list/model catalog) and per-workspace data have different
+lifecycles. The workspace DB must be a separate *file per workspace* so workspace switch stays
+"close old graph, open new file" and a workspace can be wiped by deleting one file. Merging them
+would put cross-workspace data behind one file and break the `WorkspaceScope` child-graph model.
 
-**Runtime result: 3 open databases instead of 26** (~88% fewer connection pools/page caches), one
-`InvalidationTracker` spanning the workspace tables, and 2 files per workspace instead of 23.
+### Agent catalog convention change (required by the merge)
+
+`AgentCatalogDatabase` currently relies on `fallbackToDestructiveMigration(dropAllTables = true)`
+because it's a re-pullable mirror of the backend model manifest. That flag **must not** be carried
+onto the shared app DB — a catalog schema bump would wipe auth and log every user out. Instead, the
+"disposable cache" semantics move from the file level to the table level:
+
+- No `fallbackToDestructiveMigration` on `AmpairsAppDatabase` — ever.
+- Any future catalog schema change ships as a trivial migration that just
+  `DROP TABLE ai_models` + recreates it — the manifest re-pulls on next launch, so no data-mapping
+  migration is ever needed for catalog tables.
+- Update `.claude/memory/feedback_agent_models.md` Rule 5 accordingly when implementing.
+
+**Runtime result: 2 open databases instead of 26** (~92% fewer connection pools/page caches), one
+`InvalidationTracker` spanning the workspace tables, and 1 file per workspace instead of 23.
 
 ### Known trade-offs (accepted)
 
@@ -98,7 +105,7 @@ Features keep their `@Entity` classes and `@Dao` interfaces; the aggregator owns
 
 ```
 data/database/src/commonMain/.../
-├── AmpairsAppDatabase.kt          # @Database(entities = [12 app entities], version = 1)
+├── AmpairsAppDatabase.kt          # @Database(entities = [13 app entities], version = 1)
 ├── AmpairsWorkspaceDatabase.kt    # @Database(entities = [~61 entities], version = 1)
 ├── migrations/                    # append-only migration list (starts empty)
 ├── di/AppDatabaseDaoModule.kt     # @ContributesTo(AppScope): @Provides DAOs from app DB
@@ -140,7 +147,10 @@ data/database/src/{androidMain,iosMain,desktopMain}/
 Users have unsynced local rows (`synced = false`) that must survive. Wipe-and-repull is **not**
 acceptable. One-time import on first open of each consolidated DB:
 
-1. Open the new consolidated DB (fresh, version 1, tables created empty).
+1. Open the new consolidated DB (fresh, version 1, tables created empty). The agent catalog table
+   is **excluded from import** — it's a re-pullable cache, so it starts empty and repopulates from
+   the backend manifest on next launch (the bundled `ModelCatalog.kt` covers cold start); the old
+   `agent_catalog` file is simply deleted.
 2. For each legacy module file that exists on disk:
    a. Open it once through its **old Room class** so any pending per-module migrations run
       (legacy files can be several versions behind if the user hasn't updated in a while), close it.
@@ -170,7 +180,7 @@ mid-import re-runs idempotently (`INSERT OR REPLACE`, flag written last).
 | **2. DI rewire** | DAO providers re-sourced; per-feature DB providers removed from main-app graphs; `WorkspaceGraph`/`CentralSyncService` sync-state handle; agent query executors | app compiles all 3 targets; fresh install works end-to-end |
 | **3. Legacy importer** | `LegacyDatabaseImporter` + completion flags + file cleanup | upgrade from current release preserves unsynced rows (manual test matrix: Android flat paths, iOS/Desktop dir paths) |
 | **4. shared-ecom aggregate** | same pattern for clientApp/marketplaceApp; delete remaining feature DB classes | shared-ecom apps compile + run |
-| **5. Cleanup** | delete deprecated feature DB classes + importer legacy-open path (after deprecation window) | 26 → 3 DB classes in the tree |
+| **5. Cleanup** | delete deprecated feature DB classes + importer legacy-open path (after deprecation window) | 26 → 2 DB classes in the tree |
 
 Validation per phase: `androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`,
 `desktopApp:compileKotlin`, plus workspace-switch and sync push/pull smoke tests
@@ -181,9 +191,10 @@ DB must still be `@SingleIn(WorkspaceScope::class)` + closable-registered).
 
 ## 6. Decision summary
 
-> **3 databases: one AppScope (`ampairs_app.db`: auth + workspace registry), one per-workspace
-> (`workspace_{slug}.db`: all ~61 feature tables incl. sync state and agent chat), and the
-> untouched `AgentCatalogDatabase` destructive-migration cache.**
-> Down from 26 open instances to 3; DAO-level DI means the blast radius is confined to DI modules,
+> **2 databases: one AppScope (`ampairs_app.db`: auth + workspace registry + agent model catalog,
+> with drop-and-recreate migrations for the catalog table instead of file-level destructive
+> migration), and one per-workspace (`workspace_{slug}.db`: all ~61 feature tables incl. sync
+> state and agent chat).**
+> Down from 26 open instances to 2; DAO-level DI means the blast radius is confined to DI modules,
 > the two new DB classes, and a one-time importer — repositories, sync delegates, and ViewModels
 > are untouched.
