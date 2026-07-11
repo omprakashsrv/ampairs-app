@@ -2,7 +2,7 @@ package com.ampairs.workspace.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.MenuBarScope
 
@@ -14,8 +14,8 @@ fun MenuBarScope.DynamicModulesMenu(
     navigationService: DynamicModuleNavigationService,
     onNavigate: (String) -> Unit
 ) {
-    val navigationRoutes by navigationService.navigationRoutes.collectAsState()
-    val isLoading by navigationService.isLoading.collectAsState()
+    val navigationRoutes by navigationService.navigationRoutes.collectAsStateWithLifecycle()
+    val isLoading by navigationService.isLoading.collectAsStateWithLifecycle()
 
     // Debug logging
     LaunchedEffect(navigationRoutes) {

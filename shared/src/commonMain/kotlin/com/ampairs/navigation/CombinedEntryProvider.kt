@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -279,7 +279,7 @@ private fun mainRouteEntryProvider(
     is Route.More -> NavEntry(key) {
         val globalNavManager = remember { com.ampairs.workspace.navigation.GlobalNavigationManager.getInstance() }
         val headerStateManager = remember { com.ampairs.common.state.AppHeaderStateManager.instance }
-        val headerState by headerStateManager.headerState.collectAsState()
+        val headerState by headerStateManager.headerState.collectAsStateWithLifecycle()
         MoreScreen(
             backStack = backStack,
             onSwitchWorkspace = {

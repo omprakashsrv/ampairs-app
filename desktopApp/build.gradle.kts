@@ -13,6 +13,7 @@ kotlin {
 
 dependencies {
     implementation(projects.shared)
+    implementation(libs.lifecycle.runtime.compose)
 
     // Feature modules used directly in main.kt
     implementation(projects.data.common)

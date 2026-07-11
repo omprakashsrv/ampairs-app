@@ -11,7 +11,7 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -37,7 +37,7 @@ fun AppNavigationRail(
         globalNavManager.navigationService.flatMapLatest { service ->
             service?.allActiveRoutes ?: flowOf(emptyList())
         }
-    }.collectAsState(initial = emptyList())
+    }.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val activeModuleCode = resolveActiveModuleCode(currentRoute)
 

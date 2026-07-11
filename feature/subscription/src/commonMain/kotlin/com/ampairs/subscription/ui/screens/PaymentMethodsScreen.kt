@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.PaymentMethod
 import com.ampairs.subscription.domain.model.PaymentMethodType
@@ -33,9 +34,9 @@ fun PaymentMethodsScreen(
     viewModel: SubscriptionViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val methods by viewModel.paymentMethods.collectAsState()
-    val defaultMethod by viewModel.defaultPaymentMethod.collectAsState()
-    val isLoading by viewModel.isLoadingPayments.collectAsState()
+    val methods by viewModel.paymentMethods.collectAsStateWithLifecycle()
+    val defaultMethod by viewModel.defaultPaymentMethod.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoadingPayments.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
     var methodToDelete by remember { mutableStateOf<PaymentMethod?>(null) }

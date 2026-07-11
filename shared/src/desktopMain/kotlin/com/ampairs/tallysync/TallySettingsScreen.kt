@@ -27,7 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,8 +56,8 @@ fun TallySettingsScreen(
     var isImporting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    val logLines by scheduler.syncService.logLines.collectAsState()
-    val taxCodeCandidates by scheduler.syncService.taxCodeCandidates.collectAsState()
+    val logLines by scheduler.syncService.logLines.collectAsStateWithLifecycle()
+    val taxCodeCandidates by scheduler.syncService.taxCodeCandidates.collectAsStateWithLifecycle()
     val clipboard = LocalClipboardManager.current
 
     LaunchedEffect(workspaceSlug) {

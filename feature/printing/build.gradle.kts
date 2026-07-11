@@ -68,6 +68,7 @@ kotlin {
                 implementation(libs.material3.adaptive)
                 implementation(libs.navigation3.ui)
                 implementation(libs.lifecycle.viewmodel.navigation3)
+                implementation(libs.lifecycle.runtime.compose)
             }
         }
         commonTest {

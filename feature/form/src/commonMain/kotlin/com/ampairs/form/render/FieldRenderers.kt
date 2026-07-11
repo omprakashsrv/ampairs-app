@@ -16,7 +16,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -178,7 +178,7 @@ private fun rememberOptions(field: FormField, optionRegistry: DynamicOptionRegis
             val flow = remember(field.dynamicSourceKey) {
                 optionRegistry.forKey(field.dynamicSourceKey)?.options() ?: flowOf(emptyList())
             }
-            val items by flow.collectAsState(initial = emptyList())
+            val items by flow.collectAsStateWithLifecycle(initialValue = emptyList())
             items
         }
         null -> emptyList()

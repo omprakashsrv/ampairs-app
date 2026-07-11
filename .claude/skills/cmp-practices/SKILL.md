@@ -32,6 +32,15 @@ Consult these files for deeper guidance. They are not auto-loaded — read them 
 | MVI discipline, naming, anti-overengineering | `references/clean-code.md` | Code review, ViewModel design |
 | RemoteMediator, offline-first paging | `references/paging-offline.md` | Paged lists with Room + Ktor |
 | Metro DI — ViewModel, Repository, platform modules | `references/metro-di.md` | Any new screen, ViewModel, or feature module |
+| Room 3 KMP — entities, DAOs, transactions, migrations | `references/room-database.md` | Room entity/DAO/migration work (DI/scoping → `/metro-di`, `/offline-sync`) |
+| Coil 3 image loading — AsyncImage, ImageLoader, caching | `references/image-loading.md` | Loading remote/resource images |
+| Material 3 theming, components, adaptive layout matrix | `references/material-design.md` | Theming, component choice, window-size layouts |
+| ViewModel testing — Turbine, fakes, Metro test graphs | `references/testing.md` | Writing ViewModel / pure-function tests |
+
+Official Google Android skills also live under `.claude/skills/android-official/`: **adaptive**
+(multi-pane / window-size UI), **navigation-3** (deep links, scenes, multiple back stacks),
+**r8-analyzer** (keep-rule / shrinker optimization), **camerax** (Android camera). Load these for
+deep Android-platform detail beyond the project references above.
 
 ---
 

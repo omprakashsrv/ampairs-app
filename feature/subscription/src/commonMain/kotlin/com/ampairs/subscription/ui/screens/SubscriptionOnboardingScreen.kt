@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.subscription.domain.model.SubscriptionStatus
 import com.ampairs.subscription.util.SubscriptionOnboardingLookup
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
@@ -26,8 +27,8 @@ fun SubscriptionOnboardingScreen(
     viewModel: SubscriptionViewModel,
     onboardingManager: SubscriptionOnboardingLookup
 ) {
-    val subscription by viewModel.subscription.collectAsState()
-    val currentPlan by viewModel.currentPlan.collectAsState()
+    val subscription by viewModel.subscription.collectAsStateWithLifecycle()
+    val currentPlan by viewModel.currentPlan.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     var shouldShow by remember { mutableStateOf<Boolean?>(null) }
