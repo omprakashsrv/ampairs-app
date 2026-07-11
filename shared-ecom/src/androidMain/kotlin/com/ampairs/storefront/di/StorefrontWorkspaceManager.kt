@@ -45,7 +45,7 @@ class StorefrontWorkspaceManager(
 
         // Delegates resolved lazily on first sync event — avoids creating every DB upfront.
         centralSyncService.setDelegates { graph.syncDelegates }
-        centralSyncService.start(graph.syncStateDatabase)
+        centralSyncService.start(graph.syncStateDao)
     }
 
     fun clear() {

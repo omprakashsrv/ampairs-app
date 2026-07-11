@@ -1,6 +1,6 @@
 # Database Consolidation Plan
 
-**Status:** Proposed (planning phase — no code changes yet)
+**Status:** Implemented (this PR) — see §7 for what shipped and how it differs from the proposal
 **Problem:** Every open Room database costs native RAM — a connection pool (1 writer + reader
 connections), each connection carrying its own SQLite page cache (~2 MB default), prepared-statement
 cache, and WAL shared-memory mapping, plus Room's per-database `InvalidationTracker` and coroutine
@@ -198,3 +198,31 @@ DB must still be `@SingleIn(WorkspaceScope::class)` + closable-registered).
 > Down from 26 open instances to 2; DAO-level DI means the blast radius is confined to DI modules,
 > the two new DB classes, and a one-time importer — repositories, sync delegates, and ViewModels
 > are untouched.
+
+---
+
+## 7. Implementation notes (what actually shipped)
+
+Phases 1–4 shipped together in one PR, with one design change forced by Room codegen:
+
+- **Legacy `@Database` classes could not be kept.** Room KSP generates each DAO's `_Impl` class
+  into the DAO's package *in whichever module hosts the `@Database`*. Keeping the old per-feature
+  databases compiled alongside the consolidated one would generate every DAO impl twice on the app
+  classpath (duplicate-class failure on Android, duplicate symbols on Native). All 26 legacy
+  database classes, their platform providers and their DAO provider modules were therefore deleted
+  outright instead of deprecated, and Metro `replaces` was unnecessary.
+- **shared-ecom got its own pair in the same PR** (`StorefrontAppDatabase` = auth,
+  `StorefrontWorkspaceDatabase` = ecom + store + file + sync-state) since the feature DB classes it
+  consumed are gone. Storefront apps drop from 6 open databases to 2 as well.
+- **The importer works on raw driver connections, not legacy Room classes**: it reads
+  `PRAGMA user_version`, replays the module's Room `Migration`s manually on a
+  `BundledSQLiteDriver` connection (which also sidesteps Room identity-hash validation), then
+  copies tables column-intersection with `INSERT OR REPLACE` inside a savepoint, marks the source
+  in a `_legacy_imports` table, and deletes the legacy file. It runs in the consolidated DB's
+  `onOpen` callback, so nothing observes a half-imported state. Feature migration objects were kept
+  (referenced from `LegacySchemas` / the storefront module); everything else legacy was deleted.
+- **Agent SAFE_QUERY executors** now inject a `WorkspaceDatabaseProvider` handle (data/common)
+  instead of their module database; each composition root binds it to its consolidated workspace DB.
+- **`CentralSyncService.start`** takes a `SyncStateDao` (the sync-state table moved into the
+  consolidated workspace DBs); `WorkspaceGraph`/`StorefrontWorkspaceGraph` expose the DAO instead
+  of a database.

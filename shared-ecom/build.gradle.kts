@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
     alias(libs.plugins.metro)
 }
 
@@ -80,7 +82,20 @@ kotlin {
                 // Serialization (NavKey routes) + logging
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kermit)
+
+                // Consolidated storefront Room databases (app + workspace) live in this module
+                implementation(libs.room.runtime)
+                implementation(libs.sqlite.bundled)
             }
         }
     }
+}
+
+room3 {
+    schemaDirectory("$projectDir/schemas")
+}
+
+dependencies {
+    // Android-only module: the storefront @Database classes live in androidMain.
+    add("kspAndroid", libs.room.compiler)
 }

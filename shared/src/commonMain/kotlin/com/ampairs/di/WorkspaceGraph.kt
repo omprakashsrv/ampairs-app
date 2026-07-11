@@ -9,7 +9,7 @@ import com.ampairs.event.EventSyncBridge
 import com.ampairs.push.PushTokenRegistrar
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
-import com.ampairs.sync.db.SyncStateDatabase
+import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.GraphExtension
 import dev.zacsweers.metro.Provides
@@ -19,7 +19,7 @@ import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 interface WorkspaceGraph : ViewModelGraph {
     val workspaceResources: WorkspaceResources
     val syncDelegates: Map<SyncEntity, SyncDelegate>
-    val syncStateDatabase: SyncStateDatabase
+    val syncStateDao: SyncStateDao
     val eventSyncBridge: EventSyncBridge
     val businessLocaleProvider: BusinessLocaleProvider
     val pushTokenRegistrar: PushTokenRegistrar

@@ -113,6 +113,7 @@ kotlin {
             dependencies {
                 api(projects.data.common)
                 api(projects.data.sync)
+                api(projects.data.database)
                 api(projects.printing.core)
                 api(projects.printing.render)
                 api(projects.printing.transport)

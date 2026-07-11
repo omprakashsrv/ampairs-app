@@ -1,6 +1,5 @@
 package com.ampairs.tax.di
 
-import com.ampairs.common.di.AppScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.tax.calculation.ITaxCalculationStrategy
 import com.ampairs.tax.calculation.strategy.AustraliaGSTStrategy
@@ -10,13 +9,6 @@ import com.ampairs.tax.calculation.strategy.EUVATStrategy
 import com.ampairs.tax.calculation.strategy.IndiaGSTStrategy
 import com.ampairs.tax.calculation.strategy.UKVATStrategy
 import com.ampairs.tax.calculation.strategy.USASalesTaxStrategy
-import com.ampairs.tax.agent.TaxAgentDao
-import com.ampairs.tax.data.db.TaxRoomDatabase
-import com.ampairs.tax.data.db.dao.TaxCodeDao
-import com.ampairs.tax.data.db.dao.TaxComponentDao
-import com.ampairs.tax.data.db.dao.TaxComponentTypeDao
-import com.ampairs.tax.data.db.dao.TaxConfigurationDao
-import com.ampairs.tax.data.db.dao.TaxRuleDao
 import com.ampairs.tax.data.repository.TaxCodeLookup
 import com.ampairs.tax.data.repository.TaxCodeRepository
 import com.ampairs.tax.domain.model.TaxStrategy
@@ -31,33 +23,16 @@ import dev.zacsweers.metro.SingleIn
 //   CanadaGSTHSTStrategy, AustraliaGSTStrategy, DefaultTaxStrategy: @Inject
 // - TaxCalculationEngine: @Inject
 // - All ViewModels: @Inject
-// Platform DB providers are in TaxModule.android/ios/desktop.kt
+// Tax DAOs are provided by the consolidated workspace database module (:data:database).
 
 @ContributesTo(WorkspaceScope::class)
-interface TaxDaoModule {
+interface TaxServiceModule {
     companion object {
         @Provides
         fun provideTaxCodeLookup(repo: TaxCodeRepository): TaxCodeLookup = repo
-
-        @Provides
-        fun provideTaxCodeDao(db: TaxRoomDatabase): TaxCodeDao = db.taxCodeDao()
-
-        @Provides
-        fun provideTaxComponentTypeDao(db: TaxRoomDatabase): TaxComponentTypeDao = db.taxComponentTypeDao()
-
-        @Provides
-        fun provideTaxComponentDao(db: TaxRoomDatabase): TaxComponentDao = db.taxComponentDao()
-
-        @Provides
-        fun provideTaxRuleDao(db: TaxRoomDatabase): TaxRuleDao = db.taxRuleDao()
-
-        @Provides
-        fun provideTaxConfigurationDao(db: TaxRoomDatabase): TaxConfigurationDao = db.taxConfigurationDao()
-
-        @Provides
-        fun provideTaxAgentDao(db: TaxRoomDatabase): TaxAgentDao = db.taxAgentDao()
     }
 }
+
 
 @ContributesTo(WorkspaceScope::class)
 interface TaxStrategyModule {
