@@ -50,12 +50,12 @@ object LegacyDatabaseImporter {
     /** Builds the Room callback. [sources] is invoked lazily on first open. */
     fun callback(sources: () -> List<LegacyDatabaseSource>): RoomDatabase.Callback =
         object : RoomDatabase.Callback() {
-            override fun onOpen(connection: SQLiteConnection) {
+            override suspend fun onOpen(connection: SQLiteConnection) {
                 importAll(connection, sources())
             }
         }
 
-    fun importAll(target: SQLiteConnection, sources: List<LegacyDatabaseSource>) {
+    suspend fun importAll(target: SQLiteConnection, sources: List<LegacyDatabaseSource>) {
         val present = sources.filter { legacyFileExists(it.path) }
         if (present.isEmpty()) return
         target.execSQL(
@@ -70,7 +70,7 @@ object LegacyDatabaseImporter {
         }
     }
 
-    private fun importOne(target: SQLiteConnection, source: LegacyDatabaseSource) {
+    private suspend fun importOne(target: SQLiteConnection, source: LegacyDatabaseSource) {
         val key = source.path.substringAfterLast('/')
         if (isImported(target, key)) {
             // Marked in a previous run but the file survived (delete failed / crash after commit).
@@ -106,13 +106,13 @@ object LegacyDatabaseImporter {
     }
 
     /** Replays the module's pending Room migrations on the raw legacy connection. */
-    private fun migrateLegacy(legacy: SQLiteConnection, migrations: List<Migration>, key: String) {
+    private suspend fun migrateLegacy(legacy: SQLiteConnection, migrations: List<Migration>, key: String) {
         var version = legacy.queryLong("PRAGMA user_version")?.toInt() ?: return
         if (version == 0) return // brand-new empty file — nothing meaningful to migrate/copy
         while (true) {
             val next = migrations.firstOrNull { it.startVersion == version } ?: return
             log.i("migrating legacy $key ${next.startVersion} -> ${next.endVersion}")
-            runBlockingCompat { next.migrate(legacy) }
+            next.migrate(legacy)
             version = next.endVersion
         }
     }
@@ -205,9 +205,6 @@ object LegacyDatabaseImporter {
             close()
         }
 }
-
-/** Bridges the non-suspend Room `onOpen` callback to the suspend [Migration.migrate]. */
-internal expect fun runBlockingCompat(block: suspend () -> Unit)
 
 internal expect fun legacyFileExists(path: String): Boolean
 

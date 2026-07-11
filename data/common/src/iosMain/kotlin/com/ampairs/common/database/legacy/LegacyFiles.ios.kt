@@ -1,15 +1,12 @@
 package com.ampairs.common.database.legacy
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSFileManager
-
-internal actual fun runBlockingCompat(block: suspend () -> Unit) {
-    runBlocking { block() }
-}
 
 internal actual fun legacyFileExists(path: String): Boolean =
     NSFileManager.defaultManager.fileExistsAtPath(path)
 
+@OptIn(ExperimentalForeignApi::class)
 internal actual fun deleteLegacyDatabaseFiles(path: String) {
     val fm = NSFileManager.defaultManager
     fm.removeItemAtPath(path, error = null)
