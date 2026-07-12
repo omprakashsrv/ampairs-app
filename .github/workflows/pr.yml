@@ -60,13 +60,6 @@ jobs:
             cp androidApp/google-services.json.template androidApp/google-services.json
           fi
       - run: chmod +x ./gradlew
-      - name: (TEMP) Probe data:database KSP per target
-        # Temporary diagnostics for the google/ksp#2476 investigation — remove before merge.
-        # Desktop first (plain JVM jars) to isolate whether the MissingType failure is
-        # android-artifact-specific; then android with the classpath dump from build.gradle.kts.
-        run: |
-          ./gradlew :data:database:kspDesktop --console=plain || echo "::warning::kspDesktop FAILED"
-          ./gradlew :data:database:kspAndroidMain --console=plain
       - name: Compile Android (debug)
         # compileDebugSources compiles all Kotlin/Java + processes resources WITHOUT packaging or
         # signing. assembleDebug can't be used here: the debug build type uses the RELEASE signing

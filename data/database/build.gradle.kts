@@ -84,26 +84,7 @@ dependencies {
     add("kspIosSimulatorArm64", libs.room.compiler)
 }
 
-// google/ksp#2476: for KMP-registered android compilations KSP populates its symbol-resolution
-// classpath from `compileDependencyFiles`, which for AGP-KMP-library project dependencies contains
-// raw .aar files that the analyzer silently skips — Room then reports every cross-module
-// entity/DAO as [MissingType]. Feed the task the AAR -> classes.jar artifact view (the same view
-// KSP's own AGP branch uses). Remove once KSP supports com.android.kotlin.multiplatform.library
-// project dependencies natively.
-tasks.matching { it.name == "kspAndroidMain" }.configureEach {
-    val compileConfigName =
-        kotlin.targets.getByName("android").compilations.getByName("main").compileDependencyConfigurationName
-    val androidClassesJars = configurations.getByName(compileConfigName).incoming.artifactView {
-        attributes.attribute(Attribute.of("artifactType", String::class.java), "android-classes-jar")
-        lenient(true)
-    }.files
-    (this as com.google.devtools.ksp.gradle.KspAATask).kspConfig.libraries.from(androidClassesJars)
-    // TEMP diagnostics for google/ksp#2476: dump what the analyzer actually receives.
-    doFirst {
-        val libs = (this as com.google.devtools.ksp.gradle.KspAATask).kspConfig.libraries.files
-        logger.lifecycle("KSP kspAndroidMain libraries (${libs.size}):")
-        libs.forEach { logger.lifecycle("  [${it.extension.ifEmpty { if (it.isDirectory) "dir" else "?" }}] $it") }
-        logger.lifecycle("android-classes-jar artifactView (${androidClassesJars.files.size}):")
-        androidClassesJars.files.forEach { logger.lifecycle("  $it") }
-    }
-}
+// NOTE: cross-module Room processing (entities/DAOs living in the feature modules, @Database
+// classes here) requires KSP >= 2.3.10 — earlier KSPs cannot read binary classes from modules
+// compiled with Kotlin 2.4's default `{group}:{project}` module names and report every
+// cross-module entity/DAO as [MissingType].

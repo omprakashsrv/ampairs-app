@@ -100,14 +100,5 @@ dependencies {
     add("kspAndroid", libs.room.compiler)
 }
 
-// google/ksp#2476: same workaround as :data:database — KSP's KMP android task can't read the raw
-// .aar project dependencies on its classpath, so feed it the AAR -> classes.jar artifact view.
-tasks.matching { it.name == "kspAndroidMain" }.configureEach {
-    val compileConfigName =
-        kotlin.targets.getByName("android").compilations.getByName("main").compileDependencyConfigurationName
-    val androidClassesJars = configurations.getByName(compileConfigName).incoming.artifactView {
-        attributes.attribute(Attribute.of("artifactType", String::class.java), "android-classes-jar")
-        lenient(true)
-    }.files
-    (this as com.google.devtools.ksp.gradle.KspAATask).kspConfig.libraries.from(androidClassesJars)
-}
+// NOTE: cross-module Room processing here (entities in the feature modules, storefront @Database
+// classes in this module) requires KSP >= 2.3.10 — see the note in data/database/build.gradle.kts.
