@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
-
 // Load local.properties into project extra so all submodules can access them via findProperty()
 val localProps = java.util.Properties()
 val localPropsFile = rootProject.file("local.properties")
@@ -25,28 +23,6 @@ plugins {
     // Applied (not `apply false`) on the root so it can aggregate the per-module
     // coverage declared via the `kover(project(...))` dependencies below.
     alias(libs.plugins.kover)
-}
-
-// ── Colon-free Kotlin module names ───────────────────────────────────────────
-// Kotlin 2.4.0 derives a compilation's default module name from the Gradle project
-// path (e.g. ":feature:customer"), so the ':' ends up in the @Metadata(moduleName)
-// recorded in every compiled .class file. KSP2's Analysis API cannot parse that ':'
-// when it reads those annotations from a *dependency* module's binaries, so any
-// cross-module Room processor (the consolidated @Database classes in :data:database
-// reference @Entity/@Dao types that live in the feature modules) fails with
-// "[ksp] [MissingType]: ... references a type that is not present" on the JVM/Android
-// targets. Native (iOS) is unaffected because klibs don't use JVM module-name
-// mangling — which is exactly why iOS compiled while :data:database:kspAndroidMain
-// did not. Forcing a colon-free, per-module name makes those binaries readable by
-// KSP2. Only the JVM/Android compile tasks need it — native compilations are left
-// untouched — so we scope to KotlinJvmCompile.
-subprojects {
-    plugins.withId("org.jetbrains.kotlin.multiplatform") {
-        val safeModuleName = path.removePrefix(":").replace(":", "_")
-        tasks.withType<KotlinJvmCompile>().configureEach {
-            compilerOptions.moduleName.set(safeModuleName)
-        }
-    }
 }
 
 // ── Aggregated code coverage (Kover) ─────────────────────────────────────────
