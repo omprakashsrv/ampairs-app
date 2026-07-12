@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 // Load local.properties into project extra so all submodules can access them via findProperty()
 val localProps = java.util.Properties()
@@ -38,19 +38,13 @@ plugins {
 // targets. Native (iOS) is unaffected because klibs don't use JVM module-name
 // mangling — which is exactly why iOS compiled while :data:database:kspAndroidMain
 // did not. Forcing a colon-free, per-module name makes those binaries readable by
-// KSP2. Applied uniformly across every compilation of a module so internal-member
-// mangling stays consistent within the module.
+// KSP2. Only the JVM/Android compile tasks need it — native compilations are left
+// untouched — so we scope to KotlinJvmCompile.
 subprojects {
     plugins.withId("org.jetbrains.kotlin.multiplatform") {
         val safeModuleName = path.removePrefix(":").replace(":", "_")
-        extensions.configure<KotlinMultiplatformExtension> {
-            targets.configureEach {
-                compilations.configureEach {
-                    compileTaskProvider.configure {
-                        compilerOptions.moduleName.set(safeModuleName)
-                    }
-                }
-            }
+        tasks.withType<KotlinJvmCompile>().configureEach {
+            compilerOptions.moduleName.set(safeModuleName)
         }
     }
 }
