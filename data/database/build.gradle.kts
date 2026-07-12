@@ -98,4 +98,12 @@ tasks.matching { it.name == "kspAndroidMain" }.configureEach {
         lenient(true)
     }.files
     (this as com.google.devtools.ksp.gradle.KspAATask).kspConfig.libraries.from(androidClassesJars)
+    // TEMP diagnostics for google/ksp#2476: dump what the analyzer actually receives.
+    doFirst {
+        val libs = (this as com.google.devtools.ksp.gradle.KspAATask).kspConfig.libraries.files
+        logger.lifecycle("KSP kspAndroidMain libraries (${libs.size}):")
+        libs.forEach { logger.lifecycle("  [${it.extension.ifEmpty { if (it.isDirectory) "dir" else "?" }}] $it") }
+        logger.lifecycle("android-classes-jar artifactView (${androidClassesJars.files.size}):")
+        androidClassesJars.files.forEach { logger.lifecycle("  $it") }
+    }
 }
