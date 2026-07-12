@@ -84,19 +84,18 @@ dependencies {
     add("kspIosSimulatorArm64", libs.room.compiler)
 }
 
-// google/ksp#2476: KSP2 resolves an incomplete project classpath for modules produced by the AGP
-// KMP library plugin, so Room reports every cross-module entity/DAO as [MissingType]. The Kotlin
-// compilation's compile classpath IS resolved correctly (AAR -> classes.jar transforms applied),
-// so feed it to the matching KSP task explicitly. Remove once KSP supports
-// com.android.kotlin.multiplatform.library project dependencies natively.
-fun wireKspClasspath(taskName: String, targetName: String) {
-    tasks.matching { it.name == taskName }.configureEach {
-        (this as com.google.devtools.ksp.gradle.KspAATask).kspConfig.libraries.from(
-            kotlin.targets.getByName(targetName).compilations.getByName("main").compileDependencyFiles
-        )
-    }
+// google/ksp#2476: for KMP-registered android compilations KSP populates its symbol-resolution
+// classpath from `compileDependencyFiles`, which for AGP-KMP-library project dependencies contains
+// raw .aar files that the analyzer silently skips — Room then reports every cross-module
+// entity/DAO as [MissingType]. Feed the task the AAR -> classes.jar artifact view (the same view
+// KSP's own AGP branch uses). Remove once KSP supports com.android.kotlin.multiplatform.library
+// project dependencies natively.
+tasks.matching { it.name == "kspAndroidMain" }.configureEach {
+    val compileConfigName =
+        kotlin.targets.getByName("android").compilations.getByName("main").compileDependencyConfigurationName
+    val androidClassesJars = configurations.getByName(compileConfigName).incoming.artifactView {
+        attributes.attribute(Attribute.of("artifactType", String::class.java), "android-classes-jar")
+        lenient(true)
+    }.files
+    (this as com.google.devtools.ksp.gradle.KspAATask).kspConfig.libraries.from(androidClassesJars)
 }
-wireKspClasspath("kspAndroidMain", "android")
-wireKspClasspath("kspDesktop", "desktop")
-wireKspClasspath("kspIosArm64", "iosArm64")
-wireKspClasspath("kspIosSimulatorArm64", "iosSimulatorArm64")
