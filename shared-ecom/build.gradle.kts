@@ -99,3 +99,12 @@ dependencies {
     // Android-only module: the storefront @Database classes live in androidMain.
     add("kspAndroid", libs.room.compiler)
 }
+
+// google/ksp#2476: same workaround as :data:database — KSP2 resolves an incomplete project
+// classpath for AGP-KMP-library dependencies, so feed the Kotlin compilation's (correctly
+// transformed) compile classpath to the KSP task explicitly.
+tasks.matching { it.name == "kspAndroidMain" }.configureEach {
+    (this as com.google.devtools.ksp.gradle.KspAATask).kspConfig.libraries.from(
+        kotlin.targets.getByName("android").compilations.getByName("main").compileDependencyFiles
+    )
+}
