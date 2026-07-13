@@ -96,12 +96,20 @@ internal object TallyVoucherMapper {
         return cleaned.toDoubleOrNull() ?: 0.0
     }
 
-    /** Tally voucher DATE is "YYYYMMDD"; normalize to ISO "yyyy-MM-dd" (pass through if already dashed). */
+    /**
+     * Tally voucher DATE is "YYYYMMDD"; normalize to the space-formatted "yyyy-MM-dd HH:mm:ss" that
+     * invoice_date/purchase_date/entry_date are stored in everywhere else (pass through if already
+     * dashed). A bare "yyyy-MM-dd" here would silently corrupt to epoch on sync push, because
+     * InvoiceApiModel/PurchaseApiModel/LedgerEntryApiModel's toIsoInstantOrSelf() only accepts ISO
+     * instants or the space-formatted form, and DateTimeAdapter.parseDate() swallows the failure and
+     * defaults to 0L (1970-01-01) instead of throwing.
+     */
     private fun String?.tallyDateToIso(): String {
         val s = this?.trim().orEmpty()
         return when {
             s.isEmpty() -> ""
-            s.length == 8 && s.all(Char::isDigit) -> "${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)}"
+            s.length == 8 && s.all(Char::isDigit) ->
+                "${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)} 00:00:00"
             else -> s
         }
     }
