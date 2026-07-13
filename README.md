@@ -1,4 +1,4 @@
-# Ampairs Mobile Application
+# Ampairs Applications
 
 [![License](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-orange.svg)](LICENSE.md)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-blue)
