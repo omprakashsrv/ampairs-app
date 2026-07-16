@@ -94,11 +94,11 @@ fun PurchaseDetailsScreen(
                                     text = purchase.supplier_name.ifBlank { "—" },
                                     style = MaterialTheme.typography.titleMedium
                                 )
-                                if (!purchase.supplier_invoice_number.isNullOrBlank()) {
+                                purchase.supplier_invoice_number?.takeIf { it.isNotBlank() }?.let { supplierInvoiceNumber ->
                                     Text(
                                         text = stringResource(
                                             Res.string.pur_detail_supplier_invoice,
-                                            purchase.supplier_invoice_number
+                                            supplierInvoiceNumber
                                         ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant

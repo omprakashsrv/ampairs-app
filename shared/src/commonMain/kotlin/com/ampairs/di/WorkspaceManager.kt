@@ -41,7 +41,7 @@ class WorkspaceManager(
 
         // Delegates resolved lazily on first sync event — avoids creating all databases upfront.
         centralSyncService.setDelegates { graph.syncDelegates }
-        centralSyncService.start(graph.syncStateDatabase)
+        centralSyncService.start(graph.syncStateDao)
 
         graph.eventSyncBridge.start()
 

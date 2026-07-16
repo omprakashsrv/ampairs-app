@@ -4,8 +4,6 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
     alias(libs.plugins.metro)
     alias(libs.plugins.kover)
 }
@@ -29,6 +27,8 @@ kotlin {
                 api(projects.feature.customerApi)
                 api(projects.feature.fileApi)
                 api(projects.feature.file)
+                // Consolidated Room persistence (entities/DAOs live here after DB consolidation)
+                implementation(projects.data.database)
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
                 implementation(libs.kermit)
@@ -94,20 +94,5 @@ kotlin {
     }
 }
 
-room3 {
-    schemaDirectory("$projectDir/schemas")
-}
-
-dependencies {
-    add("kspAndroid", libs.room.compiler)
-    add("kspDesktop", libs.room.compiler)
-    add("kspIosArm64", libs.room.compiler)
-    add("kspIosSimulatorArm64", libs.room.compiler)
-}
-
-tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
-    dependsOn(tasks.matching { it.name.startsWith("generateComposeResClass") })
-    dependsOn(tasks.matching { it.name.startsWith("generateResourceAccessorsFor") })
-    dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
-    dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
-}
+// Room persistence (entities/DAOs/@Database + KSP codegen) moved to :data:database as part of the
+// database consolidation — this module no longer runs the Room processor.

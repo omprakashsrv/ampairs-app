@@ -1,12 +1,10 @@
 package com.ampairs.auth
 
 import android.content.Context
-import androidx.room3.Room
 import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
-import com.ampairs.auth.db.AuthRoomDatabase
 import com.ampairs.auth.firebase.FirebaseAuthProvider
 import com.ampairs.auth.service.RecaptchaConfig
 import com.ampairs.auth.service.RecaptchaService
@@ -34,20 +32,6 @@ val AUTH_MIGRATION_2_3 = object : Migration(2, 3) {
 @ContributesTo(AppScope::class)
 interface AuthAndroidModule {
     companion object {
-        @Provides @SingleIn(AppScope::class)
-        fun provideAuthDatabase(context: Context): AuthRoomDatabase {
-            val dbFile = context.getDatabasePath("auth.db")
-            return Room.databaseBuilder<AuthRoomDatabase>(
-                context = context,
-                name = dbFile.absolutePath
-            )
-                .setDriver(BundledSQLiteDriver())
-                .setQueryCoroutineContext(Dispatchers.IO)
-                .addMigrations(AUTH_MIGRATION_2_3)
-                .enableMultiInstanceInvalidation()
-                .build()
-        }
-
         @Provides @SingleIn(AppScope::class)
         fun provideFirebaseAuthProvider(): FirebaseAuthProvider = FirebaseAuthProvider()
 

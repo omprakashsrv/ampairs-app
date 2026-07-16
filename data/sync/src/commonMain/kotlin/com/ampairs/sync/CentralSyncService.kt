@@ -4,7 +4,6 @@ import co.touchlab.kermit.Logger
 import com.ampairs.common.di.AppScope
 import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
-import com.ampairs.sync.db.SyncStateDatabase
 import com.ampairs.sync.db.SyncStateEntity
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -95,16 +94,17 @@ class CentralSyncService {
     // region — Lifecycle
 
     /**
-     * Must be called after workspace selection with the workspace's SyncStateDatabase.
-     * Restores persisted states, then kicks off pending syncs and event processing.
+     * Must be called after workspace selection with the workspace's [SyncStateDao] (sourced from
+     * the consolidated workspace database in the main app, or the standalone sync-state database
+     * in the storefront apps). Restores persisted states, then kicks off pending syncs and event
+     * processing.
      */
-    fun start(db: SyncStateDatabase) {
+    fun start(syncDao: SyncStateDao) {
         stop() // clean up any prior session
 
         val newScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
         scope = newScope
 
-        val syncDao = db.syncStateDao()
         dao = syncDao
 
         newScope.launch {

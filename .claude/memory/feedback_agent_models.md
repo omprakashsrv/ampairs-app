@@ -60,12 +60,15 @@ re-launched-offline 270M would default to CHAT.
 
 ---
 
-## Rule 5: `AgentCatalogDatabase` is a disposable cache → use destructive migration
+## Rule 5: The model-catalog table is a disposable cache → drop-and-recreate migrations
 
-It only mirrors the backend manifest (re-pulled on next launch), so on any schema change bump the
-`@Database(version=...)` and add `.fallbackToDestructiveMigration(dropAllTables = true)` to all three
-platform builders (`AgentCatalogDbModule.{android,ios,desktop}.kt`) — **don't** write a Room migration.
-(Room 2.8.x signature requires the `dropAllTables` boolean.)
+The catalog now lives as the `AiModelEntity` table inside the consolidated `AmpairsAppDatabase`
+(`:data:database`) next to durable auth data, so `fallbackToDestructiveMigration` is **banned** on
+that database. The disposable-cache semantics moved to the table level: a catalog schema change
+ships as a normal `AmpairsAppDatabase` version bump whose migration just `DROP TABLE` + recreates
+the catalog table — the manifest re-pulls on next launch, so no data-mapping migration is ever
+needed for it. (The old standalone `AgentCatalogDatabase`/`agent_catalog.db` is deleted on upgrade
+by `LegacyDatabaseImporter` without copying.)
 
 ---
 
@@ -106,8 +109,9 @@ constrained `OutputSchema` + system prompt are the gate, not just the executor m
 
 **To make a NEW module queryable (mechanical, ~2 files, no central wiring):**
 1. `feature/{m}/.../agent/{M}QueryExecutor.kt` — `@Inject @ContributesIntoMap(WorkspaceScope::class)
-   @QueryExecutorKey("{m}")`, inject the module's Room DB, copy the `useReaderConnection { usePrepared }`
-   body verbatim from `CustomerQueryExecutor`.
+   @QueryExecutorKey("{m}")`, inject `WorkspaceDatabaseProvider` (the consolidated workspace DB handle
+   from data/common — features must not depend on :data:database), copy the
+   `databaseProvider.get().useReaderConnection { usePrepared }` body verbatim from `CustomerQueryExecutor`.
 2. `feature/{m}/.../agent/{M}QuerySchemaModule.kt` — `@ContributesTo(WorkspaceScope::class)` +
    `@Provides @IntoMap @QuerySchemaKey("{m}")` returning a `ModuleQuerySchema` of curated tables/columns.
 The injected schema map auto-feeds the prompt + moduleName enum — no edit to AgentSchemaBuilder/
@@ -122,8 +126,9 @@ unit, tax, business, subscription, ecom (added together).
   small and stops the model querying plumbing.
 - Document **units in the column description** when storage ≠ display (e.g. payment `*_minor` is paise →
   divide by 100); the model reads these descriptions.
-- Each query hits **one module's DB** — cross-module joins are impossible by construction. "Sales by
-  customer name" (invoice⨝customer) can't be one query.
+- The validator still scopes each query to **one module's curated table list**, but since the DB
+  consolidation all workspace tables live in ONE file — cross-module joins are now technically
+  possible if a future schema/validator change decides to allow them.
 
 **Hard dependency:** SQL is generated **only** by the LLM resolver — the rule-based fallback can't.
 So the data-query path needs a chat model loaded (RAM ≥ 3 GB per `RamTiers`). With no model, only the

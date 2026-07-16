@@ -38,6 +38,8 @@ kotlin {
                 // Shared data infrastructure
                 api(projects.data.common)
                 api(projects.data.sync)
+                // Consolidated Room databases (incl. the storefront @Database classes) live here.
+                api(projects.data.database)
                 // LocationService + ContactPickerService bindings (address location picker)
                 implementation(projects.feature.formwidgets)
                 // DataStore (AppPreferences public type)
@@ -80,7 +82,16 @@ kotlin {
                 // Serialization (NavKey routes) + logging
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kermit)
+
+                // Consolidated storefront Room databases (app + workspace) live in this module
+                implementation(libs.room.runtime)
+                implementation(libs.sqlite.bundled)
             }
         }
     }
 }
+
+// The storefront @Database classes (StorefrontAppDatabase / StorefrontWorkspaceDatabase) moved into
+// :data:database/androidMain so Room's KSP runs single-module alongside the entities it references
+// (cross-module @Entity resolution is unsupported by KSP2 on JVM/Android). This module no longer
+// runs the Room processor; it depends on :data:database for those @Database classes + DAOs.

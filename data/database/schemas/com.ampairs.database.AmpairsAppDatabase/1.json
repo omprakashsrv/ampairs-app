@@ -1,0 +1,1972 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "8ae97adcb9985cd0ad9346d64699cc6b",
+    "entities": [
+      {
+        "tableName": "userEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `first_name` TEXT NOT NULL, `last_name` TEXT NOT NULL, `user_name` TEXT NOT NULL, `country_code` INTEGER NOT NULL, `phone` TEXT NOT NULL, `profile_picture_url` TEXT, `profile_picture_thumbnail_url` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "first_name",
+            "columnName": "first_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_name",
+            "columnName": "last_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_name",
+            "columnName": "user_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "country_code",
+            "columnName": "country_code",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profile_picture_url",
+            "columnName": "profile_picture_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "profile_picture_thumbnail_url",
+            "columnName": "profile_picture_thumbnail_url",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_userEntity_id",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_userEntity_id` ON `${TABLE_NAME}` (`id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "userTokenEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `refresh_token` TEXT NOT NULL, `access_token` TEXT NOT NULL, `access_token_expires_at` INTEGER, `refresh_token_expires_at` INTEGER, `is_active` INTEGER NOT NULL, `last_used` INTEGER NOT NULL, `expires_at` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "refresh_token",
+            "columnName": "refresh_token",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "access_token",
+            "columnName": "access_token",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "access_token_expires_at",
+            "columnName": "access_token_expires_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "refresh_token_expires_at",
+            "columnName": "refresh_token_expires_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "is_active",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_used",
+            "columnName": "last_used",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expires_at",
+            "columnName": "expires_at",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_userTokenEntity_user_id",
+            "unique": true,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_userTokenEntity_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          },
+          {
+            "name": "index_userTokenEntity_id",
+            "unique": false,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_userTokenEntity_id` ON `${TABLE_NAME}` (`id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "userSessionEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` TEXT NOT NULL, `is_current` INTEGER NOT NULL, `workspace_id` TEXT NOT NULL, `last_login` INTEGER NOT NULL, `login_count` INTEGER NOT NULL, `device_info` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "is_current",
+            "columnName": "is_current",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspace_id",
+            "columnName": "workspace_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_login",
+            "columnName": "last_login",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "login_count",
+            "columnName": "login_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "device_info",
+            "columnName": "device_info",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_userSessionEntity_user_id",
+            "unique": false,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_userSessionEntity_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workspaceEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `name` TEXT NOT NULL, `slug` TEXT NOT NULL, `description` TEXT NOT NULL, `workspaceType` TEXT NOT NULL, `avatarUrl` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `subscriptionPlan` TEXT NOT NULL, `maxMembers` INTEGER NOT NULL, `storageLimitGb` INTEGER NOT NULL, `storageUsedGb` INTEGER NOT NULL, `timezone` TEXT NOT NULL, `language` TEXT NOT NULL, `createdBy` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `lastActivityAt` TEXT NOT NULL, `trialExpiresAt` TEXT NOT NULL, `memberCount` INTEGER NOT NULL, `isTrial` INTEGER NOT NULL, `storagePercentage` REAL NOT NULL, `sync_state` TEXT NOT NULL, `last_synced_at` INTEGER NOT NULL, `local_updated_at` INTEGER NOT NULL, `server_updated_at` INTEGER NOT NULL, `pending_changes` TEXT NOT NULL, `conflict_data` TEXT NOT NULL, `retry_count` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "slug",
+            "columnName": "slug",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspaceType",
+            "columnName": "workspaceType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatarUrl",
+            "columnName": "avatarUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subscriptionPlan",
+            "columnName": "subscriptionPlan",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxMembers",
+            "columnName": "maxMembers",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storageLimitGb",
+            "columnName": "storageLimitGb",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storageUsedGb",
+            "columnName": "storageUsedGb",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timezone",
+            "columnName": "timezone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdBy",
+            "columnName": "createdBy",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastActivityAt",
+            "columnName": "lastActivityAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trialExpiresAt",
+            "columnName": "trialExpiresAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "memberCount",
+            "columnName": "memberCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isTrial",
+            "columnName": "isTrial",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storagePercentage",
+            "columnName": "storagePercentage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sync_state",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_synced_at",
+            "columnName": "last_synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "local_updated_at",
+            "columnName": "local_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "server_updated_at",
+            "columnName": "server_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pending_changes",
+            "columnName": "pending_changes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conflict_data",
+            "columnName": "conflict_data",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retry_count",
+            "columnName": "retry_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workspaceEntity_id",
+            "unique": false,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceEntity_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_workspaceEntity_user_id",
+            "unique": false,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceEntity_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          },
+          {
+            "name": "index_workspaceEntity_user_id_id",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_workspaceEntity_user_id_id` ON `${TABLE_NAME}` (`user_id`, `id`)"
+          },
+          {
+            "name": "index_workspaceEntity_sync_state",
+            "unique": false,
+            "columnNames": [
+              "sync_state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceEntity_sync_state` ON `${TABLE_NAME}` (`sync_state`)"
+          },
+          {
+            "name": "index_workspaceEntity_last_synced_at",
+            "unique": false,
+            "columnNames": [
+              "last_synced_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceEntity_last_synced_at` ON `${TABLE_NAME}` (`last_synced_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workspaceMemberEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `member_user_id` TEXT NOT NULL, `workspace_id` TEXT NOT NULL, `email` TEXT NOT NULL, `name` TEXT NOT NULL, `role` TEXT NOT NULL, `status` TEXT NOT NULL, `joined_at` TEXT NOT NULL, `last_activity` TEXT, `permissions` TEXT NOT NULL, `avatar_url` TEXT, `phone` TEXT, `sync_state` TEXT NOT NULL, `last_synced_at` INTEGER NOT NULL, `local_updated_at` INTEGER NOT NULL, `server_updated_at` INTEGER NOT NULL, `pending_changes` TEXT NOT NULL, `conflict_data` TEXT NOT NULL, `retry_count` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "member_user_id",
+            "columnName": "member_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspace_id",
+            "columnName": "workspace_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "joined_at",
+            "columnName": "joined_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_activity",
+            "columnName": "last_activity",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "permissions",
+            "columnName": "permissions",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatar_url",
+            "columnName": "avatar_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sync_state",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_synced_at",
+            "columnName": "last_synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "local_updated_at",
+            "columnName": "local_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "server_updated_at",
+            "columnName": "server_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pending_changes",
+            "columnName": "pending_changes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conflict_data",
+            "columnName": "conflict_data",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retry_count",
+            "columnName": "retry_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workspaceMemberEntity_id",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_workspaceMemberEntity_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_workspaceMemberEntity_user_id",
+            "unique": false,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceMemberEntity_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          },
+          {
+            "name": "index_workspaceMemberEntity_workspace_id",
+            "unique": false,
+            "columnNames": [
+              "workspace_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceMemberEntity_workspace_id` ON `${TABLE_NAME}` (`workspace_id`)"
+          },
+          {
+            "name": "index_workspaceMemberEntity_sync_state",
+            "unique": false,
+            "columnNames": [
+              "sync_state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceMemberEntity_sync_state` ON `${TABLE_NAME}` (`sync_state`)"
+          },
+          {
+            "name": "index_workspaceMemberEntity_last_synced_at",
+            "unique": false,
+            "columnNames": [
+              "last_synced_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceMemberEntity_last_synced_at` ON `${TABLE_NAME}` (`last_synced_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workspaceInvitationEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `workspace_id` TEXT NOT NULL, `country_code` INTEGER NOT NULL, `phone` TEXT NOT NULL, `recipient_name` TEXT, `invited_role` TEXT NOT NULL, `status` TEXT NOT NULL, `created_at` TEXT NOT NULL, `expires_at` TEXT NOT NULL, `sent_by_name` TEXT NOT NULL, `sent_by_email` TEXT NOT NULL, `email_sent` INTEGER NOT NULL, `email_delivered` INTEGER NOT NULL, `email_opened` INTEGER NOT NULL, `link_clicked` INTEGER NOT NULL, `resend_count` INTEGER NOT NULL, `invitation_message` TEXT, `sync_state` TEXT NOT NULL, `last_synced_at` INTEGER NOT NULL, `local_updated_at` INTEGER NOT NULL, `server_updated_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspace_id",
+            "columnName": "workspace_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "country_code",
+            "columnName": "country_code",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipient_name",
+            "columnName": "recipient_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "invited_role",
+            "columnName": "invited_role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expires_at",
+            "columnName": "expires_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sent_by_name",
+            "columnName": "sent_by_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sent_by_email",
+            "columnName": "sent_by_email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email_sent",
+            "columnName": "email_sent",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email_delivered",
+            "columnName": "email_delivered",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email_opened",
+            "columnName": "email_opened",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "link_clicked",
+            "columnName": "link_clicked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resend_count",
+            "columnName": "resend_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "invitation_message",
+            "columnName": "invitation_message",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sync_state",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_synced_at",
+            "columnName": "last_synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "local_updated_at",
+            "columnName": "local_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "server_updated_at",
+            "columnName": "server_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workspaceInvitationEntity_id",
+            "unique": false,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_workspaceInvitationEntity_user_id",
+            "unique": false,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          },
+          {
+            "name": "index_workspaceInvitationEntity_workspace_id",
+            "unique": false,
+            "columnNames": [
+              "workspace_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_workspace_id` ON `${TABLE_NAME}` (`workspace_id`)"
+          },
+          {
+            "name": "index_workspaceInvitationEntity_user_id_workspace_id",
+            "unique": false,
+            "columnNames": [
+              "user_id",
+              "workspace_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_user_id_workspace_id` ON `${TABLE_NAME}` (`user_id`, `workspace_id`)"
+          },
+          {
+            "name": "index_workspaceInvitationEntity_user_id_id",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_user_id_id` ON `${TABLE_NAME}` (`user_id`, `id`)"
+          },
+          {
+            "name": "index_workspaceInvitationEntity_phone",
+            "unique": false,
+            "columnNames": [
+              "phone"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_phone` ON `${TABLE_NAME}` (`phone`)"
+          },
+          {
+            "name": "index_workspaceInvitationEntity_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_workspaceInvitationEntity_sync_state",
+            "unique": false,
+            "columnNames": [
+              "sync_state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_sync_state` ON `${TABLE_NAME}` (`sync_state`)"
+          },
+          {
+            "name": "index_workspaceInvitationEntity_last_synced_at",
+            "unique": false,
+            "columnNames": [
+              "last_synced_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceInvitationEntity_last_synced_at` ON `${TABLE_NAME}` (`last_synced_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workspaceRoleEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `workspace_id` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `level` INTEGER NOT NULL, `is_system_role` INTEGER NOT NULL, `permissions` TEXT NOT NULL, `can_manage_members` INTEGER NOT NULL, `can_edit_workspace` INTEGER NOT NULL, `can_delete_workspace` INTEGER NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL, `sync_state` TEXT NOT NULL, `last_synced_at` INTEGER NOT NULL, `local_updated_at` INTEGER NOT NULL, `server_updated_at` INTEGER NOT NULL, `pending_changes` TEXT NOT NULL, `conflict_data` TEXT NOT NULL, `retry_count` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspace_id",
+            "columnName": "workspace_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "level",
+            "columnName": "level",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "is_system_role",
+            "columnName": "is_system_role",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "permissions",
+            "columnName": "permissions",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "can_manage_members",
+            "columnName": "can_manage_members",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "can_edit_workspace",
+            "columnName": "can_edit_workspace",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "can_delete_workspace",
+            "columnName": "can_delete_workspace",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sync_state",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_synced_at",
+            "columnName": "last_synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "local_updated_at",
+            "columnName": "local_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "server_updated_at",
+            "columnName": "server_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pending_changes",
+            "columnName": "pending_changes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conflict_data",
+            "columnName": "conflict_data",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retry_count",
+            "columnName": "retry_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workspaceRoleEntity_id",
+            "unique": false,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceRoleEntity_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_workspaceRoleEntity_user_id",
+            "unique": false,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceRoleEntity_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          },
+          {
+            "name": "index_workspaceRoleEntity_workspace_id",
+            "unique": false,
+            "columnNames": [
+              "workspace_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceRoleEntity_workspace_id` ON `${TABLE_NAME}` (`workspace_id`)"
+          },
+          {
+            "name": "index_workspaceRoleEntity_user_id_workspace_id_id",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "workspace_id",
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_workspaceRoleEntity_user_id_workspace_id_id` ON `${TABLE_NAME}` (`user_id`, `workspace_id`, `id`)"
+          },
+          {
+            "name": "index_workspaceRoleEntity_sync_state",
+            "unique": false,
+            "columnNames": [
+              "sync_state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceRoleEntity_sync_state` ON `${TABLE_NAME}` (`sync_state`)"
+          },
+          {
+            "name": "index_workspaceRoleEntity_last_synced_at",
+            "unique": false,
+            "columnNames": [
+              "last_synced_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspaceRoleEntity_last_synced_at` ON `${TABLE_NAME}` (`last_synced_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workspacePermissionEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `user_id` TEXT NOT NULL, `workspace_id` TEXT NOT NULL, `module` TEXT NOT NULL, `actions` TEXT NOT NULL, `description` TEXT NOT NULL, `sync_state` TEXT NOT NULL, `last_synced_at` INTEGER NOT NULL, `local_updated_at` INTEGER NOT NULL, `server_updated_at` INTEGER NOT NULL, `pending_changes` TEXT NOT NULL, `conflict_data` TEXT NOT NULL, `retry_count` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspace_id",
+            "columnName": "workspace_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "module",
+            "columnName": "module",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actions",
+            "columnName": "actions",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sync_state",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_synced_at",
+            "columnName": "last_synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "local_updated_at",
+            "columnName": "local_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "server_updated_at",
+            "columnName": "server_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pending_changes",
+            "columnName": "pending_changes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conflict_data",
+            "columnName": "conflict_data",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retry_count",
+            "columnName": "retry_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workspacePermissionEntity_user_id",
+            "unique": false,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspacePermissionEntity_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          },
+          {
+            "name": "index_workspacePermissionEntity_workspace_id",
+            "unique": false,
+            "columnNames": [
+              "workspace_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspacePermissionEntity_workspace_id` ON `${TABLE_NAME}` (`workspace_id`)"
+          },
+          {
+            "name": "index_workspacePermissionEntity_user_id_workspace_id_module",
+            "unique": true,
+            "columnNames": [
+              "user_id",
+              "workspace_id",
+              "module"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_workspacePermissionEntity_user_id_workspace_id_module` ON `${TABLE_NAME}` (`user_id`, `workspace_id`, `module`)"
+          },
+          {
+            "name": "index_workspacePermissionEntity_sync_state",
+            "unique": false,
+            "columnNames": [
+              "sync_state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspacePermissionEntity_sync_state` ON `${TABLE_NAME}` (`sync_state`)"
+          },
+          {
+            "name": "index_workspacePermissionEntity_last_synced_at",
+            "unique": false,
+            "columnNames": [
+              "last_synced_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workspacePermissionEntity_last_synced_at` ON `${TABLE_NAME}` (`last_synced_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "installed_module",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `workspaceId` TEXT NOT NULL, `moduleCode` TEXT NOT NULL, `name` TEXT NOT NULL, `category` TEXT NOT NULL, `version` TEXT NOT NULL, `status` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `installedAt` TEXT NOT NULL, `icon` TEXT NOT NULL, `primaryColor` TEXT NOT NULL, `healthScore` REAL, `needsAttention` INTEGER, `description` TEXT, `navigationIndex` INTEGER NOT NULL, `routeBasePath` TEXT NOT NULL, `routeDisplayName` TEXT NOT NULL, `routeIconName` TEXT NOT NULL, `sync_state` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `last_synced_at` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspaceId",
+            "columnName": "workspaceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "moduleCode",
+            "columnName": "moduleCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installedAt",
+            "columnName": "installedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "icon",
+            "columnName": "icon",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "primaryColor",
+            "columnName": "primaryColor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "healthScore",
+            "columnName": "healthScore",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "needsAttention",
+            "columnName": "needsAttention",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "navigationIndex",
+            "columnName": "navigationIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routeBasePath",
+            "columnName": "routeBasePath",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routeDisplayName",
+            "columnName": "routeDisplayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routeIconName",
+            "columnName": "routeIconName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sync_state",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_synced_at",
+            "columnName": "last_synced_at",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_installed_module_id",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_installed_module_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_installed_module_workspaceId",
+            "unique": false,
+            "columnNames": [
+              "workspaceId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_installed_module_workspaceId` ON `${TABLE_NAME}` (`workspaceId`)"
+          },
+          {
+            "name": "index_installed_module_workspaceId_moduleCode",
+            "unique": true,
+            "columnNames": [
+              "workspaceId",
+              "moduleCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_installed_module_workspaceId_moduleCode` ON `${TABLE_NAME}` (`workspaceId`, `moduleCode`)"
+          },
+          {
+            "name": "index_installed_module_moduleCode",
+            "unique": false,
+            "columnNames": [
+              "moduleCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_installed_module_moduleCode` ON `${TABLE_NAME}` (`moduleCode`)"
+          },
+          {
+            "name": "index_installed_module_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_installed_module_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_installed_module_category",
+            "unique": false,
+            "columnNames": [
+              "category"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_installed_module_category` ON `${TABLE_NAME}` (`category`)"
+          },
+          {
+            "name": "index_installed_module_sync_state",
+            "unique": false,
+            "columnNames": [
+              "sync_state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_installed_module_sync_state` ON `${TABLE_NAME}` (`sync_state`)"
+          },
+          {
+            "name": "index_installed_module_last_synced_at",
+            "unique": false,
+            "columnNames": [
+              "last_synced_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_installed_module_last_synced_at` ON `${TABLE_NAME}` (`last_synced_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "available_module",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`moduleCode` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `category` TEXT NOT NULL, `version` TEXT NOT NULL, `rating` REAL NOT NULL, `installCount` INTEGER NOT NULL, `complexity` TEXT NOT NULL, `icon` TEXT NOT NULL, `primaryColor` TEXT NOT NULL, `featured` INTEGER NOT NULL, `requiredTier` TEXT NOT NULL, `sizeMb` INTEGER NOT NULL, `sync_state` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `last_synced_at` INTEGER, PRIMARY KEY(`moduleCode`))",
+        "fields": [
+          {
+            "fieldPath": "moduleCode",
+            "columnName": "moduleCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rating",
+            "columnName": "rating",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installCount",
+            "columnName": "installCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "complexity",
+            "columnName": "complexity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "icon",
+            "columnName": "icon",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "primaryColor",
+            "columnName": "primaryColor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "featured",
+            "columnName": "featured",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requiredTier",
+            "columnName": "requiredTier",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sizeMb",
+            "columnName": "sizeMb",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sync_state",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_synced_at",
+            "columnName": "last_synced_at",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "moduleCode"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_available_module_moduleCode",
+            "unique": true,
+            "columnNames": [
+              "moduleCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_available_module_moduleCode` ON `${TABLE_NAME}` (`moduleCode`)"
+          },
+          {
+            "name": "index_available_module_category",
+            "unique": false,
+            "columnNames": [
+              "category"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_available_module_category` ON `${TABLE_NAME}` (`category`)"
+          },
+          {
+            "name": "index_available_module_featured",
+            "unique": false,
+            "columnNames": [
+              "featured"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_available_module_featured` ON `${TABLE_NAME}` (`featured`)"
+          },
+          {
+            "name": "index_available_module_sync_state",
+            "unique": false,
+            "columnNames": [
+              "sync_state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_available_module_sync_state` ON `${TABLE_NAME}` (`sync_state`)"
+          },
+          {
+            "name": "index_available_module_last_synced_at",
+            "unique": false,
+            "columnNames": [
+              "last_synced_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_available_module_last_synced_at` ON `${TABLE_NAME}` (`last_synced_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "module_menu_item",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `moduleId` TEXT NOT NULL, `label` TEXT NOT NULL, `routePath` TEXT NOT NULL, `icon` TEXT NOT NULL, `order` INTEGER NOT NULL, `isDefault` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "moduleId",
+            "columnName": "moduleId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routePath",
+            "columnName": "routePath",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "icon",
+            "columnName": "icon",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "order",
+            "columnName": "order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDefault",
+            "columnName": "isDefault",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_module_menu_item_id",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_module_menu_item_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_module_menu_item_moduleId",
+            "unique": false,
+            "columnNames": [
+              "moduleId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_module_menu_item_moduleId` ON `${TABLE_NAME}` (`moduleId`)"
+          },
+          {
+            "name": "index_module_menu_item_order",
+            "unique": false,
+            "columnNames": [
+              "order"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_module_menu_item_order` ON `${TABLE_NAME}` (`order`)"
+          }
+        ]
+      },
+      {
+        "tableName": "userInvitationEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `user_id` TEXT NOT NULL, `workspace_id` TEXT NOT NULL, `workspace_name` TEXT NOT NULL, `workspace_description` TEXT, `workspace_type` TEXT, `role` TEXT NOT NULL, `message` TEXT, `invited_by` TEXT, `inviter_name` TEXT, `expires_at` TEXT NOT NULL, `created_at` TEXT NOT NULL, `days_until_expiry` INTEGER, `sync_state` TEXT NOT NULL, `last_synced_at` INTEGER NOT NULL, `local_updated_at` INTEGER NOT NULL, `server_updated_at` INTEGER NOT NULL, `pending_changes` TEXT NOT NULL, `conflict_data` TEXT NOT NULL, `retry_count` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "user_id",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspace_id",
+            "columnName": "workspace_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspace_name",
+            "columnName": "workspace_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workspace_description",
+            "columnName": "workspace_description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "workspace_type",
+            "columnName": "workspace_type",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "invited_by",
+            "columnName": "invited_by",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "inviter_name",
+            "columnName": "inviter_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "expires_at",
+            "columnName": "expires_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "days_until_expiry",
+            "columnName": "days_until_expiry",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sync_state",
+            "columnName": "sync_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_synced_at",
+            "columnName": "last_synced_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "local_updated_at",
+            "columnName": "local_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "server_updated_at",
+            "columnName": "server_updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pending_changes",
+            "columnName": "pending_changes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conflict_data",
+            "columnName": "conflict_data",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retry_count",
+            "columnName": "retry_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_userInvitationEntity_id",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_userInvitationEntity_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_userInvitationEntity_user_id",
+            "unique": false,
+            "columnNames": [
+              "user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_userInvitationEntity_user_id` ON `${TABLE_NAME}` (`user_id`)"
+          },
+          {
+            "name": "index_userInvitationEntity_workspace_id",
+            "unique": false,
+            "columnNames": [
+              "workspace_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_userInvitationEntity_workspace_id` ON `${TABLE_NAME}` (`workspace_id`)"
+          },
+          {
+            "name": "index_userInvitationEntity_sync_state",
+            "unique": false,
+            "columnNames": [
+              "sync_state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_userInvitationEntity_sync_state` ON `${TABLE_NAME}` (`sync_state`)"
+          },
+          {
+            "name": "index_userInvitationEntity_expires_at",
+            "unique": false,
+            "columnNames": [
+              "expires_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_userInvitationEntity_expires_at` ON `${TABLE_NAME}` (`expires_at`)"
+          },
+          {
+            "name": "index_userInvitationEntity_created_at",
+            "unique": false,
+            "columnNames": [
+              "created_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_userInvitationEntity_created_at` ON `${TABLE_NAME}` (`created_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ai_model_catalog",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `family` TEXT NOT NULL, `parameterLabel` TEXT NOT NULL, `role` TEXT NOT NULL, `fileName` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `sha256` TEXT, `requiredRamMb` INTEGER NOT NULL, `backendId` TEXT NOT NULL, `transport` TEXT NOT NULL, `remoteModelId` TEXT NOT NULL, `platforms` TEXT NOT NULL, `recommended` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "family",
+            "columnName": "family",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parameterLabel",
+            "columnName": "parameterLabel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fileName",
+            "columnName": "fileName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sizeBytes",
+            "columnName": "sizeBytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sha256",
+            "columnName": "sha256",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "requiredRamMb",
+            "columnName": "requiredRamMb",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backendId",
+            "columnName": "backendId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "transport",
+            "columnName": "transport",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remoteModelId",
+            "columnName": "remoteModelId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "platforms",
+            "columnName": "platforms",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recommended",
+            "columnName": "recommended",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8ae97adcb9985cd0ad9346d64699cc6b')"
+    ]
+  }
+}
