@@ -4,8 +4,6 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
     alias(libs.plugins.metro)
 }
 
@@ -40,6 +38,8 @@ kotlin {
                 // Shared data infrastructure
                 api(projects.data.common)
                 api(projects.data.sync)
+                // Consolidated Room databases (incl. the storefront @Database classes) live here.
+                api(projects.data.database)
                 // LocationService + ContactPickerService bindings (address location picker)
                 implementation(projects.feature.formwidgets)
                 // DataStore (AppPreferences public type)
@@ -91,14 +91,7 @@ kotlin {
     }
 }
 
-room3 {
-    schemaDirectory("$projectDir/schemas")
-}
-
-dependencies {
-    // Android-only module: the storefront @Database classes live in androidMain.
-    add("kspAndroid", libs.room.compiler)
-}
-
-// NOTE: cross-module Room processing here (entities in the feature modules, storefront @Database
-// classes in this module) requires KSP >= 2.3.10 — see the note in data/database/build.gradle.kts.
+// The storefront @Database classes (StorefrontAppDatabase / StorefrontWorkspaceDatabase) moved into
+// :data:database/androidMain so Room's KSP runs single-module alongside the entities it references
+// (cross-module @Entity resolution is unsupported by KSP2 on JVM/Android). This module no longer
+// runs the Room processor; it depends on :data:database for those @Database classes + DAOs.
