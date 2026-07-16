@@ -4,8 +4,6 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.ampairs.tax.domain.model.TaxCode
-import com.ampairs.tax.domain.model.TaxCodeType
 import kotlin.time.Instant
 
 /**
@@ -74,46 +72,3 @@ data class TaxCodeEntity(
     @ColumnInfo(name = "sync_status")
     val syncStatus: String = "SYNCED"
 )
-
-// Extension functions for conversion
-fun TaxCodeEntity.toDomain(): TaxCode {
-    return TaxCode(
-        id = id,
-        masterTaxCodeId = masterTaxCodeId,
-        code = code,
-        codeType = TaxCodeType.valueOf(codeType),
-        description = description,
-        shortDescription = shortDescription,
-        customName = customName,
-        customTaxRuleId = customTaxRuleId,
-        usageCount = usageCount,
-        lastUsedAt = lastUsedAt,
-        isFavorite = isFavorite,
-        notes = notes,
-        isActive = isActive,
-        addedAt = addedAt,
-        updatedAt = updatedAt,
-        syncStatus = syncStatus
-    )
-}
-
-fun TaxCode.toEntity(): TaxCodeEntity {
-    return TaxCodeEntity(
-        id = id,
-        masterTaxCodeId = masterTaxCodeId,
-        code = code,
-        codeType = codeType.name,
-        description = description,
-        shortDescription = shortDescription,
-        customName = customName,
-        customTaxRuleId = customTaxRuleId,
-        usageCount = usageCount,
-        lastUsedAt = lastUsedAt,
-        isFavorite = isFavorite,
-        notes = notes,
-        isActive = isActive,
-        addedAt = addedAt,
-        updatedAt = updatedAt,
-        syncStatus = syncStatus
-    )
-}

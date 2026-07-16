@@ -4,7 +4,6 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.ampairs.unit.domain.model.Unit
 
 /**
  * Room entity for unit of measurement storage
@@ -54,36 +53,4 @@ data class UnitEntity(
 
     @ColumnInfo(name = "ref_id")
     val refId: String? = null
-)
-
-/**
- * Convert entity to domain model
- */
-fun UnitEntity.toUnit(): Unit = Unit(
-    uid = id,
-    name = name,
-    shortName = shortName,
-    decimalPlaces = decimalPlaces,
-    description = description,
-    category = category,
-    active = active,
-    refId = refId,
-    createdAt = createdAt,
-    updatedAt = updatedAt
-)
-
-/**
- * Convert domain model to entity
- */
-fun Unit.toEntity(): UnitEntity = UnitEntity(
-    id = uid,
-    name = name,
-    shortName = shortName,
-    decimalPlaces = decimalPlaces,
-    description = description,
-    category = category,
-    active = active,
-    refId = refId,
-    createdAt = createdAt,
-    updatedAt = updatedAt
 )

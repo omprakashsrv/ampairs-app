@@ -4,7 +4,6 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.ampairs.unit.domain.model.UnitConversion
 
 /**
  * Room entity for unit conversion storage
@@ -53,32 +52,4 @@ data class UnitConversionEntity(
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: String? = null
-)
-
-/**
- * Convert entity to domain model
- */
-fun UnitConversionEntity.toUnitConversion(): UnitConversion = UnitConversion(
-    uid = id,
-    productId = productId,
-    baseUnitId = baseUnitId,
-    derivedUnitId = derivedUnitId,
-    multiplier = multiplier,
-    active = active,
-    createdAt = createdAt,
-    updatedAt = updatedAt
-)
-
-/**
- * Convert domain model to entity
- */
-fun UnitConversion.toEntity(): UnitConversionEntity = UnitConversionEntity(
-    id = uid,
-    productId = productId,
-    baseUnitId = baseUnitId,
-    derivedUnitId = derivedUnitId,
-    multiplier = multiplier,
-    active = active,
-    createdAt = createdAt,
-    updatedAt = updatedAt
 )

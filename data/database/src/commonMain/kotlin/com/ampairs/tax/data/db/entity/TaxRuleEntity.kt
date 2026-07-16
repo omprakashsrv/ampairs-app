@@ -4,10 +4,6 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.ampairs.tax.domain.model.ComponentComposition
-import com.ampairs.tax.domain.model.TaxRule
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.time.Instant
 
 /**
@@ -66,40 +62,3 @@ data class TaxRuleEntity(
     @ColumnInfo(name = "sync_status")
     val syncStatus: String = "SYNCED"
 )
-
-// Extension functions
-fun TaxRuleEntity.toDomain(): TaxRule {
-    return TaxRule(
-        id = id,
-        countryCode = countryCode,
-        taxCodeId = taxCodeId,
-        taxCode = taxCode,
-        taxCodeType = taxCodeType,
-        taxCodeDescription = taxCodeDescription,
-        jurisdiction = jurisdiction,
-        jurisdictionLevel = jurisdictionLevel,
-        componentComposition = Json.decodeFromString(componentComposition),
-        isActive = isActive,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        syncStatus = syncStatus
-    )
-}
-
-fun TaxRule.toEntity(): TaxRuleEntity {
-    return TaxRuleEntity(
-        id = id,
-        countryCode = countryCode,
-        taxCodeId = taxCodeId,
-        taxCode = taxCode,
-        taxCodeType = taxCodeType,
-        taxCodeDescription = taxCodeDescription,
-        jurisdiction = jurisdiction,
-        jurisdictionLevel = jurisdictionLevel,
-        componentComposition = Json.encodeToString(componentComposition),
-        isActive = isActive,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        syncStatus = syncStatus
-    )
-}
