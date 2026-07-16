@@ -59,7 +59,7 @@ vosk = "0.3.38"
 # vosk-android ships a self-consistent AAR (matched Java + per-ABI .so for arm64-v8a/armeabi-v7a/x86/
 # x86_64, pulls net.java.dev.jna:jna automatically) — none of the desktop arm64 native problems apply.
 vosk-android = "0.3.75"
-kotlinx-io = "0.9.0"
+kotlinx-io = "0.9.1"
 kotlincrypto-sha2 = "0.8.0"
 play-services-coroutines = "1.11.0"
 play-services-auth = "21.6.0"
