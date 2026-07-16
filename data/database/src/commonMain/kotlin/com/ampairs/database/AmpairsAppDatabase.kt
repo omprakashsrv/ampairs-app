@@ -36,8 +36,8 @@ import com.ampairs.workspace.db.entity.WorkspaceRoleEntity
  *
  * Replaces the former `AuthRoomDatabase` (auth.db), `WorkspaceRoomDatabase` (workspace.db) and
  * `AgentCatalogDatabase` (agent_catalog.db). The legacy classes are deleted (a DAO may only have
- * ONE Room-generated impl per app classpath);
- * [com.ampairs.common.database.legacy.LegacyDatabaseImporter] reads the old files raw once on upgrade.
+ * ONE Room-generated impl per app classpath). On upgrade the consolidated file is created fresh and
+ * server-authoritative data re-syncs; the old per-module files are left in place.
  *
  * Migration policy:
  * - NEVER add `fallbackToDestructiveMigration` to this database — it now carries durable auth data.

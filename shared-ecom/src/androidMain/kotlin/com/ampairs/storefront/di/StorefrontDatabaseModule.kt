@@ -3,12 +3,9 @@ package com.ampairs.storefront.di
 import android.content.Context
 import androidx.room3.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import com.ampairs.auth.AUTH_MIGRATION_2_3
 import com.ampairs.auth.db.dao.UserDao
 import com.ampairs.auth.db.dao.UserSessionDao
 import com.ampairs.auth.db.dao.UserTokenDao
-import com.ampairs.common.database.legacy.LegacyDatabaseImporter
-import com.ampairs.common.database.legacy.LegacyDatabaseSource
 import com.ampairs.common.di.AppScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
@@ -20,15 +17,12 @@ import com.ampairs.ecom.data.db.dao.ListedProductDao
 import com.ampairs.ecom.data.db.dao.StorefrontDao
 import com.ampairs.ecom.data.db.dao.SyncCursorDao
 import com.ampairs.ecom.data.db.dao.TaxonomyImageDao
-import com.ampairs.ecom.data.db.migrations.ECOM_MIGRATION_1_2
 import com.ampairs.file.db.dao.FileDao
 import com.ampairs.storefront.db.StorefrontAppDatabase
 import com.ampairs.storefront.db.StorefrontWorkspaceDatabase
 import com.ampairs.store.data.db.dao.StoreSettingDao
 import com.ampairs.store.data.db.dao.StoreSettingDefinitionDao
-import com.ampairs.store.data.db.migrations.STORE_MIGRATION_1_2
 import com.ampairs.sync.db.SyncStateDao
-import com.ampairs.sync.db.migrations.SYNC_MIGRATION_1_2
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -37,8 +31,7 @@ import kotlinx.coroutines.Dispatchers
 /**
  * Providers for the two consolidated storefront databases plus every DAO they own. Mirrors the
  * main app's `:data:database` module for the slim storefront feature set (auth + ecom + store +
- * file + sync-state). First open runs [LegacyDatabaseImporter] to absorb the legacy per-module
- * files, then deletes them.
+ * file + sync-state).
  */
 @ContributesTo(AppScope::class)
 interface StorefrontAppDatabaseModule {
@@ -54,16 +47,6 @@ interface StorefrontAppDatabaseModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .enableMultiInstanceInvalidation()
-                .addCallback(
-                    LegacyDatabaseImporter.callback {
-                        listOf(
-                            LegacyDatabaseSource(
-                                context.getDatabasePath("auth.db").absolutePath,
-                                migrations = listOf(AUTH_MIGRATION_2_3),
-                            ),
-                        )
-                    }
-                )
                 .build()
         }
 
@@ -90,7 +73,6 @@ interface StorefrontWorkspaceDatabaseModule {
         ): StorefrontWorkspaceDatabase {
             val slug = config.workspaceSlug
             val dbFile = context.getDatabasePath("workspace_${slug}_main.db")
-            fun legacy(module: String) = context.getDatabasePath("workspace_${slug}_${module}.db").absolutePath
             return Room.databaseBuilder<StorefrontWorkspaceDatabase>(
                 context = context,
                 name = dbFile.absolutePath,
@@ -98,16 +80,6 @@ interface StorefrontWorkspaceDatabaseModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .enableMultiInstanceInvalidation()
-                .addCallback(
-                    LegacyDatabaseImporter.callback {
-                        listOf(
-                            LegacyDatabaseSource(legacy("ecom"), migrations = listOf(ECOM_MIGRATION_1_2)),
-                            LegacyDatabaseSource(legacy("store"), migrations = listOf(STORE_MIGRATION_1_2)),
-                            LegacyDatabaseSource(legacy("file")),
-                            LegacyDatabaseSource(legacy("sync"), migrations = listOf(SYNC_MIGRATION_1_2)),
-                        )
-                    }
-                )
                 .build()
                 .also { closableRegistry.register { it.close() } }
         }

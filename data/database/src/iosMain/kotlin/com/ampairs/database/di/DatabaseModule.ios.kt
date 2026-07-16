@@ -11,8 +11,6 @@ import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.database.AmpairsAppDatabase
 import com.ampairs.database.AmpairsWorkspaceDatabase
-import com.ampairs.common.database.legacy.LegacyDatabaseImporter
-import com.ampairs.database.legacy.LegacySchemas
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -29,11 +27,6 @@ interface AppDatabaseIosModule {
             Room.databaseBuilder<AmpairsAppDatabase>(name = getIosDatabasePath("ampairs_app.db"))
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(DispatcherProvider.io)
-                .addCallback(
-                    LegacyDatabaseImporter.callback {
-                        LegacySchemas.appSources { fileName -> getIosDatabasePath(fileName) }
-                    }
-                )
                 .build()
     }
 }
@@ -60,13 +53,6 @@ interface WorkspaceDatabaseIosModule {
             )
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(factory.queryDispatcher)
-                .addCallback(
-                    LegacyDatabaseImporter.callback {
-                        LegacySchemas.workspaceSources { module ->
-                            pathProvider.getWorkspaceDatabasePath(slug, module)
-                        }
-                    }
-                )
                 .build()
                 .also { closableRegistry.register { it.close() } }
         }

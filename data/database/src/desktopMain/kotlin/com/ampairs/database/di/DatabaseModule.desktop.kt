@@ -10,8 +10,6 @@ import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.database.AmpairsAppDatabase
 import com.ampairs.database.AmpairsWorkspaceDatabase
-import com.ampairs.common.database.legacy.LegacyDatabaseImporter
-import com.ampairs.database.legacy.LegacySchemas
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -32,13 +30,6 @@ interface AppDatabaseDesktopModule {
             return Room.databaseBuilder<AmpairsAppDatabase>(name = dbFile.absolutePath)
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
-                .addCallback(
-                    LegacyDatabaseImporter.callback {
-                        LegacySchemas.appSources { fileName ->
-                            File(DataDirectoryManager.getDatabaseDir(), fileName).absolutePath
-                        }
-                    }
-                )
                 .build()
         }
     }
@@ -66,13 +57,6 @@ interface WorkspaceDatabaseDesktopModule {
             )
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(factory.queryDispatcher)
-                .addCallback(
-                    LegacyDatabaseImporter.callback {
-                        LegacySchemas.workspaceSources { module ->
-                            pathProvider.getWorkspaceDatabasePath(slug, module)
-                        }
-                    }
-                )
                 .build()
                 .also { closableRegistry.register { it.close() } }
         }

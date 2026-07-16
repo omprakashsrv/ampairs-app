@@ -156,8 +156,8 @@ import com.ampairs.unit.data.db.entity.UnitEntity
  * InvalidationTracker instead of 23 replaces the biggest native-memory multiplier in the app.
  *
  * The legacy per-feature database classes are gone (a DAO may only have ONE Room-generated impl per
- * app classpath); [com.ampairs.common.database.legacy.LegacyDatabaseImporter] reads the old files
- * raw once on upgrade before deleting them.
+ * app classpath). On upgrade the consolidated file is created fresh and server-authoritative data
+ * re-syncs; the old per-module files are left in place.
  *
  * Schema changes: bump [Database.version] here and add a migration under `migrations/` —
  * append-only, one shared version line for all features.

@@ -9,8 +9,6 @@ import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.database.AmpairsAppDatabase
 import com.ampairs.database.AmpairsWorkspaceDatabase
-import com.ampairs.common.database.legacy.LegacyDatabaseImporter
-import com.ampairs.database.legacy.LegacySchemas
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -18,8 +16,7 @@ import kotlinx.coroutines.Dispatchers
 
 /**
  * Android provider for the consolidated [AmpairsAppDatabase]; absorbed the three legacy
- * app-scoped databases. First open runs [LegacyDatabaseImporter] to absorb
- * `auth.db` / `workspace.db` and drop `agent_catalog.db`.
+ * app-scoped databases (`auth.db` / `workspace.db` / `agent_catalog.db`).
  */
 @ContributesTo(AppScope::class)
 interface AppDatabaseAndroidModule {
@@ -35,11 +32,6 @@ interface AppDatabaseAndroidModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .enableMultiInstanceInvalidation()
-                .addCallback(
-                    LegacyDatabaseImporter.callback {
-                        LegacySchemas.appSources { fileName -> context.getDatabasePath(fileName).absolutePath }
-                    }
-                )
                 .build()
         }
     }
@@ -48,7 +40,6 @@ interface AppDatabaseAndroidModule {
 /**
  * Android provider for the consolidated per-workspace [AmpairsWorkspaceDatabase]
  * (`workspace_{slug}_main.db`); absorbed all 22 legacy per-module workspace databases.
- * First open per workspace runs [LegacyDatabaseImporter] to absorb the legacy module files.
  */
 @ContributesTo(WorkspaceScope::class)
 interface WorkspaceDatabaseAndroidModule {
@@ -69,13 +60,6 @@ interface WorkspaceDatabaseAndroidModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .enableMultiInstanceInvalidation()
-                .addCallback(
-                    LegacyDatabaseImporter.callback {
-                        LegacySchemas.workspaceSources { module ->
-                            context.getDatabasePath("workspace_${slug}_${module}.db").absolutePath
-                        }
-                    }
-                )
                 .build()
                 .also { closableRegistry.register { it.close() } }
         }
