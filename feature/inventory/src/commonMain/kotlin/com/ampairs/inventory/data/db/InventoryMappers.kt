@@ -1,37 +1,50 @@
 package com.ampairs.inventory.data.db
 
-import androidx.room3.Entity
-import androidx.room3.Index
-import androidx.room3.PrimaryKey
+import com.ampairs.inventory.domain.InventoryItem
 import com.ampairs.inventory.domain.InventoryMovement
 
-@Entity(
-    tableName = "inventory_transactions",
-    indices = [
-        Index(value = ["inventoryItemId"]),
-    ],
+// Entity <-> domain mappers. The @Entity classes live in :data:database (same package); these
+// mappers stay in the feature module because they reference the inventory domain models.
+
+fun InventoryItemEntity.toInventoryItem(): InventoryItem = InventoryItem(
+    uid = id,
+    name = name,
+    sku = sku,
+    productId = productId,
+    productVariantId = productVariantId,
+    unitId = unitId,
+    warehouseId = warehouseId,
+    currentStock = currentStock,
+    reservedStock = reservedStock,
+    availableStock = availableStock,
+    reorderLevel = reorderLevel,
+    costPrice = costPrice,
+    sellingPrice = sellingPrice,
+    mrp = mrp,
+    active = active,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    pendingSync = !synced,
 )
-data class InventoryTransactionEntity(
-    @PrimaryKey val id: String,
-    val transactionNumber: String,
-    val transactionType: String,
-    val transactionReason: String,
-    val inventoryItemId: String,
-    val warehouseId: String?,
-    val quantity: Double,
-    val balanceAfter: Double,
-    val unitCost: Double,
-    val totalCost: Double,
-    val sourceType: String?,
-    val sourceId: String?,
-    val sourceLineUid: String?,
-    val referenceNumber: String?,
-    val transactionDate: String?,
-    val performedBy: String?,
-    val notes: String?,
-    val synced: Boolean = false,
-    val createdAt: String?,
-    val updatedAt: String?,
+
+fun InventoryItem.toEntity(): InventoryItemEntity = InventoryItemEntity(
+    id = uid,
+    name = name,
+    sku = sku,
+    productId = productId,
+    productVariantId = productVariantId,
+    unitId = unitId,
+    warehouseId = warehouseId,
+    currentStock = currentStock,
+    reservedStock = reservedStock,
+    availableStock = availableStock,
+    reorderLevel = reorderLevel,
+    costPrice = costPrice,
+    sellingPrice = sellingPrice,
+    mrp = mrp,
+    active = active,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
 )
 
 fun InventoryTransactionEntity.toMovement(): InventoryMovement = InventoryMovement(

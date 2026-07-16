@@ -4,7 +4,6 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.ampairs.store.domain.model.StoreSetting
 
 /**
  * Room entity for a workspace setting override.
@@ -50,28 +49,4 @@ data class StoreSettingEntity(
 
     @ColumnInfo(name = "ref_id")
     val refId: String? = null,
-)
-
-fun StoreSettingEntity.toStoreSetting(): StoreSetting = StoreSetting(
-    uid = id,
-    module = module,
-    key = settingKey,
-    value = value,
-    valueType = valueType,
-    active = active,
-    refId = refId,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-)
-
-fun StoreSetting.toEntity(): StoreSettingEntity = StoreSettingEntity(
-    id = uid,
-    module = module,
-    settingKey = key,
-    value = value,
-    valueType = valueType,
-    active = active,
-    refId = refId,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
 )

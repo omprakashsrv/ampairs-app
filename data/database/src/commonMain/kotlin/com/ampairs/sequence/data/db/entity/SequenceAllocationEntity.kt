@@ -4,7 +4,6 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.ampairs.sequence.domain.model.SequenceAllocation
 
 /**
  * A server-granted exclusive number block for this device. The format snapshot
@@ -67,22 +66,4 @@ data class SequenceAllocationEntity(
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: String? = null,
-)
-
-fun SequenceAllocation.toEntity(synced: Boolean = true): SequenceAllocationEntity = SequenceAllocationEntity(
-    uid = uid,
-    definitionUid = definitionUid,
-    entityType = entityType,
-    deviceId = deviceId,
-    rangeStart = rangeStart,
-    rangeEnd = rangeEnd,
-    nextAvailable = nextAvailable,
-    status = status,
-    prefix = prefix,
-    suffix = suffix,
-    paddingLength = paddingLength,
-    incrementStep = incrementStep,
-    synced = synced,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
 )

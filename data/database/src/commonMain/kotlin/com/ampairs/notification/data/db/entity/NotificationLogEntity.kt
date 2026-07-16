@@ -4,7 +4,6 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.ampairs.notification.domain.model.AppNotification
 
 /**
  * Room entity for an in-app notification.
@@ -48,28 +47,4 @@ data class NotificationLogEntity(
 
     @ColumnInfo(name = "synced")
     val synced: Boolean = false,
-)
-
-/** Convert entity to domain/wire model. */
-fun NotificationLogEntity.toAppNotification(): AppNotification = AppNotification(
-    uid = uid,
-    type = type,
-    title = title,
-    body = body,
-    dataPayload = dataPayload,
-    read = read,
-    active = active,
-    updatedAt = updatedAt,
-)
-
-/** Convert domain/wire model to entity. */
-fun AppNotification.toEntity(): NotificationLogEntity = NotificationLogEntity(
-    uid = uid,
-    type = type,
-    title = title,
-    body = body,
-    dataPayload = dataPayload,
-    read = read,
-    active = active,
-    updatedAt = updatedAt,
 )

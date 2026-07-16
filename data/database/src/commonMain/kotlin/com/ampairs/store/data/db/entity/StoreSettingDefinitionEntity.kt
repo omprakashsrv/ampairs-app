@@ -3,8 +3,6 @@ package com.ampairs.store.data.db.entity
 import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.PrimaryKey
-import com.ampairs.store.domain.SettingValueType
-import com.ampairs.store.domain.definition.StoreSettingDefinition
 
 /**
  * Room cache of the server-declared setting definitions for this workspace's installed modules.
@@ -39,25 +37,4 @@ data class StoreSettingDefinitionEntity(
 
     @ColumnInfo(name = "description")
     val description: String? = null,
-)
-
-fun StoreSettingDefinitionEntity.toDefinition(): StoreSettingDefinition = StoreSettingDefinition(
-    module = module,
-    key = settingKey,
-    valueType = SettingValueType.fromName(valueType),
-    defaultValue = defaultValue,
-    allowedValues = if (allowedValues.isBlank()) emptyList() else allowedValues.split("\n"),
-    label = label,
-    description = description,
-)
-
-fun StoreSettingDefinition.toEntity(): StoreSettingDefinitionEntity = StoreSettingDefinitionEntity(
-    id = "$module/$key",
-    module = module,
-    settingKey = key,
-    valueType = valueType.name,
-    defaultValue = defaultValue,
-    allowedValues = allowedValues.joinToString("\n"),
-    label = label,
-    description = description,
 )

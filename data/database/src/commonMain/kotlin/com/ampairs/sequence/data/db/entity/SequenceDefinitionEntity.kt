@@ -4,7 +4,6 @@ import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
-import com.ampairs.sequence.domain.model.SequenceDefinition
 
 /**
  * Local mirror of a server sequence definition. Local admin edits are written with
@@ -64,38 +63,4 @@ data class SequenceDefinitionEntity(
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: String? = null,
-)
-
-fun SequenceDefinitionEntity.toDefinition(): SequenceDefinition = SequenceDefinition(
-    uid = uid,
-    entityType = entityType,
-    scope = scope,
-    userId = userId,
-    prefix = prefix,
-    suffix = suffix,
-    paddingLength = paddingLength,
-    startValue = startValue,
-    incrementStep = incrementStep,
-    currentValue = currentValue,
-    active = active,
-    refId = refId,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-)
-
-fun SequenceDefinition.toEntity(): SequenceDefinitionEntity = SequenceDefinitionEntity(
-    uid = uid,
-    entityType = entityType,
-    scope = scope,
-    userId = userId,
-    prefix = prefix,
-    suffix = suffix,
-    paddingLength = paddingLength,
-    startValue = startValue,
-    incrementStep = incrementStep,
-    currentValue = currentValue,
-    active = active,
-    refId = refId,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
 )
