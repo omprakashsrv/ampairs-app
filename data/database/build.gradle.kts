@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.metro)
@@ -21,31 +22,12 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                // This module now OWNS every @Entity/@Dao/@Database (moved out of the feature
+                // modules so Room's KSP processor runs single-module — cross-module @Entity
+                // resolution is unsupported by KSP2 on JVM/Android). It therefore depends only on
+                // the lowest-level shared infra; the feature modules depend on THIS module for the
+                // persistence types.
                 implementation(projects.data.common)
-                implementation(projects.data.sync)
-                implementation(projects.feature.auth)
-                implementation(projects.feature.workspace)
-                implementation(projects.feature.agent)
-                implementation(projects.feature.customer)
-                implementation(projects.feature.product)
-                implementation(projects.feature.tax)
-                implementation(projects.feature.order)
-                implementation(projects.feature.invoice)
-                implementation(projects.feature.purchase)
-                implementation(projects.feature.payment)
-                implementation(projects.feature.inventory)
-                implementation(projects.feature.unit)
-                implementation(projects.feature.form)
-                implementation(projects.feature.file)
-                implementation(projects.feature.business)
-                implementation(projects.feature.store)
-                implementation(projects.feature.subscription)
-                implementation(projects.feature.supplier)
-                implementation(projects.feature.sequence)
-                implementation(projects.feature.pricing)
-                implementation(projects.feature.printing)
-                implementation(projects.feature.notification)
-                implementation(projects.feature.ecom)
                 implementation(libs.metro.runtime)
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
@@ -53,6 +35,7 @@ kotlin {
                 implementation(libs.sqlite.bundled)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.dateTime)
+                implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kermit)
             }
         }
