@@ -10,6 +10,7 @@ import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEntityKey
 import com.ampairs.sync.SyncResult
+import com.ampairs.sync.db.SyncStateDao
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
@@ -24,6 +25,7 @@ import dev.zacsweers.metro.Inject
 class InventoryTransactionSyncDelegate(
     private val api: InventoryTransactionApi,
     private val dao: InventoryTransactionDao,
+    private val syncStateDao: SyncStateDao,
 ) : SyncDelegate {
 
     override val entity: SyncEntity = SyncEntity.INVENTORY_TRANSACTION
@@ -73,10 +75,12 @@ class InventoryTransactionSyncDelegate(
     }
 
     private suspend fun pull(batchSize: Int = 100): Result<Int> = try {
+        val lastSync = syncStateDao.getLastSyncedAtIso(SyncEntity.INVENTORY_TRANSACTION) ?: ""
         var totalSynced = 0
         var currentPage = 0
+        var maxTime = ""
         do {
-            val pageResponse = api.getMovements(currentPage, batchSize)
+            val pageResponse = api.getMovements(currentPage, batchSize, lastSync.ifBlank { null })
             if (pageResponse.error != null) throw Exception(pageResponse.error?.message ?: "Network error")
             val batch = pageResponse.data?.content ?: emptyList()
             val toInsert = batch.mapNotNull { server ->
@@ -85,9 +89,12 @@ class InventoryTransactionSyncDelegate(
                 else server.toEntity().copy(synced = true)
             }
             if (toInsert.isNotEmpty()) dao.insertMovements(toInsert)
+            val batchMax = batch.mapNotNull { it.updatedAt?.takeIf { s -> s.isNotBlank() } }.maxOrNull() ?: ""
+            if (batchMax > maxTime) maxTime = batchMax
             totalSynced += batch.size
             currentPage++
         } while (batch.size == batchSize && totalSynced < 10000)
+        if (maxTime.isNotBlank()) syncStateDao.setLastSyncedAtIso(SyncEntity.INVENTORY_TRANSACTION, maxTime)
         Result.success(totalSynced)
     } catch (e: Exception) {
         InventoryLogger.e("InventoryTransactionSyncDelegate", "Pull failed", e)
