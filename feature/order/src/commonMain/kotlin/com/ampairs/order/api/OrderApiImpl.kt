@@ -11,9 +11,10 @@ import com.ampairs.order.api.model.OrderApiModel
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 
-@Inject @ContributesBinding(AppScope::class)
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class OrderApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository) : OrderApi {
 
     // sendDefaults: the /sync push is a full-row upsert; the backend rejects bodies with

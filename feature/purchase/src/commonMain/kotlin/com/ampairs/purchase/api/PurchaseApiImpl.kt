@@ -11,9 +11,10 @@ import com.ampairs.common.post
 import com.ampairs.purchase.api.model.PurchaseApiModel
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 
-@Inject @ContributesBinding(AppScope::class)
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class PurchaseApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository) : PurchaseApi {
 
     // sendDefaults: the /sync push is a full-row upsert; the backend rejects bodies with missing
