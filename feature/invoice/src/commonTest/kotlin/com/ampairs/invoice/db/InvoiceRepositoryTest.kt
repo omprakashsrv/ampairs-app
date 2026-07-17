@@ -31,6 +31,7 @@ import com.ampairs.sequence.domain.model.SequenceAllocationRequest
 import com.ampairs.sequence.domain.model.SequenceDefinition
 import com.ampairs.common.model.PageResponse
 import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.sync.db.SyncStateEntity
 import kotlinx.coroutines.flow.Flow
@@ -434,7 +435,6 @@ private class FakeInvoiceDao : InvoiceDao {
     override suspend fun getInvoicesByCustomerName(searchText: String): List<InvoiceEntity> = emptyList()
     override suspend fun getInvoicesByDateRange(startDate: String, endDate: String): List<InvoiceEntity> = emptyList()
     override suspend fun getInvoicesByOrderRef(orderRefId: String): List<InvoiceEntity> = emptyList()
-    override suspend fun getMaxLastUpdated(): Long? = null
     override suspend fun countInvoices(): Int = rows.size
     override suspend fun countInvoicesByCustomer(customerId: String): Int = 0
     override suspend fun countInvoicesByStatus(status: String): Int = 0
@@ -524,6 +524,14 @@ private class RecordingSyncStateDao : SyncStateDao {
     override suspend fun getAll(): List<SyncStateEntity> = emptyList()
     override suspend fun getPending(): List<SyncStateEntity> = emptyList()
     override suspend fun upsert(state: SyncStateEntity) {}
+    override suspend fun upsertStatus(
+        entity: SyncEntity,
+        status: SyncPersistStatus,
+        lastSyncedAt: Long?,
+        pendingCount: Int,
+        errorMessage: String?,
+        now: Long,
+    ) {}
     override suspend fun getLastSyncedAtIso(entity: SyncEntity): String? = null
     override suspend fun setLastSyncedAtIso(entity: SyncEntity, iso: String) {}
     override suspend fun markPendingPush(entity: SyncEntity, now: Long) { pendingPushes += entity }

@@ -42,7 +42,10 @@ data class InvoiceEntity(
     val active: Long = 1,
     val soft_deleted: Long = 0,
     val synced: Long = 0,
-    val last_updated: Long = 0,
+    // Server-authoritative timestamps (ISO-8601), round-tripped from the API model — same pattern
+    // as CustomerEntity. Null for locally-created rows not yet synced.
+    val created_at: String? = null,
+    val updated_at: String? = null,
     val order_ref_id: String? = null,
     // spec 010: document tax/discount mode (C1/C2) + client-assigned GST number series (C4/C5)
     val price_mode: String = "TAX_EXCLUSIVE",

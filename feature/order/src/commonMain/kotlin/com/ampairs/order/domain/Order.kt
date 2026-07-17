@@ -142,7 +142,6 @@ fun Order.asDatabaseModel(): OrderEntity {
         active = if (this.active) 1 else 0,
         soft_deleted = if (this.softDeleted) 1 else 0,
         synced = 0,
-        last_updated = 0,
         created_by = this.createdBy,
         updated_by = this.updatedBy,
         discount = this.discount?.let { Json.encodeToString(it) })
