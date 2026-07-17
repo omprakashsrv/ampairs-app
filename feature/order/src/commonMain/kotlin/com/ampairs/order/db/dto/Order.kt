@@ -89,7 +89,8 @@ fun List<OrderApiModel>.asDatabaseModel(): List<OrderEntity> {
                 orderApiModel.shippingAddress
             ) else null,
             tax_info = Json.encodeToString(orderApiModel.taxInfoApiModels),
-            last_updated = orderApiModel.lastUpdated,
+            created_at = orderApiModel.createdAt,
+            updated_at = orderApiModel.updatedAt,
             synced = 1,
             created_by = orderApiModel.created_by,
             updated_by = orderApiModel.updated_by,

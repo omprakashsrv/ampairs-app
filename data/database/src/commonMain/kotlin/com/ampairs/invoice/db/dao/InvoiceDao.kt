@@ -39,9 +39,6 @@ interface InvoiceDao {
     @Query("SELECT * FROM invoiceEntity WHERE order_ref_id = :orderRefId AND active = 1 ORDER BY invoice_date DESC")
     suspend fun getInvoicesByOrderRef(orderRefId: String): List<InvoiceEntity>
 
-    @Query("SELECT max(last_updated) FROM invoiceEntity")
-    suspend fun getMaxLastUpdated(): Long?
-
     @Query("SELECT count(*) FROM invoiceEntity WHERE active = 1")
     suspend fun countInvoices(): Int
 

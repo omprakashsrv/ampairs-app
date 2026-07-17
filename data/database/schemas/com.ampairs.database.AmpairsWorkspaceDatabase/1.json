@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "f9a55f5ef6779ee1d38868ce0fe9eb34",
+    "identityHash": "24d511d81087d3c27f5576093a7eead1",
     "entities": [
       {
         "tableName": "customers",
@@ -2041,7 +2041,7 @@
       },
       {
         "tableName": "orderEntity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `order_number` TEXT NOT NULL, `order_date` TEXT NOT NULL, `status` TEXT NOT NULL, `customer_id` TEXT NOT NULL, `customer_name` TEXT NOT NULL, `customer_gst` TEXT NOT NULL, `customer_phone` TEXT, `seller_name` TEXT, `seller_address` TEXT, `seller_gst` TEXT, `place_of_supply` TEXT, `seller_place_of_supply` TEXT, `total_cost` REAL NOT NULL, `total_tax` REAL NOT NULL, `total_items` INTEGER NOT NULL, `total_quantity` REAL NOT NULL, `base_price` REAL NOT NULL, `tax_info` TEXT, `created_by` TEXT NOT NULL, `updated_by` TEXT NOT NULL, `billing_address` TEXT, `shipping_address` TEXT, `discount` TEXT, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `last_updated` INTEGER NOT NULL, `invoice_ref_id` TEXT, `price_mode` TEXT NOT NULL, `overall_discount_mode` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `order_number` TEXT NOT NULL, `order_date` TEXT NOT NULL, `status` TEXT NOT NULL, `customer_id` TEXT NOT NULL, `customer_name` TEXT NOT NULL, `customer_gst` TEXT NOT NULL, `customer_phone` TEXT, `seller_name` TEXT, `seller_address` TEXT, `seller_gst` TEXT, `place_of_supply` TEXT, `seller_place_of_supply` TEXT, `total_cost` REAL NOT NULL, `total_tax` REAL NOT NULL, `total_items` INTEGER NOT NULL, `total_quantity` REAL NOT NULL, `base_price` REAL NOT NULL, `tax_info` TEXT, `created_by` TEXT NOT NULL, `updated_by` TEXT NOT NULL, `billing_address` TEXT, `shipping_address` TEXT, `discount` TEXT, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `created_at` TEXT, `updated_at` TEXT, `invoice_ref_id` TEXT, `price_mode` TEXT NOT NULL, `overall_discount_mode` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "seq_id",
@@ -2202,10 +2202,14 @@
             "notNull": true
           },
           {
-            "fieldPath": "last_updated",
-            "columnName": "last_updated",
-            "affinity": "INTEGER",
-            "notNull": true
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "invoice_ref_id",
@@ -2428,7 +2432,7 @@
       },
       {
         "tableName": "invoiceEntity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `invoice_number` TEXT NOT NULL, `invoice_date` TEXT NOT NULL, `status` TEXT NOT NULL, `customer_id` TEXT NOT NULL, `customer_name` TEXT NOT NULL, `customer_gst` TEXT NOT NULL, `customer_phone` TEXT, `seller_name` TEXT, `seller_address` TEXT, `seller_gst` TEXT, `place_of_supply` TEXT, `seller_place_of_supply` TEXT, `total_cost` REAL NOT NULL, `total_tax` REAL NOT NULL, `total_items` INTEGER NOT NULL, `total_quantity` REAL NOT NULL, `base_price` REAL NOT NULL, `tax_info` TEXT, `created_by` TEXT NOT NULL, `updated_by` TEXT NOT NULL, `billing_address` TEXT, `shipping_address` TEXT, `discount` TEXT, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `last_updated` INTEGER NOT NULL, `order_ref_id` TEXT, `price_mode` TEXT NOT NULL, `overall_discount_mode` TEXT NOT NULL, `series` TEXT NOT NULL, `sequence_number` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `invoice_number` TEXT NOT NULL, `invoice_date` TEXT NOT NULL, `status` TEXT NOT NULL, `customer_id` TEXT NOT NULL, `customer_name` TEXT NOT NULL, `customer_gst` TEXT NOT NULL, `customer_phone` TEXT, `seller_name` TEXT, `seller_address` TEXT, `seller_gst` TEXT, `place_of_supply` TEXT, `seller_place_of_supply` TEXT, `total_cost` REAL NOT NULL, `total_tax` REAL NOT NULL, `total_items` INTEGER NOT NULL, `total_quantity` REAL NOT NULL, `base_price` REAL NOT NULL, `tax_info` TEXT, `created_by` TEXT NOT NULL, `updated_by` TEXT NOT NULL, `billing_address` TEXT, `shipping_address` TEXT, `discount` TEXT, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `created_at` TEXT, `updated_at` TEXT, `order_ref_id` TEXT, `price_mode` TEXT NOT NULL, `overall_discount_mode` TEXT NOT NULL, `series` TEXT NOT NULL, `sequence_number` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "seq_id",
@@ -2589,10 +2593,14 @@
             "notNull": true
           },
           {
-            "fieldPath": "last_updated",
-            "columnName": "last_updated",
-            "affinity": "INTEGER",
-            "notNull": true
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "order_ref_id",
@@ -7641,7 +7649,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f9a55f5ef6779ee1d38868ce0fe9eb34')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '24d511d81087d3c27f5576093a7eead1')"
     ]
   }
 }

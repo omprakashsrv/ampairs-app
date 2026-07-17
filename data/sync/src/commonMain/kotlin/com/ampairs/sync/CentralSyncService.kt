@@ -4,7 +4,6 @@ import co.touchlab.kermit.Logger
 import com.ampairs.common.di.AppScope
 import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
-import com.ampairs.sync.db.SyncStateEntity
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
@@ -601,30 +600,29 @@ class CentralSyncService {
     private suspend fun persistStatus(entity: SyncEntity, status: SyncStatus, lastSyncedAt: Long? = null) {
         val currentDao = dao ?: return
         val current = _syncStates.value[entity]
-        currentDao.upsert(
-            SyncStateEntity(
-                entityName = entity,
-                statusName = SyncStatus.toPersistStatus(status),
-                lastSyncedAt = lastSyncedAt ?: current?.lastSyncedAt,
-                pendingCount = (status as? SyncStatus.PendingPush)?.count ?: 0,
-                errorMessage = null,
-                updatedAt = Clock.System.now().toEpochMilliseconds(),
-            )
+        // upsertStatus never touches lastSyncedAtIso — the pull checkpoint a delegate just wrote via
+        // setLastSyncedAtIso() must survive the status-update that follows every sync, or the next
+        // pull restarts from empty and re-fetches the whole table every cycle.
+        currentDao.upsertStatus(
+            entity = entity,
+            status = SyncStatus.toPersistStatus(status),
+            lastSyncedAt = lastSyncedAt ?: current?.lastSyncedAt,
+            pendingCount = (status as? SyncStatus.PendingPush)?.count ?: 0,
+            errorMessage = null,
+            now = Clock.System.now().toEpochMilliseconds(),
         )
     }
 
     private suspend fun persistPersistStatus(entity: SyncEntity, status: SyncPersistStatus, errorMessage: String? = null) {
         val currentDao = dao ?: return
         val current = _syncStates.value[entity]
-        currentDao.upsert(
-            SyncStateEntity(
-                entityName = entity,
-                statusName = status,
-                lastSyncedAt = current?.lastSyncedAt,
-                pendingCount = 0,
-                errorMessage = errorMessage,
-                updatedAt = Clock.System.now().toEpochMilliseconds(),
-            )
+        currentDao.upsertStatus(
+            entity = entity,
+            status = status,
+            lastSyncedAt = current?.lastSyncedAt,
+            pendingCount = 0,
+            errorMessage = errorMessage,
+            now = Clock.System.now().toEpochMilliseconds(),
         )
     }
 

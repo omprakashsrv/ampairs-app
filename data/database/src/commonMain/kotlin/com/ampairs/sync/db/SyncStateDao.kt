@@ -23,6 +23,32 @@ interface SyncStateDao {
     @Upsert
     suspend fun upsert(state: SyncStateEntity)
 
+    /**
+     * Persist status/progress fields only — never touches `lastSyncedAtIso`. Used for every
+     * routine status transition (syncing/idle/pending/failed) so the pull checkpoint written by a
+     * delegate's `pull()` is never clobbered by a status update that runs right after it.
+     */
+    @Query(
+        """
+        INSERT INTO entity_sync_state (entityName, statusName, lastSyncedAt, lastSyncedAtIso, pendingCount, errorMessage, updatedAt)
+        VALUES (:entity, :status, :lastSyncedAt, NULL, :pendingCount, :errorMessage, :now)
+        ON CONFLICT(entityName) DO UPDATE SET
+            statusName = :status,
+            lastSyncedAt = :lastSyncedAt,
+            pendingCount = :pendingCount,
+            errorMessage = :errorMessage,
+            updatedAt = :now
+        """
+    )
+    suspend fun upsertStatus(
+        entity: SyncEntity,
+        status: SyncPersistStatus,
+        lastSyncedAt: Long?,
+        pendingCount: Int,
+        errorMessage: String?,
+        now: Long,
+    )
+
     @Query("SELECT lastSyncedAtIso FROM entity_sync_state WHERE entityName = :entity")
     suspend fun getLastSyncedAtIso(entity: SyncEntity): String?
 

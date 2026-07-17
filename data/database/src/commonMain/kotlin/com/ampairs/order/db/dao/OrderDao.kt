@@ -42,9 +42,6 @@ interface OrderDao {
     @Query("SELECT * FROM orderEntity WHERE order_date BETWEEN :startDate AND :endDate AND active = 1 ORDER BY order_date DESC")
     suspend fun getOrdersByDateRange(startDate: String, endDate: String): List<OrderEntity>
 
-    @Query("SELECT max(last_updated) FROM orderEntity")
-    suspend fun getMaxLastUpdated(): Long?
-
     // Highest local ORD-#### sequence — order numbers are client-assigned at save (design v2).
     @Query("SELECT max(CAST(substr(order_number, 5) AS INTEGER)) FROM orderEntity WHERE order_number LIKE 'ORD-%'")
     suspend fun maxOrderSequence(): Long?

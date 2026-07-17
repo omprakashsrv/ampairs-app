@@ -88,7 +88,8 @@ fun List<InvoiceApiModel>.asDatabaseModel(): List<InvoiceEntity> {
                 invoiceApiModel.shippingAddress
             ) else null,
             tax_info = Json.encodeToString(invoiceApiModel.taxInfoApiModels),
-            last_updated = invoiceApiModel.lastUpdated,
+            created_at = invoiceApiModel.createdAt,
+            updated_at = invoiceApiModel.updatedAt,
             synced = 1,
             created_by = invoiceApiModel.created_by,
             updated_by = invoiceApiModel.updated_by,
