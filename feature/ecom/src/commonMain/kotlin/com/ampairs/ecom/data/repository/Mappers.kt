@@ -42,6 +42,18 @@ fun Storefront.toEntity(cachedAt: Long): StorefrontEntity = StorefrontEntity(
     cached_at = cachedAt,
 )
 
+/** Reverse of [toEntity] — rebuilds the domain model from the offline cache (branding/status only). */
+fun StorefrontEntity.toStorefront(): Storefront = Storefront(
+    uid = uid,
+    slug = slug,
+    name = name,
+    description = description,
+    logoUrl = logo_url,
+    bannerUrl = banner_url,
+    status = status,
+    accessMode = access_mode,
+)
+
 // ── Listed product ──
 
 fun ListedProduct.toEntity(storefrontId: String): ListedProductEntity = ListedProductEntity(
