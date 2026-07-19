@@ -67,6 +67,7 @@ import ampairsapp.feature.ecom.generated.resources.Res
 import ampairsapp.feature.ecom.generated.resources.ecom_directory_clear_search
 import ampairsapp.feature.ecom.generated.resources.ecom_directory_empty_body
 import ampairsapp.feature.ecom.generated.resources.ecom_directory_empty_title
+import ampairsapp.feature.ecom.generated.resources.ecom_directory_offline_banner
 import ampairsapp.feature.ecom.generated.resources.ecom_directory_error_body
 import ampairsapp.feature.ecom.generated.resources.ecom_directory_error_title
 import ampairsapp.feature.ecom.generated.resources.ecom_directory_search
@@ -125,6 +126,10 @@ fun StorefrontDirectoryScreen(
             isLoading = state.isLoading,
             modifier = Modifier.padding(horizontal = 20.dp),
         )
+
+        if (state.isOffline && state.storefronts.isNotEmpty()) {
+            OfflineBanner(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+        }
 
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
@@ -222,6 +227,35 @@ private fun DirectorySearchBar(
             )
         } else {
             Spacer(Modifier.height(7.dp))
+        }
+    }
+}
+
+// ─── Offline banner ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun OfflineBanner(modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                Icons.Filled.CloudOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                stringResource(Res.string.ecom_directory_offline_banner),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
         }
     }
 }

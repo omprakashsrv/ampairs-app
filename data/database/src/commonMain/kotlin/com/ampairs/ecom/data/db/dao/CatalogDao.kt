@@ -5,6 +5,7 @@ import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import com.ampairs.ecom.data.db.entity.ListedProductEntity
+import com.ampairs.ecom.data.db.entity.StorefrontDirectoryEntity
 import com.ampairs.ecom.data.db.entity.StorefrontEntity
 import com.ampairs.ecom.data.db.entity.SyncCursorEntity
 import com.ampairs.ecom.data.db.entity.TaxonomyImageEntity
@@ -20,6 +21,25 @@ interface StorefrontDao {
 
     @Query("SELECT * FROM storefront WHERE slug = :slug")
     fun observeBySlug(slug: String): Flow<StorefrontEntity?>
+}
+
+@Dao
+interface StorefrontDirectoryDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(rows: List<StorefrontDirectoryEntity>)
+
+    @Query("DELETE FROM storefront_directory")
+    suspend fun clear()
+
+    @Query("SELECT * FROM storefront_directory ORDER BY position ASC")
+    suspend fun all(): List<StorefrontDirectoryEntity>
+
+    @Query(
+        "SELECT * FROM storefront_directory " +
+            "WHERE name LIKE '%' || :query || '%' OR slug LIKE '%' || :query || '%' " +
+            "ORDER BY position ASC"
+    )
+    suspend fun search(query: String): List<StorefrontDirectoryEntity>
 }
 
 @Dao

@@ -10,12 +10,14 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
+import com.ampairs.database.migrations.STOREFRONT_APP_MIGRATION_1_2
 import com.ampairs.database.migrations.WORKSPACE_MIGRATION_1_2
 import com.ampairs.ecom.data.db.dao.AddressDao
 import com.ampairs.ecom.data.db.dao.CartDao
 import com.ampairs.ecom.data.db.dao.EcomOrderDao
 import com.ampairs.ecom.data.db.dao.ListedProductDao
 import com.ampairs.ecom.data.db.dao.StorefrontDao
+import com.ampairs.ecom.data.db.dao.StorefrontDirectoryDao
 import com.ampairs.ecom.data.db.dao.SyncCursorDao
 import com.ampairs.ecom.data.db.dao.TaxonomyImageDao
 import com.ampairs.file.db.dao.FileDao
@@ -48,6 +50,7 @@ interface StorefrontAppDatabaseModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .enableMultiInstanceInvalidation()
+                .addMigrations(STOREFRONT_APP_MIGRATION_1_2)
                 .build()
         }
 
@@ -59,6 +62,10 @@ interface StorefrontAppDatabaseModule {
 
         @Provides @SingleIn(AppScope::class)
         fun provideSessionDao(db: StorefrontAppDatabase): UserSessionDao = db.userSessionDao()
+
+        @Provides @SingleIn(AppScope::class)
+        fun provideStorefrontDirectoryDao(db: StorefrontAppDatabase): StorefrontDirectoryDao =
+            db.storefrontDirectoryDao()
     }
 }
 

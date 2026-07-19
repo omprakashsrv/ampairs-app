@@ -25,6 +25,8 @@ data class StorefrontDirectoryUiState(
     val query: String = "",
     val storefronts: List<Storefront> = emptyList(),
     val isLoading: Boolean = false,
+    // True when the shown list came from the offline cache (network was unavailable).
+    val isOffline: Boolean = false,
     val error: String? = null,
 )
 
@@ -55,11 +57,21 @@ class StorefrontDirectoryViewModel(
         .mapLatest { (q, _) -> q to repository.listStorefronts(q.ifBlank { null }) }
         .onEach { (q, result) ->
             result.fold(
-                onSuccess = { list ->
-                    _uiState.update { it.copy(query = q, storefronts = list, isLoading = false, error = null) }
+                onSuccess = { page ->
+                    _uiState.update {
+                        it.copy(
+                            query = q,
+                            storefronts = page.stores,
+                            isLoading = false,
+                            isOffline = page.fromCache,
+                            error = null,
+                        )
+                    }
                 },
                 onFailure = { e ->
-                    _uiState.update { it.copy(query = q, isLoading = false, error = e.message ?: "Failed to load stores") }
+                    _uiState.update {
+                        it.copy(query = q, isLoading = false, isOffline = false, error = e.message ?: "Failed to load stores")
+                    }
                 },
             )
         }

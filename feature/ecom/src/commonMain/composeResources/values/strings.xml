@@ -10,6 +10,7 @@
     <string name="ecom_directory_error_title">Couldn't load stores</string>
     <string name="ecom_directory_error_body">Check your connection and try again — your stores will be right here.</string>
     <string name="ecom_directory_try_again">Try again</string>
+    <string name="ecom_directory_offline_banner">You\'re offline — showing saved stores</string>
     <string name="ecom_directory_empty_title">No stores match your search</string>
     <string name="ecom_directory_empty_body">Try a shorter name or check the spelling.</string>
     <string name="ecom_directory_clear_search">Clear search</string>
