@@ -16,6 +16,7 @@ import com.ampairs.invoice.domain.TaxSpec as InvoiceTaxSpec
 import com.ampairs.invoice.editor.DocSyncUi
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.domain.Order
+import com.ampairs.order.domain.OrderStatus
 import com.ampairs.order.print.OrderPrintValueProvider
 import com.ampairs.printing.core.spool.SendOutcome
 import com.ampairs.printing.service.PrintCoordinator
@@ -181,11 +182,33 @@ class OrderViewViewModel(
                 val invoice = current.toInvoice()
                 invoiceRepository.saveInvoice(invoice)        // saves + numbers + marks INVOICE pending
                 current.invoiceRefId = invoice.id
+                // Mirror the backend's OrderService.createInvoice: invoicing is terminal for the
+                // order's sale lifecycle — without this the order's status (and what gets pushed to
+                // the server) never reflects that it's been invoiced.
+                current.status = OrderStatus.INVOICED
                 orderRepository.saveOrder(current)            // local-only + marks ORDER pending
             }
             order = orderRepository.getOrder(orderId)
             resolveUnitNames()
             refreshLinkedInvoiceNumber()
+            viewModelScope.launch(Dispatchers.Main) {
+                savingOrder = false
+            }
+        }
+    }
+
+    /**
+     * Fulfillment step: INVOICED → SHIPPED → OUT_FOR_DELIVERY → DELIVERED. Local-only + marks
+     * ORDER pending, same as every other write here — the next sync push carries the new status to
+     * the server, which (for an ecom-linked order) forwards it to the buyer's storefront app.
+     */
+    fun advanceStatus(newStatus: OrderStatus) {
+        savingOrder = true
+        viewModelScope.launch(DispatcherProvider.io) {
+            val current = order
+            current.status = newStatus
+            orderRepository.saveOrder(current)
+            order = orderRepository.getOrder(orderId)
             viewModelScope.launch(Dispatchers.Main) {
                 savingOrder = false
             }

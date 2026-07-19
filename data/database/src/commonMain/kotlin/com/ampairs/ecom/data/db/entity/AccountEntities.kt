@@ -31,6 +31,8 @@ data class CustomerAddressEntity(
 data class EcomOrderEntity(
     @PrimaryKey val uid: String,
     val ecom_order_ref: String,
+    /** Human-friendly order number (e.g. "ECO-00001") — what the buyer sees/quotes to track this order. */
+    val order_number: String = "",
     val storefront_id: String,
     val status: String,
     val subtotal: Double,

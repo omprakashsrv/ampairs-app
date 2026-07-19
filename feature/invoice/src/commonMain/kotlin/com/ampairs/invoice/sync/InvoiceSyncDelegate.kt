@@ -90,7 +90,12 @@ class InvoiceSyncDelegate(
                 }
             }
 
-            if (synced == 0 && failed > 0) {
+            // Unlike a leaf entity (where partial success is fine — failed rows retry next cycle),
+            // INVOICE has its own push dependents. CentralSyncService only defers a dependent when
+            // the dependency's push signals failure, so ANY unsynced batch here — not just a total
+            // wipeout — must report failure, or a dependent could push in this same cycle against a
+            // row that never actually reached the server.
+            if (failed > 0) {
                 Result.failure(Exception("$failed invoice(s) failed to push — will retry on reconnect"))
             } else {
                 Result.success(synced)

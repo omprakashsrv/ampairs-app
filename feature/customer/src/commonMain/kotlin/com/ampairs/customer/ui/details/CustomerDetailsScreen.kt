@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,8 +36,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,6 +64,7 @@ import com.ampairs.common.locale.formatDateTime
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.domain.CustomerContactResponse
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
 import com.ampairs.customer.ui.components.images.CustomerImageViewModel
 import com.ampairs.customer.ui.list.CustomerAvatar
@@ -118,6 +122,15 @@ import ampairsapp.feature.customer.generated.resources.customer_details_credit_d
 import ampairsapp.feature.customer.generated.resources.customer_details_no_limit
 import ampairsapp.feature.customer.generated.resources.customer_details_na
 import ampairsapp.feature.customer.generated.resources.customer_details_days_suffix
+import ampairsapp.feature.customer.generated.resources.customer_section_linked_accounts
+import ampairsapp.feature.customer.generated.resources.customer_linked_accounts_empty
+import ampairsapp.feature.customer.generated.resources.customer_link_account
+import ampairsapp.feature.customer.generated.resources.customer_link_account_title
+import ampairsapp.feature.customer.generated.resources.customer_link_account_phone_label
+import ampairsapp.feature.customer.generated.resources.customer_link_account_name_label
+import ampairsapp.feature.customer.generated.resources.customer_link_account_confirm
+import ampairsapp.feature.customer.generated.resources.customer_account_restricted
+import ampairsapp.feature.customer.generated.resources.customer_account_active
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -131,6 +144,7 @@ fun CustomerDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val imagesConfig by viewModel.imagesConfig.collectAsStateWithLifecycle()
+    val linkedAccounts by viewModel.linkedAccounts.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
@@ -181,6 +195,9 @@ fun CustomerDetailsScreen(
                         attributeRows = uiState.attributeRows,
                         showImages = imagesConfig.visible,
                         imagesReadOnly = imagesConfig.readOnly,
+                        linkedAccounts = linkedAccounts,
+                        onLinkAccount = viewModel::linkAccount,
+                        onToggleAccount = viewModel::setAccountActive,
                         onEdit = { onEditCustomer(customerId) },
                         modifier = Modifier.fillMaxSize()
                     )
@@ -190,6 +207,9 @@ fun CustomerDetailsScreen(
                         attributeRows = uiState.attributeRows,
                         showImages = imagesConfig.visible,
                         imagesReadOnly = imagesConfig.readOnly,
+                        linkedAccounts = linkedAccounts,
+                        onLinkAccount = viewModel::linkAccount,
+                        onToggleAccount = viewModel::setAccountActive,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -223,6 +243,9 @@ private fun CustomerDetailsMobile(
     attributeRows: List<Pair<String, String>>,
     showImages: Boolean,
     imagesReadOnly: Boolean,
+    linkedAccounts: LinkedAccountsUiState,
+    onLinkAccount: (String, String?) -> Unit,
+    onToggleAccount: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -238,7 +261,14 @@ private fun CustomerDetailsMobile(
         }
 
         when (selectedTab) {
-            0 -> CustomerOverviewTab(customer = customer, attributeRows = attributeRows, modifier = Modifier.fillMaxSize())
+            0 -> CustomerOverviewTab(
+                customer = customer,
+                attributeRows = attributeRows,
+                linkedAccounts = linkedAccounts,
+                onLinkAccount = onLinkAccount,
+                onToggleAccount = onToggleAccount,
+                modifier = Modifier.fillMaxSize(),
+            )
             1 -> if (showImages) {
                 CustomerImageManagementScreen(
                     customerId = customer.uid,
@@ -259,6 +289,9 @@ private fun CustomerDetailsExpanded(
     attributeRows: List<Pair<String, String>>,
     showImages: Boolean,
     imagesReadOnly: Boolean,
+    linkedAccounts: LinkedAccountsUiState,
+    onLinkAccount: (String, String?) -> Unit,
+    onToggleAccount: (String, Boolean) -> Unit,
     onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -343,7 +376,14 @@ private fun CustomerDetailsExpanded(
 
         // Details panel
         OutlinedCard(modifier = Modifier.weight(if (showImages) 0.6f else 1f).fillMaxHeight()) {
-            CustomerOverviewTab(customer = customer, attributeRows = attributeRows, modifier = Modifier.fillMaxSize())
+            CustomerOverviewTab(
+                customer = customer,
+                attributeRows = attributeRows,
+                linkedAccounts = linkedAccounts,
+                onLinkAccount = onLinkAccount,
+                onToggleAccount = onToggleAccount,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         // Images panel (no tabs on desktop)
@@ -505,6 +545,9 @@ private fun StatCard(
 private fun CustomerOverviewTab(
     customer: Customer,
     attributeRows: List<Pair<String, String>>,
+    linkedAccounts: LinkedAccountsUiState,
+    onLinkAccount: (String, String?) -> Unit,
+    onToggleAccount: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val locale = LocalAppLocale.current
@@ -540,6 +583,12 @@ private fun CustomerOverviewTab(
                         else stringResource(Res.string.customer_status_inactive_label)
             )
         }
+
+        LinkedAccountsSection(
+            state = linkedAccounts,
+            onLinkAccount = onLinkAccount,
+            onToggleAccount = onToggleAccount,
+        )
 
         if (customer.gstNumber != null || customer.panNumber != null || customer.creditLimit != null || customer.creditDays != null) {
             InfoSection(title = stringResource(Res.string.customer_section_financial)) {
@@ -661,6 +710,131 @@ private fun InfoRow(label: String, value: String) {
             modifier = Modifier.weight(2f)
         )
     }
+}
+
+// ─── Linked accounts (ecom storefront logins linked to this customer) ─────────
+
+@Composable
+private fun LinkedAccountsSection(
+    state: LinkedAccountsUiState,
+    onLinkAccount: (String, String?) -> Unit,
+    onToggleAccount: (String, Boolean) -> Unit,
+) {
+    var showLinkDialog by remember { mutableStateOf(false) }
+
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(Res.string.customer_section_linked_accounts),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                TextButton(onClick = { showLinkDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(Res.string.customer_link_account))
+                }
+            }
+
+            if (state.contacts.isEmpty() && !state.isLoading) {
+                Text(
+                    text = stringResource(Res.string.customer_linked_accounts_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            state.contacts.forEach { contact ->
+                LinkedAccountRow(contact = contact, onToggle = { active -> onToggleAccount(contact.contactUid, active) })
+            }
+
+            state.error?.let {
+                Text(text = it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+
+    if (showLinkDialog) {
+        LinkAccountDialog(
+            isLinking = state.isLinking,
+            onConfirm = { phone, name ->
+                onLinkAccount(phone, name)
+                showLinkDialog = false
+            },
+            onDismiss = { showLinkDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun LinkedAccountRow(contact: CustomerContactResponse, onToggle: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(contact.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            contact.phone?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Text(
+                text = if (contact.active) stringResource(Res.string.customer_account_active) else stringResource(Res.string.customer_account_restricted),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (contact.active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            )
+        }
+        Switch(checked = contact.active, onCheckedChange = onToggle)
+    }
+}
+
+@Composable
+private fun LinkAccountDialog(isLinking: Boolean, onConfirm: (String, String?) -> Unit, onDismiss: () -> Unit) {
+    var phone by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.customer_link_account_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text(stringResource(Res.string.customer_link_account_phone_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(Res.string.customer_link_account_name_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(phone.trim(), name.trim().ifBlank { null }) },
+                enabled = phone.isNotBlank() && !isLinking,
+            ) {
+                Text(stringResource(Res.string.customer_link_account_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.customer_cancel)) }
+        },
+    )
 }
 
 // ─── Dialogs & error states ───────────────────────────────────────────────────

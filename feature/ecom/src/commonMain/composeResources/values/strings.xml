@@ -72,6 +72,16 @@
     <string name="ecom_place_order">Place order</string>
     <string name="ecom_order_notes">Delivery notes (optional)</string>
     <string name="ecom_continue">Continue</string>
+    <string name="ecom_not_linked_title">Not linked to this business</string>
+    <string name="ecom_not_linked_got_it">Got it</string>
+    <string name="ecom_link_candidate_title">Link your account?</string>
+    <string name="ecom_link_candidate_subtitle">We found an account matching your phone number with this business.</string>
+    <string name="ecom_link_candidate_name">Name</string>
+    <string name="ecom_link_candidate_phone">Phone</string>
+    <string name="ecom_link_candidate_gstin">GSTIN</string>
+    <string name="ecom_link_candidate_address">Address</string>
+    <string name="ecom_link_candidate_confirm">Link and continue</string>
+    <string name="ecom_link_candidate_cancel">Cancel</string>
 
     <!-- Order placed / tracking -->
     <string name="ecom_order_placed_title">Order placed</string>
@@ -147,10 +157,19 @@
     <string name="storefront_mgmt_publish">Publish</string>
     <string name="storefront_mgmt_unpublish">Unpublish</string>
     <string name="storefront_mgmt_preview">Preview store</string>
+    <string name="storefront_mgmt_manage_users">Manage ecom users</string>
     <string name="storefront_mgmt_retry">Retry</string>
     <string name="ecom_address_use_location">Use my location</string>
     <string name="ecom_address_location_hint">Use your current location or pick on the map to fill the address automatically. You can edit any field afterwards.</string>
     <string name="ecom_address_details">Address details</string>
     <string name="ecom_cancel">Cancel</string>
     <string name="ecom_delivery_address">Delivery address</string>
+
+    <!-- Ecom users management (owner-facing) -->
+    <string name="ecom_users_title">Ecom Users</string>
+    <string name="ecom_users_intro">Everyone linked to one of your customers across your storefronts. Restrict an account to block it from ordering.</string>
+    <string name="ecom_users_empty">No linked ecom accounts yet.</string>
+    <string name="ecom_users_retry">Retry</string>
+    <string name="ecom_users_active">Active</string>
+    <string name="ecom_users_restricted">Restricted</string>
 </resources>

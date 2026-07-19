@@ -255,7 +255,7 @@ import com.ampairs.unit.data.db.entity.UnitEntity
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)

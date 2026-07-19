@@ -4,11 +4,15 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
+import com.ampairs.common.patch
 import com.ampairs.common.post
 import com.ampairs.common.delete
 import com.ampairs.common.model.Response
 import com.ampairs.common.model.PageResponse
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.domain.CustomerContactResponse
+import com.ampairs.customer.domain.LinkContactRequest
+import com.ampairs.customer.domain.SetContactStatusRequest
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.MasterState
 import com.ampairs.common.di.AppScope
@@ -139,5 +143,31 @@ class CustomerApiImpl(
         } catch (_: Exception) {
             null
         }
+    }
+
+    override suspend fun getContacts(customerId: String): List<CustomerContactResponse> {
+        val response: Response<List<CustomerContactResponse>> = get(
+            client,
+            ApiUrlBuilder.customerUrl("v1/$customerId/contacts")
+        )
+        return response.data ?: emptyList()
+    }
+
+    override suspend fun linkContact(customerId: String, request: LinkContactRequest): CustomerContactResponse {
+        val response: Response<CustomerContactResponse> = post(
+            client,
+            ApiUrlBuilder.customerUrl("v1/$customerId/contacts"),
+            request
+        )
+        return response.data ?: throw Exception(response.error?.message ?: "Failed to link account")
+    }
+
+    override suspend fun setContactActive(customerId: String, contactUid: String, active: Boolean): CustomerContactResponse {
+        val response: Response<CustomerContactResponse> = patch(
+            client,
+            ApiUrlBuilder.customerUrl("v1/$customerId/contacts/$contactUid/status"),
+            SetContactStatusRequest(active)
+        )
+        return response.data ?: throw Exception(response.error?.message ?: "Failed to update account status")
     }
 }
