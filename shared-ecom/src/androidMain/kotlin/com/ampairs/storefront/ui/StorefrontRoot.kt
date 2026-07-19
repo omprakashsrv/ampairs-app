@@ -1,8 +1,6 @@
 package com.ampairs.storefront.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -12,6 +10,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -94,11 +93,14 @@ fun StorefrontRoot(
     }
 
     StorefrontTheme(seedColor = seedColorState) {
-        Box(
-            Modifier
-                .background(MaterialTheme.colorScheme.surface)
+        // Surface (not Modifier.background) so LocalContentColor defaults to onSurface — Text()
+        // without an explicit color would otherwise fall back to Compose's hardcoded black,
+        // invisible against a dark surface in dark mode.
+        Surface(
+            modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.systemBars),
+            color = MaterialTheme.colorScheme.surface,
         ) {
             val activeSession = session
             val start = startDestination
@@ -106,7 +108,7 @@ fun StorefrontRoot(
             // renders on the app graph until a store is picked.
             if (start == null || (!directoryMode && activeSession == null)) {
                 Loading()
-                return@Box
+                return@Surface
             }
 
             // Before a store is activated (directory mode) resolve VMs from the app graph; once a

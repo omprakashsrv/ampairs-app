@@ -86,7 +86,12 @@ class OrderSyncDelegate(
                 }
             }
 
-            if (synced == 0 && failed > 0) {
+            // Unlike a leaf entity (where partial success is fine — failed rows retry next cycle),
+            // ORDER has push dependents (INVOICE via fk_invoice_order_ref). CentralSyncService only
+            // defers a dependent when the dependency's push signals failure, so ANY unsynced batch
+            // here — not just a total wipeout — must report failure, or the invoice for one of the
+            // still-unsynced orders could push in this same cycle and hit the FK constraint.
+            if (failed > 0) {
                 Result.failure(Exception("$failed order(s) failed to push — will retry on reconnect"))
             } else {
                 Result.success(synced)

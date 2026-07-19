@@ -311,6 +311,19 @@ if (syncedCount == 0 && entitiesToUpdate.any { it.uploadStatus == STATUS_FAILED 
 
 **Why:** `SyncResult.Success(0)` tells CentralSyncService everything is fine. The delegate's `.fold(onSuccess = SyncResult.Success, onFailure = SyncResult.Failure)` chain only propagates failure if the repository returns `Result.failure()`. Partial success (some uploaded, some failed) is OK to report as success — the FAILED rows will retry next push cycle.
 
+> **Exception — entities that other entities declare as a `pushDependencies`:** partial success is
+> **not** OK there. `CentralSyncService.executePush` only defers a dependent (e.g. INVOICE) when the
+> dependency's (ORDER's) push signals `SyncResult.Failure` — it has no visibility into "3 of 4 rows
+> synced". If ORDER's `pushPending()` reports `Result.success` after a partial multi-batch failure
+> (`synced > 0 && failed > 0`), CentralSyncService clears ORDER's pending state and lets INVOICE push
+> in the *same cycle* — including any invoice referencing one of the still-unsynced orders, which the
+> backend rejects with a `fk_invoice_order_ref` (409) violation. Live bug: `OrderSyncDelegate`/
+> `InvoiceSyncDelegate` used `if (synced == 0 && failed > 0)`; fixed to `if (failed > 0)` so ANY failed
+> batch reports failure — the successfully-synced rows are still durably marked `synced=1` in Room
+> either way (that part doesn't roll back), this only changes the *signal* CentralSyncService acts on.
+> Rule of thumb: leaf entities (no dependents) → total-failure-only reporting is fine; entities with
+> dependents → any-failure reporting is required.
+
 ---
 
 ### Rule 3 — Upload timeout: Ktor's blanket timeout fires before `withTimeout()`

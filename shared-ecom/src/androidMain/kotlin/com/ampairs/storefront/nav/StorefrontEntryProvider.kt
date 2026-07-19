@@ -185,7 +185,11 @@ fun storefrontEntryProvider(
                 snackbar = snackbar,
                 onBack = { backStack.removeLastOrNull() },
                 onAddAddress = { backStack.add(StorefrontRoute.Addresses) },
-                onOrderPlaced = { ref, orderNumber -> backStack.add(StorefrontRoute.OrderPlaced(ref, orderNumber)) },
+                onOrderPlaced = { ref, orderNumber ->
+                    // Drop Cart/Checkout/Addresses so back-from-OrderPlaced can't re-enter checkout.
+                    backStack.trimToStorefront()
+                    backStack.add(StorefrontRoute.OrderPlaced(ref, orderNumber))
+                },
             )
         }
     }
@@ -195,10 +199,7 @@ fun storefrontEntryProvider(
             orderRef = key.orderRef,
             orderNumber = key.orderNumber,
             onTrack = { backStack.add(StorefrontRoute.OrderTracking(key.orderRef)) },
-            onContinue = {
-                val idx = backStack.indexOfFirst { it is StorefrontRoute.Storefront }
-                if (idx >= 0) while (backStack.size > idx + 1) backStack.removeLastOrNull()
-            },
+            onContinue = { backStack.trimToStorefront() },
         )
     }
 
@@ -240,4 +241,10 @@ private fun EcomScaffold(content: @Composable (SnackbarHostState) -> Unit) {
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) { content(snackbar) }
     }
+}
+
+/** Drops every entry pushed after the storefront shell (Cart, Checkout, Addresses, ...). */
+private fun MutableList<NavKey>.trimToStorefront() {
+    val idx = indexOfFirst { it is StorefrontRoute.Storefront }
+    if (idx >= 0) while (size > idx + 1) removeLastOrNull()
 }
