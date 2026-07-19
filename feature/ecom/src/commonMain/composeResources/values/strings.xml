@@ -72,6 +72,16 @@
     <string name="ecom_place_order">Place order</string>
     <string name="ecom_order_notes">Delivery notes (optional)</string>
     <string name="ecom_continue">Continue</string>
+    <string name="ecom_not_linked_title">Not linked to this business</string>
+    <string name="ecom_not_linked_got_it">Got it</string>
+    <string name="ecom_link_candidate_title">Link your account?</string>
+    <string name="ecom_link_candidate_subtitle">We found an account matching your phone number with this business.</string>
+    <string name="ecom_link_candidate_name">Name</string>
+    <string name="ecom_link_candidate_phone">Phone</string>
+    <string name="ecom_link_candidate_gstin">GSTIN</string>
+    <string name="ecom_link_candidate_address">Address</string>
+    <string name="ecom_link_candidate_confirm">Link and continue</string>
+    <string name="ecom_link_candidate_cancel">Cancel</string>
 
     <!-- Order placed / tracking -->
     <string name="ecom_order_placed_title">Order placed</string>

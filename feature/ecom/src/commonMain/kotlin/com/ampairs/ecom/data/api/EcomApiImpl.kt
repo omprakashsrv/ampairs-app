@@ -15,7 +15,11 @@ import com.ampairs.ecom.api.model.AddressResponse
 import com.ampairs.ecom.api.model.CartResponse
 import com.ampairs.ecom.api.model.CatalogMeta
 import com.ampairs.ecom.api.model.CheckoutRequest
+import com.ampairs.ecom.api.model.ConfirmLinkRequest
+import com.ampairs.ecom.api.model.DistributorAccount
+import com.ampairs.ecom.api.model.EcomApiException
 import com.ampairs.ecom.api.model.EcomOrderResponse
+import com.ampairs.ecom.api.model.LinkCandidateResponse
 import com.ampairs.ecom.api.model.ListedProduct
 import com.ampairs.ecom.api.model.ManagedStorefront
 import com.ampairs.ecom.api.model.PageResponse
@@ -164,6 +168,29 @@ class EcomApiImpl(
         get<Response<EcomOrderResponse>>(client, ApiUrlBuilder.ecomUrl("account/orders/$ecomOrderRef"), params)
     }
 
+    // ── Distributor link ──
+
+    override suspend fun getLinkCandidate(slug: String): Result<LinkCandidateResponse?> = try {
+        val params = mapOf<String, Any>("storefront_slug" to slug)
+        val response = get<Response<LinkCandidateResponse>>(client, ApiUrlBuilder.ecomUrl("account/link-candidate"), params)
+        if (response.error != null) {
+            Result.failure(EcomApiException(response.error?.code ?: "UNKNOWN", response.error?.message ?: "Failed to check link"))
+        } else {
+            // data is legitimately null when no CRM account matches this buyer's phone.
+            Result.success(response.data)
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    override suspend fun confirmLink(slug: String, customerId: String): Result<DistributorAccount> = call {
+        post<Response<DistributorAccount>>(
+            client,
+            ApiUrlBuilder.ecomUrl("account/link?storefront_slug=$slug"),
+            ConfirmLinkRequest(customerId),
+        )
+    }
+
     // ── Store access gate (future API — see plan §11.1) ──
 
     override suspend fun requestStoreAccess(slug: String): Result<StoreAccessResponse> = call {
@@ -182,7 +209,12 @@ class EcomApiImpl(
             response.data != null -> Result.success(response.data)
             // No storefront created yet — distinguish 404 NOT_FOUND from a real error.
             response.error?.code == "NOT_FOUND" -> Result.success(null)
-            else -> Result.failure(Exception(response.error?.message?.ifBlank { "Failed to load storefront" } ?: "Failed to load storefront"))
+            else -> Result.failure(
+                EcomApiException(
+                    response.error?.code ?: "UNKNOWN",
+                    response.error?.message?.ifBlank { "Failed to load storefront" } ?: "Failed to load storefront",
+                ),
+            )
         }
     } catch (e: Exception) {
         Result.failure(e)
@@ -210,7 +242,12 @@ class EcomApiImpl(
         if (response.data != null && response.error == null) {
             Result.success(response.data!!)
         } else {
-            Result.failure(Exception(response.error?.message?.ifBlank { "Server returned no data" } ?: "Server returned no data"))
+            Result.failure(
+                EcomApiException(
+                    response.error?.code ?: "UNKNOWN",
+                    response.error?.message?.ifBlank { "Server returned no data" } ?: "Server returned no data",
+                ),
+            )
         }
     } catch (e: Exception) {
         Result.failure(e)

@@ -6,7 +6,9 @@ import com.ampairs.ecom.api.model.AddressResponse
 import com.ampairs.ecom.api.model.CartResponse
 import com.ampairs.ecom.api.model.CatalogMeta
 import com.ampairs.ecom.api.model.CheckoutRequest
+import com.ampairs.ecom.api.model.DistributorAccount
 import com.ampairs.ecom.api.model.EcomOrderResponse
+import com.ampairs.ecom.api.model.LinkCandidateResponse
 import com.ampairs.ecom.api.model.ListedProduct
 import com.ampairs.ecom.api.model.ManagedStorefront
 import com.ampairs.ecom.api.model.PageResponse
@@ -63,6 +65,12 @@ interface EcomApi {
     // ── Account: orders (auth) ──
     suspend fun getOrders(slug: String, page: Int = 0, size: Int = 20): Result<PageResponse<EcomOrderResponse>>
     suspend fun getOrder(slug: String, ecomOrderRef: String): Result<EcomOrderResponse>
+
+    // ── Distributor link (auth) ──
+    /** A CRM account matching the buyer's own phone in this workspace, or `null` when there's no match. */
+    suspend fun getLinkCandidate(slug: String): Result<LinkCandidateResponse?>
+    /** Commits a candidate from [getLinkCandidate]; the server re-validates the phone match. */
+    suspend fun confirmLink(slug: String, customerId: String): Result<DistributorAccount>
 
     // ── Store access gate (auth, future API — see plan §11.1) ──
     suspend fun requestStoreAccess(slug: String): Result<StoreAccessResponse>
