@@ -7,6 +7,7 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.Response
+import com.ampairs.common.patch
 import com.ampairs.common.post
 import com.ampairs.common.put
 import com.ampairs.ecom.api.model.AddCartItemRequest
@@ -18,12 +19,14 @@ import com.ampairs.ecom.api.model.CheckoutRequest
 import com.ampairs.ecom.api.model.ConfirmLinkRequest
 import com.ampairs.ecom.api.model.DistributorAccount
 import com.ampairs.ecom.api.model.EcomApiException
+import com.ampairs.ecom.api.model.EcomContactResponse
 import com.ampairs.ecom.api.model.EcomOrderResponse
 import com.ampairs.ecom.api.model.LinkCandidateResponse
 import com.ampairs.ecom.api.model.ListedProduct
 import com.ampairs.ecom.api.model.ManagedStorefront
 import com.ampairs.ecom.api.model.PageResponse
 import com.ampairs.ecom.api.model.ProductSyncPage
+import com.ampairs.ecom.api.model.SetEcomContactStatusRequest
 import com.ampairs.ecom.api.model.StoreAccessRequest
 import com.ampairs.ecom.api.model.StoreAccessResponse
 import com.ampairs.ecom.api.model.Storefront
@@ -188,6 +191,20 @@ class EcomApiImpl(
             client,
             ApiUrlBuilder.ecomUrl("account/link?storefront_slug=$slug"),
             ConfirmLinkRequest(customerId),
+        )
+    }
+
+    // ── Owner-facing "ecom users" management ──
+
+    override suspend fun getEcomContacts(): Result<List<EcomContactResponse>> = call {
+        get<Response<List<EcomContactResponse>>>(client, ApiUrlBuilder.ecomUrl("management/customers"))
+    }
+
+    override suspend fun setEcomContactActive(contactUid: String, active: Boolean): Result<EcomContactResponse> = call {
+        patch<Response<EcomContactResponse>>(
+            client,
+            ApiUrlBuilder.ecomUrl("management/customers/$contactUid/status"),
+            SetEcomContactStatusRequest(active),
         )
     }
 

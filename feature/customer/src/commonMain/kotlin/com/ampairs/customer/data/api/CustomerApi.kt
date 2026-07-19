@@ -1,6 +1,8 @@
 package com.ampairs.customer.data.api
 
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.domain.CustomerContactResponse
+import com.ampairs.customer.domain.LinkContactRequest
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.MasterState
 import com.ampairs.common.model.PageResponse
@@ -45,4 +47,9 @@ interface CustomerApi {
     suspend fun getAvailableStatesForImport(): List<MasterState>
     suspend fun deleteState(stateId: String)
     suspend fun getState(stateId: String): State?
+
+    // -- Linked ecom accounts ("linked accounts" section on the customer detail screen) --
+    suspend fun getContacts(customerId: String): List<CustomerContactResponse>
+    suspend fun linkContact(customerId: String, request: LinkContactRequest): CustomerContactResponse
+    suspend fun setContactActive(customerId: String, contactUid: String, active: Boolean): CustomerContactResponse
 }

@@ -157,10 +157,19 @@
     <string name="storefront_mgmt_publish">Publish</string>
     <string name="storefront_mgmt_unpublish">Unpublish</string>
     <string name="storefront_mgmt_preview">Preview store</string>
+    <string name="storefront_mgmt_manage_users">Manage ecom users</string>
     <string name="storefront_mgmt_retry">Retry</string>
     <string name="ecom_address_use_location">Use my location</string>
     <string name="ecom_address_location_hint">Use your current location or pick on the map to fill the address automatically. You can edit any field afterwards.</string>
     <string name="ecom_address_details">Address details</string>
     <string name="ecom_cancel">Cancel</string>
     <string name="ecom_delivery_address">Delivery address</string>
+
+    <!-- Ecom users management (owner-facing) -->
+    <string name="ecom_users_title">Ecom Users</string>
+    <string name="ecom_users_intro">Everyone linked to one of your customers across your storefronts. Restrict an account to block it from ordering.</string>
+    <string name="ecom_users_empty">No linked ecom accounts yet.</string>
+    <string name="ecom_users_retry">Retry</string>
+    <string name="ecom_users_active">Active</string>
+    <string name="ecom_users_restricted">Restricted</string>
 </resources>
