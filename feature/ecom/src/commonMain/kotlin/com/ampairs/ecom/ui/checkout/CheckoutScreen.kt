@@ -73,7 +73,7 @@ fun CheckoutScreen(
     snackbar: SnackbarHostState,
     onBack: () -> Unit,
     onAddAddress: () -> Unit,
-    onOrderPlaced: (String) -> Unit,
+    onOrderPlaced: (orderRef: String, orderNumber: String) -> Unit,
     viewModel: CheckoutViewModel = metroViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -84,7 +84,7 @@ fun CheckoutScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is CheckoutEvent.OrderPlaced -> onOrderPlaced(event.orderRef)
+                is CheckoutEvent.OrderPlaced -> onOrderPlaced(event.orderRef, event.orderNumber)
                 is CheckoutEvent.Error -> snackbar.showSnackbar(event.message)
                 is CheckoutEvent.NotLinked -> notLinkedMessage = event.message
                 is CheckoutEvent.LinkCandidateFound -> linkCandidate = event.candidate

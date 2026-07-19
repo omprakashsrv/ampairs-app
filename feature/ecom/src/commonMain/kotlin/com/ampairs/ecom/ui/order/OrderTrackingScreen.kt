@@ -71,7 +71,7 @@ fun OrderTrackingScreen(
             item {
                 Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text(order.ecom_order_ref, style = MaterialTheme.typography.titleMedium)
+                        Text(order.order_number.ifBlank { order.ecom_order_ref }, style = MaterialTheme.typography.titleMedium)
                         Text(order.placed_at.take(10), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     OrderStatusChip(status = order.status, label = orderStatusLabel(order.status))

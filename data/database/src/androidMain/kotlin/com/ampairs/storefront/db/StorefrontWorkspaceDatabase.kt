@@ -55,7 +55,7 @@ import com.ampairs.sync.db.SyncStateEntity
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class StorefrontWorkspaceDatabase : RoomDatabase() {

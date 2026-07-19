@@ -185,7 +185,7 @@ fun storefrontEntryProvider(
                 snackbar = snackbar,
                 onBack = { backStack.removeLastOrNull() },
                 onAddAddress = { backStack.add(StorefrontRoute.Addresses) },
-                onOrderPlaced = { ref -> backStack.add(StorefrontRoute.OrderPlaced(ref)) },
+                onOrderPlaced = { ref, orderNumber -> backStack.add(StorefrontRoute.OrderPlaced(ref, orderNumber)) },
             )
         }
     }
@@ -193,6 +193,7 @@ fun storefrontEntryProvider(
     is StorefrontRoute.OrderPlaced -> NavEntry(key) {
         OrderPlacedScreen(
             orderRef = key.orderRef,
+            orderNumber = key.orderNumber,
             onTrack = { backStack.add(StorefrontRoute.OrderTracking(key.orderRef)) },
             onContinue = {
                 val idx = backStack.indexOfFirst { it is StorefrontRoute.Storefront }

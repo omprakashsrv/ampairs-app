@@ -266,7 +266,7 @@ sealed interface EcomRoute : NavKey {
     data object Checkout : EcomRoute
 
     @Serializable
-    data class OrderPlaced(val orderRef: String) : EcomRoute
+    data class OrderPlaced(val orderRef: String, val orderNumber: String = "") : EcomRoute
 
     @Serializable
     data object Orders : EcomRoute

@@ -10,6 +10,7 @@ import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
 import com.ampairs.database.AmpairsAppDatabase
 import com.ampairs.database.AmpairsWorkspaceDatabase
+import com.ampairs.database.migrations.WORKSPACE_MIGRATION_1_2
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -57,6 +58,7 @@ interface WorkspaceDatabaseDesktopModule {
             )
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(factory.queryDispatcher)
+                .addMigrations(WORKSPACE_MIGRATION_1_2)
                 .build()
                 .also { closableRegistry.register { it.close() } }
         }

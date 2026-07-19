@@ -42,7 +42,7 @@ data class CheckoutUiState(
 )
 
 sealed interface CheckoutEvent {
-    data class OrderPlaced(val orderRef: String) : CheckoutEvent
+    data class OrderPlaced(val orderRef: String, val orderNumber: String) : CheckoutEvent
     data class Error(val message: String) : CheckoutEvent
     /** No distributor link and no phone-match candidate either — the backend blocked checkout (ECOM_NOT_LINKED). */
     data class NotLinked(val message: String) : CheckoutEvent
@@ -136,7 +136,7 @@ class CheckoutViewModel(
                     // The local cart has been turned into an order — clear it.
                     cartRepository.clear(storefrontId)
                     syncService.emit(SyncEvent.TriggerPull(SyncEntity.ECOM_ORDER))
-                    _events.tryEmit(CheckoutEvent.OrderPlaced(order.ecomOrderRef))
+                    _events.tryEmit(CheckoutEvent.OrderPlaced(order.ecomOrderRef, order.orderNumber))
                 },
                 onFailure = {
                     if (it is EcomApiException && it.code == "ECOM_NOT_LINKED") {

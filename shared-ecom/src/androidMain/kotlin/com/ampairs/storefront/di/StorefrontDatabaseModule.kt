@@ -10,6 +10,7 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
+import com.ampairs.database.migrations.WORKSPACE_MIGRATION_1_2
 import com.ampairs.ecom.data.db.dao.AddressDao
 import com.ampairs.ecom.data.db.dao.CartDao
 import com.ampairs.ecom.data.db.dao.EcomOrderDao
@@ -80,6 +81,7 @@ interface StorefrontWorkspaceDatabaseModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .enableMultiInstanceInvalidation()
+                .addMigrations(WORKSPACE_MIGRATION_1_2)
                 .build()
                 .also { closableRegistry.register { it.close() } }
         }

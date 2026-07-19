@@ -161,6 +161,7 @@ fun CustomerAddressEntity.toModel(): AddressResponse = AddressResponse(
 fun EcomOrderResponse.toEntity(): EcomOrderEntity = EcomOrderEntity(
     uid = uid,
     ecom_order_ref = ecomOrderRef,
+    order_number = orderNumber,
     storefront_id = storefrontId,
     status = status,
     subtotal = subtotal,

@@ -43,7 +43,7 @@ sealed interface StorefrontRoute : NavKey {
 
     @Serializable data object Checkout : StorefrontRoute
 
-    @Serializable data class OrderPlaced(val orderRef: String) : StorefrontRoute
+    @Serializable data class OrderPlaced(val orderRef: String, val orderNumber: String = "") : StorefrontRoute
 
     @Serializable data class OrderTracking(val orderRef: String) : StorefrontRoute
 

@@ -88,7 +88,7 @@ fun ecomEntryProvider(
                 snackbar = snackbar,
                 onBack = { backStack.removeLastOrNull() },
                 onAddAddress = { backStack.add(EcomRoute.Addresses) },
-                onOrderPlaced = { ref -> backStack.add(EcomRoute.OrderPlaced(ref)) },
+                onOrderPlaced = { ref, orderNumber -> backStack.add(EcomRoute.OrderPlaced(ref, orderNumber)) },
             )
         }
     }
@@ -96,6 +96,7 @@ fun ecomEntryProvider(
     is EcomRoute.OrderPlaced -> NavEntry(key) {
         OrderPlacedScreen(
             orderRef = key.orderRef,
+            orderNumber = key.orderNumber,
             onTrack = { backStack.add(EcomRoute.OrderTracking(key.orderRef)) },
             onContinue = {
                 val idx = backStack.indexOfFirst { it is EcomRoute.Storefront }
