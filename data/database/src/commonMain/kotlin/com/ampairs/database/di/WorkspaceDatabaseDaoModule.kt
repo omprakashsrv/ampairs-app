@@ -3,7 +3,6 @@ package com.ampairs.database.di
 import com.ampairs.agent.data.db.dao.ChatMessageDao
 import com.ampairs.business.agent.BusinessAgentDao
 import com.ampairs.business.data.db.BusinessDao
-import com.ampairs.common.agent.WorkspaceDatabaseProvider
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.customer.agent.CustomerAgentDao
 import com.ampairs.customer.data.db.CustomerDao
@@ -11,14 +10,6 @@ import com.ampairs.customer.data.db.CustomerGroupDao
 import com.ampairs.customer.data.db.CustomerTypeDao
 import com.ampairs.customer.data.db.StateDao
 import com.ampairs.database.AmpairsWorkspaceDatabase
-import com.ampairs.ecom.data.db.dao.AddressDao
-import com.ampairs.ecom.data.db.dao.CartDao
-import com.ampairs.ecom.data.db.dao.EcomOrderDao
-import com.ampairs.ecom.data.db.dao.ListedProductDao
-import com.ampairs.ecom.data.db.dao.StorefrontDao
-import com.ampairs.ecom.data.db.dao.SyncCursorDao
-import com.ampairs.ecom.data.db.dao.TaxonomyImageDao
-import com.ampairs.file.db.dao.FileDao
 import com.ampairs.form.agent.FormAgentDao
 import com.ampairs.form.data.db.FormFieldDao
 import com.ampairs.form.data.db.FormSchemaDao
@@ -61,11 +52,8 @@ import com.ampairs.product.db.dao.VariantAttributeDao
 import com.ampairs.purchase.db.dao.PurchaseDao
 import com.ampairs.sequence.data.db.dao.SequenceAllocationDao
 import com.ampairs.sequence.data.db.dao.SequenceDefinitionDao
-import com.ampairs.store.data.db.dao.StoreSettingDao
-import com.ampairs.store.data.db.dao.StoreSettingDefinitionDao
 import com.ampairs.subscription.db.SubscriptionDao
 import com.ampairs.supplier.data.db.SupplierDao
-import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.tax.agent.TaxAgentDao
 import com.ampairs.tax.data.db.dao.TaxCodeDao
 import com.ampairs.tax.data.db.dao.TaxComponentDao
@@ -81,8 +69,15 @@ import dev.zacsweers.metro.Provides
 /**
  * Sources every workspace-scoped DAO from the consolidated [AmpairsWorkspaceDatabase]. DAO types
  * are unchanged from the old per-feature modules, so repositories, sync delegates and ViewModels
- * are untouched by the consolidation. (The storefront apps provide their subset — ecom/store/file/
- * sync — from their own database in shared-ecom.)
+ * are untouched by the consolidation.
+ *
+ * The ecom/store/file/sync-state DAOs (and the [com.ampairs.common.agent.WorkspaceDatabaseProvider]
+ * binding) are deliberately NOT provided here even though this module also owns those tables —
+ * they live in `:shared`'s `EcomFileStoreSyncDaoModule` instead. `:shared-ecom` depends on this
+ * module (for the storefront `@Database` class definitions) but does NOT depend on `:shared`, and
+ * provides that same DAO subset from its own `StorefrontWorkspaceDatabase`. Since Metro merges every
+ * `@ContributesTo(WorkspaceScope::class)` visible on the classpath, keeping those providers here
+ * would duplicate-bind them in the storefront apps' graph.
  */
 @ContributesTo(WorkspaceScope::class)
 interface WorkspaceDatabaseDaoModule {
@@ -236,24 +231,12 @@ interface WorkspaceDatabaseDaoModule {
         @Provides
         fun provideFormAgentDao(db: AmpairsWorkspaceDatabase): FormAgentDao = db.formAgentDao()
 
-        // file
-        @Provides
-        fun provideFileDao(db: AmpairsWorkspaceDatabase): FileDao = db.fileDao()
-
         // business
         @Provides
         fun provideBusinessDao(db: AmpairsWorkspaceDatabase): BusinessDao = db.businessDao()
 
         @Provides
         fun provideBusinessAgentDao(db: AmpairsWorkspaceDatabase): BusinessAgentDao = db.businessAgentDao()
-
-        // store
-        @Provides
-        fun provideStoreSettingDao(db: AmpairsWorkspaceDatabase): StoreSettingDao = db.storeSettingDao()
-
-        @Provides
-        fun provideStoreSettingDefinitionDao(db: AmpairsWorkspaceDatabase): StoreSettingDefinitionDao =
-            db.storeSettingDefinitionDao()
 
         // subscription
         @Provides
@@ -302,39 +285,8 @@ interface WorkspaceDatabaseDaoModule {
         @Provides
         fun provideNotificationDao(db: AmpairsWorkspaceDatabase): NotificationDao = db.notificationDao()
 
-        // ecom
-        @Provides
-        fun provideStorefrontDao(db: AmpairsWorkspaceDatabase): StorefrontDao = db.storefrontDao()
-
-        @Provides
-        fun provideTaxonomyImageDao(db: AmpairsWorkspaceDatabase): TaxonomyImageDao = db.taxonomyImageDao()
-
-        @Provides
-        fun provideListedProductDao(db: AmpairsWorkspaceDatabase): ListedProductDao = db.listedProductDao()
-
-        @Provides
-        fun provideSyncCursorDao(db: AmpairsWorkspaceDatabase): SyncCursorDao = db.syncCursorDao()
-
-        @Provides
-        fun provideCartDao(db: AmpairsWorkspaceDatabase): CartDao = db.cartDao()
-
-        @Provides
-        fun provideAddressDao(db: AmpairsWorkspaceDatabase): AddressDao = db.addressDao()
-
-        @Provides
-        fun provideEcomOrderDao(db: AmpairsWorkspaceDatabase): EcomOrderDao = db.ecomOrderDao()
-
         // agent chat
         @Provides
         fun provideChatMessageDao(db: AmpairsWorkspaceDatabase): ChatMessageDao = db.chatMessageDao()
-
-        // sync state
-        @Provides
-        fun provideSyncStateDao(db: AmpairsWorkspaceDatabase): SyncStateDao = db.syncStateDao()
-
-        // reader-connection handle for the agent SAFE_QUERY executors
-        @Provides
-        fun provideWorkspaceDatabaseProvider(db: AmpairsWorkspaceDatabase): WorkspaceDatabaseProvider =
-            WorkspaceDatabaseProvider { db }
     }
 }
