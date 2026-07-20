@@ -10,7 +10,7 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.workspace.WorkspaceClosableRegistry
 import com.ampairs.common.workspace.WorkspaceConfig
-import com.ampairs.database.migrations.STOREFRONT_APP_MIGRATION_1_2
+import com.ampairs.database.migrations.STOREFRONT_APP_DOWNGRADE_2_1
 import com.ampairs.database.migrations.WORKSPACE_MIGRATION_1_2
 import com.ampairs.ecom.data.db.dao.AddressDao
 import com.ampairs.ecom.data.db.dao.CartDao
@@ -22,6 +22,7 @@ import com.ampairs.ecom.data.db.dao.SyncCursorDao
 import com.ampairs.ecom.data.db.dao.TaxonomyImageDao
 import com.ampairs.file.db.dao.FileDao
 import com.ampairs.storefront.db.StorefrontAppDatabase
+import com.ampairs.storefront.db.StorefrontDirectoryDatabase
 import com.ampairs.storefront.db.StorefrontWorkspaceDatabase
 import com.ampairs.store.data.db.dao.StoreSettingDao
 import com.ampairs.store.data.db.dao.StoreSettingDefinitionDao
@@ -50,7 +51,9 @@ interface StorefrontAppDatabaseModule {
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .enableMultiInstanceInvalidation()
-                .addMigrations(STOREFRONT_APP_MIGRATION_1_2)
+                // Recovers devices whose storefront_app.db was briefly bumped to v2 (the directory
+                // cache used to live here); the migration drops that stray table, keeping auth.
+                .addMigrations(STOREFRONT_APP_DOWNGRADE_2_1)
                 .build()
         }
 
@@ -63,8 +66,24 @@ interface StorefrontAppDatabaseModule {
         @Provides @SingleIn(AppScope::class)
         fun provideSessionDao(db: StorefrontAppDatabase): UserSessionDao = db.userSessionDao()
 
+        // Storefront-directory offline cache — its OWN disposable database, decoupled from the
+        // durable auth DB above so a cache schema change never risks the auth store's version.
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideStorefrontDirectoryDatabase(context: Context): StorefrontDirectoryDatabase {
+            val dbFile = context.getDatabasePath("storefront_directory.db")
+            return Room.databaseBuilder<StorefrontDirectoryDatabase>(
+                context = context,
+                name = dbFile.absolutePath,
+            )
+                .setDriver(BundledSQLiteDriver())
+                .setQueryCoroutineContext(Dispatchers.IO)
+                .enableMultiInstanceInvalidation()
+                .build()
+        }
+
         @Provides @SingleIn(AppScope::class)
-        fun provideStorefrontDirectoryDao(db: StorefrontAppDatabase): StorefrontDirectoryDao =
+        fun provideStorefrontDirectoryDao(db: StorefrontDirectoryDatabase): StorefrontDirectoryDao =
             db.storefrontDirectoryDao()
     }
 }
