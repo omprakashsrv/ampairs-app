@@ -18,7 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -102,7 +102,7 @@ fun BrowseScreen(
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 when {
                     state.loadFailed -> ShopStateMessage(
-                        icon = Icons.Filled.CloudOff,
+                        icon = Icons.Filled.ErrorOutline,
                         title = stringResource(Res.string.ecom_shop_offline_title),
                         body = stringResource(Res.string.ecom_shop_offline_body),
                         onRetry = viewModel::refresh,
