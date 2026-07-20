@@ -35,10 +35,10 @@ class CartRepository(
     fun observeItems(storefrontId: String): Flow<List<CartItemEntity>> =
         cartDao.observeCartForStorefront(storefrontId).flatMapLatest { cart ->
             if (cart == null) flowOf(emptyList()) else cartDao.observeItems(cart.uid)
-        }
+        }.orEmitOnDbClosed(emptyList())
 
     fun observeCart(storefrontId: String): Flow<CartEntity?> =
-        cartDao.observeCartForStorefront(storefrontId)
+        cartDao.observeCartForStorefront(storefrontId).orEmitOnDbClosed(null)
 
     /** Get-or-create the LOCAL cart for a storefront. Never touches the network. */
     suspend fun ensureCart(storefrontId: String): CartEntity {

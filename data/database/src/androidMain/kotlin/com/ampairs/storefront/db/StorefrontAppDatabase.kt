@@ -16,6 +16,12 @@ import com.ampairs.auth.db.entity.UserTokenEntity
  *
  * Android-only module, so no `@ConstructedBy` — Room resolves the generated impl reflectively.
  * Never add `fallbackToDestructiveMigration` here: it carries durable auth sessions.
+ *
+ * NOTE: this stays at version 1. It once briefly held the storefront-directory offline cache at
+ * version 2, but coupling a disposable cache to the durable auth DB made the auth store
+ * version-fragile (a build with older, v1 code crashed on a v2 disk with a downgrade error). The
+ * cache moved to its own [StorefrontDirectoryDatabase]; a downgrade Migration(2, 1) that drops the
+ * old `storefront_directory` table recovers devices that ran that v2 build, keeping auth intact.
  */
 @Database(
     entities = [

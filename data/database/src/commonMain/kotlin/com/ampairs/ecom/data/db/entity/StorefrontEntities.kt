@@ -21,6 +21,28 @@ data class StorefrontEntity(
     val cached_at: Long,
 )
 
+/**
+ * Cached storefront-directory listing for the common (multi-store) app so the picker survives
+ * offline. Populated from the unfiltered `GET /store` directory page; offline search filters these
+ * rows client-side. `position` preserves the server's ordering. This is an AppScope table (the
+ * directory exists before any workspace is activated) and lives only in the storefront apps'
+ * `StorefrontAppDatabase` — the main app never shows the directory.
+ */
+@Entity(tableName = "storefront_directory")
+data class StorefrontDirectoryEntity(
+    @PrimaryKey val slug: String,
+    val uid: String,
+    val name: String,
+    val description: String? = null,
+    val logo_url: String? = null,
+    val banner_url: String? = null,
+    val status: String,
+    val access_mode: String? = null,
+    val brand_color_argb: Long? = null,
+    val position: Int,
+    val cached_at: Long,
+)
+
 /** Taxonomy tile images from /catalog-meta. Contract §8 `taxonomy_image`. */
 @Entity(
     tableName = "taxonomy_image",

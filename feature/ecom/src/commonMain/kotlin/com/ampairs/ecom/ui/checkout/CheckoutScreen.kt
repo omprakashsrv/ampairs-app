@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -155,7 +156,10 @@ fun CheckoutScreen(
                 }
                 Button(onClick = viewModel::placeOrder, enabled = !state.isPlacing && state.selectedAddressId != null) {
                     if (state.isPlacing) {
-                        CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(end = 8.dp).size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
                     }
                     Text(stringResource(Res.string.ecom_place_order))
                 }

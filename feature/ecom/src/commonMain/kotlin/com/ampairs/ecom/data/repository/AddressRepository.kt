@@ -16,7 +16,7 @@ class AddressRepository(
     private val api: EcomApi,
     private val addressDao: AddressDao,
 ) {
-    fun observeAddresses(): Flow<List<CustomerAddressEntity>> = addressDao.observeAll()
+    fun observeAddresses(): Flow<List<CustomerAddressEntity>> = addressDao.observeAll().orEmitOnDbClosed(emptyList())
 
     /** Database-first write: persist locally as unsynced; CentralSyncService pushes it. */
     suspend fun saveLocally(address: CustomerAddressEntity): Result<CustomerAddressEntity> {
