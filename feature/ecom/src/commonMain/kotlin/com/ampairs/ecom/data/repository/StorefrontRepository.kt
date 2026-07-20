@@ -23,10 +23,11 @@ class StorefrontRepository(
     private val storefrontDao: StorefrontDao,
     private val taxonomyDao: TaxonomyImageDao,
 ) {
-    fun observeStorefront(slug: String): Flow<StorefrontEntity?> = storefrontDao.observeBySlug(slug)
+    fun observeStorefront(slug: String): Flow<StorefrontEntity?> =
+        storefrontDao.observeBySlug(slug).orEmitOnDbClosed(null)
 
     fun observeTaxonomy(storefrontId: String): Flow<List<TaxonomyImageEntity>> =
-        taxonomyDao.observeForStorefront(storefrontId)
+        taxonomyDao.observeForStorefront(storefrontId).orEmitOnDbClosed(emptyList())
 
     /**
      * Fetch + cache the storefront. Returns the domain model so the caller can resolve the gate.
