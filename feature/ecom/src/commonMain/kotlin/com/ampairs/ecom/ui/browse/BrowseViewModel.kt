@@ -14,6 +14,7 @@ import com.ampairs.ecom.domain.withCartQty
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
@@ -36,8 +37,16 @@ data class BrowseUiState(
     val popular: List<ProductRow> = emptyList(),
     val cartCount: Int = 0,
     val cartTotal: Double = 0.0,
-    val isRefreshing: Boolean = false,
-)
+    // Catalog-load status, so the shop can show a spinner / offline-retry / empty state instead of
+    // a silently blank screen when nothing is cached yet.
+    val loadFailed: Boolean = false,
+    // A catalog pull has finished (success or failure) at least once this session. Until then an
+    // empty catalog is treated as "loading", not "empty" — avoids a blank/empty flash on entry.
+    val settled: Boolean = false,
+) {
+    /** True when there's nothing cached to render (no categories, brands or products). */
+    val isEmpty: Boolean get() = categories.isEmpty() && brands.isEmpty() && popular.isEmpty()
+}
 
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
@@ -63,7 +72,9 @@ class BrowseViewModel(
                 storefrontRepository.observeTaxonomy(active.storefrontId),
                 catalogRepository.observeVisible(active.storefrontId),
                 cartRepository.observeItems(active.storefrontId),
-            ) { storefront, taxonomy, products, cartItems ->
+                syncService.observeEntity(SyncEntity.ECOM_PRODUCT),
+            ) { storefront, taxonomy, products, cartItems, catalogSync ->
+                val status = catalogSync?.status
                 BrowseUiState(
                     storeName = storefront?.name ?: "",
                     categories = taxonomy.filter { it.type == TaxonomyType.CATEGORY.name },
@@ -71,6 +82,8 @@ class BrowseViewModel(
                     popular = products.take(8).withCartQty(cartItems),
                     cartCount = cartItems.sumOf { it.quantity },
                     cartTotal = cartItems.sumOf { it.unit_price * it.quantity },
+                    loadFailed = status is SyncStatus.Failed,
+                    settled = status is SyncStatus.Success || status is SyncStatus.Failed,
                 )
             }
         }
@@ -80,6 +93,9 @@ class BrowseViewModel(
         val slug = session.activeSlug
         val storefrontId = session.activeStorefrontId
         if (slug != null && storefrontId != null) {
+            // Kick a catalog pull on entry so the shop shows a spinner (then products / offline-retry)
+            // rather than a blank screen. Idempotent — CentralSyncService serializes it per entity.
+            syncService.emit(SyncEvent.TriggerPull(SyncEntity.ECOM_PRODUCT))
             viewModelScope.launch {
                 // Make sure a local cart exists for quick-add, and refresh taxonomy tiles.
                 cartRepository.ensureCart(storefrontId)
