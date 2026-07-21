@@ -6,7 +6,7 @@ trigger: /cmp-practices
 
 # /cmp-practices — Compose Multiplatform Best Practices
 
-> **Version baseline (as of May 2025):** CMP 1.11.0 (stable) / 1.12.0-alpha01 (cutting edge) · Ktor 3.5.0 latest (project on 3.3.2) · coroutines 1.10.2 · Kotlin 2.3.21 · Navigation3 1.0.0-alpha06
+> **Version baseline (as of July 2026 — project versions):** CMP 1.11.1 · Kotlin 2.4.0 · Ktor 3.5.1 · coroutines 1.11.0 · Navigation3 1.1.1 · Room KMP (androidx.room3) 3.0.0 · Metro 1.2.1 — always confirm against `gradle/libs.versions.toml` / `.claude/memory/project_versions.md`
 
 When invoked, apply this knowledge actively while writing or reviewing code. Flag every anti-pattern encountered. Do not skip sections that are relevant to the current file.
 
@@ -238,10 +238,10 @@ actual @Composable fun BackNavigationHandler(onBack: () -> Unit) { }
 
 ### Dispatchers on iOS
 
-`Dispatchers.IO` is available on all KMP targets since `kotlinx.coroutines 1.7+`. This project uses 1.10.2, so it's safe everywhere. The old `Dispatchers.Default` workaround is no longer needed.
+`Dispatchers.IO` is available on all KMP targets since `kotlinx.coroutines 1.7+`. This project uses 1.11.0, so it's safe in `commonMain`. (In `iosMain` source sets the Native actual is internal — use `Dispatchers.Default` there; see `.claude/memory/feedback_kmp_rules.md`.)
 
 ```kotlin
-// ✅ Safe in commonMain — coroutines 1.10.2
+// ✅ Safe in commonMain — coroutines 1.11.0
 withContext(Dispatchers.IO) { ... }
 ```
 
@@ -317,7 +317,7 @@ items.forEach { item ->
 
 ## 7. Navigation3 (this project)
 
-This project uses **Navigation3** (androidx.navigation3, alpha). Routes implement `NavKey` via `@Serializable sealed interface`.
+This project uses **Navigation3** (androidx.navigation3, 1.1.1). Routes implement `NavKey` via `@Serializable sealed interface`.
 
 ```kotlin
 // ✅ Correct route definition
@@ -531,7 +531,7 @@ can land on the wrong day/month. In non-composable code (ViewModel/repository/pr
 | `collectAsState()` | `collectAsStateWithLifecycle()` |
 | `LocalContext.current` in commonMain | expect/actual or pass as param |
 | `BackHandler` in commonMain | expect/actual `BackNavigationHandler` |
-| `Dispatchers.IO` before coroutines 1.7 | Safe since 1.7+ — project uses 1.10.2, no issue |
+| `Dispatchers.IO` before coroutines 1.7 | Safe since 1.7+ — project uses 1.11.0, no issue (commonMain only; use `Dispatchers.Default` in `iosMain`) |
 | Hardcoded string in `Text()` | `stringResource(Res.string.xxx)` |
 | `LocalAppGraph.current` in composable | Metro-injected ViewModel |
 | Business logic in composable | Move to ViewModel intent handler |
