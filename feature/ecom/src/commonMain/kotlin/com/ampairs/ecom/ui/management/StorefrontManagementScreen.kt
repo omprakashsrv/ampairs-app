@@ -13,6 +13,7 @@ import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_create_intro
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_description
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_intro
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_logo
+import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_manage_users
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_name
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_preview
 import ampairsapp.feature.ecom.generated.resources.storefront_mgmt_publish
@@ -85,6 +86,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun StorefrontManagementScreen(
     onPreview: (slug: String) -> Unit,
+    onManageUsers: () -> Unit,
     onBack: () -> Unit,
     viewModel: StorefrontManagementViewModel = metroViewModel(),
 ) {
@@ -117,7 +119,7 @@ fun StorefrontManagementScreen(
             when {
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 state.loadError != null -> LoadError(message = state.loadError!!, onRetry = viewModel::load)
-                else -> StorefrontForm(state = state, viewModel = viewModel)
+                else -> StorefrontForm(state = state, viewModel = viewModel, onManageUsers = onManageUsers)
             }
         }
     }
@@ -140,6 +142,7 @@ private fun LoadError(message: String, onRetry: () -> Unit) {
 private fun StorefrontForm(
     state: StorefrontManagementUiState,
     viewModel: StorefrontManagementViewModel,
+    onManageUsers: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -282,6 +285,13 @@ private fun StorefrontForm(
                 ) {
                     Text(stringResource(Res.string.storefront_mgmt_preview))
                 }
+            }
+
+            TextButton(
+                onClick = onManageUsers,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(Res.string.storefront_mgmt_manage_users))
             }
         }
 

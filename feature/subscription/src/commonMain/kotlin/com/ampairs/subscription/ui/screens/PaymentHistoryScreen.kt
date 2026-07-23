@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.viewmodel.SubscriptionViewModel
@@ -33,11 +34,11 @@ fun PaymentHistoryScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val subscription by viewModel.subscription.collectAsState()
-    val payments by viewModel.paymentHistory.collectAsState()
-    val isLoadingPayments by viewModel.isLoadingPayments.collectAsState()
-    val hasMorePayments by viewModel.hasMorePayments.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val subscription by viewModel.subscription.collectAsStateWithLifecycle()
+    val payments by viewModel.paymentHistory.collectAsStateWithLifecycle()
+    val isLoadingPayments by viewModel.isLoadingPayments.collectAsStateWithLifecycle()
+    val hasMorePayments by viewModel.hasMorePayments.collectAsStateWithLifecycle()
 
     // Load payment history on first composition
     LaunchedEffect(Unit) {

@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.business.ui.components.BusinessFormSection
 import com.ampairs.business.ui.components.BusinessSaveBar
 import com.ampairs.business.ui.components.BusinessScreenContent
@@ -36,7 +37,7 @@ fun BusinessOperationsScreen(
     modifier: Modifier = Modifier,
     viewModel: BusinessOperationsViewModel = metroViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveSuccess) {

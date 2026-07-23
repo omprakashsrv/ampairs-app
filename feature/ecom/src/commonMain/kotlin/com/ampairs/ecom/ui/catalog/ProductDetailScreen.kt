@@ -86,27 +86,28 @@ fun ProductDetailScreen(
             }
 
             Column(Modifier.padding(16.dp)) {
-                if (!product.brand.isNullOrBlank()) {
-                    Text(product.brand.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                product.brand?.takeIf { it.isNotBlank() }?.let { brand ->
+                    Text(brand.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(product.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-                if (!product.unit.isNullOrBlank()) {
-                    Text(product.unit, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                product.unit?.takeIf { it.isNotBlank() }?.let { unit ->
+                    Text(unit, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
 
                 Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(formatMoney(product.price, locale), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    if (product.mrp != null && product.mrp > product.price) {
-                        Text(formatMoney(product.mrp, locale), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textDecoration = TextDecoration.LineThrough)
+                    val mrp = product.mrp
+                    if (mrp != null && mrp > product.price) {
+                        Text(formatMoney(mrp, locale), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textDecoration = TextDecoration.LineThrough)
                     }
                 }
                 savingsOrNull(product.price, product.mrp)?.let {
                     Text(stringResource(Res.string.ecom_save_amount, formatMoney(it, locale)), style = MaterialTheme.typography.labelLarge, color = com.ampairs.ecom.ui.components.EcomColors.OnSuccessGreen, modifier = Modifier.padding(top = 4.dp))
                 }
 
-                if (!product.description.isNullOrBlank()) {
+                product.description?.takeIf { it.isNotBlank() }?.let { description ->
                     HorizontalDivider(Modifier.padding(vertical = 16.dp))
-                    Text(product.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

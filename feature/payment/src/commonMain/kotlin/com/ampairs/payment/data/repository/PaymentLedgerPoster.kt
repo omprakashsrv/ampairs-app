@@ -129,6 +129,12 @@ class PaymentLedgerPoster(
         val now = Clock.System.now().toString()
         if (balanceRow == null) {
             // Auto-create a balance row so the badge/statement have something to read.
+            // synced = true (like PartyBalanceRepository.ensureBalance): this placeholder carries a
+            // zero opening it does NOT own — pushing it would make the backend (which matches by
+            // party_uid and copies the client's opening fields verbatim) wipe the real opening set
+            // on another device, and its unsynced flag would make the party-balance pull skip the
+            // server's opening ("local unsynced wins"). Only setOpeningBalance() writes an opening
+            // edit worth pushing (synced = false + PENDING_PUSH).
             val created = PartyBalance(
                 uid = "PBL_$partyUid",
                 partyUid = partyUid,
@@ -136,8 +142,7 @@ class PaymentLedgerPoster(
                 lastComputedAt = now,
                 openingAsOf = now,
             )
-            partyBalanceDao.insert(created.toEntity(synced = false))
-            syncStateDao.markPendingPush(SyncEntity.PARTY_BALANCE, Clock.System.now().toEpochMilliseconds())
+            partyBalanceDao.insert(created.toEntity(synced = true))
         } else {
             partyBalanceDao.updateCachedClosing(partyUid, closing.minor, now)
         }

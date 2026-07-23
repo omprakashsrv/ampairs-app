@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.ampairs.common.PlatformBackHandler
 import ampairsapp.feature.ecom.generated.resources.Res
 import ampairsapp.feature.ecom.generated.resources.ecom_tab_account
 import ampairsapp.feature.ecom.generated.resources.ecom_tab_orders
@@ -48,11 +49,21 @@ fun EcomShell(
     onOpenAddresses: () -> Unit,
     onLogin: () -> Unit,
     onLoggedOut: () -> Unit,
+    // Multi-store app only: leave this store back to the storefront directory. Null in a pinned
+    // (single-store) build, where back on the Shop tab falls through to the system default.
+    onExitStore: (() -> Unit)? = null,
 ) {
     // Persist the selected tab as a saveable Int index (enums aren't reliably saveable on CMP).
     var tabIndex by rememberSaveable { mutableStateOf(0) }
     val tab = EcomTab.entries[tabIndex]
     val snackbar = remember { SnackbarHostState() }
+
+    // Swiggy/Zomato-style back: from a secondary tab, back returns to Shop; from the Shop tab, back
+    // leaves the store (→ directory) when this is the multi-store app. Disabled on the Shop tab of a
+    // pinned build so the outer host handles it (app exit).
+    PlatformBackHandler(enabled = tabIndex != 0 || onExitStore != null) {
+        if (tabIndex != 0) tabIndex = 0 else onExitStore?.invoke()
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },

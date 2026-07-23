@@ -2,6 +2,7 @@ package com.ampairs.unit.data.repository
 
 import app.cash.turbine.test
 import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.sync.db.SyncStateEntity
 import com.ampairs.unit.data.db.dao.UnitConversionDao
@@ -170,6 +171,10 @@ private class FakeUnitConversionDao : UnitConversionDao {
     ): UnitConversionEntity? = null
     override suspend fun getUnitConversionById(id: String): UnitConversionEntity? = null
     override suspend fun getUnsyncedUnitConversions(): List<UnitConversionEntity> = emptyList()
+    override suspend fun getActiveByProductIds(productIds: List<String>): List<UnitConversionEntity> = emptyList()
+    override suspend fun productIdsWithUnsyncedConversions(): List<String> = emptyList()
+    override suspend fun unsyncedCountForProduct(productId: String): Int = 0
+    override suspend fun markSyncedByProduct(productId: String) {}
     override suspend fun getUnitConversionsByBaseUnit(baseUnitId: String): List<UnitConversionEntity> = emptyList()
     override suspend fun getUnitConversionsByDerivedUnit(derivedUnitId: String): List<UnitConversionEntity> = emptyList()
     override suspend fun insertUnitConversion(unitConversion: UnitConversionEntity) {}
@@ -189,6 +194,14 @@ private class RecordingSyncStateDao : SyncStateDao {
     override suspend fun getAll(): List<SyncStateEntity> = emptyList()
     override suspend fun getPending(): List<SyncStateEntity> = emptyList()
     override suspend fun upsert(state: SyncStateEntity) {}
+    override suspend fun upsertStatus(
+        entity: SyncEntity,
+        status: SyncPersistStatus,
+        lastSyncedAt: Long?,
+        pendingCount: Int,
+        errorMessage: String?,
+        now: Long,
+    ) {}
     override suspend fun getLastSyncedAtIso(entity: SyncEntity): String? = null
     override suspend fun setLastSyncedAtIso(entity: SyncEntity, iso: String) {}
     override suspend fun markPendingPush(entity: SyncEntity, now: Long) {

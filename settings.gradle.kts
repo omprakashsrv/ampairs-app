@@ -25,9 +25,13 @@ dependencyResolutionManagement {
 
 include(":shared")
 include(":androidApp")
+include(":shared-ecom")
+include(":clientApp")
+include(":marketplaceApp")
 include(":whispercpp")
 include(":desktopApp")
 include(":data:common")
+include(":data:database")
 include(":data:sync")
 include(":data:event")
 include(":tally")
@@ -53,6 +57,7 @@ include(
     ":feature:form",
     ":feature:formwidgets",
     ":feature:unit",
+    ":feature:pricing",
     ":feature:sequence",
     ":feature:store",
     ":feature:update",
@@ -61,9 +66,11 @@ include(
     ":feature:business",
     ":feature:product",
     ":feature:customer",
+    ":feature:supplier",
     ":feature:inventory",
     ":feature:order",
     ":feature:invoice",
+    ":feature:purchase",
     ":feature:payment",
     ":feature:notification",
     ":feature:workspace",

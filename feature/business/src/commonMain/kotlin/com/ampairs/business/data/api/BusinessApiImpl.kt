@@ -13,6 +13,7 @@ import com.ampairs.common.delete
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -23,7 +24,7 @@ import io.ktor.utils.io.ByteReadChannel
  * Implementation of BusinessApi using Ktor HTTP client (simplified).
  * All business management operations use unified endpoints.
  */
-@Inject @ContributesBinding(AppScope::class)
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class BusinessApiImpl(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository

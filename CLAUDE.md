@@ -36,31 +36,53 @@ The project uses a **multi-module Gradle architecture** with clear separation of
 ampairs-app/
 ├── shared/                    # Compose Multiplatform UI, navigation, DI root
 │   └── src/{commonMain, androidMain, iosMain, desktopMain, wasmJsMain}/
-├── androidApp/                # Android application entry point
+├── androidApp/                # Android entry point (main business app)
 ├── desktopApp/                # Desktop (JVM) application entry point
 ├── iosApp/                    # iOS Xcode project wrapper
-├── data/common/               # Shared data infrastructure (DB factories, paths, DataStore)
-├── tallyModule/               # Tally ERP integration (JVM-only)
-├── thirdparty/androidx/paging/compose/   # Custom Paging3 KMP integration
-└── feature/                   # 17 isolated feature modules
-    ├── auth/                  # Phone/OTP authentication, JWT, device management
-    ├── agent/                 # AI chat/agentic actions
-    ├── aws/                   # AWS S3 file uploads
+├── clientApp/                 # White-label storefront app pinned to ONE store (-Pclient=<id>)
+├── marketplaceApp/            # Multi-store storefront app (directory → pick store → isolated DB)
+├── shared-ecom/               # Shared storefront UI/logic for clientApp + marketplaceApp
+├── clients/                   # Per-client white-label config (e.g. clients/ambika/)
+├── data/
+│   ├── common/                # DB factories, paths, DataStore, ApiUrlBuilder, Response<T>
+│   ├── database/              # Consolidated AmpairsAppDatabase (features use WorkspaceDatabaseProvider)
+│   ├── sync/                  # CentralSyncService, SyncDelegate, SyncEntity
+│   └── event/                 # WebSocket/STOMP real-time events (Krossbow)
+├── tally/                     # Tally ERP integration (JVM-only, XML)
+├── whispercpp/                # whisper.cpp bindings for on-device STT (agent voice)
+├── printing/{core,render,transport}   # Printing engine (templates, rendering, transports)
+└── feature/                   # 25 impl + 10 -api contract modules
+    ├── auth/ (+auth-api)      # Phone/OTP authentication, JWT, device management
+    ├── agent/                 # AI assistant: chat, agentic actions, text-to-SQL, voice
     ├── business/              # Business profile and configuration
-    ├── customer/              # CRM: customers, groups, types, images
-    ├── event/                 # Event management
-    ├── form/                  # Dynamic entity form configuration
-    ├── inventory/             # Stock tracking and movement
+    ├── customer/ (+customer-api)  # CRM: customers, groups, types, images
+    ├── ecom/ (+ecom-api)      # Storefront/ecom feature (catalog, cart, checkout)
+    ├── file/ (+file-api)      # File/image upload and sync
+    ├── form/ (+form-api)      # Dynamic entity form configuration
+    ├── formwidgets/           # Reusable form widget components
+    ├── inventory/ (+inventory-api)  # Stock tracking and movement
     ├── invoice/               # Invoice creation, GST, PDF
+    ├── notification/          # Notifications
     ├── order/                 # Order management and pricing
-    ├── product/               # Product catalog, variants, categories
+    ├── payment/               # Payments
+    ├── pricing/               # Pricing and offers
+    ├── printing/              # Printing UI/feature layer (on printing/{core,render,transport})
+    ├── product/ (+product-api)    # Product catalog, variants, categories
+    ├── purchase/              # Purchases
+    ├── sequence/              # Document number sequences
     ├── store/                 # Workspace settings (offline-sync; module toggles like tax-inclusive pricing, discount visibility)
-    ├── subscription/          # In-app billing (StoreKit/Play Billing)
-    ├── tax/                   # Tax codes, configurations, calculator
-    ├── unit/                  # Unit and unit conversion management
+    ├── subscription/ (+subscription-api)  # In-app billing (StoreKit/Play Billing)
+    ├── supplier/              # Supplier management
+    ├── tax/ (+tax-api)        # Tax codes, configurations, calculator
+    ├── unit/ (+unit-api)      # Unit and unit conversion management
     ├── update/                # In-app update management
     └── workspace/             # Multi-tenant workspace, navigation, members
 ```
+
+**`:api` / `:impl` split** — cross-feature dependencies go through the thin `-api` module only
+(interfaces + shared domain models). An impl module never appears in another feature's
+`build.gradle.kts`. See `docs/api-impl-split-pattern.md`. Some modules (data-common, auth-api, auth,
+sync, event) are published to GitHub Packages — see `docs/published-modules.md`.
 
 **Each feature module follows this internal structure:**
 ```
@@ -84,34 +106,37 @@ feature/{name}/src/
 | Concern | Library | Version |
 |---|---|---|
 | Language | Kotlin KMP | 2.4.0 |
-| UI | Compose Multiplatform | 1.11.1 |
-| Design | Material 3 + Material Kolor | 1.9.0 / 3.0.1 |
-| DI | Metro | 1.1.1 |
-| Database | Room KMP | 2.8.4 |
-| HTTP | Ktor | 3.5.0 |
+| Build | AGP / KSP | 9.3.0 / 2.3.10 |
+| UI | Compose Multiplatform | 1.11.1 (Material 1.9.0) |
+| DI | Metro | 1.2.1 |
+| Database | Room KMP (androidx.room3) | 3.0.0 |
+| HTTP | Ktor | 3.5.1 |
 | Navigation | Navigation3 (AndroidX) | 1.1.1 |
-| Image loading | Coil | 3.4.0 |
-| Serialization | kotlinx.serialization | (kotlin 2.3.21 bundled) |
+| Image loading | Coil | 3.5.0 |
+| Serialization | kotlinx.serialization | (kotlin-bundled) |
 | Date/Time | kotlinx.datetime | 0.8.0 |
 | Coroutines | kotlinx.coroutines | 1.11.0 |
 | Logging | Kermit | 2.1.0 |
 | Crash reporting | Sentry KMP | 0.27.0 |
-| Firebase | Crashlytics / Analytics / Perf / FCM | BOM 34.14.0 |
-| Cloud storage | AWS SDK Kotlin | 1.5.44 |
-| Protocol Buffers | Wire | 5.4.0 |
+| Firebase | Crashlytics / Analytics / Perf / FCM | BOM 34.15.0 |
 | Real-time | Krossbow (STOMP/WebSocket) | 9.3.0 |
 | Preferences | DataStore | 1.2.1 |
-| Background sync | WorkManager (Android) | 2.11.1 |
-| Paging | AndroidX Paging | 3.3.6 |
-| In-app billing | Play Billing / StoreKit | 9.0.0 |
-| File picking | FileKit | 0.14.1 |
+| Background sync | WorkManager (Android) | 2.11.2 |
+| Paging | AndroidX Paging | 3.5.0 |
+| In-app billing | Play Billing / StoreKit | 9.1.0 |
+| File picking | FileKit | 0.14.2 |
 | Maps | Maps Compose (Android) | 8.3.0 |
-| Permissions | Moko Permissions | 0.20.1 |
+| Permissions | Accompanist (Android) / Grant | 0.37.3 / 2.2.1 |
 | Adaptive UI | Material3 Adaptive | 1.2.0 |
 | Location | Play Services Location (Android) | 21.3.0 |
 | UUID | benasher44/uuid | 0.8.4 |
+| On-device LLM (agent) | LiteRT-LM | 0.13.1 |
+| Speech-to-text | whisper-jni (desktop) / whisper.cpp (iOS) / Vosk | 1.7.1 / 1.9.1 / 0.3.38 |
+| Desktop print preview | OpenJFX WebView | 21.0.5 |
 
-**Android SDK**: Min 24 / Target 36 / Compile 36 | **Java**: 21+ | **App version**: 1.0.9 (versionCode 109)
+**Removed** (do not reference in new code): Material Kolor, Wire/protobuf, Moko Permissions, AWS SDK Kotlin.
+
+**Android SDK**: Min 24 / Target 36 / Compile 36 | **Java**: 21+ | **App version**: 1.0.21 (versionCode 100021)
 
 ---
 
@@ -462,7 +487,7 @@ User taps module → tryNavigateToModule()
 - **Usage**: injected via Metro ViewModel or provided as `CompositionLocal` in `App.kt`
 - **Apply**: `PlatformAmpairsTheme(darkTheme = themeManager.isDarkTheme())`
 - **Set**: `themeManager.setThemePreference(ThemePreference.DARK)`
-- **Colors**: Material Kolor 3.0.1 for dynamic color generation
+- **Colors**: Material 3 color schemes (Material Kolor was removed — don't reference it)
 
 ---
 

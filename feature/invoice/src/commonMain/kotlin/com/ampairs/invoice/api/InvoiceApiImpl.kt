@@ -11,9 +11,10 @@ import com.ampairs.common.model.Response
 import com.ampairs.common.di.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 
-@Inject @ContributesBinding(AppScope::class)
+@Inject @SingleIn(AppScope::class) @ContributesBinding(AppScope::class)
 class InvoiceApiImpl(engine: HttpClientEngine, tokenRepository: TokenRepository) : InvoiceApi {
 
     // sendDefaults: the /sync push is a full-row upsert; the backend rejects bodies with

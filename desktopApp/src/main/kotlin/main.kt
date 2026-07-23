@@ -1,6 +1,6 @@
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -33,6 +33,7 @@ import coil3.compose.setSingletonImageLoaderFactory
 import com.ampairs.common.sentry.SentryManager
 import com.ampairs.di.DesktopAppGraph
 import com.ampairs.di.DesktopWorkspaceModule
+import com.ampairs.logging.initAppLogging
 import com.ampairs.tallysync.TallySettingsScreen
 import com.ampairs.tallysync.TallySyncScheduler
 import dev.zacsweers.metro.createGraphFactory
@@ -40,6 +41,7 @@ import org.jetbrains.skia.Image
 import java.awt.Frame
 
 fun main() = application {
+    initAppLogging()
     // Check if data directory is set before initializing the graph
     var showDataDirectoryPicker by remember { mutableStateOf(!DataDirectoryManager.isDataDirectorySet()) }
     var dataDirectoryReady by remember { mutableStateOf(DataDirectoryManager.isDataDirectorySet()) }
@@ -177,7 +179,7 @@ private fun ApplicationScope.TallyWindow(
     onCloseRequest = state::close, title = state.title,
     onKeyEvent = { false }
 ) {
-    val session by appGraph.workspaceManager.session.collectAsState()
+    val session by appGraph.workspaceManager.session.collectAsStateWithLifecycle()
     val scheduler = (session?.graph as? DesktopWorkspaceModule)?.tallySyncScheduler
     if (scheduler != null) {
         TallySettingsScreen(

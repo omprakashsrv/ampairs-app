@@ -15,6 +15,7 @@ import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
 import com.ampairs.product.db.entity.SubCategoryEntity
 import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.sync.db.SyncStateEntity
 import kotlinx.coroutines.flow.Flow
@@ -292,6 +293,14 @@ private class RecordingSyncStateDao : SyncStateDao {
     override suspend fun getAll(): List<SyncStateEntity> = emptyList()
     override suspend fun getPending(): List<SyncStateEntity> = emptyList()
     override suspend fun upsert(state: SyncStateEntity) {}
+    override suspend fun upsertStatus(
+        entity: SyncEntity,
+        status: SyncPersistStatus,
+        lastSyncedAt: Long?,
+        pendingCount: Int,
+        errorMessage: String?,
+        now: Long,
+    ) {}
     override suspend fun getLastSyncedAtIso(entity: SyncEntity): String? = null
     override suspend fun setLastSyncedAtIso(entity: SyncEntity, iso: String) {}
     override suspend fun markPendingPush(entity: SyncEntity, now: Long) { pendingPushes += entity }

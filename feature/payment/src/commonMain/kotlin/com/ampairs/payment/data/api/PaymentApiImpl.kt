@@ -10,9 +10,11 @@ import com.ampairs.common.model.Response
 import com.ampairs.common.post
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.client.engine.HttpClientEngine
 
 @Inject
+@SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class PaymentApiImpl(
     engine: HttpClientEngine,

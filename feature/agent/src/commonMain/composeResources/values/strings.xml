@@ -53,7 +53,7 @@
     <string name="agent_model_role_size">%1$s · %2$s</string>
     <!-- Full-screen hands-free voice conversation mode -->
     <string name="agent_voice_mode_cd">Start voice conversation</string>
-    <string name="agent_voice_unavailable">Voice conversation isn\'t available on this device.</string>
+    <string name="agent_voice_unavailable">Voice conversation isn't available on this device.</string>
     <string name="agent_voice_connecting">Getting ready…</string>
     <string name="agent_voice_listening">Listening…</string>
     <string name="agent_voice_listening_hint">Speak now</string>
@@ -76,7 +76,7 @@
     <string name="agent_settings_telemetry">Improve the assistant</string>
     <string name="agent_settings_telemetry_desc">Share your chats with us to improve the assistant. Off by default.</string>
     <string name="agent_settings_reasoning">Show reasoning</string>
-    <string name="agent_settings_reasoning_desc">Show the model\'s thinking while it works out a reply. On by default.</string>
+    <string name="agent_settings_reasoning_desc">Show the model's thinking while it works out a reply. On by default.</string>
     <string name="agent_adapter_device">Device (built-in)</string>
     <string name="agent_adapter_whisper">Whisper (offline)</string>
     <string name="agent_adapter_vosk">Vosk (offline)</string>

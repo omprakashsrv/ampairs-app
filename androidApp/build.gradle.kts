@@ -46,8 +46,8 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 100016
-        versionName = "1.0.16"
+        versionCode = 100021
+        versionName = "1.0.21"
 
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
@@ -67,7 +67,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.3:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.22:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
 

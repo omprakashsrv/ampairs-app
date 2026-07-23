@@ -2,8 +2,6 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
     alias(libs.plugins.metro)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
@@ -29,6 +27,9 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(projects.data.common)
+                // Sync-state persistence (SyncEntity/SyncStateEntity/SyncStateDao) lives in the
+                // consolidated database module after DB consolidation.
+                implementation(projects.data.database)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.room.runtime)
@@ -71,20 +72,8 @@ kotlin {
     }
 }
 
-room {
-    schemaDirectory("$projectDir/schemas")
-}
-
-dependencies {
-    // kspCommonMainMetadata intentionally omitted: Room KSP generates an actual object for the
-    // Database constructor in the metadata context, which conflicts with the expect object declared
-    // in source when Kotlin 2.x compiles commonMainKotlinMetadata (expect/actual same-module error).
-    // Platform KSPs (kspAndroid, kspIos*, kspDesktop) generate the actuals in the correct targets.
-    add("kspAndroid", libs.room.compiler)
-    add("kspDesktop", libs.room.compiler)
-    add("kspIosArm64", libs.room.compiler)
-    add("kspIosSimulatorArm64", libs.room.compiler)
-}
+// Room persistence (SyncStateEntity/@Database + KSP codegen) moved to :data:database as part of the
+// database consolidation — this module no longer runs the Room processor.
 
 publishing {
     repositories {

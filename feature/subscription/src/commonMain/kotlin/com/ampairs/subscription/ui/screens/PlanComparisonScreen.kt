@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.viewmodel.SubscriptionEvent
@@ -31,9 +32,9 @@ fun PlanComparisonScreen(
     onCheckoutUrl: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val subscription by viewModel.subscription.collectAsState()
-    val plans by viewModel.plans.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val subscription by viewModel.subscription.collectAsStateWithLifecycle()
+    val plans by viewModel.plans.collectAsStateWithLifecycle()
 
     var selectedBillingCycle by remember { mutableStateOf(BillingCycle.ANNUAL) }
     var showConfirmDialog by remember { mutableStateOf(false) }

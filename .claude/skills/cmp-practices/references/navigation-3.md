@@ -1,6 +1,6 @@
 # Navigation 3
 
-> **Project usage:** Navigation3 alpha06 (`1.0.0-alpha06`). Routes implement `NavKey` via `@Serializable sealed interface`. Entry providers in `shared/src/commonMain/kotlin/com/ampairs/navigation/providers/`.
+> **Project usage:** Navigation3 `1.1.1`. Routes implement `NavKey` via `@Serializable sealed interface`. Entry providers in `shared/src/commonMain/kotlin/com/ampairs/navigation/providers/`.
 
 Reference: [Android Nav 3 docs](https://developer.android.com/guide/navigation/navigation-3)
 

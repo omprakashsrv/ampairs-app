@@ -1,4 +1,4 @@
-# Ampairs Mobile Application
+# Ampairs Applications
 
 [![License](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-orange.svg)](LICENSE.md)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-blue)
@@ -23,9 +23,10 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 
 - **Offline-First** — Full CRUD works without internet; background sync with conflict resolution
 - **Multi-Tenant** — Workspace isolation with per-workspace database scoping
-- **AI Agent** — Conversational agentic actions across business domains
+- **AI Agent** — On-device LLM assistant (LiteRT-LM): chat, agentic actions, safe text-to-SQL data queries, and voice input (whisper.cpp / Vosk)
 - **Real-Time** — WebSocket/STOMP live updates when online
-- **Business Modules** — CRM, Products, Orders, Invoices, Inventory, Tax, Tally ERP
+- **Business Modules** — CRM, Products, Orders, Invoices, Purchases, Payments, Pricing, Inventory, Suppliers, Tax, Printing, Tally ERP
+- **Storefront Apps** — White-label single-store (`clientApp`) and multi-store marketplace (`marketplaceApp`) customer apps built on `shared-ecom`
 - **In-App Billing** — Google Play Billing (Android) and StoreKit (iOS)
 
 ---
@@ -38,10 +39,10 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 |---|---|---|
 | Kotlin KMP | 2.4.0 | Language & multiplatform |
 | Compose Multiplatform | 1.11.1 | Declarative UI across platforms |
-| Material 3 + Material Kolor | 1.9.0 / 3.0.1 | Design system + dynamic colors |
-| Metro | 1.1.1 | Dependency injection (compile-time) |
-| Room KMP | 2.8.4 | Local database |
-| Ktor | 3.5.0 | HTTP client + WebSockets |
+| Material 3 | 1.9.0 | Design system |
+| Metro | 1.2.1 | Dependency injection (compile-time) |
+| Room KMP (androidx.room3) | 3.0.0 | Local database |
+| Ktor | 3.5.1 | HTTP client + WebSockets |
 | Navigation3 | 1.1.1 | Back-stack navigation with NavKey |
 | kotlinx.coroutines | 1.11.0 | Async & concurrency |
 | kotlinx.datetime | 0.8.0 | Cross-platform date/time |
@@ -51,19 +52,20 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 
 | Library | Version | Purpose |
 |---|---|---|
-| Firebase BOM | 34.14.0 | Crashlytics, Analytics, Perf, FCM |
+| Firebase BOM | 34.15.0 | Crashlytics, Analytics, Perf, FCM |
 | Sentry KMP | 0.27.0 | Error monitoring |
 | Krossbow | 9.3.0 | STOMP/WebSocket real-time |
-| Wire | 5.4.0 | Protocol Buffers (Tally ERP) |
-| Coil | 3.4.0 | Image loading & caching |
+| Coil | 3.5.0 | Image loading & caching |
 | Kermit | 2.1.0 | Multiplatform logging |
-| Moko Permissions | 0.20.1 | Cross-platform permissions |
-| FileKit | 0.14.1 | Cross-platform file picker |
-| WorkManager | 2.11.1 | Android background sync |
-| Play Billing | 9.0.0 | Android in-app purchases |
+| FileKit | 0.14.2 | Cross-platform file picker |
+| WorkManager | 2.11.2 | Android background sync |
+| Play Billing | 9.1.0 | Android in-app purchases |
 | Maps Compose | 8.3.0 | Android Google Maps |
 | Adaptive Layouts | 1.2.0 | Multi-pane adaptive UI |
 | Lifecycle ViewModel | 2.10.0 | ViewModel + SavedState |
+| LiteRT-LM | 0.13.1 | On-device LLM for the AI agent |
+| whisper.cpp / whisper-jni / Vosk | 1.9.1 / 1.7.1 / 0.3.38 | On-device speech-to-text |
+| OpenJFX | 21.0.5 | Desktop WebView print preview |
 
 ### Platform Targets
 
@@ -80,39 +82,63 @@ Ampairs Mobile is part of a three-tier business management ecosystem:
 
 ```
 ampairs-app/
-├── androidApp/              # Android entry point (versionName 1.0.9)
+├── androidApp/              # Android entry point — main business app (versionName 1.0.21)
 ├── desktopApp/              # Desktop JVM entry point
 ├── iosApp/                  # Xcode project wrapper
+├── clientApp/               # White-label storefront app pinned to ONE store (-Pclient=<id>)
+├── marketplaceApp/          # Multi-store storefront app (directory → pick store)
+├── shared-ecom/             # Shared storefront UI/logic for clientApp + marketplaceApp
+├── clients/                 # Per-client white-label config (e.g. clients/ambika/)
 ├── shared/                  # Compose UI, navigation (Nav3), DI root, Firebase
 │   └── src/{commonMain, androidMain, iosMain, desktopMain, wasmJsMain}/
-├── data/common/             # DB factories, DataStore, ApiUrlBuilder, DatabaseScopeManager
-├── tallyModule/             # Tally ERP integration (JVM, Wire protocol)
-├── thirdparty/
-│   └── androidx/paging/    # Custom KMP Paging3 wrapper
-├── feature/
-│   ├── auth/               # Phone/OTP login, JWT, device management, Firebase Auth
-│   ├── agent/              # AI agent chat & agentic actions
+├── data/
+│   ├── common/             # DB factories, DataStore, ApiUrlBuilder, Response<T>
+│   ├── database/           # Consolidated AmpairsAppDatabase
+│   ├── sync/               # CentralSyncService, SyncDelegate, SyncEntity
+│   └── event/              # WebSocket/STOMP real-time events (Krossbow)
+├── tally/                   # Tally ERP integration (JVM, XML)
+├── whispercpp/              # whisper.cpp bindings for on-device speech-to-text
+├── printing/                # Printing engine: core / render / transport
+├── feature/                 # 25 impl + 10 -api contract modules
+│   ├── auth/ (+auth-api)   # Phone/OTP login, JWT, device management, Firebase Auth
+│   ├── agent/              # AI assistant: chat, agentic actions, text-to-SQL, voice
 │   ├── business/           # Business profile, tax config, custom attributes
-│   ├── customer/           # CRM: customers, groups, types, images, states
-│   ├── event/              # Event management
-│   ├── form/               # Dynamic entity form configuration
-│   ├── inventory/          # Stock tracking and movement
+│   ├── customer/ (+api)    # CRM: customers, groups, types, images, states
+│   ├── ecom/ (+api)        # Storefront: catalog, cart, checkout
+│   ├── file/ (+api)        # File/image upload and sync
+│   ├── form/ (+api)        # Dynamic entity form configuration
+│   ├── formwidgets/        # Reusable form widget components
+│   ├── inventory/ (+api)   # Stock tracking and movement
 │   ├── invoice/            # Invoice creation, GST, PDF, email
+│   ├── notification/       # Notifications
 │   ├── order/              # Order management, pricing, status workflow
-│   ├── product/            # Catalog, variants, categories, images
+│   ├── payment/            # Payments
+│   ├── pricing/            # Pricing and offers
+│   ├── printing/           # Printing UI (on printing/{core,render,transport})
+│   ├── product/ (+api)     # Catalog, variants, categories, images
+│   ├── purchase/           # Purchases
+│   ├── sequence/           # Document number sequences
 │   ├── store/              # Workspace settings (offline-sync; module toggles e.g. tax-inclusive pricing, discount visibility)
-│   ├── subscription/       # In-app billing (StoreKit / Play Billing)
-│   ├── tax/                # Tax codes, configurations, calculator
-│   ├── unit/               # Unit definitions and conversions
+│   ├── subscription/ (+api)# In-app billing (StoreKit / Play Billing)
+│   ├── supplier/           # Supplier management
+│   ├── tax/ (+api)         # Tax codes, configurations, calculator
+│   ├── unit/ (+api)        # Unit definitions and conversions
 │   ├── update/             # In-app update management
 │   └── workspace/          # Multi-tenant workspaces, members, dynamic module nav
 ├── gradle/
 │   └── libs.versions.toml  # Centralized version catalog
+├── docs/                    # Architecture, API, feature, and setup docs
+│   ├── api-impl-split-pattern.md   # The :api / :impl module split
+│   └── published-modules.md        # GitHub Packages artifacts (com.ampairs:*)
 ├── .claude/
 │   ├── rules.md            # Claude Code project rules
-│   └── memory/             # Claude Code project memory
+│   ├── memory/             # Claude Code project memory
+│   └── skills/             # cmp-practices, offline-sync, metro-di, android-official
 └── CLAUDE.md               # Development guidelines (imports .claude/)
 ```
+
+Cross-feature dependencies always go through the thin `-api` contract modules — an impl module
+never appears in another feature's `build.gradle.kts` (see `docs/api-impl-split-pattern.md`).
 
 ### Feature Module Internal Layout
 
@@ -327,8 +353,12 @@ SomeLogger.w("Tag", "message", exception)                         // logger: w/e
 | File | Purpose |
 |---|---|
 | `CLAUDE.md` | Architecture, patterns, and development guidelines |
+| `docs/` | Architecture, API, feature, and setup documentation |
+| `docs/api-impl-split-pattern.md` | The `:api` / `:impl` feature-module split |
+| `docs/published-modules.md` | Consuming the published `com.ampairs:*` artifacts |
 | `.claude/rules.md` | Enforced coding rules for Claude Code |
 | `.claude/memory/` | Project context and version reference |
+| `.claude/skills/` | `/cmp-practices`, `/offline-sync`, `/metro-di` skill guides |
 
 ---
 

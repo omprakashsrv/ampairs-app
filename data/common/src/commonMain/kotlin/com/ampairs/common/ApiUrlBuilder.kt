@@ -59,6 +59,10 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/analytics/$cleanPath"
     }
 
+    fun supplierUrl(path: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/api/supplier/$path"
+    }
+
     fun productUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/product/$cleanPath"
@@ -67,6 +71,11 @@ object ApiUrlBuilder {
     fun unitUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/unit/$cleanPath"
+    }
+
+    fun pricingUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/pricing/$cleanPath"
     }
 
     fun sequenceUrl(path: String): String {
@@ -114,6 +123,11 @@ object ApiUrlBuilder {
     fun orderUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/order/$cleanPath"
+    }
+
+    fun purchaseUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/purchase/$cleanPath"
     }
 
     fun invoiceUrl(path: String): String {
@@ -183,6 +197,17 @@ object ApiUrlBuilder {
     fun ecomUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/v1/ecom/$cleanPath"
+    }
+
+    /**
+     * Public storefront directory (discovery) endpoints — NOT slug-scoped: /api/v1/storefronts/{path}
+     * e.g. storefrontsUrl() → list all published stores, storefrontsUrl("search").
+     * Used by the common (multi-store) app to let the customer pick a storefront.
+     */
+    fun storefrontsUrl(path: String = ""): String {
+        val cleanPath = path.removePrefix("/")
+        val base = "${ConfigurationManager.apiBaseUrl}/api/v1/storefronts"
+        return if (cleanPath.isBlank()) base else "$base/$cleanPath"
     }
 
     /**

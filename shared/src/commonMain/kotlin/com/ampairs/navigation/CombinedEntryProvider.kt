@@ -11,21 +11,30 @@ import ProductRoute
 import Route
 import SubscriptionRoute
 import WorkspaceRoute
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.customer.ui.CustomerListRoute
+import com.ampairs.supplier.ui.SupplierListRoute
+import com.ampairs.purchase.ui.PurchaseRoute
 import com.ampairs.form.ui.FormConfigScreen
 import com.ampairs.form.ui.FormConfigHubScreen
 import com.ampairs.navigation.providers.agentEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
 import com.ampairs.navigation.providers.customerEntryProvider
+import com.ampairs.navigation.providers.supplierEntryProvider
+import com.ampairs.navigation.providers.purchaseEntryProvider
 import com.ampairs.navigation.providers.ecomEntryProvider
 import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
@@ -39,12 +48,16 @@ import com.ampairs.navigation.providers.storefrontEntryProvider
 import com.ampairs.navigation.providers.subscriptionEntryProvider
 import com.ampairs.navigation.providers.taxEntryProvider
 import com.ampairs.navigation.providers.unitEntryProvider
+import com.ampairs.navigation.providers.pricingEntryProvider
 import com.ampairs.navigation.providers.printingEntryProvider
 import com.ampairs.navigation.providers.workspaceEntryProvider
 import com.ampairs.store.ui.StoreSettingsRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitListRoute
 import com.ampairs.notification.ui.NotificationListRoute
+import com.ampairs.pricing.ui.PriceListListRoute
+import com.ampairs.pricing.ui.PricingHomeRoute
+import com.ampairs.pricing.ui.PricingShellRoute
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 
@@ -68,6 +81,8 @@ fun combinedEntryProvider(
     return authEntryProvider(key, backStack, onLoginSuccess, sharedViewModelStoreOwner)
         ?: workspaceEntryProvider(key, backStack, onNavigationServiceReady)
         ?: customerEntryProvider(key, backStack)
+        ?: supplierEntryProvider(key, backStack)
+        ?: purchaseEntryProvider(key, backStack)
         ?: storefrontEntryProvider(key, backStack)
         ?: ecomEntryProvider(key, backStack)
         ?: productEntryProvider(key, backStack)
@@ -75,6 +90,7 @@ fun combinedEntryProvider(
         ?: businessEntryProvider(key, backStack)
         ?: subscriptionEntryProvider(key, backStack)
         ?: unitEntryProvider(key, backStack)
+        ?: pricingEntryProvider(key, backStack)
         ?: printingEntryProvider(key, backStack)
         ?: storeEntryProvider(key, backStack)
         ?: sequenceEntryProvider(key, backStack)
@@ -96,13 +112,15 @@ private fun mainRouteEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>
 ): NavEntry<NavKey>? = when (key) {
-    // Route.Login is handled by authEntryProvider (redirects to AuthRoute.UserSelection)
+    // Route.Login — redirects to UserSelection; shows spinner while the effect fires so
+    // the screen is never blank if this entry is somehow reached again.
     is Route.Login -> NavEntry(key) {
-        // This will redirect to UserSelection in authEntryProvider
-        // For safety, we add the actual start destination
         LaunchedEffect(Unit) {
             backStack.clear()
             backStack.add(AuthRoute.UserSelection)
+        }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
     }
 
@@ -119,6 +137,14 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(CustomerListRoute)
+        }
+    }
+
+    // Route.Supplier redirects to SupplierListRoute
+    is Route.Supplier -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(SupplierListRoute)
         }
     }
 
@@ -177,6 +203,14 @@ private fun mainRouteEntryProvider(
         }
     }
 
+    // Route.Pricing redirects to the Pricing & Offers 5-tab shell
+    is Route.Pricing -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(PricingShellRoute)
+        }
+    }
+
     // Route.Settings redirects to StoreSettingsRoute
     is Route.Settings -> NavEntry(key) {
         LaunchedEffect(Unit) {
@@ -209,6 +243,14 @@ private fun mainRouteEntryProvider(
         }
     }
 
+    // Route.Purchase redirects to PurchaseRoute.PurchaseListRoute
+    is Route.Purchase -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(PurchaseRoute.PurchaseListRoute)
+        }
+    }
+
     // Route.Inventory redirects to InventoryRoute.Dashboard
     is Route.Inventory -> NavEntry(key) {
         LaunchedEffect(Unit) {
@@ -237,7 +279,7 @@ private fun mainRouteEntryProvider(
     is Route.More -> NavEntry(key) {
         val globalNavManager = remember { com.ampairs.workspace.navigation.GlobalNavigationManager.getInstance() }
         val headerStateManager = remember { com.ampairs.common.state.AppHeaderStateManager.instance }
-        val headerState by headerStateManager.headerState.collectAsState()
+        val headerState by headerStateManager.headerState.collectAsStateWithLifecycle()
         MoreScreen(
             backStack = backStack,
             onSwitchWorkspace = {

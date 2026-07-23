@@ -1,47 +1,16 @@
 package com.ampairs.product
 
 import com.ampairs.common.di.WorkspaceScope
-import com.ampairs.product.agent.ProductAgentDao
 import com.ampairs.product.data.ProductDataService
 import com.ampairs.product.data.repository.ProductRepository
-import com.ampairs.product.db.ProductRoomDatabase
-import com.ampairs.product.db.dao.BrandDao
-import com.ampairs.product.db.dao.CategoryDao
-import com.ampairs.product.db.dao.GroupDao
-import com.ampairs.product.db.dao.ProductDao
-import com.ampairs.product.db.dao.ProductVariantDao
-import com.ampairs.product.db.dao.SubCategoryDao
-import com.ampairs.product.db.dao.VariantAttributeDao
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 
+// Product DAOs are provided by the consolidated workspace database module (:data:database for the
+// main app). This module keeps only the feature's non-DAO service bindings.
 @ContributesTo(WorkspaceScope::class)
-interface ProductDaoModule {
+interface ProductServiceModule {
     companion object {
-        @Provides
-        fun provideProductDao(db: ProductRoomDatabase): ProductDao = db.productDao()
-
-        @Provides
-        fun provideProductAgentDao(db: ProductRoomDatabase): ProductAgentDao = db.productAgentDao()
-
-        @Provides
-        fun provideProductVariantDao(db: ProductRoomDatabase): ProductVariantDao = db.productVariantDao()
-
-        @Provides
-        fun provideVariantAttributeDao(db: ProductRoomDatabase): VariantAttributeDao = db.variantAttributeDao()
-
-        @Provides
-        fun provideGroupDao(db: ProductRoomDatabase): GroupDao = db.groupDao()
-
-        @Provides
-        fun provideCategoryDao(db: ProductRoomDatabase): CategoryDao = db.categoryDao()
-
-        @Provides
-        fun provideBrandDao(db: ProductRoomDatabase): BrandDao = db.brandDao()
-
-        @Provides
-        fun provideSubCategoryDao(db: ProductRoomDatabase): SubCategoryDao = db.subCategoryDao()
-
         @Provides
         fun provideProductDataService(repo: ProductRepository): ProductDataService = repo
     }

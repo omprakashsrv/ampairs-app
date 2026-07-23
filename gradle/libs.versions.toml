@@ -1,5 +1,5 @@
 [versions]
-agp = "9.2.1"
+agp = "9.3.0"
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
@@ -13,9 +13,9 @@ compose-plugin = "1.11.1"
 compose-material = "1.9.0"
 compose-material-icons = "1.7.3"
 kotlin = "2.4.0"
-ksp = "2.3.9"
-androidx-room = "2.8.4"
-androidx-sqlite-bundled = "2.6.2"
+ksp = "2.3.10"
+androidx-room = "3.0.0"
+androidx-sqlite-bundled = "2.7.0"
 coil = "3.5.0"
 
 kotlinx-dateTime = "0.8.0"
@@ -113,9 +113,9 @@ krossbow-stomp-kxserialization = { module = "org.hildan.krossbow:krossbow-stomp-
 paging-common = { module = "androidx.paging:paging-common", version.ref = "paging-common" }
 paging-componse-common = { module = "androidx.paging:paging-compose", version.ref = "paging-common" }
 
-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room" }
-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
-room-paging = { module = "androidx.room:room-paging", version.ref = "androidx-room" }
+room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "androidx-room" }
+room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "androidx-room" }
+room-paging = { module = "androidx.room3:room3-paging", version.ref = "androidx-room" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite-bundled" }
 
 image-loader = { module = "io.github.qdsfdhvh:image-loader", version.ref = "image-loader" }
@@ -201,7 +201,7 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-room = { id = "androidx.room", version.ref = "androidx-room" }
+room = { id = "androidx.room3", version.ref = "androidx-room" }
 googleServices = { id = "com.google.gms.google-services", version.ref = "google-services" }
 firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-gradle" }
 firebasePerf = { id = "com.google.firebase.firebase-perf", version.ref = "firebase-perf-gradle" }

@@ -11,18 +11,26 @@ sealed interface Route : NavKey {
     
     @Serializable
     data object Customer : Route
-    
+
+    /** Buy-side counterparty master (suppliers/vendors). */
+    @Serializable
+    data object Supplier : Route
+
     @Serializable
     data object Product : Route
-    
+
     @Serializable
     data object Inventory : Route
-    
+
     @Serializable
     data object Order : Route
-    
+
     @Serializable
     data object Invoice : Route
+
+    /** Buy-side purchase document (mirrors Order). */
+    @Serializable
+    data object Purchase : Route
 
     @Serializable
     data object Tax : Route
@@ -36,9 +44,17 @@ sealed interface Route : NavKey {
     @Serializable
     data object Unit : Route
 
+    /** Pricing / price-list management (admin). */
+    @Serializable
+    data object Pricing : Route
+
     /** Merchant-side online-store (ecom storefront) setup & configuration. */
     @Serializable
     data object Storefront : Route
+
+    /** Owner-facing "ecom users" list — every buyer linked to any customer, restrict/re-enable access. */
+    @Serializable
+    data object EcomUsers : Route
 
     @Serializable
     data class FormConfig(
@@ -250,7 +266,7 @@ sealed interface EcomRoute : NavKey {
     data object Checkout : EcomRoute
 
     @Serializable
-    data class OrderPlaced(val orderRef: String) : EcomRoute
+    data class OrderPlaced(val orderRef: String, val orderNumber: String = "") : EcomRoute
 
     @Serializable
     data object Orders : EcomRoute

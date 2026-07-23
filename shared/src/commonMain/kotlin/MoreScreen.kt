@@ -44,7 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -90,7 +90,7 @@ fun MoreScreen(
     onEditProfile: () -> Unit
 ) {
     val headerStateManager = remember { AppHeaderStateManager.instance }
-    val headerState by headerStateManager.headerState.collectAsState()
+    val headerState by headerStateManager.headerState.collectAsStateWithLifecycle()
     val workspaceName = headerState.currentWorkspace?.name ?: ""
     val workspaceId = headerState.currentWorkspace?.id ?: ""
     val userName = "${headerState.currentUser?.firstName ?: ""} ${headerState.currentUser?.lastName ?: ""}".trim()
@@ -248,7 +248,7 @@ fun MoreScreen(
                 globalNavManager.navigationService.flatMapLatest { service ->
                     service?.navigationRoutes ?: flowOf(emptyList())
                 }
-            }.collectAsState(initial = emptyList())
+            }.collectAsStateWithLifecycle(initialValue = emptyList())
 
             val modules = buildList {
                 add(ModuleItem(stringResource(Res.string.nav_home)))

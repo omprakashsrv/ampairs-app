@@ -15,7 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.mutableStateOf
@@ -50,14 +50,14 @@ fun GlobalAppLayoutNav3(
 ) {
     val viewModel: GlobalAppLayoutViewModel = metroViewModel()
     val headerStateManager = remember { AppHeaderStateManager.instance }
-    val headerState by headerStateManager.headerState.collectAsState()
+    val headerState by headerStateManager.headerState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.navEvent.collectLatest { event ->
             when (event) {
                 GlobalAppLayoutViewModel.NavEvent.NavigateToLogin -> {
                     backStack.clear()
-                    backStack.add(Route.Login)
+                    backStack.add(AuthRoute.UserSelection)
                 }
                 GlobalAppLayoutViewModel.NavEvent.NavigateToWorkspace -> {
                     backStack.clear()
@@ -91,7 +91,7 @@ fun GlobalAppLayoutNav3(
     BackNavigationHandlerNav3(
         backStack = backStack,
         enabled = shouldShowHeader,
-        fallbackRoute = if (isWorkspaceSelection) Route.Login else Route.Workspace
+        fallbackRoute = if (isWorkspaceSelection) AuthRoute.UserSelection else Route.Workspace
     )
 
     if (!shouldShowHeader) {
@@ -119,7 +119,7 @@ fun GlobalAppLayoutNav3(
 
     // Keep global navigation manager updated for the desktop system MenuBar.
     val globalNavManager = remember { GlobalNavigationManager.getInstance() }
-    val navigationService by globalNavManager.navigationService.collectAsState()
+    val navigationService by globalNavManager.navigationService.collectAsStateWithLifecycle()
 
     when {
         // ── Full-screen routes (AI assistant chat): no app chrome (no bottom nav / rail /

@@ -21,6 +21,10 @@ import com.ampairs.customer.ui.CustomerListRoute
 import com.ampairs.customer.ui.CustomerTypeCreateRoute
 import com.ampairs.customer.ui.CustomerTypeListRoute
 import com.ampairs.customer.ui.StateListRoute
+import com.ampairs.supplier.ui.SupplierCreateRoute
+import com.ampairs.supplier.ui.SupplierDetailsRoute
+import com.ampairs.supplier.ui.SupplierListRoute
+import com.ampairs.purchase.ui.PurchaseRoute
 import com.ampairs.tax.ui.navigation.MyTaxCodesRoute
 import com.ampairs.tax.ui.navigation.TaxCalculatorRoute
 import com.ampairs.tax.ui.navigation.TaxCodeDetailRoute
@@ -49,15 +53,18 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(Route.Login::class)
                 subclass(Route.Workspace::class)
                 subclass(Route.Customer::class)
+                subclass(Route.Supplier::class)
                 subclass(Route.Product::class)
                 subclass(Route.Inventory::class)
                 subclass(Route.Order::class)
                 subclass(Route.Invoice::class)
+                subclass(Route.Purchase::class)
                 subclass(Route.Tax::class)
                 subclass(Route.Business::class)
                 subclass(Route.Subscription::class)
                 subclass(Route.Unit::class)
                 subclass(Route.Storefront::class)
+                subclass(Route.EcomUsers::class)
                 subclass(Route.FormConfig::class)
                 subclass(Route.Agent::class)
                 subclass(Route.More::class)
@@ -114,6 +121,16 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(CustomerTypeCreateRoute::class)
                 subclass(CustomerGroupListRoute::class)
                 subclass(CustomerGroupCreateRoute::class)
+
+                // Supplier Navigation Routes (standalone)
+                subclass(SupplierListRoute::class)
+                subclass(SupplierDetailsRoute::class)
+                subclass(SupplierCreateRoute::class)
+
+                // Purchase Routes
+                subclass(PurchaseRoute.PurchaseListRoute::class)
+                subclass(PurchaseRoute.PurchaseDetailsRoute::class)
+                subclass(PurchaseRoute.PurchaseCreateRoute::class)
 
                 // Inventory Routes
                 subclass(InventoryRoute.Dashboard::class)

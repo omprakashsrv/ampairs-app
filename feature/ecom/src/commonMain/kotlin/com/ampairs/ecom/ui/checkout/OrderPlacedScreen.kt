@@ -33,6 +33,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun OrderPlacedScreen(
     orderRef: String,
+    orderNumber: String,
     onTrack: () -> Unit,
     onContinue: () -> Unit,
 ) {
@@ -68,7 +69,7 @@ fun OrderPlacedScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(stringResource(Res.string.ecom_order_ref), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(orderRef, style = MaterialTheme.typography.titleMedium)
+            Text(orderNumber.ifBlank { orderRef }, style = MaterialTheme.typography.titleMedium)
         }
         Button(onClick = onTrack, modifier = Modifier.fillMaxWidth().padding(top = 28.dp)) {
             Text(stringResource(Res.string.ecom_track_order))

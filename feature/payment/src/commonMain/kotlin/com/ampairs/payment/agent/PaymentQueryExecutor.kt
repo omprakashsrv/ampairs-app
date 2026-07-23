@@ -1,11 +1,11 @@
 package com.ampairs.payment.agent
 
-import androidx.room.useReaderConnection
+import androidx.room3.useReaderConnection
 import com.ampairs.common.agent.ModuleQueryExecutor
 import com.ampairs.common.agent.QueryExecutorKey
 import com.ampairs.common.agent.QueryResultSet
+import com.ampairs.common.agent.WorkspaceDatabaseProvider
 import com.ampairs.common.di.WorkspaceScope
-import com.ampairs.payment.data.db.PaymentRoomDatabase
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 
@@ -18,13 +18,13 @@ import dev.zacsweers.metro.Inject
 @ContributesIntoMap(WorkspaceScope::class)
 @QueryExecutorKey("payment")
 class PaymentQueryExecutor(
-    private val database: PaymentRoomDatabase,
+    private val databaseProvider: WorkspaceDatabaseProvider,
 ) : ModuleQueryExecutor {
 
     override val moduleName: String = "payment"
 
     override suspend fun executeReadOnly(sql: String): QueryResultSet =
-        database.useReaderConnection { connection ->
+        databaseProvider.get().useReaderConnection { connection ->
             connection.usePrepared(sql) { statement ->
                 val columnCount = statement.getColumnCount()
                 val columns = (0 until columnCount).map { statement.getColumnName(it) }

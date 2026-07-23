@@ -27,13 +27,27 @@ data class InvoiceItemApiModel(
     @SerialName("soft_deleted") var softDeleted: Boolean,
     @SerialName("discount") var discount: List<Discount>? = null,
     @SerialName("tax_infos") val taxInfoApiModels: List<TaxInfoApiModel> = arrayListOf(),
+    // 009 pricing snapshot — persisted verbatim by the backend (no re-resolution)
+    @SerialName("resolved_unit_price_minor") var resolvedUnitPriceMinor: Long? = null,
+    @SerialName("currency") var currency: String? = null,
+    @SerialName("price_source") var priceSource: String? = null,
+    @SerialName("matched_price_list_uid") var matchedPriceListUid: String? = null,
+    @SerialName("applied_tier_min_qty") var appliedTierMinQty: Double? = null,
+    @SerialName("below_moq") var belowMoq: Boolean? = null,
+    // spec 010 FR-014: unit of measure + base-unit quantity, and selected variant. Must ride the
+    // /sync wire both ways — omitting them made the pull wipe the local unit after every sync.
+    @SerialName("unit_id") var unitId: String = "",
+    @SerialName("base_quantity") var baseQuantity: Double = 0.0,
+    @SerialName("variant_sku") var variantSku: String? = null,
 )
 
 fun List<InvoiceItem>.toApiModel(invoice: Invoice): List<InvoiceItemApiModel> {
     return map {
         InvoiceItemApiModel(
             id = it.id,
-            description = it.product?.name + " " + it.product?.code,
+            // Derive from the catalog product when attached, else keep the line's own snapshot —
+            // a detached line (product = null) must not push blanks to the server.
+            description = it.product?.let { p -> "${p.name} ${p.code}" } ?: it.description,
             quantity = it.quantity,
             price = it.price,
             productPrice = it.productPrice,
@@ -43,12 +57,21 @@ fun List<InvoiceItem>.toApiModel(invoice: Invoice): List<InvoiceItemApiModel> {
             totalTax = it.totalTax,
             basePrice = it.basePrice,
             invoiceId = invoice.id,
-            productId = it.product?.id ?: "",
-            taxCode = it.product?.taxCode ?: "",
+            productId = it.product?.id ?: it.productId ?: "",
+            taxCode = it.product?.taxCode ?: it.taxCode,
             taxInfoApiModels = it.taxInfos.toApiModel(),
             active = it.active,
             softDeleted = it.softDeleted,
-            discount = it.discount
+            discount = it.discount,
+            unitId = it.unitId,
+            baseQuantity = it.baseQuantity,
+            variantSku = it.variantSku,
+            resolvedUnitPriceMinor = it.resolvedUnitPriceMinor,
+            currency = it.currency,
+            priceSource = it.priceSource,
+            matchedPriceListUid = it.matchedPriceListUid,
+            appliedTierMinQty = it.appliedTierMinQty,
+            belowMoq = it.belowMoq,
         )
     }
 }
