@@ -87,6 +87,20 @@ interface InvoiceAgentDao {
     @Query("SELECT count(*) FROM invoiceEntity WHERE active = 1")
     suspend fun countInvoices(): Int
 
+    // ── Dashboard KPI aggregates (feature 022) ──────────────────────────────────
+
+    /** Taxable (pre-tax) net sales within a half-open period. */
+    @Query("SELECT SUM(base_price) FROM invoiceEntity WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end")
+    suspend fun sumNetBetween(start: String, end: String): Double?
+
+    /** Total output tax within a half-open period. */
+    @Query("SELECT SUM(total_tax) FROM invoiceEntity WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end")
+    suspend fun sumTaxBetween(start: String, end: String): Double?
+
+    /** Count of active invoices within a half-open period. */
+    @Query("SELECT count(*) FROM invoiceEntity WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end")
+    suspend fun countInvoicesBetween(start: String, end: String): Int
+
     /** Chat search by invoice number or (whitespace-normalized, case-insensitive) customer name. */
     @Query(
         """
