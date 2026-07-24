@@ -22,8 +22,13 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(projects.data.common)
+                implementation(projects.data.database)
                 implementation(projects.data.sync)
+                implementation(projects.feature.authApi)
                 implementation(libs.metro.runtime)
+                implementation(libs.bundles.ktor.common)
+                implementation(libs.room.runtime)
+                implementation(libs.sqlite.bundled)
                 implementation(libs.kotlinx.dateTime)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kermit)
@@ -32,6 +37,26 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
+            }
+        }
+        androidMain {
+            dependencies {
+                implementation(libs.ktor.client.okHttp)
+            }
+        }
+        val desktopMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.okHttp)
+            }
+        }
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        val iosMain by creating {
+            dependsOn(commonMain.get())
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
+            dependencies {
+                implementation(libs.ktor.client.darwin)
             }
         }
     }
