@@ -80,7 +80,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.22:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.4:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
         }
