@@ -1,6 +1,7 @@
 package com.ampairs.database.di
 
 import com.ampairs.agent.data.db.dao.ChatMessageDao
+import com.ampairs.analytics.data.db.dao.DemandForecastDao
 import com.ampairs.business.agent.BusinessAgentDao
 import com.ampairs.business.data.db.BusinessDao
 import com.ampairs.common.di.WorkspaceScope
@@ -288,5 +289,9 @@ interface WorkspaceDatabaseDaoModule {
         // agent chat
         @Provides
         fun provideChatMessageDao(db: AmpairsWorkspaceDatabase): ChatMessageDao = db.chatMessageDao()
+
+        // analytics (feature 022)
+        @Provides
+        fun provideDemandForecastDao(db: AmpairsWorkspaceDatabase): DemandForecastDao = db.demandForecastDao()
     }
 }
