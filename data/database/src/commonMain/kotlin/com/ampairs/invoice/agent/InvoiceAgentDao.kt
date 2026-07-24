@@ -23,6 +23,19 @@ data class InvoiceSummaryRow(
     @ColumnInfo(name = "status") val status: String,
 )
 
+/** One GST-by-rate row for the dashboard GST summary (feature 022), grouped by the line tax code. */
+data class GstByRateRow(
+    @ColumnInfo(name = "code") val taxCode: String?,
+    @ColumnInfo(name = "taxable") val taxable: Double,
+    @ColumnInfo(name = "tax") val tax: Double,
+)
+
+/** One day/period bucket of sales for the dashboard trend (feature 022). */
+data class SalesTrendRow(
+    @ColumnInfo(name = "bucket") val bucket: String,
+    @ColumnInfo(name = "total") val total: Double,
+)
+
 /**
  * Read-only aggregate queries that back the assistant's curated invoice reports — kept **separate**
  * from the operational [com.ampairs.invoice.db.dao.InvoiceDao] so report concerns don't leak into the
@@ -100,6 +113,56 @@ interface InvoiceAgentDao {
     /** Count of active invoices within a half-open period. */
     @Query("SELECT count(*) FROM invoiceEntity WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end")
     suspend fun countInvoicesBetween(start: String, end: String): Int
+
+    // ── GST summary (feature 022): intra-state (CGST+SGST) vs inter-state (IGST) ──
+    // Intra iff place_of_supply == seller_place_of_supply. SQLite `IS`/`IS NOT` is null-safe
+    // (NULL IS NULL → intra), matching the backend's `placeOfSupply == sellerPlaceOfSupply`.
+
+    /** Output tax on intra-state invoices (CGST+SGST) within a half-open period. */
+    @Query(
+        "SELECT SUM(total_tax) FROM invoiceEntity WHERE active = 1 " +
+            "AND invoice_date >= :start AND invoice_date < :end AND place_of_supply IS seller_place_of_supply",
+    )
+    suspend fun sumIntraStateTaxBetween(start: String, end: String): Double?
+
+    /** Output tax on inter-state invoices (IGST) within a half-open period. */
+    @Query(
+        "SELECT SUM(total_tax) FROM invoiceEntity WHERE active = 1 " +
+            "AND invoice_date >= :start AND invoice_date < :end AND place_of_supply IS NOT seller_place_of_supply",
+    )
+    suspend fun sumInterStateTaxBetween(start: String, end: String): Double?
+
+    /** Taxable base on intra-state invoices within a half-open period. */
+    @Query(
+        "SELECT SUM(base_price) FROM invoiceEntity WHERE active = 1 " +
+            "AND invoice_date >= :start AND invoice_date < :end AND place_of_supply IS seller_place_of_supply",
+    )
+    suspend fun sumTaxableIntraBetween(start: String, end: String): Double?
+
+    /** Taxable base on inter-state invoices within a half-open period. */
+    @Query(
+        "SELECT SUM(base_price) FROM invoiceEntity WHERE active = 1 " +
+            "AND invoice_date >= :start AND invoice_date < :end AND place_of_supply IS NOT seller_place_of_supply",
+    )
+    suspend fun sumTaxableInterBetween(start: String, end: String): Double?
+
+    /** GST breakdown by line tax code (taxable base + tax) within a half-open period. */
+    @Query(
+        "SELECT ii.tax_code AS code, SUM(ii.base_price) AS taxable, SUM(ii.total_tax) AS tax " +
+            "FROM invoiceItemEntity ii JOIN invoiceEntity i ON ii.invoice_id = i.id " +
+            "WHERE i.active = 1 AND ii.active = 1 AND i.invoice_date >= :start AND i.invoice_date < :end " +
+            "GROUP BY ii.tax_code ORDER BY tax DESC",
+    )
+    suspend fun gstByRateBetween(start: String, end: String): List<GstByRateRow>
+
+    // ── Sales trend (feature 022): daily buckets from the "yyyy-MM-dd HH:mm:ss" invoice_date ──
+
+    /** Daily gross-sales buckets within a half-open period (bucket = the date part of invoice_date). */
+    @Query(
+        "SELECT substr(invoice_date, 1, 10) AS bucket, SUM(total_cost) AS total FROM invoiceEntity " +
+            "WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end GROUP BY bucket ORDER BY bucket",
+    )
+    suspend fun salesTrendDaily(start: String, end: String): List<SalesTrendRow>
 
     /** Chat search by invoice number or (whitespace-normalized, case-insensitive) customer name. */
     @Query(
