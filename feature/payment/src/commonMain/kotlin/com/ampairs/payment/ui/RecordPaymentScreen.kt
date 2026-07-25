@@ -704,7 +704,9 @@ private fun AllocationBillRow(row: AllocationRow) {
                 MonoAmount(amount = row.bill.total.toDouble(), color = MaterialTheme.colorScheme.onSurface)
             }
             Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(row.bill.billDate.substringBefore('T'), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // billDate is invoice/purchase-sourced "yyyy-MM-dd HH:mm:ss" (no 'T') — strip a
+                // space-separated time too, not just a 'T'-separated one.
+                Text(row.bill.billDate.substringBefore('T').substringBefore(' '), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     statusLabel + " · " + com.ampairs.common.locale.formatMoney(com.ampairs.payment.domain.Money(row.allocatedMinor).toDouble(), locale),
                     style = MaterialTheme.typography.labelSmall,

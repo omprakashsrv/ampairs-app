@@ -90,7 +90,10 @@ class CustomerDetailsViewModel(
         viewModelScope.launch {
             _linkedAccounts.update { it.copy(isLinking = true, error = null) }
             contactRepository.linkContact(customerId, phone, name).fold(
-                onSuccess = { loadContacts() },
+                onSuccess = {
+                    _linkedAccounts.update { it.copy(isLinking = false) }
+                    loadContacts()
+                },
                 onFailure = { e -> _linkedAccounts.update { it.copy(isLinking = false, error = e.message ?: "Couldn't link that phone number") } },
             )
         }
