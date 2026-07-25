@@ -1,3 +1,4 @@
+import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import java.util.Properties
 
 plugins {
@@ -9,6 +10,7 @@ plugins {
     alias(libs.plugins.firebaseCrashlytics)
     alias(libs.plugins.firebasePerf)
     alias(libs.plugins.metro)
+    alias(libs.plugins.playPublisher)
 }
 
 kotlin {
@@ -119,6 +121,20 @@ android {
             signingConfig = signingConfigs["release"]
         }
     }
+}
+
+// ── Play Console publishing (gradle-play-publisher) ────────────────────────
+// One Google Play Developer account, one service account, granted access per-app in Play
+// Console (Setup > API access). The service account JSON never goes in git — see .gitignore.
+//   ./gradlew :clientApp:publishBundle -Pclient=ambika                       (internal track)
+//   ./gradlew :clientApp:publishBundle -Pclient=ambika -PplayTrack=production (draft — requires
+//     a manual "Start rollout" click in Play Console; never auto-completes production)
+play {
+    serviceAccountCredentials.set(rootProject.file("play-service-account.json"))
+    val trackName = (findProperty("playTrack") as String?) ?: "internal"
+    track.set(trackName)
+    defaultToAppBundles.set(true)
+    releaseStatus.set(if (trackName == "production") ReleaseStatus.DRAFT else ReleaseStatus.COMPLETED)
 }
 
 dependencies {
