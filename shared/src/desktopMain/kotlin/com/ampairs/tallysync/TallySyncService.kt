@@ -752,9 +752,11 @@ class TallySyncService(
 
     /**
      * Sets a party's (customer or supplier) opening balance from its Tally ledger opening figure.
-     * Tally sign convention: positive = Debit (receivable → [Direction.DR]), negative = Credit
-     * (payable → [Direction.CR]). No-op when zero/blank. Idempotent per party (the repository reuses
-     * the existing PartyBalance row by party), recomputes the closing balance, and flags it for push.
+     * Tally's XML LEDGER.OPENINGBALANCE (and CLOSINGBALANCE) sign convention is the reverse of
+     * ordinary accounting intuition: negative = Debit (receivable → [Direction.DR]), positive =
+     * Credit (payable → [Direction.CR]) — a well-known Tally export quirk, distinct from voucher
+     * ledger-entry amounts. No-op when zero/blank. Idempotent per party (the repository reuses the
+     * existing PartyBalance row by party), recomputes the closing balance, and flags it for push.
      */
     private suspend fun syncOpeningBalance(partyUid: String, openingBalanceRaw: String?) {
         val amount = openingBalanceRaw.parseTallyAmount()
@@ -763,7 +765,7 @@ class TallySyncService(
             partyUid = partyUid,
             uid = UidGenerator.generateUid("PBL"),
             openingBalance = Money.fromDouble(abs(amount)),
-            openingDirection = if (amount >= 0.0) Direction.DR else Direction.CR,
+            openingDirection = if (amount < 0.0) Direction.DR else Direction.CR,
             openingAsOf = "",
         ).onFailure { log.w { "Opening balance for $partyUid failed: ${it.message}" } }
     }
