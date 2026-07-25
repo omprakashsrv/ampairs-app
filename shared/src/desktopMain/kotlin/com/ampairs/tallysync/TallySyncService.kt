@@ -27,6 +27,7 @@ import com.ampairs.payment.data.repository.PaymentLedgerPoster
 import com.ampairs.payment.data.repository.PaymentVoucherRepository
 import com.ampairs.payment.domain.AllocationTarget
 import com.ampairs.payment.domain.Direction
+import com.ampairs.payment.domain.LedgerSourceType
 import com.ampairs.payment.domain.Money
 import com.ampairs.payment.domain.PurchaseLedgerPoster
 import com.ampairs.purchase.db.dao.PurchaseDao
@@ -70,6 +71,7 @@ import com.ampairs.tallysync.TallyVoucherMapper.invoiceId
 import com.ampairs.tallysync.TallyVoucherMapper.isInvoiceKind
 import com.ampairs.tallysync.TallyVoucherMapper.isPaymentKind
 import com.ampairs.tallysync.TallyVoucherMapper.resolvePartyName
+import com.ampairs.tallysync.TallyVoucherMapper.toMappedAdjustment
 import com.ampairs.tallysync.TallyVoucherMapper.toMappedInvoice
 import com.ampairs.tallysync.TallyVoucherMapper.toMappedPayment
 import com.ampairs.tally.model.master.StockItem
@@ -797,6 +799,22 @@ class TallySyncService(
         emit("Vouchers: ${vouchers.size} total, lastAlterId=$lastAlterId")
         val filtered = vouchers.filter { it.alterId.toAlterLong() > lastAlterId }
 
+        // Diagnostic: classify() only recognizes sales/purchase/credit-debit-note/receipt/payment
+        // keywords — anything else (e.g. a Tally "Journal" voucher used for discounts/promotions/
+        // write-offs) falls to Kind.OTHER and is dropped below without posting any ledger entry.
+        // Log a breakdown so an unhandled voucher-type name can be identified from the sync log.
+        val kindCounts = filtered.groupingBy { it.classify() }.eachCount()
+        emit("Vouchers by kind: " + Kind.entries.joinToString(", ") { k -> "${k.name}=${kindCounts[k] ?: 0}" })
+        val otherByType = filtered.filter { it.classify() == Kind.OTHER }
+            .groupingBy { (it.voucherTypeName ?: it.vchType ?: "<blank>").trim() }
+            .eachCount()
+        if (otherByType.isNotEmpty()) {
+            emit(
+                "Excluded (OTHER, not synced) voucher types: " +
+                    otherByType.entries.sortedByDescending { it.value }.joinToString(", ") { (name, count) -> "\"$name\"=$count" },
+            )
+        }
+
         // Sales party matches a synced customer; purchase party matches a synced supplier (both were
         // synced earlier this cycle — purchase parties are now always synced as suppliers). Line items
         // match by stock-item name to a synced product.
@@ -925,9 +943,40 @@ class TallySyncService(
         }
         if (skippedPaymentNoParty > 0) emit("Payments: skipped $skippedPaymentNoParty (party not a known customer/supplier)")
 
+        // --- Journal entries against a known party (discount/write-off/other adjustments Tally
+        // records via a plain Journal rather than a dedicated voucher type — see toMappedAdjustment).
+        // Journals with no resolvable customer/supplier party (bank contras, depreciation, provisions,
+        // ...) are skipped, same as payments above.
+        var adjustmentsSynced = 0
+        var skippedJournalNoParty = 0
+        for (voucher in filtered) {
+            if (voucher.classify() != Kind.JOURNAL) continue
+            val partyName = voucher.resolvePartyName()
+            val partyUid = partyName?.let { customerIdByName[it] ?: supplierIdByName[it] }
+            if (partyUid == null) {
+                skippedJournalNoParty++
+                continue
+            }
+            val mapped = voucher.toMappedAdjustment(partyName) ?: continue
+            ledgerPoster.postDocumentEntry(
+                partyUid = partyUid,
+                sourceType = LedgerSourceType.ADJUSTMENT,
+                sourceUid = mapped.sourceUid,
+                entryType = mapped.entryType,
+                direction = mapped.direction,
+                amount = Money.fromDouble(mapped.amount),
+                entryDate = mapped.entryDate,
+                voucherNo = mapped.voucherNo,
+                narration = mapped.narration,
+            )
+            adjustmentsSynced++
+        }
+        if (adjustmentsSynced > 0) emit("Journal adjustments: $adjustmentsSynced posted to party ledgers")
+        if (skippedJournalNoParty > 0) emit("Journals: skipped $skippedJournalNoParty (no customer/supplier party on the voucher)")
+
         val maxAlterId = vouchers.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_VOUCHER, maxAlterId)
-        log.d { "syncVouchers: $invoicesSynced invoices, $purchasesSynced purchases, $paymentsSynced payments" }
+        log.d { "syncVouchers: $invoicesSynced invoices, $purchasesSynced purchases, $paymentsSynced payments, $adjustmentsSynced adjustments" }
         return Triple(invoicesSynced, paymentsSynced, purchasesSynced)
     }
 
