@@ -159,7 +159,7 @@ class CustomerApiImpl(
             ApiUrlBuilder.customerUrl("v1/$customerId/contacts"),
             request
         )
-        return response.data ?: throw Exception(response.error?.message ?: "Failed to link account")
+        return response.data ?: throw Exception(response.error?.displayMessage ?: "Failed to link account")
     }
 
     override suspend fun setContactActive(customerId: String, contactUid: String, active: Boolean): CustomerContactResponse {
@@ -168,6 +168,6 @@ class CustomerApiImpl(
             ApiUrlBuilder.customerUrl("v1/$customerId/contacts/$contactUid/status"),
             SetContactStatusRequest(active)
         )
-        return response.data ?: throw Exception(response.error?.message ?: "Failed to update account status")
+        return response.data ?: throw Exception(response.error?.displayMessage ?: "Failed to update account status")
     }
 }
