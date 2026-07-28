@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -36,6 +37,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +49,7 @@ import ampairsapp.feature.analytics.generated.resources.analytics_aging_empty
 import ampairsapp.feature.analytics.generated.resources.analytics_aging_invoices
 import ampairsapp.feature.analytics.generated.resources.analytics_dashboard_title
 import ampairsapp.feature.analytics.generated.resources.analytics_error_generic
+import ampairsapp.feature.analytics.generated.resources.analytics_export
 import ampairsapp.feature.analytics.generated.resources.analytics_gst_empty
 import ampairsapp.feature.analytics.generated.resources.analytics_gst_inter
 import ampairsapp.feature.analytics.generated.resources.analytics_gst_intra
@@ -78,6 +82,7 @@ import com.ampairs.analytics.domain.DashboardPeriod
 import com.ampairs.analytics.domain.GstSummary
 import com.ampairs.analytics.domain.SalesTrendPoint
 import com.ampairs.common.locale.LocalAppLocale
+import com.ampairs.common.locale.currencySymbol
 import com.ampairs.common.locale.formatMoney
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
@@ -89,6 +94,9 @@ fun DashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val locale = LocalAppLocale.current
+    val clipboard = LocalClipboardManager.current
+    val periodLabel = state.period.label()
+    val symbol = currencySymbol(locale.currencyCode)
 
     // Push the workspace business time zone into the VM so period bounds bucket correctly.
     LaunchedEffect(locale.timeZoneId) { viewModel.setLocale(locale.timeZoneId) }
@@ -101,6 +109,13 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.analytics_dashboard_title)) },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            clipboard.setText(AnnotatedString(buildDashboardCsv(state.data, periodLabel, symbol)))
+                        },
+                    ) {
+                        Icon(Icons.Filled.Share, contentDescription = stringResource(Res.string.analytics_export))
+                    }
                     IconButton(onClick = viewModel::refresh) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(Res.string.analytics_refresh))
                     }

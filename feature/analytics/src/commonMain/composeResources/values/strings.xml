@@ -1,6 +1,7 @@
 <resources>
     <string name="analytics_dashboard_title">Dashboard</string>
     <string name="analytics_refresh">Refresh</string>
+    <string name="analytics_export">Export CSV</string>
     <string name="analytics_last_synced">Updated %1$s</string>
     <string name="analytics_never_synced">Not yet synced</string>
     <string name="analytics_error_generic">Couldn\'t load the dashboard</string>
