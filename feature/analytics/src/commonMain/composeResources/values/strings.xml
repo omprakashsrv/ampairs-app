@@ -1,0 +1,47 @@
+<resources>
+    <string name="analytics_dashboard_title">Dashboard</string>
+    <string name="analytics_refresh">Refresh</string>
+    <string name="analytics_last_synced">Updated %1$s</string>
+    <string name="analytics_never_synced">Not yet synced</string>
+    <string name="analytics_error_generic">Couldn\'t load the dashboard</string>
+    <string name="analytics_retry">Retry</string>
+
+    <!-- Period selector -->
+    <string name="analytics_period_today">Today</string>
+    <string name="analytics_period_this_week">This week</string>
+    <string name="analytics_period_this_month">This month</string>
+    <string name="analytics_period_last_month">Last month</string>
+    <string name="analytics_period_this_year">This year</string>
+    <string name="analytics_period_all_time">All time</string>
+
+    <!-- KPI cards -->
+    <string name="analytics_kpi_gross_sales">Gross sales</string>
+    <string name="analytics_kpi_net_sales">Net sales</string>
+    <string name="analytics_kpi_tax">Tax collected</string>
+    <string name="analytics_kpi_invoices">Invoices</string>
+    <string name="analytics_kpi_avg_invoice">Avg. invoice</string>
+    <string name="analytics_kpi_collections">Collections</string>
+    <string name="analytics_kpi_stock_value">Stock value</string>
+    <string name="analytics_kpi_low_stock">Low stock items</string>
+    <string name="analytics_kpi_outstanding">Outstanding</string>
+    <string name="analytics_kpi_inventory_turns">Inventory turns</string>
+
+    <!-- Sections -->
+    <string name="analytics_section_kpis">Overview</string>
+    <string name="analytics_section_trend">Sales trend</string>
+    <string name="analytics_section_gst">GST summary</string>
+    <string name="analytics_section_aging">Receivables aging</string>
+
+    <!-- GST -->
+    <string name="analytics_gst_intra">Intra-state (CGST+SGST)</string>
+    <string name="analytics_gst_inter">Inter-state (IGST)</string>
+    <string name="analytics_gst_taxable">Taxable</string>
+    <string name="analytics_gst_tax">Tax</string>
+    <string name="analytics_gst_rate">Rate</string>
+    <string name="analytics_gst_empty">No taxable sales in this period</string>
+
+    <!-- Trend / aging -->
+    <string name="analytics_trend_empty">No sales in this period</string>
+    <string name="analytics_aging_empty">No outstanding receivables</string>
+    <string name="analytics_aging_invoices">%1$d invoices</string>
+</resources>

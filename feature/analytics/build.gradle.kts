@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.metro)
     alias(libs.plugins.kover)
@@ -13,6 +15,7 @@ kotlin {
         namespace = "com.ampairs.analytics"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
     jvm("desktop")
     iosArm64()
@@ -26,12 +29,25 @@ kotlin {
                 implementation(projects.data.sync)
                 implementation(projects.feature.authApi)
                 implementation(libs.metro.runtime)
+                implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
                 implementation(libs.kotlinx.dateTime)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kermit)
+                // Compose
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.animation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.material.icons.extended)
+                implementation(libs.compose.components.resources)
+                // Material3 Adaptive
+                implementation(libs.material3.adaptive)
+                implementation(libs.material3.adaptive.layout)
+                implementation(libs.material3.adaptive.navigation)
             }
         }
         commonTest {
