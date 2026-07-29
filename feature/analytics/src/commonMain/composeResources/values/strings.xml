@@ -47,6 +47,18 @@
     <string name="analytics_aging_empty">No outstanding receivables</string>
     <string name="analytics_aging_invoices">%1$d invoices</string>
 
+    <!-- Ask a question (NL panel) -->
+    <string name="analytics_section_ask">Ask a question</string>
+    <string name="analytics_ask_placeholder">e.g. total sales, how many invoices, outstanding</string>
+    <string name="analytics_ask_submit">Ask</string>
+    <string name="analytics_ask_clear">Clear</string>
+    <string name="analytics_ask_unanswered">I couldn\'t answer that from the dashboard. Try the assistant for detailed questions.</string>
+    <string name="analytics_ask_q_sales">Total sales</string>
+    <string name="analytics_ask_q_invoices">How many invoices</string>
+    <string name="analytics_ask_q_outstanding">Outstanding</string>
+    <string name="analytics_ask_q_low_stock">Low stock</string>
+    <string name="analytics_ask_q_collections">Collections</string>
+
     <!-- Coverage (sync window) -->
     <string name="analytics_coverage_from">Showing data from %1$s — connect to the internet to include earlier history</string>
 

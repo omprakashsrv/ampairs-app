@@ -16,11 +16,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -29,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -36,6 +41,9 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,6 +53,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,6 +61,15 @@ import androidx.window.core.layout.WindowSizeClass
 import ampairsapp.feature.analytics.generated.resources.Res
 import ampairsapp.feature.analytics.generated.resources.analytics_aging_empty
 import ampairsapp.feature.analytics.generated.resources.analytics_aging_invoices
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_clear
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_placeholder
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_collections
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_invoices
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_low_stock
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_outstanding
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_sales
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_submit
+import ampairsapp.feature.analytics.generated.resources.analytics_ask_unanswered
 import ampairsapp.feature.analytics.generated.resources.analytics_coverage_from
 import ampairsapp.feature.analytics.generated.resources.analytics_dashboard_title
 import ampairsapp.feature.analytics.generated.resources.analytics_error_generic
@@ -88,6 +106,7 @@ import ampairsapp.feature.analytics.generated.resources.analytics_refresh
 import ampairsapp.feature.analytics.generated.resources.analytics_retry
 import ampairsapp.feature.analytics.generated.resources.analytics_section_aging
 import ampairsapp.feature.analytics.generated.resources.analytics_section_gst
+import ampairsapp.feature.analytics.generated.resources.analytics_section_ask
 import ampairsapp.feature.analytics.generated.resources.analytics_section_forecast
 import ampairsapp.feature.analytics.generated.resources.analytics_section_kpis
 import ampairsapp.feature.analytics.generated.resources.analytics_section_trend
@@ -98,6 +117,8 @@ import com.ampairs.analytics.domain.DashboardKpis
 import com.ampairs.analytics.domain.DashboardPeriod
 import com.ampairs.analytics.domain.ForecastSource
 import com.ampairs.analytics.domain.GstSummary
+import com.ampairs.analytics.domain.NlAnswer
+import com.ampairs.analytics.domain.NlMetric
 import com.ampairs.analytics.domain.ProductForecast
 import com.ampairs.analytics.domain.SalesTrendPoint
 import com.ampairs.common.locale.LocalAppLocale
@@ -175,6 +196,7 @@ fun DashboardScreen(
 
                 else -> {
                     (state.coverage as? DashboardCoverage.Reduced)?.let { CoverageBadge(it.fromDate) }
+                    NlQuerySection(state.nlAnswer, locale, onAsk = viewModel::askNl, onClear = viewModel::clearNl)
                     KpiSection(state.data.kpis, locale, expanded)
                     TrendSection(state.data.trend, locale)
                     ForecastSection(state.data.forecasts)
@@ -371,6 +393,98 @@ private fun AgingSection(buckets: List<AgingBucket>, locale: com.ampairs.common.
         }
     }
 }
+
+// ───────────────────────── Ask a question (NL → KPI) ─────────────────────────
+
+@Composable
+private fun NlQuerySection(
+    answer: NlAnswer?,
+    locale: com.ampairs.common.locale.AppLocale,
+    onAsk: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf("") }
+    val suggestions = listOf(
+        stringResource(Res.string.analytics_ask_q_sales),
+        stringResource(Res.string.analytics_ask_q_invoices),
+        stringResource(Res.string.analytics_ask_q_outstanding),
+        stringResource(Res.string.analytics_ask_q_collections),
+        stringResource(Res.string.analytics_ask_q_low_stock),
+    )
+    SectionHeader(stringResource(Res.string.analytics_section_ask))
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(Res.string.analytics_ask_placeholder)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { if (text.isNotBlank()) onAsk(text) }),
+            trailingIcon = {
+                if (text.isNotEmpty()) {
+                    IconButton(onClick = { text = ""; onClear() }) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(Res.string.analytics_ask_clear))
+                    }
+                }
+            },
+        )
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            suggestions.forEach { q ->
+                AssistChip(onClick = { text = q; onAsk(q) }, label = { Text(q) })
+            }
+        }
+        when (answer) {
+            is NlAnswer.Answered -> NlAnswerCard(answer, locale)
+            NlAnswer.Unanswered -> SectionSurface {
+                EmptyRow(stringResource(Res.string.analytics_ask_unanswered))
+            }
+            null -> Unit
+        }
+    }
+}
+
+@Composable
+private fun NlAnswerCard(answer: NlAnswer.Answered, locale: com.ampairs.common.locale.AppLocale) {
+    val value = if (answer.metric.moneyValued) formatMoney(answer.value, locale) else answer.value.asQty()
+    Column(
+        Modifier.fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(16.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            answer.metric.label().uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun NlMetric.label(): String = stringResource(
+    when (this) {
+        NlMetric.GROSS_SALES -> Res.string.analytics_kpi_gross_sales
+        NlMetric.NET_SALES -> Res.string.analytics_kpi_net_sales
+        NlMetric.TAX -> Res.string.analytics_kpi_tax
+        NlMetric.INVOICES -> Res.string.analytics_kpi_invoices
+        NlMetric.AVG_INVOICE -> Res.string.analytics_kpi_avg_invoice
+        NlMetric.COLLECTIONS -> Res.string.analytics_kpi_collections
+        NlMetric.STOCK_VALUE -> Res.string.analytics_kpi_stock_value
+        NlMetric.LOW_STOCK -> Res.string.analytics_kpi_low_stock
+        NlMetric.OUTSTANDING -> Res.string.analytics_kpi_outstanding
+        NlMetric.INVENTORY_TURNS -> Res.string.analytics_kpi_inventory_turns
+    },
+)
 
 // ───────────────────────── Coverage badge (reduced sync window) ─────────────────────────
 

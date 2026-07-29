@@ -10,6 +10,8 @@ import com.ampairs.analytics.domain.DashboardCoverage
 import com.ampairs.analytics.domain.DashboardData
 import com.ampairs.analytics.domain.DashboardPeriod
 import com.ampairs.analytics.domain.DeepHistorySlice
+import com.ampairs.analytics.domain.NlAnswer
+import com.ampairs.analytics.domain.NlQueryMatcher
 import com.ampairs.analytics.domain.SalesTrendPoint
 import com.ampairs.analytics.domain.mergePriorSlice
 import com.ampairs.common.agent.DateRange
@@ -50,6 +52,8 @@ data class DashboardUiState(
     val isRefreshing: Boolean = false,
     val lastSyncedAt: Long? = null,
     val error: String? = null,
+    val nlQuery: String = "",
+    val nlAnswer: NlAnswer? = null,
 )
 
 /**
@@ -115,6 +119,17 @@ class DashboardViewModel(
     fun refresh() {
         SYNCED_ENTITIES.forEach { syncService.emit(SyncEvent.TriggerFullSync(it)) }
         reload()
+    }
+
+    /** Resolve a natural-language question against the current KPIs (T049); deterministic, offline. */
+    fun askNl(question: String) {
+        _uiState.update {
+            it.copy(nlQuery = question, nlAnswer = NlQueryMatcher.match(question, it.data.kpis))
+        }
+    }
+
+    fun clearNl() {
+        _uiState.update { it.copy(nlQuery = "", nlAnswer = null) }
     }
 
     private fun reload() {
