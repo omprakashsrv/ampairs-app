@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 /**
  * DTOs for the backend deep-history dashboard reads (feature 022, T030): the KPI + trend endpoints
- * under `/api/analytics/v1/dashboard/*`. Used only for the portion of a requested period that falls
+ * under the `/api/analytics/v1/dashboard/` path. Used only for the portion of a requested period that falls
  * BEFORE the device's local sync window (T030a). Fields mirror the backend `AnalyticsResponses.kt`
  * (global SNAKE_CASE); `BigDecimal` serializes as a JSON number → `Double`, `LocalDate`/`Instant` as
  * ISO strings. All default so a partial payload never fails deserialization.
