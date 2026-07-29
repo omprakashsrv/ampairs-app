@@ -47,6 +47,14 @@
     <string name="analytics_aging_empty">No outstanding receivables</string>
     <string name="analytics_aging_invoices">%1$d invoices</string>
 
+    <!-- Customize dashboard layout -->
+    <string name="analytics_customize_action">Customize layout</string>
+    <string name="analytics_customize_title">Customize dashboard</string>
+    <string name="analytics_customize_save">Save</string>
+    <string name="analytics_customize_cancel">Cancel</string>
+    <string name="analytics_customize_move_up">Move up</string>
+    <string name="analytics_customize_move_down">Move down</string>
+
     <!-- Ask a question (NL panel) -->
     <string name="analytics_section_ask">Ask a question</string>
     <string name="analytics_ask_placeholder">e.g. total sales, how many invoices, outstanding</string>

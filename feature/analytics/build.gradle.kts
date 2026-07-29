@@ -28,6 +28,7 @@ kotlin {
                 implementation(projects.data.database)
                 implementation(projects.data.sync)
                 implementation(projects.feature.authApi)
+                implementation(projects.feature.store)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)

@@ -22,9 +22,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -36,12 +41,15 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,6 +79,12 @@ import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_sales
 import ampairsapp.feature.analytics.generated.resources.analytics_ask_submit
 import ampairsapp.feature.analytics.generated.resources.analytics_ask_unanswered
 import ampairsapp.feature.analytics.generated.resources.analytics_coverage_from
+import ampairsapp.feature.analytics.generated.resources.analytics_customize_action
+import ampairsapp.feature.analytics.generated.resources.analytics_customize_cancel
+import ampairsapp.feature.analytics.generated.resources.analytics_customize_move_down
+import ampairsapp.feature.analytics.generated.resources.analytics_customize_move_up
+import ampairsapp.feature.analytics.generated.resources.analytics_customize_save
+import ampairsapp.feature.analytics.generated.resources.analytics_customize_title
 import ampairsapp.feature.analytics.generated.resources.analytics_dashboard_title
 import ampairsapp.feature.analytics.generated.resources.analytics_error_generic
 import ampairsapp.feature.analytics.generated.resources.analytics_export
@@ -115,6 +129,7 @@ import com.ampairs.analytics.domain.AgingBucket
 import com.ampairs.analytics.domain.DashboardCoverage
 import com.ampairs.analytics.domain.DashboardKpis
 import com.ampairs.analytics.domain.DashboardPeriod
+import com.ampairs.analytics.domain.DashboardTile
 import com.ampairs.analytics.domain.ForecastSource
 import com.ampairs.analytics.domain.GstSummary
 import com.ampairs.analytics.domain.NlAnswer
@@ -138,6 +153,7 @@ fun DashboardScreen(
     val clipboard = LocalClipboardManager.current
     val periodLabel = state.period.label()
     val symbol = currencySymbol(locale.currencyCode)
+    var showCustomize by rememberSaveable { mutableStateOf(false) }
 
     // Push the workspace business time zone into the VM so period bounds bucket correctly.
     LaunchedEffect(locale.timeZoneId) { viewModel.setLocale(locale.timeZoneId) }
@@ -156,6 +172,9 @@ fun DashboardScreen(
                         },
                     ) {
                         Icon(Icons.Filled.Share, contentDescription = stringResource(Res.string.analytics_export))
+                    }
+                    IconButton(onClick = { showCustomize = true }) {
+                        Icon(Icons.Filled.Tune, contentDescription = stringResource(Res.string.analytics_customize_action))
                     }
                     IconButton(onClick = viewModel::refresh) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(Res.string.analytics_refresh))
@@ -197,7 +216,7 @@ fun DashboardScreen(
                 else -> {
                     (state.coverage as? DashboardCoverage.Reduced)?.let { CoverageBadge(it.fromDate) }
                     NlQuerySection(state.nlAnswer, locale, onAsk = viewModel::askNl, onClear = viewModel::clearNl)
-                    KpiSection(state.data.kpis, locale, expanded)
+                    KpiSection(state.tiles, state.data.kpis, locale, expanded)
                     TrendSection(state.data.trend, locale)
                     ForecastSection(state.data.forecasts)
                     GstSection(state.data.gst, locale)
@@ -206,6 +225,66 @@ fun DashboardScreen(
             }
         }
     }
+
+    if (showCustomize) {
+        CustomizeLayoutDialog(
+            current = state.tiles,
+            onDismiss = { showCustomize = false },
+            onSave = { viewModel.setTiles(it); showCustomize = false },
+        )
+    }
+}
+
+// ───────────────────────── Customize dashboard layout ─────────────────────────
+
+@Composable
+private fun CustomizeLayoutDialog(
+    current: List<DashboardTile>,
+    onDismiss: () -> Unit,
+    onSave: (List<DashboardTile>) -> Unit,
+) {
+    // Enabled tiles first (in stored order), then the rest in canonical order; each row is toggleable
+    // and reorderable, so save = the checked tiles in their row order (add / remove / reorder).
+    val enabled = current.toSet()
+    val rows = remember {
+        mutableStateListOf<Pair<DashboardTile, Boolean>>().apply {
+            addAll((current + DashboardTile.DEFAULT_ORDER.filter { it !in enabled }).map { it to (it in enabled) })
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.analytics_customize_title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                rows.forEachIndexed { index, (tile, isOn) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = isOn, onCheckedChange = { rows[index] = tile to it })
+                        Text(tile.displayName(), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        IconButton(onClick = { if (index > 0) rows.swap(index, index - 1) }, enabled = index > 0) {
+                            Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(Res.string.analytics_customize_move_up))
+                        }
+                        IconButton(onClick = { if (index < rows.lastIndex) rows.swap(index, index + 1) }, enabled = index < rows.lastIndex) {
+                            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(Res.string.analytics_customize_move_down))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(rows.filter { it.second }.map { it.first }) }) {
+                Text(stringResource(Res.string.analytics_customize_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.analytics_customize_cancel)) }
+        },
+    )
+}
+
+private fun <T> MutableList<T>.swap(a: Int, b: Int) {
+    val tmp = this[a]
+    this[a] = this[b]
+    this[b] = tmp
 }
 
 // ───────────────────────── Period selector ─────────────────────────
@@ -241,42 +320,75 @@ private fun DashboardPeriod.label(): String = stringResource(
 // ───────────────────────── KPI section ─────────────────────────
 
 @Composable
-private fun KpiSection(kpis: DashboardKpis, locale: com.ampairs.common.locale.AppLocale, expanded: Boolean) {
+private fun KpiSection(
+    tiles: List<DashboardTile>,
+    kpis: DashboardKpis,
+    locale: com.ampairs.common.locale.AppLocale,
+    expanded: Boolean,
+) {
     SectionHeader(stringResource(Res.string.analytics_section_kpis))
-    val cards: List<@Composable (Modifier) -> Unit> = listOf(
-        { m -> KpiCard(stringResource(Res.string.analytics_kpi_gross_sales), formatMoney(kpis.grossSales, locale), m) },
-        { m -> KpiCard(stringResource(Res.string.analytics_kpi_net_sales), formatMoney(kpis.netSales, locale), m) },
-        { m -> KpiCard(stringResource(Res.string.analytics_kpi_tax), formatMoney(kpis.totalTax, locale), m) },
-        { m -> KpiCard(stringResource(Res.string.analytics_kpi_invoices), kpis.invoiceCount.toString(), m) },
-        { m -> KpiCard(stringResource(Res.string.analytics_kpi_avg_invoice), formatMoney(kpis.averageInvoiceValue, locale), m) },
-        { m -> KpiCard(stringResource(Res.string.analytics_kpi_collections), formatMoney(kpis.collectionsReceived, locale), m) },
-        { m -> KpiCard(stringResource(Res.string.analytics_kpi_stock_value), formatMoney(kpis.stockValue, locale), m) },
-        { m ->
-            KpiCard(
-                stringResource(Res.string.analytics_kpi_low_stock), kpis.lowStockCount.toString(), m,
-                container = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-        },
-        { m ->
-            KpiCard(
-                stringResource(Res.string.analytics_kpi_outstanding), formatMoney(kpis.outstandingReceivable, locale), m,
-                container = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-            )
-        },
-        { m -> KpiCard(stringResource(Res.string.analytics_kpi_inventory_turns), "${kpis.inventoryTurns.as2dp()}×", m) },
-    )
     val perRow = if (expanded) 4 else 2
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        cards.chunked(perRow).forEach { row ->
+        tiles.chunked(perRow).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                row.forEach { card -> card(Modifier.weight(1f)) }
+                row.forEach { tile -> KpiTileCard(tile, kpis, locale, Modifier.weight(1f)) }
                 repeat(perRow - row.size) { Box(Modifier.weight(1f)) }
             }
         }
     }
 }
+
+/** Render one [DashboardTile] from the current KPIs — the switchboard the layout setting drives. */
+@Composable
+private fun KpiTileCard(
+    tile: DashboardTile,
+    kpis: DashboardKpis,
+    locale: com.ampairs.common.locale.AppLocale,
+    modifier: Modifier,
+) = when (tile) {
+    DashboardTile.GROSS_SALES ->
+        KpiCard(stringResource(Res.string.analytics_kpi_gross_sales), formatMoney(kpis.grossSales, locale), modifier)
+    DashboardTile.NET_SALES ->
+        KpiCard(stringResource(Res.string.analytics_kpi_net_sales), formatMoney(kpis.netSales, locale), modifier)
+    DashboardTile.TAX ->
+        KpiCard(stringResource(Res.string.analytics_kpi_tax), formatMoney(kpis.totalTax, locale), modifier)
+    DashboardTile.INVOICES ->
+        KpiCard(stringResource(Res.string.analytics_kpi_invoices), kpis.invoiceCount.toString(), modifier)
+    DashboardTile.AVG_INVOICE ->
+        KpiCard(stringResource(Res.string.analytics_kpi_avg_invoice), formatMoney(kpis.averageInvoiceValue, locale), modifier)
+    DashboardTile.COLLECTIONS ->
+        KpiCard(stringResource(Res.string.analytics_kpi_collections), formatMoney(kpis.collectionsReceived, locale), modifier)
+    DashboardTile.STOCK_VALUE ->
+        KpiCard(stringResource(Res.string.analytics_kpi_stock_value), formatMoney(kpis.stockValue, locale), modifier)
+    DashboardTile.LOW_STOCK -> KpiCard(
+        stringResource(Res.string.analytics_kpi_low_stock), kpis.lowStockCount.toString(), modifier,
+        container = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+    )
+    DashboardTile.OUTSTANDING -> KpiCard(
+        stringResource(Res.string.analytics_kpi_outstanding), formatMoney(kpis.outstandingReceivable, locale), modifier,
+        container = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+    )
+    DashboardTile.INVENTORY_TURNS ->
+        KpiCard(stringResource(Res.string.analytics_kpi_inventory_turns), "${kpis.inventoryTurns.as2dp()}×", modifier)
+}
+
+@Composable
+private fun DashboardTile.displayName(): String = stringResource(
+    when (this) {
+        DashboardTile.GROSS_SALES -> Res.string.analytics_kpi_gross_sales
+        DashboardTile.NET_SALES -> Res.string.analytics_kpi_net_sales
+        DashboardTile.TAX -> Res.string.analytics_kpi_tax
+        DashboardTile.INVOICES -> Res.string.analytics_kpi_invoices
+        DashboardTile.AVG_INVOICE -> Res.string.analytics_kpi_avg_invoice
+        DashboardTile.COLLECTIONS -> Res.string.analytics_kpi_collections
+        DashboardTile.STOCK_VALUE -> Res.string.analytics_kpi_stock_value
+        DashboardTile.LOW_STOCK -> Res.string.analytics_kpi_low_stock
+        DashboardTile.OUTSTANDING -> Res.string.analytics_kpi_outstanding
+        DashboardTile.INVENTORY_TURNS -> Res.string.analytics_kpi_inventory_turns
+    },
+)
 
 @Composable
 private fun KpiCard(

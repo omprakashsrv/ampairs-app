@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.analytics.data.api.AnalyticsApi
 import com.ampairs.analytics.data.query.DashboardReadFacade
+import com.ampairs.analytics.data.settings.AnalyticsDashboardSettings
 import com.ampairs.analytics.domain.DashboardCoverage
 import com.ampairs.analytics.domain.DashboardData
 import com.ampairs.analytics.domain.DashboardPeriod
+import com.ampairs.analytics.domain.DashboardTile
 import com.ampairs.analytics.domain.DeepHistorySlice
 import com.ampairs.analytics.domain.NlAnswer
 import com.ampairs.analytics.domain.NlQueryMatcher
@@ -47,6 +49,7 @@ import kotlin.time.Instant
 data class DashboardUiState(
     val period: DashboardPeriod = DashboardPeriod.THIS_MONTH,
     val data: DashboardData = DashboardData(),
+    val tiles: List<DashboardTile> = DashboardTile.DEFAULT_ORDER,
     val coverage: DashboardCoverage = DashboardCoverage.Full,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
@@ -71,6 +74,7 @@ class DashboardViewModel(
     private val facade: DashboardReadFacade,
     private val syncService: CentralSyncService,
     private val analyticsApi: AnalyticsApi,
+    private val dashboardSettings: AnalyticsDashboardSettings,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -96,6 +100,11 @@ class DashboardViewModel(
             .map { it?.status is SyncStatus.Success }
             .distinctUntilChanged()
             .onEach { done -> if (done) reload() }
+            .launchIn(viewModelScope)
+
+        // Reactive dashboard layout (T050) — enabled tiles + order from the workspace setting.
+        dashboardSettings.observeLayout()
+            .onEach { tiles -> _uiState.update { it.copy(tiles = tiles) } }
             .launchIn(viewModelScope)
 
         // Freshen the local mirrors on open.
@@ -130,6 +139,11 @@ class DashboardViewModel(
 
     fun clearNl() {
         _uiState.update { it.copy(nlQuery = "", nlAnswer = null) }
+    }
+
+    /** Persist a new dashboard tile layout (add/remove/reorder). State updates reactively via the flow. */
+    fun setTiles(tiles: List<DashboardTile>) {
+        viewModelScope.launch { dashboardSettings.saveLayout(tiles) }
     }
 
     private fun reload() {
