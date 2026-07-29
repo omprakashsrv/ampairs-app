@@ -76,7 +76,6 @@ import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_invoices
 import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_low_stock
 import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_outstanding
 import ampairsapp.feature.analytics.generated.resources.analytics_ask_q_sales
-import ampairsapp.feature.analytics.generated.resources.analytics_ask_submit
 import ampairsapp.feature.analytics.generated.resources.analytics_ask_unanswered
 import ampairsapp.feature.analytics.generated.resources.analytics_coverage_from
 import ampairsapp.feature.analytics.generated.resources.analytics_customize_action
