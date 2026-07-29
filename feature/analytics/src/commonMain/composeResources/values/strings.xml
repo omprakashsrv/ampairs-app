@@ -47,6 +47,9 @@
     <string name="analytics_aging_empty">No outstanding receivables</string>
     <string name="analytics_aging_invoices">%1$d invoices</string>
 
+    <!-- Coverage (sync window) -->
+    <string name="analytics_coverage_from">Showing data from %1$s — connect to the internet to include earlier history</string>
+
     <!-- Demand forecast -->
     <string name="analytics_forecast_empty">Not enough sales history to forecast demand yet</string>
     <string name="analytics_forecast_expected">Expected demand</string>

@@ -1,5 +1,7 @@
 package com.ampairs.analytics.domain
 
+import kotlinx.datetime.LocalDate
+
 /**
  * The selectable reporting window for the analytics dashboard. [keyword] is the string
  * [com.ampairs.common.agent.ReportPeriod] understands; `ALL_TIME` maps to a null range (no filter).
@@ -110,3 +112,53 @@ data class DashboardData(
     val aging: AgingReport = AgingReport(),
     val forecasts: List<ProductForecast> = emptyList(),
 )
+
+/**
+ * How complete the rendered [DashboardData] is for the selected period (feature 022, T030a / FR-011).
+ * [Full] = the local sync window covers the whole period, or the earlier remainder was merged from the
+ * server. [Reduced] = the period extends before the local window and the device is offline, so figures
+ * only cover data from [fromDate] onward — surfaced as a "showing data from {date}" badge rather than
+ * silently undercounting.
+ */
+sealed interface DashboardCoverage {
+    data object Full : DashboardCoverage
+    data class Reduced(val fromDate: LocalDate) : DashboardCoverage
+}
+
+/**
+ * Additive KPI + trend totals for the slice of a period that predates the local sync window, fetched
+ * from the backend deep-history reads (T030). Snapshot figures (stock value, outstanding, aging) are
+ * NOT range-additive and are intentionally absent — they stay local-only.
+ */
+data class DeepHistorySlice(
+    val grossSales: Double = 0.0,
+    val netSales: Double = 0.0,
+    val totalTax: Double = 0.0,
+    val invoiceCount: Int = 0,
+    val collectionsReceived: Double = 0.0,
+    val trend: List<SalesTrendPoint> = emptyList(),
+)
+
+/**
+ * Merge a server-fetched pre-window [slice] into local aggregates (T030a). The slice covers a date
+ * range strictly BEFORE the local window, so the ranges are disjoint and additive — no double count.
+ * Only additive figures merge; snapshot KPIs (stock/outstanding/turns), GST detail, aging and
+ * forecasts are left as the local values.
+ */
+fun DashboardData.mergePriorSlice(slice: DeepHistorySlice): DashboardData {
+    val gross = kpis.grossSales + slice.grossSales
+    val count = kpis.invoiceCount + slice.invoiceCount
+    val mergedKpis = kpis.copy(
+        grossSales = gross,
+        netSales = kpis.netSales + slice.netSales,
+        totalTax = kpis.totalTax + slice.totalTax,
+        invoiceCount = count,
+        averageInvoiceValue = if (count > 0) gross / count else 0.0,
+        collectionsReceived = kpis.collectionsReceived + slice.collectionsReceived,
+    )
+    val mergedTrend = (slice.trend + trend)
+        .groupBy { it.bucket }
+        .map { (bucket, points) -> SalesTrendPoint(bucket, points.sumOf { it.total }) }
+        .sortedBy { it.bucket }
+    return copy(kpis = mergedKpis, trend = mergedTrend)
+}

@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,6 +52,7 @@ import androidx.window.core.layout.WindowSizeClass
 import ampairsapp.feature.analytics.generated.resources.Res
 import ampairsapp.feature.analytics.generated.resources.analytics_aging_empty
 import ampairsapp.feature.analytics.generated.resources.analytics_aging_invoices
+import ampairsapp.feature.analytics.generated.resources.analytics_coverage_from
 import ampairsapp.feature.analytics.generated.resources.analytics_dashboard_title
 import ampairsapp.feature.analytics.generated.resources.analytics_error_generic
 import ampairsapp.feature.analytics.generated.resources.analytics_export
@@ -91,6 +93,7 @@ import ampairsapp.feature.analytics.generated.resources.analytics_section_kpis
 import ampairsapp.feature.analytics.generated.resources.analytics_section_trend
 import ampairsapp.feature.analytics.generated.resources.analytics_trend_empty
 import com.ampairs.analytics.domain.AgingBucket
+import com.ampairs.analytics.domain.DashboardCoverage
 import com.ampairs.analytics.domain.DashboardKpis
 import com.ampairs.analytics.domain.DashboardPeriod
 import com.ampairs.analytics.domain.ForecastSource
@@ -101,6 +104,7 @@ import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.currencySymbol
 import com.ampairs.common.locale.formatMoney
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToLong
 
@@ -170,6 +174,7 @@ fun DashboardScreen(
                 }
 
                 else -> {
+                    (state.coverage as? DashboardCoverage.Reduced)?.let { CoverageBadge(it.fromDate) }
                     KpiSection(state.data.kpis, locale, expanded)
                     TrendSection(state.data.trend, locale)
                     ForecastSection(state.data.forecasts)
@@ -364,6 +369,30 @@ private fun AgingSection(buckets: List<AgingBucket>, locale: com.ampairs.common.
                 }
             }
         }
+    }
+}
+
+// ───────────────────────── Coverage badge (reduced sync window) ─────────────────────────
+
+@Composable
+private fun CoverageBadge(fromDate: LocalDate) {
+    Row(
+        Modifier.fillMaxWidth()
+            .background(MaterialTheme.colorScheme.tertiaryContainer, RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Filled.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
+        Text(
+            stringResource(Res.string.analytics_coverage_from, fromDate.toString()),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
     }
 }
 

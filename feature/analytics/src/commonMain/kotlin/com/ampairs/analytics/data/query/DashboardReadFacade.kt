@@ -121,6 +121,16 @@ class DashboardReadFacade(
             }
     }
 
+    /**
+     * The earliest business date present in the local invoice mirror — the sync-window floor used to
+     * decide whether a requested period extends into deep history (T030a). `null` when there are no
+     * local invoices yet. The date part of the device-local `invoice_date` (`yyyy-MM-dd ...`).
+     */
+    suspend fun earliestLocalBusinessDate(): LocalDate? {
+        val raw = invoiceAgentDao.minInvoiceDate() ?: return null
+        return runCatching { LocalDate.parse(raw.take(10)) }.getOrNull()
+    }
+
     /** Dense trailing daily-units series (zero-filled) for the sparkline / EWMA input. */
     private suspend fun densifyDailyUnits(
         productId: String,

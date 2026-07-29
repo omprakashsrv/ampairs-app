@@ -39,6 +39,46 @@ class AnalyticsApiImpl(
         return response.data ?: emptyPage(page, size)
     }
 
+    override suspend fun getKpis(
+        fromDate: String,
+        toDate: String,
+        period: String,
+        metricGroup: String,
+    ): KpiResponseDto {
+        val response: Response<KpiResponseDto> = get(
+            client,
+            ApiUrlBuilder.analyticsUrl("v1/dashboard/kpis"),
+            mapOf(
+                "from_date" to fromDate,
+                "to_date" to toDate,
+                "period" to period,
+                "metric_group" to metricGroup,
+            ),
+        )
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: KpiResponseDto()
+    }
+
+    override suspend fun getTrend(
+        fromDate: String,
+        toDate: String,
+        period: String,
+        metricId: String,
+    ): List<TrendPointDto> {
+        val response: Response<List<TrendPointDto>> = get(
+            client,
+            ApiUrlBuilder.analyticsUrl("v1/dashboard/trend"),
+            mapOf(
+                "from_date" to fromDate,
+                "to_date" to toDate,
+                "period" to period,
+                "metric_id" to metricId,
+            ),
+        )
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyList()
+    }
+
     private fun syncParams(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): Map<String, Any> {
         val params = mutableMapOf<String, Any>(
             "page" to page,

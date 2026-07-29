@@ -107,6 +107,10 @@ interface InvoiceAgentDao {
     @Query("SELECT count(*) FROM invoiceEntity WHERE active = 1")
     suspend fun countInvoices(): Int
 
+    /** Earliest local `invoice_date` (device-local "yyyy-MM-dd HH:mm:ss") — the sync-window floor (T030a). */
+    @Query("SELECT MIN(invoice_date) FROM invoiceEntity WHERE active = 1")
+    suspend fun minInvoiceDate(): String?
+
     // ── Dashboard KPI aggregates (feature 022) ──────────────────────────────────
 
     /** Taxable (pre-tax) net sales within a half-open period. */
