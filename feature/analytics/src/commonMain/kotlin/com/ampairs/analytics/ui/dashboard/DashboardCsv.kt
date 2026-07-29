@@ -49,6 +49,13 @@ fun buildDashboardCsv(
         sb.append("aging,").append(csv(b.label)).append(',').append(b.count).append(',').append(b.amount).append('\n')
     }
 
+    sb.append("\nsection,product,expected_demand,horizon_days,current_stock,reorder,source\n")
+    data.forecasts.forEach { f ->
+        sb.append("forecast,").append(csv(f.productName)).append(',').append(f.expectedDemand).append(',')
+            .append(f.horizonDays).append(',').append(f.currentStock).append(',')
+            .append(if (f.reorderCandidate) "yes" else "no").append(',').append(f.source.name.lowercase()).append('\n')
+    }
+
     return sb.toString()
 }
 

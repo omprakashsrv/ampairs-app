@@ -32,6 +32,7 @@
     <string name="analytics_section_trend">Sales trend</string>
     <string name="analytics_section_gst">GST summary</string>
     <string name="analytics_section_aging">Receivables aging</string>
+    <string name="analytics_section_forecast">Demand forecast</string>
 
     <!-- GST -->
     <string name="analytics_gst_intra">Intra-state (CGST+SGST)</string>
@@ -45,4 +46,15 @@
     <string name="analytics_trend_empty">No sales in this period</string>
     <string name="analytics_aging_empty">No outstanding receivables</string>
     <string name="analytics_aging_invoices">%1$d invoices</string>
+
+    <!-- Demand forecast -->
+    <string name="analytics_forecast_empty">Not enough sales history to forecast demand yet</string>
+    <string name="analytics_forecast_expected">Expected demand</string>
+    <string name="analytics_forecast_horizon">next %1$d days</string>
+    <string name="analytics_forecast_in_stock">%1$s in stock</string>
+    <string name="analytics_forecast_reorder">Reorder</string>
+    <string name="analytics_forecast_estimated">Estimated</string>
+    <string name="analytics_forecast_confidence_high">High confidence</string>
+    <string name="analytics_forecast_confidence_medium">Medium confidence</string>
+    <string name="analytics_forecast_confidence_low">Low confidence</string>
 </resources>

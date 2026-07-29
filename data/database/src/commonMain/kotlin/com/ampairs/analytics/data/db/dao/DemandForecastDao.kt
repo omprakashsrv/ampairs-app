@@ -24,6 +24,22 @@ interface DemandForecastDao {
     @Query("SELECT * FROM demand_forecast WHERE product_id = :productId ORDER BY period_start DESC")
     fun observeForProduct(productId: String): Flow<List<DemandForecastEntity>>
 
+    /**
+     * The most recent forecast per product (highest `period_start`), highest expected demand first —
+     * backs the dashboard forecast section (feature 022, T045). Bounded by [limit].
+     */
+    @Query(
+        """
+        SELECT f.* FROM demand_forecast f
+        WHERE f.period_start = (
+            SELECT MAX(f2.period_start) FROM demand_forecast f2 WHERE f2.product_id = f.product_id
+        )
+        ORDER BY f.mean_qty DESC
+        LIMIT :limit
+        """,
+    )
+    suspend fun latestPerProduct(limit: Int): List<DemandForecastEntity>
+
     @Query("SELECT * FROM demand_forecast WHERE uid = :uid")
     suspend fun getByUid(uid: String): DemandForecastEntity?
 

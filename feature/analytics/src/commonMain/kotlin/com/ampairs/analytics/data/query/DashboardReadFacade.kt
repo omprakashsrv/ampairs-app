@@ -1,20 +1,30 @@
 package com.ampairs.analytics.data.query
 
+import com.ampairs.analytics.data.db.dao.DemandForecastDao
 import com.ampairs.analytics.domain.AgingBucket
 import com.ampairs.analytics.domain.AgingReport
 import com.ampairs.analytics.domain.DashboardData
 import com.ampairs.analytics.domain.DashboardKpis
+import com.ampairs.analytics.domain.DemandForecasting
+import com.ampairs.analytics.domain.ForecastSource
 import com.ampairs.analytics.domain.GstRateLine
 import com.ampairs.analytics.domain.GstSummary
+import com.ampairs.analytics.domain.ProductForecast
 import com.ampairs.analytics.domain.SalesTrendPoint
 import com.ampairs.common.agent.DateRange
 import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.inventory.agent.InventoryAgentDao
 import com.ampairs.invoice.agent.InvoiceAgentDao
 import com.ampairs.payment.agent.PaymentAgentDao
+import com.ampairs.product.agent.ProductAgentDao
 import dev.zacsweers.metro.Inject
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.daysUntil
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 
 /**
  * Cross-module read facade (feature 022, T029): composes the per-module read-only agent DAOs into
@@ -34,9 +44,11 @@ class DashboardReadFacade(
     private val invoiceAgentDao: InvoiceAgentDao,
     private val inventoryAgentDao: InventoryAgentDao,
     private val paymentAgentDao: PaymentAgentDao,
+    private val demandForecastDao: DemandForecastDao,
+    private val productAgentDao: ProductAgentDao,
 ) {
 
-    suspend fun load(range: DateRange, today: LocalDate): DashboardData {
+    suspend fun load(range: DateRange, today: LocalDate, tz: TimeZone): DashboardData {
         // Half-open bounds in each column's own storage format.
         val invStart = DateTimeAdapter.toDateTimeString(range.startInclusive)
         val invEnd = DateTimeAdapter.toDateTimeString(range.endExclusive)
@@ -49,7 +61,78 @@ class DashboardReadFacade(
             trend = invoiceAgentDao.salesTrendDaily(invStart, invEnd)
                 .map { SalesTrendPoint(bucket = it.bucket, total = it.total) },
             aging = loadAging(today),
+            forecasts = loadForecasts(today, tz),
         )
+    }
+
+    /**
+     * The forward-looking demand section (T045). Server-computed forecasts in the `demand_forecast`
+     * mirror win; if the mirror is empty (offline first launch / nightly batch not yet run) it falls
+     * back to an on-device [DemandForecasting] EWMA over the top-selling products (T044). The forecast
+     * window is a fixed trailing [SPARK_DAYS] regardless of the dashboard period — a forecast is a
+     * property of the product, not of the reporting window.
+     */
+    private suspend fun loadForecasts(today: LocalDate, tz: TimeZone): List<ProductForecast> {
+        val startDate = today.minus(SPARK_DAYS - 1, DateTimeUnit.DAY)
+        val start = DateTimeAdapter.toDateTimeString(startDate.atStartOfDayIn(tz))
+        val end = DateTimeAdapter.toDateTimeString(today.plus(1, DateTimeUnit.DAY).atStartOfDayIn(tz))
+
+        val serverRows = demandForecastDao.latestPerProduct(FORECAST_LIMIT)
+        if (serverRows.isNotEmpty()) {
+            return serverRows.map { row ->
+                val series = densifyDailyUnits(row.productId, start, end, startDate)
+                val stock = inventoryAgentDao.stockByProduct(row.productId)?.onHand ?: 0.0
+                val horizon = row.horizon.coerceAtLeast(1)
+                ProductForecast(
+                    productId = row.productId,
+                    productName = productAgentDao.nameById(row.productId) ?: row.productId,
+                    expectedDemand = row.meanQty,
+                    perDayDemand = row.meanQty / horizon,
+                    horizonDays = row.horizon,
+                    confidence = row.confidence,
+                    source = ForecastSource.SERVER,
+                    recentDailyUnits = series,
+                    currentStock = stock,
+                    reorderCandidate = stock < row.meanQty,
+                )
+            }
+        }
+
+        // Fallback: no server forecast yet — estimate from local sales history via EWMA.
+        val horizon = DemandForecasting.DEFAULT_HORIZON_DAYS
+        return invoiceAgentDao.topProductUnitsBetween(start, end, FORECAST_LIMIT)
+            .filter { it.units > 0.0 }
+            .map { ref ->
+                val series = densifyDailyUnits(ref.productId, start, end, startDate)
+                val stock = inventoryAgentDao.stockByProduct(ref.productId)?.onHand ?: 0.0
+                val expected = DemandForecasting.expectedDemand(series, horizon)
+                ProductForecast(
+                    productId = ref.productId,
+                    productName = ref.label?.takeIf { it.isNotBlank() } ?: ref.productId,
+                    expectedDemand = expected,
+                    perDayDemand = expected / horizon,
+                    horizonDays = horizon,
+                    confidence = "",
+                    source = ForecastSource.EWMA,
+                    recentDailyUnits = series,
+                    currentStock = stock,
+                    reorderCandidate = stock < expected,
+                )
+            }
+    }
+
+    /** Dense trailing daily-units series (zero-filled) for the sparkline / EWMA input. */
+    private suspend fun densifyDailyUnits(
+        productId: String,
+        start: String,
+        end: String,
+        startDate: LocalDate,
+    ): List<Double> {
+        val byDate = invoiceAgentDao.productDailyUnits(productId, start, end)
+            .associate { it.bucket to it.total }
+        return (0 until SPARK_DAYS).map { i ->
+            byDate[startDate.plus(i, DateTimeUnit.DAY).toString()] ?: 0.0
+        }
     }
 
     private suspend fun loadKpis(
@@ -137,6 +220,12 @@ class DashboardReadFacade(
     private data class Bucket(val label: String, val maxDays: Int)
 
     private companion object {
+        /** Trailing window (days) for the forecast sparkline series and EWMA fallback. */
+        const val SPARK_DAYS = 14
+
+        /** Max products shown in the forecast section (bounds the per-product query fan-out). */
+        const val FORECAST_LIMIT = 6
+
         // Ordered youngest-first; the last bucket is the catch-all (maxDays = Int.MAX_VALUE).
         val BUCKETS = listOf(
             Bucket("0–30 days", 30),

@@ -122,7 +122,7 @@ class DashboardViewModel(
                         startInclusive = Instant.fromEpochMilliseconds(0L),
                         endExclusive = today.plus(1, DateTimeUnit.DAY).atStartOfDayIn(tz),
                     )
-                facade.load(range, today)
+                facade.load(range, today, tz)
             }.onSuccess { data ->
                 _uiState.update { it.copy(data = data, isLoading = false) }
             }.onFailure { e ->

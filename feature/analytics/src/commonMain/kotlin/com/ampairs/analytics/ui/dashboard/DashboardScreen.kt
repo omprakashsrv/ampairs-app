@@ -2,6 +2,7 @@
 
 package com.ampairs.analytics.ui.dashboard
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +54,15 @@ import ampairsapp.feature.analytics.generated.resources.analytics_aging_invoices
 import ampairsapp.feature.analytics.generated.resources.analytics_dashboard_title
 import ampairsapp.feature.analytics.generated.resources.analytics_error_generic
 import ampairsapp.feature.analytics.generated.resources.analytics_export
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_confidence_high
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_confidence_low
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_confidence_medium
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_empty
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_estimated
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_expected
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_horizon
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_in_stock
+import ampairsapp.feature.analytics.generated.resources.analytics_forecast_reorder
 import ampairsapp.feature.analytics.generated.resources.analytics_gst_empty
 import ampairsapp.feature.analytics.generated.resources.analytics_gst_inter
 import ampairsapp.feature.analytics.generated.resources.analytics_gst_intra
@@ -73,13 +86,16 @@ import ampairsapp.feature.analytics.generated.resources.analytics_refresh
 import ampairsapp.feature.analytics.generated.resources.analytics_retry
 import ampairsapp.feature.analytics.generated.resources.analytics_section_aging
 import ampairsapp.feature.analytics.generated.resources.analytics_section_gst
+import ampairsapp.feature.analytics.generated.resources.analytics_section_forecast
 import ampairsapp.feature.analytics.generated.resources.analytics_section_kpis
 import ampairsapp.feature.analytics.generated.resources.analytics_section_trend
 import ampairsapp.feature.analytics.generated.resources.analytics_trend_empty
 import com.ampairs.analytics.domain.AgingBucket
 import com.ampairs.analytics.domain.DashboardKpis
 import com.ampairs.analytics.domain.DashboardPeriod
+import com.ampairs.analytics.domain.ForecastSource
 import com.ampairs.analytics.domain.GstSummary
+import com.ampairs.analytics.domain.ProductForecast
 import com.ampairs.analytics.domain.SalesTrendPoint
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.currencySymbol
@@ -156,6 +172,7 @@ fun DashboardScreen(
                 else -> {
                     KpiSection(state.data.kpis, locale, expanded)
                     TrendSection(state.data.trend, locale)
+                    ForecastSection(state.data.forecasts)
                     GstSection(state.data.gst, locale)
                     AgingSection(state.data.aging.buckets, locale)
                 }
@@ -350,6 +367,134 @@ private fun AgingSection(buckets: List<AgingBucket>, locale: com.ampairs.common.
     }
 }
 
+// ───────────────────────── Demand forecast (sparkline + reorder) ─────────────────────────
+
+@Composable
+private fun ForecastSection(forecasts: List<ProductForecast>) {
+    SectionHeader(stringResource(Res.string.analytics_section_forecast))
+    SectionSurface {
+        if (forecasts.isEmpty()) {
+            EmptyRow(stringResource(Res.string.analytics_forecast_empty))
+        } else {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                forecasts.forEach { ForecastRow(it) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ForecastRow(forecast: ProductForecast) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    forecast.productName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (forecast.reorderCandidate) ReorderBadge()
+            }
+            Text(
+                forecast.subtitle(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        Sparkline(
+            values = forecast.recentDailyUnits,
+            modifier = Modifier.width(72.dp).height(28.dp),
+        )
+
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                forecast.expectedDemand.asQty(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+            Text(
+                stringResource(Res.string.analytics_forecast_horizon, forecast.horizonDays),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReorderBadge() {
+    Text(
+        stringResource(Res.string.analytics_forecast_reorder).uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onErrorContainer,
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(6.dp))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    )
+}
+
+/** "Expected demand · High confidence" (server) or "Estimated · 12 in stock" (EWMA). */
+@Composable
+private fun ProductForecast.subtitle(): String {
+    val lead = when (source) {
+        ForecastSource.SERVER -> stringResource(Res.string.analytics_forecast_expected)
+        ForecastSource.EWMA -> stringResource(Res.string.analytics_forecast_estimated)
+    }
+    val tail = when (source) {
+        ForecastSource.SERVER -> confidenceLabel()
+        ForecastSource.EWMA -> stringResource(Res.string.analytics_forecast_in_stock, currentStock.asQty())
+    }
+    return if (tail.isBlank()) lead else "$lead · $tail"
+}
+
+@Composable
+private fun ProductForecast.confidenceLabel(): String = when (confidence.uppercase()) {
+    "HIGH" -> stringResource(Res.string.analytics_forecast_confidence_high)
+    "MEDIUM" -> stringResource(Res.string.analytics_forecast_confidence_medium)
+    "LOW" -> stringResource(Res.string.analytics_forecast_confidence_low)
+    else -> ""
+}
+
+/**
+ * A minimal line sparkline of the trailing daily-units [values]. Scaled to the box height between the
+ * series min and max; a flat (all-equal) series draws a centered baseline.
+ */
+@Composable
+private fun Sparkline(values: List<Double>, modifier: Modifier = Modifier) {
+    val stroke = MaterialTheme.colorScheme.primary
+    val track = MaterialTheme.colorScheme.surfaceVariant
+    Box(modifier.background(track, RoundedCornerShape(6.dp))) {
+        if (values.size < 2) return@Box
+        Canvas(Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 6.dp)) {
+            val min = values.min()
+            val max = values.max()
+            val span = (max - min).takeIf { it > 0.0 } ?: 1.0
+            val stepX = if (values.size > 1) size.width / (values.size - 1) else size.width
+            val path = Path()
+            values.forEachIndexed { i, v ->
+                val x = stepX * i
+                // Invert Y: higher value → higher on screen. Flat series → centered.
+                val norm = if (max == min) 0.5 else (v - min) / span
+                val y = size.height - (norm * size.height).toFloat()
+                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            drawPath(path, color = stroke, style = Stroke(width = 2.5f, cap = StrokeCap.Round))
+        }
+    }
+}
+
 // ───────────────────────── Shared building blocks ─────────────────────────
 
 @Composable
@@ -386,4 +531,10 @@ private fun LabelValueRow(label: String, value: String) {
 private fun Double.as2dp(): String {
     val r = (this * 100).roundToLong() / 100.0
     return r.toString()
+}
+
+/** Quantity formatting for forecast figures: whole numbers drop the ".0", else 2 dp. */
+private fun Double.asQty(): String {
+    val rounded = roundToLong()
+    return if (kotlin.math.abs(this - rounded) < 0.05) rounded.toString() else as2dp()
 }

@@ -36,6 +36,13 @@ data class SalesTrendRow(
     @ColumnInfo(name = "total") val total: Double,
 )
 
+/** A product reference with its units sold, for the forecast EWMA fallback (feature 022, T045). */
+data class ProductUnitsRow(
+    @ColumnInfo(name = "product_id") val productId: String,
+    @ColumnInfo(name = "label") val label: String?,
+    @ColumnInfo(name = "units") val units: Double,
+)
+
 /**
  * Read-only aggregate queries that back the assistant's curated invoice reports — kept **separate**
  * from the operational [com.ampairs.invoice.db.dao.InvoiceDao] so report concerns don't leak into the
@@ -163,6 +170,26 @@ interface InvoiceAgentDao {
             "WHERE active = 1 AND invoice_date >= :start AND invoice_date < :end GROUP BY bucket ORDER BY bucket",
     )
     suspend fun salesTrendDaily(start: String, end: String): List<SalesTrendRow>
+
+    // ── Demand forecast section (feature 022, T045) ─────────────────────────────
+
+    /** Daily units sold of ONE product within a half-open period — the forecast sparkline series. */
+    @Query(
+        "SELECT substr(i.invoice_date, 1, 10) AS bucket, SUM(ii.quantity) AS total " +
+            "FROM invoiceItemEntity ii JOIN invoiceEntity i ON ii.invoice_id = i.id " +
+            "WHERE i.active = 1 AND ii.active = 1 AND ii.product_id = :productId " +
+            "AND i.invoice_date >= :start AND i.invoice_date < :end GROUP BY bucket ORDER BY bucket",
+    )
+    suspend fun productDailyUnits(productId: String, start: String, end: String): List<SalesTrendRow>
+
+    /** Top products by units sold within a half-open period — seeds the EWMA fallback when the mirror is empty. */
+    @Query(
+        "SELECT ii.product_id AS product_id, ii.description AS label, SUM(ii.quantity) AS units " +
+            "FROM invoiceItemEntity ii JOIN invoiceEntity i ON ii.invoice_id = i.id " +
+            "WHERE i.active = 1 AND ii.active = 1 AND i.invoice_date >= :start AND i.invoice_date < :end " +
+            "GROUP BY ii.product_id ORDER BY units DESC LIMIT :limit",
+    )
+    suspend fun topProductUnitsBetween(start: String, end: String, limit: Int): List<ProductUnitsRow>
 
     /** Chat search by invoice number or (whitespace-normalized, case-insensitive) customer name. */
     @Query(

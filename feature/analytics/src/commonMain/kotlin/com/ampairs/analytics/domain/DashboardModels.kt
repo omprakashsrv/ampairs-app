@@ -72,10 +72,41 @@ data class AgingReport(
     val totalOutstanding: Double get() = buckets.sumOf { it.amount }
 }
 
+/** Where a [ProductForecast]'s expected-demand figure came from. */
+enum class ForecastSource {
+    /** Server-computed forecast pulled into the `demand_forecast` mirror (Holt-Winters / MA). */
+    SERVER,
+
+    /** On-device EWMA fallback ([DemandForecasting]) — the mirror was empty (offline / not yet run). */
+    EWMA,
+}
+
+/**
+ * One product's forward-looking demand signal for the dashboard forecast section (feature 022, T045).
+ *
+ * [expectedDemand] is the **horizon-total** expected quantity over [horizonDays] (matching the server
+ * `mean_qty` contract); [perDayDemand] is that divided by the horizon. [recentDailyUnits] is the
+ * trailing daily units-sold series that feeds the sparkline (and the EWMA fallback). A product is a
+ * [reorderCandidate] when on-hand [currentStock] can't cover the expected demand over the horizon.
+ */
+data class ProductForecast(
+    val productId: String,
+    val productName: String,
+    val expectedDemand: Double,
+    val perDayDemand: Double,
+    val horizonDays: Int,
+    val confidence: String,
+    val source: ForecastSource,
+    val recentDailyUnits: List<Double> = emptyList(),
+    val currentStock: Double = 0.0,
+    val reorderCandidate: Boolean = false,
+)
+
 /** Everything the dashboard renders for one period, composed from the per-module agent DAOs. */
 data class DashboardData(
     val kpis: DashboardKpis = DashboardKpis(),
     val gst: GstSummary = GstSummary(),
     val trend: List<SalesTrendPoint> = emptyList(),
     val aging: AgingReport = AgingReport(),
+    val forecasts: List<ProductForecast> = emptyList(),
 )
