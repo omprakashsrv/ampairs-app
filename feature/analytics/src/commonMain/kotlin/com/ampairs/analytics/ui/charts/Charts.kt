@@ -15,13 +15,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import com.patrykandpatrick.vico.multiplatform.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.multiplatform.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.multiplatform.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.multiplatform.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.multiplatform.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.multiplatform.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.multiplatform.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.multiplatform.common.Fill
+import com.patrykandpatrick.vico.multiplatform.common.component.rememberLineComponent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,15 +62,17 @@ data class ChartSlice(val label: String, val value: Double, val color: Color)
 
 /**
  * Line chart of an ordered [values] series (e.g. daily sales), rendered with Vico
- * ([CartesianChartHost] + a line layer). Scroll is disabled so the whole series fits the width.
- * A series shorter than two points renders an empty box rather than a degenerate chart. [lineColor]
- * is retained for source compatibility; Vico themes the line from its own defaults.
+ * ([CartesianChartHost] + a line layer). The line + translucent area fill are themed from [lineColor]
+ * ([MaterialTheme.colorScheme] primary by default). A `start` (value) axis is shown for scale unless
+ * [showAxis] is false — pass false for compact sparklines. Scroll is disabled so the whole series
+ * fits the width. A series shorter than two points renders an empty box.
  */
 @Composable
 fun LineChart(
     values: List<Double>,
     modifier: Modifier = Modifier.fillMaxWidth().height(140.dp),
     lineColor: Color = MaterialTheme.colorScheme.primary,
+    showAxis: Boolean = true,
 ) {
     if (values.size < 2) {
         Box(modifier) {}
@@ -75,8 +82,16 @@ fun LineChart(
     LaunchedEffect(values) {
         producer.runTransaction { lineSeries { series(values) } }
     }
+    val line = LineCartesianLayer.rememberLine(
+        fill = LineCartesianLayer.LineFill.single(Fill(lineColor)),
+        areaFill = LineCartesianLayer.AreaFill.single(Fill(lineColor.copy(alpha = 0.15f))),
+    )
+    val startAxis = if (showAxis) VerticalAxis.rememberStart() else null
     CartesianChartHost(
-        rememberCartesianChart(rememberLineCartesianLayer()),
+        rememberCartesianChart(
+            rememberLineCartesianLayer(LineCartesianLayer.LineProvider.series(line)),
+            startAxis = startAxis,
+        ),
         producer,
         modifier,
         rememberVicoScrollState(false),
@@ -87,10 +102,11 @@ fun LineChart(
 
 /**
  * Column chart over a small ordered set of [bars] (e.g. aging buckets), rendered with Vico
- * ([CartesianChartHost] + a column layer). Scroll is disabled so the columns fit the width. The
- * caller renders the per-bucket label/value list beside/under this chart, so no axis labels are
- * drawn here. [valueFormatter] and [barColor] are retained for source compatibility; Vico themes the
- * columns from its own defaults.
+ * ([CartesianChartHost] + a column layer). Columns are themed from [barColor]
+ * ([MaterialTheme.colorScheme] primary by default) and a `start` (value) axis is shown for scale
+ * unless [showAxis] is false. The caller renders the per-bucket label/value list beside/under this
+ * chart, so the x-axis is left off. Scroll is disabled so the columns fit the width. [valueFormatter]
+ * is retained for source compatibility.
  */
 @Composable
 fun BarChart(
@@ -98,14 +114,20 @@ fun BarChart(
     valueFormatter: (Double) -> String,
     modifier: Modifier = Modifier.fillMaxWidth().height(120.dp),
     barColor: Color = MaterialTheme.colorScheme.primary,
+    showAxis: Boolean = true,
 ) {
     if (bars.isEmpty()) return
     val producer = remember { CartesianChartModelProducer() }
     LaunchedEffect(bars) {
         producer.runTransaction { columnSeries { series(bars.map { it.value }) } }
     }
+    val column = rememberLineComponent(Fill(barColor), 16.dp)
+    val startAxis = if (showAxis) VerticalAxis.rememberStart() else null
     CartesianChartHost(
-        rememberCartesianChart(rememberColumnCartesianLayer()),
+        rememberCartesianChart(
+            rememberColumnCartesianLayer(ColumnCartesianLayer.ColumnProvider.series(column)),
+            startAxis = startAxis,
+        ),
         producer,
         modifier,
         rememberVicoScrollState(false),

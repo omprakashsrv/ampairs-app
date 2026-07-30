@@ -93,7 +93,11 @@ fun AnalyticsHomeSummary(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(6.dp))
-                LineChart(values = state.weekSales, modifier = Modifier.fillMaxWidth().height(64.dp))
+                LineChart(
+                    values = state.weekSales,
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    showAxis = false,
+                )
             }
 
             // Tap-through affordance
