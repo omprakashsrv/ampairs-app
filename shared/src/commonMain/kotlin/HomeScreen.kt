@@ -54,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.analytics.ui.home.AnalyticsHomeSummary
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.common.ui.navigateToModule
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
@@ -79,6 +80,8 @@ fun HomeScreen(
     val headerStateManager = remember { AppHeaderStateManager.instance }
     val headerState by headerStateManager.headerState.collectAsStateWithLifecycle()
     val unreadCount by badgeViewModel.unreadCount.collectAsStateWithLifecycle()
+    val activeModules by viewModel.activeModules.collectAsStateWithLifecycle()
+    val analyticsActive = activeModules.any { it.moduleCode == ModuleCodes.BUSINESS_DASHBOARD }
 
     val userName = headerState.currentUser?.firstName ?: ""
     val workspaceName = headerState.currentWorkspace?.name ?: ""
@@ -157,29 +160,39 @@ fun HomeScreen(
             )
         }
 
-        // KPI cards row
+        // Overview: real analytics snapshot (KPIs + 7-day sparkline, taps into the full dashboard)
+        // when the analytics module is enabled; otherwise fall back to the placeholder KPI cards.
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                KpiCard(
-                    label = stringResource(Res.string.home_stat_today_sales),
-                    value = stringResource(Res.string.home_placeholder_value),
-                    modifier = Modifier.weight(1f)
+            if (analyticsActive) {
+                AnalyticsHomeSummary(
+                    onOpenDashboard = if (backStack != null) {
+                        { backStack.add(Route.Analytics) }
+                    } else null,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                KpiCard(
-                    label = stringResource(Res.string.home_stat_invoices),
-                    value = stringResource(Res.string.home_placeholder_value),
-                    modifier = Modifier.weight(1f)
-                )
-                KpiCard(
-                    label = stringResource(Res.string.home_stat_customers),
-                    value = stringResource(Res.string.home_placeholder_value),
-                    modifier = Modifier.weight(1f)
-                )
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    KpiCard(
+                        label = stringResource(Res.string.home_stat_today_sales),
+                        value = stringResource(Res.string.home_placeholder_value),
+                        modifier = Modifier.weight(1f)
+                    )
+                    KpiCard(
+                        label = stringResource(Res.string.home_stat_invoices),
+                        value = stringResource(Res.string.home_placeholder_value),
+                        modifier = Modifier.weight(1f)
+                    )
+                    KpiCard(
+                        label = stringResource(Res.string.home_stat_customers),
+                        value = stringResource(Res.string.home_placeholder_value),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 
