@@ -24,6 +24,7 @@ import com.patrykandpatrick.vico.multiplatform.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.multiplatform.common.Fill
 import com.patrykandpatrick.vico.multiplatform.common.component.rememberLineComponent
