@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -136,6 +137,62 @@ fun BarChart(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                 )
+            }
+        }
+    }
+}
+
+// ───────────────────────── Horizontal ranked bars (top-N named items) ─────────────────────────
+
+/**
+ * Ranked horizontal bar list for a small "top N" set of named items (e.g. top customers / products).
+ * Each row is a label + value line over a proportional track-backed bar; bars scale to the largest
+ * value so the leader fills the row. Horizontal (not the vertical [BarChart]) because the category
+ * identity is a long name that reads far better beside the bar than rotated beneath it.
+ */
+@Composable
+fun HorizontalBarList(
+    bars: List<ChartBar>,
+    valueFormatter: (Double) -> String,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+    barColor: Color = MaterialTheme.colorScheme.primary,
+) {
+    if (bars.isEmpty()) return
+    val max = bars.maxOf { it.value }.coerceAtLeast(1.0)
+    val track = MaterialTheme.colorScheme.surfaceVariant
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        bars.forEach { bar ->
+            val fraction = (bar.value / max).toFloat().coerceIn(0f, 1f)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        bar.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Text(
+                        valueFormatter(bar.value),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(track),
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(fraction)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(barColor),
+                    )
+                }
             }
         }
     }

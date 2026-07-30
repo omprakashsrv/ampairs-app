@@ -33,6 +33,9 @@
     <string name="analytics_section_gst">GST summary</string>
     <string name="analytics_section_aging">Receivables aging</string>
     <string name="analytics_section_forecast">Demand forecast</string>
+    <string name="analytics_section_top_products">Top products</string>
+    <string name="analytics_section_top_customers">Top customers</string>
+    <string name="analytics_top_empty">No sales in this period yet</string>
 
     <!-- GST -->
     <string name="analytics_gst_intra">Intra-state (CGST+SGST)</string>

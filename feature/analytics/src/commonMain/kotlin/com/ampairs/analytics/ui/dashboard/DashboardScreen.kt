@@ -122,7 +122,10 @@ import ampairsapp.feature.analytics.generated.resources.analytics_section_gst
 import ampairsapp.feature.analytics.generated.resources.analytics_section_ask
 import ampairsapp.feature.analytics.generated.resources.analytics_section_forecast
 import ampairsapp.feature.analytics.generated.resources.analytics_section_kpis
+import ampairsapp.feature.analytics.generated.resources.analytics_section_top_customers
+import ampairsapp.feature.analytics.generated.resources.analytics_section_top_products
 import ampairsapp.feature.analytics.generated.resources.analytics_section_trend
+import ampairsapp.feature.analytics.generated.resources.analytics_top_empty
 import ampairsapp.feature.analytics.generated.resources.analytics_trend_empty
 import com.ampairs.analytics.domain.AgingBucket
 import com.ampairs.analytics.domain.DashboardCoverage
@@ -137,8 +140,10 @@ import com.ampairs.analytics.ui.charts.BarChart
 import com.ampairs.analytics.ui.charts.ChartBar
 import com.ampairs.analytics.ui.charts.ChartSlice
 import com.ampairs.analytics.ui.charts.DonutChart
+import com.ampairs.analytics.ui.charts.HorizontalBarList
 import com.ampairs.analytics.ui.charts.LineChart
 import com.ampairs.analytics.domain.ProductForecast
+import com.ampairs.analytics.domain.RankedItem
 import com.ampairs.analytics.domain.SalesTrendPoint
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.currencySymbol
@@ -222,6 +227,8 @@ fun DashboardScreen(
                     NlQuerySection(state.nlAnswer, locale, onAsk = viewModel::askNl, onClear = viewModel::clearNl)
                     KpiSection(state.tiles, state.data.kpis, locale, expanded)
                     TrendSection(state.data.trend, locale)
+                    TopProductsSection(state.data.topProducts, locale)
+                    TopCustomersSection(state.data.topCustomers, locale)
                     ForecastSection(state.data.forecasts)
                     GstSection(state.data.gst, locale)
                     AgingSection(state.data.aging.buckets, locale)
@@ -453,6 +460,40 @@ private fun TrendSection(points: List<SalesTrendPoint>, locale: com.ampairs.comm
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// ───────────────────────── Top products / customers (ranked by sales) ─────────────────────────
+
+@Composable
+private fun TopProductsSection(items: List<RankedItem>, locale: com.ampairs.common.locale.AppLocale) {
+    RankedSection(stringResource(Res.string.analytics_section_top_products), items, locale)
+}
+
+@Composable
+private fun TopCustomersSection(items: List<RankedItem>, locale: com.ampairs.common.locale.AppLocale) {
+    RankedSection(stringResource(Res.string.analytics_section_top_customers), items, locale)
+}
+
+@Composable
+private fun RankedSection(
+    header: String,
+    items: List<RankedItem>,
+    locale: com.ampairs.common.locale.AppLocale,
+) {
+    SectionHeader(header)
+    SectionSurface {
+        val ranked = items.filter { it.value > 0.0 }
+        if (ranked.isEmpty()) {
+            EmptyRow(stringResource(Res.string.analytics_top_empty))
+        } else {
+            Column(Modifier.padding(12.dp)) {
+                HorizontalBarList(
+                    bars = ranked.map { ChartBar(it.label, it.value) },
+                    valueFormatter = { formatMoney(it, locale) },
+                )
             }
         }
     }

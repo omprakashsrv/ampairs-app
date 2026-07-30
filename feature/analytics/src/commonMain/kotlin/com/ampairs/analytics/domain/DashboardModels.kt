@@ -60,6 +60,15 @@ data class SalesTrendPoint(
     val total: Double,
 )
 
+/**
+ * One entry of a ranked "top N" breakdown (top customers by sales, top products by revenue) — a
+ * display label and its money value in workspace base currency, most-valuable first.
+ */
+data class RankedItem(
+    val label: String,
+    val value: Double,
+)
+
 /** One receivables-aging bucket (e.g. "0–30 days"): number of open invoices and amount owed. */
 data class AgingBucket(
     val label: String,
@@ -111,6 +120,8 @@ data class DashboardData(
     val trend: List<SalesTrendPoint> = emptyList(),
     val aging: AgingReport = AgingReport(),
     val forecasts: List<ProductForecast> = emptyList(),
+    val topCustomers: List<RankedItem> = emptyList(),
+    val topProducts: List<RankedItem> = emptyList(),
 )
 
 /**

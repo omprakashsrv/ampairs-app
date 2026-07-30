@@ -10,6 +10,7 @@ import com.ampairs.analytics.domain.ForecastSource
 import com.ampairs.analytics.domain.GstRateLine
 import com.ampairs.analytics.domain.GstSummary
 import com.ampairs.analytics.domain.ProductForecast
+import com.ampairs.analytics.domain.RankedItem
 import com.ampairs.analytics.domain.SalesTrendPoint
 import com.ampairs.common.agent.DateRange
 import com.ampairs.common.model.DateTimeAdapter
@@ -61,6 +62,10 @@ class DashboardReadFacade(
                 .map { SalesTrendPoint(bucket = it.bucket, total = it.total) },
             aging = loadAging(today),
             forecasts = loadForecasts(today, tz),
+            topCustomers = invoiceAgentDao.topCustomersBetween(invStart, invEnd, TOP_LIMIT)
+                .map { RankedItem(it.label?.takeIf { l -> l.isNotBlank() } ?: "—", it.total) },
+            topProducts = invoiceAgentDao.topProductsBetween(invStart, invEnd, TOP_LIMIT)
+                .map { RankedItem(it.label?.takeIf { l -> l.isNotBlank() } ?: "—", it.total) },
         )
     }
 
@@ -210,5 +215,8 @@ class DashboardReadFacade(
 
         /** Max products shown in the forecast section (bounds the per-product query fan-out). */
         const val FORECAST_LIMIT = 6
+
+        /** Max entries shown in the top-customers / top-products ranked breakdowns. */
+        const val TOP_LIMIT = 5
     }
 }

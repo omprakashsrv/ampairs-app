@@ -10,8 +10,11 @@ Android + iOS + Desktop, Compose Multiplatform, Metro DI (`WorkspaceScope`).
   `DashboardReadFacade` (no cross-DB join; each figure from its own module). Business-timezone
   bucketing via the zone the screen pushes into the ViewModel.
 - **Charts** (`ui/charts/Charts.kt`, pure Canvas, `MaterialTheme` colours) — line/area sales trend,
-  vertical bars for receivables aging, a donut for the GST intra/inter split. No chart library, so
-  the three targets render identically.
+  vertical bars for receivables aging, a donut for the GST intra/inter split, and ranked horizontal
+  bars for top customers / top products. No chart library, so the three targets render identically.
+- **Top customers / top products** — ranked-by-sales breakdowns for the period, composed in
+  `DashboardReadFacade` from the invoice agent DAO (`topCustomersBetween` / `topProductsBetween`);
+  surfaces the customer & product module signals with no new sync plumbing.
 - **Demand forecast** — `DemandForecastSyncDelegate` (PULL-ONLY) mirrors the server
   `/forecasts/sync` feed into Room; the dashboard shows a per-product sparkline + reorder flag, and
   falls back to an on-device EWMA (`domain/DemandForecasting`) when the mirror is empty.
