@@ -23,6 +23,14 @@ data class InvoiceSummaryRow(
     @ColumnInfo(name = "status") val status: String,
 )
 
+/** One recent invoice for the home activity feed (id + number + date-only + status). */
+data class RecentInvoiceRow(
+    @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "number") val number: String,
+    @ColumnInfo(name = "doc_date") val docDate: String,
+    @ColumnInfo(name = "status") val status: String,
+)
+
 /** One GST-by-rate row for the dashboard GST summary (feature 022), grouped by the line tax code. */
 data class GstByRateRow(
     @ColumnInfo(name = "code") val taxCode: String?,
@@ -226,4 +234,11 @@ interface InvoiceAgentDao {
     /** List most recent active invoices. */
     @Query("SELECT id, invoice_number, status FROM invoiceEntity WHERE active = 1 ORDER BY invoice_date DESC LIMIT :limit")
     suspend fun recent(limit: Long): List<InvoiceSummaryRow>
+
+    /** Recent invoices for the home activity feed (number + date-only + status), newest first. */
+    @Query(
+        "SELECT id, invoice_number AS number, substr(invoice_date, 1, 10) AS doc_date, status " +
+            "FROM invoiceEntity WHERE active = 1 ORDER BY invoice_date DESC LIMIT :limit",
+    )
+    suspend fun recentActivity(limit: Int): List<RecentInvoiceRow>
 }

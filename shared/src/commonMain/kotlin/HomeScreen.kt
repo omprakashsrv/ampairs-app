@@ -5,7 +5,6 @@ import ampairsapp.shared.generated.resources.home_action_new_invoice
 import ampairsapp.shared.generated.resources.home_cd_notifications
 import ampairsapp.shared.generated.resources.home_greeting
 import ampairsapp.shared.generated.resources.home_placeholder_value
-import ampairsapp.shared.generated.resources.home_recent_activity_empty
 import ampairsapp.shared.generated.resources.home_section_overview
 import ampairsapp.shared.generated.resources.home_section_quick_actions
 import ampairsapp.shared.generated.resources.home_section_recent_activity
@@ -55,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.analytics.ui.home.AnalyticsHomeSummary
+import com.ampairs.analytics.ui.home.RecentActivityCard
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.common.ui.navigateToModule
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
@@ -244,28 +244,11 @@ fun HomeScreen(
         }
 
         item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(Res.string.home_recent_activity_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            RecentActivityCard(
+                onOpenInvoice = { if (backStack != null) navigateToModule(backStack, ModuleCodes.INVOICE_BILLING) },
+                onOpenOrder = { if (backStack != null) navigateToModule(backStack, ModuleCodes.ORDER_MANAGEMENT) },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
     }
 }

@@ -88,6 +88,7 @@
     <string name="analytics_forecast_confidence_low">Low confidence</string>
 
     <!-- Home summary (hybrid home overview strip) -->
+    <string name="analytics_activity_empty">No recent activity yet</string>
     <string name="analytics_home_today_sales">Today\'s sales</string>
     <string name="analytics_home_today_invoices">Invoices today</string>
     <string name="analytics_home_outstanding">Outstanding</string>

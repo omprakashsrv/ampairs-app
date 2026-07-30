@@ -19,6 +19,9 @@ Android + iOS + Desktop, Compose Multiplatform, Metro DI (`WorkspaceScope`).
   surfaces the customer & product module signals with no new sync plumbing.
 - **Orders** — active-order total + a status breakdown (snapshot, not period-scoped) from the order
   agent DAO (`countActive` / `statusCounts`).
+- **Home widgets** (`ui/home/`) — embedded in the app home screen (in `shared/`): `AnalyticsHomeSummary`
+  (KPI strip + 7-day sparkline, taps to the dashboard) and `RecentActivityCard` (latest invoices +
+  orders interleaved newest-first, from the invoice/order agent DAOs' `recentActivity`).
 - **Demand forecast** — `DemandForecastSyncDelegate` (PULL-ONLY) mirrors the server
   `/forecasts/sync` feed into Room; the dashboard shows a per-product sparkline + reorder flag, and
   falls back to an on-device EWMA (`domain/DemandForecasting`) when the mirror is empty.
