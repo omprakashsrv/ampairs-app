@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -529,8 +530,16 @@ private fun GstSection(gst: GstSummary, locale: com.ampairs.common.locale.AppLoc
                 }
                 if (gst.byRate.isNotEmpty()) {
                     HorizontalDivider()
-                    gst.byRate.forEach { r ->
-                        LabelValueRow(r.taxCode.ifBlank { "—" }, formatMoney(r.tax, locale))
+                    // Cap the per-rate breakdown to a fixed height and scroll internally so a long
+                    // list of tax codes doesn't stretch the whole dashboard (bounded height is also
+                    // required for a nested scroll inside the page's outer verticalScroll).
+                    Column(
+                        Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        gst.byRate.forEach { r ->
+                            LabelValueRow(r.taxCode.ifBlank { "—" }, formatMoney(r.tax, locale))
+                        }
                     }
                 }
             }
