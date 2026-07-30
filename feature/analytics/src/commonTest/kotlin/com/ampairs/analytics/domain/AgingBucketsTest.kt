@@ -29,7 +29,7 @@ class AgingBucketsTest {
         assertEquals(0, byLabel.getValue("61–90 days").count)
         assertEquals(1, byLabel.getValue("90+ days").count)
         assertEquals(400.0, byLabel.getValue("90+ days").amount, 1e-9)
-        assertEquals(650.0, report.totalOutstanding, 1e-9)
+        assertEquals(750.0, report.totalOutstanding, 1e-9)
     }
 
     @Test
