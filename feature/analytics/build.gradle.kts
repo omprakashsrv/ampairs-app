@@ -45,6 +45,8 @@ kotlin {
                 implementation(libs.compose.material3)
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
+                // Charts (Vico — Compose Multiplatform, all targets)
+                implementation(libs.vico.multiplatform)
                 // Material3 Adaptive
                 implementation(libs.material3.adaptive)
                 implementation(libs.material3.adaptive.layout)

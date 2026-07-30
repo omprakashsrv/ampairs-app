@@ -9,9 +9,11 @@ Android + iOS + Desktop, Compose Multiplatform, Metro DI (`WorkspaceScope`).
   per-module read-only *agent DAOs* (invoice/inventory/payment/product) composed by
   `DashboardReadFacade` (no cross-DB join; each figure from its own module). Business-timezone
   bucketing via the zone the screen pushes into the ViewModel.
-- **Charts** (`ui/charts/Charts.kt`, pure Canvas, `MaterialTheme` colours) — line/area sales trend,
-  vertical bars for receivables aging, a donut for the GST intra/inter split, and ranked horizontal
-  bars for top customers / top products. No chart library, so the three targets render identically.
+- **Charts** (`ui/charts/Charts.kt`) — the sales-trend **line** and receivables-aging **columns** are
+  rendered with **Vico** (`com.patrykandpatrick.vico:multiplatform`, Compose Multiplatform). The GST
+  intra/inter **donut** and the top-customers / top-products **ranked horizontal bars** stay on a KMP
+  `Canvas` (`MaterialTheme` colours): Vico is Cartesian-only (no pie/donut), and a horizontal ranked
+  list reads better for long named categories than Vico's vertical columns.
 - **Top customers / top products** — ranked-by-sales breakdowns for the period, composed in
   `DashboardReadFacade` from the invoice agent DAO (`topCustomersBetween` / `topProductsBetween`);
   surfaces the customer & product module signals with no new sync plumbing.
