@@ -133,6 +133,11 @@ import com.ampairs.analytics.domain.ForecastSource
 import com.ampairs.analytics.domain.GstSummary
 import com.ampairs.analytics.domain.NlAnswer
 import com.ampairs.analytics.domain.NlMetric
+import com.ampairs.analytics.ui.charts.BarChart
+import com.ampairs.analytics.ui.charts.ChartBar
+import com.ampairs.analytics.ui.charts.ChartSlice
+import com.ampairs.analytics.ui.charts.DonutChart
+import com.ampairs.analytics.ui.charts.LineChart
 import com.ampairs.analytics.domain.ProductForecast
 import com.ampairs.analytics.domain.SalesTrendPoint
 import com.ampairs.common.locale.LocalAppLocale
@@ -422,29 +427,29 @@ private fun TrendSection(points: List<SalesTrendPoint>, locale: com.ampairs.comm
         if (points.isEmpty()) {
             EmptyRow(stringResource(Res.string.analytics_trend_empty))
         } else {
-            val max = points.maxOf { it.total }.coerceAtLeast(1.0)
-            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                points.takeLast(14).forEach { p ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val recent = points.takeLast(30)
+            val max = recent.maxOf { it.total }
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // y-axis peak label
+                Text(
+                    formatMoney(max, locale),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (recent.size < 2) {
+                    LabelValueRow(recent.first().bucket.takeLast(5), formatMoney(recent.first().total, locale))
+                } else {
+                    LineChart(recent.map { it.total }, Modifier.fillMaxWidth().height(140.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(
-                            p.bucket.takeLast(5),
+                            recent.first().bucket.takeLast(5),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.width(44.dp),
                         )
-                        Box(
-                            Modifier.weight(1f).height(14.dp)
-                                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(7.dp)),
-                        ) {
-                            Box(
-                                Modifier.fillMaxWidth((p.total / max).toFloat().coerceIn(0f, 1f)).height(14.dp)
-                                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(7.dp)),
-                            )
-                        }
                         Text(
-                            formatMoney(p.total, locale),
+                            recent.last().bucket.takeLast(5),
                             style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -462,9 +467,25 @@ private fun GstSection(gst: GstSummary, locale: com.ampairs.common.locale.AppLoc
         if (gst.totalTax <= 0.0 && gst.byRate.isEmpty()) {
             EmptyRow(stringResource(Res.string.analytics_gst_empty))
         } else {
+            val intraLabel = stringResource(Res.string.analytics_gst_intra)
+            val interLabel = stringResource(Res.string.analytics_gst_inter)
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                LabelValueRow(stringResource(Res.string.analytics_gst_intra), formatMoney(gst.intraStateTax, locale))
-                LabelValueRow(stringResource(Res.string.analytics_gst_inter), formatMoney(gst.interStateTax, locale))
+                if (gst.intraStateTax > 0.0 || gst.interStateTax > 0.0) {
+                    DonutChart(
+                        slices = listOf(
+                            ChartSlice(
+                                "$intraLabel · ${formatMoney(gst.intraStateTax, locale)}",
+                                gst.intraStateTax,
+                                MaterialTheme.colorScheme.primary,
+                            ),
+                            ChartSlice(
+                                "$interLabel · ${formatMoney(gst.interStateTax, locale)}",
+                                gst.interStateTax,
+                                MaterialTheme.colorScheme.tertiary,
+                            ),
+                        ),
+                    )
+                }
                 if (gst.byRate.isNotEmpty()) {
                     HorizontalDivider()
                     gst.byRate.forEach { r ->
@@ -486,7 +507,12 @@ private fun AgingSection(buckets: List<AgingBucket>, locale: com.ampairs.common.
         if (nonEmpty.isEmpty()) {
             EmptyRow(stringResource(Res.string.analytics_aging_empty))
         } else {
-            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                BarChart(
+                    bars = nonEmpty.map { ChartBar(it.label, it.amount) },
+                    valueFormatter = { formatMoney(it, locale) },
+                )
+                HorizontalDivider()
                 nonEmpty.forEach { b ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
