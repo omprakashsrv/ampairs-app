@@ -122,6 +122,10 @@ data class DashboardData(
     val forecasts: List<ProductForecast> = emptyList(),
     val topCustomers: List<RankedItem> = emptyList(),
     val topProducts: List<RankedItem> = emptyList(),
+    /** Snapshot count of active orders (not period-scoped, like stock/outstanding). */
+    val orderCount: Int = 0,
+    /** Active-order counts by status; [RankedItem.value] carries the integer count. */
+    val ordersByStatus: List<RankedItem> = emptyList(),
 )
 
 /**

@@ -122,7 +122,10 @@ import ampairsapp.feature.analytics.generated.resources.analytics_section_aging
 import ampairsapp.feature.analytics.generated.resources.analytics_section_gst
 import ampairsapp.feature.analytics.generated.resources.analytics_section_ask
 import ampairsapp.feature.analytics.generated.resources.analytics_section_forecast
+import ampairsapp.feature.analytics.generated.resources.analytics_orders_empty
+import ampairsapp.feature.analytics.generated.resources.analytics_orders_total
 import ampairsapp.feature.analytics.generated.resources.analytics_section_kpis
+import ampairsapp.feature.analytics.generated.resources.analytics_section_orders
 import ampairsapp.feature.analytics.generated.resources.analytics_section_top_customers
 import ampairsapp.feature.analytics.generated.resources.analytics_section_top_products
 import ampairsapp.feature.analytics.generated.resources.analytics_section_trend
@@ -233,6 +236,7 @@ fun DashboardScreen(
                     ForecastSection(state.data.forecasts)
                     GstSection(state.data.gst, locale)
                     AgingSection(state.data.aging.buckets, locale)
+                    OrdersSection(state.data.orderCount, state.data.ordersByStatus)
                 }
             }
         }
@@ -492,6 +496,29 @@ private fun RankedSection(
                     bars = ranked.map { ChartBar(it.label, it.value) },
                     valueFormatter = { formatMoney(it, locale) },
                 )
+            }
+        }
+    }
+}
+
+// ───────────────────────── Orders (active count + status breakdown) ─────────────────────────
+
+@Composable
+private fun OrdersSection(orderCount: Int, byStatus: List<RankedItem>) {
+    SectionHeader(stringResource(Res.string.analytics_section_orders))
+    SectionSurface {
+        if (orderCount == 0) {
+            EmptyRow(stringResource(Res.string.analytics_orders_empty))
+        } else {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LabelValueRow(stringResource(Res.string.analytics_orders_total), orderCount.toString())
+                if (byStatus.isNotEmpty()) {
+                    HorizontalDivider()
+                    HorizontalBarList(
+                        bars = byStatus.map { ChartBar(it.label, it.value) },
+                        valueFormatter = { it.toInt().toString() },
+                    )
+                }
             }
         }
     }

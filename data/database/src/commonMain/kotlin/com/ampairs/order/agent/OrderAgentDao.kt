@@ -11,6 +11,12 @@ data class OrderSummaryRow(
     @ColumnInfo(name = "status") val status: String,
 )
 
+/** One (status → count) bucket of active orders for the dashboard orders breakdown (feature 022). */
+data class OrderStatusCountRow(
+    @ColumnInfo(name = "status") val status: String,
+    @ColumnInfo(name = "cnt") val count: Int,
+)
+
 /**
  * Read-only report/search queries backing the assistant's order actions — separate from the
  * operational [com.ampairs.order.db.OrderDao]. Over the existing `orderEntity` table (no schema
@@ -21,6 +27,10 @@ interface OrderAgentDao {
     /** Count of active orders. */
     @Query("SELECT count(*) FROM orderEntity WHERE active = 1")
     suspend fun countActive(): Int
+
+    /** Active-order counts grouped by status (most common first) — dashboard orders breakdown. */
+    @Query("SELECT status, count(*) AS cnt FROM orderEntity WHERE active = 1 GROUP BY status ORDER BY cnt DESC")
+    suspend fun statusCounts(): List<OrderStatusCountRow>
 
     /** Chat search by order number or (whitespace-normalized, case-insensitive) customer name. */
     @Query(

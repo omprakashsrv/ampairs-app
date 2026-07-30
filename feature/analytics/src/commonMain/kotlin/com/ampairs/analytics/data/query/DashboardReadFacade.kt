@@ -16,6 +16,7 @@ import com.ampairs.common.agent.DateRange
 import com.ampairs.common.model.DateTimeAdapter
 import com.ampairs.inventory.agent.InventoryAgentDao
 import com.ampairs.invoice.agent.InvoiceAgentDao
+import com.ampairs.order.agent.OrderAgentDao
 import com.ampairs.payment.agent.PaymentAgentDao
 import com.ampairs.product.agent.ProductAgentDao
 import dev.zacsweers.metro.Inject
@@ -46,6 +47,7 @@ class DashboardReadFacade(
     private val paymentAgentDao: PaymentAgentDao,
     private val demandForecastDao: DemandForecastDao,
     private val productAgentDao: ProductAgentDao,
+    private val orderAgentDao: OrderAgentDao,
 ) {
 
     suspend fun load(range: DateRange, today: LocalDate, tz: TimeZone): DashboardData {
@@ -66,6 +68,9 @@ class DashboardReadFacade(
                 .map { RankedItem(it.label?.takeIf { l -> l.isNotBlank() } ?: "—", it.total) },
             topProducts = invoiceAgentDao.topProductsBetween(invStart, invEnd, TOP_LIMIT)
                 .map { RankedItem(it.label?.takeIf { l -> l.isNotBlank() } ?: "—", it.total) },
+            orderCount = orderAgentDao.countActive(),
+            ordersByStatus = orderAgentDao.statusCounts()
+                .map { RankedItem(it.status.ifBlank { "—" }, it.count.toDouble()) },
         )
     }
 

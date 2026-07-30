@@ -17,6 +17,8 @@ Android + iOS + Desktop, Compose Multiplatform, Metro DI (`WorkspaceScope`).
 - **Top customers / top products** — ranked-by-sales breakdowns for the period, composed in
   `DashboardReadFacade` from the invoice agent DAO (`topCustomersBetween` / `topProductsBetween`);
   surfaces the customer & product module signals with no new sync plumbing.
+- **Orders** — active-order total + a status breakdown (snapshot, not period-scoped) from the order
+  agent DAO (`countActive` / `statusCounts`).
 - **Demand forecast** — `DemandForecastSyncDelegate` (PULL-ONLY) mirrors the server
   `/forecasts/sync` feed into Room; the dashboard shows a per-product sparkline + reorder flag, and
   falls back to an on-device EWMA (`domain/DemandForecasting`) when the mirror is empty.

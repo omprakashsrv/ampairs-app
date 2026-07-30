@@ -36,6 +36,9 @@
     <string name="analytics_section_top_products">Top products</string>
     <string name="analytics_section_top_customers">Top customers</string>
     <string name="analytics_top_empty">No sales in this period yet</string>
+    <string name="analytics_section_orders">Orders</string>
+    <string name="analytics_orders_total">Active orders</string>
+    <string name="analytics_orders_empty">No orders yet</string>
 
     <!-- GST -->
     <string name="analytics_gst_intra">Intra-state (CGST+SGST)</string>
