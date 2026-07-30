@@ -1,7 +1,7 @@
 package com.ampairs.analytics.data.query
 
 import com.ampairs.analytics.data.db.dao.DemandForecastDao
-import com.ampairs.analytics.domain.AgingBucket
+import com.ampairs.analytics.domain.AgingBuckets
 import com.ampairs.analytics.domain.AgingReport
 import com.ampairs.analytics.domain.DashboardData
 import com.ampairs.analytics.domain.DashboardKpis
@@ -22,7 +22,6 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
-import kotlinx.datetime.daysUntil
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
@@ -199,35 +198,11 @@ class DashboardReadFacade(
      * chars of the device-local `invoice_date` (`yyyy-MM-dd ...`).
      */
     private suspend fun loadAging(today: LocalDate): AgingReport {
-        val rows = paymentAgentDao.openInvoicesForAging()
-        val counts = IntArray(BUCKETS.size)
-        val amounts = DoubleArray(BUCKETS.size)
-        rows.forEach { row ->
-            val outstanding = row.total - row.allocatedMinor / 100.0
-            if (outstanding <= 0.01) return@forEach
-            val idx = bucketIndex(ageInDays(row.invoiceDate, today))
-            counts[idx]++
-            amounts[idx] += outstanding
+        val entries = paymentAgentDao.openInvoicesForAging().map { row ->
+            AgingBuckets.Entry(row.invoiceDate, row.total - row.allocatedMinor / 100.0)
         }
-        return AgingReport(
-            buckets = BUCKETS.indices.map { i ->
-                AgingBucket(label = BUCKETS[i].label, count = counts[i], amount = amounts[i])
-            },
-        )
+        return AgingBuckets.compute(entries, today)
     }
-
-    private fun ageInDays(invoiceDate: String, today: LocalDate): Int {
-        val datePart = invoiceDate.take(10)
-        val invoiced = runCatching { LocalDate.parse(datePart) }.getOrNull() ?: return 0
-        return invoiced.daysUntil(today).coerceAtLeast(0)
-    }
-
-    private fun bucketIndex(ageDays: Int): Int {
-        BUCKETS.forEachIndexed { i, b -> if (ageDays <= b.maxDays) return i }
-        return BUCKETS.lastIndex
-    }
-
-    private data class Bucket(val label: String, val maxDays: Int)
 
     private companion object {
         /** Trailing window (days) for the forecast sparkline series and EWMA fallback. */
@@ -235,13 +210,5 @@ class DashboardReadFacade(
 
         /** Max products shown in the forecast section (bounds the per-product query fan-out). */
         const val FORECAST_LIMIT = 6
-
-        // Ordered youngest-first; the last bucket is the catch-all (maxDays = Int.MAX_VALUE).
-        val BUCKETS = listOf(
-            Bucket("0–30 days", 30),
-            Bucket("31–60 days", 60),
-            Bucket("61–90 days", 90),
-            Bucket("90+ days", Int.MAX_VALUE),
-        )
     }
 }
