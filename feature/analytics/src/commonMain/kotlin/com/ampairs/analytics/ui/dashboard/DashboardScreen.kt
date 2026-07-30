@@ -436,18 +436,15 @@ private fun TrendSection(points: List<SalesTrendPoint>, locale: com.ampairs.comm
             EmptyRow(stringResource(Res.string.analytics_trend_empty))
         } else {
             val recent = points.takeLast(30)
-            val max = recent.maxOf { it.total }
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                // y-axis peak label
-                Text(
-                    formatMoney(max, locale),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 if (recent.size < 2) {
                     LabelValueRow(recent.first().bucket.takeLast(5), formatMoney(recent.first().total, locale))
                 } else {
-                    LineChart(recent.map { it.total }, Modifier.fillMaxWidth().height(140.dp))
+                    LineChart(
+                        recent.map { it.total },
+                        Modifier.fillMaxWidth().height(140.dp),
+                        yFormatter = { formatMoney(it, locale) },
+                    )
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(
                             recent.first().bucket.takeLast(5),
@@ -561,6 +558,7 @@ private fun AgingSection(buckets: List<AgingBucket>, locale: com.ampairs.common.
                 BarChart(
                     bars = nonEmpty.map { ChartBar(it.label, it.amount) },
                     valueFormatter = { formatMoney(it, locale) },
+                    yFormatter = { formatMoney(it, locale) },
                 )
                 HorizontalDivider()
                 nonEmpty.forEach { b ->

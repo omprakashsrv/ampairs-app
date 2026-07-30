@@ -19,6 +19,7 @@ import com.patrykandpatrick.vico.multiplatform.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.multiplatform.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.multiplatform.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.multiplatform.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.multiplatform.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.ColumnCartesianLayer
@@ -59,6 +60,22 @@ data class ChartBar(val label: String, val value: Double)
 
 data class ChartSlice(val label: String, val value: Double, val color: Color)
 
+/**
+ * A Vico `start` (value) axis, or null when [show] is false. When [yFormatter] is supplied the axis
+ * labels are formatted through it (e.g. as money) instead of Vico's raw decimals.
+ */
+@Composable
+private fun startValueAxis(show: Boolean, yFormatter: ((Double) -> String)?) =
+    if (!show) {
+        null
+    } else if (yFormatter != null) {
+        VerticalAxis.rememberStart(
+            valueFormatter = CartesianValueFormatter { _, value, _ -> yFormatter(value) },
+        )
+    } else {
+        VerticalAxis.rememberStart()
+    }
+
 // ───────────────────────── Line / area (change over time) ─────────────────────────
 
 /**
@@ -74,6 +91,7 @@ fun LineChart(
     modifier: Modifier = Modifier.fillMaxWidth().height(140.dp),
     lineColor: Color = MaterialTheme.colorScheme.primary,
     showAxis: Boolean = true,
+    yFormatter: ((Double) -> String)? = null,
 ) {
     if (values.size < 2) {
         Box(modifier) {}
@@ -87,7 +105,7 @@ fun LineChart(
         fill = LineCartesianLayer.LineFill.single(Fill(lineColor)),
         areaFill = LineCartesianLayer.AreaFill.single(Fill(lineColor.copy(alpha = 0.15f))),
     )
-    val startAxis = if (showAxis) VerticalAxis.rememberStart() else null
+    val startAxis = startValueAxis(showAxis, yFormatter)
     CartesianChartHost(
         rememberCartesianChart(
             rememberLineCartesianLayer(LineCartesianLayer.LineProvider.series(line)),
@@ -116,6 +134,7 @@ fun BarChart(
     modifier: Modifier = Modifier.fillMaxWidth().height(120.dp),
     barColor: Color = MaterialTheme.colorScheme.primary,
     showAxis: Boolean = true,
+    yFormatter: ((Double) -> String)? = null,
 ) {
     if (bars.isEmpty()) return
     val producer = remember { CartesianChartModelProducer() }
@@ -123,7 +142,7 @@ fun BarChart(
         producer.runTransaction { columnSeries { series(bars.map { it.value }) } }
     }
     val column = rememberLineComponent(Fill(barColor), 16.dp)
-    val startAxis = if (showAxis) VerticalAxis.rememberStart() else null
+    val startAxis = startValueAxis(showAxis, yFormatter)
     CartesianChartHost(
         rememberCartesianChart(
             rememberColumnCartesianLayer(ColumnCartesianLayer.ColumnProvider.series(column)),
