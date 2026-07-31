@@ -27,8 +27,11 @@ import com.patrykandpatrick.vico.multiplatform.cartesian.layer.LineCartesianLaye
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.multiplatform.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.multiplatform.cartesian.marker.rememberDefaultCartesianMarker
 import com.patrykandpatrick.vico.multiplatform.common.Fill
 import com.patrykandpatrick.vico.multiplatform.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.multiplatform.common.component.rememberTextComponent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +67,18 @@ data class ChartSlice(val label: String, val value: Double, val color: Color)
  * A Vico `start` (value) axis, or null when [show] is false. When [yFormatter] is supplied the axis
  * labels are formatted through it (e.g. as money) instead of Vico's raw decimals.
  */
+/**
+ * A tap marker (tooltip) for the Cartesian charts — touching/dragging the chart shows the value at
+ * that point. Passed to [rememberCartesianChart]'s `marker`, which [CartesianChartHost] surfaces on
+ * touch. Default numeric label for now (currency-formatted marker is a follow-up).
+ */
+@Composable
+private fun rememberChartMarker(): DefaultCartesianMarker =
+    rememberDefaultCartesianMarker(
+        label = rememberTextComponent(),
+        valueFormatter = DefaultCartesianMarker.ValueFormatter.default(),
+    )
+
 @Composable
 private fun startValueAxis(show: Boolean, yFormatter: ((Double) -> String)?) =
     if (!show) {
@@ -106,10 +121,12 @@ fun LineChart(
         areaFill = LineCartesianLayer.AreaFill.single(Fill(lineColor.copy(alpha = 0.15f))),
     )
     val startAxis = startValueAxis(showAxis, yFormatter)
+    val marker = if (showAxis) rememberChartMarker() else null
     CartesianChartHost(
         rememberCartesianChart(
             rememberLineCartesianLayer(LineCartesianLayer.LineProvider.series(line)),
             startAxis = startAxis,
+            marker = marker,
         ),
         producer,
         modifier,
@@ -143,10 +160,12 @@ fun BarChart(
     }
     val column = rememberLineComponent(Fill(barColor), 16.dp)
     val startAxis = startValueAxis(showAxis, yFormatter)
+    val marker = if (showAxis) rememberChartMarker() else null
     CartesianChartHost(
         rememberCartesianChart(
             rememberColumnCartesianLayer(ColumnCartesianLayer.ColumnProvider.series(column)),
             startAxis = startAxis,
+            marker = marker,
         ),
         producer,
         modifier,
