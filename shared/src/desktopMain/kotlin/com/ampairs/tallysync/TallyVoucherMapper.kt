@@ -6,6 +6,7 @@ import com.ampairs.invoice.db.model.TaxInfoEntity
 import com.ampairs.invoice.domain.TaxSpec
 import com.ampairs.payment.domain.AllocationTarget
 import com.ampairs.payment.domain.ClearanceStatus
+import com.ampairs.payment.domain.Direction
 import com.ampairs.payment.domain.EntryType
 import com.ampairs.payment.domain.LedgerSourceType
 import com.ampairs.payment.domain.Money
@@ -43,8 +44,9 @@ internal object TallyVoucherMapper {
     private const val ID_PREFIX_ALLOCATION = "PALTLY"
     private const val ID_PREFIX_PURCHASE = "PURTLY"
     private const val ID_PREFIX_PURCHASE_ITEM = "PITTLY"
+    private const val ID_PREFIX_ADJUSTMENT = "ADJTLY"
 
-    enum class Kind { SALES, CREDIT_NOTE, PURCHASE, DEBIT_NOTE, RECEIPT, PAYMENT, OTHER }
+    enum class Kind { SALES, CREDIT_NOTE, PURCHASE, DEBIT_NOTE, RECEIPT, PAYMENT, JOURNAL, OTHER }
 
     /** Classify by keyword so custom voucher-type names ("GST Sales", "Cash Receipt") still resolve. */
     fun Voucher.classify(): Kind {
@@ -57,6 +59,7 @@ internal object TallyVoucherMapper {
             "payment" in t -> Kind.PAYMENT
             "purchase" in t -> Kind.PURCHASE
             "sales" in t || "invoice" in t -> Kind.SALES
+            "journal" in t -> Kind.JOURNAL
             else -> Kind.OTHER
         }
     }
@@ -96,12 +99,20 @@ internal object TallyVoucherMapper {
         return cleaned.toDoubleOrNull() ?: 0.0
     }
 
-    /** Tally voucher DATE is "YYYYMMDD"; normalize to ISO "yyyy-MM-dd" (pass through if already dashed). */
+    /**
+     * Tally voucher DATE is "YYYYMMDD"; normalize to the space-formatted "yyyy-MM-dd HH:mm:ss" that
+     * invoice_date/purchase_date/entry_date are stored in everywhere else (pass through if already
+     * dashed). A bare "yyyy-MM-dd" here would silently corrupt to epoch on sync push, because
+     * InvoiceApiModel/PurchaseApiModel/LedgerEntryApiModel's toIsoInstantOrSelf() only accepts ISO
+     * instants or the space-formatted form, and DateTimeAdapter.parseDate() swallows the failure and
+     * defaults to 0L (1970-01-01) instead of throwing.
+     */
     private fun String?.tallyDateToIso(): String {
         val s = this?.trim().orEmpty()
         return when {
             s.isEmpty() -> ""
-            s.length == 8 && s.all(Char::isDigit) -> "${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)}"
+            s.length == 8 && s.all(Char::isDigit) ->
+                "${s.substring(0, 4)}-${s.substring(4, 6)}-${s.substring(6, 8)} 00:00:00"
             else -> s
         }
     }
@@ -411,5 +422,58 @@ internal object TallyVoucherMapper {
             )
         }
         return MappedPayment(voucher, allocations)
+    }
+
+    data class MappedAdjustment(
+        val entryType: EntryType,
+        val direction: Direction,
+        val amount: Double,
+        val voucherNo: String,
+        val entryDate: String,
+        val narration: String?,
+        val sourceUid: String,
+    )
+
+    /**
+     * Maps a Tally Journal voucher to a party-ledger adjustment. Tally has no dedicated voucher type
+     * for discounts/write-offs/other party postings — businesses record them via a plain Journal, so
+     * (unlike Sales/Receipt/Payment, where the voucher type alone implies the direction) direction
+     * must come from the party's own line: its [LedgerEntrie.isDeemedPositive] flag ("Yes" = Debit,
+     * "No" = Credit) is Tally's authoritative signal, since the same Journal type covers both
+     * directions depending on context (e.g. "discount allowed" credits a customer, but a "discount
+     * received" journal on a supplier debits them). Returns null when the party's own line can't be
+     * identified (bank contras, depreciation, and other non-party Journals are skipped by the caller
+     * via [resolvePartyName] returning no match before this is even called).
+     */
+    fun Voucher.toMappedAdjustment(partyName: String): MappedAdjustment? {
+        val guid = guid?.takeIf { it.isNotBlank() } ?: return null
+        val partyEntry = partyEntryFor(partyName) ?: return null
+        val amount = abs(partyEntry.amount.parseAmount())
+        if (amount <= 0.0) return null
+        val direction = if (partyEntry.isDeemedPositive.equals("Yes", ignoreCase = true)) Direction.DR else Direction.CR
+
+        // Best-effort label from the largest non-party line (e.g. "Discount Allowed", "Bad Debts
+        // Written Off"). Falls back to a generic ADJUSTMENT when nothing matches — the amount and
+        // direction above are correct either way; this only affects the displayed entry type.
+        val otherLine = ledgerEntries()
+            .filter { !it.ledgerName?.trim().equals(partyName.trim(), ignoreCase = true) }
+            .maxByOrNull { abs(it.amount.parseAmount()) }
+        val otherName = (otherLine?.ledgerName ?: "").lowercase()
+        val entryType = when {
+            "discount" in otherName -> EntryType.DISCOUNT_ALLOWED
+            "written off" in otherName || "write off" in otherName || "bad debt" in otherName -> EntryType.WRITE_OFF
+            "round off" in otherName || "rounding" in otherName -> EntryType.ROUND_OFF
+            else -> EntryType.ADJUSTMENT
+        }
+
+        return MappedAdjustment(
+            entryType = entryType,
+            direction = direction,
+            amount = amount,
+            voucherNo = voucherNumber?.trim().orEmpty(),
+            entryDate = date.tallyDateToIso(),
+            narration = narration?.trim()?.takeIf { it.isNotBlank() } ?: otherLine?.ledgerName?.trim(),
+            sourceUid = ID_PREFIX_ADJUSTMENT + sanitize(guid),
+        )
     }
 }

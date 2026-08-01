@@ -11,11 +11,16 @@ import ProductRoute
 import Route
 import SubscriptionRoute
 import WorkspaceRoute
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -25,6 +30,7 @@ import com.ampairs.purchase.ui.PurchaseRoute
 import com.ampairs.form.ui.FormConfigScreen
 import com.ampairs.form.ui.FormConfigHubScreen
 import com.ampairs.navigation.providers.agentEntryProvider
+import com.ampairs.navigation.providers.analyticsEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
 import com.ampairs.navigation.providers.customerEntryProvider
@@ -94,6 +100,7 @@ fun combinedEntryProvider(
         ?: paymentEntryProvider(key, backStack)
         ?: notificationEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key, backStack)
+        ?: analyticsEntryProvider(key, backStack)
         ?: agentEntryProvider(key, backStack)
         ?: mainRouteEntryProvider(key, backStack)
         ?: NavEntry(key) { Text("Unknown route: $key") }
@@ -107,13 +114,15 @@ private fun mainRouteEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>
 ): NavEntry<NavKey>? = when (key) {
-    // Route.Login is handled by authEntryProvider (redirects to AuthRoute.UserSelection)
+    // Route.Login — redirects to UserSelection; shows spinner while the effect fires so
+    // the screen is never blank if this entry is somehow reached again.
     is Route.Login -> NavEntry(key) {
-        // This will redirect to UserSelection in authEntryProvider
-        // For safety, we add the actual start destination
         LaunchedEffect(Unit) {
             backStack.clear()
             backStack.add(AuthRoute.UserSelection)
+        }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
     }
 
@@ -272,7 +281,7 @@ private fun mainRouteEntryProvider(
     is Route.More -> NavEntry(key) {
         val globalNavManager = remember { com.ampairs.workspace.navigation.GlobalNavigationManager.getInstance() }
         val headerStateManager = remember { com.ampairs.common.state.AppHeaderStateManager.instance }
-        val headerState by headerStateManager.headerState.collectAsState()
+        val headerState by headerStateManager.headerState.collectAsStateWithLifecycle()
         MoreScreen(
             backStack = backStack,
             onSwitchWorkspace = {

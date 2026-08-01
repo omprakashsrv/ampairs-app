@@ -142,7 +142,6 @@ fun Order.asDatabaseModel(): OrderEntity {
         active = if (this.active) 1 else 0,
         soft_deleted = if (this.softDeleted) 1 else 0,
         synced = 0,
-        last_updated = 0,
         created_by = this.createdBy,
         updated_by = this.updatedBy,
         discount = this.discount?.let { Json.encodeToString(it) })
@@ -156,7 +155,8 @@ fun OrderEntity.asDomainModel(): Order {
     order.id = this.id
     order.orderNumber = this.order_number
     order.orderDate = DateTimeAdapter.fromDateTimeString(this.order_date) ?: Clock.System.now()
-    order.status = OrderStatus.valueOf(this.status.uppercase())
+    order.status = parseOrderStatus(this.status)
+    order.invoiceRefId = this.invoice_ref_id
     order.basePrice = this.base_price
     order.totalTax = this.total_tax
     order.items = mutableListOf()
@@ -189,7 +189,8 @@ fun OrderModel.asDomainModel(): Order {
     order.orderNumber = this.order.order_number
     order.orderDate =
         DateTimeAdapter.fromDateTimeString(this.order.order_date) ?: Clock.System.now()
-    order.status = OrderStatus.valueOf(this.order.status.uppercase())
+    order.status = parseOrderStatus(this.order.status)
+    order.invoiceRefId = this.order.invoice_ref_id
     order.basePrice = this.order.base_price
     order.totalTax = this.order.total_tax
     order.items = this.orderItems.asItemsDomainModel().toMutableList()

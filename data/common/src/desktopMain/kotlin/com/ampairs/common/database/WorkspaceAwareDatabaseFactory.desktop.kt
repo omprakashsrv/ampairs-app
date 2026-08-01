@@ -1,8 +1,8 @@
 package com.ampairs.common.database
 
-import androidx.room.Room
-import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
+import androidx.room3.Room
+import androidx.room3.RoomDatabase
+import androidx.room3.migration.Migration
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 
 actual inline fun <reified T : RoomDatabase> WorkspaceAwareDatabaseFactory.createPlatformDatabase(

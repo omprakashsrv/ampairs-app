@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <!--
+          Debug-only: allow profiling (CPU/memory/Perfetto/simpleperf, Android Studio Profiler)
+          without affecting the release build. Ignored on API < 29. shell="true" also lets
+          shell-launched tools (simpleperf, Perfetto CLI, Macrobenchmark) attach.
+        -->
+        <profileable android:shell="true" tools:targetApi="q" />
+    </application>
+
+</manifest>

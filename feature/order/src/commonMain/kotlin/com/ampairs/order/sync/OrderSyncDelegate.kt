@@ -74,7 +74,11 @@ class OrderSyncDelegate(
             for (batch in apiModels.chunked(100)) {
                 try {
                     orderApi.bulkUpdateOrders(batch)
-                    batch.forEach { orderDao.markAsSynced(it.id) }
+                    batch.forEach {
+                        orderDao.markAsSynced(it.id)
+                        // The soft-deleted lines have now reached the server — drop them locally.
+                        orderDao.deleteInactiveOrderItems(it.id)
+                    }
                     synced += batch.size
                 } catch (e: Exception) {
                     ErrorTracking.captureException(e, "OrderSyncDelegate.pushPending")
@@ -82,7 +86,12 @@ class OrderSyncDelegate(
                 }
             }
 
-            if (synced == 0 && failed > 0) {
+            // Unlike a leaf entity (where partial success is fine — failed rows retry next cycle),
+            // ORDER has push dependents (INVOICE via fk_invoice_order_ref). CentralSyncService only
+            // defers a dependent when the dependency's push signals failure, so ANY unsynced batch
+            // here — not just a total wipeout — must report failure, or the invoice for one of the
+            // still-unsynced orders could push in this same cycle and hit the FK constraint.
+            if (failed > 0) {
                 Result.failure(Exception("$failed order(s) failed to push — will retry on reconnect"))
             } else {
                 Result.success(synced)
@@ -119,7 +128,12 @@ class OrderSyncDelegate(
                         }
                     }
                     if (toUpsert.isNotEmpty()) {
-                        orderDao.updateOrders(toUpsert.asDatabaseModel(), toUpsert.asItemDatabaseModel())
+                        // Server-removed lines arrive as active = 0 — hard-delete them locally instead
+                        // of upserting hidden rows; upsert the rest as synced.
+                        val (activeItems, inactiveItems) = toUpsert.asItemDatabaseModel().partition { it.active == 1 }
+                        orderDao.updateOrders(toUpsert.asDatabaseModel(), activeItems)
+                        val inactiveIds = inactiveItems.map { it.id }
+                        if (inactiveIds.isNotEmpty()) orderDao.deleteOrderItemsByIds(inactiveIds)
                     }
                     val batchMax = content
                         .mapNotNull { it.updatedAt?.takeIf { s -> s.isNotBlank() } }

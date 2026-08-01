@@ -13,6 +13,7 @@ import com.ampairs.form.domain.FormSchema
 import com.ampairs.form.domain.FormSection
 import com.ampairs.sync.SyncEntity
 import com.ampairs.sync.SyncResult
+import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.sync.db.SyncStateEntity
 import kotlinx.coroutines.flow.Flow
@@ -75,6 +76,14 @@ class FormSyncDelegateTest {
         override suspend fun getAll(): List<SyncStateEntity> = emptyList()
         override suspend fun getPending(): List<SyncStateEntity> = emptyList()
         override suspend fun upsert(state: SyncStateEntity) {}
+        override suspend fun upsertStatus(
+            entity: SyncEntity,
+            status: SyncPersistStatus,
+            lastSyncedAt: Long?,
+            pendingCount: Int,
+            errorMessage: String?,
+            now: Long,
+        ) {}
         override suspend fun getLastSyncedAtIso(entity: SyncEntity): String? = lastSyncedAtIso
         override suspend fun setLastSyncedAtIso(entity: SyncEntity, iso: String) { lastSyncedAtIso = iso }
         override suspend fun markPendingPush(entity: SyncEntity, now: Long) {}

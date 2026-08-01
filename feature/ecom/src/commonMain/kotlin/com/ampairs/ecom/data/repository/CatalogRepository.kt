@@ -25,10 +25,10 @@ class CatalogRepository(
     private val session: EcomSession,
 ) {
     fun observeVisible(storefrontId: String): Flow<List<ListedProductEntity>> =
-        productDao.observeVisible(storefrontId)
+        productDao.observeVisible(storefrontId).orEmitOnDbClosed(emptyList())
 
     fun observeProduct(productId: String): Flow<ListedProductEntity?> =
-        productDao.observeById(productId)
+        productDao.observeById(productId).orEmitOnDbClosed(null)
 
     /** Refresh one product from the server (fresh stock) and cache it. */
     suspend fun refreshProduct(slug: String, productId: String, storefrontId: String): Result<ListedProduct> {
@@ -42,7 +42,8 @@ class CatalogRepository(
         category: String? = null,
         brand: String? = null,
         subcategory: String? = null,
-    ): Flow<List<ListedProductEntity>> = productDao.observeFiltered(storefrontId, category, brand, subcategory)
+    ): Flow<List<ListedProductEntity>> =
+        productDao.observeFiltered(storefrontId, category, brand, subcategory).orEmitOnDbClosed(emptyList())
 
     suspend fun search(slug: String, query: String, page: Int = 0, size: Int = 20): Result<PageResponse<ListedProduct>> =
         api.searchProducts(slug, query, page, size)

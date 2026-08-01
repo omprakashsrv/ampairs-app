@@ -1,3 +1,4 @@
+import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import java.util.Properties
 
 plugins {
@@ -7,6 +8,7 @@ plugins {
     alias(libs.plugins.firebaseCrashlytics)
     alias(libs.plugins.firebasePerf)
     alias(libs.plugins.metro)
+    alias(libs.plugins.playPublisher)
 }
 
 kotlin {
@@ -46,8 +48,8 @@ android {
         applicationId = "com.ampairs.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 100017
-        versionName = "1.0.17"
+        versionCode = 100022
+        versionName = "1.0.22"
 
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
@@ -67,7 +69,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.3:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.22:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
 
@@ -91,6 +93,20 @@ android {
             }
         }
     }
+}
+
+// ── Play Console publishing (gradle-play-publisher) ────────────────────────
+// Same service account as clientApp, granted access to this app (com.ampairs.app) separately
+// in Play Console (Setup > API access). Credentials file is shared, gitignored, repo-root.
+//   ./gradlew :androidApp:publishBundle                       (internal track)
+//   ./gradlew :androidApp:publishBundle -PplayTrack=production (draft — requires a manual
+//     "Start rollout" click in Play Console; never auto-completes production)
+play {
+    serviceAccountCredentials.set(rootProject.file("play-service-account.json"))
+    val trackName = (findProperty("playTrack") as String?) ?: "internal"
+    track.set(trackName)
+    defaultToAppBundles.set(true)
+    releaseStatus.set(if (trackName == "production") ReleaseStatus.DRAFT else ReleaseStatus.COMPLETED)
 }
 
 dependencies {

@@ -53,7 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.pricing.domain.model.OfferConditionType
@@ -147,7 +147,7 @@ fun OfferBuilderScreen(
         key = offerId ?: "new",
     ) { create(offerId) },
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val isLast = state.step == OFFER_STEP_COUNT - 1
 
     Column(modifier = modifier.fillMaxSize()) {

@@ -25,6 +25,9 @@ import ampairsapp.feature.order.generated.resources.ord_view_edit
 import ampairsapp.feature.order.generated.resources.ord_view_inter_foot
 import ampairsapp.feature.order.generated.resources.ord_view_intra_foot
 import ampairsapp.feature.order.generated.resources.ord_view_line_meta
+import ampairsapp.feature.order.generated.resources.ord_view_mark_delivered
+import ampairsapp.feature.order.generated.resources.ord_view_mark_out_for_delivery
+import ampairsapp.feature.order.generated.resources.ord_view_mark_shipped
 import ampairsapp.feature.order.generated.resources.ord_view_unregistered
 import ampairsapp.feature.order.generated.resources.ord_view_from_seller
 import ampairsapp.feature.order.generated.resources.ord_view_grand
@@ -90,6 +93,7 @@ import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatDate
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.editor.DocSyncChip
+import com.ampairs.order.domain.OrderStatus
 import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.viewmodel.OrderViewViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
@@ -120,6 +124,17 @@ fun OrderViewScreen(
     var showConvertConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val converted = !order.invoiceRefId.isNullOrEmpty()
+    // Fulfillment step, one at a time: (invoiced) → SHIPPED → OUT_FOR_DELIVERY → DELIVERED. The
+    // first step keys off `converted` (invoiceRefId set), not `status == INVOICED` specifically —
+    // an order invoiced through an older app version, the web app, or the ecom auto-confirm path may
+    // have invoiceRefId set without status having ever been written back as INVOICED locally, and it
+    // should still be advanceable. Null once delivered/cancelled/refunded, or before invoicing.
+    val nextFulfillment = when (order.status) {
+        OrderStatus.SHIPPED -> OrderStatus.OUT_FOR_DELIVERY to Res.string.ord_view_mark_out_for_delivery
+        OrderStatus.OUT_FOR_DELIVERY -> OrderStatus.DELIVERED to Res.string.ord_view_mark_delivered
+        OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.REFUNDED -> null
+        else -> if (converted) OrderStatus.SHIPPED to Res.string.ord_view_mark_shipped else null
+    }
 
     viewModel.printMessage?.let { msg ->
         AlertDialog(
@@ -167,11 +182,15 @@ fun OrderViewScreen(
                             contentDescription = stringResource(Res.string.ord_view_cd_print)
                         )
                     }
-                    IconButton(onClick = { onEdit(order.id) }) {
-                        Icon(
-                            imageVector = Icons.Filled.Edit,
-                            contentDescription = stringResource(Res.string.ord_view_cd_edit)
-                        )
+                    // Editing after invoicing would desync the order from the invoice already
+                    // generated from it — no edit action once invoiceRefId is set.
+                    if (!converted) {
+                        IconButton(onClick = { onEdit(order.id) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = stringResource(Res.string.ord_view_cd_edit)
+                            )
+                        }
                     }
                 }
             )
@@ -187,12 +206,14 @@ fun OrderViewScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
-                OutlinedButton(
-                    onClick = { onEdit(order.id) },
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text("  " + stringResource(Res.string.ord_view_edit))
+                if (!converted) {
+                    OutlinedButton(
+                        onClick = { onEdit(order.id) },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("  " + stringResource(Res.string.ord_view_edit))
+                    }
                 }
                 if (order.orderNumber.isNullOrEmpty()) {
                     Button(
@@ -217,6 +238,23 @@ fun OrderViewScreen(
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null, modifier = Modifier.size(18.dp))
                         Text("  " + stringResource(Res.string.ord_view_view_invoice))
+                    }
+                    nextFulfillment?.let { (next, label) ->
+                        Button(
+                            onClick = { viewModel.advanceStatus(next) },
+                            enabled = !viewModel.savingOrder,
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            if (viewModel.savingOrder) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.progressSemantics().size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = cs.onPrimary
+                                )
+                            } else {
+                                Text(stringResource(label))
+                            }
+                        }
                     }
                 } else {
                     Button(

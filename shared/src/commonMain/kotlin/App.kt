@@ -1,10 +1,9 @@
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -35,11 +34,14 @@ fun App(
 
         LocaleProvider(LocalLocaleManager.current) {
             PlatformAmpairsTheme(darkTheme = isDarkTheme) {
-                Box(
+                // Surface (not Modifier.background) so LocalContentColor defaults to onSurface —
+                // Text() without an explicit color would otherwise fall back to Compose's hardcoded
+                // black, invisible against a dark surface in dark mode.
+                Surface(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface)
                         .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.systemBars)
+                        .windowInsetsPadding(WindowInsets.systemBars),
+                    color = MaterialTheme.colorScheme.surface,
                 ) {
                     AppNavigationNav3(onNavigationServiceReady, onNavigationReady, onWorkspaceEntered, onWorkspaceLeft)
                 }

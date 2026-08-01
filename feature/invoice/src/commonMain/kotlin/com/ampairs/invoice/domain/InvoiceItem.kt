@@ -70,6 +70,9 @@ class InvoiceItem(var product: ProductSummary?) {
     var price: Double by mutableStateOf(product?.sellingPrice ?: 0.0)
     var description: String = (product?.name + " " + product?.code)
     var productId = product?.id
+
+    /** HSN snapshot — kept on the line so it survives without an attached catalog product. */
+    var taxCode: String = product?.taxCode ?: ""
     var mrp: Double = product?.mrp ?: 0.0
     var totalCost: Double by mutableStateOf(0.0)
     var basePrice: Double = 0.0
@@ -107,9 +110,12 @@ fun List<InvoiceItem>.asDatabaseModel(invoiceId: String): List<InvoiceItemEntity
         InvoiceItemEntity(
             seq_id = 0,
             id = invoiceItem.id,
-            description = invoiceItem.product?.name + " " + invoiceItem.product?.code,
+            // Derive from the catalog product when it's attached, else keep the line's own snapshot.
+            // An untouched line (re-opened invoice whose product isn't in the local catalog) has a null
+            // product; re-deriving from it would wipe the name to "null null" and blank the product id.
+            description = invoiceItem.product?.let { "${it.name} ${it.code}" } ?: invoiceItem.description,
             item_no = 0,
-            product_id = invoiceItem.product?.id ?: "",
+            product_id = invoiceItem.product?.id ?: invoiceItem.productId ?: "",
             total_cost = invoiceItem.totalCost,
             base_price = invoiceItem.basePrice,
             product_price = invoiceItem.productPrice,
@@ -118,7 +124,7 @@ fun List<InvoiceItem>.asDatabaseModel(invoiceId: String): List<InvoiceItemEntity
             mrp = invoiceItem.mrp,
             dp = invoiceItem.dp,
             invoice_id = invoiceId,
-            tax_code = invoiceItem.product?.taxCode ?: "",
+            tax_code = invoiceItem.product?.taxCode ?: invoiceItem.taxCode,
             tax_info = Json.encodeToString(invoiceItem.taxInfos.toDatabaseEntity()),
             total_tax = invoiceItem.totalTax,
             active = if (invoiceItem.active) 1 else 0,

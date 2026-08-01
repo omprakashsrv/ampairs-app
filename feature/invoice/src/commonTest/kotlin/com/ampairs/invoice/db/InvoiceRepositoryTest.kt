@@ -31,6 +31,7 @@ import com.ampairs.sequence.domain.model.SequenceAllocationRequest
 import com.ampairs.sequence.domain.model.SequenceDefinition
 import com.ampairs.common.model.PageResponse
 import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
 import com.ampairs.sync.db.SyncStateEntity
 import kotlinx.coroutines.flow.Flow
@@ -434,7 +435,6 @@ private class FakeInvoiceDao : InvoiceDao {
     override suspend fun getInvoicesByCustomerName(searchText: String): List<InvoiceEntity> = emptyList()
     override suspend fun getInvoicesByDateRange(startDate: String, endDate: String): List<InvoiceEntity> = emptyList()
     override suspend fun getInvoicesByOrderRef(orderRefId: String): List<InvoiceEntity> = emptyList()
-    override suspend fun getMaxLastUpdated(): Long? = null
     override suspend fun countInvoices(): Int = rows.size
     override suspend fun countInvoicesByCustomer(customerId: String): Int = 0
     override suspend fun countInvoicesByStatus(status: String): Int = 0
@@ -470,6 +470,8 @@ private class FakeInvoiceItemDao : InvoiceItemDao {
     override suspend fun insertAll(invoiceItems: List<InvoiceItemEntity>) { invoiceItems.forEach { rows[it.id] = it } }
     override suspend fun getInvoiceItems(invoiceId: String): List<InvoiceItemEntity> =
         rows.values.filter { it.invoice_id == invoiceId && it.active == 1L }.sortedBy { it.item_no }
+    override suspend fun getAllInvoiceItemsRaw(invoiceId: String): List<InvoiceItemEntity> =
+        rows.values.filter { it.invoice_id == invoiceId }.sortedBy { it.item_no }
 
     override suspend fun selectById(id: String): InvoiceItemEntity? = rows[id]
     override suspend fun selectAll(): List<InvoiceItemEntity> = rows.values.toList()
@@ -499,6 +501,10 @@ private class FakeInvoiceItemDao : InvoiceItemDao {
     override suspend fun softDelete(id: String) {}
     override suspend fun softDeleteByInvoiceId(invoiceId: String) {}
     override suspend fun deleteById(id: String) { rows.remove(id) }
+    override suspend fun deleteByIds(ids: List<String>) { ids.forEach { rows.remove(it) } }
+    override suspend fun deleteInactiveByInvoice(invoiceId: String) {
+        rows.values.filter { it.invoice_id == invoiceId && it.active == 0L }.forEach { rows.remove(it.id) }
+    }
     override suspend fun deleteByInvoiceId(invoiceId: String) {
         rows.values.filter { it.invoice_id == invoiceId }.forEach { rows.remove(it.id) }
     }
@@ -518,6 +524,14 @@ private class RecordingSyncStateDao : SyncStateDao {
     override suspend fun getAll(): List<SyncStateEntity> = emptyList()
     override suspend fun getPending(): List<SyncStateEntity> = emptyList()
     override suspend fun upsert(state: SyncStateEntity) {}
+    override suspend fun upsertStatus(
+        entity: SyncEntity,
+        status: SyncPersistStatus,
+        lastSyncedAt: Long?,
+        pendingCount: Int,
+        errorMessage: String?,
+        now: Long,
+    ) {}
     override suspend fun getLastSyncedAtIso(entity: SyncEntity): String? = null
     override suspend fun setLastSyncedAtIso(entity: SyncEntity, iso: String) {}
     override suspend fun markPendingPush(entity: SyncEntity, now: Long) { pendingPushes += entity }

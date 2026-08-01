@@ -97,7 +97,7 @@
     <string name="prod_variant_empty_title">No Variants</string>
     <string name="prod_variant_empty_desc">Add variants to manage different product options</string>
     <string name="prod_variant_delete_title">Delete Variant</string>
-    <string name="prod_variant_delete_confirm">Are you sure you want to delete \'%1$s\'? This action cannot be undone.</string>
+    <string name="prod_variant_delete_confirm">Are you sure you want to delete '%1$s'? This action cannot be undone.</string>
     <string name="prod_variant_low_stock">Low Stock</string>
     <string name="prod_variant_selling">Selling</string>
 
@@ -134,7 +134,7 @@
     <string name="prod_form_has_variants_label">This product has variants</string>
     <string name="prod_form_has_variants_desc">Enable if product comes in different sizes, colors, or configurations</string>
     <string name="prod_form_save_first_title">Save product first to add variants</string>
-    <string name="prod_form_save_first_desc">After saving this product, you\'ll be able to add and manage variants like sizes, colors, and other options.</string>
+    <string name="prod_form_save_first_desc">After saving this product, you'll be able to add and manage variants like sizes, colors, and other options.</string>
     <string name="prod_form_manage_variants_title">Manage Product Variants</string>
     <string name="prod_form_manage_variants_desc">Add and manage sizes, colors, and other variant options. At least one variant is required.</string>
     <string name="prod_form_optional_placeholder">Optional</string>

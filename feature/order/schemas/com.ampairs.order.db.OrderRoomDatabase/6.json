@@ -1,0 +1,400 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "5c034f67515d433acf5aa9c435b8da09",
+    "entities": [
+      {
+        "tableName": "orderEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `order_number` TEXT NOT NULL, `order_date` TEXT NOT NULL, `status` TEXT NOT NULL, `customer_id` TEXT NOT NULL, `customer_name` TEXT NOT NULL, `customer_gst` TEXT NOT NULL, `customer_phone` TEXT, `seller_name` TEXT, `seller_address` TEXT, `seller_gst` TEXT, `place_of_supply` TEXT, `seller_place_of_supply` TEXT, `total_cost` REAL NOT NULL, `total_tax` REAL NOT NULL, `total_items` INTEGER NOT NULL, `total_quantity` REAL NOT NULL, `base_price` REAL NOT NULL, `tax_info` TEXT, `created_by` TEXT NOT NULL, `updated_by` TEXT NOT NULL, `billing_address` TEXT, `shipping_address` TEXT, `discount` TEXT, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `last_updated` INTEGER NOT NULL, `invoice_ref_id` TEXT, `price_mode` TEXT NOT NULL, `overall_discount_mode` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "order_number",
+            "columnName": "order_number",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "order_date",
+            "columnName": "order_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customer_id",
+            "columnName": "customer_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customer_name",
+            "columnName": "customer_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customer_gst",
+            "columnName": "customer_gst",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customer_phone",
+            "columnName": "customer_phone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seller_name",
+            "columnName": "seller_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seller_address",
+            "columnName": "seller_address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seller_gst",
+            "columnName": "seller_gst",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "place_of_supply",
+            "columnName": "place_of_supply",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seller_place_of_supply",
+            "columnName": "seller_place_of_supply",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "total_cost",
+            "columnName": "total_cost",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_tax",
+            "columnName": "total_tax",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_items",
+            "columnName": "total_items",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_quantity",
+            "columnName": "total_quantity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "base_price",
+            "columnName": "base_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tax_info",
+            "columnName": "tax_info",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "created_by",
+            "columnName": "created_by",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_by",
+            "columnName": "updated_by",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "billing_address",
+            "columnName": "billing_address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "shipping_address",
+            "columnName": "shipping_address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "discount",
+            "columnName": "discount",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soft_deleted",
+            "columnName": "soft_deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_updated",
+            "columnName": "last_updated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "invoice_ref_id",
+            "columnName": "invoice_ref_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "price_mode",
+            "columnName": "price_mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overall_discount_mode",
+            "columnName": "overall_discount_mode",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "order_id_idx",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `order_id_idx` ON `${TABLE_NAME}` (`id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "orderItemEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `description` TEXT NOT NULL, `product_id` TEXT NOT NULL, `total_cost` REAL NOT NULL, `base_price` REAL NOT NULL, `product_price` REAL NOT NULL, `total_tax` REAL NOT NULL, `order_id` TEXT NOT NULL, `tax_code` TEXT NOT NULL, `quantity` REAL NOT NULL, `item_no` INTEGER NOT NULL, `selling_price` REAL NOT NULL, `mrp` REAL NOT NULL, `dp` REAL NOT NULL, `tax_info` TEXT, `discount` TEXT, `active` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `unit_id` TEXT NOT NULL, `base_quantity` REAL NOT NULL, `variant_sku` TEXT, `resolved_unit_price_minor` INTEGER, `currency` TEXT, `price_source` TEXT, `matched_price_list_uid` TEXT, `applied_tier_min_qty` REAL, `below_moq` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "product_id",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_cost",
+            "columnName": "total_cost",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "base_price",
+            "columnName": "base_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "product_price",
+            "columnName": "product_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_tax",
+            "columnName": "total_tax",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "order_id",
+            "columnName": "order_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tax_code",
+            "columnName": "tax_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "item_no",
+            "columnName": "item_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selling_price",
+            "columnName": "selling_price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mrp",
+            "columnName": "mrp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dp",
+            "columnName": "dp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tax_info",
+            "columnName": "tax_info",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "discount",
+            "columnName": "discount",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soft_deleted",
+            "columnName": "soft_deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit_id",
+            "columnName": "unit_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "base_quantity",
+            "columnName": "base_quantity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "variant_sku",
+            "columnName": "variant_sku",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "resolved_unit_price_minor",
+            "columnName": "resolved_unit_price_minor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "price_source",
+            "columnName": "price_source",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "matched_price_list_uid",
+            "columnName": "matched_price_list_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "applied_tier_min_qty",
+            "columnName": "applied_tier_min_qty",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "below_moq",
+            "columnName": "below_moq",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "order_item_id_idx",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `order_item_id_idx` ON `${TABLE_NAME}` (`id`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5c034f67515d433acf5aa9c435b8da09')"
+    ]
+  }
+}

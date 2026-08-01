@@ -113,6 +113,7 @@ kotlin {
             dependencies {
                 api(projects.data.common)
                 api(projects.data.sync)
+                api(projects.data.database)
                 api(projects.printing.core)
                 api(projects.printing.render)
                 api(projects.printing.transport)
@@ -143,6 +144,7 @@ kotlin {
                 api(projects.feature.payment)
                 api(projects.feature.notification)
                 api(projects.feature.workspace)
+                api(projects.feature.analytics)
                 api(projects.feature.fileApi)
                 api(projects.feature.file)
 
@@ -180,6 +182,7 @@ kotlin {
                 implementation(libs.lifecycle.viewmodel)
                 implementation(libs.lifecycle.viewmodel.compose)
                 implementation(libs.lifecycle.viewmodel.navigation3)
+                implementation(libs.lifecycle.runtime.compose)
                 implementation(libs.savedstate)
                 implementation(libs.savedstate.compose)
                 implementation(libs.paging.componse.common)
@@ -218,7 +221,7 @@ kotlin {
 }
 
 
-room {
+room3 {
     schemaDirectory("$projectDir/schemas")
 }
 

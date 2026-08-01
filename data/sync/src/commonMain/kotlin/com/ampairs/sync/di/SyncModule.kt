@@ -4,11 +4,8 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.sync.SyncDelegate
 import com.ampairs.sync.SyncEntity
-import com.ampairs.sync.db.SyncStateDao
-import com.ampairs.sync.db.SyncStateDatabase
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Multibinds
-import dev.zacsweers.metro.Provides
 
 @ContributesTo(AppScope::class)
 interface SyncModule {
@@ -23,8 +20,6 @@ interface WorkspaceSyncModule {
     @Multibinds
     fun syncDelegates(): Map<SyncEntity, SyncDelegate>
 
-    companion object {
-        @Provides
-        fun provideSyncStateDao(db: SyncStateDatabase): SyncStateDao = db.syncStateDao()
-    }
+    // SyncStateDao is provided by the composition root's consolidated workspace database module
+    // (:data:database for the main app, shared-ecom's storefront database for the client apps).
 }

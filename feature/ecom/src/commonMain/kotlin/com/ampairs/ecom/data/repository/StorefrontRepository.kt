@@ -9,6 +9,7 @@ import com.ampairs.ecom.data.db.dao.TaxonomyImageDao
 import com.ampairs.ecom.data.db.entity.StorefrontEntity
 import com.ampairs.ecom.data.db.entity.TaxonomyImageEntity
 import com.ampairs.ecom.domain.EcomLogger
+import com.ampairs.ecom.domain.toAbsoluteImageUrl
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Clock
@@ -22,19 +23,35 @@ class StorefrontRepository(
     private val storefrontDao: StorefrontDao,
     private val taxonomyDao: TaxonomyImageDao,
 ) {
-    fun observeStorefront(slug: String): Flow<StorefrontEntity?> = storefrontDao.observeBySlug(slug)
+    fun observeStorefront(slug: String): Flow<StorefrontEntity?> =
+        storefrontDao.observeBySlug(slug).orEmitOnDbClosed(null)
 
     fun observeTaxonomy(storefrontId: String): Flow<List<TaxonomyImageEntity>> =
-        taxonomyDao.observeForStorefront(storefrontId)
+        taxonomyDao.observeForStorefront(storefrontId).orEmitOnDbClosed(emptyList())
 
-    /** Fetch + cache the storefront. Returns the domain model so the caller can resolve the gate. */
-    suspend fun bootstrap(slug: String): Result<Storefront> {
-        val result = api.getStorefront(slug)
-        result.onSuccess { storefront ->
-            storefrontDao.upsert(storefront.toEntity(Clock.System.now().toEpochMilliseconds()))
-        }.onFailure { EcomLogger.w("Storefront", "bootstrap failed for $slug", it) }
-        return result
-    }
+    /**
+     * Fetch + cache the storefront. Returns the domain model so the caller can resolve the gate.
+     * Offline: falls back to the last cached [StorefrontEntity] so a store the buyer has visited
+     * before still opens (the gate can proceed on the cached status/access mode). Only a network
+     * failure with no cache surfaces as `Result.failure`.
+     */
+    suspend fun bootstrap(slug: String): Result<Storefront> =
+        api.getStorefront(slug).fold(
+            onSuccess = { storefront ->
+                storefrontDao.upsert(storefront.toEntity(Clock.System.now().toEpochMilliseconds()))
+                Result.success(storefront)
+            },
+            onFailure = { e ->
+                val cached = storefrontDao.bySlug(slug)
+                if (cached != null) {
+                    EcomLogger.w("Storefront", "bootstrap offline for $slug — serving cached store", e)
+                    Result.success(cached.toStorefront())
+                } else {
+                    EcomLogger.w("Storefront", "bootstrap failed for $slug (no cache)", e)
+                    Result.failure(e)
+                }
+            },
+        )
 
     /** Refresh category/subcategory/brand tiles for a storefront. */
     suspend fun refreshCatalogMeta(slug: String, storefrontId: String): Result<CatalogMeta> {
@@ -53,7 +70,7 @@ class StorefrontRepository(
                 storefront_id = storefrontId,
                 type = TaxonomyType.CATEGORY.name,
                 name = cat.name,
-                image_url = cat.imageUrl,
+                image_url = cat.imageUrl?.toAbsoluteImageUrl(),
                 product_count = cat.productCount,
                 sort_order = cat.sortOrder,
             )
@@ -64,7 +81,7 @@ class StorefrontRepository(
                     type = TaxonomyType.SUBCATEGORY.name,
                     name = sub.name,
                     parent_name = cat.name,
-                    image_url = sub.imageUrl,
+                    image_url = sub.imageUrl?.toAbsoluteImageUrl(),
                     product_count = sub.productCount,
                     sort_order = sub.sortOrder,
                 )
@@ -76,7 +93,7 @@ class StorefrontRepository(
                 storefront_id = storefrontId,
                 type = TaxonomyType.BRAND.name,
                 name = brand.name,
-                image_url = brand.imageUrl,
+                image_url = brand.imageUrl?.toAbsoluteImageUrl(),
                 product_count = brand.productCount,
                 sort_order = brand.sortOrder,
             )

@@ -254,7 +254,10 @@ private fun LedgerStatementRow(line: StatementLine, locale: AppLocale, onEditPay
         !line.isReversal
     val isDebit = line.debit.isPositive
     val delta = if (isDebit) line.debit else line.credit
-    val deltaColor = if (isDebit) CollectionsColors.payable else CollectionsColors.receivable
+    // DR increases the receivable / reduces the payable — same "DR = receivable colour" convention
+    // used for the aggregate balance (PartyBalanceRow); this was inverted, coloring e.g. a
+    // SALES_INVOICE line as payable and a PAYMENT_IN line as receivable.
+    val deltaColor = if (isDebit) CollectionsColors.receivable else CollectionsColors.payable
     val icon: ImageVector = when {
         line.isOpening -> Icons.Filled.Flag
         isDebit -> Icons.Filled.NorthEast
@@ -269,8 +272,10 @@ private fun LedgerStatementRow(line: StatementLine, locale: AppLocale, onEditPay
         line.isOpening -> stringResource(Res.string.payment_opening_balance)
         else -> line.entryType?.name?.humanize() ?: line.narration.orEmpty()
     }
+    // Invoice/purchase-derived entries carry the invoice's "yyyy-MM-dd HH:mm:ss" local date (no
+    // 'T'), so substringBefore('T') alone is a no-op for them — strip a space-separated time too.
     val ref = listOfNotNull(
-        line.entryDate.substringBefore('T').takeIf { it.isNotBlank() },
+        line.entryDate.substringBefore('T').substringBefore(' ').takeIf { it.isNotBlank() },
         line.voucherNo.takeIf { it.isNotBlank() },
     ).joinToString(" · ")
 

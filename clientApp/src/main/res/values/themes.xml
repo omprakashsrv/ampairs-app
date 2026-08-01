@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base app theme. Compose owns all UI; this just needs to be a valid NoActionBar theme
+         with no AppCompat dependency. Status/navigation bars are handled by enableEdgeToEdge(). -->
+    <style name="Theme.Client" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>

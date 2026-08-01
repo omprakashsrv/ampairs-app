@@ -1,7 +1,7 @@
 package com.ampairs.common.database
 
-import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
+import androidx.room3.RoomDatabase
+import androidx.room3.migration.Migration
 import kotlinx.coroutines.CoroutineDispatcher
 
 class WorkspaceAwareDatabaseFactory(

@@ -52,6 +52,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object Storefront : Route
 
+    /** Owner-facing "ecom users" list — every buyer linked to any customer, restrict/re-enable access. */
+    @Serializable
+    data object EcomUsers : Route
+
     @Serializable
     data class FormConfig(
         val entityType: String = ""
@@ -71,6 +75,10 @@ sealed interface Route : NavKey {
 
     @Serializable
     data object Notifications : Route
+
+    /** Analytics & forecasting dashboard (feature 022). */
+    @Serializable
+    data object Analytics : Route
 
     @Serializable
     data object More : Route
@@ -262,7 +270,7 @@ sealed interface EcomRoute : NavKey {
     data object Checkout : EcomRoute
 
     @Serializable
-    data class OrderPlaced(val orderRef: String) : EcomRoute
+    data class OrderPlaced(val orderRef: String, val orderNumber: String = "") : EcomRoute
 
     @Serializable
     data object Orders : EcomRoute

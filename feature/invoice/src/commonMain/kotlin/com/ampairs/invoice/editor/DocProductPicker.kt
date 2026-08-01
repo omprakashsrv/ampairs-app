@@ -14,7 +14,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Inventory2
@@ -79,9 +80,16 @@ fun DocProductPickerPopover(
                 textStyle = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp).focusRequester(focusRequester),
             )
-            LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                items(results.size, key = { results[it].id }) { i ->
-                    val p = results[i]
+            // A DropdownMenu measures its content with IntrinsicSize.Max, which a LazyColumn (a
+            // SubcomposeLayout) cannot answer ("Asking for intrinsic measurements of SubcomposeLayout
+            // layouts is not supported"). Product results are search-capped (≤50), so a plain
+            // scrollable Column is both correct and cheap here.
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 300.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                results.forEach { p ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -116,31 +124,29 @@ fun DocProductPickerPopover(
                     }
                 }
                 if (query.isNotBlank()) {
-                    item(key = "create") {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onCreate(query.trim()) }
-                                .padding(vertical = 8.dp, horizontal = 4.dp)
-                                .heightIn(min = 40.dp),
-                        ) {
-                            Icon(
-                                Icons.Filled.AddCircle, contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp),
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onCreate(query.trim()) }
+                            .padding(vertical = 8.dp, horizontal = 4.dp)
+                            .heightIn(min = 40.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.AddCircle, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp),
+                        )
+                        Column(Modifier.padding(horizontal = 8.dp)) {
+                            Text(
+                                stringResource(Res.string.doc_cmd_create, query.trim()),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
                             )
-                            Column(Modifier.padding(horizontal = 8.dp)) {
-                                Text(
-                                    stringResource(Res.string.doc_cmd_create, query.trim()),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                                Text(
-                                    stringResource(Res.string.doc_cmd_create_sub),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
+                            Text(
+                                stringResource(Res.string.doc_cmd_create_sub),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }

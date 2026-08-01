@@ -28,5 +28,8 @@ GoogleService-Info.plist
 *.keystore
 ampairs.jks
 
+# Play Console publishing service-account key (gradle-play-publisher)
+play-service-account.json
+
 # Android release build outputs (APK/AAB/baseline profiles — large binaries)
 androidApp/release/

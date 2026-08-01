@@ -1,7 +1,7 @@
 package com.ampairs.invoice.db
 
 import androidx.paging.PagingSource
-import androidx.room.Transaction
+import androidx.room3.Transaction
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
@@ -57,7 +57,14 @@ class InvoiceRepository(
     @Transaction
     private suspend fun persist(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
         invoiceDao.insert(invoiceEntity.copy(synced = 0))
-        invoiceItemDao.insertAll(invoiceItems)
+        // Lines the user removed while billing are no longer in [invoiceItems]. Soft-delete the ones
+        // that still exist in Room (active = 0) and keep them so the deletion rides along on the next
+        // invoice /sync push (in-band delete); the backend then propagates it to every device.
+        val currentIds = invoiceItems.map { it.id }.toSet()
+        val removed = invoiceItemDao.getAllInvoiceItemsRaw(invoiceEntity.id)
+            .filter { it.id !in currentIds && it.active == 1L }
+            .map { it.copy(active = 0, soft_deleted = 1) }
+        invoiceItemDao.insertAll(invoiceItems + removed)
     }
 
     /**
@@ -147,6 +154,12 @@ class InvoiceRepository(
             val product = products.find { it.id == itemEntity.product_id }
             val item = InvoiceItem(product)
             item.id = itemEntity.id
+            // Restore the stored line snapshot so it survives an edit round-trip even when the
+            // catalog product is absent (otherwise the InvoiceItem(null) constructor leaves the
+            // name as "null null" and the id blank, and re-saving would persist that).
+            item.description = itemEntity.description
+            item.productId = itemEntity.product_id
+            item.taxCode = itemEntity.tax_code
             item.quantity = itemEntity.quantity
             item.price = itemEntity.selling_price
             item.productPrice = itemEntity.product_price

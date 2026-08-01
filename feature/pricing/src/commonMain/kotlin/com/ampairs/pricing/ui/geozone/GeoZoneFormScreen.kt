@@ -41,7 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -99,7 +99,7 @@ fun GeoZoneFormScreen(
         key = geoZoneId ?: "new",
     ) { create(geoZoneId) },
 ) {
-    val state by viewModel.formState.collectAsState()
+    val state by viewModel.formState.collectAsStateWithLifecycle()
 
     Scaffold(modifier = modifier.fillMaxSize()) { padding ->
         if (state.isLoading) {

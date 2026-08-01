@@ -75,7 +75,7 @@
     <string name="otp_verifying">Verifying...</string>
     <string name="otp_enter_code">Enter the code sent to your phone</string>
     <string name="otp_waiting_for_auto_verification">Waiting for automatic verification...</string>
-    <string name="otp_auto_verification_desc">We\'re checking if your device can be verified automatically.\nThis usually takes a few seconds.</string>
+    <string name="otp_auto_verification_desc">We're checking if your device can be verified automatically.\nThis usually takes a few seconds.</string>
     <string name="otp_enter_manually">Enter code manually</string>
     
     <!-- Customer Screen -->
@@ -209,7 +209,7 @@
     <string name="desktop_auth_sign_in_with_browser">Sign in with Browser</string>
     <string name="desktop_auth_waiting_for_authentication">Waiting for authentication...</string>
     <string name="desktop_auth_complete_in_browser">Complete the authentication in your browser.\nThis window will automatically update when done.</string>
-    <string name="desktop_auth_browser_no_deep_links">Browser doesn\'t support deep links? Paste tokens here</string>
+    <string name="desktop_auth_browser_no_deep_links">Browser doesn't support deep links? Paste tokens here</string>
     <string name="desktop_auth_cancel">Cancel</string>
     <string name="desktop_auth_paste_tokens">Paste Authentication Tokens</string>
     <string name="desktop_auth_paste_instructions">After completing authentication in your browser, copy the JSON tokens and paste them below.</string>
@@ -241,7 +241,7 @@
     <string name="inv_synced">Synced</string>
     <string name="inv_pending">Pending</string>
     <string name="inv_offline">Offline</string>
-    <string name="inv_offline_banner">You\'re offline — changes will sync when you reconnect.</string>
+    <string name="inv_offline_banner">You're offline — changes will sync when you reconnect.</string>
     <string name="inv_view_all">View all</string>
     <string name="inv_refresh">Refresh</string>
 
@@ -281,10 +281,10 @@
     <!-- Empty / error states -->
     <string name="inv_empty_filtered_title">No matching items</string>
     <string name="inv_empty_low_title">No low-stock items</string>
-    <string name="inv_empty_low_desc">Everything\'s above its reorder level. Nice.</string>
+    <string name="inv_empty_low_desc">Everything's above its reorder level. Nice.</string>
     <string name="inv_empty_out_title">No out-of-stock items</string>
     <string name="inv_empty_inactive_title">No inactive items</string>
-    <string name="inv_error_title">Couldn\'t load items</string>
+    <string name="inv_error_title">Couldn't load items</string>
     <string name="inv_error_desc">Check your connection and try again.</string>
 
     <!-- Item detail -->
@@ -327,7 +327,7 @@
     <string name="inv_form_section_pricing">Pricing</string>
     <string name="inv_form_section_stock">Stock</string>
     <string name="inv_form_label_opening_stock">Opening stock</string>
-    <string name="inv_form_opening_hint">Becomes the item\'s first OPENING movement — never a silent number.</string>
+    <string name="inv_form_opening_hint">Becomes the item's first OPENING movement — never a silent number.</string>
     <string name="inv_form_error_name_required">Name is required.</string>
     <string name="inv_form_save">Save</string>
     <string name="inv_form_close">Close</string>
@@ -336,7 +336,7 @@
     <string name="inv_adjust_direction">Direction</string>
     <string name="inv_adjust_preview">New on-hand</string>
     <string name="inv_adjust_reason_optional">Reason (optional)</string>
-    <string name="inv_adjust_blocked_negative">Can\'t go below zero. Negative stock is disabled for this workspace. Reduce the quantity, or enable negative stock in settings.</string>
+    <string name="inv_adjust_blocked_negative">Can't go below zero. Negative stock is disabled for this workspace. Reduce the quantity, or enable negative stock in settings.</string>
     <string name="inv_adjust_disabled">Manual adjustments are turned off for this workspace.</string>
     <string name="inv_adjust_success">Adjustment recorded. Saved locally · will sync when online.</string>
 
@@ -384,7 +384,7 @@
     <string name="inv_set_auto_deduct_title">Auto-deduct stock on sale</string>
     <string name="inv_set_auto_deduct_desc">When a sale is confirmed or an invoice is finalized, stock is deducted automatically — no manual step.</string>
     <string name="inv_set_block_out_title">Block orders when out of stock</string>
-    <string name="inv_set_block_out_desc">Sales can\'t be confirmed for items with zero available stock. Sellers see a blocked state in the line-item editor.</string>
+    <string name="inv_set_block_out_desc">Sales can't be confirmed for items with zero available stock. Sellers see a blocked state in the line-item editor.</string>
     <string name="inv_set_allow_negative_title">Allow negative stock</string>
     <string name="inv_set_allow_negative_desc">Permit on-hand to drop below zero (back-orders). When off, adjustments and sales that would go negative are blocked.</string>
     <string name="inv_set_allow_manual_title">Allow manual adjustments</string>

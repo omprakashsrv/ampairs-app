@@ -1,6 +1,6 @@
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -179,7 +179,7 @@ private fun ApplicationScope.TallyWindow(
     onCloseRequest = state::close, title = state.title,
     onKeyEvent = { false }
 ) {
-    val session by appGraph.workspaceManager.session.collectAsState()
+    val session by appGraph.workspaceManager.session.collectAsStateWithLifecycle()
     val scheduler = (session?.graph as? DesktopWorkspaceModule)?.tallySyncScheduler
     if (scheduler != null) {
         TallySettingsScreen(

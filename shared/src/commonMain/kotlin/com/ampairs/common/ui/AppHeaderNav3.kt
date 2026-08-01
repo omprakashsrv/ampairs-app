@@ -54,7 +54,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -124,7 +124,7 @@ fun AppHeaderNav3(
         ) {
             // Navigation button logic - platform-aware
             val globalNavManager = remember { GlobalNavigationManager.getInstance() }
-            val shouldShowHamburger by globalNavManager.shouldShowHamburgerMenu.collectAsState()
+            val shouldShowHamburger by globalNavManager.shouldShowHamburgerMenu.collectAsStateWithLifecycle()
             val canNavigateBack = backStack.size > 1
             val platformRequiresBackButton = remember { PlatformNavigationDetector.requiresBackButton() }
 
@@ -651,7 +651,7 @@ private fun ThemeSettingsDialogNav3(
     onDismiss: () -> Unit
 ) {
     val themeManager = LocalThemeManager.current
-    val currentTheme by themeManager.themePreference.collectAsState()
+    val currentTheme by themeManager.themePreference.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     Dialog(onDismissRequest = onDismiss) {

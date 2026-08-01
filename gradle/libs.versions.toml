@@ -1,5 +1,5 @@
 [versions]
-agp = "9.2.1"
+agp = "9.3.1"
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "36"
@@ -13,21 +13,22 @@ compose-plugin = "1.11.1"
 compose-material = "1.9.0"
 compose-material-icons = "1.7.3"
 kotlin = "2.4.0"
-ksp = "2.3.9"
-androidx-room = "2.8.4"
-androidx-sqlite-bundled = "2.6.2"
+ksp = "2.3.10"
+androidx-room = "3.0.0"
+androidx-sqlite-bundled = "2.7.0"
 coil = "3.5.0"
+vico = "2.5.2"
 
 kotlinx-dateTime = "0.8.0"
 kotlinx = "1.11.0"
 
 ktor = "3.5.1"
-metro = "1.2.1"
+metro = "1.3.0"
 paging-common = "3.5.0"
 image-loader = "1.10.0"
 splash-screen = "1.2.0"
 uuid = "0.8.4"
-grant = "2.2.1"
+grant = "2.2.3"
 adaptive = "1.2.0"
 kermit = "2.1.0"
 # Navigation 3 (new paradigm with user-owned back stack)
@@ -48,7 +49,7 @@ filekit = "0.14.2"
 play-services-location = "21.3.0"
 maps-compose = "8.3.0"
 accompanist-permissions = "0.37.3"
-litertlm = "0.13.1"
+litertlm = "0.14.0"
 whisper-jni = "1.7.1"
 whisper-cpp-xcframework = "1.9.1"
 # 0.3.38, not the newer 0.3.45: the 0.3.45 jar bundles a stale 2022 libvosk native that lacks
@@ -72,6 +73,7 @@ firebase-auth = "24.1.0"
 google-services = "4.5.0"
 firebase-crashlytics-gradle = "3.0.7"
 firebase-perf-gradle = "2.0.2"
+play-publisher = "4.0.0"
 sentry-kmp = "0.27.0"
 junit5 = "5.11.0"
 # Testing
@@ -113,9 +115,9 @@ krossbow-stomp-kxserialization = { module = "org.hildan.krossbow:krossbow-stomp-
 paging-common = { module = "androidx.paging:paging-common", version.ref = "paging-common" }
 paging-componse-common = { module = "androidx.paging:paging-compose", version.ref = "paging-common" }
 
-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room" }
-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
-room-paging = { module = "androidx.room:room-paging", version.ref = "androidx-room" }
+room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "androidx-room" }
+room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "androidx-room" }
+room-paging = { module = "androidx.room3:room3-paging", version.ref = "androidx-room" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite-bundled" }
 
 image-loader = { module = "io.github.qdsfdhvh:image-loader", version.ref = "image-loader" }
@@ -168,6 +170,7 @@ compose-components-resources = { group = "org.jetbrains.compose.components", nam
 coil-core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+vico-multiplatform = { module = "com.patrykandpatrick.vico:multiplatform", version.ref = "vico" }
 
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work-runtime" }
 
@@ -201,7 +204,7 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-room = { id = "androidx.room", version.ref = "androidx-room" }
+room = { id = "androidx.room3", version.ref = "androidx-room" }
 googleServices = { id = "com.google.gms.google-services", version.ref = "google-services" }
 firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-gradle" }
 firebasePerf = { id = "com.google.firebase.firebase-perf", version.ref = "firebase-perf-gradle" }
@@ -209,6 +212,7 @@ kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = 
 sentryPlugin = { id = "io.sentry.kotlin.multiplatform.gradle", version.ref = "sentry-kmp" }
 metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+playPublisher = { id = "com.github.triplet.play", version.ref = "play-publisher" }
 
 [bundles]
 ktor-common = ["ktor-client-core", "ktor-client-logging", "ktor-client-serialization", "ktor-client-contentNegotiation", "ktor-client-auth", "ktor-client-cio", "ktor-client-websockets"]

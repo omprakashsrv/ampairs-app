@@ -21,11 +21,14 @@ class EcomOrderRepository(
     private val orderDao: EcomOrderDao,
     private val session: EcomSession,
 ) {
-    fun observeOrders(storefrontId: String): Flow<List<EcomOrderEntity>> = orderDao.observeForStorefront(storefrontId)
+    fun observeOrders(storefrontId: String): Flow<List<EcomOrderEntity>> =
+        orderDao.observeForStorefront(storefrontId).orEmitOnDbClosed(emptyList())
 
-    fun observeOrder(ref: String): Flow<EcomOrderEntity?> = orderDao.observeByRef(ref)
+    fun observeOrder(ref: String): Flow<EcomOrderEntity?> =
+        orderDao.observeByRef(ref).orEmitOnDbClosed(null)
 
-    fun observeLineItems(orderUid: String): Flow<List<EcomOrderLineItemEntity>> = orderDao.observeLineItems(orderUid)
+    fun observeLineItems(orderUid: String): Flow<List<EcomOrderLineItemEntity>> =
+        orderDao.observeLineItems(orderUid).orEmitOnDbClosed(emptyList())
 
     /** Place the order. On success, cache it locally and return the response. */
     suspend fun checkout(slug: String, sessionToken: String, request: CheckoutRequest): Result<EcomOrderResponse> {
