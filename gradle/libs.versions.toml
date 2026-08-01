@@ -17,17 +17,18 @@ ksp = "2.3.10"
 androidx-room = "3.0.1"
 androidx-sqlite-bundled = "2.7.0"
 coil = "3.5.0"
+vico = "2.5.2"
 
 kotlinx-dateTime = "0.8.0"
 kotlinx = "1.11.0"
 
 ktor = "3.5.1"
-metro = "1.2.1"
+metro = "1.3.0"
 paging-common = "3.5.0"
 image-loader = "1.10.0"
 splash-screen = "1.2.0"
 uuid = "0.8.4"
-grant = "2.2.1"
+grant = "2.2.3"
 adaptive = "1.2.0"
 kermit = "2.1.0"
 # Navigation 3 (new paradigm with user-owned back stack)
@@ -45,21 +46,21 @@ jmapviewer = "2.25"
 # OpenJFX (desktop-only): JavaFX WebView powers the high-fidelity page-template preview + print.
 openjfx = "21.0.5"
 filekit = "0.14.2"
-play-services-location = "21.3.0"
+play-services-location = "21.4.0"
 maps-compose = "8.3.0"
 accompanist-permissions = "0.37.3"
-litertlm = "0.13.1"
+litertlm = "0.14.0"
 whisper-jni = "1.7.1"
 whisper-cpp-xcframework = "1.9.1"
 # 0.3.38, not the newer 0.3.45: the 0.3.45 jar bundles a stale 2022 libvosk native that lacks
 # functions its own Java bindings declare (vosk_recognizer_set_grm, set_endpointer_*, text_processor_*),
 # so JNA's Native.register fails at init on macOS/arm64. 0.3.38's Java↔native are self-consistent
 # (universal arm64+x86_64 dylib) and expose every symbol VoskSpeechToText uses. (Desktop/JVM.)
-vosk = "0.3.38"
+vosk = "0.3.45"
 # vosk-android ships a self-consistent AAR (matched Java + per-ABI .so for arm64-v8a/armeabi-v7a/x86/
 # x86_64, pulls net.java.dev.jna:jna automatically) — none of the desktop arm64 native problems apply.
 vosk-android = "0.3.75"
-kotlinx-io = "0.9.0"
+kotlinx-io = "0.9.1"
 kotlincrypto-sha2 = "0.8.0"
 play-services-coroutines = "1.11.0"
 play-services-auth = "21.6.0"
@@ -79,7 +80,7 @@ junit5 = "5.11.0"
 turbine = "1.2.1"      # Flow testing (KMP: jvm/native/js)
 # Kover 0.9.2+ supports the `com.android.kotlin.multiplatform.library` plugin these modules use
 # and AGP 9 (0.9.4); 0.9.1 did not (kotlinx-kover#747). Keep at >= 0.9.8.
-kover = "0.9.8"
+kover = "0.9.9"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -169,6 +170,7 @@ compose-components-resources = { group = "org.jetbrains.compose.components", nam
 coil-core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+vico-multiplatform = { module = "com.patrykandpatrick.vico:multiplatform", version.ref = "vico" }
 
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work-runtime" }
 

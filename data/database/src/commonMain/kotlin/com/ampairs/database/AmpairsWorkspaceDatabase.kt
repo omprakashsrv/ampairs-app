@@ -9,6 +9,8 @@ import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import com.ampairs.agent.data.db.dao.ChatMessageDao
 import com.ampairs.agent.data.db.entity.ChatMessageEntity
+import com.ampairs.analytics.data.db.dao.DemandForecastDao
+import com.ampairs.analytics.data.db.entity.DemandForecastEntity
 import com.ampairs.business.agent.BusinessAgentDao
 import com.ampairs.business.data.db.BusinessDao
 import com.ampairs.business.data.db.BusinessEntity
@@ -252,10 +254,12 @@ import com.ampairs.unit.data.db.entity.UnitEntity
         EcomOrderLineItemEntity::class,
         // agent chat (was agent_chat.db v1)
         ChatMessageEntity::class,
+        // analytics (feature 022) — pull-only forecast mirror
+        DemandForecastEntity::class,
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
@@ -374,6 +378,9 @@ abstract class AmpairsWorkspaceDatabase : RoomDatabase() {
 
     // agent chat
     abstract fun chatMessageDao(): ChatMessageDao
+
+    // analytics (feature 022)
+    abstract fun demandForecastDao(): DemandForecastDao
 
     // sync state
     abstract fun syncStateDao(): SyncStateDao

@@ -136,6 +136,8 @@ class DynamicModuleNavigationService {
             ModuleCodes.STOREFRONT_MANAGEMENT -> true
             ModuleCodes.AI_ASSISTANT -> true
             ModuleCodes.PRICING_MANAGEMENT -> true
+            ModuleCodes.BUSINESS_DASHBOARD,
+            ModuleCodes.BUSINESS_REPORTING -> true
             else -> false
         }
     }

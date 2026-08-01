@@ -73,5 +73,6 @@ include(
     ":feature:purchase",
     ":feature:payment",
     ":feature:notification",
-    ":feature:workspace"
+    ":feature:workspace",
+    ":feature:analytics"
 )
