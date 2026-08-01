@@ -1,10 +1,10 @@
 ---
 name: Dependency Versions
-description: Current pinned dependency versions for the Ampairs KMP app (as of July 2026, release 1.0.21)
+description: Current pinned dependency versions for the Ampairs KMP app (as of July 2026, release 1.0.23)
 type: project
 originSessionId: 35585732-55ed-4e7b-8cf2-fb305112b179
 ---
-Versions from `gradle/libs.versions.toml` (current as of July 2026 / app release 1.0.21):
+Versions from `gradle/libs.versions.toml` (current as of July 2026 / app release 1.0.23):
 
 | Dependency | Version |
 |---|---|
@@ -53,6 +53,6 @@ Versions from `gradle/libs.versions.toml` (current as of July 2026 / app release
 
 **Android SDK**: minSdk 24 / targetSdk 36 / compileSdk 37 (bumped from 36 so androidx-core 1.19.0 and vico:multiplatform-android 2.5.2 satisfy their AAR metadata minCompileSdk requirement)
 
-**App version**: versionName `1.0.21`, versionCode `100021` (in `androidApp/build.gradle.kts`)
+**App version**: versionName `1.0.23`, versionCode `100023` (in `androidApp/build.gradle.kts`)
 
 **Why:** These versions are in the version catalog and are referenced across all modules. When adding dependencies, always add to `gradle/libs.versions.toml` and reference via version catalog aliases, not hardcoded strings.

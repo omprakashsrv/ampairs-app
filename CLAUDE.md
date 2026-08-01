@@ -136,7 +136,7 @@ feature/{name}/src/
 
 **Removed** (do not reference in new code): Material Kolor, Wire/protobuf, Moko Permissions, AWS SDK Kotlin.
 
-**Android SDK**: Min 24 / Target 36 / Compile 37 | **Java**: 21+ | **App version**: 1.0.21 (versionCode 100021)
+**Android SDK**: Min 24 / Target 36 / Compile 37 | **Java**: 21+ | **App version**: 1.0.23 (versionCode 100023)
 
 ---
 
