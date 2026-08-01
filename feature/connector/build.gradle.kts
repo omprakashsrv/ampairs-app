@@ -21,6 +21,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(projects.data.common)
+                implementation(projects.data.database)
                 implementation(projects.data.sync)
                 implementation(projects.feature.authApi)
                 implementation(libs.kotlinx.serialization.json)
