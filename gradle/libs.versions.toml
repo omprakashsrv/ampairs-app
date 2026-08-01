@@ -56,7 +56,7 @@ whisper-cpp-xcframework = "1.9.1"
 # functions its own Java bindings declare (vosk_recognizer_set_grm, set_endpointer_*, text_processor_*),
 # so JNA's Native.register fails at init on macOS/arm64. 0.3.38's Java↔native are self-consistent
 # (universal arm64+x86_64 dylib) and expose every symbol VoskSpeechToText uses. (Desktop/JVM.)
-vosk = "0.3.38"
+vosk = "0.3.45"
 # vosk-android ships a self-consistent AAR (matched Java + per-ABI .so for arm64-v8a/armeabi-v7a/x86/
 # x86_64, pulls net.java.dev.jna:jna automatically) — none of the desktop arm64 native problems apply.
 vosk-android = "0.3.75"
