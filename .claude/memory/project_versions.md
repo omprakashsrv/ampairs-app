@@ -51,7 +51,7 @@ Versions from `gradle/libs.versions.toml` (current as of July 2026 / app release
 
 **Removed since earlier docs:** Material Kolor, Wire (Protocol Buffers), Moko Permissions, AWS SDK Kotlin — no longer in the version catalog; don't reference them in new code.
 
-**Android SDK**: minSdk 24 / targetSdk 36 / compileSdk 36 (androidx.core pinned to 1.17.x until compileSdk 37)
+**Android SDK**: minSdk 24 / targetSdk 36 / compileSdk 37 (bumped from 36 so androidx-core 1.19.0 and vico:multiplatform-android 2.5.2 satisfy their AAR metadata minCompileSdk requirement)
 
 **App version**: versionName `1.0.21`, versionCode `100021` (in `androidApp/build.gradle.kts`)
 
