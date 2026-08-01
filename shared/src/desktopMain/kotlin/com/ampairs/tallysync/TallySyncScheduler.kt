@@ -72,10 +72,47 @@ class TallySyncScheduler(
                 centralSyncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)
             if (result.customersSynced > 0)
                 centralSyncService.markPendingPush(SyncEntity.CUSTOMER)
+            if (result.suppliersSynced > 0)
+                centralSyncService.markPendingPush(SyncEntity.SUPPLIER)
             if (result.productsSynced > 0)
                 centralSyncService.markPendingPush(SyncEntity.PRODUCT)
             if (result.groupsSynced > 0 || result.categoriesSynced > 0)
                 centralSyncService.markPendingPush(SyncEntity.PRODUCT_CATALOG)
+            // Effective-dated standard price → price list (header + items); standard cost →
+            // product_standard_cost; compound units → unit conversions (ride the UNIT feed).
+            if (result.pricesSynced > 0) {
+                centralSyncService.markPendingPush(SyncEntity.PRICE_LIST)
+                centralSyncService.markPendingPush(SyncEntity.PRICE_LIST_ITEM)
+            }
+            if (result.standardCostsSynced > 0)
+                centralSyncService.markPendingPush(SyncEntity.PRODUCT_STANDARD_COST)
+            // Unit conversions ride the product /sync feed: ProductSyncDelegate now attaches each
+            // product's conversions on push (and writes server copies back on pull). Flag PRODUCT so
+            // the delegate runs and carries them — products and conversions come from the same stock
+            // items, so productsSynced is normally > 0 too, but flag explicitly to be safe.
+            if (result.unitConversionsSynced > 0)
+                centralSyncService.markPendingPush(SyncEntity.PRODUCT)
+            // Stock balances → inventory items + opening transactions.
+            if (result.inventoryItemsSynced > 0) {
+                centralSyncService.markPendingPush(SyncEntity.INVENTORY)
+                centralSyncService.markPendingPush(SyncEntity.INVENTORY_TRANSACTION)
+            }
+            if (result.invoicesSynced > 0)
+                centralSyncService.markPendingPush(SyncEntity.INVOICE)
+            if (result.purchasesSynced > 0)
+                centralSyncService.markPendingPush(SyncEntity.PURCHASE)
+            // Payments: the repository + ledger poster already flag these inside save()/postDocumentEntry;
+            // marking again is harmless and keeps the scheduler self-documenting.
+            if (result.paymentsSynced > 0) {
+                centralSyncService.markPendingPush(SyncEntity.PAYMENT_VOUCHER)
+                centralSyncService.markPendingPush(SyncEntity.PAYMENT_ALLOCATION)
+            }
+            // Invoice + purchase + payment postings all write ledger entries and recompute party
+            // balances (purchases via the buy-side PURCHASE_BILL → supplier "To Pay").
+            if (result.invoicesSynced > 0 || result.purchasesSynced > 0 || result.paymentsSynced > 0) {
+                centralSyncService.markPendingPush(SyncEntity.LEDGER_ENTRY)
+                centralSyncService.markPendingPush(SyncEntity.PARTY_BALANCE)
+            }
         }
 
         // Report the cycle to the backend connector platform (run history). Non-fatal.

@@ -16,12 +16,16 @@
     <string name="ord_view_title">Order</string>
     <string name="ord_view_cd_back">Go back</string>
     <string name="ord_view_cd_edit">Edit order</string>
+    <string name="ord_view_cd_print">Print order</string>
     <string name="ord_view_from">From</string>
     <string name="ord_view_to">To</string>
     <string name="ord_view_items">%1$d Items</string>
     <string name="ord_view_discount">Discount</string>
     <string name="ord_view_save">Save</string>
     <string name="ord_view_create_invoice">Create Invoice</string>
+    <string name="ord_view_mark_shipped">Mark Shipped</string>
+    <string name="ord_view_mark_out_for_delivery">Mark Out for Delivery</string>
+    <string name="ord_view_mark_delivered">Mark Delivered</string>
     <string name="ord_view_col_particulars">Particulars</string>
     <string name="ord_view_col_rate">Rate</string>
     <string name="ord_view_col_qty">Qty</string>

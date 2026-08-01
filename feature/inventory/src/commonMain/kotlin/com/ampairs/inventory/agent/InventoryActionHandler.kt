@@ -7,13 +7,16 @@ import com.ampairs.common.agent.ActionResult
 import com.ampairs.common.agent.ActionType
 import com.ampairs.common.agent.AgentAction
 import com.ampairs.common.agent.ParameterType
-import com.ampairs.common.di.AppScope
+import com.ampairs.common.agent.ActionHandlerKey
+import com.ampairs.common.di.WorkspaceScope
+import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
-import com.ampairs.inventory.db.InventoryRepository
 
 @Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@ActionHandlerKey("inventory")
 class InventoryActionHandler(
-    private val inventoryRepository: InventoryRepository,
+    private val agentDao: InventoryAgentDao,
 ) : ActionHandler {
 
     override val moduleName = "inventory"
@@ -31,11 +34,11 @@ class InventoryActionHandler(
     private suspend fun searchInventory(params: Map<String, String>): ActionResult {
         val query = params["query"]
             ?: return ActionResult.NeedsInput("What product are you looking for?", listOf("query"))
-        val items = inventoryRepository.inventoryDao.getInventoryByDescription(query, 10, 0)
+        val items = agentDao.search(normalizeWhitespace(query), limit = 50)
         return if (items.isEmpty()) {
             ActionResult.Success("No inventory found matching '$query'.")
         } else {
-            val summary = items.take(5).joinToString("\n") { "• ${it.description}: stock=${it.stock}" }
+            val summary = items.take(5).joinToString("\n") { "• ${it.name}: stock=${it.currentStock}" }
             ActionResult.Success("Found ${items.size} item(s):\n$summary")
         }
     }
@@ -43,9 +46,9 @@ class InventoryActionHandler(
     private suspend fun countInventory(params: Map<String, String>): ActionResult {
         val query = params["query"]
         val count = if (query != null) {
-            inventoryRepository.inventoryDao.countInventoryByDescription(query)
+            agentDao.countMatching(normalizeWhitespace(query))
         } else {
-            inventoryRepository.inventoryDao.countInventory()
+            agentDao.countActive()
         }
         return ActionResult.Success("Total inventory items: $count")
     }
@@ -53,29 +56,31 @@ class InventoryActionHandler(
     private suspend fun getProductInventory(params: Map<String, String>): ActionResult {
         val productId = params["productId"]
             ?: return ActionResult.NeedsInput("Which product's inventory?", listOf("productId"))
-        val inventory = inventoryRepository.getProductInventory(productId)
+        val stock = agentDao.stockByProduct(productId)
             ?: return ActionResult.Error("No inventory found for product '$productId'.")
-        return ActionResult.Success("Stock for product: ${inventory.stock} ${inventory.unit?.name ?: inventory.unitId ?: "units"}")
+        return ActionResult.Success("Stock for product: ${stock.onHand} (available ${stock.available})")
     }
 
     private suspend fun listLowStock(params: Map<String, String>): ActionResult {
-        val threshold = params["threshold"]?.toDoubleOrNull() ?: 10.0
-        val items = inventoryRepository.inventoryDao.getLowStockItems(threshold)
+        val items = agentDao.lowStock(limit = 50)
         return if (items.isEmpty()) {
-            ActionResult.Success("No low-stock items (threshold: $threshold).")
+            ActionResult.Success("No low-stock items.")
         } else {
-            val summary = items.take(5).joinToString("\n") { "• ${it.description}: stock=${it.stock}" }
+            val summary = items.take(5).joinToString("\n") { "• ${it.name}: stock=${it.currentStock} (reorder ${it.reorderLevel})" }
             val more = if (items.size > 5) "\n… and ${items.size - 5} more" else ""
             ActionResult.Success("${items.size} low-stock item(s):\n$summary$more")
         }
     }
+
+    private fun normalizeWhitespace(text: String): String =
+        text.trim().replace(Regex("\\s+"), " ")
 
     companion object {
         val ACTIONS = listOf(
             ActionDescriptor(
                 actionType = ActionType.SEARCH,
                 moduleName = "inventory",
-                description = "Search inventory by product description",
+                description = "Search inventory by product name or SKU",
                 parameters = listOf(
                     ActionParameter("query", ParameterType.STRING, required = true, "Search query"),
                 ),
@@ -99,9 +104,9 @@ class InventoryActionHandler(
             ActionDescriptor(
                 actionType = ActionType.LIST,
                 moduleName = "inventory",
-                description = "List low-stock items below a threshold",
+                description = "List low-stock items",
                 parameters = listOf(
-                    ActionParameter("threshold", ParameterType.NUMBER, required = false, "Stock threshold (default 10)"),
+                    ActionParameter("threshold", ParameterType.NUMBER, required = false, "Unused; low stock uses each item's reorder level"),
                 ),
             ),
         )

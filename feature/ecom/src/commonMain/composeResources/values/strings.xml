@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Storefront directory (common multi-store app) -->
+    <string name="ecom_directory_title">Choose a store</string>
+    <string name="ecom_directory_subtitle">Select a storefront to start ordering</string>
+    <string name="ecom_directory_search">Search stores…</string>
+    <string name="ecom_directory_empty">No stores found</string>
+    <string name="ecom_directory_error">Couldn't load stores. Pull to retry.</string>
+    <string name="ecom_directory_retry">Retry</string>
+    <string name="ecom_directory_error_title">Couldn't load stores</string>
+    <string name="ecom_directory_error_body">Check your connection and try again — your stores will be right here.</string>
+    <string name="ecom_directory_try_again">Try again</string>
+    <string name="ecom_directory_offline_banner">Showing saved stores</string>
+
+    <!-- Shop / browse load states -->
+    <string name="ecom_shop_offline_title">Couldn\'t load products</string>
+    <string name="ecom_shop_offline_body">We couldn\'t load this store\'s products right now. Please retry.</string>
+    <string name="ecom_shop_empty_title">No products yet</string>
+    <string name="ecom_shop_empty_body">This store hasn\'t added any products.</string>
+    <string name="ecom_shop_retry">Retry</string>
+    <string name="ecom_directory_empty_title">No stores match your search</string>
+    <string name="ecom_directory_empty_body">Try a shorter name or check the spelling.</string>
+    <string name="ecom_directory_clear_search">Clear search</string>
+    <string name="ecom_directory_single_title">Your store</string>
+    <string name="ecom_directory_single_subtitle">Continue where you left off</string>
+    <string name="ecom_directory_start_ordering">Start ordering</string>
+
     <!-- Gate -->
     <string name="ecom_loading">Loading…</string>
     <string name="ecom_store_unavailable_title">Store not available</string>
@@ -7,12 +32,15 @@
     <string name="ecom_request_access_title">Request store access</string>
     <string name="ecom_request_access_btn">Request access</string>
     <string name="ecom_pending_title">Access pending</string>
-    <string name="ecom_pending_body">The store will review your request. We\'ll notify you by SMS once you\'re approved.</string>
+    <string name="ecom_pending_body">The store will review your request. We'll notify you by SMS once you're approved.</string>
     <string name="ecom_shop_placeholder_title">Storefront ready</string>
     <string name="ecom_shop_placeholder_body">Browse, cart and checkout screens are coming in the next phase.</string>
 
     <!-- Browse / catalog -->
     <string name="ecom_search_placeholder">Search products…</string>
+    <string name="ecom_search_prompt">Search products by name or brand</string>
+    <string name="ecom_search_no_results">No products found</string>
+    <string name="ecom_add">ADD</string>
     <string name="ecom_shop_by_category">Shop by category</string>
     <string name="ecom_shop_by_brand">Shop by brand</string>
     <string name="ecom_popular">Popular</string>
@@ -52,6 +80,16 @@
     <string name="ecom_place_order">Place order</string>
     <string name="ecom_order_notes">Delivery notes (optional)</string>
     <string name="ecom_continue">Continue</string>
+    <string name="ecom_not_linked_title">Not linked to this business</string>
+    <string name="ecom_not_linked_got_it">Got it</string>
+    <string name="ecom_link_candidate_title">Link your account?</string>
+    <string name="ecom_link_candidate_subtitle">We found an account matching your phone number with this business.</string>
+    <string name="ecom_link_candidate_name">Name</string>
+    <string name="ecom_link_candidate_phone">Phone</string>
+    <string name="ecom_link_candidate_gstin">GSTIN</string>
+    <string name="ecom_link_candidate_address">Address</string>
+    <string name="ecom_link_candidate_confirm">Link and continue</string>
+    <string name="ecom_link_candidate_cancel">Cancel</string>
 
     <!-- Order placed / tracking -->
     <string name="ecom_order_placed_title">Order placed</string>
@@ -97,4 +135,49 @@
     <string name="ecom_address_default">Set as default</string>
     <string name="ecom_save">Save</string>
     <string name="ecom_delete">Delete</string>
+
+    <!-- Merchant storefront management -->
+    <string name="storefront_mgmt_title">Online Store</string>
+    <string name="storefront_mgmt_intro">Set up your customer-facing storefront. Configure branding and access, then publish to go live.</string>
+    <string name="storefront_mgmt_create_intro">Create your online store. Pick a store name and a permanent store URL — customers will browse and order here.</string>
+    <string name="storefront_mgmt_section_details">Store details</string>
+    <string name="storefront_mgmt_section_branding">Branding</string>
+    <string name="storefront_mgmt_section_access">Access</string>
+    <string name="storefront_mgmt_name">Store name</string>
+    <string name="storefront_mgmt_slug">Store URL (slug)</string>
+    <string name="storefront_mgmt_slug_helper">Lowercase letters, digits and hyphens. Permanent once created.</string>
+    <string name="storefront_mgmt_description">Description</string>
+    <string name="storefront_mgmt_logo">Logo</string>
+    <string name="storefront_mgmt_banner">Banner</string>
+    <string name="storefront_mgmt_branding_after_create">Save your store first, then add a logo and banner.</string>
+    <string name="storefront_mgmt_access_mode">Who can access</string>
+    <string name="storefront_mgmt_access_public">Public</string>
+    <string name="storefront_mgmt_access_public_desc">Anyone can browse and order</string>
+    <string name="storefront_mgmt_access_restricted">Restricted</string>
+    <string name="storefront_mgmt_access_restricted_desc">Customers must be granted access</string>
+    <string name="storefront_mgmt_status">Status</string>
+    <string name="storefront_mgmt_status_draft">Draft</string>
+    <string name="storefront_mgmt_status_published">Published</string>
+    <string name="storefront_mgmt_status_unpublished">Unpublished</string>
+    <string name="storefront_mgmt_status_unknown">Unknown</string>
+    <string name="storefront_mgmt_create">Create storefront</string>
+    <string name="storefront_mgmt_save">Save changes</string>
+    <string name="storefront_mgmt_publish">Publish</string>
+    <string name="storefront_mgmt_unpublish">Unpublish</string>
+    <string name="storefront_mgmt_preview">Preview store</string>
+    <string name="storefront_mgmt_manage_users">Manage ecom users</string>
+    <string name="storefront_mgmt_retry">Retry</string>
+    <string name="ecom_address_use_location">Use my location</string>
+    <string name="ecom_address_location_hint">Use your current location or pick on the map to fill the address automatically. You can edit any field afterwards.</string>
+    <string name="ecom_address_details">Address details</string>
+    <string name="ecom_cancel">Cancel</string>
+    <string name="ecom_delivery_address">Delivery address</string>
+
+    <!-- Ecom users management (owner-facing) -->
+    <string name="ecom_users_title">Ecom Users</string>
+    <string name="ecom_users_intro">Everyone linked to one of your customers across your storefronts. Restrict an account to block it from ordering.</string>
+    <string name="ecom_users_empty">No linked ecom accounts yet.</string>
+    <string name="ecom_users_retry">Retry</string>
+    <string name="ecom_users_active">Active</string>
+    <string name="ecom_users_restricted">Restricted</string>
 </resources>

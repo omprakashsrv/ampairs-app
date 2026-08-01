@@ -18,6 +18,8 @@ data class AddressResponse(
     @SerialName("country") val country: String = "IN",
     @SerialName("phone") val phone: String? = null,
     @SerialName("is_default") val isDefault: Boolean = false,
+    @SerialName("latitude") val latitude: Double? = null,
+    @SerialName("longitude") val longitude: Double? = null,
 )
 
 /**
@@ -25,6 +27,9 @@ data class AddressResponse(
  */
 @Serializable
 data class AddressRequest(
+    // Client-generated uid — the app owns address ids. Sent so the server create is idempotent on
+    // this uid and the local id stays authoritative (matches at checkout).
+    @SerialName("uid") val uid: String? = null,
     @SerialName("label") val label: String? = null,
     @SerialName("address_line1") val addressLine1: String,
     @SerialName("address_line2") val addressLine2: String? = null,
@@ -34,4 +39,7 @@ data class AddressRequest(
     @SerialName("country") val country: String = "IN",
     @SerialName("phone") val phone: String? = null,
     @SerialName("is_default") val isDefault: Boolean = false,
+    // Optional geolocation, when the address was picked on the map.
+    @SerialName("latitude") val latitude: Double? = null,
+    @SerialName("longitude") val longitude: Double? = null,
 )

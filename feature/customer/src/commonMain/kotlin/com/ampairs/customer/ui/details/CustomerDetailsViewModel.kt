@@ -2,7 +2,9 @@ package com.ampairs.customer.ui.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.customer.data.repository.CustomerContactRepository
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.domain.CustomerContactResponse
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.form.data.repository.ConfigLookup
@@ -34,11 +36,21 @@ data class CustomerDetailsUiState(
     val attributeRows: List<Pair<String, String>> = emptyList(),
 )
 
+/** "Linked accounts" section state — kept separate from [CustomerDetailsUiState] since it's a
+ * live, UI-invoked concern (not part of the offline-synced customer record). */
+data class LinkedAccountsUiState(
+    val contacts: List<CustomerContactResponse> = emptyList(),
+    val isLoading: Boolean = false,
+    val isLinking: Boolean = false,
+    val error: String? = null,
+)
+
 @AssistedInject
 class CustomerDetailsViewModel(
     @Assisted private val customerId: String,
     private val customerStore: CustomerStore,
-    private val configRepository: ConfigLookup
+    private val configRepository: ConfigLookup,
+    private val contactRepository: CustomerContactRepository,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -54,8 +66,47 @@ class CustomerDetailsViewModel(
     private val _imagesConfig = MutableStateFlow(CustomerImagesConfig())
     val imagesConfig: StateFlow<CustomerImagesConfig> = _imagesConfig.asStateFlow()
 
+    private val _linkedAccounts = MutableStateFlow(LinkedAccountsUiState())
+    val linkedAccounts: StateFlow<LinkedAccountsUiState> = _linkedAccounts.asStateFlow()
+
     init {
         loadCustomerImagesConfig()
+        loadContacts()
+    }
+
+    fun loadContacts() {
+        viewModelScope.launch {
+            _linkedAccounts.update { it.copy(isLoading = true, error = null) }
+            contactRepository.getContacts(customerId).fold(
+                onSuccess = { contacts -> _linkedAccounts.update { it.copy(contacts = contacts, isLoading = false) } },
+                onFailure = { e -> _linkedAccounts.update { it.copy(isLoading = false, error = e.message ?: "Failed to load linked accounts") } },
+            )
+        }
+    }
+
+    /** Owner-initiated: find the app account registered with [phone] and link it to this customer. */
+    fun linkAccount(phone: String, name: String?) {
+        if (_linkedAccounts.value.isLinking) return
+        viewModelScope.launch {
+            _linkedAccounts.update { it.copy(isLinking = true, error = null) }
+            contactRepository.linkContact(customerId, phone, name).fold(
+                onSuccess = {
+                    _linkedAccounts.update { it.copy(isLinking = false) }
+                    loadContacts()
+                },
+                onFailure = { e -> _linkedAccounts.update { it.copy(isLinking = false, error = e.message ?: "Couldn't link that phone number") } },
+            )
+        }
+    }
+
+    /** Restrict (false) or re-enable (true) a linked account's ordering access. */
+    fun setAccountActive(contactUid: String, active: Boolean) {
+        viewModelScope.launch {
+            contactRepository.setContactActive(customerId, contactUid, active).fold(
+                onSuccess = { loadContacts() },
+                onFailure = { e -> _linkedAccounts.update { it.copy(error = e.message ?: "Couldn't update that account") } },
+            )
+        }
     }
 
     private fun loadCustomerImagesConfig() {

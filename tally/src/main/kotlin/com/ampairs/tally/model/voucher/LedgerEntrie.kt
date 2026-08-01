@@ -13,9 +13,12 @@ class LedgerEntrie(
     @XmlSerialName("LEDGERNAME")
     var ledgerName: String? = null,
 
+    // "Yes"/"No" — Tally's own Debit/Credit flag for this ledger line. Unlike AMOUNT (whose sign
+    // convention differs between contexts — e.g. OPENINGBALANCE is the reverse of voucher lines),
+    // this flag reliably means Debit when "Yes", Credit when "No".
     @XmlElement(true)
     @XmlSerialName("ISDEEMEDPOSITIVE")
-    private var isDeemedPositive: String? = null,
+    var isDeemedPositive: String? = null,
 
     @XmlElement(true)
     @XmlSerialName("ISPARTYLEDGER")
@@ -37,9 +40,10 @@ class LedgerEntrie(
     @XmlSerialName("BANKALLOCATIONS.LIST")
     var bankAllocationList: List<BankAllocation>? = null,
 
+    // A receipt/payment can settle multiple bills, so this is a list (one BILLALLOCATIONS.LIST per bill).
     @XmlElement(true)
     @XmlSerialName("BILLALLOCATIONS.LIST")
-    var billAllocation: BillAllocation? = null,
+    var billAllocationList: List<BillAllocation>? = null,
 
     @XmlElement(true)
     @XmlSerialName("TAXOBJECTALLOCATIONS.LIST")

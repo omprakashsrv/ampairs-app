@@ -16,7 +16,7 @@
 
     <!-- Attribute actions -->
     <string name="form_add_attribute">Add Attribute</string>
-    <string name="form_no_attributes">No custom attributes defined. Click \'Add Attribute\' to create one.</string>
+    <string name="form_no_attributes">No custom attributes defined. Click 'Add Attribute' to create one.</string>
     <string name="form_new_attribute">New Attribute</string>
     <string name="form_delete_attribute_cd">Delete Attribute</string>
 
@@ -101,7 +101,7 @@
     <string name="form_edit_show_section">Show section</string>
     <string name="form_edit_move_up">Move up</string>
     <string name="form_edit_move_down">Move down</string>
-    <string name="form_edit_default_no_delete">Default section — can\'t delete</string>
+    <string name="form_edit_default_no_delete">Default section — can't delete</string>
     <string name="form_edit_delete_section">Delete section</string>
     <string name="form_edit_no_fields">No fields yet — add one or drag a field here.</string>
     <string name="form_edit_add_field_to">Add field to %1$s</string>
@@ -121,13 +121,13 @@
     <string name="form_edit_allow_editing">Allow editing</string>
     <string name="form_edit_duplicate">Duplicate</string>
     <string name="form_edit_delete_field">Delete field</string>
-    <string name="form_edit_cant_delete_standard">Can\'t delete standard field</string>
+    <string name="form_edit_cant_delete_standard">Can't delete standard field</string>
     <string name="form_edit_untitled">Untitled</string>
 
     <!-- Form editor — toasts -->
     <string name="form_edit_toast_saved">All changes saved</string>
     <string name="form_edit_toast_discarded">Changes discarded</string>
-    <string name="form_edit_toast_save_failed">Couldn\'t save</string>
+    <string name="form_edit_toast_save_failed">Couldn't save</string>
 
     <!-- Form editor — live preview -->
     <string name="form_preview_new_entity">New %1$s</string>
@@ -175,13 +175,13 @@
     <string name="form_sheet_show_desc">Visible to staff entering data</string>
     <string name="form_sheet_required_desc">Staff must fill this in</string>
     <string name="form_sheet_readonly">Read-only</string>
-    <string name="form_sheet_readonly_desc">Shown but can\'t be edited</string>
+    <string name="form_sheet_readonly_desc">Shown but can't be edited</string>
     <string name="form_sheet_advanced_title">Advanced</string>
     <string name="form_sheet_apply">Apply</string>
     <string name="form_sheet_builtin_type_fixed">Built-in fields are backed by a data column, so the type is fixed.</string>
     <string name="form_sheet_validation_rules">Validation rules</string>
     <string name="form_sheet_validation_hint">Pick the checks staff must pass. No formulas — just plain limits.</string>
-    <string name="form_sheet_required_empty">Can\'t be left empty</string>
+    <string name="form_sheet_required_empty">Can't be left empty</string>
     <string name="form_sheet_no_checks">This type has no extra checks.</string>
     <string name="form_sheet_options_source">Where options come from</string>
     <string name="form_sheet_default_opt">Default value (optional)</string>
@@ -230,4 +230,20 @@
         <item quantity="one">%1$d option</item>
         <item quantity="other">%1$d options</item>
     </plurals>
+
+    <!-- Form agent chat bubble -->
+    <string name="form_agent_chat_title">AI Form Assistant</string>
+    <string name="form_agent_voice_listen">Start listening</string>
+    <string name="form_agent_voice_stop">Stop listening</string>
+    <string name="form_agent_processing">Processing…</string>
+    <string name="form_agent_close_cd">Close</string>
+    <string name="form_agent_open_cd">Fill with AI</string>
+    <string name="form_agent_editing">Editing: %1$s</string>
+    <string name="form_agent_input_hint">Describe the details to fill…</string>
+    <string name="form_agent_send_cd">Send</string>
+    <string name="form_agent_empty">Describe the record in plain words and I'll fill the matching fields. For example: \"Acme Traders in Mumbai, phone 9876543210\".</string>
+    <string name="form_agent_done">Done</string>
+    <string name="form_agent_listening">Listening… speak the details</string>
+    <string name="form_agent_tap_to_speak">Tap the mic, then say the details — name, phone, PAN, address…</string>
+    <string name="form_agent_voice_unavailable">Voice input isn't available on this device.</string>
 </resources>

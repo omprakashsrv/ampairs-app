@@ -2,6 +2,7 @@ package com.ampairs.common.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,7 +40,7 @@ class ThemeManager(
     @Composable
     fun isDarkTheme(): Boolean {
         val systemInDarkTheme = isSystemInDarkTheme()
-        val preference by themePreference.collectAsState()
+        val preference by themePreference.collectAsStateWithLifecycle()
 
         return when (preference) {
             ThemePreference.SYSTEM -> systemInDarkTheme

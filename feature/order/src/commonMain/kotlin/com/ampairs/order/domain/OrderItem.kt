@@ -76,6 +76,9 @@ class OrderItem(var product: ProductSummary?) {
     var basePrice: Double = 0.0
     var description: String = (product?.name + " " + product?.code)
     var productId = product?.id
+
+    /** HSN snapshot — kept on the line so it survives without an attached catalog product. */
+    var taxCode: String = product?.taxCode ?: ""
     var productPrice: Double = product?.sellingPrice ?: 0.0
     var dp: Double = product?.dp ?: 0.0
     var totalTax: Double = 0.0
@@ -87,6 +90,15 @@ class OrderItem(var product: ProductSummary?) {
 
     var id: String = ""
     var discountPercent: Double by mutableStateOf(0.0)
+
+    // 009 pricing snapshot — set by the PriceResolver seam at line build; persisted to Room and
+    // pushed verbatim on /sync (the backend never re-resolves). Null when no resolution ran yet.
+    var resolvedUnitPriceMinor: Long? = null
+    var currency: String? = null
+    var priceSource: String? = null
+    var matchedPriceListUid: String? = null
+    var appliedTierMinQty: Double? = null
+    var belowMoq: Boolean = false
 
     init {
         if (id == "") {
@@ -101,9 +113,12 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
         OrderItemEntity(
             seq_id = 0,
             id = orderItem.id,
-            description = orderItem.product?.name + " " + orderItem.product?.code,
+            // Derive from the catalog product when it's attached, else keep the line's own snapshot.
+            // An untouched line (re-opened order whose product isn't in the local catalog) has a null
+            // product; re-deriving from it would wipe the name to "null null" and blank the product id.
+            description = orderItem.product?.let { "${it.name} ${it.code}" } ?: orderItem.description,
             item_no = 0,
-            product_id = orderItem.product?.id ?: "",
+            product_id = orderItem.product?.id ?: orderItem.productId ?: "",
             total_cost = orderItem.totalCost,
             base_price = orderItem.basePrice,
             product_price = orderItem.productPrice,
@@ -112,7 +127,7 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
             mrp = orderItem.mrp,
             dp = orderItem.dp,
             order_id = orderId,
-            tax_code = orderItem.product?.taxCode ?: "",
+            tax_code = orderItem.product?.taxCode ?: orderItem.taxCode,
             tax_info = Json.encodeToString(orderItem.taxInfos.toDatabaseEntity()),
             total_tax = orderItem.totalTax,
             active = if (orderItem.active) 1 else 0,
@@ -120,7 +135,13 @@ fun List<OrderItem>.asDatabaseModel(orderId: String): List<OrderItemEntity> {
             discount = if (orderItem.discount.isNotEmpty()) Json.encodeToString(orderItem.discount) else null,
             unit_id = orderItem.unitId,
             base_quantity = orderItem.baseQuantity,
-            variant_sku = orderItem.variantSku
+            variant_sku = orderItem.variantSku,
+            resolved_unit_price_minor = orderItem.resolvedUnitPriceMinor,
+            currency = orderItem.currency,
+            price_source = orderItem.priceSource,
+            matched_price_list_uid = orderItem.matchedPriceListUid,
+            applied_tier_min_qty = orderItem.appliedTierMinQty,
+            below_moq = if (orderItem.belowMoq) 1 else 0,
         )
     }
 }
@@ -130,6 +151,7 @@ fun List<OrderItemEntity>.asItemsDomainModel(): List<OrderItem> {
         val orderItem1 = OrderItem(null)
         orderItem1.id = orderItem.id
         orderItem1.productId = orderItem.product_id
+        orderItem1.taxCode = orderItem.tax_code
         orderItem1.description = orderItem.description
         orderItem1.quantity = orderItem.quantity
         orderItem1.price = orderItem.selling_price
@@ -154,6 +176,12 @@ fun List<OrderItemEntity>.asItemsDomainModel(): List<OrderItem> {
         orderItem1.unitMultiplier =
             if (orderItem.quantity > 0.0 && orderItem.base_quantity > 0.0) orderItem.base_quantity / orderItem.quantity else 1.0
         orderItem1.variantSku = orderItem.variant_sku
+        orderItem1.resolvedUnitPriceMinor = orderItem.resolved_unit_price_minor
+        orderItem1.currency = orderItem.currency
+        orderItem1.priceSource = orderItem.price_source
+        orderItem1.matchedPriceListUid = orderItem.matched_price_list_uid
+        orderItem1.appliedTierMinQty = orderItem.applied_tier_min_qty
+        orderItem1.belowMoq = orderItem.below_moq == 1
         // derive the override flag: price differs from the unit-scaled catalog price
         orderItem1.priceOverridden =
             kotlin.math.abs(orderItem.selling_price - orderItem.product_price * orderItem1.unitMultiplier) > 0.005

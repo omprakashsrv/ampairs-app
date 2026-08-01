@@ -15,6 +15,8 @@ data class DeliveryAddress(
     @SerialName("pin_code") val pinCode: String = "",
     @SerialName("country") val country: String = "IN",
     @SerialName("phone") val phone: String? = null,
+    @SerialName("latitude") val latitude: Double? = null,
+    @SerialName("longitude") val longitude: Double? = null,
 )
 
 @Serializable
@@ -37,6 +39,8 @@ data class EcomOrderLineItem(
 data class EcomOrderResponse(
     @SerialName("uid") val uid: String = "",
     @SerialName("ecom_order_ref") val ecomOrderRef: String = "",
+    /** Human-friendly order number (e.g. "ECO-00001") — what the buyer sees/quotes to track this order. */
+    @SerialName("order_number") val orderNumber: String = "",
     @SerialName("storefront_id") val storefrontId: String = "",
     @SerialName("customer_name") val customerName: String? = null,
     @SerialName("customer_email") val customerEmail: String? = null,

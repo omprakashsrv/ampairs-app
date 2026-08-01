@@ -89,7 +89,8 @@ fun List<OrderApiModel>.asDatabaseModel(): List<OrderEntity> {
                 orderApiModel.shippingAddress
             ) else null,
             tax_info = Json.encodeToString(orderApiModel.taxInfoApiModels),
-            last_updated = orderApiModel.lastUpdated,
+            created_at = orderApiModel.createdAt,
+            updated_at = orderApiModel.updatedAt,
             synced = 1,
             created_by = orderApiModel.created_by,
             updated_by = orderApiModel.updated_by,
@@ -122,7 +123,18 @@ fun List<OrderApiModel>.asItemDatabaseModel(): List<OrderItemEntity> {
                 product_id = item.productId,
                 quantity = item.quantity,
                 tax_code = item.taxCode,
-                discount = item.discount?.let { Json.encodeToString(it) }
+                discount = item.discount?.let { Json.encodeToString(it) },
+                // unit/variant + pricing snapshot must survive the pull — omitting them made every
+                // sync overwrite the local row with a blank unit (and dropped the 009 snapshot).
+                unit_id = item.unitId,
+                base_quantity = item.baseQuantity,
+                variant_sku = item.variantSku,
+                resolved_unit_price_minor = item.resolvedUnitPriceMinor,
+                currency = item.currency,
+                price_source = item.priceSource,
+                matched_price_list_uid = item.matchedPriceListUid,
+                applied_tier_min_qty = item.appliedTierMinQty,
+                below_moq = if (item.belowMoq == true) 1 else 0,
             )
         })
     }

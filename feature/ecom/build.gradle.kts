@@ -4,8 +4,6 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
     alias(libs.plugins.metro)
 }
 
@@ -27,8 +25,13 @@ kotlin {
             dependencies {
                 api(projects.feature.ecomApi)
                 implementation(projects.data.common)
+                implementation(projects.data.database)
                 implementation(projects.data.sync)
                 implementation(projects.feature.authApi)
+                api(projects.feature.fileApi)
+                implementation(projects.feature.file)
+                // Location picker (current location / map select + reverse geocode) for addresses
+                implementation(projects.feature.formwidgets)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.bundles.ktor.common)
@@ -79,20 +82,3 @@ kotlin {
     }
 }
 
-room {
-    schemaDirectory("$projectDir/schemas")
-}
-
-dependencies {
-    add("kspAndroid", libs.room.compiler)
-    add("kspDesktop", libs.room.compiler)
-    add("kspIosArm64", libs.room.compiler)
-    add("kspIosSimulatorArm64", libs.room.compiler)
-}
-
-tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
-    dependsOn(tasks.matching { it.name.startsWith("generateComposeResClass") })
-    dependsOn(tasks.matching { it.name.startsWith("generateResourceAccessorsFor") })
-    dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
-    dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
-}

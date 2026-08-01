@@ -15,6 +15,7 @@ import com.ampairs.ecom.data.db.entity.EcomOrderEntity
 import com.ampairs.ecom.data.db.entity.EcomOrderLineItemEntity
 import com.ampairs.ecom.data.db.entity.ListedProductEntity
 import com.ampairs.ecom.data.db.entity.StorefrontEntity
+import com.ampairs.ecom.domain.toAbsoluteImageUrl
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -34,11 +35,23 @@ fun Storefront.toEntity(cachedAt: Long): StorefrontEntity = StorefrontEntity(
     slug = slug,
     name = name,
     description = description,
-    logo_url = logoUrl,
-    banner_url = bannerUrl,
+    logo_url = logoUrl?.toAbsoluteImageUrl(),
+    banner_url = bannerUrl?.toAbsoluteImageUrl(),
     status = status,
     access_mode = accessMode,
     cached_at = cachedAt,
+)
+
+/** Reverse of [toEntity] — rebuilds the domain model from the offline cache (branding/status only). */
+fun StorefrontEntity.toStorefront(): Storefront = Storefront(
+    uid = uid,
+    slug = slug,
+    name = name,
+    description = description,
+    logoUrl = logo_url,
+    bannerUrl = banner_url,
+    status = status,
+    accessMode = access_mode,
 )
 
 // ── Listed product ──
@@ -118,7 +131,7 @@ fun CartItemResponse.toEntity(cartId: String): CartItemEntity = CartItemEntity(
     unit_price = unitPrice,
     mrp_at_add = mrpAtAdd,
     quantity = quantity,
-    primary_image_url = primaryImageUrl,
+    primary_image_url = primaryImageUrl?.toAbsoluteImageUrl(),
 )
 
 // ── Address ──
@@ -136,6 +149,8 @@ fun AddressResponse.toEntity(synced: Int = 1): CustomerAddressEntity = CustomerA
     is_default = if (isDefault) 1 else 0,
     active = 1,
     synced = synced,
+    latitude = latitude,
+    longitude = longitude,
 )
 
 fun CustomerAddressEntity.toModel(): AddressResponse = AddressResponse(
@@ -149,6 +164,8 @@ fun CustomerAddressEntity.toModel(): AddressResponse = AddressResponse(
     country = country,
     phone = phone,
     isDefault = is_default == 1,
+    latitude = latitude,
+    longitude = longitude,
 )
 
 // ── Order ──
@@ -156,6 +173,7 @@ fun CustomerAddressEntity.toModel(): AddressResponse = AddressResponse(
 fun EcomOrderResponse.toEntity(): EcomOrderEntity = EcomOrderEntity(
     uid = uid,
     ecom_order_ref = ecomOrderRef,
+    order_number = orderNumber,
     storefront_id = storefrontId,
     status = status,
     subtotal = subtotal,

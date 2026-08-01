@@ -4,8 +4,6 @@ import co.touchlab.kermit.Logger
 import com.ampairs.common.di.AppScope
 import com.ampairs.sync.db.SyncPersistStatus
 import com.ampairs.sync.db.SyncStateDao
-import com.ampairs.sync.db.SyncStateDatabase
-import com.ampairs.sync.db.SyncStateEntity
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +27,10 @@ import kotlin.concurrent.Volatile
 import kotlin.time.Clock
 
 private val log = Logger.withTag("CentralSyncService")
+
+// Push-failure backoff bounds: first retry after 30s, doubling up to a 30-minute ceiling.
+private const val PUSH_RETRY_BASE_MS = 30_000L
+private const val PUSH_RETRY_MAX_MS = 1_800_000L
 
 /**
  * Central coordinator for all offline-first background sync.
@@ -70,6 +72,15 @@ class CentralSyncService {
     private val pushMutexes = SyncEntity.entries.associateWith { Mutex() }
     private val pullMutexes = SyncEntity.entries.associateWith { Mutex() }
 
+    // Per-entity push-failure backoff. A push that keeps failing (e.g. the server rejecting every
+    // invoice with a 409) must NOT be re-attempted on every observer fire / dependent re-trigger —
+    // that produces an endless tight loop hammering the server. After a failure we set the earliest
+    // wall-clock millis the entity may be pushed again (exponential: 30s, 60s, 2m, … capped at 30m).
+    // Cleared on success and on reconnect (so "retry on reconnect" stays immediate). Pulls are never
+    // backed off (they generally succeed and overwrite nothing local-unsynced).
+    private val nextPushRetryAt = mutableMapOf<SyncEntity, Long>()
+    private val pushFailureCount = mutableMapOf<SyncEntity, Int>()
+
     // The server checkpoint (ISO-8601 max updatedAt) each entity was last pulled up to this session.
     // Lets repeated bootstraps (hourly / reconnect) skip entities the server hasn't advanced past.
     // Both sides come from the checkpoint endpoint, so the string comparison is exact. Reset in stop().
@@ -82,16 +93,17 @@ class CentralSyncService {
     // region — Lifecycle
 
     /**
-     * Must be called after workspace selection with the workspace's SyncStateDatabase.
-     * Restores persisted states, then kicks off pending syncs and event processing.
+     * Must be called after workspace selection with the workspace's [SyncStateDao] (sourced from
+     * the consolidated workspace database in the main app, or the standalone sync-state database
+     * in the storefront apps). Restores persisted states, then kicks off pending syncs and event
+     * processing.
      */
-    fun start(db: SyncStateDatabase) {
+    fun start(syncDao: SyncStateDao) {
         stop() // clean up any prior session
 
         val newScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
         scope = newScope
 
-        val syncDao = db.syncStateDao()
         dao = syncDao
 
         newScope.launch {
@@ -135,6 +147,9 @@ class CentralSyncService {
      * Checkpoint reconciliation ([reconcileCheckpoints]) is triggered separately by EventSyncBridge.
      */
     fun onConnectionRestored() {
+        // A reconnect is a fresh chance — clear push backoff so pending pushes retry immediately.
+        nextPushRetryAt.clear()
+        pushFailureCount.clear()
         scope?.launch {
             log.i { "WebSocket reconnected — flushing pending states (push → pull per entity)" }
             processPendingStates()
@@ -149,6 +164,8 @@ class CentralSyncService {
         _syncStates.value = emptyMap()
         _syncLogs.value = emptyList()
         lastPulledCheckpoints.clear()
+        nextPushRetryAt.clear()
+        pushFailureCount.clear()
         log.i { "Stopped" }
     }
 
@@ -311,6 +328,11 @@ class CentralSyncService {
                 is SyncEvent.TriggerPush -> scope?.launch { executePush(event.entity) }
                 is SyncEvent.TriggerFullSync -> {
                     val targets = if (event.entity != null) listOf(event.entity) else delegates.keys.toList()
+                    // Manual/explicit sync — clear any push backoff so the user can force a retry now.
+                    targets.forEach { entity ->
+                        nextPushRetryAt.remove(entity)
+                        pushFailureCount.remove(entity)
+                    }
                     targets.forEach { entity ->
                         // Push local changes first, then pull — so local edits reach the server
                         // before the pull, and the pull never races ahead of an unpushed change.
@@ -381,13 +403,67 @@ class CentralSyncService {
         }
     }
 
-    private suspend fun executePush(entity: SyncEntity) {
-        val delegate = delegates[entity] ?: return
-        // Run push dependencies sequentially before acquiring this entity's mutex.
-        // Each dependency uses its own mutex, so a concurrently running catalog push will
-        // simply be waited on rather than duplicated.
-        delegate.pushDependencies.forEach { dep -> executePush(dep) }
-        pushMutexes[entity]?.withLock {
+    /**
+     * Push an entity after its push-dependencies, in dependency-safe order. Returns true when this
+     * entity's push (and every dependency it needed) succeeded; false when it was deferred because a
+     * parent had not yet reached the server.
+     *
+     * Two properties make cross-resource pushes correct and stop the retry storm:
+     *
+     * 1. **Per-run memoization** ([attempted]): the push DAG is a diamond — `allocation → invoice`
+     *    AND `allocation → voucher → invoice → order`, and `party_balance → (almost) everything`.
+     *    Without memoization a single trigger re-walks and re-pushes the same parent many times; if
+     *    that parent batch is doomed (parent not yet acked) it fails on every pass — the observed
+     *    "same batch retried ~6× in ~150ms". Memoizing per top-level invocation pushes each entity at
+     *    most once per run.
+     *
+     * 2. **Defer-on-unsynced-parent**: a dependency push that does not fully succeed means the parent
+     *    is not on the server yet, so pushing the child would hit `fk_invoice_order_ref` (409) /
+     *    "voucher not found" (404). We DEFER the child instead — leave it PENDING_PUSH (no hard
+     *    failure, no DB write, so the reactive observer does not re-fire) and return false so its own
+     *    dependents defer too. When the parent later pushes successfully we re-trigger the child.
+     */
+    private suspend fun executePush(
+        entity: SyncEntity,
+        attempted: MutableMap<SyncEntity, Boolean> = mutableMapOf(),
+        isTopLevel: Boolean = true,
+    ): Boolean {
+        attempted[entity]?.let { return it }
+        // No delegate for this entity (not installed) — treat as a satisfied dependency, don't block.
+        val delegate = delegates[entity] ?: run { attempted[entity] = true; return true }
+
+        // Backoff: if this entity's push failed recently, don't re-attempt it (or walk its deps) yet.
+        // Returns false so dependents defer, exactly as a real failure would — but with no network
+        // call and no DB write, so it neither hammers the server nor re-arms the reactive observer.
+        nextPushRetryAt[entity]?.let { retryAt ->
+            if (Clock.System.now().toEpochMilliseconds() < retryAt) {
+                attempted[entity] = false
+                return false
+            }
+        }
+
+        // Push dependencies first; if any could not fully sync, defer this entity.
+        for (dep in delegate.pushDependencies) {
+            if (!executePush(dep, attempted, isTopLevel = false)) {
+                deferPush(entity, dep)
+                attempted[entity] = false
+                return false
+            }
+        }
+
+        // Sentinel: the push was skipped inside the lock because the backoff armed while we waited.
+        var skippedByBackoff = false
+        val succeeded = pushMutexes[entity]?.withLock {
+            // Re-check the backoff INSIDE the lock. Many triggers (observer, processPendingStates,
+            // dependent re-triggers, reconcile) can clear the outer check at the same instant while
+            // the map is still empty, then queue on this mutex. Without this re-check they'd drain
+            // through one-by-one, each re-hitting the server (the "retries every ~1.6s" symptom).
+            nextPushRetryAt[entity]?.let { retryAt ->
+                if (Clock.System.now().toEpochMilliseconds() < retryAt) {
+                    skippedByBackoff = true
+                    return@withLock false
+                }
+            }
             updateState(entity) { it.copy(status = SyncStatus.Syncing) }
             appendLog(SyncLogEntry(Clock.System.now().toEpochMilliseconds(), entity, SyncLogEntry.Direction.PUSH, SyncLogEntry.Outcome.STARTED, "Push started"))
             val result = runCatching { delegate.pushPendingToServer() }.fold(
@@ -395,7 +471,60 @@ class CentralSyncService {
                 onFailure = { SyncResult.Failure(it) },
             )
             applyResult(entity, result, wasPull = false)
+            result is SyncResult.Success
+        } ?: false
+        attempted[entity] = succeeded
+
+        // Arm/clear the failure backoff so a permanently-failing push can't be retried in a tight
+        // loop. Do nothing when skipped by backoff — it's already armed and we made no network call.
+        if (!skippedByBackoff) {
+            if (succeeded) {
+                pushFailureCount.remove(entity)
+                nextPushRetryAt.remove(entity)
+            } else {
+                val attempts = (pushFailureCount[entity] ?: 0) + 1
+                pushFailureCount[entity] = attempts
+                val delayMs = minOf(PUSH_RETRY_BASE_MS shl minOf(attempts - 1, 6), PUSH_RETRY_MAX_MS)
+                nextPushRetryAt[entity] = Clock.System.now().toEpochMilliseconds() + delayMs
+                log.d { "${entity.name} push failed (attempt $attempts) — backing off ${delayMs / 1000}s" }
+            }
         }
+
+        // A parent just reached the server — re-attempt any still-pending entity that was waiting on
+        // it, so a deferred child retries as soon as its parent syncs (not only on the next reconnect).
+        //
+        // Only fire this from a TOP-LEVEL push. A dependency pushed *inside* another entity's run
+        // (isTopLevel = false) must NOT re-trigger its dependents: doing so creates an endless storm
+        // when any dependent is permanently blocked (e.g. INVOICE failing a 409 keeps PARTY_BALANCE
+        // PendingPush, so every dependency push success re-triggers it → re-walk → repeat with no
+        // delay). The dependent is still picked up: it is retried when its parent is pushed at top
+        // level (its own pending trigger) or on the next reconnect/full-sync.
+        if (succeeded && isTopLevel) {
+            pushDependentsOf(entity).forEach { dependent ->
+                val status = _syncStates.value[dependent]?.status
+                if (status is SyncStatus.PendingPush || status is SyncStatus.Failed) {
+                    emit(SyncEvent.TriggerPush(dependent))
+                }
+            }
+        }
+        return succeeded
+    }
+
+    /** Entities that declare [entity] among their push dependencies (reverse edges of the push DAG). */
+    private fun pushDependentsOf(entity: SyncEntity): List<SyncEntity> =
+        delegates.filterValues { entity in it.pushDependencies }.keys.toList()
+
+    /**
+     * Mark [entity] as waiting on an unsynced parent. The DB row stays PENDING_PUSH (we never cleared
+     * it), so nothing is persisted and the reactive observer does not re-fire — this is what stops the
+     * retry storm. Only the in-memory status is refreshed so the UI keeps showing "pending".
+     */
+    private fun deferPush(entity: SyncEntity, blockedBy: SyncEntity) {
+        updateState(entity) { state ->
+            val count = (state.status as? SyncStatus.PendingPush)?.count ?: 0
+            state.copy(status = SyncStatus.PendingPush(count))
+        }
+        log.d { "Deferring ${entity.name} push — ${blockedBy.name} not synced yet; will retry after it syncs" }
     }
 
     private suspend fun executeBackendEvent(entity: SyncEntity, entityId: String, eventType: String) {
@@ -471,30 +600,29 @@ class CentralSyncService {
     private suspend fun persistStatus(entity: SyncEntity, status: SyncStatus, lastSyncedAt: Long? = null) {
         val currentDao = dao ?: return
         val current = _syncStates.value[entity]
-        currentDao.upsert(
-            SyncStateEntity(
-                entityName = entity,
-                statusName = SyncStatus.toPersistStatus(status),
-                lastSyncedAt = lastSyncedAt ?: current?.lastSyncedAt,
-                pendingCount = (status as? SyncStatus.PendingPush)?.count ?: 0,
-                errorMessage = null,
-                updatedAt = Clock.System.now().toEpochMilliseconds(),
-            )
+        // upsertStatus never touches lastSyncedAtIso — the pull checkpoint a delegate just wrote via
+        // setLastSyncedAtIso() must survive the status-update that follows every sync, or the next
+        // pull restarts from empty and re-fetches the whole table every cycle.
+        currentDao.upsertStatus(
+            entity = entity,
+            status = SyncStatus.toPersistStatus(status),
+            lastSyncedAt = lastSyncedAt ?: current?.lastSyncedAt,
+            pendingCount = (status as? SyncStatus.PendingPush)?.count ?: 0,
+            errorMessage = null,
+            now = Clock.System.now().toEpochMilliseconds(),
         )
     }
 
     private suspend fun persistPersistStatus(entity: SyncEntity, status: SyncPersistStatus, errorMessage: String? = null) {
         val currentDao = dao ?: return
         val current = _syncStates.value[entity]
-        currentDao.upsert(
-            SyncStateEntity(
-                entityName = entity,
-                statusName = status,
-                lastSyncedAt = current?.lastSyncedAt,
-                pendingCount = 0,
-                errorMessage = errorMessage,
-                updatedAt = Clock.System.now().toEpochMilliseconds(),
-            )
+        currentDao.upsertStatus(
+            entity = entity,
+            status = status,
+            lastSyncedAt = current?.lastSyncedAt,
+            pendingCount = 0,
+            errorMessage = errorMessage,
+            now = Clock.System.now().toEpochMilliseconds(),
         )
     }
 

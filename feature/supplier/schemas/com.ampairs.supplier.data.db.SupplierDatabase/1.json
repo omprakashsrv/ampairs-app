@@ -1,0 +1,248 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "1663d460be147bc401b1b776f4776b13",
+    "entities": [
+      {
+        "tableName": "suppliers",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT, `phone` TEXT, `landline` TEXT, `country_code` INTEGER NOT NULL, `supplier_type` TEXT, `supplier_group` TEXT, `gstNumber` TEXT, `panNumber` TEXT, `creditLimit` REAL, `creditDays` INTEGER, `outstandingAmount` REAL, `address` TEXT, `street` TEXT, `street2` TEXT, `city` TEXT, `state` TEXT, `pincode` TEXT, `country` TEXT NOT NULL, `status` TEXT, `latitude` REAL, `longitude` REAL, `billing_address_json` TEXT, `shipping_address_json` TEXT, `attributes_json` TEXT, `active` INTEGER NOT NULL, `created_at` TEXT, `updated_at` TEXT, `synced` INTEGER NOT NULL, `last_sync` INTEGER NOT NULL, `ref_id` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "landline",
+            "columnName": "landline",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "country_code",
+            "columnName": "country_code",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "supplier_type",
+            "columnName": "supplier_type",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "supplier_group",
+            "columnName": "supplier_group",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "gstNumber",
+            "columnName": "gstNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "panNumber",
+            "columnName": "panNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "creditLimit",
+            "columnName": "creditLimit",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "creditDays",
+            "columnName": "creditDays",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "outstandingAmount",
+            "columnName": "outstandingAmount",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "street",
+            "columnName": "street",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "street2",
+            "columnName": "street2",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "city",
+            "columnName": "city",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pincode",
+            "columnName": "pincode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "country",
+            "columnName": "country",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "billing_address_json",
+            "columnName": "billing_address_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "shipping_address_json",
+            "columnName": "shipping_address_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "attributes_json",
+            "columnName": "attributes_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_sync",
+            "columnName": "last_sync",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ref_id",
+            "columnName": "ref_id",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_suppliers_id",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_suppliers_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_suppliers_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_suppliers_name` ON `${TABLE_NAME}` (`name`)"
+          },
+          {
+            "name": "supplier_ref_idx",
+            "unique": false,
+            "columnNames": [
+              "ref_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `supplier_ref_idx` ON `${TABLE_NAME}` (`ref_id`)"
+          },
+          {
+            "name": "supplier_state_idx",
+            "unique": false,
+            "columnNames": [
+              "state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `supplier_state_idx` ON `${TABLE_NAME}` (`state`)"
+          },
+          {
+            "name": "supplier_type_idx",
+            "unique": false,
+            "columnNames": [
+              "supplier_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `supplier_type_idx` ON `${TABLE_NAME}` (`supplier_type`)"
+          },
+          {
+            "name": "supplier_group_idx",
+            "unique": false,
+            "columnNames": [
+              "supplier_group"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `supplier_group_idx` ON `${TABLE_NAME}` (`supplier_group`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1663d460be147bc401b1b776f4776b13')"
+    ]
+  }
+}

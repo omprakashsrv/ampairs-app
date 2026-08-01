@@ -1,0 +1,84 @@
+<resources>
+    <string name="pricing_wizard_title">Create Price List</string>
+
+    <!-- step indicator / footer -->
+    <string name="pricing_wizard_step_label">Step %1$d of %2$d</string>
+    <string name="pricing_wizard_back">Back</string>
+    <string name="pricing_wizard_continue">Continue</string>
+    <string name="pricing_wizard_save_activate">Save &amp; Activate</string>
+
+    <!-- step titles -->
+    <string name="pricing_wizard_step0_title">Basics</string>
+    <string name="pricing_wizard_step1_title">Who gets this price?</string>
+    <string name="pricing_wizard_step2_title">Which products?</string>
+    <string name="pricing_wizard_step3_title">Where does it apply?</string>
+    <string name="pricing_wizard_step4_title">Advanced</string>
+    <string name="pricing_wizard_step5_title">Review</string>
+
+    <!-- live preview sentence -->
+    <string name="pricing_wizard_preview">Applies to %1$s buying on %2$s, for %3$s in %4$s.</string>
+    <string name="pricing_wizard_preview_everyone">everyone</string>
+    <string name="pricing_wizard_preview_all_products">all products</string>
+    <string name="pricing_wizard_preview_everywhere">everywhere</string>
+
+    <!-- step 0 basics -->
+    <string name="pricing_wizard_name_label">List name</string>
+    <string name="pricing_wizard_name_hint">e.g. Wholesale Q3</string>
+    <string name="pricing_wizard_channel_label">Channel</string>
+    <string name="pricing_wizard_channel_wholesale">Wholesale</string>
+    <string name="pricing_wizard_channel_wholesale_sub">B2B</string>
+    <string name="pricing_wizard_channel_retail">Retail</string>
+    <string name="pricing_wizard_channel_retail_sub">B2C</string>
+    <string name="pricing_wizard_currency_label">Currency</string>
+    <string name="pricing_wizard_currency_value">INR</string>
+    <string name="pricing_wizard_status_label">Status</string>
+    <string name="pricing_wizard_status_draft">Draft</string>
+
+    <!-- step 1 who -->
+    <string name="pricing_wizard_who_hint">Leave blank for everyone in this channel. The more you set, the narrower the audience.</string>
+    <string name="pricing_wizard_who_everyone">Everyone</string>
+    <string name="pricing_wizard_who_everyone_sub">All customers on this channel</string>
+    <string name="pricing_wizard_who_group">Customer Group</string>
+    <string name="pricing_wizard_who_group_sub">A specific customer group</string>
+    <string name="pricing_wizard_who_type">Customer Type</string>
+    <string name="pricing_wizard_who_type_sub">A specific customer type</string>
+    <string name="pricing_wizard_who_customer">Specific Customer</string>
+    <string name="pricing_wizard_who_customer_sub">A single customer</string>
+    <string name="pricing_wizard_who_group_value">Customer group ID</string>
+    <string name="pricing_wizard_who_type_value">Customer type</string>
+    <string name="pricing_wizard_who_customer_value">Customer ID</string>
+
+    <!-- step 2 products -->
+    <string name="pricing_wizard_products_hint">Pick a Brand, Category or Product Group. Leave all blank for every product.</string>
+    <string name="pricing_wizard_brand_label">Brand</string>
+    <string name="pricing_wizard_category_label">Category</string>
+    <string name="pricing_wizard_product_group_label">Product Group</string>
+    <string name="pricing_wizard_optional_id_hint">Optional ID</string>
+
+    <!-- step 3 where -->
+    <string name="pricing_wizard_where_hint">Restrict to a Geo Zone, or leave blank to apply everywhere.</string>
+    <string name="pricing_wizard_geo_zone_label">Geo Zone</string>
+    <string name="pricing_wizard_geo_zone_all">All zones</string>
+    <string name="pricing_wizard_create_zone">Create a new zone</string>
+
+    <!-- step 4 advanced -->
+    <string name="pricing_wizard_advanced_note">Most merchants skip this. Advanced controls are here when you need them.</string>
+    <string name="pricing_wizard_priority_label">Priority</string>
+    <string name="pricing_wizard_priority_hint">Used only as a tiebreaker when two lists match. Higher wins.</string>
+    <string name="pricing_wizard_attribute_rules_label">Attribute rules</string>
+    <string name="pricing_wizard_attribute_rules_note">Advanced attribute rules can be configured after creation.</string>
+    <string name="pricing_wizard_time_window_label">Active time window</string>
+    <string name="pricing_wizard_time_window_value">Always active</string>
+
+    <!-- step 5 review -->
+    <string name="pricing_wizard_review_name">Name</string>
+    <string name="pricing_wizard_review_channel">Channel</string>
+    <string name="pricing_wizard_review_audience">Audience</string>
+    <string name="pricing_wizard_review_products">Products</string>
+    <string name="pricing_wizard_review_where">Where</string>
+    <string name="pricing_wizard_review_priority">Priority</string>
+    <string name="pricing_wizard_review_sync_note">Saves locally and syncs in the background — no spinner blocking you.</string>
+
+    <!-- errors -->
+    <string name="pricing_wizard_error_name_required">List name is required</string>
+</resources>

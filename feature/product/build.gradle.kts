@@ -4,9 +4,8 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
     alias(libs.plugins.metro)
+    alias(libs.plugins.kover)
 }
 
 kotlin {
@@ -29,6 +28,7 @@ kotlin {
                 api(projects.feature.fileApi)
                 implementation(projects.feature.file)
                 implementation(projects.data.common)
+                implementation(projects.data.database)
                 implementation(projects.data.sync)
                 implementation(projects.feature.formApi)
                 implementation(projects.feature.form)
@@ -64,6 +64,13 @@ kotlin {
                 implementation(libs.filekit.dialogs)
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
+            }
+        }
         androidMain {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
@@ -87,20 +94,3 @@ kotlin {
     }
 }
 
-room {
-    schemaDirectory("$projectDir/schemas")
-}
-
-dependencies {
-    add("kspAndroid", libs.room.compiler)
-    add("kspDesktop", libs.room.compiler)
-    add("kspIosArm64", libs.room.compiler)
-    add("kspIosSimulatorArm64", libs.room.compiler)
-}
-
-tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
-    dependsOn(tasks.matching { it.name.startsWith("generateComposeResClass") })
-    dependsOn(tasks.matching { it.name.startsWith("generateResourceAccessorsFor") })
-    dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
-    dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
-}

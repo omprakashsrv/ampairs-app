@@ -6,10 +6,14 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.coroutines.DispatcherProvider
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.editor.DocSyncUi
+import com.ampairs.invoice.print.InvoicePrintValueProvider
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.printing.core.spool.SendOutcome
+import com.ampairs.printing.service.PrintCoordinator
 import com.ampairs.unit.data.repository.UnitLookup
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
@@ -32,6 +36,8 @@ class InvoiceViewViewModel(
     val invoiceRepository: InvoiceRepository,
     private val unitLookup: UnitLookup,
     private val syncService: CentralSyncService,
+    private val printCoordinator: PrintCoordinator,
+    private val invoicePrintProvider: InvoicePrintValueProvider,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -48,6 +54,12 @@ class InvoiceViewViewModel(
 
     /** Live document sync chip: this row's synced flag + the INVOICE entity's sync activity. */
     var syncUi by mutableStateOf(DocSyncUi.NONE)
+        private set
+
+    /** Transient result of the last thermal print attempt (shown then dismissed by the screen). */
+    var printMessage by mutableStateOf<String?>(null)
+        private set
+    var printing by mutableStateOf(false)
         private set
 
     init {
@@ -88,6 +100,41 @@ class InvoiceViewViewModel(
 
     fun retrySync() {
         syncService.emit(SyncEvent.TriggerPush(SyncEntity.INVOICE))
+    }
+
+    /**
+     * Print this invoice to the routed thermal printer via the offline-first spool. The idempotency
+     * key (one per tap) makes a retry safe — the spool will never double-print (§19).
+     */
+    fun printThermal() {
+        if (printing) return
+        printing = true
+        viewModelScope.launch(DispatcherProvider.io) {
+            val key = UidGenerator.generateUid("PJB")
+            val result = printCoordinator.print(invoicePrintProvider, invoiceId, key)
+            val message = result.fold(
+                onSuccess = { outcome ->
+                    when (outcome) {
+                        SendOutcome.CONFIRMED -> "Printed"
+                        SendOutcome.SENT_UNCONFIRMED -> "Sent to printer"
+                        SendOutcome.TRANSIENT_FAILURE -> "Printer unavailable — queued for retry"
+                        SendOutcome.PERMANENT_FAILURE -> "No printer configured for invoices"
+                    }
+                },
+                onFailure = { it.message ?: "Print failed" },
+            )
+            viewModelScope.launch(Dispatchers.Main) {
+                printMessage = message
+                printing = false
+            }
+        }
+    }
+
+    /** True if any printer is configured (so we print); else the UI launches printer setup. */
+    suspend fun hasAnyPrinter(): Boolean = printCoordinator.hasAnyPrinter()
+
+    fun clearPrintMessage() {
+        printMessage = null
     }
 
     fun saveInvoice() {

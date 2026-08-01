@@ -31,6 +31,8 @@ import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.domain.asDatabaseModel
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.ProductDataService
+import com.ampairs.product.data.PriceResolver
+import com.ampairs.product.data.PriceResolutionInput
 import com.ampairs.product.domain.Constants
 import com.ampairs.product.domain.ProductSummary
 import com.ampairs.store.domain.StoreSettingsProvider
@@ -80,6 +82,7 @@ class OrderViewModel(
     val customerDataService: CustomerDataService,
     val orderRepository: OrderRepository,
     val productDataService: ProductDataService,
+    val priceResolver: PriceResolver,
     val tokenRepository: TokenRepository,
     val taxRateProvider: TaxRateProvider,
     val unitOptionsLookup: UnitOptionsLookup,
@@ -196,15 +199,13 @@ class OrderViewModel(
     }
 
     /**
-     * Merge rule (spec 010 v2): same product + same unit, no price override and no line discount
-     * on either side → increment quantity; otherwise append a new line.
+     * One line per product: if the product is already on the order, increment that line's quantity
+     * instead of appending a duplicate. Matches on the line's product id — including lines reloaded
+     * from Room, where the catalog product isn't attached (product == null) but productId is set.
      */
     private suspend fun commitPreview(preview: EntryPreview) {
         val mergeable = orderItems.find { item ->
-            item.product?.id == preview.product.id &&
-                unitKeyOf(item) == preview.unit.unitId &&
-                !item.priceOverridden && !preview.priceOverridden &&
-                item.discount.isEmpty() && preview.discountPercent == 0.0
+            (item.product?.id ?: item.productId) == preview.product.id
         }
         if (mergeable != null) {
             mergeable.quantity = EntryMatcher.clampToDecimals(mergeable.quantity + preview.quantity, preview.unit.decimalPlaces)
@@ -236,8 +237,6 @@ class OrderViewModel(
         }
         computeTotals()
     }
-
-    private fun unitKeyOf(item: OrderItem): String = item.unitId
 
     private fun trimQty(q: Double): String = if (q % 1.0 == 0.0) "${q.toInt()}" else "$q"
 
@@ -360,17 +359,43 @@ class OrderViewModel(
         val item = orderItems.find { it.id == lineId } ?: return
         viewModelScope.launch(DispatcherProvider.io) {
             val product = productDataService.getById(productId) ?: return@launch
+            // Resolve the line price through the PriceResolver seam (spec 009), supplying the order's
+            // customer + channel context. Walk-in => RETAIL, a named customer => WHOLESALE. Falls back
+            // to product.sellingPrice when no price list matches.
+            val orderCustomer = order.customer
+            val resolved = priceResolver.resolve(
+                PriceResolutionInput(
+                    productId = product.id,
+                    variantSku = null,
+                    quantity = item.quantity,
+                    fallbackUnitPrice = product.sellingPrice,
+                    channel = if (customerWalkIn || orderCustomer == null) "RETAIL" else "WHOLESALE",
+                    customerId = orderCustomer?.uid,
+                    customerGroupId = orderCustomer?.customerGroup,
+                    customerType = orderCustomer?.customerType,
+                    pincode = orderCustomer?.pincode,
+                    // Resolve the price as of the order's document date (effective-dated pricing).
+                    asOfDate = order.orderDate.toString(),
+                ),
+            )
             item.product = product
             item.productId = product.id
             item.description = product.name + " " + product.code
-            item.productPrice = product.sellingPrice
+            item.productPrice = resolved.unitPrice
             item.priceOverridden = false
             item.variantSku = null
+            // Capture the resolution snapshot so it persists to Room and pushes verbatim on /sync.
+            item.resolvedUnitPriceMinor = resolved.resolvedUnitPriceMinor
+            item.currency = resolved.currency
+            item.priceSource = resolved.priceSource
+            item.matchedPriceListUid = resolved.matchedPriceListUid
+            item.appliedTierMinQty = resolved.appliedTierMinQty
+            item.belowMoq = resolved.belowMoq
             val base = engine.unitsFor(product).firstOrNull()
             if (base != null) {
                 item.selectUnit(base.unitId, base.name, base.multiplier)
             } else {
-                item.price = product.sellingPrice
+                item.price = resolved.unitPrice
                 item.updateTotal()
             }
             order.updateTotalCost()
@@ -607,6 +632,7 @@ class OrderViewModel(
                 taxable = item.basePrice,
                 totalTax = item.totalTax,
                 lineTotal = item.totalCost,
+                belowMoq = item.belowMoq,
             )
         }
     }
@@ -757,6 +783,14 @@ class OrderViewModel(
                 order = orderRepository.getOrder(id)
                 customer = order.customer
                 orderItems.addAll(order.items)
+                // unitName is transient (display-only, not persisted) — restore it from the unit
+                // catalog so re-opened lines show their unit even when the catalog product isn't
+                // attached (publishLineUis otherwise resolves the name only via the product's units).
+                orderItems.forEach { item ->
+                    if (item.unitName.isBlank() && item.unitId.isNotBlank()) {
+                        unitLookup.getUnitById(item.unitId)?.let { u -> item.unitName = u.shortName.ifBlank { u.name } }
+                    }
+                }
             } else {
                 customer = customerId?.let { customerDataService.getById(it) }
                 order.customer = customer

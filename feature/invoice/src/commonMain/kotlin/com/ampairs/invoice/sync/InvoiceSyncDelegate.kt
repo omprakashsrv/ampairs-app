@@ -37,8 +37,10 @@ class InvoiceSyncDelegate(
 
     override val entity: SyncEntity = SyncEntity.INVOICE
 
-    // Invoices reference orders, customers, products and tax — pull/push those first.
-    override val dependsOn: List<SyncEntity> =
+    // Invoices reference orders, customers, products and tax — push/pull those first. Must be
+    // pushDependencies (not just dependsOn) so the PUSH sends the referenced order before the invoice
+    // (the backend enforces fk_invoice_order_ref → customer_order). dependsOn inherits this list.
+    override val pushDependencies: List<SyncEntity> =
         listOf(SyncEntity.ORDER, SyncEntity.CUSTOMER, SyncEntity.PRODUCT, SyncEntity.TAX)
 
     override suspend fun pullFromServer(): SyncResult =
@@ -66,8 +68,9 @@ class InvoiceSyncDelegate(
 
             // Build full api models (invoice + items) straight from the entities (product_id and
             // tax_code are stored on the item entity — no product lookup needed).
+            // Include soft-deleted (active = 0) lines so removed items push as in-band deletes.
             val apiModels = unsynced.map { e ->
-                e.toApiModel(invoiceItemDao.getInvoiceItems(e.id))
+                e.toApiModel(invoiceItemDao.getAllInvoiceItemsRaw(e.id))
             }
 
             var synced = 0
@@ -75,7 +78,11 @@ class InvoiceSyncDelegate(
             for (batch in apiModels.chunked(100)) {
                 try {
                     invoiceApi.bulkUpdateInvoices(batch)
-                    batch.forEach { invoiceDao.markAsSynced(it.id) }
+                    batch.forEach {
+                        invoiceDao.markAsSynced(it.id)
+                        // The soft-deleted lines have now reached the server — drop them locally.
+                        invoiceItemDao.deleteInactiveByInvoice(it.id)
+                    }
                     synced += batch.size
                 } catch (e: Exception) {
                     ErrorTracking.captureException(e, "InvoiceSyncDelegate.pushPending")
@@ -83,7 +90,12 @@ class InvoiceSyncDelegate(
                 }
             }
 
-            if (synced == 0 && failed > 0) {
+            // Unlike a leaf entity (where partial success is fine — failed rows retry next cycle),
+            // INVOICE has its own push dependents. CentralSyncService only defers a dependent when
+            // the dependency's push signals failure, so ANY unsynced batch here — not just a total
+            // wipeout — must report failure, or a dependent could push in this same cycle against a
+            // row that never actually reached the server.
+            if (failed > 0) {
                 Result.failure(Exception("$failed invoice(s) failed to push — will retry on reconnect"))
             } else {
                 Result.success(synced)
@@ -121,8 +133,12 @@ class InvoiceSyncDelegate(
                     }
                     if (toUpsert.isNotEmpty()) {
                         invoiceDao.updateInvoices(toUpsert.asDatabaseModel())
-                        val items = toUpsert.asItemDatabaseModel()
-                        if (items.isNotEmpty()) invoiceItemDao.updateInvoiceItems(items)
+                        // Server-removed lines arrive as active = 0 — hard-delete them locally instead
+                        // of upserting hidden rows; upsert the rest as synced.
+                        val (activeItems, inactiveItems) = toUpsert.asItemDatabaseModel().partition { it.active == 1L }
+                        if (activeItems.isNotEmpty()) invoiceItemDao.updateInvoiceItems(activeItems)
+                        val inactiveIds = inactiveItems.map { it.id }
+                        if (inactiveIds.isNotEmpty()) invoiceItemDao.deleteByIds(inactiveIds)
                     }
                     val batchMax = content
                         .mapNotNull { it.updatedAt?.takeIf { s -> s.isNotBlank() } }

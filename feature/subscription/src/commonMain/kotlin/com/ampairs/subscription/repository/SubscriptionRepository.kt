@@ -368,6 +368,21 @@ class SubscriptionRepository(
     }
 
     /**
+     * Register/update this device's FCM push token on the backend. Network-only — safe to call
+     * from app-level token-refresh listeners (no workspace DB write).
+     */
+    suspend fun updatePushToken(
+        deviceId: String,
+        pushToken: String,
+        pushTokenType: String,
+    ): Result<Unit> = try {
+        api.updatePushToken(deviceId, pushToken, pushTokenType)
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
      * Refresh device token
      */
     suspend fun refreshDeviceToken(

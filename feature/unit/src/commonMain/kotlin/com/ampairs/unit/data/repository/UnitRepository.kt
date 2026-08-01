@@ -2,6 +2,9 @@ package com.ampairs.unit.data.repository
 
 import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
+import com.ampairs.unit.data.db.entity.UnitConversionEntity
+import com.ampairs.unit.data.repository.UnitConversionData
+import com.ampairs.unit.data.repository.UnitConversionSync
 import com.ampairs.unit.data.repository.UnitLookup
 import com.ampairs.unit.data.repository.UnitOption
 import com.ampairs.unit.data.repository.UnitOptionsLookup
@@ -29,7 +32,7 @@ class UnitRepository(
     private val unitDao: UnitDao,
     private val unitConversionDao: UnitConversionDao,
     private val syncStateDao: SyncStateDao,
-) : UnitLookup, UnitOptionsLookup {
+) : UnitLookup, UnitOptionsLookup, UnitConversionSync {
 
     fun observeUnits(): Flow<List<Unit>> =
         unitDao.getAllUnits().map { entities -> entities.map { it.toUnit() } }
@@ -128,4 +131,50 @@ class UnitRepository(
     private suspend fun markPending() {
         syncStateDao.markPendingPush(SyncEntity.UNIT, Clock.System.now().toEpochMilliseconds())
     }
+
+    // --- UnitConversionSync (conversions ride the product /sync feed) ------------------------
+
+    override suspend fun conversionsForProducts(productIds: List<String>): Map<String, List<UnitConversionData>> {
+        if (productIds.isEmpty()) return emptyMap()
+        return productIds.chunked(900) // SQLite variable limit guard
+            .flatMap { unitConversionDao.getActiveByProductIds(it) }
+            .map { it.toConversionData() }
+            .groupBy { it.productId }
+    }
+
+    override suspend fun productIdsWithUnsyncedConversions(): List<String> =
+        unitConversionDao.productIdsWithUnsyncedConversions()
+
+    override suspend fun markConversionsSynced(productId: String) {
+        unitConversionDao.markSyncedByProduct(productId)
+    }
+
+    override suspend fun replaceConversionsFromServer(productId: String, conversions: List<UnitConversionData>) {
+        // Local unsynced edits win until pushed — skip the whole product (matches product reconcile).
+        if (unitConversionDao.unsyncedCountForProduct(productId) > 0) return
+        unitConversionDao.deleteByProductId(productId)
+        val active = conversions.filter { it.active && it.multiplier > 0.0 }
+        if (active.isNotEmpty()) {
+            unitConversionDao.insertUnitConversions(active.map { it.toEntity(synced = true) })
+        }
+    }
 }
+
+private fun UnitConversionEntity.toConversionData(): UnitConversionData = UnitConversionData(
+    uid = id,
+    productId = productId,
+    baseUnitId = baseUnitId,
+    derivedUnitId = derivedUnitId,
+    multiplier = multiplier,
+    active = active,
+)
+
+private fun UnitConversionData.toEntity(synced: Boolean): UnitConversionEntity = UnitConversionEntity(
+    id = uid,
+    productId = productId,
+    baseUnitId = baseUnitId,
+    derivedUnitId = derivedUnitId,
+    multiplier = multiplier,
+    active = active,
+    synced = synced,
+)

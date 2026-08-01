@@ -4,9 +4,8 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
     alias(libs.plugins.metro)
+    alias(libs.plugins.kover)
 }
 
 kotlin {
@@ -26,6 +25,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(projects.data.common)
+                implementation(projects.data.database)
                 implementation(projects.data.sync)
                 implementation(libs.kotlinx.dateTime)
                 implementation(libs.metro.runtime)
@@ -40,6 +40,7 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(projects.feature.authApi)
+                implementation(projects.feature.agent)
                 implementation(projects.feature.customerApi)
                 implementation(projects.feature.productApi)
                 implementation(projects.feature.taxApi)
@@ -47,6 +48,8 @@ kotlin {
                 implementation(projects.feature.store)
                 implementation(projects.feature.sequence)
                 implementation(projects.feature.invoice)
+                implementation(projects.printing.core)
+                implementation(projects.feature.printing)
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
@@ -56,6 +59,13 @@ kotlin {
                 implementation(libs.material3.adaptive)
                 implementation(libs.material3.adaptive.layout)
                 implementation(libs.material3.adaptive.navigation)
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
             }
         }
         androidMain {
@@ -81,20 +91,3 @@ kotlin {
     }
 }
 
-room {
-    schemaDirectory("$projectDir/schemas")
-}
-
-dependencies {
-    add("kspAndroid", libs.room.compiler)
-    add("kspDesktop", libs.room.compiler)
-    add("kspIosArm64", libs.room.compiler)
-    add("kspIosSimulatorArm64", libs.room.compiler)
-}
-
-tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
-    dependsOn(tasks.matching { it.name.startsWith("generateComposeResClass") })
-    dependsOn(tasks.matching { it.name.startsWith("generateResourceAccessorsFor") })
-    dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
-    dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
-}

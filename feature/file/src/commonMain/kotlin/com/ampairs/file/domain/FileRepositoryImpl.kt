@@ -82,6 +82,12 @@ class FileRepositoryImpl(
         entity.toDomain()
     }
 
+    override suspend fun readFileBytes(fileUid: String): Result<ByteArray> = runCatching {
+        val entity = dao.getByUid(fileUid) ?: error("File not found: $fileUid")
+        val path = entity.localPath ?: error("File not cached locally: $fileUid")
+        fileManager.readFile(path)
+    }
+
     override suspend fun deleteFile(fileUid: String): Result<Unit> = runCatching {
         dao.softDelete(fileUid)
         markPending()

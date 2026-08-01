@@ -51,6 +51,9 @@ fun EcomStorefrontScreen(
     onOpenDrillDown: (DrillDownArgs) -> Unit,
     onOpenOrder: (String) -> Unit,
     onOpenAddresses: () -> Unit,
+    // Multi-store app only: back from the store home returns to the storefront directory. Null in a
+    // pinned single-store build.
+    onExitStore: (() -> Unit)? = null,
     viewModel: StorefrontGateViewModel =
         assistedMetroViewModel<StorefrontGateViewModel, StorefrontGateViewModel.Factory>(key = slug) { create(slug) },
 ) {
@@ -70,6 +73,7 @@ fun EcomStorefrontScreen(
             onOpenAddresses = onOpenAddresses,
             onLogin = onRequireLogin,
             onLoggedOut = { viewModel.resolve() },
+            onExitStore = onExitStore,
         )
 
         GatePhase.StoreUnavailable -> GateStatus(

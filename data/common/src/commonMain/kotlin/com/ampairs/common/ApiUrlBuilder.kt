@@ -58,6 +58,15 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/connector/$path"
     }
 
+    fun analyticsUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/analytics/$cleanPath"
+    }
+
+    fun supplierUrl(path: String): String {
+        return "${ConfigurationManager.apiBaseUrl}/api/supplier/$path"
+    }
+
     fun productUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/product/$cleanPath"
@@ -66,6 +75,11 @@ object ApiUrlBuilder {
     fun unitUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/unit/$cleanPath"
+    }
+
+    fun pricingUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/pricing/$cleanPath"
     }
 
     fun sequenceUrl(path: String): String {
@@ -81,6 +95,11 @@ object ApiUrlBuilder {
     fun eventUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/event/$cleanPath"
+    }
+
+    fun printingUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/printing/$cleanPath"
     }
 
     fun businessUrl(path: String = ""): String {
@@ -110,9 +129,19 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/order/$cleanPath"
     }
 
+    fun purchaseUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/purchase/$cleanPath"
+    }
+
     fun invoiceUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/invoice/$cleanPath"
+    }
+
+    fun paymentUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/payment/$cleanPath"
     }
 
     fun inventoryUrl(path: String): String {
@@ -133,6 +162,20 @@ object ApiUrlBuilder {
     fun subscriptionUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/subscription/$cleanPath"
+    }
+
+    /**
+     * On-device AI model endpoints (manifest + download proxy), served by the backend `agent` module.
+     * e.g. agentUrl("v1/models"), agentUrl("v1/models/{id}/download")
+     */
+    fun agentUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/agent/$cleanPath"
+    }
+
+    fun notificationUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/notification/$cleanPath"
     }
 
     fun taxUrl(path: String, queryParams: Map<String, String> = emptyMap()): String {
@@ -158,6 +201,17 @@ object ApiUrlBuilder {
     fun ecomUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/v1/ecom/$cleanPath"
+    }
+
+    /**
+     * Public storefront directory (discovery) endpoints — NOT slug-scoped: /api/v1/storefronts/{path}
+     * e.g. storefrontsUrl() → list all published stores, storefrontsUrl("search").
+     * Used by the common (multi-store) app to let the customer pick a storefront.
+     */
+    fun storefrontsUrl(path: String = ""): String {
+        val cleanPath = path.removePrefix("/")
+        val base = "${ConfigurationManager.apiBaseUrl}/api/v1/storefronts"
+        return if (cleanPath.isBlank()) base else "$base/$cleanPath"
     }
 
     /**

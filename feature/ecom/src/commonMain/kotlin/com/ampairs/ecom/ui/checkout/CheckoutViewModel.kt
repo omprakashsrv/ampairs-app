@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.api.model.CheckoutRequest
+import com.ampairs.ecom.api.model.EcomApiException
+import com.ampairs.ecom.api.model.LinkCandidateResponse
 import com.ampairs.ecom.data.db.entity.CustomerAddressEntity
 import com.ampairs.ecom.data.repository.AddressRepository
 import com.ampairs.ecom.data.repository.CartRepository
+import com.ampairs.ecom.data.repository.CustomerLinkRepository
 import com.ampairs.ecom.data.repository.EcomOrderRepository
 import com.ampairs.ecom.domain.EcomSession
 import com.ampairs.sync.CentralSyncService
@@ -39,9 +42,16 @@ data class CheckoutUiState(
 )
 
 sealed interface CheckoutEvent {
-    data class OrderPlaced(val orderRef: String) : CheckoutEvent
+    data class OrderPlaced(val orderRef: String, val orderNumber: String) : CheckoutEvent
     data class Error(val message: String) : CheckoutEvent
+    /** No distributor link and no phone-match candidate either — the backend blocked checkout (ECOM_NOT_LINKED). */
+    data class NotLinked(val message: String) : CheckoutEvent
+    /** A CRM account matching the buyer's own phone was found — offer to link before retrying checkout. */
+    data class LinkCandidateFound(val candidate: LinkCandidateResponse) : CheckoutEvent
 }
+
+private const val DEFAULT_NOT_LINKED_MESSAGE =
+    "Your account isn't linked to this business yet. Please contact the business owner to get linked before placing an order."
 
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
@@ -50,6 +60,7 @@ class CheckoutViewModel(
     private val addressRepository: AddressRepository,
     private val cartRepository: CartRepository,
     private val orderRepository: EcomOrderRepository,
+    private val linkRepository: CustomerLinkRepository,
     private val session: EcomSession,
     private val syncService: CentralSyncService,
 ) : ViewModel() {
@@ -105,21 +116,70 @@ class CheckoutViewModel(
         if (form.value.isPlacing) return
         form.update { it.copy(isPlacing = true) }
         viewModelScope.launch {
-            val token = cartRepository.sessionToken(storefrontId)
-            if (token == null) {
+            // Addresses are offline-first — a just-created one may not have reached the server yet,
+            // and checkout looks it up by id. Push it now rather than racing the reactive sync cycle.
+            val resolvedAddressId = addressRepository.ensureSynced(addressId).getOrElse {
                 form.update { it.copy(isPlacing = false) }
-                _events.tryEmit(CheckoutEvent.Error("Cart session expired"))
+                _events.tryEmit(CheckoutEvent.Error(it.message ?: "Couldn't sync your delivery address"))
                 return@launch
             }
-            val request = CheckoutRequest(deliveryAddressId = addressId, notes = uiState.value.notes.ifBlank { null })
+            // The cart is built offline; materialise it to the server now. This is where stock /
+            // availability are validated — a failure here is surfaced before the order is placed.
+            val token = cartRepository.materializeToServer(slug, storefrontId).getOrElse {
+                form.update { it.copy(isPlacing = false) }
+                _events.tryEmit(CheckoutEvent.Error(it.message ?: "Couldn't validate your cart"))
+                return@launch
+            }
+            val request = CheckoutRequest(deliveryAddressId = resolvedAddressId, notes = uiState.value.notes.ifBlank { null })
             orderRepository.checkout(slug, token, request).fold(
                 onSuccess = { order ->
+                    // The local cart has been turned into an order — clear it.
+                    cartRepository.clear(storefrontId)
                     syncService.emit(SyncEvent.TriggerPull(SyncEntity.ECOM_ORDER))
-                    _events.tryEmit(CheckoutEvent.OrderPlaced(order.ecomOrderRef))
+                    _events.tryEmit(CheckoutEvent.OrderPlaced(order.ecomOrderRef, order.orderNumber))
                 },
-                onFailure = { _events.tryEmit(CheckoutEvent.Error(it.message ?: "Couldn't place order")) },
+                onFailure = {
+                    if (it is EcomApiException && it.code == "ECOM_NOT_LINKED") {
+                        handleNotLinked(slug, it.message)
+                    } else {
+                        _events.tryEmit(CheckoutEvent.Error(it.message ?: "Couldn't place order"))
+                    }
+                },
             )
             form.update { it.copy(isPlacing = false) }
+        }
+    }
+
+    /** Checkout was blocked as ECOM_NOT_LINKED — check for a phone-match candidate before giving up. */
+    private suspend fun handleNotLinked(slug: String, fallbackMessage: String?) {
+        linkRepository.getLinkCandidate(slug).fold(
+            onSuccess = { candidate ->
+                if (candidate != null) {
+                    _events.tryEmit(CheckoutEvent.LinkCandidateFound(candidate))
+                } else {
+                    _events.tryEmit(CheckoutEvent.NotLinked(fallbackMessage ?: DEFAULT_NOT_LINKED_MESSAGE))
+                }
+            },
+            onFailure = { _events.tryEmit(CheckoutEvent.NotLinked(fallbackMessage ?: DEFAULT_NOT_LINKED_MESSAGE)) },
+        )
+    }
+
+    /** The buyer approved a [CheckoutEvent.LinkCandidateFound] — link, then retry the original checkout. */
+    fun confirmLink(customerId: String) {
+        val slug = session.activeSlug ?: return
+        if (form.value.isPlacing) return
+        form.update { it.copy(isPlacing = true) }
+        viewModelScope.launch {
+            linkRepository.confirmLink(slug, customerId).fold(
+                onSuccess = {
+                    form.update { it.copy(isPlacing = false) }
+                    placeOrder()
+                },
+                onFailure = {
+                    form.update { it.copy(isPlacing = false) }
+                    _events.tryEmit(CheckoutEvent.Error(it.message ?: "Couldn't link your account"))
+                },
+            )
         }
     }
 }

@@ -41,9 +41,14 @@ class WorkspaceManager(
 
         // Delegates resolved lazily on first sync event — avoids creating all databases upfront.
         centralSyncService.setDelegates { graph.syncDelegates }
-        centralSyncService.start(graph.syncStateDatabase)
+        centralSyncService.start(graph.syncStateDao)
 
         graph.eventSyncBridge.start()
+
+        // Register this device's FCM push token now that a workspace is active and the
+        // X-Workspace-ID header is set. The registrar's own coroutine scope handles the async work;
+        // on Desktop FirebaseMessaging is a stub and getToken() returns null, so this no-ops safely.
+        graph.pushTokenRegistrar.start()
     }
 
     fun clearSession() {

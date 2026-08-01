@@ -1,7 +1,7 @@
 package com.ampairs.invoice.db
 
 import androidx.paging.PagingSource
-import androidx.room.Transaction
+import androidx.room3.Transaction
 import com.ampairs.customer.data.CustomerDataService
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
@@ -12,6 +12,9 @@ import com.ampairs.invoice.db.model.toDomainModel
 import com.ampairs.invoice.domain.Discount
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.domain.InvoiceItem
+import com.ampairs.invoice.domain.InvoiceStatus
+import com.ampairs.invoice.spi.FinalizedInvoice
+import com.ampairs.invoice.spi.InvoiceLifecycleListener
 import com.ampairs.invoice.domain.asDatabaseModel as invoiceAsEntity
 import com.ampairs.invoice.domain.asDomainModelSimple
 import com.ampairs.product.data.ProductDataService
@@ -36,13 +39,61 @@ class InvoiceRepository(
     val customerDataService: CustomerDataService,
     val syncStateDao: SyncStateDao,
     val sequenceNumberProvider: SequenceNumberProvider,
+    // Downstream reactions to a LOCAL invoice save (e.g. payment posts the receivable). Contributed
+    // via Metro @ContributesIntoSet(WorkspaceScope) — the payment module always provides one.
+    private val lifecycleListeners: Set<InvoiceLifecycleListener>,
 ) {
-    @Transaction
     suspend fun saveInvoice(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
+        val previous = invoiceDao.selectById(invoiceEntity.id)
         val numbered = if (invoiceEntity.invoice_number.isBlank()) assignNumber(invoiceEntity) else invoiceEntity
-        invoiceDao.insert(numbered.copy(synced = 0))
-        invoiceItemDao.insertAll(invoiceItems)
+        persist(numbered, invoiceItems)
         markPending()
+        // Fire AFTER the DB write completes (and outside the Room transaction) — the listeners write
+        // to a different database (the party ledger). Only local saves reach here; sync-pulled writes
+        // go straight to the DAO via the sync delegate, so this never causes sync churn.
+        notifyFinalizationChange(previous?.status, previous?.total_cost, numbered)
+    }
+
+    @Transaction
+    private suspend fun persist(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
+        invoiceDao.insert(invoiceEntity.copy(synced = 0))
+        // Lines the user removed while billing are no longer in [invoiceItems]. Soft-delete the ones
+        // that still exist in Room (active = 0) and keep them so the deletion rides along on the next
+        // invoice /sync push (in-band delete); the backend then propagates it to every device.
+        val currentIds = invoiceItems.map { it.id }.toSet()
+        val removed = invoiceItemDao.getAllInvoiceItemsRaw(invoiceEntity.id)
+            .filter { it.id !in currentIds && it.active == 1L }
+            .map { it.copy(active = 0, soft_deleted = 1) }
+        invoiceItemDao.insertAll(invoiceItems + removed)
+    }
+
+    /**
+     * Bridge a local billed/un-billed transition — or a billed-amount edit — to downstream listeners
+     * (spec 013, R9). A saved invoice counts as billed (post the receivable) unless it's an explicit
+     * DRAFT — the app saves invoices as NEW, so gating on INVOICEED would never fire. Re-posting is
+     * idempotent (deterministic LDG_<uid>), so an amount change refreshes the receivable.
+     */
+    private suspend fun notifyFinalizationChange(previousStatus: String?, previousTotal: Double?, entity: InvoiceEntity) {
+        if (lifecycleListeners.isEmpty()) return
+        fun billed(status: String?) = !status.isNullOrBlank() && !status.equals(InvoiceStatus.DRAFT.name, ignoreCase = true)
+        val nowBilled = billed(entity.status)
+        val wasBilled = billed(previousStatus)
+        val totalChanged = previousTotal == null || previousTotal != entity.total_cost
+        when {
+            nowBilled && (!wasBilled || totalChanged) -> {
+                if (entity.customer_id.isBlank()) return
+                val info = FinalizedInvoice(
+                    uid = entity.id,
+                    partyUid = entity.customer_id,
+                    invoiceNumber = entity.invoice_number,
+                    invoiceDate = entity.invoice_date,
+                    totalCost = entity.total_cost,
+                )
+                lifecycleListeners.forEach { it.onFinalized(info) }
+            }
+            wasBilled && !nowBilled ->
+                lifecycleListeners.forEach { it.onReverted(entity.id) }
+        }
     }
 
     suspend fun saveInvoice(invoice: Invoice?) {
@@ -103,6 +154,12 @@ class InvoiceRepository(
             val product = products.find { it.id == itemEntity.product_id }
             val item = InvoiceItem(product)
             item.id = itemEntity.id
+            // Restore the stored line snapshot so it survives an edit round-trip even when the
+            // catalog product is absent (otherwise the InvoiceItem(null) constructor leaves the
+            // name as "null null" and the id blank, and re-saving would persist that).
+            item.description = itemEntity.description
+            item.productId = itemEntity.product_id
+            item.taxCode = itemEntity.tax_code
             item.quantity = itemEntity.quantity
             item.price = itemEntity.selling_price
             item.productPrice = itemEntity.product_price
@@ -131,6 +188,13 @@ class InvoiceRepository(
             item.unitMultiplier =
                 if (itemEntity.quantity > 0.0 && itemEntity.base_quantity > 0.0) itemEntity.base_quantity / itemEntity.quantity else 1.0
             item.variantSku = itemEntity.variant_sku
+            // restore the spec 009 pricing snapshot so it survives an edit round-trip and re-push
+            item.resolvedUnitPriceMinor = itemEntity.resolved_unit_price_minor
+            item.currency = itemEntity.currency
+            item.priceSource = itemEntity.price_source
+            item.matchedPriceListUid = itemEntity.matched_price_list_uid
+            item.appliedTierMinQty = itemEntity.applied_tier_min_qty
+            item.belowMoq = itemEntity.below_moq == 1
             item.priceOverridden =
                 kotlin.math.abs(itemEntity.selling_price - itemEntity.product_price * item.unitMultiplier) > 0.005
             item

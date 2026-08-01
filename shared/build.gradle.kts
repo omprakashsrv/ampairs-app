@@ -113,6 +113,11 @@ kotlin {
             dependencies {
                 api(projects.data.common)
                 api(projects.data.sync)
+                api(projects.data.database)
+                api(projects.printing.core)
+                api(projects.printing.render)
+                api(projects.printing.transport)
+                api(projects.feature.printing)
 
                 // Feature modules — api so androidApp can see Metro-generated supertypes
                 api(projects.feature.auth)
@@ -121,6 +126,7 @@ kotlin {
                 api(projects.feature.form)
                 api(projects.feature.formwidgets)
                 api(projects.feature.unit)
+                api(projects.feature.pricing)
                 api(projects.feature.sequence)
                 api(projects.feature.store)
                 api(projects.feature.update)
@@ -130,10 +136,15 @@ kotlin {
                 api(projects.feature.business)
                 api(projects.feature.product)
                 api(projects.feature.customer)
+                api(projects.feature.supplier)
                 api(projects.feature.inventory)
                 api(projects.feature.order)
                 api(projects.feature.invoice)
+                api(projects.feature.purchase)
+                api(projects.feature.payment)
+                api(projects.feature.notification)
                 api(projects.feature.workspace)
+                api(projects.feature.analytics)
                 api(projects.feature.fileApi)
                 api(projects.feature.file)
 
@@ -146,6 +157,7 @@ kotlin {
                 implementation(libs.compose.components.resources)
 
                 implementation(libs.kotlinx.dateTime)
+                implementation(libs.kermit)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
 
@@ -168,7 +180,9 @@ kotlin {
                 implementation(libs.material3.adaptive.navigation)
                 implementation(libs.navigation3.ui)
                 implementation(libs.lifecycle.viewmodel)
+                implementation(libs.lifecycle.viewmodel.compose)
                 implementation(libs.lifecycle.viewmodel.navigation3)
+                implementation(libs.lifecycle.runtime.compose)
                 implementation(libs.savedstate)
                 implementation(libs.savedstate.compose)
                 implementation(libs.paging.componse.common)
@@ -208,7 +222,7 @@ kotlin {
 }
 
 
-room {
+room3 {
     schemaDirectory("$projectDir/schemas")
 }
 

@@ -1,0 +1,97 @@
+<resources>
+    <!-- Offer Builder wizard (feature/pricing) -->
+    <string name="pricing_offerb_title">Offer Builder</string>
+    <string name="pricing_offerb_step_label">Step %1$d of %2$d</string>
+    <string name="pricing_offerb_back">Back</string>
+    <string name="pricing_offerb_continue">Continue</string>
+    <string name="pricing_offerb_schedule">Schedule offer</string>
+
+    <!-- Step titles -->
+    <string name="pricing_offerb_step0_title">Basics</string>
+    <string name="pricing_offerb_step1_title">Who &amp; where it applies</string>
+    <string name="pricing_offerb_step2_title">Trigger</string>
+    <string name="pricing_offerb_step3_title">Reward</string>
+    <string name="pricing_offerb_step4_title">Limits</string>
+    <string name="pricing_offerb_step5_title">Review</string>
+
+    <!-- Live preview sentence: "<condition> on <channel> → get <reward>." -->
+    <string name="pricing_offerb_preview_sentence">%1$s on %2$s → get %3$s.</string>
+
+    <!-- Channel -->
+    <string name="pricing_offerb_channel_label">Channel</string>
+    <string name="pricing_offerb_channel_wholesale">Wholesale</string>
+    <string name="pricing_offerb_channel_retail">Retail</string>
+
+    <!-- Status -->
+    <string name="pricing_offerb_status_label">Status</string>
+    <string name="pricing_offerb_status_scheduled">Scheduled</string>
+    <string name="pricing_offerb_status_draft">Draft</string>
+
+    <!-- Step 0 basics -->
+    <string name="pricing_offerb_basics_name_label">Offer name</string>
+    <string name="pricing_offerb_basics_name_hint">e.g. Diwali Distributor Deal</string>
+    <string name="pricing_offerb_basics_brand_label">Brand</string>
+    <string name="pricing_offerb_basics_category_label">Category</string>
+    <string name="pricing_offerb_priority_label">Priority</string>
+    <string name="pricing_offerb_error_name_required">Offer name is required.</string>
+
+    <!-- Step 1 targets -->
+    <string name="pricing_offerb_step1_hint">Same dimensions as price lists — who, where and what this offer applies to.</string>
+    <string name="pricing_offerb_target_group_label">Customer Group</string>
+    <string name="pricing_offerb_target_type_label">Customer Type</string>
+    <string name="pricing_offerb_geo_zone_label">Geo Zone</string>
+    <string name="pricing_offerb_geo_zone_all">All zones</string>
+    <string name="pricing_offerb_optional_id_hint">Optional</string>
+
+    <!-- Step 2 trigger -->
+    <string name="pricing_offerb_step2_hint">What has to happen for this offer to fire?</string>
+    <string name="pricing_offerb_cond_none">No condition</string>
+    <string name="pricing_offerb_cond_none_sub">Always applies on this channel</string>
+    <string name="pricing_offerb_cond_cart_min">Minimum cart total</string>
+    <string name="pricing_offerb_cond_cart_min_sub">Fires when the cart reaches an amount</string>
+    <string name="pricing_offerb_cond_cart_min_label">Minimum cart total</string>
+    <string name="pricing_offerb_cond_quantity_min">Minimum quantity</string>
+    <string name="pricing_offerb_cond_quantity_min_sub">Fires at a number of units</string>
+    <string name="pricing_offerb_cond_quantity_min_label">Minimum quantity</string>
+    <string name="pricing_offerb_cond_first_order">First order</string>
+    <string name="pricing_offerb_cond_first_order_sub">Only the customer's first order</string>
+    <string name="pricing_offerb_cond_coupon">Coupon code</string>
+    <string name="pricing_offerb_cond_coupon_sub">Applies when a code is entered</string>
+    <string name="pricing_offerb_cond_coupon_code_label">Coupon code</string>
+    <string name="pricing_offerb_cond_coupon_limit_label">Redemption limit</string>
+
+    <!-- Step 3 reward -->
+    <string name="pricing_offerb_reward_hint">What does the customer get?</string>
+    <string name="pricing_offerb_reward_percent">Percent off</string>
+    <string name="pricing_offerb_reward_flat">Flat off</string>
+    <string name="pricing_offerb_reward_bogo">Buy X get Y</string>
+    <string name="pricing_offerb_reward_bogo_summary">buy %1$s get %2$s free</string>
+    <string name="pricing_offerb_reward_free_shipping">Free shipping</string>
+    <string name="pricing_offerb_reward_free_gift">Free gift</string>
+    <string name="pricing_offerb_reward_tiered">Tiered</string>
+    <string name="pricing_offerb_reward_percent_label">Discount %</string>
+    <string name="pricing_offerb_reward_cap_label">Max discount (cap)</string>
+    <string name="pricing_offerb_reward_flat_label">Flat amount off</string>
+    <string name="pricing_offerb_reward_bogo_buy_label">Buy</string>
+    <string name="pricing_offerb_reward_bogo_get_label">Get free</string>
+
+    <!-- Step 4 limits -->
+    <string name="pricing_offerb_limits_stackable_title">Combine with other offers</string>
+    <string name="pricing_offerb_limits_stackable_sub">Allow stacking on the same cart</string>
+    <string name="pricing_offerb_limits_exclusive_title">Exclusive offer</string>
+    <string name="pricing_offerb_limits_exclusive_sub">Wins over all others when it fires</string>
+    <string name="pricing_offerb_limits_per_customer_label">Limit per customer</string>
+    <string name="pricing_offerb_limits_total_label">Total redemptions</string>
+
+    <!-- Step 5 review + sample cart -->
+    <string name="pricing_offerb_review_name">Name</string>
+    <string name="pricing_offerb_review_channel">Channel</string>
+    <string name="pricing_offerb_review_audience">Audience</string>
+    <string name="pricing_offerb_review_condition">Condition</string>
+    <string name="pricing_offerb_review_reward">Reward</string>
+    <string name="pricing_offerb_review_sample_cart">Sample cart preview</string>
+    <string name="pricing_offerb_review_cart_subtotal">Subtotal</string>
+    <string name="pricing_offerb_review_discount">Discount</string>
+    <string name="pricing_offerb_review_customer_pays">Customer pays</string>
+    <string name="pricing_offerb_review_sync_note">Saves locally and syncs in the background.</string>
+</resources>

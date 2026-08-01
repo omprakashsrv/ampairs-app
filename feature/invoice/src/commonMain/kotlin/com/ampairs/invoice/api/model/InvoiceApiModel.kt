@@ -36,7 +36,7 @@ data class InvoiceApiModel(
     @SerialName("status") var status: InvoiceStatus = InvoiceStatus.DRAFT,
     @SerialName("total_items") var totalItems: Int = 0,
     @SerialName("active") var active: Boolean = true,
-    @SerialName("last_updated") var lastUpdated: Long = 0,
+    @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("soft_deleted") var softDeleted: Boolean = false,
     @SerialName("total_quantity") var totalQuantity: Double = 0.0,
@@ -102,7 +102,8 @@ fun InvoiceApiModel.toInvoiceDatabaseModel(): InvoiceEntity {
         total_tax = this.totalTax,
         active = if (this.active) 1 else 0,
         soft_deleted = if (this.softDeleted) 1 else 0,
-        last_updated = this.lastUpdated,
+        created_at = this.createdAt,
+        updated_at = this.updatedAt,
         synced = 1,
         created_by = this.created_by,
         updated_by = this.updated_by,
@@ -113,6 +114,12 @@ fun InvoiceApiModel.toInvoiceDatabaseModel(): InvoiceEntity {
 
 // --- Entity -> API (for offline sync push, spec 010). Reads product_id/tax_code straight off the
 // entity, so no product lookup is needed; reverses toInvoiceDatabaseModel. ---
+
+/** Normalize a stored date string ("yyyy-MM-dd HH:mm:ss" or ISO) to an ISO-8601 Instant the backend
+ *  (`java.time.Instant`) can parse. The entity stores invoice_date space-formatted; sync must send ISO. */
+@OptIn(ExperimentalTime::class)
+private fun String.toIsoInstantOrSelf(): String =
+    if (isBlank()) this else DateTimeAdapter.fromDateTimeString(this)?.toString() ?: this
 
 private fun String?.decodeTaxInfos(): List<TaxInfoApiModel>? =
     this?.takeIf { it.isNotBlank() && it != "null" }
@@ -140,11 +147,20 @@ fun InvoiceItemEntity.toApiModel(): InvoiceItemApiModel = InvoiceItemApiModel(
     softDeleted = soft_deleted == 1L,
     discount = discount.decodeDiscounts(),
     taxInfoApiModels = tax_info.decodeTaxInfos() ?: arrayListOf(),
+    unitId = unit_id,
+    baseQuantity = base_quantity,
+    variantSku = variant_sku,
+    resolvedUnitPriceMinor = resolved_unit_price_minor,
+    currency = currency,
+    priceSource = price_source,
+    matchedPriceListUid = matched_price_list_uid,
+    appliedTierMinQty = applied_tier_min_qty,
+    belowMoq = below_moq == 1,
 )
 
 fun InvoiceEntity.toApiModel(items: List<InvoiceItemEntity>): InvoiceApiModel = InvoiceApiModel(
     id = id,
-    invoiceDate = invoice_date,
+    invoiceDate = invoice_date.toIsoInstantOrSelf(),
     invoiceNumber = invoice_number,
     order_ref_id = order_ref_id,
     customerId = customer_id,
@@ -164,7 +180,8 @@ fun InvoiceEntity.toApiModel(items: List<InvoiceItemEntity>): InvoiceApiModel = 
     status = runCatching { InvoiceStatus.valueOf(status) }.getOrDefault(InvoiceStatus.DRAFT),
     totalItems = total_items.toInt(),
     active = active == 1L,
-    lastUpdated = last_updated,
+    createdAt = created_at,
+    updatedAt = updated_at,
     softDeleted = soft_deleted == 1L,
     totalQuantity = total_quantity,
     discount = discount.decodeDiscounts(),

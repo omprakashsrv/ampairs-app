@@ -46,6 +46,12 @@ data class Ledger(
     @XmlSerialName("PARTYGSTIN")
     var partyGstin: String? = null,
 
+    // Tally opening balance: positive = Debit (receivable), negative = Credit (payable). "0" / blank
+    // when the party starts flat. Carries no date — it's the books-beginning balance.
+    @XmlElement(true)
+    @XmlSerialName("OPENINGBALANCE")
+    var openingBalance: String? = null,
+
     @XmlElement(true)
     @XmlSerialName("GUID")
     var guid: String? = null,

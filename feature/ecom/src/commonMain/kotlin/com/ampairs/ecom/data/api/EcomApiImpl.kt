@@ -7,6 +7,7 @@ import com.ampairs.common.di.AppScope
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.Response
+import com.ampairs.common.patch
 import com.ampairs.common.post
 import com.ampairs.common.put
 import com.ampairs.ecom.api.model.AddCartItemRequest
@@ -15,13 +16,22 @@ import com.ampairs.ecom.api.model.AddressResponse
 import com.ampairs.ecom.api.model.CartResponse
 import com.ampairs.ecom.api.model.CatalogMeta
 import com.ampairs.ecom.api.model.CheckoutRequest
+import com.ampairs.ecom.api.model.ConfirmLinkRequest
+import com.ampairs.ecom.api.model.DistributorAccount
+import com.ampairs.ecom.api.model.EcomApiException
+import com.ampairs.ecom.api.model.EcomContactResponse
 import com.ampairs.ecom.api.model.EcomOrderResponse
+import com.ampairs.ecom.api.model.LinkCandidateResponse
 import com.ampairs.ecom.api.model.ListedProduct
+import com.ampairs.ecom.api.model.ManagedStorefront
 import com.ampairs.ecom.api.model.PageResponse
 import com.ampairs.ecom.api.model.ProductSyncPage
+import com.ampairs.ecom.api.model.SetEcomContactStatusRequest
 import com.ampairs.ecom.api.model.StoreAccessRequest
 import com.ampairs.ecom.api.model.StoreAccessResponse
 import com.ampairs.ecom.api.model.Storefront
+import com.ampairs.ecom.api.model.StorefrontCreateRequest
+import com.ampairs.ecom.api.model.StorefrontUpdateRequest
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -39,6 +49,16 @@ class EcomApiImpl(
 ) : EcomApi {
 
     private val client = httpClient(engine, tokenRepository)
+
+    // ── Storefront directory (public discovery) ──
+
+    override suspend fun listStorefronts(q: String?, page: Int, size: Int): Result<PageResponse<Storefront>> = call {
+        val params = buildMap<String, Any> {
+            put("page", page); put("size", size)
+            q?.takeIf { it.isNotBlank() }?.let { put("q", it) }
+        }
+        get<Response<PageResponse<Storefront>>>(client, ApiUrlBuilder.storefrontsUrl(), params)
+    }
 
     // ── Storefront bootstrap & catalog ──
 
@@ -151,6 +171,43 @@ class EcomApiImpl(
         get<Response<EcomOrderResponse>>(client, ApiUrlBuilder.ecomUrl("account/orders/$ecomOrderRef"), params)
     }
 
+    // ── Distributor link ──
+
+    override suspend fun getLinkCandidate(slug: String): Result<LinkCandidateResponse?> = try {
+        val params = mapOf<String, Any>("storefront_slug" to slug)
+        val response = get<Response<LinkCandidateResponse>>(client, ApiUrlBuilder.ecomUrl("account/link-candidate"), params)
+        if (response.error != null) {
+            Result.failure(EcomApiException(response.error?.code ?: "UNKNOWN", response.error?.message ?: "Failed to check link"))
+        } else {
+            // data is legitimately null when no CRM account matches this buyer's phone.
+            Result.success(response.data)
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    override suspend fun confirmLink(slug: String, customerId: String): Result<DistributorAccount> = call {
+        post<Response<DistributorAccount>>(
+            client,
+            ApiUrlBuilder.ecomUrl("account/link?storefront_slug=$slug"),
+            ConfirmLinkRequest(customerId),
+        )
+    }
+
+    // ── Owner-facing "ecom users" management ──
+
+    override suspend fun getEcomContacts(): Result<List<EcomContactResponse>> = call {
+        get<Response<List<EcomContactResponse>>>(client, ApiUrlBuilder.ecomUrl("management/customers"))
+    }
+
+    override suspend fun setEcomContactActive(contactUid: String, active: Boolean): Result<EcomContactResponse> = call {
+        patch<Response<EcomContactResponse>>(
+            client,
+            ApiUrlBuilder.ecomUrl("management/customers/$contactUid/status"),
+            SetEcomContactStatusRequest(active),
+        )
+    }
+
     // ── Store access gate (future API — see plan §11.1) ──
 
     override suspend fun requestStoreAccess(slug: String): Result<StoreAccessResponse> = call {
@@ -161,13 +218,53 @@ class EcomApiImpl(
         get<Response<StoreAccessResponse>>(client, ApiUrlBuilder.ecomUrl("account/store-access/$slug"))
     }
 
+    // ── Merchant storefront management ──
+
+    override suspend fun getMyStorefront(): Result<ManagedStorefront?> = try {
+        val response = get<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront"))
+        when {
+            response.data != null -> Result.success(response.data)
+            // No storefront created yet — distinguish 404 NOT_FOUND from a real error.
+            response.error?.code == "NOT_FOUND" -> Result.success(null)
+            else -> Result.failure(
+                EcomApiException(
+                    response.error?.code ?: "UNKNOWN",
+                    response.error?.message?.ifBlank { "Failed to load storefront" } ?: "Failed to load storefront",
+                ),
+            )
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    override suspend fun createStorefront(request: StorefrontCreateRequest): Result<ManagedStorefront> = call {
+        post<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront"), request)
+    }
+
+    override suspend fun updateStorefront(request: StorefrontUpdateRequest): Result<ManagedStorefront> = call {
+        put<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront"), request)
+    }
+
+    override suspend fun publishStorefront(): Result<ManagedStorefront> = call {
+        put<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront/publish"), null)
+    }
+
+    override suspend fun unpublishStorefront(): Result<ManagedStorefront> = call {
+        put<Response<ManagedStorefront>>(client, ApiUrlBuilder.ecomUrl("management/storefront/unpublish"), null)
+    }
+
     /** Shared Response<T> → Result<T> mapping; no exceptions reach the UI layer. */
     private inline fun <T> call(block: () -> Response<T>): Result<T> = try {
         val response = block()
         if (response.data != null && response.error == null) {
             Result.success(response.data!!)
         } else {
-            Result.failure(Exception(response.error?.message?.ifBlank { "Server returned no data" } ?: "Server returned no data"))
+            Result.failure(
+                EcomApiException(
+                    response.error?.code ?: "UNKNOWN",
+                    response.error?.message?.ifBlank { "Server returned no data" } ?: "Server returned no data",
+                ),
+            )
         }
     } catch (e: Exception) {
         Result.failure(e)

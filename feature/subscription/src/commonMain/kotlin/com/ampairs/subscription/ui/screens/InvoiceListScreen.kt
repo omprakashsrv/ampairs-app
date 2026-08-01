@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
@@ -29,11 +30,11 @@ fun InvoiceListScreen(
     onNavigateBack: () -> Unit,
     viewModel: InvoiceViewModel = metroViewModel(),
 ) {
-    val invoices by viewModel.invoices.collectAsState()
-    val invoiceSummary by viewModel.invoiceSummary.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val selectedStatus by viewModel.selectedStatus.collectAsState()
+    val invoices by viewModel.invoices.collectAsStateWithLifecycle()
+    val invoiceSummary by viewModel.invoiceSummary.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val selectedStatus by viewModel.selectedStatus.collectAsStateWithLifecycle()
 
     var showFilterMenu by remember { mutableStateOf(false) }
 

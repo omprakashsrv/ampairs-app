@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.subscription.domain.model.SubscriptionLimits
 import com.ampairs.subscription.domain.model.SubscriptionPlan
@@ -32,9 +33,9 @@ fun UsageDetailsScreen(
     onNavigateToPlans: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val subscription by viewModel.subscription.collectAsState()
-    val usageStatus by viewModel.usageStatus.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val subscription by viewModel.subscription.collectAsStateWithLifecycle()
+    val usageStatus by viewModel.usageStatus.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

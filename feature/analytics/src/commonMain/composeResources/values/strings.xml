@@ -1,0 +1,97 @@
+<resources>
+    <string name="analytics_dashboard_title">Dashboard</string>
+    <string name="analytics_refresh">Refresh</string>
+    <string name="analytics_export">Export CSV</string>
+    <string name="analytics_last_synced">Updated %1$s</string>
+    <string name="analytics_never_synced">Not yet synced</string>
+    <string name="analytics_error_generic">Couldn\'t load the dashboard</string>
+    <string name="analytics_retry">Retry</string>
+
+    <!-- Period selector -->
+    <string name="analytics_period_today">Today</string>
+    <string name="analytics_period_this_week">This week</string>
+    <string name="analytics_period_this_month">This month</string>
+    <string name="analytics_period_last_month">Last month</string>
+    <string name="analytics_period_this_year">This year</string>
+    <string name="analytics_period_all_time">All time</string>
+
+    <!-- KPI cards -->
+    <string name="analytics_kpi_gross_sales">Gross sales</string>
+    <string name="analytics_kpi_net_sales">Net sales</string>
+    <string name="analytics_kpi_tax">Tax collected</string>
+    <string name="analytics_kpi_invoices">Invoices</string>
+    <string name="analytics_kpi_avg_invoice">Avg. invoice</string>
+    <string name="analytics_kpi_collections">Collections</string>
+    <string name="analytics_kpi_stock_value">Stock value</string>
+    <string name="analytics_kpi_low_stock">Low stock items</string>
+    <string name="analytics_kpi_outstanding">Outstanding</string>
+    <string name="analytics_kpi_inventory_turns">Inventory turns</string>
+
+    <!-- Sections -->
+    <string name="analytics_section_kpis">Overview</string>
+    <string name="analytics_section_trend">Sales trend</string>
+    <string name="analytics_section_gst">GST summary</string>
+    <string name="analytics_section_aging">Receivables aging</string>
+    <string name="analytics_section_forecast">Demand forecast</string>
+    <string name="analytics_section_top_products">Top products</string>
+    <string name="analytics_section_top_customers">Top customers</string>
+    <string name="analytics_top_empty">No sales in this period yet</string>
+    <string name="analytics_section_orders">Orders</string>
+    <string name="analytics_orders_total">Active orders</string>
+    <string name="analytics_orders_empty">No orders yet</string>
+
+    <!-- GST -->
+    <string name="analytics_gst_intra">Intra-state (CGST+SGST)</string>
+    <string name="analytics_gst_inter">Inter-state (IGST)</string>
+    <string name="analytics_gst_taxable">Taxable</string>
+    <string name="analytics_gst_tax">Tax</string>
+    <string name="analytics_gst_rate">Rate</string>
+    <string name="analytics_gst_empty">No taxable sales in this period</string>
+
+    <!-- Trend / aging -->
+    <string name="analytics_trend_empty">No sales in this period</string>
+    <string name="analytics_aging_empty">No outstanding receivables</string>
+    <string name="analytics_aging_invoices">%1$d invoices</string>
+
+    <!-- Customize dashboard layout -->
+    <string name="analytics_customize_action">Customize layout</string>
+    <string name="analytics_customize_title">Customize dashboard</string>
+    <string name="analytics_customize_save">Save</string>
+    <string name="analytics_customize_cancel">Cancel</string>
+    <string name="analytics_customize_move_up">Move up</string>
+    <string name="analytics_customize_move_down">Move down</string>
+
+    <!-- Ask a question (NL panel) -->
+    <string name="analytics_section_ask">Ask a question</string>
+    <string name="analytics_ask_placeholder">e.g. total sales, how many invoices, outstanding</string>
+    <string name="analytics_ask_submit">Ask</string>
+    <string name="analytics_ask_clear">Clear</string>
+    <string name="analytics_ask_unanswered">I couldn\'t answer that from the dashboard. Try the assistant for detailed questions.</string>
+    <string name="analytics_ask_q_sales">Total sales</string>
+    <string name="analytics_ask_q_invoices">How many invoices</string>
+    <string name="analytics_ask_q_outstanding">Outstanding</string>
+    <string name="analytics_ask_q_low_stock">Low stock</string>
+    <string name="analytics_ask_q_collections">Collections</string>
+
+    <!-- Coverage (sync window) -->
+    <string name="analytics_coverage_from">Showing data from %1$s — connect to the internet to include earlier history</string>
+
+    <!-- Demand forecast -->
+    <string name="analytics_forecast_empty">Not enough sales history to forecast demand yet</string>
+    <string name="analytics_forecast_expected">Expected demand</string>
+    <string name="analytics_forecast_horizon">next %1$d days</string>
+    <string name="analytics_forecast_in_stock">%1$s in stock</string>
+    <string name="analytics_forecast_reorder">Reorder</string>
+    <string name="analytics_forecast_estimated">Estimated</string>
+    <string name="analytics_forecast_confidence_high">High confidence</string>
+    <string name="analytics_forecast_confidence_medium">Medium confidence</string>
+    <string name="analytics_forecast_confidence_low">Low confidence</string>
+
+    <!-- Home summary (hybrid home overview strip) -->
+    <string name="analytics_activity_empty">No recent activity yet</string>
+    <string name="analytics_home_today_sales">Today\'s sales</string>
+    <string name="analytics_home_today_invoices">Invoices today</string>
+    <string name="analytics_home_outstanding">Outstanding</string>
+    <string name="analytics_home_last7">Last 7 days</string>
+    <string name="analytics_home_view_dashboard">View dashboard</string>
+</resources>

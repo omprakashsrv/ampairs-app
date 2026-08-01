@@ -88,6 +88,10 @@ class AppNavigationViewModel(
     private fun observeUnauthenticated() {
         viewModelScope.launch {
             UnauthenticatedHandler.onUnauthenticated.collectLatest {
+                // Ignore 401s that fire before the user has an active workspace session
+                // (e.g. the app-updates check that runs on every launch before login).
+                // Only trigger logout when a session was actually active.
+                if (workspaceManager.session.value == null) return@collectLatest
                 appPreferences.clearLastWorkspaceId()
                 workspaceManager.clearSession()
                 _logoutEvent.emit(Unit)
@@ -166,7 +170,13 @@ class AppNavigationViewModel(
         route.contains("InvoiceRoute.Root") -> "Invoice_Create"
         route.contains("InvoiceRoute.InvoiceView") -> "Invoice_View"
         route.contains("InvoiceRoute.Invoices") -> "Invoice_List"
-        route.contains("InventoryRoute.Inventory") -> "Inventory"
+        route.contains("InventoryRoute.Dashboard") -> "Inventory"
+        route.contains("InventoryRoute.Items") -> "Inventory_Items"
+        route.contains("InventoryRoute.ItemForm") -> "Inventory_ItemForm"
+        route.contains("InventoryRoute.PhysicalCount") -> "Inventory_Count"
+        route.contains("InventoryRoute.Ledger") -> "Inventory_Ledger"
+        route.contains("InventoryRoute.LowStock") -> "Inventory_LowStock"
+        route.contains("InventoryRoute.Settings") -> "Inventory_Settings"
         route.contains("FormConfig") -> "FormConfig"
         else -> route.substringAfterLast(".").substringBefore("(")
     }

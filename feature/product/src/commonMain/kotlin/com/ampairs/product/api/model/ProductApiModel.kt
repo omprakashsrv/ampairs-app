@@ -24,10 +24,12 @@ data class ProductApiModel(
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("last_updated") var lastUpdated: Long = 0L,
+    @SerialName("unit_id") var unitId: String? = null,
     @SerialName("base_unit_id") var baseUnitId: String?,
     @SerialName("base_unit") val baseUnit: UnitApiModel?,
     @SerialName("unit_conversions") val unitConversions: List<UnitConversionApiModel>,
     @SerialName("images") val images: List<ImageApiModel>,
     @SerialName("inventory") val inventory: InventoryApiModel? = null,
     @SerialName("attributes") val attributes: Map<String, String>? = null,
+    @SerialName("is_ecom_listed") val isEcomListed: Boolean = false,
 )

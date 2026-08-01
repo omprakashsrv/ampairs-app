@@ -25,21 +25,24 @@ jobs:
   android-desktop:
     name: Compile Android + Desktop, run tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # required to post the coverage comment on the PR
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
       - name: Set up Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
           # Vestigial/empty per-module gradle-wrapper.jar files + very new Gradle the action does
           # not yet have a checksum for; the build uses the root wrapper. Skip wrapper validation.
           validate-wrappers: false
       - name: Cache Kotlin/Native (~/.konan)
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.konan
           key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -64,27 +67,49 @@ jobs:
         run: ./gradlew :androidApp:compileDebugSources --console=plain
       - name: Compile Desktop
         run: ./gradlew :desktopApp:compileKotlin --console=plain
-      - name: Run tests
-        run: ./gradlew :feature:tax:desktopTest --console=plain
+      - name: Run tests with coverage
+        # koverXmlReport/koverHtmlReport run the desktop (JVM) test tasks of the kover-applied
+        # modules and aggregate them. A test failure still fails the job.
+        run: ./gradlew koverXmlReport koverHtmlReport --console=plain
+      - name: Publish coverage comment on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        # Kover emits JaCoCo-format XML, so the JaCoCo reporter consumes it directly.
+        uses: madrapps/jacoco-report@v1.8.0
+        with:
+          paths: ${{ github.workspace }}/build/reports/kover/report.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: 'App Code Coverage'
+          update-comment: true
+          # Informational for now (foundation baseline). Raise min-coverage-changed-files
+          # later to enforce that new/changed code is tested.
+          min-coverage-overall: 0
+          min-coverage-changed-files: 0
+      - name: Upload HTML coverage report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-coverage-report
+          path: build/reports/kover/html/
+          if-no-files-found: warn
 
   ios:
     name: Compile iOS (simulatorArm64)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
       - name: Set up Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
           # Vestigial/empty per-module gradle-wrapper.jar files + very new Gradle the action does
           # not yet have a checksum for; the build uses the root wrapper. Skip wrapper validation.
           validate-wrappers: false
       - name: Cache Kotlin/Native (~/.konan)
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.konan
           key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}

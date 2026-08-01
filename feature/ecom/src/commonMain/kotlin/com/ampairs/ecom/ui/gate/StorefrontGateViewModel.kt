@@ -6,6 +6,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.api.model.AccessMode
 import com.ampairs.ecom.api.model.StoreAccessStatus
+import com.ampairs.ecom.api.model.StorefrontAccessMode
 import com.ampairs.ecom.api.model.StorefrontStatus
 import com.ampairs.ecom.data.repository.StoreAccessRepository
 import com.ampairs.ecom.data.repository.StorefrontRepository
@@ -102,8 +103,19 @@ class StorefrontGateViewModel(
         _state.update { it.copy(phase = GatePhase.Shop) }
     }
 
-    private fun parseAccessMode(raw: String?): AccessMode =
-        raw?.let { runCatching { AccessMode.valueOf(it) }.getOrNull() } ?: AccessMode.GUEST_FIRST
+    // The bootstrap payload's `access_mode` is the same backend field the merchant sets via the
+    // storefront management API (StorefrontAccessMode.PUBLIC/RESTRICTED) — not a literal
+    // GUEST_FIRST/LOGIN_FIRST value. Map it into the gate's own AccessMode so RESTRICTED actually
+    // routes into resolveLoginFirst(). A literal GUEST_FIRST/LOGIN_FIRST is still honored if the
+    // backend ever sends that instead.
+    private fun parseAccessMode(raw: String?): AccessMode {
+        if (raw == null) return AccessMode.GUEST_FIRST
+        runCatching { AccessMode.valueOf(raw) }.getOrNull()?.let { return it }
+        return when (runCatching { StorefrontAccessMode.valueOf(raw) }.getOrNull()) {
+            StorefrontAccessMode.RESTRICTED -> AccessMode.LOGIN_FIRST
+            StorefrontAccessMode.PUBLIC, StorefrontAccessMode.UNKNOWN, null -> AccessMode.GUEST_FIRST
+        }
+    }
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey

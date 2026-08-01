@@ -25,11 +25,20 @@ dependencyResolutionManagement {
 
 include(":shared")
 include(":androidApp")
+include(":shared-ecom")
+include(":clientApp")
+include(":marketplaceApp")
+include(":whispercpp")
 include(":desktopApp")
 include(":data:common")
+include(":data:database")
 include(":data:sync")
 include(":data:event")
 include(":tally")
+include(":printing:core")
+include(":printing:render")
+include(":printing:transport")
+include(":feature:printing")
 include(
     ":feature:file-api",
     ":feature:file",
@@ -39,6 +48,7 @@ include(
     ":feature:ecom",
     ":feature:customer-api",
     ":feature:product-api",
+    ":feature:inventory-api",
     ":feature:tax-api",
     ":feature:form-api",
     ":feature:unit-api",
@@ -47,6 +57,7 @@ include(
     ":feature:form",
     ":feature:formwidgets",
     ":feature:unit",
+    ":feature:pricing",
     ":feature:sequence",
     ":feature:store",
     ":feature:connector",
@@ -56,8 +67,13 @@ include(
     ":feature:business",
     ":feature:product",
     ":feature:customer",
+    ":feature:supplier",
     ":feature:inventory",
     ":feature:order",
     ":feature:invoice",
-    ":feature:workspace"
+    ":feature:purchase",
+    ":feature:payment",
+    ":feature:notification",
+    ":feature:workspace",
+    ":feature:analytics"
 )

@@ -1,6 +1,7 @@
 package com.ampairs.invoice.editor
 
 import ampairsapp.feature.invoice.generated.resources.Res
+import ampairsapp.feature.invoice.generated.resources.doc_line_below_moq
 import ampairsapp.feature.invoice.generated.resources.doc_line_exempt
 import ampairsapp.feature.invoice.generated.resources.doc_stepper_minus_cd
 import ampairsapp.feature.invoice.generated.resources.doc_stepper_plus_cd
@@ -111,6 +112,9 @@ private fun LineCard(
                     if (line.exempt) stringResource(Res.string.doc_line_exempt)
                     else "GST ${ratePctLabel(line.gstRatePercent ?: 0.0)}"
                 )
+                if (line.belowMoq) {
+                    CardChip(stringResource(Res.string.doc_line_below_moq), warning = true)
+                }
             }
         }
     }
@@ -165,16 +169,23 @@ private fun StepButton(symbol: String, cd: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun CardChip(text: String, emphasized: Boolean = false) {
+private fun CardChip(text: String, emphasized: Boolean = false, warning: Boolean = false) {
     val cs = MaterialTheme.colorScheme
-    Surface(
-        color = if (emphasized) cs.secondaryContainer else cs.surfaceContainerHigh,
-        shape = RoundedCornerShape(50),
-    ) {
+    val container = when {
+        warning -> cs.errorContainer
+        emphasized -> cs.secondaryContainer
+        else -> cs.surfaceContainerHigh
+    }
+    val content = when {
+        warning -> cs.onErrorContainer
+        emphasized -> cs.onSecondaryContainer
+        else -> cs.onSurfaceVariant
+    }
+    Surface(color = container, shape = RoundedCornerShape(50)) {
         Text(
             text,
             style = MaterialTheme.typography.labelSmall,
-            color = if (emphasized) cs.onSecondaryContainer else cs.onSurfaceVariant,
+            color = content,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             maxLines = 1,
         )

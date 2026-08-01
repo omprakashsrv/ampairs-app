@@ -31,7 +31,7 @@ class TallyRepository(val tallyApi: TallyApi) {
     suspend fun getStockBalances(): TallyXML {
         val xml = Type.STOCK_BALANCE.toTallyXML()
         val collection = xml.body?.desc?.tdl?.tdlMessage?.collection!!
-        collection.nativeMethod = listOf("NAME", "GUID", "BASEUNITS")
+        collection.nativeMethod = listOf("NAME", "GUID", "BASEUNITS", "ALTERID")
         collection.compute = listOf(
             "CLOSINGBALANCE : \$CLOSINGBALANCE",
             "CLOSINGVALUE : \$CLOSINGVALUE",
@@ -45,6 +45,11 @@ class TallyRepository(val tallyApi: TallyApi) {
 
     suspend fun getGroups(): TallyXML {
         return post(Type.GROUP.toTallyXML())
+    }
+
+    /** All vouchers (sales, purchase, receipts, payments, credit/debit notes) for invoice + payment sync. */
+    suspend fun getVouchers(): TallyXML {
+        return post(Type.VOUCHER.toTallyXML())
     }
 
 

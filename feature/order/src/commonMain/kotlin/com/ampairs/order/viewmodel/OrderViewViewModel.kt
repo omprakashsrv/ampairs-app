@@ -16,6 +16,11 @@ import com.ampairs.invoice.domain.TaxSpec as InvoiceTaxSpec
 import com.ampairs.invoice.editor.DocSyncUi
 import com.ampairs.order.db.OrderRepository
 import com.ampairs.order.domain.Order
+import com.ampairs.order.domain.OrderStatus
+import com.ampairs.order.print.OrderPrintValueProvider
+import com.ampairs.printing.core.spool.SendOutcome
+import com.ampairs.printing.service.PrintCoordinator
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.unit.data.repository.UnitLookup
 import com.ampairs.sync.CentralSyncService
 import com.ampairs.sync.SyncEntity
@@ -42,6 +47,8 @@ class OrderViewViewModel(
     val invoiceRepository: InvoiceRepository,
     private val unitLookup: UnitLookup,
     private val syncService: CentralSyncService,
+    private val printCoordinator: PrintCoordinator,
+    private val orderPrintProvider: OrderPrintValueProvider,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -54,6 +61,11 @@ class OrderViewViewModel(
     var order by mutableStateOf(Order())
         private set
     var savingOrder by mutableStateOf(false)
+        private set
+
+    /** Transient result of the last thermal print attempt (shown then dismissed by the screen). */
+    var printMessage by mutableStateOf<String?>(null)
+    var printing by mutableStateOf(false)
         private set
 
     /** Live document sync chip: this row's synced flag + the ORDER entity's sync activity. */
@@ -111,6 +123,39 @@ class OrderViewViewModel(
         syncService.emit(SyncEvent.TriggerPush(SyncEntity.ORDER))
     }
 
+    /**
+     * Print this order to the routed printer via the offline-first spool. The idempotency key (one
+     * per tap) makes a retry safe — the spool will never double-print (§19).
+     */
+    fun printThermal() {
+        if (printing) return
+        printing = true
+        viewModelScope.launch(DispatcherProvider.io) {
+            val key = UidGenerator.generateUid("PRN")
+            val result = printCoordinator.print(orderPrintProvider, orderId, key)
+            val message = result.fold(
+                onSuccess = {
+                    when (it) {
+                        SendOutcome.CONFIRMED -> "Printed"
+                        SendOutcome.SENT_UNCONFIRMED -> "Sent to printer"
+                        SendOutcome.TRANSIENT_FAILURE -> "Printer unavailable — queued for retry"
+                        SendOutcome.PERMANENT_FAILURE -> "No printer configured for orders"
+                    }
+                },
+                onFailure = { it.message ?: "Print failed" },
+            )
+            printMessage = message
+            printing = false
+        }
+    }
+
+    /** True if any printer is configured (so we print); else the UI launches printer setup. */
+    suspend fun hasAnyPrinter(): Boolean = printCoordinator.hasAnyPrinter()
+
+    fun clearPrintMessage() {
+        printMessage = null
+    }
+
     fun saveOrder() {
         savingOrder = true
         viewModelScope.launch(DispatcherProvider.io) {
@@ -137,11 +182,33 @@ class OrderViewViewModel(
                 val invoice = current.toInvoice()
                 invoiceRepository.saveInvoice(invoice)        // saves + numbers + marks INVOICE pending
                 current.invoiceRefId = invoice.id
+                // Mirror the backend's OrderService.createInvoice: invoicing is terminal for the
+                // order's sale lifecycle — without this the order's status (and what gets pushed to
+                // the server) never reflects that it's been invoiced.
+                current.status = OrderStatus.INVOICED
                 orderRepository.saveOrder(current)            // local-only + marks ORDER pending
             }
             order = orderRepository.getOrder(orderId)
             resolveUnitNames()
             refreshLinkedInvoiceNumber()
+            viewModelScope.launch(Dispatchers.Main) {
+                savingOrder = false
+            }
+        }
+    }
+
+    /**
+     * Fulfillment step: INVOICED → SHIPPED → OUT_FOR_DELIVERY → DELIVERED. Local-only + marks
+     * ORDER pending, same as every other write here — the next sync push carries the new status to
+     * the server, which (for an ecom-linked order) forwards it to the buyer's storefront app.
+     */
+    fun advanceStatus(newStatus: OrderStatus) {
+        savingOrder = true
+        viewModelScope.launch(DispatcherProvider.io) {
+            val current = order
+            current.status = newStatus
+            orderRepository.saveOrder(current)
+            order = orderRepository.getOrder(orderId)
             viewModelScope.launch(Dispatchers.Main) {
                 savingOrder = false
             }
@@ -171,6 +238,11 @@ class OrderViewViewModel(
     }
 
     private fun OrderItem.toInvoiceItem(): InvoiceItem = InvoiceItem(this.product).apply {
+        // Carry the line snapshot explicitly — the InvoiceItem(product) constructor derives these
+        // from the product, which is null for lines whose product isn't in the local catalog.
+        description = this@toInvoiceItem.description
+        productId = this@toInvoiceItem.productId
+        taxCode = this@toInvoiceItem.taxCode
         quantity = this@toInvoiceItem.quantity
         price = this@toInvoiceItem.price
         mrp = this@toInvoiceItem.mrp

@@ -1,0 +1,541 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "447274f42590fba66d357ce84f88f9f4",
+    "entities": [
+      {
+        "tableName": "party_balance",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `party_uid` TEXT NOT NULL, `opening_minor` INTEGER NOT NULL, `opening_direction` TEXT NOT NULL, `opening_as_of` TEXT NOT NULL, `cached_closing_minor` INTEGER NOT NULL, `last_computed_at` TEXT NOT NULL, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `updated_at` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "party_uid",
+            "columnName": "party_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opening_minor",
+            "columnName": "opening_minor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opening_direction",
+            "columnName": "opening_direction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "opening_as_of",
+            "columnName": "opening_as_of",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cached_closing_minor",
+            "columnName": "cached_closing_minor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "last_computed_at",
+            "columnName": "last_computed_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "party_balance_uid_idx",
+            "unique": true,
+            "columnNames": [
+              "uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `party_balance_uid_idx` ON `${TABLE_NAME}` (`uid`)"
+          },
+          {
+            "name": "party_balance_party_idx",
+            "unique": true,
+            "columnNames": [
+              "party_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `party_balance_party_idx` ON `${TABLE_NAME}` (`party_uid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ledger_entry",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `party_uid` TEXT NOT NULL, `entry_date` TEXT NOT NULL, `entry_type` TEXT NOT NULL, `direction` TEXT NOT NULL, `amount_minor` INTEGER NOT NULL, `source_type` TEXT NOT NULL, `source_uid` TEXT NOT NULL, `voucher_no` TEXT NOT NULL, `narration` TEXT, `reversal_of` TEXT, `reversed` INTEGER NOT NULL, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `updated_at` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "party_uid",
+            "columnName": "party_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entry_date",
+            "columnName": "entry_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entry_type",
+            "columnName": "entry_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "direction",
+            "columnName": "direction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount_minor",
+            "columnName": "amount_minor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source_type",
+            "columnName": "source_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source_uid",
+            "columnName": "source_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voucher_no",
+            "columnName": "voucher_no",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "narration",
+            "columnName": "narration",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reversal_of",
+            "columnName": "reversal_of",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reversed",
+            "columnName": "reversed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "ledger_entry_uid_idx",
+            "unique": true,
+            "columnNames": [
+              "uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `ledger_entry_uid_idx` ON `${TABLE_NAME}` (`uid`)"
+          },
+          {
+            "name": "ledger_entry_party_date_idx",
+            "unique": false,
+            "columnNames": [
+              "party_uid",
+              "entry_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `ledger_entry_party_date_idx` ON `${TABLE_NAME}` (`party_uid`, `entry_date`)"
+          },
+          {
+            "name": "ledger_entry_source_idx",
+            "unique": false,
+            "columnNames": [
+              "source_type",
+              "source_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `ledger_entry_source_idx` ON `${TABLE_NAME}` (`source_type`, `source_uid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "payment_voucher",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `party_uid` TEXT NOT NULL, `voucher_no` TEXT NOT NULL, `voucher_date` TEXT NOT NULL, `direction` TEXT NOT NULL, `total_minor` INTEGER NOT NULL, `payment_mode` TEXT NOT NULL, `reference_number` TEXT, `instrument_date` TEXT, `bank_name` TEXT, `clearance_status` TEXT NOT NULL, `unallocated_minor` INTEGER NOT NULL, `narration` TEXT, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `updated_at` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "party_uid",
+            "columnName": "party_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voucher_no",
+            "columnName": "voucher_no",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voucher_date",
+            "columnName": "voucher_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "direction",
+            "columnName": "direction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "total_minor",
+            "columnName": "total_minor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payment_mode",
+            "columnName": "payment_mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reference_number",
+            "columnName": "reference_number",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "instrument_date",
+            "columnName": "instrument_date",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bank_name",
+            "columnName": "bank_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "clearance_status",
+            "columnName": "clearance_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unallocated_minor",
+            "columnName": "unallocated_minor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "narration",
+            "columnName": "narration",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "payment_voucher_uid_idx",
+            "unique": true,
+            "columnNames": [
+              "uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `payment_voucher_uid_idx` ON `${TABLE_NAME}` (`uid`)"
+          },
+          {
+            "name": "payment_voucher_party_idx",
+            "unique": false,
+            "columnNames": [
+              "party_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `payment_voucher_party_idx` ON `${TABLE_NAME}` (`party_uid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "payment_allocation",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `payment_voucher_uid` TEXT NOT NULL, `target_type` TEXT NOT NULL, `target_uid` TEXT NOT NULL, `amount_minor` INTEGER NOT NULL, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `updated_at` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payment_voucher_uid",
+            "columnName": "payment_voucher_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "target_type",
+            "columnName": "target_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "target_uid",
+            "columnName": "target_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount_minor",
+            "columnName": "amount_minor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "payment_allocation_uid_idx",
+            "unique": true,
+            "columnNames": [
+              "uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `payment_allocation_uid_idx` ON `${TABLE_NAME}` (`uid`)"
+          },
+          {
+            "name": "payment_allocation_voucher_idx",
+            "unique": false,
+            "columnNames": [
+              "payment_voucher_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `payment_allocation_voucher_idx` ON `${TABLE_NAME}` (`payment_voucher_uid`)"
+          },
+          {
+            "name": "payment_allocation_target_idx",
+            "unique": false,
+            "columnNames": [
+              "target_type",
+              "target_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `payment_allocation_target_idx` ON `${TABLE_NAME}` (`target_type`, `target_uid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "adjustment_voucher",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `party_uid` TEXT NOT NULL, `voucher_no` TEXT NOT NULL, `voucher_date` TEXT NOT NULL, `adjustment_type` TEXT NOT NULL, `amount_minor` INTEGER NOT NULL, `narration` TEXT, `source_ref` TEXT, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `updated_at` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "party_uid",
+            "columnName": "party_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voucher_no",
+            "columnName": "voucher_no",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voucher_date",
+            "columnName": "voucher_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "adjustment_type",
+            "columnName": "adjustment_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount_minor",
+            "columnName": "amount_minor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "narration",
+            "columnName": "narration",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "source_ref",
+            "columnName": "source_ref",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "adjustment_voucher_uid_idx",
+            "unique": true,
+            "columnNames": [
+              "uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `adjustment_voucher_uid_idx` ON `${TABLE_NAME}` (`uid`)"
+          },
+          {
+            "name": "adjustment_voucher_party_idx",
+            "unique": false,
+            "columnNames": [
+              "party_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `adjustment_voucher_party_idx` ON `${TABLE_NAME}` (`party_uid`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '447274f42590fba66d357ce84f88f9f4')"
+    ]
+  }
+}

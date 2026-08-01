@@ -1,10 +1,12 @@
+import AuthRoute
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -46,7 +48,7 @@ fun AppNavigationNav3(
     onWorkspaceLeft: (() -> Unit)? = null,
 ) {
     val viewModel: AppNavigationViewModel = metroViewModel()
-    val autoResumeState by viewModel.autoResumeState.collectAsState()
+    val autoResumeState by viewModel.autoResumeState.collectAsStateWithLifecycle()
     val workspaceSession by viewModel.workspaceSession.collectAsStateWithLifecycle()
 
     // Show loading while checking auto-resume
@@ -59,7 +61,7 @@ fun AppNavigationNav3(
     val startDestination: NavKey = if (shouldAutoResume && lastWorkspaceId != null && lastWorkspaceSlug != null) {
         WorkspaceRoute.Modules(lastWorkspaceId, lastWorkspaceSlug)
     } else {
-        Route.Login
+        AuthRoute.UserSelection
     }
 
     // Create Nav3 SavedStateConfiguration for polymorphic serialization
@@ -83,7 +85,7 @@ fun AppNavigationNav3(
                 val modulesRoute = currentRoute as? WorkspaceRoute.Modules
                 if (modulesRoute != null && modulesRoute.workspaceSlug.isNotBlank()) {
                     onWorkspaceEntered?.invoke(modulesRoute.workspaceSlug)
-                } else if (currentRoute is Route.Login) {
+                } else if (currentRoute is Route.Login || currentRoute is AuthRoute.UserSelection) {
                     onWorkspaceLeft?.invoke()
                 }
             }
@@ -93,7 +95,7 @@ fun AppNavigationNav3(
     LaunchedEffect(Unit) {
         viewModel.logoutEvent.collectLatest {
             backStack.clear()
-            backStack.add(Route.Login)
+            backStack.add(AuthRoute.UserSelection)
         }
     }
 
@@ -168,7 +170,14 @@ fun AppNavigationNav3(
                     },
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.background)
+                        // Apply the global bar/padding insets, then CONSUME them so a screen's own
+                        // imePadding() doesn't stack on top of the bottom-bar inset (that residual
+                        // stack was the keyboard-sized gap above the IME on the chat input). Finally
+                        // imePadding() lifts content the remaining distance to the keyboard top —
+                        // handled once, centrally, for every screen.
                         .padding(globalPaddingValues)
+                        .consumeWindowInsets(globalPaddingValues)
+                        .imePadding()
                 )
             }
         }
@@ -192,6 +201,25 @@ fun navigateToMenuItemNav3(
         route == "inventory" -> backStack.add(Route.Inventory)
         route == "tax" -> backStack.add(Route.Tax)
         route == "subscription" -> backStack.add(Route.Subscription)
+        route == "printing" -> backStack.add(Route.Printing)
+        route == "payment" -> backStack.add(Route.Payment)
+        route == "pricing" -> backStack.add(Route.Pricing)
+        route == "analytics" || route == "dashboard" -> backStack.add(Route.Analytics)
+        route == "business-dashboard" || route == "business-reporting" -> backStack.add(Route.Analytics)
+
+        route.startsWith("/analytics") || route.startsWith("/dashboard") || route.startsWith("/reports") ->
+            backStack.add(Route.Analytics)
+        route.startsWith("/payments") -> backStack.add(Route.Payment)
+        route.startsWith("/pricing") -> backStack.add(Route.Pricing)
+
+        route.startsWith("/printing") -> {
+            when (route) {
+                "/printing", "/printing/printers" -> backStack.add(Route.Printing)
+                "/printing/templates" -> backStack.add(com.ampairs.printing.ui.TemplateListRoute)
+                "/printing/queue" -> backStack.add(com.ampairs.printing.ui.PrintQueueRoute)
+                else -> backStack.add(Route.Printing)
+            }
+        }
 
         // Handle specific menu item paths
         route.startsWith("/customers") -> {

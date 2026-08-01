@@ -20,6 +20,7 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 import com.ampairs.common.util.formatCurrencyWithCode
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.clickable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Main subscription management screen
@@ -38,18 +39,18 @@ fun SubscriptionScreen(
     modifier: Modifier = Modifier,
     invoiceViewModel: InvoiceViewModel = metroViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val subscription by viewModel.subscription.collectAsState()
-    val plans by viewModel.plans.collectAsState()
-    val usageStatus by viewModel.usageStatus.collectAsState()
-    val currentPlan by viewModel.currentPlan.collectAsState()
-    val activeSeasonalDiscount by viewModel.activeSeasonalDiscount.collectAsState()
-    val activePreLaunchDiscount by viewModel.activePreLaunchDiscount.collectAsState()
-    val isNewUser by viewModel.isNewUser.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val subscription by viewModel.subscription.collectAsStateWithLifecycle()
+    val plans by viewModel.plans.collectAsStateWithLifecycle()
+    val usageStatus by viewModel.usageStatus.collectAsStateWithLifecycle()
+    val currentPlan by viewModel.currentPlan.collectAsStateWithLifecycle()
+    val activeSeasonalDiscount by viewModel.activeSeasonalDiscount.collectAsStateWithLifecycle()
+    val activePreLaunchDiscount by viewModel.activePreLaunchDiscount.collectAsStateWithLifecycle()
+    val isNewUser by viewModel.isNewUser.collectAsStateWithLifecycle()
 
     // Invoice states
-    val invoiceSummary by invoiceViewModel.invoiceSummary.collectAsState()
-    val unpaidInvoices by invoiceViewModel.invoices.collectAsState()
+    val invoiceSummary by invoiceViewModel.invoiceSummary.collectAsStateWithLifecycle()
+    val unpaidInvoices by invoiceViewModel.invoices.collectAsStateWithLifecycle()
 
     var showCancelDialog by remember { mutableStateOf(false) }
     var showUpgradeSheet by remember { mutableStateOf(false) }

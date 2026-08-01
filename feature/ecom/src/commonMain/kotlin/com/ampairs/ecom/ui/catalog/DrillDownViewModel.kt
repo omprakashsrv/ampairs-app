@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -48,6 +49,7 @@ data class DrillDownUiState(
     val activeRefine: String? = null,
     val cartCount: Int = 0,
     val cartTotal: Double = 0.0,
+    val isSearch: Boolean = false,
 )
 
 @AssistedInject
@@ -64,18 +66,37 @@ class DrillDownViewModel(
 
     private val refine = MutableStateFlow(args.subcategory)
 
+    // Search mode is entered when the screen is opened via the search bar (query != null, possibly
+    // blank). The term is then edited live in the screen, so it must be observable state — not the
+    // fixed args.query.
+    private val isSearch = args.query != null
+    private val searchQuery = MutableStateFlow(args.query.orEmpty())
+
+    /**
+     * The live search term. The text field binds to THIS (synchronous) flow, not [uiState] — the
+     * latter is produced from Room flows and lags a keystroke behind, which reorders fast typing
+     * (e.g. "ring" → "ingr") because the field reconciles against a stale value.
+     */
+    val query: StateFlow<String> = searchQuery.asStateFlow()
+
+    fun setQuery(value: String) {
+        searchQuery.value = value
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<DrillDownUiState> =
-        combine(session.active, refine) { active, r -> active to r }
-            .flatMapLatest { (active, activeRefine) ->
+        combine(session.active, refine, searchQuery) { active, r, q -> Triple(active, r, q) }
+            .flatMapLatest { (active, activeRefine, query) ->
                 if (active == null) {
-                    flowOf(DrillDownUiState(title = args.title))
+                    flowOf(DrillDownUiState(title = args.title, isSearch = isSearch))
                 } else {
                     val id = active.storefrontId
-                    val productsFlow = if (args.query != null) {
+                    val productsFlow = if (isSearch) {
                         catalogRepository.observeVisible(id).map { list ->
-                            val q = args.query.trim().lowercase()
-                            list.filter { it.name.lowercase().contains(q) || (it.brand?.lowercase()?.contains(q) == true) }
+                            val q = query.trim().lowercase()
+                            // Blank term → show nothing (prompt to type), not the whole catalog.
+                            if (q.isEmpty()) emptyList()
+                            else list.filter { it.name.lowercase().contains(q) || (it.brand?.lowercase()?.contains(q) == true) }
                         }
                     } else {
                         catalogRepository.observeFiltered(id, args.category, args.brand, activeRefine)
@@ -99,20 +120,20 @@ class DrillDownViewModel(
                             activeRefine = activeRefine,
                             cartCount = cartItems.sumOf { it.quantity },
                             cartTotal = cartItems.sumOf { it.unit_price * it.quantity },
+                            isSearch = isSearch,
                         )
                     }
                 }
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DrillDownUiState(title = args.title))
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DrillDownUiState(title = args.title, isSearch = isSearch))
 
     fun toggleRefine(value: String) {
         refine.value = if (refine.value == value) null else value
     }
 
     fun setQuantity(productId: String, quantity: Int) {
-        val slug = session.activeSlug ?: return
         val storefrontId = session.activeStorefrontId ?: return
         viewModelScope.launch {
-            cartRepository.setItem(slug, storefrontId, productId, quantity)
+            cartRepository.setItem(storefrontId, productId, quantity)
                 .onFailure { _messages.tryEmit(it.message ?: "Couldn't update cart") }
         }
     }

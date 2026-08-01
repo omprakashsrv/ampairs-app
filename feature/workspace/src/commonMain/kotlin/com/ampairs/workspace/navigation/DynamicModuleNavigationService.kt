@@ -130,7 +130,14 @@ class DynamicModuleNavigationService {
             ModuleCodes.INVOICE_BILLING,
             ModuleCodes.INVENTORY_MANAGEMENT,
             ModuleCodes.TAX_CODE_MANAGEMENT,
-            ModuleCodes.UNIT_MANAGEMENT -> true
+            ModuleCodes.UNIT_MANAGEMENT,
+            ModuleCodes.PRINTING,
+            ModuleCodes.PAYMENT_COLLECTION -> true
+            ModuleCodes.STOREFRONT_MANAGEMENT -> true
+            ModuleCodes.AI_ASSISTANT -> true
+            ModuleCodes.PRICING_MANAGEMENT -> true
+            ModuleCodes.BUSINESS_DASHBOARD,
+            ModuleCodes.BUSINESS_REPORTING -> true
             else -> false
         }
     }

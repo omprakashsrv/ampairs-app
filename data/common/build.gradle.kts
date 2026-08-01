@@ -38,6 +38,7 @@ kotlin {
             dependencies {
                 // Compose
                 implementation(libs.compose.runtime)
+                implementation(libs.lifecycle.runtime.compose)
                 implementation(libs.compose.ui)
                 implementation(libs.compose.foundation)
                 implementation(libs.compose.animation)

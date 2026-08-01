@@ -54,7 +54,7 @@ fun OrdersListScreen(
             LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)) {
                 items(state.orders, key = { it.uid }) { order ->
                     OrderCard(
-                        ref = order.ecom_order_ref,
+                        ref = order.order_number.ifBlank { order.ecom_order_ref },
                         date = order.placed_at,
                         status = order.status,
                         total = order.total_amount,

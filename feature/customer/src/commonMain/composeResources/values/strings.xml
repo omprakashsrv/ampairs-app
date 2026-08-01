@@ -37,6 +37,7 @@
     <!-- Customer form screen -->
     <string name="customer_form_title_new">New Customer</string>
     <string name="customer_form_title_edit">Edit Customer</string>
+    <string name="customer_ai_fill">Fill with AI</string>
     <string name="customer_import_contact">Import from Contact</string>
     <string name="customer_importing">Importing…</string>
     <string name="customer_save_action">Save Customer</string>
@@ -61,6 +62,15 @@
     <string name="customer_section_financial">Financial Information</string>
     <string name="customer_section_additional">Additional Information</string>
     <string name="customer_section_system">System Information</string>
+    <string name="customer_section_linked_accounts">Linked accounts</string>
+    <string name="customer_linked_accounts_empty">No app accounts linked yet.</string>
+    <string name="customer_link_account">Link account</string>
+    <string name="customer_link_account_title">Link an app account</string>
+    <string name="customer_link_account_phone_label">Phone number</string>
+    <string name="customer_link_account_name_label">Name (optional)</string>
+    <string name="customer_link_account_confirm">Link</string>
+    <string name="customer_account_restricted">Restricted</string>
+    <string name="customer_account_active">Active</string>
 
     <!-- Field labels -->
     <string name="customer_label_name">Name</string>

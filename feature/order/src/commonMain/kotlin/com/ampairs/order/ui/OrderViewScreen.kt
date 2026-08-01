@@ -12,6 +12,7 @@ import ampairsapp.feature.order.generated.resources.ord_conv_title
 import ampairsapp.feature.order.generated.resources.ord_view_bill_to
 import ampairsapp.feature.order.generated.resources.ord_view_cd_back
 import ampairsapp.feature.order.generated.resources.ord_view_cd_edit
+import ampairsapp.feature.order.generated.resources.ord_view_cd_print
 import ampairsapp.feature.order.generated.resources.ord_view_col_particulars
 import ampairsapp.feature.order.generated.resources.ord_view_col_qty
 import ampairsapp.feature.order.generated.resources.ord_view_col_rate
@@ -24,6 +25,9 @@ import ampairsapp.feature.order.generated.resources.ord_view_edit
 import ampairsapp.feature.order.generated.resources.ord_view_inter_foot
 import ampairsapp.feature.order.generated.resources.ord_view_intra_foot
 import ampairsapp.feature.order.generated.resources.ord_view_line_meta
+import ampairsapp.feature.order.generated.resources.ord_view_mark_delivered
+import ampairsapp.feature.order.generated.resources.ord_view_mark_out_for_delivery
+import ampairsapp.feature.order.generated.resources.ord_view_mark_shipped
 import ampairsapp.feature.order.generated.resources.ord_view_unregistered
 import ampairsapp.feature.order.generated.resources.ord_view_from_seller
 import ampairsapp.feature.order.generated.resources.ord_view_grand
@@ -51,6 +55,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomAppBar
@@ -72,6 +77,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,9 +93,11 @@ import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatDate
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.invoice.editor.DocSyncChip
+import com.ampairs.order.domain.OrderStatus
 import com.ampairs.order.domain.TaxSpec
 import com.ampairs.order.viewmodel.OrderViewViewModel
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
@@ -106,6 +114,7 @@ fun OrderViewScreen(
     onNavigateBack: () -> Unit,
     onEdit: (orderId: String) -> Unit = {},
     onOpenInvoice: (invoiceId: String) -> Unit = {},
+    onOpenPrinterSetup: () -> Unit = {},
     viewModel: OrderViewViewModel = assistedMetroViewModel<OrderViewViewModel, OrderViewViewModel.Factory>(key = orderId) { create(orderId) }
 ) {
     val locale = LocalAppLocale.current
@@ -113,7 +122,29 @@ fun OrderViewScreen(
     val cs = MaterialTheme.colorScheme
     val mono = FontFamily.Monospace
     var showConvertConfirm by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val converted = !order.invoiceRefId.isNullOrEmpty()
+    // Fulfillment step, one at a time: (invoiced) → SHIPPED → OUT_FOR_DELIVERY → DELIVERED. The
+    // first step keys off `converted` (invoiceRefId set), not `status == INVOICED` specifically —
+    // an order invoiced through an older app version, the web app, or the ecom auto-confirm path may
+    // have invoiceRefId set without status having ever been written back as INVOICED locally, and it
+    // should still be advanceable. Null once delivered/cancelled/refunded, or before invoicing.
+    val nextFulfillment = when (order.status) {
+        OrderStatus.SHIPPED -> OrderStatus.OUT_FOR_DELIVERY to Res.string.ord_view_mark_out_for_delivery
+        OrderStatus.OUT_FOR_DELIVERY -> OrderStatus.DELIVERED to Res.string.ord_view_mark_delivered
+        OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.REFUNDED -> null
+        else -> if (converted) OrderStatus.SHIPPED to Res.string.ord_view_mark_shipped else null
+    }
+
+    viewModel.printMessage?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPrintMessage() },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearPrintMessage() }) { Text("OK") }
+            },
+            text = { Text(msg) },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -138,11 +169,28 @@ fun OrderViewScreen(
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
-                    IconButton(onClick = { onEdit(order.id) }) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                if (viewModel.hasAnyPrinter()) viewModel.printThermal() else onOpenPrinterSetup()
+                            }
+                        },
+                        enabled = !viewModel.printing,
+                    ) {
                         Icon(
-                            imageVector = Icons.Filled.Edit,
-                            contentDescription = stringResource(Res.string.ord_view_cd_edit)
+                            imageVector = Icons.Filled.Print,
+                            contentDescription = stringResource(Res.string.ord_view_cd_print)
                         )
+                    }
+                    // Editing after invoicing would desync the order from the invoice already
+                    // generated from it — no edit action once invoiceRefId is set.
+                    if (!converted) {
+                        IconButton(onClick = { onEdit(order.id) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = stringResource(Res.string.ord_view_cd_edit)
+                            )
+                        }
                     }
                 }
             )
@@ -158,12 +206,14 @@ fun OrderViewScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
-                OutlinedButton(
-                    onClick = { onEdit(order.id) },
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text("  " + stringResource(Res.string.ord_view_edit))
+                if (!converted) {
+                    OutlinedButton(
+                        onClick = { onEdit(order.id) },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("  " + stringResource(Res.string.ord_view_edit))
+                    }
                 }
                 if (order.orderNumber.isNullOrEmpty()) {
                     Button(
@@ -188,6 +238,23 @@ fun OrderViewScreen(
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null, modifier = Modifier.size(18.dp))
                         Text("  " + stringResource(Res.string.ord_view_view_invoice))
+                    }
+                    nextFulfillment?.let { (next, label) ->
+                        Button(
+                            onClick = { viewModel.advanceStatus(next) },
+                            enabled = !viewModel.savingOrder,
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            if (viewModel.savingOrder) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.progressSemantics().size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = cs.onPrimary
+                                )
+                            } else {
+                                Text(stringResource(label))
+                            }
+                        }
                     }
                 } else {
                     Button(

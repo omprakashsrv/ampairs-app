@@ -3,6 +3,7 @@ package com.ampairs.ecom.ui.catalog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,23 +15,35 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.ecom.generated.resources.Res
 import ampairsapp.feature.ecom.generated.resources.ecom_result_count
+import ampairsapp.feature.ecom.generated.resources.ecom_search_placeholder
+import ampairsapp.feature.ecom.generated.resources.ecom_search_prompt
+import ampairsapp.feature.ecom.generated.resources.ecom_search_no_results
 import ampairsapp.feature.ecom.generated.resources.ecom_view_cart
 import com.ampairs.common.navigation.ScreenBackButton
 import com.ampairs.ecom.domain.firstImageUrl
@@ -50,6 +63,8 @@ fun DrillDownScreen(
         assistedMetroViewModel<DrillDownViewModel, DrillDownViewModel.Factory>(key = args.key) { create(args) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Bind the field to the synchronous query flow (uiState lags a keystroke behind via Room flows).
+    val query by viewModel.query.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.messages.collect { snackbar.showSnackbar(it) } }
 
     Column(Modifier.fillMaxSize()) {
@@ -58,15 +73,39 @@ fun DrillDownScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ScreenBackButton(onClick = onBack, contentDescription = "Back")
-            Text(state.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            if (state.isSearch) {
+                val focusRequester = remember { FocusRequester() }
+                LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = viewModel::setQuery,
+                    modifier = Modifier.weight(1f).focusRequester(focusRequester),
+                    placeholder = { Text(stringResource(Res.string.ecom_search_placeholder)) },
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.setQuery("") }) {
+                                Icon(Icons.Filled.Close, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                )
+            } else {
+                Text(state.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            }
         }
 
-        Text(
-            stringResource(Res.string.ecom_result_count, state.products.size),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-        )
+        // Only show the result count once a search term is entered (or for category/brand drill-down).
+        if (!state.isSearch || query.isNotBlank()) {
+            Text(
+                stringResource(Res.string.ecom_result_count, state.products.size),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+            )
+        }
 
         if (state.refineOptions.isNotEmpty()) {
             LazyRow(
@@ -80,28 +119,42 @@ fun DrillDownScreen(
             }
         }
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(state.products, key = { it.product.uid }) { row ->
-                val p = row.product
-                ProductGridCard(
-                    name = p.name,
-                    brand = p.brand,
-                    unit = p.unit,
-                    price = p.price,
-                    mrp = p.mrp,
-                    stockStatus = p.stock_status,
-                    imageUrl = p.image_urls.firstImageUrl(),
-                    quantityInCart = row.qtyInCart,
-                    onOpen = { onOpenProduct(p.uid) },
-                    onAdd = { viewModel.setQuantity(p.uid, 1) },
-                    onIncrement = { viewModel.setQuantity(p.uid, row.qtyInCart + 1) },
-                    onDecrement = { viewModel.setQuantity(p.uid, row.qtyInCart - 1) },
+        if (state.isSearch && state.products.isEmpty()) {
+            // Search-mode empty state: prompt before typing, "no results" once a term is entered.
+            Box(Modifier.weight(1f).fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(
+                        if (query.isBlank()) Res.string.ecom_search_prompt else Res.string.ecom_search_no_results
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                 )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 170.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(state.products, key = { it.product.uid }) { row ->
+                    val p = row.product
+                    ProductGridCard(
+                        name = p.name,
+                        brand = p.brand,
+                        unit = p.unit,
+                        price = p.price,
+                        mrp = p.mrp,
+                        stockStatus = p.stock_status,
+                        imageUrl = p.image_urls.firstImageUrl(),
+                        quantityInCart = row.qtyInCart,
+                        onOpen = { onOpenProduct(p.uid) },
+                        onAdd = { viewModel.setQuantity(p.uid, 1) },
+                        onIncrement = { viewModel.setQuantity(p.uid, row.qtyInCart + 1) },
+                        onDecrement = { viewModel.setQuantity(p.uid, row.qtyInCart - 1) },
+                    )
+                }
             }
         }
 

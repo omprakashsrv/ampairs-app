@@ -39,12 +39,17 @@ data class ProductDetailsUiState(
     val subCategoryName: String = "",
     val baseUnitName: String = "",
     val primaryImageUrl: String? = null,
+    /** Whether this product is listed on the workspace storefront (server state). */
+    val isEcomListed: Boolean = false,
+    val isEcomToggling: Boolean = false,
+    val ecomError: String? = null,
 )
 
 @AssistedInject
 class ProductDetailsViewModel(
     @Assisted private val productId: String,
     private val productRepository: ProductRepository,
+    private val productApi: com.ampairs.product.data.api.ProductApi,
     private val fileRepository: FileRepository,
     private val categoryDao: CategoryDao,
     private val brandDao: BrandDao,
@@ -66,6 +71,33 @@ class ProductDetailsViewModel(
     init {
         observeProduct()
         observePrimaryImage()
+        loadEcomListing()
+    }
+
+    /** Fetch current storefront-listing state (online; best-effort — silent if it fails). */
+    private fun loadEcomListing() {
+        viewModelScope.launch {
+            productApi.getProduct(productId)
+                .onSuccess { p -> _uiState.update { it.copy(isEcomListed = p.isEcomListed) } }
+        }
+    }
+
+    /**
+     * Toggle storefront listing for this product (online action). On success the storefront catalog
+     * is updated server-side asynchronously.
+     */
+    fun setEcomListing(listed: Boolean) {
+        if (_uiState.value.isEcomToggling) return
+        _uiState.update { it.copy(isEcomToggling = true, ecomError = null) }
+        viewModelScope.launch {
+            productApi.setEcomListing(productId, listed)
+                .onSuccess { p ->
+                    _uiState.update { it.copy(isEcomListed = p.isEcomListed, isEcomToggling = false) }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isEcomToggling = false, ecomError = e.message ?: "Failed to update storefront listing") }
+                }
+        }
     }
 
     private fun observeProduct() {

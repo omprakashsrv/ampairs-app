@@ -25,7 +25,13 @@ class RuleBasedIntentResolver : IntentResolver {
             return ResolvedIntent.Conversation("Please type a command or question.")
         }
 
-        return tryCreate(trimmed)
+        return tryCartShow(trimmed)
+            ?: tryCartClear(trimmed)
+            ?: tryCartRemoveLast(trimmed)
+            ?: tryFinalizeDocument(trimmed)
+            ?: tryCartSetCustomer(trimmed)
+            ?: tryCartAddItem(trimmed)
+            ?: tryCreate(trimmed)
             ?: trySearch(trimmed)
             ?: tryCount(trimmed)
             ?: tryList(trimmed)
@@ -35,6 +41,73 @@ class RuleBasedIntentResolver : IntentResolver {
             ?: trySync(trimmed)
             ?: tryRead(trimmed)
             ?: fallback()
+    }
+
+    // ── Conversational cart (multi-item ordering) ──
+    // The flow: "add 2 widgets" → builds a cart, "customer John" → sets the buyer, "create invoice"
+    // / "create order" → finalizes. The handlers do the real product/customer matching against local
+    // data; these patterns only extract the action + slots (mirrors what the on-device LLM emits).
+
+    // ── Pattern: "create/make/new an invoice/bill/order [for] {customer?}" → finalize the cart ──
+    private fun tryFinalizeDocument(input: String): ResolvedIntent? {
+        val pattern = Regex(
+            """(?i)(?:create|make|generate|raise|place|checkout|finali[sz]e|new)\s+(?:an?\s+|as\s+)?(invoice|bill|order)(?:\s+(?:for\s+)?(.+))?$"""
+        )
+        val match = pattern.find(input) ?: return null
+        val module = if (match.groupValues[1].lowercase() == "order") "order" else "invoice"
+        val customer = match.groupValues[2].trim()
+        val params = if (customer.isNotBlank()) mapOf("customer" to customer) else emptyMap()
+        return ResolvedIntent.Action(AgentAction(ActionType.CREATE, module, params))
+    }
+
+    // ── Pattern: "add {qty} [x] {product} [at|@|for {price}]" → add a line to the cart ──
+    private fun tryCartAddItem(input: String): ResolvedIntent? {
+        val pattern = Regex(
+            """(?i)^(?:add|put|include)\s+(\d+(?:\.\d+)?)\s+(?:x\s+|of\s+)?(.+?)(?:\s+(?:at|@|for|each\s+at|priced?\s+at)\s+(?:₹|rs\.?|inr|\$)?\s*(\d+(?:\.\d+)?))?$"""
+        )
+        val match = pattern.find(input) ?: return null
+        val qty = match.groupValues[1].trim()
+        val product = match.groupValues[2].trim()
+        val price = match.groupValues[3].trim()
+        if (product.isBlank()) return null
+        val params = buildMap {
+            put("product", product)
+            put("quantity", qty)
+            if (price.isNotBlank()) put("price", price)
+        }
+        return ResolvedIntent.Action(AgentAction(ActionType.ADD_ITEM, "cart", params))
+    }
+
+    // ── Pattern: "customer John" / "bill to John" / "set customer to John" → set the cart's buyer ──
+    private fun tryCartSetCustomer(input: String): ResolvedIntent? {
+        val pattern = Regex(
+            """(?i)^(?:bill\s+to|set\s+customer(?:\s+to)?|customer(?:\s+is)?|for\s+customer)\s+(.+)$"""
+        )
+        val match = pattern.find(input) ?: return null
+        val customer = match.groupValues[1].trim()
+        if (customer.isBlank()) return null
+        return ResolvedIntent.Action(AgentAction(ActionType.SET_CUSTOMER, "cart", mapOf("customer" to customer)))
+    }
+
+    // ── Pattern: "show cart" / "view bill" / "what's in my cart" ──
+    private fun tryCartShow(input: String): ResolvedIntent? {
+        val pattern = Regex("""(?i)^(?:show|view|see|open|what'?s\s+in)\s+(?:my\s+|the\s+|current\s+)?(?:cart|bill|draft|basket)$""")
+        if (pattern.find(input) == null) return null
+        return ResolvedIntent.Action(AgentAction(ActionType.LIST, "cart"))
+    }
+
+    // ── Pattern: "clear cart" / "empty bill" / "discard draft" ──
+    private fun tryCartClear(input: String): ResolvedIntent? {
+        val pattern = Regex("""(?i)^(?:clear|empty|reset|discard|cancel)\s+(?:my\s+|the\s+)?(?:cart|bill|draft|basket)$""")
+        if (pattern.find(input) == null) return null
+        return ResolvedIntent.Action(AgentAction(ActionType.DELETE, "cart"))
+    }
+
+    // ── Pattern: "remove last [item]" / "undo last" ──
+    private fun tryCartRemoveLast(input: String): ResolvedIntent? {
+        val pattern = Regex("""(?i)^(?:remove|delete|drop|undo)\s+(?:the\s+)?last(?:\s+item)?$""")
+        if (pattern.find(input) == null) return null
+        return ResolvedIntent.Action(AgentAction(ActionType.DELETE, "cart", mapOf("scope" to "last")))
     }
 
     // ── Pattern: "add/create/new {module} [called/named] {name}" ──
@@ -230,14 +303,18 @@ class RuleBasedIntentResolver : IntentResolver {
     }
 
     private fun fallback(): ResolvedIntent = ResolvedIntent.Conversation(
-        "I can help you manage customers, products, orders, invoices, and inventory. Try:\n" +
+        "I can help you manage customers, products, orders, invoices, and inventory.\n" +
+            "Build a bill or order conversationally:\n" +
+            "  - \"add 2 widgets\"  (optionally \"... at 90\")\n" +
+            "  - \"add 3 bolts\"\n" +
+            "  - \"customer John\"\n" +
+            "  - \"show cart\"  /  \"remove last\"  /  \"clear cart\"\n" +
+            "  - \"create invoice\"  or  \"create order\"  to finalize\n" +
+            "Or single commands:\n" +
             "  - \"add customer John\"\n" +
             "  - \"search orders 1001\"\n" +
-            "  - \"list invoices with status PENDING\"\n" +
             "  - \"how many invoices\"\n" +
             "  - \"low stock items\"\n" +
-            "  - \"stock level for product PRD123\"\n" +
-            "  - \"show order details of 1001\"\n" +
             "  - \"sync inventory\""
     )
 

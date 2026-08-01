@@ -16,7 +16,7 @@ class AddressRepository(
     private val api: EcomApi,
     private val addressDao: AddressDao,
 ) {
-    fun observeAddresses(): Flow<List<CustomerAddressEntity>> = addressDao.observeAll()
+    fun observeAddresses(): Flow<List<CustomerAddressEntity>> = addressDao.observeAll().orEmitOnDbClosed(emptyList())
 
     /** Database-first write: persist locally as unsynced; CentralSyncService pushes it. */
     suspend fun saveLocally(address: CustomerAddressEntity): Result<CustomerAddressEntity> {
@@ -36,6 +36,10 @@ class AddressRepository(
         return result.fold(
             onSuccess = { list ->
                 addressDao.upsertAll(list.map { it.toEntity(synced = 1) })
+                // Server is authoritative: drop synced rows it no longer returns (heals stale
+                // duplicates from older client-uid divergence). Only prune when the server
+                // actually returned addresses, to avoid wiping on a transient empty response.
+                if (list.isNotEmpty()) addressDao.deleteSyncedNotIn(list.map { it.uid })
                 Result.success(list.size)
             },
             onFailure = {
@@ -51,17 +55,7 @@ class AddressRepository(
         var pushed = 0
         var failures = 0
         for (row in pending) {
-            val outcome = if (row.active == 0) {
-                api.deleteAddress(row.uid).onSuccess { addressDao.hardDelete(row.uid) }
-            } else {
-                val request = row.toRequest()
-                // Try update first, fall back to create — mirrors the standard push pattern.
-                api.updateAddress(row.uid, request)
-                    .recoverCatching { api.createAddress(request).getOrThrow() }
-                    .onSuccess { addressDao.upsert(row.copy(synced = 1)) }
-                    .map { }
-            }
-            outcome.onSuccess { pushed++ }.onFailure { failures++ }
+            pushRow(row).onSuccess { pushed++ }.onFailure { failures++ }
         }
         return if (pushed == 0 && failures > 0) {
             Result.failure(Exception("Failed to push pending addresses — will retry"))
@@ -70,7 +64,49 @@ class AddressRepository(
         }
     }
 
+    /**
+     * Checkout needs the delivery address to already exist server-side by this exact uid (it's
+     * looked up by id, not inlined) — but address creation is offline-first, so a just-created
+     * address may still be waiting for its turn in the regular push cycle. Push it now and wait,
+     * the same way [com.ampairs.ecom.data.repository.CartRepository.materializeToServer] does for
+     * the cart: a live, checkout-time round trip rather than the reactive sync path.
+     *
+     * Returns the uid checkout should actually reference — usually [uid] unchanged, but the server
+     * can assign a different one (see [pushRow]); the caller must use the returned value.
+     */
+    suspend fun ensureSynced(uid: String): Result<String> {
+        val row = addressDao.byId(uid) ?: return Result.failure(Exception("Address not found: $uid"))
+        if (row.synced == 1) return Result.success(uid)
+        return pushRow(row)
+    }
+
+    /** Pushes one row; returns the uid it now lives under server-side (see [ensureSynced]). */
+    private suspend fun pushRow(row: CustomerAddressEntity): Result<String> {
+        return if (row.active == 0) {
+            api.deleteAddress(row.uid).onSuccess { addressDao.hardDelete(row.uid) }.map { row.uid }
+        } else {
+            val request = row.toRequest()
+            // Try update first, fall back to create — mirrors the standard push pattern.
+            api.updateAddress(row.uid, request)
+                .recoverCatching { api.createAddress(request).getOrThrow() }
+                .map { resp ->
+                    if (resp.uid.isNotBlank() && resp.uid != row.uid) {
+                        // Server assigned a different uid (legacy data created before the server
+                        // honored client uids). Adopt it so the next pull upserts the same row
+                        // instead of inserting a duplicate.
+                        addressDao.hardDelete(row.uid)
+                        addressDao.upsert(row.copy(uid = resp.uid, synced = 1))
+                        resp.uid
+                    } else {
+                        addressDao.upsert(row.copy(synced = 1))
+                        row.uid
+                    }
+                }
+        }
+    }
+
     private fun CustomerAddressEntity.toRequest() = AddressRequest(
+        uid = uid,
         label = label,
         addressLine1 = address_line1,
         addressLine2 = address_line2,
@@ -80,5 +116,7 @@ class AddressRepository(
         country = country,
         phone = phone,
         isDefault = is_default == 1,
+        latitude = latitude,
+        longitude = longitude,
     )
 }

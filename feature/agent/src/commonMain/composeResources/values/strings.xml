@@ -1,0 +1,96 @@
+<resources>
+    <!-- Assistant chat UI (feature 002) -->
+    <string name="agent_title">Assistant</string>
+    <string name="agent_back_cd">Back</string>
+    <string name="agent_clear_chat_cd">Clear chat</string>
+    <string name="agent_empty_title">How can I help you?</string>
+    <string name="agent_empty_hint">Try: \"add customer John\" or \"search products\"</string>
+    <string name="agent_thinking">Thinking…</string>
+    <string name="agent_input_placeholder">Type a message…</string>
+    <string name="agent_send_cd">Send</string>
+    <string name="agent_stop_cd">Stop generating</string>
+    <string name="agent_confirm_prompt">Confirm this action?</string>
+    <string name="agent_confirm">Confirm</string>
+    <string name="agent_cancel">Cancel</string>
+    <string name="agent_view">View</string>
+    <string name="agent_total">Total</string>
+    <string name="agent_error_generic">Something went wrong</string>
+    <string name="agent_cancelled">Okay, cancelled. Nothing was saved.</string>
+    <string name="agent_mute_cd">Mute spoken responses</string>
+    <string name="agent_unmute_cd">Read responses aloud</string>
+    <string name="agent_mic_permission_denied">Microphone access is needed for voice input. You can still type.</string>
+    <!-- First-use on-device model download (consent + progress) -->
+    <string name="agent_model_download_title">Download AI model?</string>
+    <string name="agent_model_download_message">The offline assistant needs to download %1$s (about %2$s) once. After that it works without internet.</string>
+    <string name="agent_model_download_confirm">Download</string>
+    <string name="agent_model_download_decline">Not now</string>
+    <string name="agent_model_downloading_title">Downloading AI model</string>
+    <string name="agent_model_downloading_progress">%1$d%% — this can take a few minutes</string>
+    <string name="agent_model_download_failed_title">Download failed</string>
+    <string name="agent_model_download_hide">Hide</string>
+    <string name="agent_model_download_retry">Retry</string>
+    <!-- Model manager (status chip + download / switch / delete sheet) -->
+    <string name="agent_model_chip_cd">Manage AI model</string>
+    <string name="agent_model_chip_rule_based">Rule-based</string>
+    <string name="agent_model_chip_unsupported">Android only</string>
+    <string name="agent_model_manager_unsupported_note">On-device AI currently runs on Android only. On this platform the assistant uses rule-based mode (actions). Model download and switching will appear here once a desktop/iOS engine is available.</string>
+    <string name="agent_model_chip_loading">Loading…</string>
+    <string name="agent_model_chip_downloading">%1$d%%</string>
+    <string name="agent_model_manager_title">AI model</string>
+    <string name="agent_model_manager_subtitle">Pick which on-device model powers the assistant. Larger models converse better but use more space and memory.</string>
+    <string name="agent_model_manager_rule_based_note">No model selected — the assistant is in rule-based mode (actions only). Download a model below for full conversation.</string>
+    <string name="agent_model_use">Use</string>
+    <string name="agent_model_active">Active</string>
+    <string name="agent_model_download_action">Download</string>
+    <string name="agent_model_delete">Delete</string>
+    <string name="agent_model_retry">Retry</string>
+    <string name="agent_model_recommended">Recommended</string>
+    <string name="agent_model_status_installed">Downloaded</string>
+    <string name="agent_model_status_not_installed">Not downloaded</string>
+    <string name="agent_model_status_failed">Download failed</string>
+    <string name="agent_model_status_downloading">Downloading %1$d%%</string>
+    <string name="agent_model_status_cloud">Runs in the cloud · no download</string>
+    <string name="agent_model_role_size">%1$s · %2$s</string>
+    <!-- Full-screen hands-free voice conversation mode -->
+    <string name="agent_voice_mode_cd">Start voice conversation</string>
+    <string name="agent_voice_unavailable">Voice conversation isn't available on this device.</string>
+    <string name="agent_voice_connecting">Getting ready…</string>
+    <string name="agent_voice_listening">Listening…</string>
+    <string name="agent_voice_listening_hint">Speak now</string>
+    <string name="agent_voice_thinking">Thinking…</string>
+    <string name="agent_voice_speaking">Speaking…</string>
+    <string name="agent_voice_paused">Paused</string>
+    <string name="agent_voice_pause_cd">Pause</string>
+    <string name="agent_voice_resume_cd">Resume</string>
+    <string name="agent_voice_exit_cd">Exit voice mode</string>
+    <string name="agent_voice_title">Voice conversation</string>
+    <!-- Assistant settings (switchable speech / model adapters) -->
+    <string name="agent_settings_cd">Assistant settings</string>
+    <string name="agent_settings_title">Assistant settings</string>
+    <string name="agent_settings_stt">Speech-to-text engine</string>
+    <string name="agent_settings_mic">Microphone</string>
+    <string name="agent_settings_tts">Text-to-speech engine</string>
+    <string name="agent_settings_llm">AI model</string>
+    <string name="agent_settings_none">Not available on this platform</string>
+    <string name="agent_settings_manage_models">Manage models</string>
+    <string name="agent_settings_telemetry">Improve the assistant</string>
+    <string name="agent_settings_telemetry_desc">Share your chats with us to improve the assistant. Off by default.</string>
+    <string name="agent_settings_reasoning">Show reasoning</string>
+    <string name="agent_settings_reasoning_desc">Show the model's thinking while it works out a reply. On by default.</string>
+    <string name="agent_adapter_device">Device (built-in)</string>
+    <string name="agent_adapter_whisper">Whisper (offline)</string>
+    <string name="agent_adapter_vosk">Vosk (offline)</string>
+    <string name="agent_stt_models_title">Speech recognition models</string>
+    <!-- Cart / order & invoice creation (FR-024) -->
+    <string name="cart_empty">Cart empty</string>
+    <string name="cart_items">Items</string>
+    <string name="cart_subtotal">Subtotal</string>
+    <string name="customer">Customer</string>
+    <string name="create_order">Create order</string>
+    <string name="create_invoice">Create invoice</string>
+    <string name="clear_cart">Clear cart</string>
+    <string name="confirm_order">Confirm order for %1$s?</string>
+    <string name="confirm_invoice">Confirm invoice for %1$s?</string>
+    <string name="order_created">Order created successfully</string>
+    <string name="invoice_created">Invoice created successfully</string>
+</resources>

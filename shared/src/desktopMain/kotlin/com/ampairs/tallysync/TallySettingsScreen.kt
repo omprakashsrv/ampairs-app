@@ -27,7 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,8 +57,8 @@ fun TallySettingsScreen(
     var connectorStatus by remember { mutableStateOf<ConnectorStatus?>(null) }
     val scope = rememberCoroutineScope()
 
-    val logLines by scheduler.syncService.logLines.collectAsState()
-    val taxCodeCandidates by scheduler.syncService.taxCodeCandidates.collectAsState()
+    val logLines by scheduler.syncService.logLines.collectAsStateWithLifecycle()
+    val taxCodeCandidates by scheduler.syncService.taxCodeCandidates.collectAsStateWithLifecycle()
     val clipboard = LocalClipboardManager.current
 
     LaunchedEffect(workspaceSlug) {
@@ -172,6 +172,8 @@ fun TallySettingsScreen(
                     enabled = !isSyncing,
                     onClick = {
                         scope.launch {
+                            // Every per-entity alterId checkpoint must be cleared, or that entity's
+                            // already-synced records (alterId <= checkpoint) won't be re-fetched/re-mapped.
                             val entityTypes = listOf(
                                 TallyProductMapper.ENTITY_STOCK_GROUP,
                                 TallyProductMapper.ENTITY_STOCK_CATEGORY,
@@ -179,6 +181,8 @@ fun TallySettingsScreen(
                                 TallyProductMapper.ENTITY_UNIT,
                                 TallyCustomerMapper.ENTITY_ACCOUNT_GROUP,
                                 TallyCustomerMapper.ENTITY_LEDGER,
+                                TallyCustomerMapper.ENTITY_SUPPLIER_LEDGER,
+                                TallyVoucherMapper.ENTITY_VOUCHER,
                             )
                             entityTypes.forEach { entity ->
                                 dataStore.setTallyLastAlterId(workspaceSlug, entity, 0L)
@@ -402,6 +406,8 @@ private fun ConnectorStatusCard(status: ConnectorStatus?) {
 
 private fun formatResult(result: TallySyncResult): String =
     if (result.success)
-        "OK — groups=${result.groupsSynced} categories=${result.categoriesSynced} products=${result.productsSynced} units=${result.unitsSynced} · ${result.taxCodesToImport} tax code(s) to import"
+        "OK — groups=${result.groupsSynced} categories=${result.categoriesSynced} products=${result.productsSynced} " +
+            "prices=${result.pricesSynced} costs=${result.standardCostsSynced} conversions=${result.unitConversionsSynced} " +
+            "units=${result.unitsSynced} inventory=${result.inventoryItemsSynced} · ${result.taxCodesToImport} tax code(s) to import"
     else
         "Error: ${result.error}"

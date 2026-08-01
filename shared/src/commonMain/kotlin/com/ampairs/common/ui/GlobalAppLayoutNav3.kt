@@ -5,7 +5,9 @@ import Route
 import WorkspaceRoute
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -13,8 +15,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,14 +50,14 @@ fun GlobalAppLayoutNav3(
 ) {
     val viewModel: GlobalAppLayoutViewModel = metroViewModel()
     val headerStateManager = remember { AppHeaderStateManager.instance }
-    val headerState by headerStateManager.headerState.collectAsState()
+    val headerState by headerStateManager.headerState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.navEvent.collectLatest { event ->
             when (event) {
                 GlobalAppLayoutViewModel.NavEvent.NavigateToLogin -> {
                     backStack.clear()
-                    backStack.add(Route.Login)
+                    backStack.add(AuthRoute.UserSelection)
                 }
                 GlobalAppLayoutViewModel.NavEvent.NavigateToWorkspace -> {
                     backStack.clear()
@@ -88,7 +91,7 @@ fun GlobalAppLayoutNav3(
     BackNavigationHandlerNav3(
         backStack = backStack,
         enabled = shouldShowHeader,
-        fallbackRoute = if (isWorkspaceSelection) Route.Login else Route.Workspace
+        fallbackRoute = if (isWorkspaceSelection) AuthRoute.UserSelection else Route.Workspace
     )
 
     if (!shouldShowHeader) {
@@ -116,18 +119,38 @@ fun GlobalAppLayoutNav3(
 
     // Keep global navigation manager updated for the desktop system MenuBar.
     val globalNavManager = remember { GlobalNavigationManager.getInstance() }
-    val navigationService by globalNavManager.navigationService.collectAsState()
+    val navigationService by globalNavManager.navigationService.collectAsStateWithLifecycle()
 
     when {
+        // ── Full-screen routes (AI assistant chat): no app chrome (no bottom nav / rail /
+        // header) so the conversation + keyboard get the whole screen. A bare Scaffold still
+        // supplies the OS status/navigation-bar insets (and IME is handled once on NavDisplay in
+        // AppNavigationNav3), and the screen renders its own top bar with a back button. ────────
+        currentRoute is Route.Agent && hasActiveWorkspace -> {
+            Scaffold(modifier = modifier) { paddingValues ->
+                CompositionLocalProvider(LocalShowScreenBackButton provides true) {
+                    content(paddingValues)
+                }
+            }
+        }
+
         // ── Mobile: NavigationBar at bottom, no top bar ─────────────────────
         navigationPattern == NavigationPattern.SIDE_DRAWER && hasActiveWorkspace -> {
+            // True while the soft keyboard is open. We hide the bottom nav then so the focused
+            // screen's input sits flush above the keyboard (nothing wedged between, no dead gap).
+            // Hide the bottom nav while the keyboard is open so the focused screen's input can sit
+            // flush above the keyboard. The IME inset itself is applied (and consumed) once on the
+            // NavDisplay in AppNavigationNav3 — not here — so it never stacks with the bar insets.
+            val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
             Scaffold(
-                modifier = modifier.imePadding(),
+                modifier = modifier,
                 bottomBar = {
-                    AppBottomNavigation(
-                        backStack = backStack,
-                        currentRoute = currentRoute
-                    )
+                    if (!imeVisible) {
+                        AppBottomNavigation(
+                            backStack = backStack,
+                            currentRoute = currentRoute
+                        )
+                    }
                 },
             ) { paddingValues ->
                 // No global header on mobile — screens render their own back button.

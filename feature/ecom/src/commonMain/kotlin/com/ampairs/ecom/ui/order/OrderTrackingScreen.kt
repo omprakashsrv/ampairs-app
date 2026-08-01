@@ -33,9 +33,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.ecom.generated.resources.Res
 import ampairsapp.feature.ecom.generated.resources.ecom_tracking_title
+import ampairsapp.feature.ecom.generated.resources.ecom_delivery_address
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.navigation.ScreenBackButton
+import com.ampairs.formwidgets.location.DeliveryLocationMap
 import com.ampairs.ecom.ui.components.OrderStatusChip
 import com.ampairs.ecom.ui.components.orderStatusLabel
 import com.ampairs.ecom.ui.components.trackingProgress
@@ -69,7 +71,7 @@ fun OrderTrackingScreen(
             item {
                 Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
-                        Text(order.ecom_order_ref, style = MaterialTheme.typography.titleMedium)
+                        Text(order.order_number.ifBlank { order.ecom_order_ref }, style = MaterialTheme.typography.titleMedium)
                         Text(order.placed_at.take(10), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     OrderStatusChip(status = order.status, label = orderStatusLabel(order.status))
@@ -104,6 +106,32 @@ fun OrderTrackingScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Total", style = MaterialTheme.typography.titleSmall)
                     Text(formatMoney(order.total_amount, locale), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            state.deliveryAddress?.let { addr ->
+                item {
+                    Column(Modifier.fillMaxWidth()) {
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                        Text(
+                            stringResource(Res.string.ecom_delivery_address),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(bottom = 6.dp),
+                        )
+                        val addressLine = listOf(addr.addressLine1, addr.addressLine2.orEmpty(), addr.city, addr.state, addr.pinCode)
+                            .filter { it.isNotBlank() }
+                            .joinToString(", ")
+                        Text(addressLine, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        addr.phone?.takeIf { it.isNotBlank() }?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        val lat = addr.latitude
+                        val lng = addr.longitude
+                        if (lat != null && lng != null) {
+                            Spacer(Modifier.height(10.dp))
+                            DeliveryLocationMap(latitude = lat, longitude = lng, label = addressLine)
+                        }
+                    }
                 }
             }
         }

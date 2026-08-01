@@ -11,18 +11,26 @@ sealed interface Route : NavKey {
     
     @Serializable
     data object Customer : Route
-    
+
+    /** Buy-side counterparty master (suppliers/vendors). */
+    @Serializable
+    data object Supplier : Route
+
     @Serializable
     data object Product : Route
-    
+
     @Serializable
     data object Inventory : Route
-    
+
     @Serializable
     data object Order : Route
-    
+
     @Serializable
     data object Invoice : Route
+
+    /** Buy-side purchase document (mirrors Order). */
+    @Serializable
+    data object Purchase : Route
 
     @Serializable
     data object Tax : Route
@@ -36,6 +44,18 @@ sealed interface Route : NavKey {
     @Serializable
     data object Unit : Route
 
+    /** Pricing / price-list management (admin). */
+    @Serializable
+    data object Pricing : Route
+
+    /** Merchant-side online-store (ecom storefront) setup & configuration. */
+    @Serializable
+    data object Storefront : Route
+
+    /** Owner-facing "ecom users" list — every buyer linked to any customer, restrict/re-enable access. */
+    @Serializable
+    data object EcomUsers : Route
+
     @Serializable
     data class FormConfig(
         val entityType: String = ""
@@ -46,6 +66,19 @@ sealed interface Route : NavKey {
 
     @Serializable
     data object Settings : Route
+
+    @Serializable
+    data object Printing : Route
+
+    @Serializable
+    data object Payment : Route
+
+    @Serializable
+    data object Notifications : Route
+
+    /** Analytics & forecasting dashboard (feature 022). */
+    @Serializable
+    data object Analytics : Route
 
     @Serializable
     data object More : Route
@@ -237,7 +270,7 @@ sealed interface EcomRoute : NavKey {
     data object Checkout : EcomRoute
 
     @Serializable
-    data class OrderPlaced(val orderRef: String) : EcomRoute
+    data class OrderPlaced(val orderRef: String, val orderNumber: String = "") : EcomRoute
 
     @Serializable
     data object Orders : EcomRoute
@@ -276,8 +309,30 @@ sealed interface CustomerRoute : NavKey {
 // Inventory routes
 @Serializable
 sealed interface InventoryRoute : NavKey {
+    /** Landing — stock truth at a glance (Route.Inventory redirects here). */
     @Serializable
-    data object Inventory : InventoryRoute
+    data object Dashboard : InventoryRoute
+
+    /** Adaptive list + detail two-pane host. */
+    @Serializable
+    data object Items : InventoryRoute
+
+    /** Add (itemId = null) / edit an item. */
+    @Serializable
+    data class ItemForm(val itemId: String? = null) : InventoryRoute
+
+    @Serializable
+    data object PhysicalCount : InventoryRoute
+
+    /** Global, immutable movement ledger across all items. */
+    @Serializable
+    data object Ledger : InventoryRoute
+
+    @Serializable
+    data object LowStock : InventoryRoute
+
+    @Serializable
+    data object Settings : InventoryRoute
 }
 
 // Order routes
@@ -314,6 +369,32 @@ sealed interface InvoiceRoute : NavKey {
 
     @Serializable
     data object Invoices : InvoiceRoute
+}
+
+// Payment & Collection routes
+@Serializable
+sealed interface PaymentRoute : NavKey {
+    @Serializable
+    data object Dashboard : PaymentRoute
+
+    // purpose: "PAYMENT" | "ADJUSTMENT" | "OPENING"
+    @Serializable
+    data class SelectParty(val purpose: String = "PAYMENT") : PaymentRoute
+
+    @Serializable
+    data class Record(val partyUid: String = "", val voucherUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class Adjustment(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class OpeningBalance(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class Statement(val partyUid: String = "") : PaymentRoute
+
+    @Serializable
+    data class PartyPayments(val partyUid: String = "") : PaymentRoute
 }
 
 // Business routes

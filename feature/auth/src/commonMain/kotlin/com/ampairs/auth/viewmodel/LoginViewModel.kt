@@ -53,6 +53,8 @@ data class LoginUiState(
     val firebaseVerificationId: String = "",
     val authMethod: AuthMethod = AuthMethod.BACKEND_API,
     val existingUser: UserEntity? = null,
+    val isCheckingLogin: Boolean = true,
+    val showWelcomeScreen: Boolean = false,
 )
 
 sealed interface LoginNavEvent {
@@ -120,7 +122,7 @@ class LoginViewModel(
         viewModelScope.launch(DispatcherProvider.io) {
             val token = userRepository.getToken()
             if (token == null || token.refreshToken.isEmpty() || token.accessToken.isEmpty()) {
-                _navEvent.emit(LoginNavEvent.NotLoggedIn)
+                _state.update { it.copy(isCheckingLogin = false, showWelcomeScreen = true) }
                 return@launch
             }
             val userEntity = userRepository.getUser()
@@ -128,7 +130,9 @@ class LoginViewModel(
                 val apiResult = try {
                     userRepository.getUserApi()
                 } catch (_: Exception) {
-                    _navEvent.emit(LoginNavEvent.NavigateToAuthRoute)
+                    // Token is stale/invalid — clear it so the next launch skips the API call
+                    tokenRepository.clearTokens()
+                    _state.update { it.copy(isCheckingLogin = false, showWelcomeScreen = true) }
                     return@launch
                 }
                 if (apiResult.data != null && apiResult.error == null) {
@@ -140,7 +144,9 @@ class LoginViewModel(
                     delay(1000)
                     handlePostLoginNavigation(savedUserEntity)
                 } else {
-                    _navEvent.emit(LoginNavEvent.NavigateToAuthRoute)
+                    // Token is expired/revoked — clear it and show login screen
+                    tokenRepository.clearTokens()
+                    _state.update { it.copy(isCheckingLogin = false, showWelcomeScreen = true) }
                 }
             } else {
                 tokenRepository.setCurrentUser(userEntity.id)
