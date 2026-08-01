@@ -11,6 +11,20 @@ data class OrderSummaryRow(
     @ColumnInfo(name = "status") val status: String,
 )
 
+/** One (status → count) bucket of active orders for the dashboard orders breakdown (feature 022). */
+data class OrderStatusCountRow(
+    @ColumnInfo(name = "status") val status: String,
+    @ColumnInfo(name = "cnt") val count: Int,
+)
+
+/** One recent order for the home activity feed (id + number + date-only + status). */
+data class RecentOrderRow(
+    @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "number") val number: String,
+    @ColumnInfo(name = "doc_date") val docDate: String,
+    @ColumnInfo(name = "status") val status: String,
+)
+
 /**
  * Read-only report/search queries backing the assistant's order actions — separate from the
  * operational [com.ampairs.order.db.OrderDao]. Over the existing `orderEntity` table (no schema
@@ -21,6 +35,10 @@ interface OrderAgentDao {
     /** Count of active orders. */
     @Query("SELECT count(*) FROM orderEntity WHERE active = 1")
     suspend fun countActive(): Int
+
+    /** Active-order counts grouped by status (most common first) — dashboard orders breakdown. */
+    @Query("SELECT status, count(*) AS cnt FROM orderEntity WHERE active = 1 GROUP BY status ORDER BY cnt DESC")
+    suspend fun statusCounts(): List<OrderStatusCountRow>
 
     /** Chat search by order number or (whitespace-normalized, case-insensitive) customer name. */
     @Query(
@@ -53,4 +71,11 @@ interface OrderAgentDao {
     /** List most recent active orders. */
     @Query("SELECT id, order_number, status FROM orderEntity WHERE active = 1 ORDER BY order_date DESC LIMIT :limit")
     suspend fun recent(limit: Long): List<OrderSummaryRow>
+
+    /** Recent orders for the home activity feed (number + date-only + status), newest first. */
+    @Query(
+        "SELECT id, order_number AS number, substr(order_date, 1, 10) AS doc_date, status " +
+            "FROM orderEntity WHERE active = 1 ORDER BY order_date DESC LIMIT :limit",
+    )
+    suspend fun recentActivity(limit: Int): List<RecentOrderRow>
 }

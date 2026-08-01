@@ -54,6 +54,11 @@ object ApiUrlBuilder {
         return "${ConfigurationManager.apiBaseUrl}/api/customer/$path"
     }
 
+    fun analyticsUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/analytics/$cleanPath"
+    }
+
     fun supplierUrl(path: String): String {
         return "${ConfigurationManager.apiBaseUrl}/api/supplier/$path"
     }

@@ -204,7 +204,11 @@ fun navigateToMenuItemNav3(
         route == "printing" -> backStack.add(Route.Printing)
         route == "payment" -> backStack.add(Route.Payment)
         route == "pricing" -> backStack.add(Route.Pricing)
+        route == "analytics" || route == "dashboard" -> backStack.add(Route.Analytics)
+        route == "business-dashboard" || route == "business-reporting" -> backStack.add(Route.Analytics)
 
+        route.startsWith("/analytics") || route.startsWith("/dashboard") || route.startsWith("/reports") ->
+            backStack.add(Route.Analytics)
         route.startsWith("/payments") -> backStack.add(Route.Payment)
         route.startsWith("/pricing") -> backStack.add(Route.Pricing)
 

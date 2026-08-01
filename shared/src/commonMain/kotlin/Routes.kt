@@ -76,6 +76,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object Notifications : Route
 
+    /** Analytics & forecasting dashboard (feature 022). */
+    @Serializable
+    data object Analytics : Route
+
     @Serializable
     data object More : Route
 }

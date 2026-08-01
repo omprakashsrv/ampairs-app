@@ -53,6 +53,10 @@ interface ProductAgentDao {
     @Query("SELECT COALESCE(SUM(stock_quantity * dp), 0) FROM productEntity WHERE active = 1 AND stock_quantity IS NOT NULL")
     suspend fun inventoryValueAtCost(): Double
 
+    /** Display name for a product id — labels the dashboard forecast rows (feature 022, T045). */
+    @Query("SELECT name FROM productEntity WHERE id = :id AND active = 1 LIMIT 1")
+    suspend fun nameById(id: String): String?
+
     /**
      * Chat-triggered product search. Case-insensitive and whitespace-normalized on `name` so a query
      * with single spaces still matches product names that contain double (or more) spaces — the cause

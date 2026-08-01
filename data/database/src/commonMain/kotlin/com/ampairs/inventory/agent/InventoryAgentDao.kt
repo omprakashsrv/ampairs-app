@@ -60,4 +60,25 @@ interface InventoryAgentDao {
     /** On-hand / available stock for a specific product. */
     @Query("SELECT currentStock, availableStock FROM inventory_items WHERE productId = :productId AND active = 1 LIMIT 1")
     suspend fun stockByProduct(productId: String): InventoryStockRow?
+
+    // ── Dashboard KPI aggregates (feature 022) ──────────────────────────────────
+
+    /** Total stock value at current cost: Σ(currentStock × costPrice) over active items. */
+    @Query("SELECT SUM(currentStock * costPrice) FROM inventory_items WHERE active = 1")
+    suspend fun stockValue(): Double?
+
+    /** Total units on hand over active items (inventory-turns denominator). */
+    @Query("SELECT SUM(currentStock) FROM inventory_items WHERE active = 1")
+    suspend fun sumCurrentStock(): Double?
+
+    /** Count of active items at/below their (non-zero) reorder level. */
+    @Query("SELECT count(*) FROM inventory_items WHERE active = 1 AND reorderLevel > 0 AND currentStock <= reorderLevel")
+    suspend fun countLowStock(): Int
+
+    /** Units moved OUT (sales/consumption) within a half-open period — turns numerator. */
+    @Query(
+        "SELECT SUM(quantity) FROM inventory_transactions WHERE transactionType = 'STOCK_OUT' " +
+            "AND transactionDate >= :start AND transactionDate < :end",
+    )
+    suspend fun sumStockOutBetween(start: String, end: String): Double?
 }

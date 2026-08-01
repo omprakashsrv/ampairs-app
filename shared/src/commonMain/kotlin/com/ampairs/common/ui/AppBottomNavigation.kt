@@ -110,6 +110,8 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.STOREFRONT_MANAGEMENT -> Route.Storefront
     ModuleCodes.PRICING_MANAGEMENT -> Route.Pricing
     ModuleCodes.AI_ASSISTANT -> Route.Agent
+    ModuleCodes.BUSINESS_DASHBOARD -> Route.Analytics
+    "business-reporting" -> Route.Analytics
     else -> null
 }
 
@@ -165,6 +167,7 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
         || currentRoute is com.ampairs.pricing.ui.GeoZoneListRoute
         || currentRoute is com.ampairs.pricing.ui.GeoZoneFormRoute
         || currentRoute is com.ampairs.pricing.ui.PriceTesterRoute -> ModuleCodes.PRICING_MANAGEMENT
+    currentRoute is Route.Analytics -> ModuleCodes.BUSINESS_DASHBOARD
     else -> null
 }
 
