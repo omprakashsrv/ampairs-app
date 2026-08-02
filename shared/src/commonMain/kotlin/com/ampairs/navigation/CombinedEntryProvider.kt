@@ -37,6 +37,7 @@ import com.ampairs.navigation.providers.customerEntryProvider
 import com.ampairs.navigation.providers.supplierEntryProvider
 import com.ampairs.navigation.providers.purchaseEntryProvider
 import com.ampairs.navigation.providers.ecomEntryProvider
+import com.ampairs.navigation.providers.connectorEntryProvider
 import com.ampairs.navigation.providers.inventoryEntryProvider
 import com.ampairs.navigation.providers.invoiceEntryProvider
 import com.ampairs.navigation.providers.notificationEntryProvider
@@ -98,6 +99,7 @@ fun combinedEntryProvider(
         ?: orderEntryProvider(key, backStack)
         ?: invoiceEntryProvider(key, backStack)
         ?: paymentEntryProvider(key, backStack)
+        ?: connectorEntryProvider(key, backStack)
         ?: notificationEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key, backStack)
         ?: analyticsEntryProvider(key, backStack)
