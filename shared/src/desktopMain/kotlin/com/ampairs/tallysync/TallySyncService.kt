@@ -674,6 +674,9 @@ class TallySyncService(
                     put("taxCode", p.tax_code)
                     p.category_id?.let { put("categoryId", it) }
                     p.group_id?.let { put("groupId", it) }
+                    // base_unit already holds the resolved workspace unit ID (by name) — matches the
+                    // backend product mapping's `baseUnitId` allowlist entry.
+                    p.base_unit?.let { put("baseUnitId", it) }
                 },
             )
         })
