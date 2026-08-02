@@ -3,6 +3,7 @@ package com.ampairs.connector.data.api
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.di.AppScope
+import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.model.PageResponse
@@ -10,12 +11,14 @@ import com.ampairs.common.model.Response
 import com.ampairs.common.post
 import com.ampairs.common.postList
 import com.ampairs.common.put
+import com.ampairs.connector.domain.CatalogueConnectorDto
 import com.ampairs.connector.domain.ConfigUpdateRequest
 import com.ampairs.connector.domain.ConnectionTestRequest
 import com.ampairs.connector.domain.ConnectionTestResult
 import com.ampairs.connector.domain.ConnectorConfigDto
 import com.ampairs.connector.domain.ConnectorInstallationDto
 import com.ampairs.connector.domain.FieldMappingDto
+import com.ampairs.connector.domain.InstallConnectorRequest
 import com.ampairs.connector.domain.SparseUpsertResult
 import com.ampairs.connector.domain.SparseUpsertRow
 import com.ampairs.connector.domain.SyncCheckpointDto
@@ -34,6 +37,15 @@ class ConnectorApiImpl(
 ) : ConnectorApi {
 
     private val client = httpClient(engine, tokenRepository)
+
+    override suspend fun catalogue(): Response<List<CatalogueConnectorDto>> =
+        get(client, ApiUrlBuilder.connectorUrl("v1/catalogue"))
+
+    override suspend fun install(request: InstallConnectorRequest): Response<ConnectorInstallationDto> =
+        post(client, ApiUrlBuilder.connectorUrl("v1/installations"), request)
+
+    override suspend fun uninstall(installationUid: String): Response<Unit> =
+        delete(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid"))
 
     override suspend fun installations(): Response<List<ConnectorInstallationDto>> =
         get(client, ApiUrlBuilder.connectorUrl("v1/installations"))
@@ -63,6 +75,9 @@ class ConnectorApiImpl(
 
     override suspend fun mappings(installationUid: String): Response<List<FieldMappingDto>> =
         get(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/mappings"))
+
+    override suspend fun updateMapping(installationUid: String, mapping: FieldMappingDto): Response<FieldMappingDto> =
+        put(client, ApiUrlBuilder.connectorUrl("v1/installations/$installationUid/mappings"), mapping)
 
     override suspend fun upsert(
         installationUid: String,

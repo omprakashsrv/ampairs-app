@@ -2,12 +2,14 @@ package com.ampairs.connector.data.api
 
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
+import com.ampairs.connector.domain.CatalogueConnectorDto
 import com.ampairs.connector.domain.ConfigUpdateRequest
 import com.ampairs.connector.domain.ConnectionTestRequest
 import com.ampairs.connector.domain.ConnectionTestResult
 import com.ampairs.connector.domain.ConnectorConfigDto
 import com.ampairs.connector.domain.ConnectorInstallationDto
 import com.ampairs.connector.domain.FieldMappingDto
+import com.ampairs.connector.domain.InstallConnectorRequest
 import com.ampairs.connector.domain.SparseUpsertResult
 import com.ampairs.connector.domain.SparseUpsertRow
 import com.ampairs.connector.domain.SyncCheckpointDto
@@ -19,6 +21,15 @@ import com.ampairs.connector.domain.SyncRunDto
  * sparse-upsert endpoint (NOT the global `/sync`).
  */
 interface ConnectorApi {
+    /** Available connectors for this workspace (`GET /connector/v1/catalogue`) — drives browse/install. */
+    suspend fun catalogue(): Response<List<CatalogueConnectorDto>>
+
+    /** Install a connector into the current workspace (`POST /connector/v1/installations`). */
+    suspend fun install(request: InstallConnectorRequest): Response<ConnectorInstallationDto>
+
+    /** Uninstall an installation (`DELETE /connector/v1/installations/{uid}`). */
+    suspend fun uninstall(installationUid: String): Response<Unit>
+
     suspend fun installations(): Response<List<ConnectorInstallationDto>>
 
     /**
@@ -32,6 +43,9 @@ interface ConnectorApi {
     suspend fun pause(installationUid: String): Response<ConnectorInstallationDto>
     suspend fun resume(installationUid: String): Response<ConnectorInstallationDto>
     suspend fun mappings(installationUid: String): Response<List<FieldMappingDto>>
+
+    /** Upsert the mapping for one entity type (`PUT /connector/v1/installations/{uid}/mappings`). */
+    suspend fun updateMapping(installationUid: String, mapping: FieldMappingDto): Response<FieldMappingDto>
     suspend fun upsert(
         installationUid: String,
         entityType: String,

@@ -15,6 +15,38 @@ data class ConnectorInstallationDto(
     @SerialName("last_error_message") val lastErrorMessage: String? = null,
 )
 
+/** A single connection-detail field the install must supply (host/port, api key). */
+@Serializable
+data class ConnectionFieldDto(
+    val key: String = "",
+    val label: String = "",
+    val secret: Boolean = false,
+    val required: Boolean = true,
+)
+
+/**
+ * Read-only catalogue entry from `GET /connector/v1/catalogue`. `hostingType` is CLIENT_SIDE (Tally)
+ * or SERVER_SIDE. `connectionSchema` drives the config form; `installed` marks an active installation.
+ */
+@Serializable
+data class CatalogueConnectorDto(
+    val type: String = "",
+    @SerialName("display_name") val displayName: String = "",
+    val description: String = "",
+    @SerialName("hosting_type") val hostingType: String = "",
+    @SerialName("supported_entities") val supportedEntities: List<String> = emptyList(),
+    @SerialName("supported_directions") val supportedDirections: List<String> = emptyList(),
+    @SerialName("connection_schema") val connectionSchema: List<ConnectionFieldDto> = emptyList(),
+    @SerialName("multiple_instances_allowed") val multipleInstancesAllowed: Boolean = false,
+    val installed: Boolean = false,
+)
+
+/** Install a connector into the current workspace (POST /connector/v1/installations). */
+@Serializable
+data class InstallConnectorRequest(
+    @SerialName("connector_type") val connectorType: String = "",
+)
+
 /** Connection config (secrets masked — only the set keys are listed). */
 @Serializable
 data class ConnectorConfigDto(
