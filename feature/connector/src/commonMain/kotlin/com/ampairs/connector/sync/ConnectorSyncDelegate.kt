@@ -51,7 +51,10 @@ class ConnectorSyncDelegate(
                 all += batch
                 page++
             } while (batch.size == batchSize && all.size < 10000)
-            mirror.cacheInstallations(all)
+            // Don't clobber a good offline cache with a transient empty feed — only replace on a
+            // non-empty pull. (An empty feed = "no installations changed / none exist"; the config
+            // provider's live path still reflects reality this cycle.)
+            if (all.isNotEmpty()) mirror.cacheInstallations(all)
             Result.success(all.size)
         } catch (e: Exception) {
             log.e(e) { "Connector mirror pull failed" }

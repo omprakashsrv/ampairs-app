@@ -64,34 +64,43 @@ class TallySyncScheduler(
             .getOrElse { TallySyncResult(error = it.message) }
         lastResult = result
 
-        // When the rows were pushed to the backend connector (sparse upsert, non-destructive), do NOT
-        // also markPendingPush — that would re-push the full entity via the legacy /sync path and
-        // re-introduce the data loss the connector push avoids.
-        if (result.success && !result.pushedViaConnector) {
-            if (result.customerGroupsSynced > 0)
-                centralSyncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)
-            if (result.customersSynced > 0)
-                centralSyncService.markPendingPush(SyncEntity.CUSTOMER)
+        // Per-entity legacy-push gating. The connector sparse-upsert only covers a SUBSET of the
+        // entities Tally writes (customer, customer_group, product, product_catalog, unit,
+        // stock_balance). For those, the legacy full `/sync` push must be skipped when the connector
+        // took them — a full push nulls unmapped columns (the data loss the connector avoids). For
+        // every OTHER entity Tally writes there is no connector writer, so they MUST still push via
+        // the legacy path even when a connector is installed, or they'd never reach the backend.
+        if (result.success) {
+            // --- Connector-covered entities: suppress legacy push only when pushed via connector ---
+            if (!result.pushedViaConnector) {
+                if (result.customerGroupsSynced > 0)
+                    centralSyncService.markPendingPush(SyncEntity.CUSTOMER_GROUP)
+                if (result.customersSynced > 0)
+                    centralSyncService.markPendingPush(SyncEntity.CUSTOMER)
+                if (result.productsSynced > 0)
+                    centralSyncService.markPendingPush(SyncEntity.PRODUCT)
+                if (result.groupsSynced > 0 || result.categoriesSynced > 0)
+                    centralSyncService.markPendingPush(SyncEntity.PRODUCT_CATALOG)
+                // Unit conversions ride the product /sync feed (ProductSyncDelegate attaches them on
+                // push). The connector product push does NOT carry conversions, so under a connector
+                // they currently don't reach the backend — flagging PRODUCT here would re-push the
+                // full product and clobber connector-managed columns. Known limitation: a dedicated
+                // conversion connector writer is a follow-up.
+                if (result.unitConversionsSynced > 0)
+                    centralSyncService.markPendingPush(SyncEntity.PRODUCT)
+            }
+
+            // --- Entities with NO connector writer: ALWAYS push via legacy /sync (separate tables,
+            //     so no unmapped-column data loss). stock_balance is connector-pushed but the backend
+            //     applies it as a no-op today, so the real inventory data still goes via this path. ---
             if (result.suppliersSynced > 0)
                 centralSyncService.markPendingPush(SyncEntity.SUPPLIER)
-            if (result.productsSynced > 0)
-                centralSyncService.markPendingPush(SyncEntity.PRODUCT)
-            if (result.groupsSynced > 0 || result.categoriesSynced > 0)
-                centralSyncService.markPendingPush(SyncEntity.PRODUCT_CATALOG)
-            // Effective-dated standard price → price list (header + items); standard cost →
-            // product_standard_cost; compound units → unit conversions (ride the UNIT feed).
             if (result.pricesSynced > 0) {
                 centralSyncService.markPendingPush(SyncEntity.PRICE_LIST)
                 centralSyncService.markPendingPush(SyncEntity.PRICE_LIST_ITEM)
             }
             if (result.standardCostsSynced > 0)
                 centralSyncService.markPendingPush(SyncEntity.PRODUCT_STANDARD_COST)
-            // Unit conversions ride the product /sync feed: ProductSyncDelegate now attaches each
-            // product's conversions on push (and writes server copies back on pull). Flag PRODUCT so
-            // the delegate runs and carries them — products and conversions come from the same stock
-            // items, so productsSynced is normally > 0 too, but flag explicitly to be safe.
-            if (result.unitConversionsSynced > 0)
-                centralSyncService.markPendingPush(SyncEntity.PRODUCT)
             // Stock balances → inventory items + opening transactions.
             if (result.inventoryItemsSynced > 0) {
                 centralSyncService.markPendingPush(SyncEntity.INVENTORY)
@@ -171,8 +180,12 @@ class TallySyncScheduler(
     private suspend fun setPaused(pause: Boolean): Boolean {
         val uid = runCatching { connectorConfigProvider.installation()?.uid }.getOrNull() ?: return false
         return runCatching {
-            if (pause) connectorApi.pause(uid) else connectorApi.resume(uid)
-            true
+            // The Ktor helpers return backend failures in Response.error (they don't throw), so a
+            // rejected pause/resume must be detected here — otherwise the UI reports success on a 4xx.
+            val response = if (pause) connectorApi.pause(uid) else connectorApi.resume(uid)
+            val ok = response.data != null && response.error == null
+            if (!ok) log.w { "Connector ${if (pause) "pause" else "resume"} rejected: ${response.error?.message}" }
+            ok
         }.getOrElse {
             log.w(it) { "Connector ${if (pause) "pause" else "resume"} failed" }
             false
