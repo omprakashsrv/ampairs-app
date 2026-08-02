@@ -90,9 +90,13 @@ class TallySyncScheduler(
                     centralSyncService.markPendingPush(SyncEntity.PRODUCT)
             }
 
-            // --- Entities with NO connector writer: ALWAYS push via legacy /sync (separate tables,
-            //     so no unmapped-column data loss). stock_balance is connector-pushed but the backend
-            //     applies it as a no-op today, so the real inventory data still goes via this path. ---
+            // --- Entities with NO connector writer (or whose connector write is only a subset):
+            //     ALWAYS push via legacy /sync so they reach the backend even under a connector
+            //     (separate tables → no unmapped-column data loss). INVENTORY note: the connector
+            //     stock_balance path now applies via a ledger-consistent physical COUNT, but it only
+            //     reconciles ALREADY-TRACKED items (opt-in, FR-004) — so the legacy inventory push
+            //     still carries the full local inventory state. The COUNT's idempotency guard (skip
+            //     when unchanged) neutralizes the overlap; converging both paths is a follow-up. ---
             if (result.suppliersSynced > 0)
                 centralSyncService.markPendingPush(SyncEntity.SUPPLIER)
             if (result.pricesSynced > 0) {
