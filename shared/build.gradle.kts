@@ -147,6 +147,7 @@ kotlin {
                 api(projects.feature.analytics)
                 api(projects.feature.fileApi)
                 api(projects.feature.file)
+                api(projects.feature.connector)
 
                 implementation(libs.compose.runtime)
                 implementation(libs.compose.ui)
@@ -204,7 +205,6 @@ kotlin {
                 implementation(libs.kermit)
 
                 implementation(project(":tally"))
-                implementation(projects.feature.connector)
             }
         }
 
