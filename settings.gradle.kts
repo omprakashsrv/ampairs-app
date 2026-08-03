@@ -60,6 +60,7 @@ include(
     ":feature:pricing",
     ":feature:sequence",
     ":feature:store",
+    ":feature:connector",
     ":feature:update",
     ":feature:tax",
     ":feature:subscription",

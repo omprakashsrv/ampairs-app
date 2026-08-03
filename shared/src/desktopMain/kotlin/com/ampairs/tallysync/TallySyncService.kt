@@ -64,6 +64,15 @@ import com.ampairs.tallysync.TallyProductMapper.toStandardCostEntities
 import com.ampairs.tallysync.TallyProductMapper.toUnitConversionEntity
 import com.ampairs.tallysync.TallyProductMapper.toUnitEntity
 import com.ampairs.tallysync.TallyProductMapper.extractHsnCode
+import com.ampairs.connector.data.api.ConnectorApi
+import com.ampairs.connector.domain.ConfigUpdateRequest
+import com.ampairs.connector.domain.ConnectionTestRequest
+import com.ampairs.connector.domain.ConnectionTestResult
+import com.ampairs.connector.domain.ConnectorConfigProvider
+import com.ampairs.connector.domain.SparseUpsertRow
+import com.ampairs.connector.domain.SyncCheckpointDto
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import com.ampairs.tallysync.TallyVoucherMapper.ENTITY_VOUCHER
 import com.ampairs.tallysync.TallyVoucherMapper.Kind
 import com.ampairs.tallysync.TallyVoucherMapper.classify
@@ -85,11 +94,13 @@ import com.ampairs.unit.data.db.dao.UnitDao
 import com.ampairs.unit.data.db.entity.UnitConversionEntity
 import dev.zacsweers.metro.Inject
 import io.ktor.client.engine.HttpClientEngine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.abs
@@ -113,6 +124,8 @@ data class TallySyncResult(
     val paymentsSynced: Int = 0,
     val taxCodesFound: Int = 0,
     val taxCodesToImport: Int = 0,
+    /** True when the rows were pushed to the backend connector (sparse upsert) this cycle. */
+    val pushedViaConnector: Boolean = false,
     val error: String? = null,
 ) {
     val totalSynced get() = groupsSynced + categoriesSynced + productsSynced + pricesSynced + standardCostsSynced + unitConversionsSynced + unitsSynced + stockBalancesUpdated + inventoryItemsSynced + customerGroupsSynced + customersSynced + suppliersSynced + invoicesSynced + purchasesSynced + paymentsSynced
@@ -171,7 +184,100 @@ class TallySyncService(
     private val taxComponentRepository: TaxComponentRepository,
     private val taxConfigurationRepository: TaxConfigurationRepository,
     private val dataStore: AppPreferencesDataStore,
+    private val connectorConfigProvider: ConnectorConfigProvider,
+    private val connectorApi: ConnectorApi,
 ) {
+    /** Set per [sync] cycle: the backend Tally connector installation uid, or null if not installed. */
+    private var connectorInstallationUid: String? = null
+
+    /**
+     * When a Tally connector is installed on the backend, push the just-mapped rows to it via the
+     * sparse-upsert endpoint (mapped-fields-only, non-destructive) instead of the legacy full-upsert
+     * `/sync` path. Non-fatal: failures are logged and the local DB write still stands.
+     */
+    private suspend fun pushToConnector(entityType: String, rows: List<SparseUpsertRow>) {
+        val uid = connectorInstallationUid ?: return
+        if (rows.isEmpty()) return
+        runCatching {
+            rows.chunked(BATCH_SIZE).forEach { connectorApi.upsert(uid, entityType, it) }
+            log.d { "Connector: pushed ${rows.size} '$entityType' rows" }
+        }.onFailure { log.w(it) { "Connector push failed for '$entityType' (non-fatal)" } }
+    }
+
+    /**
+     * Tests reachability of the local Tally instance (host:port) and reports the result to the
+     * backend connector platform (FR-009, G2). The server never reaches a client-side connector's
+     * external system, so the client computes reachability and POSTs it; the backend records
+     * `last_validated_at`.
+     */
+    suspend fun testConnection(workspaceSlug: String): ConnectionTestResult {
+        val installationUid = runCatching { connectorConfigProvider.installation()?.uid }.getOrNull()
+        val backendConfig = installationUid?.let {
+            runCatching { connectorConfigProvider.config(it) }.getOrNull()
+        }
+        val host = backendConfig?.nonSecretValues?.get("host")?.takeIf { it.isNotBlank() }
+            ?: dataStore.getTallyHost(workspaceSlug).first()
+        val port = backendConfig?.nonSecretValues?.get("port")?.trim()?.toIntOrNull()
+            ?: dataStore.getTallyPort(workspaceSlug).first()
+        if (host.isBlank()) {
+            emit("Connection test — Tally host not configured")
+            return ConnectionTestResult(ok = false, message = "Tally host not configured")
+        }
+
+        val (reachable, message) = checkReachable(host, port)
+        emit("Connection test — $host:$port → ${if (reachable) "reachable" else "unreachable"} ($message)")
+
+        // Report to the backend (records last_validated_at). Non-fatal if the backend is unreachable.
+        installationUid?.let { uid ->
+            runCatching { connectorApi.testConnection(uid, ConnectionTestRequest(ok = reachable, message = message)) }
+                .onFailure { log.w(it) { "Connection test report failed (non-fatal)" } }
+        }
+        return ConnectionTestResult(ok = reachable, message = message)
+    }
+
+    /**
+     * Reports per-entity incremental watermarks (Tally ALTERIDs) to the backend connector platform
+     * after a cycle, so multi-device / resumed syncs know where the client left off (FR-024). The
+     * connector entity_type is keyed to the corresponding Tally entity's stored ALTERID. Non-fatal.
+     */
+    private suspend fun reportCheckpoints(workspaceSlug: String) {
+        val uid = connectorInstallationUid ?: return
+        val mapping = listOf(
+            "product_group" to ENTITY_STOCK_GROUP,
+            "product_category" to ENTITY_STOCK_CATEGORY,
+            "unit" to ENTITY_UNIT,
+            "product" to ENTITY_STOCK_ITEM,
+            "customer_group" to ENTITY_ACCOUNT_GROUP,
+            "customer" to ENTITY_LEDGER,
+        )
+        runCatching {
+            mapping.forEach { (entityType, tallyEntity) ->
+                val watermark = dataStore.getTallyLastAlterId(workspaceSlug, tallyEntity).first()
+                connectorApi.putCheckpoint(
+                    uid,
+                    SyncCheckpointDto(
+                        installationUid = uid,
+                        entityType = entityType,
+                        direction = "INBOUND",
+                        watermark = watermark.toString(),
+                    ),
+                )
+            }
+        }.onFailure { log.w(it) { "Checkpoint report failed (non-fatal)" } }
+    }
+
+    private suspend fun checkReachable(host: String, port: Int): Pair<Boolean, String> =
+        withContext(Dispatchers.IO) {
+            try {
+                java.net.Socket().use { socket ->
+                    socket.connect(java.net.InetSocketAddress(host, port), 5000)
+                }
+                true to "Connected to $host:$port"
+            } catch (e: Exception) {
+                false to (e.message ?: "Unreachable")
+            }
+        }
+
     private val _logLines = MutableStateFlow<List<String>>(emptyList())
     /** Reactive, human-readable log of recent sync activity (capped to the last [MAX_LOG_LINES] lines). */
     val logLines: StateFlow<List<String>> = _logLines.asStateFlow()
@@ -269,12 +375,37 @@ class TallySyncService(
             ?: "IN"
 
     suspend fun sync(workspaceSlug: String): TallySyncResult {
-        val host = dataStore.getTallyHost(workspaceSlug).first()
+        // Resolve the backend Tally connector installation (if installed). Rows are then pushed to it
+        // via the sparse-upsert endpoint instead of the legacy full-upsert /sync path, and the
+        // backend connector config becomes the source of truth for host/port (FR-H03) — falling back
+        // to local DataStore only when the backend has no value.
+        val installationUid = runCatching { connectorConfigProvider.installation()?.uid }.getOrNull()
+        connectorInstallationUid = installationUid
+        val backendConfig = installationUid?.let {
+            runCatching { connectorConfigProvider.config(it) }.getOrNull()
+        }
+
+        val host = backendConfig?.nonSecretValues?.get("host")?.takeIf { it.isNotBlank() }
+            ?: dataStore.getTallyHost(workspaceSlug).first()
         if (host.isBlank()) {
             emit("Tally host not configured")
             return TallySyncResult(error = "Tally host not configured")
         }
-        val port = dataStore.getTallyPort(workspaceSlug).first()
+        val port = backendConfig?.nonSecretValues?.get("port")?.trim()?.toIntOrNull()
+            ?: dataStore.getTallyPort(workspaceSlug).first()
+
+        // First-run seed (FR-027): hydrate the backend connector config from local DataStore
+        // settings when the backend has no host yet, so existing Tally users don't reconfigure.
+        if (installationUid != null && backendConfig?.nonSecretValues?.get("host").isNullOrBlank()) {
+            runCatching {
+                connectorApi.updateConfig(
+                    installationUid,
+                    ConfigUpdateRequest(nonSecretValues = mapOf("host" to host, "port" to port.toString())),
+                )
+                emit("Seeded backend connector config from local settings ($host:$port)")
+            }.onFailure { log.w(it) { "Connector config seed failed (non-fatal)" } }
+        }
+
         val baseUrl = "http://$host:$port"
         emit("Tally sync started — $baseUrl")
 
@@ -343,6 +474,7 @@ class TallySyncService(
                 inventoryItemsSynced = stockCounts.inventoryItems,
                 customerGroupsSynced = customerGroupsSynced,
                 customersSynced = customersSynced,
+                pushedViaConnector = connectorInstallationUid != null,
                 suppliersSynced = suppliersSynced,
                 invoicesSynced = invoicesSynced,
                 purchasesSynced = purchasesSynced,
@@ -350,6 +482,7 @@ class TallySyncService(
                 taxCodesFound = candidates.size,
                 taxCodesToImport = toImport,
             )
+            if (connectorInstallationUid != null) reportCheckpoints(workspaceSlug)
             emit("Tally sync complete — total=${result.totalSynced}, tax codes to import=$toImport")
             result
         } catch (e: Exception) {
@@ -375,6 +508,9 @@ class TallySyncService(
             sg.toGroupEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { groupDao.insertAll(it) }
+        pushToConnector("product_group", entities.map { g ->
+            SparseUpsertRow(refId = g.ref_id, uid = g.id, values = buildJsonObject { put("name", g.name) })
+        })
         val maxAlterId = stockGroups.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_GROUP, maxAlterId)
         log.d { "syncGroups: ${entities.size} new (batches=${entities.size / BATCH_SIZE + 1})" }
@@ -397,6 +533,9 @@ class TallySyncService(
             sc.toCategoryEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { categoryDao.insertAll(it) }
+        pushToConnector("product_category", entities.map { c ->
+            SparseUpsertRow(refId = c.ref_id, uid = c.id, values = buildJsonObject { put("name", c.name) })
+        })
         val maxAlterId = stockCategories.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_CATEGORY, maxAlterId)
         log.d { "syncCategories: ${entities.size} new" }
@@ -433,6 +572,17 @@ class TallySyncService(
             u.toUnitEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { unitDao.insertUnits(it) }
+        // Units have no ref_id column locally; the connector sparse-upsert matches by uid instead
+        // (AbstractRefIdEntityWriter falls back to uid → creates/updates the backend unit with it).
+        pushToConnector("unit", entities.map { u ->
+            SparseUpsertRow(
+                uid = u.id,
+                values = buildJsonObject {
+                    put("name", u.name)
+                    put("shortName", u.shortName)
+                },
+            )
+        })
         val maxAlterId = units.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_UNIT, maxAlterId)
         log.d { "syncUnits: ${entities.size} upserted" }
@@ -495,7 +645,6 @@ class TallySyncService(
             batchNum++
             log.d { "syncProducts batch $batchNum: inserted ${batch.size}" }
         }
-
         // Effective-dated standard price → price list items, standard cost → product_standard_cost,
         // compound unit → product-scoped unit conversion. Built per item using the resolved product id.
         val priceItems = mutableListOf<PriceListItemEntity>()
@@ -513,6 +662,24 @@ class TallySyncService(
         costRows.chunked(BATCH_SIZE).forEach { productStandardCostDao.insertAll(it) }
         if (conversions.isNotEmpty()) unitConversionDao.insertUnitConversions(conversions)
 
+        pushToConnector("product", pairs.map { it.second }.map { p ->
+            SparseUpsertRow(
+                refId = p.ref_id,
+                uid = p.id,
+                values = buildJsonObject {
+                    put("name", p.name)
+                    put("sellingPrice", p.selling_price)
+                    put("mrp", p.mrp)
+                    put("costPrice", p.dp)
+                    put("taxCode", p.tax_code)
+                    p.category_id?.let { put("categoryId", it) }
+                    p.group_id?.let { put("groupId", it) }
+                    // base_unit already holds the resolved workspace unit ID (by name) — matches the
+                    // backend product mapping's `baseUnitId` allowlist entry.
+                    p.base_unit?.let { put("baseUnitId", it) }
+                },
+            )
+        })
         // Scan the full catalogue (not just alterId-filtered items) so the tax-code panel always
         // reflects every HSN in Tally, even when no products are newly changed this cycle.
         scanTaxCodeCandidates(stockItems)
@@ -614,11 +781,18 @@ class TallySyncService(
         var updated = 0
         val invItems = mutableListOf<InventoryItemEntity>()
         val invMovements = mutableListOf<InventoryTransactionEntity>()
+        val connectorRows = mutableListOf<SparseUpsertRow>()
         filtered.forEach { item ->
             val qty = item.closingBalance?.parseClosingQty() ?: return@forEach
             val guid = item.guid?.takeIf { it.isNotBlank() } ?: return@forEach
             productDao.updateStockQuantityByTallyRef(guid, qty)
             updated++
+            // Match the product on the backend by its Tally GUID (ref_id); the connector stock writer
+            // applies stockQuantity onto the product's stock.
+            connectorRows += SparseUpsertRow(
+                refId = guid,
+                values = buildJsonObject { put("stockQuantity", qty) },
+            )
 
             val product = productByGuid[guid] ?: return@forEach
             val itemId = inventoryItemId(guid)
@@ -627,6 +801,7 @@ class TallySyncService(
         }
         invItems.chunked(BATCH_SIZE).forEach { inventoryItemDao.insertItems(it) }
         invMovements.chunked(BATCH_SIZE).forEach { inventoryTransactionDao.insertMovements(it) }
+        pushToConnector("stock_balance", connectorRows)
 
         val maxAlterId = items.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
         if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_STOCK_BALANCE, maxAlterId)
@@ -652,6 +827,16 @@ class TallySyncService(
             g.toCustomerGroupEntity(id)
         }
         entities.chunked(BATCH_SIZE).forEach { customerGroupDao.insertCustomerGroups(it) }
+        pushToConnector("customer_group", entities.map { g ->
+            SparseUpsertRow(
+                refId = g.ref_id,
+                uid = g.id,
+                values = buildJsonObject {
+                    put("name", g.name)
+                    g.description?.let { put("description", it) }
+                },
+            )
+        })
         if (entities.isNotEmpty()) {
             val maxAlterId = groups.maxOfOrNull { it.alterId.toAlterLong() } ?: lastAlterId
             if (maxAlterId > lastAlterId) dataStore.setTallyLastAlterId(workspaceSlug, ENTITY_ACCOUNT_GROUP, maxAlterId)
@@ -688,6 +873,24 @@ class TallySyncService(
         }
         val entities = pairs.map { it.second }
         entities.chunked(BATCH_SIZE).forEach { customerDao.insertCustomers(it) }
+        pushToConnector("customer", entities.map { c ->
+            SparseUpsertRow(
+                refId = c.ref_id,
+                uid = c.id,
+                values = buildJsonObject {
+                    put("name", c.name)
+                    c.phone?.let { put("phone", it) }
+                    c.landline?.let { put("landline", it) }
+                    c.gstNumber?.let { put("gstNumber", it) }
+                    c.address?.let { put("address", it) }
+                    c.street?.let { put("street", it) }
+                    c.city?.let { put("city", it) }
+                    c.state?.let { put("state", it) }
+                    c.pincode?.let { put("pincode", it) }
+                    c.customer_group?.let { put("customerGroup", it) }
+                },
+            )
+        })
         // Opening balance per party (Dr = receivable, Cr = payable) → PartyBalance, recomputed locally.
         for ((ledger, entity) in pairs) syncOpeningBalance(entity.id, ledger.openingBalance)
         if (entities.isNotEmpty()) {

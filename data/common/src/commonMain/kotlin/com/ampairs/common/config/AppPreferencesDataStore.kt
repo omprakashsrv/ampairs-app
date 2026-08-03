@@ -129,6 +129,12 @@ interface AppPreferencesDataStore {
     fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
     suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
 
+    // Connector mirror cache (offline-first): raw JSON blobs of backend connector metadata so the
+    // client's connector config/installation list survives offline and across restarts.
+    fun getConnectorInstallationsJson(workspaceSlug: String): Flow<String?>
+    suspend fun setConnectorInstallationsJson(workspaceSlug: String, json: String)
+    fun getConnectorConfigJson(installationUid: String): Flow<String?>
+    suspend fun setConnectorConfigJson(installationUid: String, json: String)
     /**
      * The user's decision on downloading the on-device AI assistant model.
      * `null` = not asked yet (show the consent prompt), `true` = consented (auto-download),
