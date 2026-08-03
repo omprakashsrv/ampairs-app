@@ -23,8 +23,12 @@ private val log = Logger.withTag("TallySyncScheduler")
 @SingleIn(WorkspaceScope::class)
 class TallySyncScheduler(
     val syncService: TallySyncService,
+    val pushService: TallyInvoicePushService,
     val centralSyncService: CentralSyncService,
 ) {
+
+    var lastPushResult: TallyPushResult? = null
+        private set
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var job: Job? = null
@@ -99,6 +103,23 @@ class TallySyncScheduler(
             }
         }
 
+        return result
+    }
+
+    /**
+     * Pushes locally-created invoices (order → invoice) into Tally, then runs a normal Tally→local
+     * sync so the created vouchers are reconciled back (matched by REMOTEID, so no duplicates). Run
+     * from the "Push to Tally" button.
+     */
+    suspend fun pushInvoices(workspaceSlug: String): TallyPushResult {
+        log.d { "Tally invoice push triggered for workspace=$workspaceSlug" }
+        val result = runCatching { pushService.push(workspaceSlug, syncService::appendLog) }
+            .onFailure { log.e(it) { "Tally invoice push error" } }
+            .getOrElse { TallyPushResult(error = it.message) }
+        lastPushResult = result
+        // Reconcile: pull the just-created vouchers back (dedup by REMOTEID) so the linked invoice
+        // reflects Tally's copy. Only worth a pull when something actually landed.
+        if (result.success && result.pushed > 0) runOnce(workspaceSlug)
         return result
     }
 

@@ -53,6 +53,7 @@ fun TallySettingsScreen(
     var port by remember { mutableStateOf("9008") }
     var statusText by remember { mutableStateOf("Not synced yet") }
     var isSyncing by remember { mutableStateOf(false) }
+    var isPushing by remember { mutableStateOf(false) }
     var isImporting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -126,8 +127,35 @@ fun TallySettingsScreen(
 
                 Spacer(Modifier.width(8.dp))
 
+                Button(
+                    enabled = !isPushing && !isSyncing && host.isNotBlank(),
+                    onClick = {
+                        scope.launch {
+                            isPushing = true
+                            statusText = "Pushing invoices to Tally…"
+                            val result = runCatching {
+                                scheduler.pushInvoices(workspaceSlug)
+                            }.onFailure { statusText = "Error: ${it.message}" }
+                                .getOrNull()
+                            if (result != null) {
+                                statusText = if (result.success) {
+                                    "Pushed ${result.pushed} invoice(s) to Tally" +
+                                        if (result.failed > 0) ", ${result.failed} failed" else ""
+                                } else {
+                                    "Push error: ${result.error}"
+                                }
+                            }
+                            isPushing = false
+                        }
+                    }
+                ) {
+                    Text(if (isPushing) "Pushing…" else "Push to Tally")
+                }
+
+                Spacer(Modifier.width(8.dp))
+
                 OutlinedButton(
-                    enabled = !isSyncing,
+                    enabled = !isSyncing && !isPushing,
                     onClick = {
                         scope.launch {
                             // Every per-entity alterId checkpoint must be cleared, or that entity's

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.ampairs.common.theme.ThemePreference
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -61,6 +62,8 @@ class DataStoreAppPreferences(
         private fun getTallyPortKey(ws: String) = intPreferencesKey("tally_port_$ws")
         private fun getTallyAlterIdKey(ws: String, entity: String) =
             longPreferencesKey("tally_alter_id_${entity}_$ws")
+        private fun getTallyPushedInvoicesKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_invoice_ids_$ws")
 
         // Notification preferences (device-local)
         private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
@@ -272,6 +275,20 @@ class DataStoreAppPreferences(
     override suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long) {
         dataStore.edit { preferences ->
             preferences[getTallyAlterIdKey(workspaceSlug, entityType)] = alterId
+        }
+    }
+
+    override fun getTallyPushedInvoiceIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedInvoicesKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedInvoiceIds(workspaceSlug: String, invoiceIds: Set<String>) {
+        if (invoiceIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedInvoicesKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + invoiceIds
         }
     }
 

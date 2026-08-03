@@ -129,6 +129,11 @@ interface AppPreferencesDataStore {
     fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
     suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
 
+    // Local invoice ids already pushed *into* Tally (per-workspace). Drives which invoices the Tally
+    // push considers new, and lets the pull skip re-importing our own pushed vouchers (by REMOTEID).
+    fun getTallyPushedInvoiceIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedInvoiceIds(workspaceSlug: String, invoiceIds: Set<String>)
+
     /**
      * The user's decision on downloading the on-device AI assistant model.
      * `null` = not asked yet (show the consent prompt), `true` = consented (auto-download),
