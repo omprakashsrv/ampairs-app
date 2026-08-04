@@ -25,7 +25,7 @@ data class TallyPushResult(
     val success get() = error == null
 }
 
-private val log = Logger.withTag("TallyInvoicePush")
+private val kermitLog = Logger.withTag("TallyInvoicePush")
 
 /**
  * Pushes locally-created invoices (order → invoice, spec 010) *into* Tally as Sales vouchers — the
@@ -124,7 +124,7 @@ class TallyInvoicePushService(
                     ?: result?.lineError?.takeIf { it.isNotBlank() }
                     ?: "Tally rejected the voucher (status=$topStatus)"
                 log("  ✗ ${inv.invoice_number} — $reason")
-                log.w { "Tally push failed for ${inv.id}: $reason" }
+                kermitLog.w { "Tally push failed for ${inv.id}: $reason" }
             }
         }
 
