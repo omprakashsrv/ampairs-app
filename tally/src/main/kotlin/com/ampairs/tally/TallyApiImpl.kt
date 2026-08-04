@@ -18,34 +18,18 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.xml.xml
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.jvm.javaio.toInputStream
-import nl.adaptivity.xmlutil.ExperimentalXmlUtilApi
-import nl.adaptivity.xmlutil.XmlDeclMode
-import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
-import nl.adaptivity.xmlutil.serialization.XML
-import nl.adaptivity.xmlutil.serialization.XmlConfig
 import java.nio.ByteBuffer
 
 private val log = Logger.withTag("TallyApi")
 
 class TallyApiImpl(engine: HttpClientEngine, private val baseUrl: String = "http://localhost:9008") : TallyApi {
 
-    @OptIn(ExperimentalXmlUtilApi::class)
     private val client = HttpClient(engine) {
         expectSuccess = true
         install(ContentNegotiation) {
             xml(
                 contentType = ContentType.Text.Xml,
-                format = XML {
-                    repairNamespaces = true
-                    xmlDeclMode = XmlDeclMode.None
-                    indentString = ""
-                    autoPolymorphic = true
-                    policy = DefaultXmlSerializationPolicy(
-                        pedantic = false,
-                        autoPolymorphic = true,
-                        unknownChildHandler = XmlConfig.IGNORING_UNKNOWN_CHILD_HANDLER
-                    )
-                }
+                format = tallyXmlFormat,
             )
         }
         install(Logging) {

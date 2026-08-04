@@ -7,6 +7,8 @@ import com.ampairs.invoice.db.dao.InvoiceItemDao
 import com.ampairs.invoice.db.model.TaxInfoEntity
 import com.ampairs.tally.TallyApiImpl
 import com.ampairs.tally.TallyRepository
+import com.ampairs.tally.model.buildVoucherImport
+import com.ampairs.tally.renderTallyXml
 import com.ampairs.unit.data.db.dao.UnitDao
 import dev.zacsweers.metro.Inject
 import io.ktor.client.engine.HttpClientEngine
@@ -97,6 +99,10 @@ class TallyInvoicePushService(
                 taxComponents = taxComponents,
                 unitNameById = unitNameById,
             )
+
+            // Surface the exact request XML in the log (Copy button on the log panel) so the first
+            // live iteration against Tally can be diagnosed without a network trace.
+            log("  → request ${inv.invoice_number}: ${renderTallyXml(buildVoucherImport(listOf(voucher)))}")
 
             val outcome = runCatching { repo.importVouchers(listOf(voucher)) }
             val response = outcome.getOrNull()
