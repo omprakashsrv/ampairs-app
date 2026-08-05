@@ -30,14 +30,21 @@ private val kermitLog = Logger.withTag("TallyInvoicePush")
 /**
  * Pushes locally-created invoices (order → invoice, spec 010) *into* Tally as Sales vouchers — the
  * write direction that complements [TallySyncService]'s pull. Offline-first friendly: it only reads
- * Room + posts to Tally, and records which invoice ids have been pushed in the DataStore so a second
- * run is idempotent (no duplicate vouchers in Tally).
+ * Room + posts to Tally.
+ *
+ * **Idempotency** is anchored on the invoice's own `ref_id`: after Tally accepts a voucher we capture
+ * its master id (`LASTMID`, falling back to `LASTVCHID`) into `InvoiceEntity.ref_id` via
+ * [InvoiceDao.setTallyRef], and skip any invoice that already carries a non-blank `ref_id`. Because
+ * `ref_id` round-trips through the invoice `/sync` contract it survives reinstall, and the voucher's
+ * `REMOTEID = local invoice id` is the second guard at the Tally end (a re-import matches the existing
+ * voucher instead of duplicating). The DataStore pushed-ids set is still written so the Tally→local
+ * reconciliation can skip vouchers we authored (see [TallySyncService]).
  *
  * Scope (v1): invoices originated in the app — id not prefixed `INVTLY` (those came *from* Tally),
- * active, numbered, with a named customer, and not already pushed. Each is sent as its own IMPORTDATA
- * request so a single bad voucher (missing ledger/stock item) fails just that invoice; the rest still
- * land. After a push the caller should trigger a normal Tally→local sync so the created voucher is
- * reconciled back (matched by REMOTEID — see [TallyVoucherMapper]).
+ * active, numbered, with a named customer, and not already linked to Tally (`ref_id` blank). Each is
+ * sent as its own IMPORTDATA request so a single bad voucher (missing ledger/stock item) fails just
+ * that invoice; the rest still land. After a push the caller should trigger a normal Tally→local sync
+ * so the created voucher is reconciled back (matched by REMOTEID — see [TallyVoucherMapper]).
  */
 @Inject
 class TallyInvoicePushService(
@@ -74,6 +81,7 @@ class TallyInvoicePushService(
             inv.soft_deleted == 0L &&
                 inv.invoice_number.isNotBlank() &&
                 inv.customer_name.isNotBlank() &&
+                inv.ref_id.isNullOrBlank() &&        // already linked to a Tally voucher → skip (idempotent)
                 inv.id !in pushedIds &&
                 tallyOriginatedPrefixes.none { inv.id.startsWith(it) }
         }
@@ -117,7 +125,17 @@ class TallyInvoicePushService(
             if (ok) {
                 pushed++
                 newlyPushed += inv.id
-                log("  ✓ ${inv.invoice_number} → Tally")
+                // Capture Tally's reference for this voucher (master id preferred; voucher id as
+                // fallback) onto the invoice's ref_id — the durable idempotency marker that also
+                // round-trips to the backend. Blank if Tally omitted both (still counts as pushed).
+                val tallyRef = result?.lastMId?.trim()?.takeIf { it.isNotBlank() }
+                    ?: result?.lastVchId?.trim()?.takeIf { it.isNotBlank() }
+                if (tallyRef != null) {
+                    invoiceDao.setTallyRef(inv.id, tallyRef)
+                    log("  ✓ ${inv.invoice_number} → Tally (ref $tallyRef)")
+                } else {
+                    log("  ✓ ${inv.invoice_number} → Tally")
+                }
             } else {
                 failed++
                 val reason = outcome.exceptionOrNull()?.message

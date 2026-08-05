@@ -94,6 +94,7 @@ fun List<InvoiceApiModel>.asDatabaseModel(): List<InvoiceEntity> {
             created_by = invoiceApiModel.created_by,
             updated_by = invoiceApiModel.updated_by,
             order_ref_id = invoiceApiModel.order_ref_id,
+            ref_id = invoiceApiModel.ref_id,
             discount = invoiceApiModel.discount?.let { Json.encodeToString(it) }
         )
     }

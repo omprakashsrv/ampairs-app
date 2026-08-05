@@ -45,7 +45,15 @@ class InvoiceRepository(
 ) {
     suspend fun saveInvoice(invoiceEntity: InvoiceEntity, invoiceItems: List<InvoiceItemEntity>) {
         val previous = invoiceDao.selectById(invoiceEntity.id)
-        val numbered = if (invoiceEntity.invoice_number.isBlank()) assignNumber(invoiceEntity) else invoiceEntity
+        // Preserve an already-captured Tally reference across local edits: asDatabaseModel() (domain →
+        // entity) doesn't carry ref_id, so a plain edit would otherwise null it and let the Tally push
+        // re-send the invoice as a duplicate.
+        val withRef = if (invoiceEntity.ref_id.isNullOrBlank() && !previous?.ref_id.isNullOrBlank()) {
+            invoiceEntity.copy(ref_id = previous?.ref_id)
+        } else {
+            invoiceEntity
+        }
+        val numbered = if (withRef.invoice_number.isBlank()) assignNumber(withRef) else withRef
         persist(numbered, invoiceItems)
         markPending()
         // Fire AFTER the DB write completes (and outside the Room transaction) — the listeners write
