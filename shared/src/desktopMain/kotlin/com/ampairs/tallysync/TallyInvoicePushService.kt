@@ -139,7 +139,10 @@ class TallyInvoicePushService(
                 failed++
                 val reason = outcome.exceptionOrNull()?.message
                     ?: result?.lineError?.takeIf { it.isNotBlank() }
-                    ?: "Tally rejected the voucher (created=${result?.created ?: 0}, errors=${result?.errors ?: 0})"
+                    ?: ("Tally created nothing (created=${result?.created ?: 0}, altered=${result?.altered ?: 0}, " +
+                        "ignored=${result?.ignored ?: 0}, combined=${result?.combined ?: 0}, " +
+                        "errors=${result?.errors ?: 0}, exceptions=${result?.exceptions ?: 0}) — likely a duplicate " +
+                        "(voucher already in Tally) or a masters/voucher-type mismatch; see 'IMPORTDATA reply' in the log")
                 log("  ✗ ${inv.invoice_number} — $reason")
                 kermitLog.w { "Tally push failed for ${inv.id}: $reason" }
             }

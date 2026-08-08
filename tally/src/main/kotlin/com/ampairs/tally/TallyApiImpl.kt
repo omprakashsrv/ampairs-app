@@ -84,6 +84,9 @@ class TallyApiImpl(engine: HttpClientEngine, private val baseUrl: String = "http
             contentType(ContentType.Text.Xml)
             setBody(tallyXML)
         }.bodyAsText().trim()
+        // Log Tally's exact reply — a created=0/errors=0 no-op (e.g. a duplicate REMOTEID) is only
+        // diagnosable from the raw <RESPONSE> counters (IGNORED/COMBINED/LASTVCHID).
+        log.i { "IMPORTDATA reply: $text" }
         return parseImportReply(text)
     }
 
