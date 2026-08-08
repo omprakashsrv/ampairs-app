@@ -217,6 +217,12 @@ class InvoiceRepository(
     /** Whether the row has reached the server (drives the invoice view's sync chip). */
     suspend fun isInvoiceSynced(id: String): Boolean = invoiceDao.selectById(id)?.synced == 1L
 
+    /**
+     * The invoice's external (Tally) reference, or null/blank if it hasn't been pushed to Tally.
+     * Drives the invoice-view "Push to Tally" button visibility (blank = show it).
+     */
+    suspend fun getTallyRef(id: String): String? = invoiceDao.selectById(id)?.ref_id
+
     /** Lightweight number lookup for cross-links (e.g. the order view's linked-invoice chip). */
     suspend fun getInvoiceNumber(id: String): String? =
         invoiceDao.selectById(id)?.invoice_number?.ifBlank { null }

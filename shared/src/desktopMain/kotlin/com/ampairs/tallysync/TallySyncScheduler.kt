@@ -111,9 +111,16 @@ class TallySyncScheduler(
      * sync so the created vouchers are reconciled back (matched by REMOTEID, so no duplicates). Run
      * from the "Push to Tally" button.
      */
-    suspend fun pushInvoices(workspaceSlug: String): TallyPushResult {
-        log.d { "Tally invoice push triggered for workspace=$workspaceSlug" }
-        val result = runCatching { pushService.push(workspaceSlug, syncService::appendLog) }
+    suspend fun pushInvoices(workspaceSlug: String): TallyPushResult = pushInvoices(workspaceSlug, null)
+
+    /**
+     * Pushes local invoices into Tally, then reconciles by pulling the created vouchers back (dedup by
+     * REMOTEID). [onlyInvoiceId] restricts the push to one invoice (the per-invoice "Push to Tally"
+     * button); null pushes all eligible (the bulk settings button).
+     */
+    suspend fun pushInvoices(workspaceSlug: String, onlyInvoiceId: String?): TallyPushResult {
+        log.d { "Tally invoice push triggered for workspace=$workspaceSlug invoice=${onlyInvoiceId ?: "ALL"}" }
+        val result = runCatching { pushService.push(workspaceSlug, syncService::appendLog, onlyInvoiceId) }
             .onFailure { log.e(it) { "Tally invoice push error" } }
             .getOrElse { TallyPushResult(error = it.message) }
         lastPushResult = result

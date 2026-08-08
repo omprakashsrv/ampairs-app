@@ -60,10 +60,14 @@ class TallyInvoicePushService(
     private val tallyOriginatedPrefixes = listOf("INVTLY")
 
     /**
-     * Pushes all not-yet-pushed local invoices. [log] streams human-readable progress to the shared
-     * Tally sync log panel. Returns counts; individual failures are logged, not thrown.
+     * Pushes not-yet-pushed local invoices. [log] streams human-readable progress to the shared Tally
+     * sync log panel. Returns counts; individual failures are logged, not thrown.
+     *
+     * @param onlyInvoiceId when non-null, restricts the push to that single invoice (the per-invoice
+     *   "Push to Tally" button on the invoice-view screen); when null, pushes every eligible invoice
+     *   (the bulk push from the Tally settings screen).
      */
-    suspend fun push(workspaceSlug: String, log: (String) -> Unit): TallyPushResult {
+    suspend fun push(workspaceSlug: String, log: (String) -> Unit, onlyInvoiceId: String? = null): TallyPushResult {
         val host = dataStore.getTallyHost(workspaceSlug).first()
         if (host.isBlank()) {
             log("Tally host not configured")
@@ -78,7 +82,8 @@ class TallyInvoicePushService(
             .associate { it.id to it.shortName.ifBlank { it.name } }
 
         val candidates = invoiceDao.selectAll().filter { inv ->
-            inv.soft_deleted == 0L &&
+            (onlyInvoiceId == null || inv.id == onlyInvoiceId) &&   // single-invoice push when set
+                inv.soft_deleted == 0L &&
                 inv.invoice_number.isNotBlank() &&
                 inv.customer_name.isNotBlank() &&
                 inv.ref_id.isNullOrBlank() &&        // already linked to a Tally voucher → skip (idempotent)
