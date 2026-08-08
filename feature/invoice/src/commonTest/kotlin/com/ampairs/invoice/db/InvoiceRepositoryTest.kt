@@ -447,6 +447,9 @@ private class FakeInvoiceDao : InvoiceDao {
     override suspend fun getTotalTaxValueByCustomer(customerId: String): Double? = null
     override suspend fun getTotalTaxValueByDateRange(startDate: String, endDate: String): Double? = null
     override suspend fun markAsSynced(id: String) {}
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows[id]?.let { rows[id] = it.copy(ref_id = refId, synced = 0) }
+    }
     override suspend fun updateStatus(id: String, status: String) {}
     override suspend fun softDelete(id: String) {}
     override suspend fun deleteById(id: String) { rows.remove(id) }

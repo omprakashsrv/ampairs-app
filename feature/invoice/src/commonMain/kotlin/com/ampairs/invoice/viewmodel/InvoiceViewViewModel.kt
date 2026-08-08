@@ -11,6 +11,7 @@ import com.ampairs.invoice.db.InvoiceRepository
 import com.ampairs.invoice.domain.Invoice
 import com.ampairs.invoice.editor.DocSyncUi
 import com.ampairs.invoice.print.InvoicePrintValueProvider
+import com.ampairs.invoice.spi.InvoiceTallyPusher
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.printing.core.spool.SendOutcome
 import com.ampairs.printing.service.PrintCoordinator
@@ -38,6 +39,8 @@ class InvoiceViewViewModel(
     private val syncService: CentralSyncService,
     private val printCoordinator: PrintCoordinator,
     private val invoicePrintProvider: InvoicePrintValueProvider,
+    // Desktop-only capability (empty set on Android/iOS) — the manual, per-invoice Tally push.
+    private val tallyPushers: Set<InvoiceTallyPusher>,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -62,9 +65,32 @@ class InvoiceViewViewModel(
     var printing by mutableStateOf(false)
         private set
 
+    /** Non-blank once the invoice is linked to a Tally voucher; blank/null = not yet pushed. */
+    var tallyRef by mutableStateOf<String?>(null)
+        private set
+    var pushingToTally by mutableStateOf(false)
+        private set
+    /** Transient result of the last Tally push (shown then dismissed by the screen). */
+    var tallyMessage by mutableStateOf<String?>(null)
+        private set
+
+    /**
+     * Show the "Push to Tally" button only when: the desktop Tally capability is present, this is an
+     * app-originated invoice (not one pulled *from* Tally), and it isn't already linked to a Tally
+     * voucher. A saved invoice is required — a still-unsaved draft has no number yet.
+     */
+    val canPushToTally: Boolean
+        get() = tallyPushers.isNotEmpty() &&
+            invoiceId.isNotBlank() &&
+            !invoiceId.startsWith("INVTLY") &&
+            !invoice.invoiceNumber.isNullOrBlank() &&
+            tallyRef.isNullOrBlank() &&
+            !pushingToTally
+
     init {
         viewModelScope.launch(DispatcherProvider.io) {
             invoice = invoiceRepository.getInvoice(invoiceId)
+            tallyRef = invoiceRepository.getTallyRef(invoiceId)
             resolveUnitNames()
             refreshSyncFlag()
         }
@@ -135,6 +161,34 @@ class InvoiceViewViewModel(
 
     fun clearPrintMessage() {
         printMessage = null
+    }
+
+    /**
+     * Manually push this single invoice to Tally (desktop only). No-op if the capability is absent or
+     * a push is already running. On completion, reloads the invoice + Tally reference so the button
+     * hides itself (the push captured a ref) and shows the result message.
+     */
+    fun pushToTally() {
+        val pusher = tallyPushers.firstOrNull() ?: return
+        if (pushingToTally) return
+        pushingToTally = true
+        viewModelScope.launch(DispatcherProvider.io) {
+            val message = pusher.pushInvoice(invoiceId).fold(
+                onSuccess = { it },
+                onFailure = { it.message ?: "Tally push failed" },
+            )
+            invoice = invoiceRepository.getInvoice(invoiceId)
+            tallyRef = invoiceRepository.getTallyRef(invoiceId)
+            resolveUnitNames()
+            viewModelScope.launch(Dispatchers.Main) {
+                tallyMessage = message
+                pushingToTally = false
+            }
+        }
+    }
+
+    fun clearTallyMessage() {
+        tallyMessage = null
     }
 
     fun saveInvoice() {

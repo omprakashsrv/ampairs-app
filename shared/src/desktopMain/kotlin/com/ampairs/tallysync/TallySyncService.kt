@@ -184,6 +184,9 @@ class TallySyncService(
         _logLines.value = emptyList()
     }
 
+    /** Appends a line to the shared Tally log panel (used by the invoice push service). */
+    fun appendLog(line: String) = emit(line)
+
     private fun emit(line: String) {
         log.i { line }
         _logLines.update { (it + "${timestamp()} $line").takeLast(MAX_LOG_LINES) }
@@ -826,12 +829,23 @@ class TallySyncService(
         val productTaxByName = products.associate { it.name.trim() to it.tax_code }
 
         // --- Invoices first (payments reference them by bill number) ---
+        // Vouchers WE pushed into Tally (order → invoice) carry REMOTEID = the local invoice id.
+        // Skip re-importing them: the local invoice is the authoritative copy (app-assigned number,
+        // full line detail) and re-mapping would either duplicate it as INVTLY<guid> or overwrite the
+        // richer local row with the Tally-derived one.
+        val pushedInvoiceIds = dataStore.getTallyPushedInvoiceIds(workspaceSlug).first()
         var invoicesSynced = 0
         var skippedInvoiceNoParty = 0
+        var skippedPushedBack = 0
         for (voucher in filtered) {
             val kind = voucher.classify()
             // PURCHASE is the buy-side and is handled separately (→ purchases + supplier payable).
             if (!kind.isInvoiceKind || kind == Kind.PURCHASE) continue
+            val remoteId = voucher.remoteId?.trim()
+            if (!remoteId.isNullOrBlank() && remoteId in pushedInvoiceIds) {
+                skippedPushedBack++
+                continue
+            }
             val partyName = voucher.resolvePartyName()
             // Unified party id (customer wins, else supplier). A party is either a customer or a supplier
             // record (never both), so a sale to a supplier-party nets onto that ONE record instead of
@@ -858,6 +872,7 @@ class TallySyncService(
             invoicesSynced++
         }
         if (skippedInvoiceNoParty > 0) emit("Invoices: skipped $skippedInvoiceNoParty (party not a known customer)")
+        if (skippedPushedBack > 0) emit("Invoices: skipped $skippedPushedBack (pushed from this app — kept local copy)")
 
         // --- Purchases (party = supplier; posts the buy-side PURCHASE_BILL payable → "To Pay") ---
         var purchasesSynced = 0

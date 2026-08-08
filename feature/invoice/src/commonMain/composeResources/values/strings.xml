@@ -16,6 +16,7 @@
     <string name="inv_view_title">Invoice</string>
     <string name="inv_view_cd_back">Go back</string>
     <string name="inv_view_cd_edit">Edit invoice</string>
+    <string name="inv_view_push_tally_cd">Push to Tally</string>
     <string name="inv_view_from">From</string>
     <string name="inv_view_to">To</string>
     <string name="inv_view_items">%1$d Items</string>

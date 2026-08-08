@@ -125,9 +125,19 @@ interface AppPreferencesDataStore {
     fun getTallyPort(workspaceSlug: String): Flow<Int>
     suspend fun setTallyPort(workspaceSlug: String, port: Int)
 
+    // The exact ledger name Tally uses for sales (varies by company setup — e.g. "Sales Account").
+    // Must match the Tally ledger byte-for-byte or the voucher import fails with a LINEERROR.
+    fun getTallySalesLedger(workspaceSlug: String): Flow<String>
+    suspend fun setTallySalesLedger(workspaceSlug: String, ledgerName: String)
+
     // Incremental sync watermarks: last seen ALTERID per entity type per workspace
     fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
     suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
+
+    // Local invoice ids already pushed *into* Tally (per-workspace). Drives which invoices the Tally
+    // push considers new, and lets the pull skip re-importing our own pushed vouchers (by REMOTEID).
+    fun getTallyPushedInvoiceIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedInvoiceIds(workspaceSlug: String, invoiceIds: Set<String>)
 
     /**
      * The user's decision on downloading the on-device AI assistant model.

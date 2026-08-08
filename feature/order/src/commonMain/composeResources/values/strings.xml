@@ -45,6 +45,8 @@
     <string name="ord_conv_note">Already converted? This opens the existing invoice — no duplicate.</string>
     <string name="ord_conv_confirm">Create invoice</string>
     <string name="ord_conv_cancel">Cancel</string>
+    <string name="ord_conv_missing_hsn">Cannot create invoice — HSN/tax code missing for: %1$s. Assign a tax code to each product, then try again.</string>
+    <string name="ord_conv_missing_hsn_ok">OK</string>
     <string name="ord_edit_taxable">Taxable</string>
     <string name="ord_edit_line_total">Line total</string>
     <string name="ord_edit_unit_label">Unit :</string>

@@ -3,7 +3,9 @@ package com.ampairs.tally
 import com.ampairs.tally.model.ReportType
 import com.ampairs.tally.model.TallyXML
 import com.ampairs.tally.model.Type
+import com.ampairs.tally.model.buildVoucherImport
 import com.ampairs.tally.model.toTallyXML
+import com.ampairs.tally.model.voucher.Voucher
 
 class TallyRepository(val tallyApi: TallyApi) {
 
@@ -52,6 +54,20 @@ class TallyRepository(val tallyApi: TallyApi) {
         return post(Type.VOUCHER.toTallyXML())
     }
 
+
+    /**
+     * Pushes vouchers *into* Tally via an IMPORTDATA request (used for order → invoice sales
+     * vouchers). Returns the parsed [com.ampairs.tally.model.ImportResult] (created/altered counts,
+     * LASTMID/LASTVCHID, any LINEERROR); null only if Tally returned an empty body. Tally's reply is a
+     * bare `<RESPONSE>` root, so this goes through [TallyApi.postImport], not the `<ENVELOPE>`-typed
+     * [post]. [companyName] targets a specific company; blank → Tally's active company.
+     */
+    suspend fun importVouchers(
+        vouchers: List<Voucher>,
+        companyName: String? = null,
+    ): com.ampairs.tally.model.ImportResult? {
+        return tallyApi.postImport(buildVoucherImport(vouchers, companyName))
+    }
 
     suspend fun post(tallyXML: TallyXML): TallyXML {
         return tallyApi.post(tallyXML)
