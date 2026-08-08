@@ -818,25 +818,6 @@ class TallySyncService(
             )
         }
 
-        // Diagnostic: the ACCOUNTINGALLOCATIONS ledger name(s) Tally's OWN sales vouchers actually use
-        // on each inventory line — tells us exactly what to put in Tally Settings → Sales Ledger Name
-        // so the push direction (TallyInvoiceVoucherMapper) matches this company's real ledger, instead
-        // of assuming the default "Sales".
-        val salesLedgerNames = filtered
-            .filter { it.classify().isInvoiceKind && it.classify() != Kind.PURCHASE }
-            .flatMap { it.inventoryList.orEmpty() }
-            .flatMap { it.accountingAllocationList.orEmpty() }
-            .mapNotNull { it.ledgerName?.trim()?.takeIf { n -> n.isNotBlank() } }
-            .groupingBy { it }
-            .eachCount()
-        if (salesLedgerNames.isNotEmpty()) {
-            emit(
-                "Sales ledger(s) seen in Tally's own invoices: " +
-                    salesLedgerNames.entries.sortedByDescending { it.value }
-                        .joinToString(", ") { (name, count) -> "\"$name\"=$count" },
-            )
-        }
-
         // Sales party matches a synced customer; purchase party matches a synced supplier (both were
         // synced earlier this cycle — purchase parties are now always synced as suppliers). Line items
         // match by stock-item name to a synced product.
