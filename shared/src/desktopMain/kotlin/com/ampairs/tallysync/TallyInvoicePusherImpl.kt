@@ -28,6 +28,7 @@ class TallyInvoicePusherImpl(
             !result.success -> Result.failure(Exception(result.error ?: "Tally push failed"))
             result.pushed > 0 -> Result.success("Pushed to Tally")
             result.failed > 0 -> Result.failure(Exception("Tally rejected the voucher — see the Tally sync log"))
+            result.skippedReason != null -> Result.failure(Exception(result.skippedReason))
             else -> Result.success("Already in Tally — nothing to push")
         }
     }

@@ -51,6 +51,7 @@ fun TallySettingsScreen(
 ) {
     var host by remember { mutableStateOf("") }
     var port by remember { mutableStateOf("9008") }
+    var salesLedger by remember { mutableStateOf("GST Sales") }
     var statusText by remember { mutableStateOf("Not synced yet") }
     var isSyncing by remember { mutableStateOf(false) }
     var isPushing by remember { mutableStateOf(false) }
@@ -65,6 +66,7 @@ fun TallySettingsScreen(
         host = dataStore.getTallyHost(workspaceSlug).first()
         val savedPort = dataStore.getTallyPort(workspaceSlug).first()
         port = savedPort.toString()
+        salesLedger = dataStore.getTallySalesLedger(workspaceSlug).first()
         scheduler.lastResult?.let { statusText = formatResult(it) }
     }
 
@@ -93,12 +95,22 @@ fun TallySettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            OutlinedTextField(
+                value = salesLedger,
+                onValueChange = { salesLedger = it },
+                label = { Text("Sales Ledger Name") },
+                placeholder = { Text("GST Sales") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(
                     onClick = {
                         scope.launch {
                             dataStore.setTallyHost(workspaceSlug, host.trim())
                             dataStore.setTallyPort(workspaceSlug, port.toIntOrNull() ?: 9008)
+                            dataStore.setTallySalesLedger(workspaceSlug, salesLedger.trim().ifBlank { "GST Sales" })
                         }
                     }
                 ) {

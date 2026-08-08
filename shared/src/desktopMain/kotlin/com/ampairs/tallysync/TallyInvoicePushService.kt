@@ -2,6 +2,7 @@ package com.ampairs.tallysync
 
 import co.touchlab.kermit.Logger
 import com.ampairs.common.config.AppPreferencesDataStore
+import com.ampairs.customer.data.db.CustomerDao
 import com.ampairs.invoice.db.dao.InvoiceDao
 import com.ampairs.invoice.db.dao.InvoiceItemDao
 import com.ampairs.invoice.db.model.TaxInfoEntity
@@ -21,6 +22,10 @@ data class TallyPushResult(
     val failed: Int = 0,
     val skipped: Int = 0,
     val error: String? = null,
+    /** Set only for a single-invoice push ([TallyInvoicePushService.push]'s `onlyInvoiceId`) that
+     * was excluded for a reason OTHER than "already linked to Tally" (e.g. missing customer_name) —
+     * lets the caller show the real cause instead of the generic "already in Tally" message. */
+    val skippedReason: String? = null,
 ) {
     val success get() = error == null
 }
@@ -52,6 +57,7 @@ class TallyInvoicePushService(
     private val invoiceDao: InvoiceDao,
     private val invoiceItemDao: InvoiceItemDao,
     private val unitDao: UnitDao,
+    private val customerDao: CustomerDao,
     private val dataStore: AppPreferencesDataStore,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
@@ -78,10 +84,26 @@ class TallyInvoicePushService(
         val repo = TallyRepository(TallyApiImpl(engine, baseUrl))
 
         val pushedIds = dataStore.getTallyPushedInvoiceIds(workspaceSlug).first()
+        val salesLedgerName = dataStore.getTallySalesLedger(workspaceSlug).first()
         val unitNameById = unitDao.getAllUnits().first()
             .associate { it.id to it.shortName.ifBlank { it.name } }
 
-        val candidates = invoiceDao.selectAll().filter { inv ->
+        // Repair invoices whose customer_name is blank but customer_id is set — e.g. an order/
+        // invoice whose Customer object was only a stub (uid set, name never resolved) when
+        // Invoice.asDatabaseModel() ran. Without this a legitimately-billable invoice is silently
+        // excluded by the customer_name check below and never reaches Tally.
+        val allInvoices = invoiceDao.selectAll().map { inv ->
+            if (inv.customer_name.isBlank() && inv.customer_id.isNotBlank()) {
+                val resolvedName = customerDao.getCustomerById(inv.customer_id)?.name?.trim().orEmpty()
+                if (resolvedName.isNotBlank()) {
+                    invoiceDao.setCustomerName(inv.id, resolvedName)
+                    log("Tally push: backfilled customer_name (\"$resolvedName\") for ${inv.invoice_number.ifBlank { inv.id }} from the customer table")
+                    inv.copy(customer_name = resolvedName)
+                } else inv
+            } else inv
+        }
+
+        val candidates = allInvoices.filter { inv ->
             (onlyInvoiceId == null || inv.id == onlyInvoiceId) &&   // single-invoice push when set
                 inv.soft_deleted == 0L &&
                 inv.invoice_number.isNotBlank() &&
@@ -91,6 +113,41 @@ class TallyInvoicePushService(
                 tallyOriginatedPrefixes.none { inv.id.startsWith(it) }
         }
         if (candidates.isEmpty()) {
+            // Diagnostic: onlyInvoiceId set but excluded — say exactly which filter dropped it,
+            // instead of a blanket "nothing to push" that looks identical to "already synced".
+            // Distinguish real data problems (blocks the push, caller should surface it) from the
+            // legitimate idempotent case (ref_id/pushedIds/INVTLY — genuinely already in Tally).
+            if (onlyInvoiceId != null) {
+                val inv = allInvoices.firstOrNull { it.id == onlyInvoiceId }
+                if (inv == null) {
+                    val msg = "Invoice $onlyInvoiceId not found locally"
+                    log("Tally push: $msg")
+                    return TallyPushResult(skipped = 1, skippedReason = msg)
+                }
+                val problems = buildList {
+                    if (inv.soft_deleted != 0L) add("invoice is soft-deleted")
+                    if (inv.invoice_number.isBlank()) add("no invoice_number")
+                    if (inv.customer_name.isBlank()) {
+                        add("no customer_name (customer_id=${inv.customer_id.ifBlank { "<blank>" }})")
+                    }
+                }
+                val alreadyHandled = buildList {
+                    if (!inv.ref_id.isNullOrBlank()) add("already linked to Tally (ref_id=${inv.ref_id})")
+                    if (inv.id in pushedIds) add("already in pushedIds cache")
+                    if (tallyOriginatedPrefixes.any { inv.id.startsWith(it) }) add("Tally-originated id (INVTLY prefix)")
+                }
+                return if (problems.isNotEmpty()) {
+                    val msg = "Cannot push ${inv.invoice_number.ifBlank { inv.id }} — ${problems.joinToString(", ")}"
+                    log("Tally push: $msg")
+                    TallyPushResult(skipped = 1, skippedReason = msg)
+                } else {
+                    log(
+                        "Tally push: ${inv.invoice_number} skipped — " +
+                            alreadyHandled.ifEmpty { listOf("no matching filter reason (unexpected)") }.joinToString(", "),
+                    )
+                    TallyPushResult()
+                }
+            }
             log("Tally push: no new invoices to push")
             return TallyPushResult()
         }
@@ -111,6 +168,7 @@ class TallyInvoicePushService(
                 items = items,
                 taxComponents = taxComponents,
                 unitNameById = unitNameById,
+                salesLedgerName = salesLedgerName,
             )
 
             // Surface the exact request XML in the log (Copy button on the log panel) so the first

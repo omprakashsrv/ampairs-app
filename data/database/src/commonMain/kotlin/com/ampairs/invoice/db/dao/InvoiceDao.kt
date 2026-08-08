@@ -99,6 +99,11 @@ interface InvoiceDao {
     @Query("UPDATE invoiceEntity SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: String, status: String)
 
+    /** Repairs a blank `customer_name` (e.g. an invoice whose Customer object was only a stub with
+     * `uid` set) by backfilling from the customer table. */
+    @Query("UPDATE invoiceEntity SET customer_name = :customerName WHERE id = :id")
+    suspend fun setCustomerName(id: String, customerName: String)
+
     @Query("UPDATE invoiceEntity SET soft_deleted = 1 WHERE id = :id")
     suspend fun softDelete(id: String)
 

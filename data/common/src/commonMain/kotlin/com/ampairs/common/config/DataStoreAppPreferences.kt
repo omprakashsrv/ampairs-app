@@ -60,6 +60,7 @@ class DataStoreAppPreferences(
         // Tally ERP sync config
         private fun getTallyHostKey(ws: String) = stringPreferencesKey("tally_host_$ws")
         private fun getTallyPortKey(ws: String) = intPreferencesKey("tally_port_$ws")
+        private fun getTallySalesLedgerKey(ws: String) = stringPreferencesKey("tally_sales_ledger_$ws")
         private fun getTallyAlterIdKey(ws: String, entity: String) =
             longPreferencesKey("tally_alter_id_${entity}_$ws")
         private fun getTallyPushedInvoicesKey(ws: String) =
@@ -263,6 +264,18 @@ class DataStoreAppPreferences(
     override suspend fun setTallyPort(workspaceSlug: String, port: Int) {
         dataStore.edit { preferences ->
             preferences[getTallyPortKey(workspaceSlug)] = port
+        }
+    }
+
+    override fun getTallySalesLedger(workspaceSlug: String): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallySalesLedgerKey(workspaceSlug)]?.takeIf { it.isNotBlank() } ?: "GST Sales"
+        }
+    }
+
+    override suspend fun setTallySalesLedger(workspaceSlug: String, ledgerName: String) {
+        dataStore.edit { preferences ->
+            preferences[getTallySalesLedgerKey(workspaceSlug)] = ledgerName
         }
     }
 

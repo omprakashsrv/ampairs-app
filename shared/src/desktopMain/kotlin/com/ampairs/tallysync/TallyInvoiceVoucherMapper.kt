@@ -26,10 +26,14 @@ import kotlin.math.roundToLong
  *   ALLINVENTORYENTRIES.LIST (one per line)
  *     STOCKITEMNAME, RATE, AMOUNT(+base), ACTUALQTY/BILLEDQTY
  *     ACCOUNTINGALLOCATIONS.LIST → LEDGERNAME=Sales  ISDEEMEDPOSITIVE=No  AMOUNT(+base)
- *   ALLLEDGERENTRIES.LIST
+ *   LEDGERENTRIES.LIST (one per ledger — repeated sibling elements, NOT a single wrapping list)
  *     party ledger   ISPARTYLEDGER=Yes  ISDEEMEDPOSITIVE=Yes  AMOUNT = -(grand total)   [debit]
  *     GST ledger(s)                     ISDEEMEDPOSITIVE=No   AMOUNT = +(tax value)      [credit]
  * ```
+ * `LEDGERENTRIES.LIST`, not `ALLLEDGERENTRIES.LIST`, is what Item Invoice mode (`ISINVOICE=Yes` with
+ * inventory) expects for the accounting postings — confirmed against a real, successfully-imported
+ * Tally export. The wrong tag is accepted by the XML gateway with HTTP 200 but the voucher is silently
+ * rejected (`EXCEPTIONS=1`, no `LINEERROR` text).
  * Tally's amount sign convention on import: **debit = negative, credit = positive**; every ledger
  * amount plus the inventory credit must net to zero, which holds because
  * `grandTotal = Σ line base + Σ GST`.
@@ -43,7 +47,7 @@ import kotlin.math.roundToLong
  */
 internal object TallyInvoiceVoucherMapper {
 
-    const val DEFAULT_SALES_LEDGER = "Sales"
+    const val DEFAULT_SALES_LEDGER = "GST Sales"
 
     /**
      * @param unitNameById resolves an item's `unit_id` to the Tally unit symbol (for RATE/QTY);
@@ -62,7 +66,13 @@ internal object TallyInvoiceVoucherMapper {
         val inventory = activeItems.map { item ->
             val unit = item.unit_id.takeIf { it.isNotBlank() }?.let { unitNameById[it] }?.trim()?.takeIf { it.isNotBlank() }
             val qtyStr = if (unit != null) "${trimNum(item.quantity)} $unit" else trimNum(item.quantity)
-            val rateStr = if (unit != null) "${money(item.product_price)}/$unit" else money(item.product_price)
+            // RATE must reconcile with AMOUNT (RATE × ACTUALQTY == AMOUNT) or Tally silently rejects
+            // the voucher (EXCEPTIONS>0, no LINEERROR text). item.product_price is the tax-INCLUSIVE
+            // selling price (workspaces can enable tax-inclusive pricing — see /cmp-practices §12),
+            // but AMOUNT below is item.base_price, the pre-tax taxable value. Derive RATE from
+            // base_price/quantity so the two always agree, independent of that pricing mode.
+            val unitRate = if (item.quantity != 0.0) item.base_price / item.quantity else item.base_price
+            val rateStr = if (unit != null) "${money(unitRate)}/$unit" else money(unitRate)
             InventoryList(
                 stockItemName = item.description,
                 isDeemedPositive = "No",             // outward (sales) stock movement
@@ -108,6 +118,7 @@ internal object TallyInvoiceVoucherMapper {
         }
 
         val tallyDate = entity.invoice_date.isoToTallyDate()
+        val stateNameForTally = entity.place_of_supply?.trim()?.takeIf { it.isNotBlank() }?.toTallyStateName()
         return Voucher(
             remoteId = entity.id,
             vchType = "Sales",
@@ -119,10 +130,15 @@ internal object TallyInvoiceVoucherMapper {
             partyLedgerName = partyName,
             partyName = partyName,
             partyGstin = entity.customer_gst.trim().takeIf { it.isNotBlank() },
-            placeOfSupply = entity.place_of_supply?.trim()?.takeIf { it.isNotBlank() },
-            stateName = entity.place_of_supply?.trim()?.takeIf { it.isNotBlank() },
+            placeOfSupply = stateNameForTally,
+            stateName = stateNameForTally,
             isInvoice = "Yes",
-            allLedgerEntriesList = ledgerEntries,
+            // Item Invoice mode (ISINVOICE=Yes + inventory) posts party/tax ledgers under repeated
+            // LEDGERENTRIES.LIST elements, NOT ALLLEDGERENTRIES.LIST — confirmed against a real,
+            // successfully-imported Tally export (Transactions.xml). Using the wrong tag is silently
+            // accepted by the XML gateway but the voucher is rejected with EXCEPTIONS=1 and no
+            // LINEERROR text, since ALLLEDGERENTRIES.LIST is the plain-voucher (non-invoice) tag.
+            ledgerEntrieList = ledgerEntries,
             inventoryList = inventory.ifEmpty { null },
             narration = "Ampairs invoice ${entity.invoice_number}".trim(),
         )
@@ -153,4 +169,30 @@ internal object TallyInvoiceVoucherMapper {
         val cents = (v * 100).roundToLong()
         return if (cents % 100 == 0L) "${cents / 100}" else money(v)
     }
+
+    /**
+     * `Invoice.place_of_supply` app-wide stores the 2-digit GST state code (see
+     * `OrderViewModel.placeOfSupply = ScenarioResolver.stateCodeFromGstin(...)`), not a name — but
+     * Tally's `STATENAME`/`PLACEOFSUPPLY` master only resolves actual state names ("Karnataka"), so a
+     * bare code ("29") silently fails GST/state resolution (Tally rejects with EXCEPTIONS>0 and no
+     * LINEERROR text). Convert a numeric code to its official GST state name; a non-numeric value is
+     * assumed to already be a name (some invoices — e.g. ones pulled in from Tally — carry the name
+     * directly) and is passed through unchanged.
+     */
+    private fun String.toTallyStateName(): String =
+        toIntOrNull()?.let { GST_STATE_CODE_TO_NAME[it] } ?: this
+
+    /** Official India GST state/UT codes → the state name as registered in Tally's default masters. */
+    private val GST_STATE_CODE_TO_NAME = mapOf(
+        1 to "Jammu & Kashmir", 2 to "Himachal Pradesh", 3 to "Punjab", 4 to "Chandigarh",
+        5 to "Uttarakhand", 6 to "Haryana", 7 to "Delhi", 8 to "Rajasthan", 9 to "Uttar Pradesh",
+        10 to "Bihar", 11 to "Sikkim", 12 to "Arunachal Pradesh", 13 to "Nagaland", 14 to "Manipur",
+        15 to "Mizoram", 16 to "Tripura", 17 to "Meghalaya", 18 to "Assam", 19 to "West Bengal",
+        20 to "Jharkhand", 21 to "Odisha", 22 to "Chhattisgarh", 23 to "Madhya Pradesh",
+        24 to "Gujarat", 25 to "Daman & Diu", 26 to "Dadra & Nagar Haveli", 27 to "Maharashtra",
+        28 to "Andhra Pradesh (Old)", 29 to "Karnataka", 30 to "Goa", 31 to "Lakshadweep",
+        32 to "Kerala", 33 to "Tamil Nadu", 34 to "Puducherry", 35 to "Andaman & Nicobar Islands",
+        36 to "Telangana", 37 to "Andhra Pradesh", 38 to "Ladakh",
+        97 to "Other Territory", 99 to "Centre Jurisdiction",
+    )
 }
