@@ -34,12 +34,17 @@ fun buildVoucherImport(
         vouchers.map { TallyMessage(xmlsUdf = "TallyUDF", voucher = it) as TallyMessage? }.toMutableList()
 
     return TallyXML(
+        // Bare <ENVELOPE> (no Action attribute) to match Tally's documented import envelope exactly.
+        action = null,
+        // Minimal import header — ONLY <TALLYREQUEST>Import Data</TALLYREQUEST>. Tally rejects the
+        // request as "Unknown Request, cannot be processed" when the header also carries the
+        // export-style <VERSION> and an empty <ID/> (which the shared Header defaults leaked in).
         header = Header(
-            version = "1",
+            version = null,
             tallyRequest = "Import Data",
             type = null,
             status = null,
-            id = "",
+            id = null,
         ),
         body = Body(
             importData = ImportData(
