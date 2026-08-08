@@ -8,11 +8,14 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import com.ampairs.tally.model.ImportResponse
+import com.ampairs.tally.model.ImportResult
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponseContainer
 import io.ktor.client.statement.HttpResponsePipeline
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.xml.xml
@@ -70,5 +73,36 @@ class TallyApiImpl(engine: HttpClientEngine, private val baseUrl: String = "http
             contentType(ContentType.Text.Xml)
             setBody(tallyXML)
         }.body()
+    }
+
+    override suspend fun postImport(tallyXML: com.ampairs.tally.model.TallyXML): ImportResult? {
+        // Read the reply as text (already sanitized by the response-pipeline interceptor above) and
+        // decode it root-agnostically: Tally's import reply is a bare <RESPONSE>, but tolerate the
+        // <ENVELOPE><BODY><DATA><IMPORTRESULT> shape too.
+        val text = client.post {
+            url(baseUrl)
+            contentType(ContentType.Text.Xml)
+            setBody(tallyXML)
+        }.bodyAsText().trim()
+        return parseImportReply(text)
+    }
+
+    private fun parseImportReply(text: String): ImportResult? {
+        if (text.isBlank()) return null
+        val looksLikeResponse = text.contains("<RESPONSE", ignoreCase = true) &&
+            !text.contains("<ENVELOPE", ignoreCase = true)
+        return runCatching {
+            if (looksLikeResponse) {
+                tallyXmlFormat.decodeFromString(ImportResponse.serializer(), text).toImportResult()
+            } else {
+                tallyXmlFormat.decodeFromString(
+                    com.ampairs.tally.model.TallyXML.serializer(), text,
+                ).body?.data?.importResult
+            }
+        }.getOrElse {
+            // Neither shape parsed — surface Tally's raw reply (truncated) as a line error so the
+            // push log shows what Tally actually said instead of a deserialization stack trace.
+            ImportResult(errors = 1, lineError = text.take(300))
+        }
     }
 }

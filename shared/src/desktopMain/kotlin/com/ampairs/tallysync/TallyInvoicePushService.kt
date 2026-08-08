@@ -118,15 +118,9 @@ class TallyInvoicePushService(
             log("  → request ${inv.invoice_number}: ${renderTallyXml(buildVoucherImport(listOf(voucher)))}")
 
             val outcome = runCatching { repo.importVouchers(listOf(voucher)) }
-            val response = outcome.getOrNull()
-            val result = response?.body?.data?.importResult
-            val topStatus = response?.header?.status?.trim()
+            val result = outcome.getOrNull()   // parsed ImportResult from Tally's <RESPONSE> reply
 
-            val ok = when {
-                outcome.isFailure -> false
-                result != null -> result.isSuccess
-                else -> topStatus == "1"
-            }
+            val ok = outcome.isSuccess && result?.isSuccess == true
             if (ok) {
                 pushed++
                 newlyPushed += inv.id
@@ -145,7 +139,7 @@ class TallyInvoicePushService(
                 failed++
                 val reason = outcome.exceptionOrNull()?.message
                     ?: result?.lineError?.takeIf { it.isNotBlank() }
-                    ?: "Tally rejected the voucher (status=$topStatus)"
+                    ?: "Tally rejected the voucher (created=${result?.created ?: 0}, errors=${result?.errors ?: 0})"
                 log("  ✗ ${inv.invoice_number} — $reason")
                 kermitLog.w { "Tally push failed for ${inv.id}: $reason" }
             }
