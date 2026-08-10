@@ -24,10 +24,14 @@ private val log = Logger.withTag("TallySyncScheduler")
 class TallySyncScheduler(
     val syncService: TallySyncService,
     val pushService: TallyInvoicePushService,
+    val paymentPushService: TallyPaymentPushService,
     val centralSyncService: CentralSyncService,
 ) {
 
     var lastPushResult: TallyPushResult? = null
+        private set
+
+    var lastPaymentPushResult: TallyPaymentPushResult? = null
         private set
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -126,6 +130,25 @@ class TallySyncScheduler(
         lastPushResult = result
         // Reconcile: pull the just-created vouchers back (dedup by REMOTEID) so the linked invoice
         // reflects Tally's copy. Only worth a pull when something actually landed.
+        if (result.success && result.pushed > 0) runOnce(workspaceSlug)
+
+        // Payments settle invoice bills, so they can only be pushed once their target invoices carry
+        // a Tally ref_id — always attempt them right after (and after any reconcile pull above),
+        // since a previously-blocked payment may now be eligible.
+        pushPayments(workspaceSlug)
+
+        return result
+    }
+
+    /** Pushes locally-recorded, fully-allocated customer collections into Tally as Receipt vouchers. */
+    suspend fun pushPayments(workspaceSlug: String): TallyPaymentPushResult {
+        log.d { "Tally payment push triggered for workspace=$workspaceSlug" }
+        val result = runCatching { paymentPushService.push(workspaceSlug, syncService::appendLog) }
+            .onFailure { log.e(it) { "Tally payment push error" } }
+            .getOrElse { TallyPaymentPushResult(error = it.message) }
+        lastPaymentPushResult = result
+        // Reconcile so the reconciliation pull's pushedPaymentIds guard sees the freshly-pushed uids
+        // and doesn't re-import our own Receipt vouchers as duplicates.
         if (result.success && result.pushed > 0) runOnce(workspaceSlug)
         return result
     }

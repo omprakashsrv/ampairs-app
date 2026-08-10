@@ -52,6 +52,8 @@ fun TallySettingsScreen(
     var host by remember { mutableStateOf("") }
     var port by remember { mutableStateOf("9008") }
     var salesLedger by remember { mutableStateOf("GST Sales") }
+    var cashLedger by remember { mutableStateOf("Cash") }
+    var bankLedger by remember { mutableStateOf("Bank") }
     var statusText by remember { mutableStateOf("Not synced yet") }
     var isSyncing by remember { mutableStateOf(false) }
     var isPushing by remember { mutableStateOf(false) }
@@ -67,6 +69,8 @@ fun TallySettingsScreen(
         val savedPort = dataStore.getTallyPort(workspaceSlug).first()
         port = savedPort.toString()
         salesLedger = dataStore.getTallySalesLedger(workspaceSlug).first()
+        cashLedger = dataStore.getTallyCashLedger(workspaceSlug).first()
+        bankLedger = dataStore.getTallyBankLedger(workspaceSlug).first()
         scheduler.lastResult?.let { statusText = formatResult(it) }
     }
 
@@ -104,6 +108,24 @@ fun TallySettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            OutlinedTextField(
+                value = cashLedger,
+                onValueChange = { cashLedger = it },
+                label = { Text("Cash Ledger Name") },
+                placeholder = { Text("Cash") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = bankLedger,
+                onValueChange = { bankLedger = it },
+                label = { Text("Bank Ledger Name") },
+                placeholder = { Text("Bank") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(
                     onClick = {
@@ -111,6 +133,8 @@ fun TallySettingsScreen(
                             dataStore.setTallyHost(workspaceSlug, host.trim())
                             dataStore.setTallyPort(workspaceSlug, port.toIntOrNull() ?: 9008)
                             dataStore.setTallySalesLedger(workspaceSlug, salesLedger.trim().ifBlank { "GST Sales" })
+                            dataStore.setTallyCashLedger(workspaceSlug, cashLedger.trim().ifBlank { "Cash" })
+                            dataStore.setTallyBankLedger(workspaceSlug, bankLedger.trim().ifBlank { "Bank" })
                         }
                     }
                 ) {
@@ -150,12 +174,22 @@ fun TallySettingsScreen(
                             }.onFailure { statusText = "Error: ${it.message}" }
                                 .getOrNull()
                             if (result != null) {
-                                statusText = if (result.success) {
-                                    "Pushed ${result.pushed} invoice(s) to Tally" +
+                                val invoiceText = if (result.success) {
+                                    "Pushed ${result.pushed} invoice(s)" +
                                         if (result.failed > 0) ", ${result.failed} failed" else ""
                                 } else {
-                                    "Push error: ${result.error}"
+                                    "Invoice push error: ${result.error}"
                                 }
+                                val paymentResult = scheduler.lastPaymentPushResult
+                                val paymentText = when {
+                                    paymentResult == null -> ""
+                                    !paymentResult.success -> " — payment push error: ${paymentResult.error}"
+                                    paymentResult.pushed > 0 || paymentResult.failed > 0 ->
+                                        " · pushed ${paymentResult.pushed} payment(s)" +
+                                            if (paymentResult.failed > 0) ", ${paymentResult.failed} failed" else ""
+                                    else -> ""
+                                }
+                                statusText = "$invoiceText to Tally$paymentText"
                             }
                             isPushing = false
                         }

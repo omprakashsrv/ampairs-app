@@ -923,11 +923,23 @@ class TallySyncService(
         // payments like rent or salary — have no customer/supplier party and are skipped here.
         val invoiceIdByNumber = invoiceDao.selectAll().associate { it.invoice_number to it.id }
         val purchaseIdByNumber = purchaseDao.selectAll().associate { it.purchase_number to it.id }
+        // Vouchers WE pushed into Tally (collection → Receipt, see TallyPaymentPushService) carry
+        // REMOTEID = the local payment voucher uid. Skip re-importing them for the same reason
+        // invoices are skipped above: toMappedPayment derives a deterministic PVCHTLY<guid> id from
+        // the Tally GUID, which is NOT our local uid, so without this guard every push would come
+        // back as a duplicate payment voucher on the very next pull.
+        val pushedPaymentIds = dataStore.getTallyPushedPaymentIds(workspaceSlug).first()
         var paymentsSynced = 0
         var skippedPaymentNoParty = 0
+        var skippedPaymentPushedBack = 0
         for (voucher in filtered) {
             val kind = voucher.classify()
             if (!kind.isPaymentKind) continue
+            val remoteId = voucher.remoteId?.trim()
+            if (!remoteId.isNullOrBlank() && remoteId in pushedPaymentIds) {
+                skippedPaymentPushedBack++
+                continue
+            }
             val partyName = voucher.resolvePartyName()
             val customerId = partyName?.let { customerIdByName[it] }
             val supplierId = partyName?.let { supplierIdByName[it] }
@@ -957,6 +969,7 @@ class TallySyncService(
                 .onFailure { emit("  payment ${mapped.voucher.voucherNo} failed: ${it.message}") }
         }
         if (skippedPaymentNoParty > 0) emit("Payments: skipped $skippedPaymentNoParty (party not a known customer/supplier)")
+        if (skippedPaymentPushedBack > 0) emit("Payments: skipped $skippedPaymentPushedBack (pushed from this app — kept local copy)")
 
         // --- Journal entries against a known party (discount/write-off/other adjustments Tally
         // records via a plain Journal rather than a dedicated voucher type — see toMappedAdjustment).
