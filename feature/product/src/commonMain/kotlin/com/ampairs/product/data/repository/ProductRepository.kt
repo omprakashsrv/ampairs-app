@@ -206,14 +206,11 @@ class ProductRepository(
     }
 
     suspend fun createProduct(product: Product): Result<Product> {
+        require(product.id.isNotBlank()) { "Product UID must be set by the ViewModel" }
         return try {
-            val productWithId = if (product.id.isBlank()) {
-                product.copy(id = generateLocalId())
-            } else product
-
-            productDao.insert(productWithId.toEntity())
+            productDao.insert(product.toEntity())
             markPending()
-            Result.success(productWithId)
+            Result.success(product)
         } catch (e: Exception) {
             ErrorTracking.captureException(e, "ProductRepository.createProduct")
             Result.failure(e)
@@ -262,10 +259,6 @@ class ProductRepository(
             ErrorTracking.captureException(e, "ProductRepository.deleteProduct")
             Result.failure(e)
         }
-    }
-
-    private fun generateLocalId(): String {
-        return "local_${Clock.System.now().toEpochMilliseconds()}_${(1000..9999).random()}"
     }
 
     suspend fun getProductCount(): Int {

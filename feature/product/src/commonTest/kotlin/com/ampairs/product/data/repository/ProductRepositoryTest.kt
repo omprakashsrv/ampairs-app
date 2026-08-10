@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -80,13 +81,10 @@ class ProductRepositoryTest {
     }
 
     @Test
-    fun `createProduct generates a local id when blank`() = runTest {
-        val result = repository.createProduct(product(id = ""))
-
-        assertTrue(result.isSuccess)
-        val created = result.getOrThrow()
-        assertTrue(created.id.startsWith("local_"), "blank id is replaced with a generated local id")
-        assertEquals(1, productDao.count(), "exactly one row inserted under the generated id")
+    fun `createProduct rejects a blank id`() = runTest {
+        assertFailsWith<IllegalArgumentException> {
+            repository.createProduct(product(id = ""))
+        }
     }
 
     @Test
