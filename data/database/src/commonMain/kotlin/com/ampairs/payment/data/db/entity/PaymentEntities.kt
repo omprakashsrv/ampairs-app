@@ -61,6 +61,7 @@ data class LedgerEntryEntity(
     indices = [
         Index(value = ["uid"], unique = true, name = "payment_voucher_uid_idx"),
         Index(value = ["party_uid"], name = "payment_voucher_party_idx"),
+        Index(value = ["ref_id"], name = "payment_voucher_ref_idx"),
     ],
 )
 data class PaymentVoucherEntity(
@@ -80,6 +81,12 @@ data class PaymentVoucherEntity(
     val active: Long = 1,
     val synced: Long = 0,
     val updated_at: String? = null,
+    /** External-system reference (the Tally voucher master id after an app→Tally push, or the Tally
+     * GUID for a voucher pulled in from Tally). Mirrors [com.ampairs.invoice.db.entity.InvoiceEntity]'s
+     * ref_id — the idempotency marker that stops [com.ampairs.tallysync.TallyPaymentPushService] from
+     * re-sending an already-linked voucher. Local-only (not round-tripped through the backend /sync
+     * contract). */
+    val ref_id: String? = null,
 )
 
 @Entity(

@@ -72,6 +72,10 @@ kotlin {
                 // UUID generation
                 implementation(libs.uuid)
 
+                // FileKit — for the shared native file-dialog parenting helper (desktop window fix)
+                implementation(libs.filekit.core)
+                implementation(libs.filekit.dialogs)
+
                 // Sentry KMP
                 implementation(libs.sentry.kmp)
 

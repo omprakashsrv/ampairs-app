@@ -65,6 +65,10 @@ class DataStoreAppPreferences(
             longPreferencesKey("tally_alter_id_${entity}_$ws")
         private fun getTallyPushedInvoicesKey(ws: String) =
             stringSetPreferencesKey("tally_pushed_invoice_ids_$ws")
+        private fun getTallyPushedPaymentsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_payment_ids_$ws")
+        private fun getTallyCashLedgerKey(ws: String) = stringPreferencesKey("tally_cash_ledger_$ws")
+        private fun getTallyBankLedgerKey(ws: String) = stringPreferencesKey("tally_bank_ledger_$ws")
 
         // Notification preferences (device-local)
         private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
@@ -302,6 +306,44 @@ class DataStoreAppPreferences(
         dataStore.edit { preferences ->
             val key = getTallyPushedInvoicesKey(workspaceSlug)
             preferences[key] = (preferences[key] ?: emptySet()) + invoiceIds
+        }
+    }
+
+    override fun getTallyPushedPaymentIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedPaymentsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedPaymentIds(workspaceSlug: String, paymentIds: Set<String>) {
+        if (paymentIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedPaymentsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + paymentIds
+        }
+    }
+
+    override fun getTallyCashLedger(workspaceSlug: String): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyCashLedgerKey(workspaceSlug)]?.takeIf { it.isNotBlank() } ?: "Cash"
+        }
+    }
+
+    override suspend fun setTallyCashLedger(workspaceSlug: String, ledgerName: String) {
+        dataStore.edit { preferences ->
+            preferences[getTallyCashLedgerKey(workspaceSlug)] = ledgerName
+        }
+    }
+
+    override fun getTallyBankLedger(workspaceSlug: String): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyBankLedgerKey(workspaceSlug)]?.takeIf { it.isNotBlank() } ?: "Bank"
+        }
+    }
+
+    override suspend fun setTallyBankLedger(workspaceSlug: String, ledgerName: String) {
+        dataStore.edit { preferences ->
+            preferences[getTallyBankLedgerKey(workspaceSlug)] = ledgerName
         }
     }
 

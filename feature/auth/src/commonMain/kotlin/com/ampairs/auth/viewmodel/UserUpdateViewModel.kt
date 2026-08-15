@@ -9,6 +9,7 @@ import com.ampairs.auth.api.model.UserApiModel
 import com.ampairs.auth.api.model.UserUpdateRequest
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.filepicker.defaultFileDialogSettings
 import com.ampairs.common.model.UiState
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitType
@@ -121,7 +122,10 @@ class UserUpdateViewModel(
     fun pickProfilePicture() {
         viewModelScope.launch {
             try {
-                val file = FileKit.openFilePicker(type = FileKitType.Image) ?: return@launch
+                val file = FileKit.openFilePicker(
+                    type = FileKitType.Image,
+                    dialogSettings = defaultFileDialogSettings(),
+                ) ?: return@launch
                 val fileName = file.name
                 val fileSize = file.size()
                 val extension = fileName.substringAfterLast(".", "").lowercase()

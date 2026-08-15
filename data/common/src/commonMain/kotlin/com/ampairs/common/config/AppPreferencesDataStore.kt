@@ -139,6 +139,19 @@ interface AppPreferencesDataStore {
     fun getTallyPushedInvoiceIds(workspaceSlug: String): Flow<Set<String>>
     suspend fun addTallyPushedInvoiceIds(workspaceSlug: String, invoiceIds: Set<String>)
 
+    // Local payment-voucher uids already pushed *into* Tally as Receipt/Payment vouchers
+    // (per-workspace) — the same self-authored-vouchers dedup guard as the invoice set above.
+    fun getTallyPushedPaymentIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedPaymentIds(workspaceSlug: String, paymentIds: Set<String>)
+
+    // The exact ledger names Tally uses for cash/bank (the Receipt/Payment counter-leg), varying by
+    // company setup. CASH-mode vouchers post to the cash ledger; every other payment mode posts to
+    // the bank ledger. Must match the Tally ledger byte-for-byte or the voucher import fails silently.
+    fun getTallyCashLedger(workspaceSlug: String): Flow<String>
+    suspend fun setTallyCashLedger(workspaceSlug: String, ledgerName: String)
+    fun getTallyBankLedger(workspaceSlug: String): Flow<String>
+    suspend fun setTallyBankLedger(workspaceSlug: String, ledgerName: String)
+
     /**
      * The user's decision on downloading the on-device AI assistant model.
      * `null` = not asked yet (show the consent prompt), `true` = consented (auto-download),

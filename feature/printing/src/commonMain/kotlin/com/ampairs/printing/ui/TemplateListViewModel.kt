@@ -3,6 +3,7 @@ package com.ampairs.printing.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.common.filepicker.defaultFileDialogSettings
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.file.api.FileEntityType
 import com.ampairs.file.api.FilePickerResult
@@ -68,7 +69,10 @@ class TemplateListViewModel(
      */
     fun importStaticTemplate(documentType: DocumentType) {
         viewModelScope.launch {
-            val file = FileKit.openFilePicker(type = FileKitType.File(setOf("html", "htm"))) ?: return@launch
+            val file = FileKit.openFilePicker(
+                type = FileKitType.File(setOf("html", "htm")),
+                dialogSettings = defaultFileDialogSettings(),
+            ) ?: return@launch
             val bytes = file.readBytes()
             val fileName = file.name
             val templateId = UidGenerator.generateUid("PTPL")

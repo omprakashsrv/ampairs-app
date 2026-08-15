@@ -259,7 +259,7 @@ import com.ampairs.unit.data.db.entity.UnitEntity
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
