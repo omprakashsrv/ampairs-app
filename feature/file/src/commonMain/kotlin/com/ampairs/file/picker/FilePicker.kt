@@ -1,5 +1,6 @@
 package com.ampairs.file.picker
 
+import com.ampairs.common.filepicker.defaultFileDialogSettings
 import com.ampairs.file.api.FilePickerResult
 import com.ampairs.file.util.FileLogger
 import io.github.vinceglb.filekit.FileKit
@@ -32,7 +33,10 @@ class FileKitFilePicker : FilePicker {
 
     override suspend fun pickSingleImage(): FilePickerResult? {
         return try {
-            val file = FileKit.openFilePicker(type = FileKitType.Image) ?: return null
+            val file = FileKit.openFilePicker(
+                type = FileKitType.Image,
+                dialogSettings = defaultFileDialogSettings(),
+            ) ?: return null
             processFile(file.name, file.size(), file.readBytes())
         } catch (e: Exception) {
             FileLogger.e(TAG, "Error picking single image", e)
@@ -45,6 +49,7 @@ class FileKitFilePicker : FilePicker {
             val files = FileKit.openFilePicker(
                 type = FileKitType.Image,
                 mode = FileKitMode.Multiple(),
+                dialogSettings = defaultFileDialogSettings(),
             ) ?: return emptyList()
             files.take(maxCount).mapNotNull { processFile(it.name, it.size(), it.readBytes()) }
         } catch (e: Exception) {
