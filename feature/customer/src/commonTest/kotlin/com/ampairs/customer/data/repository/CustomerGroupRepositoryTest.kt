@@ -240,6 +240,10 @@ private class FakeCustomerGroupDao : CustomerGroupDao {
         rows.value = rows.value + (customerGroup.id to customerGroup)
     }
 
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = false)) }
+    }
+
     override suspend fun deleteCustomerGroup(id: String) {
         rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = false)) }
     }

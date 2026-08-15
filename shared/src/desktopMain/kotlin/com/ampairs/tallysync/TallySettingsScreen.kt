@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -57,12 +58,19 @@ fun TallySettingsScreen(
     var statusText by remember { mutableStateOf("Not synced yet") }
     var isSyncing by remember { mutableStateOf(false) }
     var isPushing by remember { mutableStateOf(false) }
+    var isPushingMasters by remember { mutableStateOf(false) }
     var isImporting by remember { mutableStateOf(false) }
+    var masterCounts by remember { mutableStateOf(TallyMasterCounts()) }
+    var masterResults by remember { mutableStateOf<Map<String, TallyMasterPushResult>>(emptyMap()) }
     val scope = rememberCoroutineScope()
 
     val logLines by scheduler.syncService.logLines.collectAsStateWithLifecycle()
     val taxCodeCandidates by scheduler.syncService.taxCodeCandidates.collectAsStateWithLifecycle()
     val clipboard = LocalClipboardManager.current
+
+    suspend fun refreshMasterCounts() {
+        masterCounts = scheduler.mastersPushService.pendingCounts(workspaceSlug)
+    }
 
     LaunchedEffect(workspaceSlug) {
         host = dataStore.getTallyHost(workspaceSlug).first()
@@ -72,6 +80,7 @@ fun TallySettingsScreen(
         cashLedger = dataStore.getTallyCashLedger(workspaceSlug).first()
         bankLedger = dataStore.getTallyBankLedger(workspaceSlug).first()
         scheduler.lastResult?.let { statusText = formatResult(it) }
+        refreshMasterCounts()
     }
 
     Surface(modifier = Modifier.padding(24.dp)) {
@@ -80,6 +89,9 @@ fun TallySettingsScreen(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
         ) {
             Text("Tally ERP Sync Settings", style = MaterialTheme.typography.titleMedium)
+
+            // ===== Connection & Ledger Mapping =====
+            Text("Connection & Ledger Mapping", style = MaterialTheme.typography.titleSmall)
 
             OutlinedTextField(
                 value = host,
@@ -126,25 +138,28 @@ fun TallySettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Button(
+                onClick = {
+                    scope.launch {
+                        dataStore.setTallyHost(workspaceSlug, host.trim())
+                        dataStore.setTallyPort(workspaceSlug, port.toIntOrNull() ?: 9008)
+                        dataStore.setTallySalesLedger(workspaceSlug, salesLedger.trim().ifBlank { "GST Sales" })
+                        dataStore.setTallyCashLedger(workspaceSlug, cashLedger.trim().ifBlank { "Cash" })
+                        dataStore.setTallyBankLedger(workspaceSlug, bankLedger.trim().ifBlank { "Bank" })
+                    }
+                }
+            ) {
+                Text("Save")
+            }
+
+            HorizontalDivider()
+
+            // ===== Pull Sync =====
+            Text("Pull Sync", style = MaterialTheme.typography.titleSmall)
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(
-                    onClick = {
-                        scope.launch {
-                            dataStore.setTallyHost(workspaceSlug, host.trim())
-                            dataStore.setTallyPort(workspaceSlug, port.toIntOrNull() ?: 9008)
-                            dataStore.setTallySalesLedger(workspaceSlug, salesLedger.trim().ifBlank { "GST Sales" })
-                            dataStore.setTallyCashLedger(workspaceSlug, cashLedger.trim().ifBlank { "Cash" })
-                            dataStore.setTallyBankLedger(workspaceSlug, bankLedger.trim().ifBlank { "Bank" })
-                        }
-                    }
-                ) {
-                    Text("Save")
-                }
-
-                Spacer(Modifier.width(8.dp))
-
-                Button(
-                    enabled = !isSyncing && host.isNotBlank(),
+                    enabled = !isSyncing && !isPushing && !isPushingMasters && host.isNotBlank(),
                     onClick = {
                         scope.launch {
                             isSyncing = true
@@ -163,45 +178,8 @@ fun TallySettingsScreen(
 
                 Spacer(Modifier.width(8.dp))
 
-                Button(
-                    enabled = !isPushing && !isSyncing && host.isNotBlank(),
-                    onClick = {
-                        scope.launch {
-                            isPushing = true
-                            statusText = "Pushing invoices to Tally…"
-                            val result = runCatching {
-                                scheduler.pushInvoices(workspaceSlug)
-                            }.onFailure { statusText = "Error: ${it.message}" }
-                                .getOrNull()
-                            if (result != null) {
-                                val invoiceText = if (result.success) {
-                                    "Pushed ${result.pushed} invoice(s)" +
-                                        if (result.failed > 0) ", ${result.failed} failed" else ""
-                                } else {
-                                    "Invoice push error: ${result.error}"
-                                }
-                                val paymentResult = scheduler.lastPaymentPushResult
-                                val paymentText = when {
-                                    paymentResult == null -> ""
-                                    !paymentResult.success -> " — payment push error: ${paymentResult.error}"
-                                    paymentResult.pushed > 0 || paymentResult.failed > 0 ->
-                                        " · pushed ${paymentResult.pushed} payment(s)" +
-                                            if (paymentResult.failed > 0) ", ${paymentResult.failed} failed" else ""
-                                    else -> ""
-                                }
-                                statusText = "$invoiceText to Tally$paymentText"
-                            }
-                            isPushing = false
-                        }
-                    }
-                ) {
-                    Text(if (isPushing) "Pushing…" else "Push to Tally")
-                }
-
-                Spacer(Modifier.width(8.dp))
-
                 OutlinedButton(
-                    enabled = !isSyncing && !isPushing,
+                    enabled = !isSyncing && !isPushing && !isPushingMasters,
                     onClick = {
                         scope.launch {
                             // Every per-entity alterId checkpoint must be cleared, or that entity's
@@ -237,8 +215,6 @@ fun TallySettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // ----- Sync log -----
-            Spacer(Modifier.height(8.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -288,8 +264,200 @@ fun TallySettingsScreen(
                 }
             }
 
-            // ----- Tax codes to import -----
-            Spacer(Modifier.height(8.dp))
+            HorizontalDivider()
+
+            // ===== Push Masters =====
+            val mastersBusy = isPushingMasters || isSyncing || isPushing
+            Text("Push Masters", style = MaterialTheme.typography.titleSmall)
+            Text(
+                text = "Pushes local customers/suppliers/products into Tally as ledgers/stock items " +
+                    "(plus the units/stock groups/categories/account groups they reference) so invoices " +
+                    "can find them by name. Push in order, top to bottom — each level depends on the one above.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    enabled = !mastersBusy && host.isNotBlank(),
+                    onClick = {
+                        scope.launch {
+                            isPushingMasters = true
+                            statusText = "Pushing all masters to Tally…"
+                            val result = runCatching {
+                                scheduler.mastersPushService.push(workspaceSlug, scheduler.syncService::appendLog)
+                            }.onFailure { statusText = "Error: ${it.message}" }
+                                .getOrNull()
+                            if (result != null) {
+                                masterResults = if (result.success) {
+                                    mapOf(
+                                        "Units" to result.units,
+                                        "Stock Groups" to result.stockGroups,
+                                        "Stock Categories" to result.stockCategories,
+                                        "Account Groups" to result.accountGroups,
+                                        "Customers" to result.customers,
+                                        "Suppliers" to result.suppliers,
+                                        "Products" to result.stockItems,
+                                    )
+                                } else {
+                                    masterResults
+                                }
+                                statusText = if (result.success)
+                                    "Pushed ${result.totalPushed} master(s)" +
+                                        if (result.totalFailed > 0) ", ${result.totalFailed} failed" else ""
+                                else
+                                    "Masters push error: ${result.error}"
+                            }
+                            refreshMasterCounts()
+                            isPushingMasters = false
+                        }
+                    }
+                ) {
+                    Text(if (isPushingMasters) "Pushing…" else "Push All Masters")
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                TextButton(
+                    enabled = !mastersBusy,
+                    onClick = { scope.launch { refreshMasterCounts() } }
+                ) {
+                    Text("Refresh counts")
+                }
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            val masterRows = listOf(
+                MasterPushRow("Units", masterCounts.units, masterResults["Units"]) {
+                    scheduler.mastersPushService.pushUnits(workspaceSlug, scheduler.syncService::appendLog)
+                },
+                MasterPushRow("Stock Groups", masterCounts.stockGroups, masterResults["Stock Groups"]) {
+                    scheduler.mastersPushService.pushStockGroups(workspaceSlug, scheduler.syncService::appendLog)
+                },
+                MasterPushRow("Stock Categories", masterCounts.stockCategories, masterResults["Stock Categories"]) {
+                    scheduler.mastersPushService.pushStockCategories(workspaceSlug, scheduler.syncService::appendLog)
+                },
+                MasterPushRow("Account Groups", masterCounts.accountGroups, masterResults["Account Groups"]) {
+                    scheduler.mastersPushService.pushAccountGroups(workspaceSlug, scheduler.syncService::appendLog)
+                },
+                MasterPushRow("Customers", masterCounts.customers, masterResults["Customers"]) {
+                    scheduler.mastersPushService.pushCustomers(workspaceSlug, scheduler.syncService::appendLog)
+                },
+                MasterPushRow("Suppliers", masterCounts.suppliers, masterResults["Suppliers"]) {
+                    scheduler.mastersPushService.pushSuppliers(workspaceSlug, scheduler.syncService::appendLog)
+                },
+                MasterPushRow("Products", masterCounts.stockItems, masterResults["Products"]) {
+                    scheduler.mastersPushService.pushStockItems(workspaceSlug, scheduler.syncService::appendLog)
+                },
+            )
+
+            Surface(
+                tonalElevation = 1.dp,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(8.dp)) {
+                    masterRows.forEachIndexed { index, row ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = row.label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.width(140.dp)
+                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    text = "${row.pendingCount} pending",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                row.lastResult?.let { r ->
+                                    Text(
+                                        text = "✓ ${r.pushed} pushed" +
+                                            (if (r.failed > 0) ", ${r.failed} failed" else "") +
+                                            (if (r.skipped > 0) ", ${r.skipped} skipped" else ""),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (r.hasFailures) MaterialTheme.colorScheme.error
+                                        else MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            TextButton(
+                                enabled = !mastersBusy && host.isNotBlank() && row.pendingCount > 0,
+                                onClick = {
+                                    scope.launch {
+                                        isPushingMasters = true
+                                        val result = runCatching { row.onPush() }
+                                            .getOrElse { TallyMasterPushResult(failed = 1) }
+                                        masterResults = masterResults + (row.label to result)
+                                        refreshMasterCounts()
+                                        isPushingMasters = false
+                                    }
+                                }
+                            ) {
+                                Text("Push")
+                            }
+                        }
+                        if (index != masterRows.lastIndex) HorizontalDivider()
+                    }
+                }
+            }
+
+            HorizontalDivider()
+
+            // ===== Push Transactions =====
+            Text("Push Transactions", style = MaterialTheme.typography.titleSmall)
+            Text(
+                text = "Pushes local invoices as Sales vouchers, then settled collections as Receipt " +
+                    "vouchers. Runs a full masters sweep first, so newly-created customers/products get " +
+                    "pushed automatically before the invoice referencing them.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Button(
+                enabled = !isPushing && !isSyncing && !isPushingMasters && host.isNotBlank(),
+                onClick = {
+                    scope.launch {
+                        isPushing = true
+                        statusText = "Pushing invoices to Tally…"
+                        val result = runCatching {
+                            scheduler.pushInvoices(workspaceSlug)
+                        }.onFailure { statusText = "Error: ${it.message}" }
+                            .getOrNull()
+                        if (result != null) {
+                            val invoiceText = if (result.success) {
+                                "Pushed ${result.pushed} invoice(s)" +
+                                    if (result.failed > 0) ", ${result.failed} failed" else ""
+                            } else {
+                                "Invoice push error: ${result.error}"
+                            }
+                            val paymentResult = scheduler.lastPaymentPushResult
+                            val paymentText = when {
+                                paymentResult == null -> ""
+                                !paymentResult.success -> " — payment push error: ${paymentResult.error}"
+                                paymentResult.pushed > 0 || paymentResult.failed > 0 ->
+                                    " · pushed ${paymentResult.pushed} payment(s)" +
+                                        if (paymentResult.failed > 0) ", ${paymentResult.failed} failed" else ""
+                                else -> ""
+                            }
+                            val mastersText = scheduler.lastMastersPushResult?.let { formatMastersResult(it) } ?: ""
+                            statusText = "$invoiceText to Tally$paymentText$mastersText"
+                        }
+                        refreshMasterCounts()
+                        isPushing = false
+                    }
+                }
+            ) {
+                Text(if (isPushing) "Pushing…" else "Push to Tally")
+            }
+
+            HorizontalDivider()
+
+            // ===== Tax Codes to Import =====
             val notSubscribed = taxCodeCandidates.count { !it.alreadySubscribed }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -374,6 +542,34 @@ fun TallySettingsScreen(
             }
         }
     }
+}
+
+/** One row in the Push Masters table — label, pending count, last push result, and its push action. */
+private class MasterPushRow(
+    val label: String,
+    val pendingCount: Int,
+    val lastResult: TallyMasterPushResult?,
+    val onPush: suspend () -> TallyMasterPushResult,
+)
+
+private fun formatMastersResult(result: TallyMastersPushResult): String {
+    if (!result.success) return " — masters push error: ${result.error}"
+    if (result.totalPushed == 0 && result.totalFailed == 0) return ""
+    val parts = buildList {
+        fun add(label: String, r: TallyMasterPushResult) {
+            if (r.pushed > 0 || r.failed > 0) {
+                add("$label ${r.pushed}" + if (r.failed > 0) " (${r.failed} failed)" else "")
+            }
+        }
+        add("Units", result.units)
+        add("Groups", result.stockGroups)
+        add("Categories", result.stockCategories)
+        add("Account groups", result.accountGroups)
+        add("Customers", result.customers)
+        add("Suppliers", result.suppliers)
+        add("Stock items", result.stockItems)
+    }
+    return if (parts.isEmpty()) "" else " · masters: ${parts.joinToString(", ")}"
 }
 
 private fun formatResult(result: TallySyncResult): String =

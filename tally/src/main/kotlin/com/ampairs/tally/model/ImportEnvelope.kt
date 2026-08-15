@@ -61,3 +61,39 @@ fun buildVoucherImport(
         ),
     )
 }
+
+/**
+ * Builds a Tally `IMPORT` envelope for pushing masters (ledgers, stock items, groups, stock
+ * groups/categories, units) *into* Tally — the master-data counterpart of [buildVoucherImport].
+ * Identical envelope shape; only [reportName] and the message payload differ. [reportName] defaults
+ * to Tally's generic "All Masters" report, which accepts a mixed list of master `TALLYMESSAGE`s
+ * (e.g. `TallyMessage(ledger = x)` alongside `TallyMessage(stockItem = y)`) in one request.
+ */
+fun buildMastersImport(
+    messages: List<TallyMessage>,
+    reportName: String = "All Masters",
+    companyName: String? = null,
+): TallyXML {
+    return TallyXML(
+        action = null,
+        header = Header(
+            version = null,
+            tallyRequest = "Import Data",
+            type = null,
+            status = null,
+            id = null,
+        ),
+        body = Body(
+            importData = ImportData(
+                requestDesc = RequestDesc(
+                    reportName = reportName,
+                    staticVariables = companyName?.trim()?.takeIf { it.isNotBlank() }?.let {
+                        StaticVariables(svCurrenCompany = it)
+                    },
+                ),
+                requestData = RequestData(tallyMessage = messages.toMutableList<TallyMessage?>()),
+            ),
+            desc = null,
+        ),
+    )
+}

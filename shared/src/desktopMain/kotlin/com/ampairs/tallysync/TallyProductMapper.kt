@@ -5,6 +5,8 @@ import com.ampairs.product.db.entity.CategoryEntity
 import com.ampairs.product.db.entity.GroupEntity
 import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.db.entity.ProductStandardCostEntity
+import com.ampairs.tally.model.master.GSTDetail
+import com.ampairs.tally.model.master.HsnDetail
 import com.ampairs.tally.model.master.StandardCost
 import com.ampairs.tally.model.master.StandardPrice
 import com.ampairs.tally.model.master.StockCategory
@@ -12,7 +14,10 @@ import com.ampairs.tally.model.master.StockGroup
 import com.ampairs.tally.model.master.StockItem
 import com.ampairs.unit.data.db.entity.UnitConversionEntity
 import com.ampairs.unit.data.db.entity.UnitEntity
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToLong
+import kotlin.time.Clock
 import com.ampairs.tally.model.master.Unit as TallyUnit
 
 internal object TallyProductMapper {
@@ -203,6 +208,68 @@ internal object TallyProductMapper {
             active = true,
             synced = false,
         )
+    }
+
+    // --- Push direction (Room → Tally), mirrors the field choices above -------------------------
+
+    /** Maps a [UnitEntity] to a Tally [TallyUnit] (the reverse of [toUnitEntity]). */
+    fun UnitEntity.toTallyUnit(): TallyUnit = TallyUnit(
+        name = shortName.ifBlank { name },
+        unitName = shortName.ifBlank { name },
+        decimalPlaces = decimalPlaces.toString(),
+        guid = refId,
+    )
+
+    /** Maps a [GroupEntity] (stock group) to a Tally [StockGroup] (the reverse of [toGroupEntity]). */
+    fun GroupEntity.toTallyStockGroup(): StockGroup = StockGroup(
+        name = name,
+        guid = ref_id,
+    )
+
+    /** Maps a [CategoryEntity] to a Tally [StockCategory] (the reverse of [toCategoryEntity]). */
+    fun CategoryEntity.toTallyStockCategory(): StockCategory = StockCategory(
+        name = name,
+        guid = ref_id,
+    )
+
+    /**
+     * Maps a [ProductEntity] to a Tally [StockItem] for the master push (the reverse of
+     * [toProductEntity]). [groupName]/[categoryName]/[unitName] are resolved by the caller from
+     * [ProductEntity.group_id]/[category_id]/[base_unit] — those masters may need pushing first (see
+     * [TallyStockGroupPushService]/[TallyStockCategoryPushService]/[TallyUnitPushService]). HSN
+     * (`tax_code`) mirrors into both [StockItem.hsnDetailList] and [gstDetailList] since
+     * [extractHsnCode] reads either; `mrp`/`dp` become single current-dated
+     * [StandardPrice]/[StandardCost] entries (the full effective-dated history isn't reconstructed —
+     * only the current app values round-trip).
+     */
+    fun ProductEntity.toTallyStockItem(
+        groupName: String?,
+        categoryName: String?,
+        unitName: String?,
+    ): StockItem {
+        val hsn = tax_code.trim().takeIf { it.isNotBlank() }
+        val today = todayTallyDate()
+        val priceUnit = unitName ?: "Nos"
+        return StockItem(
+            name = name,
+            guid = ref_id,
+            parent = groupName,
+            category = categoryName,
+            baseUnits = unitName,
+            hsnDetailList = hsn?.let { listOf(HsnDetail(hsnCode = it)) },
+            gstDetailList = hsn?.let { listOf(GSTDetail(hsnCode = it)) },
+            standardPrice = mrp.takeIf { it > 0.0 }?.let { listOf(StandardPrice(date = today, rate = "$it/$priceUnit")) },
+            standardCost = dp.takeIf { it > 0.0 }?.let { listOf(StandardCost(date = today, rate = "$it/$priceUnit")) },
+        )
+    }
+
+    /** Today's date as a Tally-format "YYYYMMDD" string, for dated standard price/cost entries. */
+    private fun todayTallyDate(): String {
+        val date = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        val y = date.year.toString().padStart(4, '0')
+        val m = date.monthNumber.toString().padStart(2, '0')
+        val d = date.dayOfMonth.toString().padStart(2, '0')
+        return "$y$m$d"
     }
 
     // --- Helpers --------------------------------------------------------------------------------

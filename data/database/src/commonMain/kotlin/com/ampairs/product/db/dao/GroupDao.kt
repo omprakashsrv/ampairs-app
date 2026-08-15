@@ -33,6 +33,10 @@ interface GroupDao {
     @Query("SELECT * FROM groupEntity WHERE ref_id IN (:refs)")
     suspend fun getGroupsByTallyRefIds(refs: List<String>): List<GroupEntity>
 
+    /** Records the Tally stock-group GUID after an app→Tally master push (mirrors CustomerDao.setTallyRef). */
+    @Query("UPDATE groupEntity SET ref_id = :refId, synced = 0 WHERE id = :id")
+    suspend fun setTallyRef(id: String, refId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(group: GroupEntity)
 
