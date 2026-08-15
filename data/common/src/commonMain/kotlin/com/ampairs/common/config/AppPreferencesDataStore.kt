@@ -144,6 +144,23 @@ interface AppPreferencesDataStore {
     fun getTallyPushedPaymentIds(workspaceSlug: String): Flow<Set<String>>
     suspend fun addTallyPushedPaymentIds(workspaceSlug: String, paymentIds: Set<String>)
 
+    // Local customer/supplier/product/group/category/unit ids already pushed *into* Tally as masters
+    // (ledgers/stock items/groups) — same self-authored dedup guard as the invoice/payment sets above.
+    fun getTallyPushedCustomerIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedCustomerIds(workspaceSlug: String, customerIds: Set<String>)
+    fun getTallyPushedSupplierIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedSupplierIds(workspaceSlug: String, supplierIds: Set<String>)
+    fun getTallyPushedProductIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedProductIds(workspaceSlug: String, productIds: Set<String>)
+    fun getTallyPushedGroupIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedGroupIds(workspaceSlug: String, groupIds: Set<String>)
+    fun getTallyPushedCategoryIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedCategoryIds(workspaceSlug: String, categoryIds: Set<String>)
+    fun getTallyPushedUnitIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedUnitIds(workspaceSlug: String, unitIds: Set<String>)
+    fun getTallyPushedAccountGroupIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedAccountGroupIds(workspaceSlug: String, accountGroupIds: Set<String>)
+
     // The exact ledger names Tally uses for cash/bank (the Receipt/Payment counter-leg), varying by
     // company setup. CASH-mode vouchers post to the cash ledger; every other payment mode posts to
     // the bank ledger. Must match the Tally ledger byte-for-byte or the voucher import fails silently.

@@ -25,6 +25,7 @@ class TallySyncScheduler(
     val syncService: TallySyncService,
     val pushService: TallyInvoicePushService,
     val paymentPushService: TallyPaymentPushService,
+    val mastersPushService: TallyMastersPushService,
     val centralSyncService: CentralSyncService,
 ) {
 
@@ -32,6 +33,9 @@ class TallySyncScheduler(
         private set
 
     var lastPaymentPushResult: TallyPaymentPushResult? = null
+        private set
+
+    var lastMastersPushResult: TallyMastersPushResult? = null
         private set
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -124,6 +128,17 @@ class TallySyncScheduler(
      */
     suspend fun pushInvoices(workspaceSlug: String, onlyInvoiceId: String?): TallyPushResult {
         log.d { "Tally invoice push triggered for workspace=$workspaceSlug invoice=${onlyInvoiceId ?: "ALL"}" }
+
+        // Masters (customer/supplier/product + the unit/stock-group/stock-category/account-group
+        // masters they reference) must exist in Tally before an invoice voucher can reference them
+        // by name — run this unconditionally first. Cheap to no-op (candidates filtered by blank
+        // ref_id), and doubles as the "auto push-if-missing" gate: any customer/product created since
+        // the last push gets its Tally counterpart created before this invoice push proceeds.
+        val mastersResult = runCatching { mastersPushService.push(workspaceSlug, syncService::appendLog) }
+            .onFailure { log.e(it) { "Tally masters push error" } }
+            .getOrElse { TallyMastersPushResult(error = it.message) }
+        lastMastersPushResult = mastersResult
+
         val result = runCatching { pushService.push(workspaceSlug, syncService::appendLog, onlyInvoiceId) }
             .onFailure { log.e(it) { "Tally invoice push error" } }
             .getOrElse { TallyPushResult(error = it.message) }

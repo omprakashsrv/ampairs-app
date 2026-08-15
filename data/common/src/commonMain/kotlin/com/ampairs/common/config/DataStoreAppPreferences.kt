@@ -67,6 +67,20 @@ class DataStoreAppPreferences(
             stringSetPreferencesKey("tally_pushed_invoice_ids_$ws")
         private fun getTallyPushedPaymentsKey(ws: String) =
             stringSetPreferencesKey("tally_pushed_payment_ids_$ws")
+        private fun getTallyPushedCustomersKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_customer_ids_$ws")
+        private fun getTallyPushedSuppliersKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_supplier_ids_$ws")
+        private fun getTallyPushedProductsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_product_ids_$ws")
+        private fun getTallyPushedGroupsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_group_ids_$ws")
+        private fun getTallyPushedCategoriesKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_category_ids_$ws")
+        private fun getTallyPushedUnitsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_unit_ids_$ws")
+        private fun getTallyPushedAccountGroupsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_account_group_ids_$ws")
         private fun getTallyCashLedgerKey(ws: String) = stringPreferencesKey("tally_cash_ledger_$ws")
         private fun getTallyBankLedgerKey(ws: String) = stringPreferencesKey("tally_bank_ledger_$ws")
 
@@ -320,6 +334,104 @@ class DataStoreAppPreferences(
         dataStore.edit { preferences ->
             val key = getTallyPushedPaymentsKey(workspaceSlug)
             preferences[key] = (preferences[key] ?: emptySet()) + paymentIds
+        }
+    }
+
+    override fun getTallyPushedCustomerIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedCustomersKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedCustomerIds(workspaceSlug: String, customerIds: Set<String>) {
+        if (customerIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedCustomersKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + customerIds
+        }
+    }
+
+    override fun getTallyPushedSupplierIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedSuppliersKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedSupplierIds(workspaceSlug: String, supplierIds: Set<String>) {
+        if (supplierIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedSuppliersKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + supplierIds
+        }
+    }
+
+    override fun getTallyPushedProductIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedProductsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedProductIds(workspaceSlug: String, productIds: Set<String>) {
+        if (productIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedProductsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + productIds
+        }
+    }
+
+    override fun getTallyPushedGroupIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedGroupsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedGroupIds(workspaceSlug: String, groupIds: Set<String>) {
+        if (groupIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedGroupsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + groupIds
+        }
+    }
+
+    override fun getTallyPushedCategoryIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedCategoriesKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedCategoryIds(workspaceSlug: String, categoryIds: Set<String>) {
+        if (categoryIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedCategoriesKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + categoryIds
+        }
+    }
+
+    override fun getTallyPushedUnitIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedUnitsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedUnitIds(workspaceSlug: String, unitIds: Set<String>) {
+        if (unitIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedUnitsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + unitIds
+        }
+    }
+
+    override fun getTallyPushedAccountGroupIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedAccountGroupsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedAccountGroupIds(workspaceSlug: String, accountGroupIds: Set<String>) {
+        if (accountGroupIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedAccountGroupsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + accountGroupIds
         }
     }
 

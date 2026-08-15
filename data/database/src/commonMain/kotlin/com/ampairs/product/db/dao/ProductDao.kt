@@ -147,6 +147,10 @@ interface ProductDao {
     @Query("SELECT * FROM productEntity WHERE ref_id IN (:refs)")
     suspend fun getProductsByTallyRefIds(refs: List<String>): List<ProductEntity>
 
+    /** Records the Tally stock-item GUID after an app→Tally master push (mirrors CustomerDao.setTallyRef). */
+    @Query("UPDATE productEntity SET ref_id = :refId, synced = 0 WHERE id = :id")
+    suspend fun setTallyRef(id: String, refId: String)
+
     @Query("UPDATE productEntity SET stock_quantity = :quantity, synced = 0 WHERE id = :id")
     suspend fun updateStockQuantity(id: String, quantity: Double)
 

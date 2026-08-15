@@ -1,8 +1,10 @@
 package com.ampairs.tally
 
 import com.ampairs.tally.model.ReportType
+import com.ampairs.tally.model.TallyMessage
 import com.ampairs.tally.model.TallyXML
 import com.ampairs.tally.model.Type
+import com.ampairs.tally.model.buildMastersImport
 import com.ampairs.tally.model.buildVoucherImport
 import com.ampairs.tally.model.toTallyXML
 import com.ampairs.tally.model.voucher.Voucher
@@ -67,6 +69,19 @@ class TallyRepository(val tallyApi: TallyApi) {
         companyName: String? = null,
     ): com.ampairs.tally.model.ImportResult? {
         return tallyApi.postImport(buildVoucherImport(vouchers, companyName))
+    }
+
+    /**
+     * Pushes masters (ledgers, stock items, groups, stock groups/categories, units) *into* Tally via
+     * an IMPORTDATA request — the master-data counterpart of [importVouchers]. Same reply shape
+     * (parsed [com.ampairs.tally.model.ImportResult]); null only if Tally returned an empty body.
+     */
+    suspend fun importMasters(
+        messages: List<TallyMessage>,
+        reportName: String = "All Masters",
+        companyName: String? = null,
+    ): com.ampairs.tally.model.ImportResult? {
+        return tallyApi.postImport(buildMastersImport(messages, reportName, companyName))
     }
 
     suspend fun post(tallyXML: TallyXML): TallyXML {
