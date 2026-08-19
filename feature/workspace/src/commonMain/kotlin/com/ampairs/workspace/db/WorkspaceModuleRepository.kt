@@ -42,15 +42,23 @@ class WorkspaceModuleRepository(
         installedModules + notInstalledModules
     }
 
-    suspend fun syncInstalledModules(workspaceId: String) {
-        try {
+    suspend fun syncInstalledModules(workspaceId: String): Result<Unit> {
+        return try {
             val result = moduleApi.getInstalledModules(workspaceId)
-            result.onSuccess { modules ->
-                val entities = modules.map { it.toInstalledModuleEntity(workspaceId).copy(sync_state = "SYNCED") }
-                moduleDao.replaceInstalledModules(workspaceId, entities)
-            }
-        } catch (_: Exception) {
-            // Graceful failure — UI continues with cached data
+            result.fold(
+                onSuccess = { modules ->
+                    val entities = modules.map { it.toInstalledModuleEntity(workspaceId).copy(sync_state = "SYNCED") }
+                    moduleDao.replaceInstalledModules(workspaceId, entities)
+                    Result.success(Unit)
+                },
+                onFailure = { e ->
+                    // Graceful failure — UI continues with cached data; caller decides on retry.
+                    Result.failure(e)
+                },
+            )
+        } catch (e: Exception) {
+            // Graceful failure — UI continues with cached data; caller decides on retry.
+            Result.failure(e)
         }
     }
 
