@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 /**
  * Spec 029 — buyer-facing invoice, statement and money-position DTOs served under
- * `/api/v1/ecom/account/**`. Wire shapes mirror the backend `ecom` controller's buyer-safe DTOs
+ * the `/api/v1/ecom/account` surface. Wire shapes mirror the backend `ecom` controller's buyer-safe DTOs
  * (finalized invoices only; no cost/margin; enums already mapped to strings; `order_ref` is the
  * buyer-facing storefront order ref, or null for a non-ecom invoice).
  */

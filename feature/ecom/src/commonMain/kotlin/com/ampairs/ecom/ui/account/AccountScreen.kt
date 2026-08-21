@@ -14,8 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
@@ -110,7 +110,7 @@ fun AccountScreen(
         }
 
         AccountRow(Icons.Filled.Receipt, stringResource(Res.string.ecom_account_orders), onOpenOrders)
-        AccountRow(Icons.AutoMirrored.Filled.ReceiptLong, stringResource(Res.string.ecom_account_invoices), onOpenInvoices)
+        AccountRow(Icons.Filled.Description, stringResource(Res.string.ecom_account_invoices), onOpenInvoices)
         AccountRow(Icons.Filled.AccountBalanceWallet, stringResource(Res.string.ecom_account_statement), onOpenStatement)
         AccountRow(Icons.Filled.LocationOn, stringResource(Res.string.ecom_account_addresses), onOpenAddresses)
         AccountRow(Icons.AutoMirrored.Filled.HelpOutline, stringResource(Res.string.ecom_account_help), {})
