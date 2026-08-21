@@ -51,6 +51,8 @@ fun EcomStorefrontScreen(
     onOpenDrillDown: (DrillDownArgs) -> Unit,
     onOpenOrder: (String) -> Unit,
     onOpenAddresses: () -> Unit,
+    onOpenInvoices: () -> Unit = {},
+    onOpenStatement: () -> Unit = {},
     // Multi-store app only: back from the store home returns to the storefront directory. Null in a
     // pinned single-store build.
     onExitStore: (() -> Unit)? = null,
@@ -71,6 +73,8 @@ fun EcomStorefrontScreen(
             onOpenDrillDown = onOpenDrillDown,
             onOpenOrder = onOpenOrder,
             onOpenAddresses = onOpenAddresses,
+            onOpenInvoices = onOpenInvoices,
+            onOpenStatement = onOpenStatement,
             onLogin = onRequireLogin,
             onLoggedOut = { viewModel.resolve() },
             onExitStore = onExitStore,

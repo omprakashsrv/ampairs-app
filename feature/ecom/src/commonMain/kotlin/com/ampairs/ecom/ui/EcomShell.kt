@@ -47,6 +47,8 @@ fun EcomShell(
     onOpenDrillDown: (DrillDownArgs) -> Unit,
     onOpenOrder: (String) -> Unit,
     onOpenAddresses: () -> Unit,
+    onOpenInvoices: () -> Unit,
+    onOpenStatement: () -> Unit,
     onLogin: () -> Unit,
     onLoggedOut: () -> Unit,
     // Multi-store app only: leave this store back to the storefront directory. Null in a pinned
@@ -104,6 +106,8 @@ fun EcomShell(
                 EcomTab.Account -> AccountScreen(
                     onOpenOrders = { tabIndex = 1 },
                     onOpenAddresses = onOpenAddresses,
+                    onOpenInvoices = onOpenInvoices,
+                    onOpenStatement = onOpenStatement,
                     onLogin = onLogin,
                     onLoggedOut = onLoggedOut,
                 )

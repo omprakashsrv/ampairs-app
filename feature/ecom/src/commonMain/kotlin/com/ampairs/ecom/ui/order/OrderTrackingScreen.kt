@@ -1,6 +1,7 @@
 package com.ampairs.ecom.ui.order
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.ecom.generated.resources.Res
 import ampairsapp.feature.ecom.generated.resources.ecom_tracking_title
 import ampairsapp.feature.ecom.generated.resources.ecom_delivery_address
+import ampairsapp.feature.ecom.generated.resources.ecom_order_invoices_section
 import com.ampairs.common.locale.LocalAppLocale
 import com.ampairs.common.locale.formatMoney
 import com.ampairs.common.navigation.ScreenBackButton
@@ -49,6 +51,7 @@ import org.jetbrains.compose.resources.stringResource
 fun OrderTrackingScreen(
     orderRef: String,
     onBack: () -> Unit,
+    onOpenInvoice: (String) -> Unit = {},
     viewModel: OrderTrackingViewModel =
         assistedMetroViewModel<OrderTrackingViewModel, OrderTrackingViewModel.Factory>(key = orderRef) { create(orderRef) },
 ) {
@@ -106,6 +109,32 @@ fun OrderTrackingScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Total", style = MaterialTheme.typography.titleSmall)
                     Text(formatMoney(order.total_amount, locale), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Spec 029 — invoices raised for this order (order↔invoice link).
+            if (state.invoices.isNotEmpty()) {
+                item {
+                    HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                    Text(
+                        stringResource(Res.string.ecom_order_invoices_section),
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
+                items(state.invoices, key = { it.invoiceUid }) { inv ->
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .clickable { onOpenInvoice(inv.invoiceUid) }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(inv.invoiceNumber, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            Text(inv.status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text(formatMoney(inv.total, locale), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
 

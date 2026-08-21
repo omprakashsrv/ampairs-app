@@ -180,4 +180,26 @@
     <string name="ecom_users_retry">Retry</string>
     <string name="ecom_users_active">Active</string>
     <string name="ecom_users_restricted">Restricted</string>
+
+    <!-- Buyer invoices, statement & order↔invoice link (spec 029) -->
+    <string name="ecom_account_invoices">Invoices</string>
+    <string name="ecom_account_statement">Account statement</string>
+    <string name="ecom_invoices_title">My invoices</string>
+    <string name="ecom_no_invoices">No invoices yet.</string>
+    <string name="ecom_invoice_title">Invoice</string>
+    <string name="ecom_invoice_for_order">For order %1$s</string>
+    <string name="ecom_invoice_subtotal">Subtotal</string>
+    <string name="ecom_invoice_tax">Tax</string>
+    <string name="ecom_invoice_total">Total</string>
+    <string name="ecom_invoice_qty">Qty %1$s</string>
+    <string name="ecom_order_invoices_section">Invoices</string>
+    <string name="ecom_statement_title">Account statement</string>
+    <string name="ecom_outstanding_balance">Outstanding balance</string>
+    <string name="ecom_open_bills">Open bills</string>
+    <string name="ecom_statement_activity">Activity</string>
+    <string name="ecom_no_statement">No account activity yet.</string>
+    <string name="ecom_bill_due">Due %1$s</string>
+    <string name="ecom_bill_overdue">%1$d days overdue</string>
+    <string name="ecom_account_not_linked">Link your account with this store to see invoices and statement.</string>
+    <string name="ecom_retry">Retry</string>
 </resources>
