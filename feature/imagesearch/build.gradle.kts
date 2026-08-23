@@ -41,6 +41,8 @@ kotlin {
                 api(projects.feature.fileApi)
                 implementation(projects.data.common)
                 implementation(projects.data.sync)
+                // SyncEntity lives in the consolidated DB module (package com.ampairs.sync).
+                implementation(projects.data.database)
                 implementation(libs.kermit)
                 implementation(libs.metro.runtime)
                 implementation(libs.metrox.viewmodel.compose)
