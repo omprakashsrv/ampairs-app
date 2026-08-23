@@ -201,5 +201,6 @@
     <string name="ecom_bill_due">Due %1$s</string>
     <string name="ecom_bill_overdue">%1$d days overdue</string>
     <string name="ecom_account_not_linked">Link your account with this store to see invoices and statement.</string>
+    <string name="ecom_account_read_error">Couldn\'t load. Check your connection and try again.</string>
     <string name="ecom_retry">Retry</string>
 </resources>

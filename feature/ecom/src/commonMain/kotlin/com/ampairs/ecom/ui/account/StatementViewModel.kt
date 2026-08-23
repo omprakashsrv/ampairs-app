@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.ecom.api.model.BuyerOutstanding
 import com.ampairs.ecom.api.model.BuyerStatement
+import com.ampairs.ecom.api.model.isNotLinked
 import com.ampairs.ecom.data.repository.StatementRepository
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
@@ -22,6 +23,7 @@ data class StatementUiState(
     val statement: BuyerStatement? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val notLinked: Boolean = false,
 )
 
 @Inject
@@ -54,6 +56,7 @@ class StatementViewModel(
                     statement = statement.getOrNull(),
                     isLoading = false,
                     error = error?.message,
+                    notLinked = error?.isNotLinked() == true,
                 )
             }
         }

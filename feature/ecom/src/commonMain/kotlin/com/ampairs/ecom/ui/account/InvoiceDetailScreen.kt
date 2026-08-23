@@ -45,7 +45,7 @@ fun InvoiceDetailScreen(
 
     when {
         state.isLoading -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
-        state.invoice == null -> AccountReadError(message = state.error, onRetry = viewModel::load)
+        state.invoice == null -> AccountReadError(notLinked = state.notLinked, onRetry = viewModel::load)
         else -> InvoiceDetailContent(state.invoice!!)
     }
 }

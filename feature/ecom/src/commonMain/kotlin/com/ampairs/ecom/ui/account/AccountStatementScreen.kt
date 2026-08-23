@@ -47,7 +47,7 @@ fun AccountStatementScreen(
     when {
         state.isLoading -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
         state.outstanding == null && state.statement == null ->
-            AccountReadError(message = state.error, onRetry = viewModel::load)
+            AccountReadError(notLinked = state.notLinked, onRetry = viewModel::load)
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
             Text(
                 stringResource(Res.string.ecom_statement_title),

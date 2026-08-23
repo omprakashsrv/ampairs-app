@@ -48,7 +48,7 @@ fun InvoiceListScreen(
         )
         when {
             state.isLoading -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
-            state.error != null -> AccountReadError(message = state.error, onRetry = viewModel::load)
+            state.error != null -> AccountReadError(notLinked = state.notLinked, onRetry = viewModel::load)
             state.invoices.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
                 Text(stringResource(Res.string.ecom_no_invoices), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
