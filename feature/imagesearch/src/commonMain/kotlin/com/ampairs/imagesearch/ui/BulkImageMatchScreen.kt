@@ -1,7 +1,10 @@
 package com.ampairs.imagesearch.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +20,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,13 +35,19 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.imagesearch.generated.resources.Res
 import ampairsapp.feature.imagesearch.generated.resources.img_bulk_empty
@@ -46,6 +56,7 @@ import ampairsapp.feature.imagesearch.generated.resources.img_bulk_no_results
 import ampairsapp.feature.imagesearch.generated.resources.img_bulk_save
 import ampairsapp.feature.imagesearch.generated.resources.img_bulk_saving
 import ampairsapp.feature.imagesearch.generated.resources.img_bulk_searching
+import ampairsapp.feature.imagesearch.generated.resources.img_bulk_close
 import ampairsapp.feature.imagesearch.generated.resources.img_bulk_title
 import ampairsapp.feature.imagesearch.generated.resources.img_search_back_cd
 import ampairsapp.feature.imagesearch.generated.resources.img_search_disclaimer_accept
@@ -77,6 +88,8 @@ fun BulkImageMatchScreen(
     ) { create(entityType, targets) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Local UI state: candidate being previewed full-size (double-click / long-press).
+    var previewCandidate by remember { mutableStateOf<ImageResult?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -142,6 +155,7 @@ fun BulkImageMatchScreen(
                             onSelect = { candidateIndex ->
                                 viewModel.selectCandidate(state.rows.indexOf(row), candidateIndex)
                             },
+                            onPreview = { candidate -> previewCandidate = candidate },
                         )
                         HorizontalDivider()
                     }
@@ -161,10 +175,14 @@ fun BulkImageMatchScreen(
     if (state.showDisclaimer) {
         DisclaimerDialogBulk(onAccept = viewModel::acceptDisclaimer, onCancel = onNavigateBack)
     }
+
+    previewCandidate?.let { candidate ->
+        CandidatePreviewDialog(candidate = candidate, onDismiss = { previewCandidate = null })
+    }
 }
 
 @Composable
-private fun BulkRow(row: BulkMatchRow, onSelect: (Int) -> Unit) {
+private fun BulkRow(row: BulkMatchRow, onSelect: (Int) -> Unit, onPreview: (ImageResult) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(
@@ -204,6 +222,7 @@ private fun BulkRow(row: BulkMatchRow, onSelect: (Int) -> Unit) {
                         candidate = candidate,
                         selected = row.selectedIndex == index,
                         onClick = { onSelect(index) },
+                        onPreview = { onPreview(candidate) },
                     )
                 }
             }
@@ -211,8 +230,14 @@ private fun BulkRow(row: BulkMatchRow, onSelect: (Int) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CandidateThumb(candidate: ImageResult, selected: Boolean, onClick: () -> Unit) {
+private fun CandidateThumb(
+    candidate: ImageResult,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onPreview: () -> Unit,
+) {
     val model: Any = candidate.thumbnailBytes ?: candidate.thumbnailUrl
     val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
     AsyncImage(
@@ -223,8 +248,47 @@ private fun CandidateThumb(candidate: ImageResult, selected: Boolean, onClick: (
             .size(84.dp)
             .clip(RoundedCornerShape(8.dp))
             .border(if (selected) 3.dp else 1.dp, borderColor, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
+            // Single tap picks; double-click (desktop) or long-press (mobile) previews full-size.
+            .combinedClickable(
+                onClick = onClick,
+                onDoubleClick = onPreview,
+                onLongClick = onPreview,
+            ),
     )
+}
+
+/** Full-size preview of a candidate image (prefers the full-res URL, falls back to the thumbnail). */
+@Composable
+private fun CandidatePreviewDialog(candidate: ImageResult, onDismiss: () -> Unit) {
+    val model: Any = candidate.fullResUrl.ifBlank { null }
+        ?: candidate.thumbnailBytes
+        ?: candidate.thumbnailUrl
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f))
+                .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.Center,
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalPlatformContext.current).data(model).build(),
+                contentDescription = stringResource(Res.string.img_search_result_cd),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+            )
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = stringResource(Res.string.img_bulk_close),
+                    tint = Color.White,
+                )
+            }
+        }
+    }
 }
 
 @Composable

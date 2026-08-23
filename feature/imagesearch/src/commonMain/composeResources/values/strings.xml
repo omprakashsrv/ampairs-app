@@ -25,4 +25,5 @@
     <string name="img_bulk_pending">Pending</string>
     <string name="img_bulk_saving">Saving images…</string>
     <string name="img_bulk_empty">No products need images.</string>
+    <string name="img_bulk_close">Close</string>
 </resources>
