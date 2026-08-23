@@ -40,6 +40,7 @@ import ampairsapp.feature.ecom.generated.resources.ecom_in_credit
 import ampairsapp.feature.ecom.generated.resources.ecom_no_statement
 import ampairsapp.feature.ecom.generated.resources.ecom_open_bills
 import ampairsapp.feature.ecom.generated.resources.ecom_outstanding_balance
+import ampairsapp.feature.ecom.generated.resources.ecom_running_balance
 import ampairsapp.feature.ecom.generated.resources.ecom_settled_up
 import ampairsapp.feature.ecom.generated.resources.ecom_statement_activity
 import com.ampairs.common.locale.AppLocale

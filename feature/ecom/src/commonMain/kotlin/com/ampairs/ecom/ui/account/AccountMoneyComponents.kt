@@ -85,7 +85,7 @@ fun MoneySectionHeader(text: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         letterSpacing = 0.8.sp,
-        modifier = modifier.padding(horizontal = 16.dp, top = 18.dp, bottom = 6.dp),
+        modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 6.dp),
     )
 }
 
