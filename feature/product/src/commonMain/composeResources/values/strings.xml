@@ -150,6 +150,7 @@
     <string name="prod_images_title">Product Images</string>
     <string name="prod_images_count">%1$d images</string>
     <string name="prod_images_retry_sync_cd">Retry sync</string>
+    <string name="prod_images_search_web_cd">Search web for image</string>
     <string name="prod_images_error">Image error</string>
     <string name="prod_images_dismiss">Dismiss</string>
     <string name="prod_images_retry">Retry</string>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="img_search_title">Search web for image</string>
+    <string name="img_search_hint">Search images…</string>
+    <string name="img_search_search">Search</string>
+    <string name="img_search_back_cd">Back</string>
+    <string name="img_search_reset">Reset</string>
+    <string name="img_search_empty">No images yet. Adjust the keywords and search.</string>
+    <string name="img_search_searching">Searching the web…</string>
+    <string name="img_search_result_cd">Search result image</string>
+    <string name="img_search_disclaimer_title">Before you continue</string>
+    <string name="img_search_disclaimer_body">Web image results may be copyrighted. You are responsible for ensuring you have the right to use any image you add to your product. Only pick images you are permitted to use.</string>
+    <string name="img_search_disclaimer_accept">I understand</string>
+    <string name="img_search_disclaimer_cancel">Cancel</string>
+    <string name="img_search_use_image">Use this image</string>
+    <string name="img_search_set_primary">Set as primary image</string>
+    <string name="img_search_cancel">Cancel</string>
+    <string name="img_search_downloading">Downloading…</string>
+    <string name="img_search_preview_title">Add this image?</string>
+</resources>

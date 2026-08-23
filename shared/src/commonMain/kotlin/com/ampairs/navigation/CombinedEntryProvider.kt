@@ -43,6 +43,7 @@ import com.ampairs.navigation.providers.notificationEntryProvider
 import com.ampairs.navigation.providers.orderEntryProvider
 import com.ampairs.navigation.providers.paymentEntryProvider
 import com.ampairs.navigation.providers.productEntryProvider
+import com.ampairs.navigation.providers.imageSearchEntryProvider
 import com.ampairs.navigation.providers.sequenceEntryProvider
 import com.ampairs.navigation.providers.storeEntryProvider
 import com.ampairs.navigation.providers.storefrontEntryProvider
@@ -87,6 +88,7 @@ fun combinedEntryProvider(
         ?: storefrontEntryProvider(key, backStack)
         ?: ecomEntryProvider(key, backStack)
         ?: productEntryProvider(key, backStack)
+        ?: imageSearchEntryProvider(key, backStack)
         ?: taxEntryProvider(key, backStack)
         ?: businessEntryProvider(key, backStack)
         ?: subscriptionEntryProvider(key, backStack)

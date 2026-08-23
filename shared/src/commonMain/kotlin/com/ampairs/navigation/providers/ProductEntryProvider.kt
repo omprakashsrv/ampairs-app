@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.imagesearch.ImageSearchRoute
 import com.ampairs.product.catalog.CatalogFormScreen
 import com.ampairs.product.catalog.ProductCatalogListScreen
 import com.ampairs.product.catalog.ProductCatalogType
@@ -69,6 +70,15 @@ fun productEntryProvider(
                     ProductRoute.VariantManagement(
                         productId = productId,
                         productName = productName
+                    )
+                )
+            },
+            onSearchWebImages = { entityUid, keywords ->
+                backStack.add(
+                    ImageSearchRoute.Search(
+                        entityType = "PRODUCT",
+                        entityUid = entityUid,
+                        keywords = keywords,
                     )
                 )
             },
@@ -162,6 +172,15 @@ fun productEntryProvider(
                     ProductRoute.VariantManagement(
                         productId = productId,
                         productName = productName
+                    )
+                )
+            },
+            onSearchWebImages = { entityUid, keywords ->
+                backStack.add(
+                    ImageSearchRoute.Search(
+                        entityType = "PRODUCT",
+                        entityUid = entityUid,
+                        keywords = keywords,
                     )
                 )
             },
