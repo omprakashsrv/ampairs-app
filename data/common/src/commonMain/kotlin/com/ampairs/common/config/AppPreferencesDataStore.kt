@@ -178,6 +178,13 @@ interface AppPreferencesDataStore {
     suspend fun setLlmModelDownloadConsent(granted: Boolean)
 
     /**
+     * Whether the user has acknowledged the internet image-search copyright disclaimer. Shown once;
+     * `true` after acknowledgement so the picker never re-prompts. Defaults false.
+     */
+    fun getImageSearchConsent(): Flow<Boolean>
+    suspend fun setImageSearchConsent(granted: Boolean)
+
+    /**
      * Whether the user opted in to uploading assistant chat transcripts to the backend for quality
      * improvement. Defaults **false** (opt-in). App-wide (not per-workspace).
      */

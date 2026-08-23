@@ -2,6 +2,7 @@ package com.ampairs.imagesearch.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.file.api.FileEntityType
 import com.ampairs.file.api.FileRepository
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -38,8 +40,8 @@ data class ImageSearchUiState(
     val results: List<ImageResult> = emptyList(),
     val selected: ImageResult? = null,
     val isDownloading: Boolean = false,
-    /** Copyright disclaimer must be accepted before the first search runs. */
-    val showDisclaimer: Boolean = true,
+    /** Copyright disclaimer — raised in init only when consent hasn't been given before. */
+    val showDisclaimer: Boolean = false,
     val error: String? = null,
 )
 
@@ -56,6 +58,7 @@ class ImageSearchViewModel(
     private val fileRepository: FileRepository,
     private val downloader: ImageDownloader,
     private val syncService: CentralSyncService,
+    private val appPreferences: AppPreferencesDataStore,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -83,9 +86,23 @@ class ImageSearchViewModel(
         private const val MAX_RESULTS = 120
     }
 
-    /** User accepted the copyright disclaimer → run the first search. */
+    init {
+        // The copyright disclaimer is shown only until it's acknowledged once; after that the picker
+        // opens straight into the search.
+        viewModelScope.launch {
+            val alreadyConsented = appPreferences.getImageSearchConsent().first()
+            if (alreadyConsented) {
+                runSearch()
+            } else {
+                _uiState.update { it.copy(showDisclaimer = true) }
+            }
+        }
+    }
+
+    /** User accepted the copyright disclaimer → persist it (one-time) and run the first search. */
     fun acceptDisclaimer() {
         _uiState.update { it.copy(showDisclaimer = false) }
+        viewModelScope.launch { appPreferences.setImageSearchConsent(true) }
         runSearch()
     }
 

@@ -27,6 +27,7 @@ class DataStoreAppPreferences(
         private val LAST_WORKSPACE_ID_KEY = stringPreferencesKey("last_workspace_id")
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
         private val LLM_MODEL_DOWNLOAD_CONSENT_KEY = booleanPreferencesKey("llm_model_download_consent")
+        private val IMAGE_SEARCH_CONSENT_KEY = booleanPreferencesKey("image_search_consent")
         private val CHAT_TELEMETRY_ENABLED_KEY = booleanPreferencesKey("chat_telemetry_enabled")
         private val ASSISTANT_REASONING_ENABLED_KEY = booleanPreferencesKey("assistant_reasoning_enabled")
         private val SELECTED_LLM_MODEL_ID_KEY = stringPreferencesKey("selected_llm_model_id")
@@ -468,6 +469,18 @@ class DataStoreAppPreferences(
     override suspend fun setLlmModelDownloadConsent(granted: Boolean) {
         dataStore.edit { preferences ->
             preferences[LLM_MODEL_DOWNLOAD_CONSENT_KEY] = granted
+        }
+    }
+
+    override fun getImageSearchConsent(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[IMAGE_SEARCH_CONSENT_KEY] ?: false
+        }
+    }
+
+    override suspend fun setImageSearchConsent(granted: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[IMAGE_SEARCH_CONSENT_KEY] = granted
         }
     }
 

@@ -22,10 +22,13 @@ object ImageScraperJs {
 
     private const val TAG = "ImageScraperJs"
 
-    /** Build the Google Images results URL for [query]. `safe=active` keeps results SFW. */
+    /**
+     * Build the Google Images results URL for [query]. `safe=active` keeps results SFW; `tbs=isz:l`
+     * biases toward large/high-resolution source images (better quality for product photos).
+     */
     fun searchUrl(query: String): String {
         val q = query.trim().encodeURLParameter(spaceToPlus = true)
-        return "https://www.google.com/search?tbm=isch&hl=en&safe=active&q=$q"
+        return "https://www.google.com/search?tbm=isch&hl=en&safe=active&tbs=isz:l&q=$q"
     }
 
     /**
@@ -66,14 +69,16 @@ object ImageScraperJs {
                 out.push({ t: thumb, f: full, h: host(full), w: img ? img.naturalWidth : 0, e: img ? img.naturalHeight : 0 });
               }
               if (out.length === 0) {
-                // Fallback: bare <img> tags (markup with no imgres anchor).
+                // Fallback: bare <img> tags (markup with no imgres anchor). Skip tiny icons/sprites.
                 var imgs = document.querySelectorAll('img');
                 for (var j = 0; j < imgs.length; j++) {
                   var s = imgs[j].src || '';
                   if (!s || s.length < 24) continue;
+                  var w = imgs[j].naturalWidth, hgt = imgs[j].naturalHeight;
+                  if (w && hgt && (w < 100 || hgt < 100)) continue;
                   if (seen[s]) continue;
                   seen[s] = true;
-                  out.push({ t: s, f: '', h: '', w: imgs[j].naturalWidth, e: imgs[j].naturalHeight });
+                  out.push({ t: s, f: '', h: '', w: w, e: hgt });
                 }
               }
             } catch (e) {}
