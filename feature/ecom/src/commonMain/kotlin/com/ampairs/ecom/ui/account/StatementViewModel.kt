@@ -12,6 +12,8 @@ import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -39,8 +41,12 @@ class StatementViewModel(
     fun load() {
         _state.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            val outstanding = repository.getOutstanding()
-            val statement = repository.getStatement()
+            // The two reads are independent — fire them together so the screen waits on one round-trip, not two.
+            val outstandingDeferred = async { repository.getOutstanding() }
+            val statementDeferred = async { repository.getStatement() }
+            awaitAll(outstandingDeferred, statementDeferred)
+            val outstanding = outstandingDeferred.await()
+            val statement = statementDeferred.await()
             val error = outstanding.exceptionOrNull() ?: statement.exceptionOrNull()
             _state.update {
                 it.copy(
