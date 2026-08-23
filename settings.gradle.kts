@@ -74,5 +74,6 @@ include(
     ":feature:payment",
     ":feature:notification",
     ":feature:workspace",
-    ":feature:analytics"
+    ":feature:analytics",
+    ":feature:imagesearch"
 )

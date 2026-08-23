@@ -135,6 +135,7 @@ kotlin {
                 api(projects.feature.subscription)
                 api(projects.feature.business)
                 api(projects.feature.product)
+                api(projects.feature.imagesearch)
                 api(projects.feature.customer)
                 api(projects.feature.supplier)
                 api(projects.feature.inventory)
