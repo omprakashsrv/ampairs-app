@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.imagesearch.BulkTarget
 import com.ampairs.imagesearch.ImageSearchRoute
 import com.ampairs.product.catalog.CatalogFormScreen
+import com.ampairs.product.domain.ProductListItem
 import com.ampairs.product.catalog.ProductCatalogListScreen
 import com.ampairs.product.catalog.ProductCatalogType
 import com.ampairs.product.ui.create.ProductFormScreen
@@ -54,6 +56,7 @@ fun productEntryProvider(
             onNavigateToCategories = { backStack.add(ProductRoute.Categories) },
             onNavigateToSubCategories = { backStack.add(ProductRoute.SubCategories) },
             onNavigateToGroups = { backStack.add(ProductRoute.Group()) },
+            onAutoMatchImages = { products -> bulkImageMatchRoute(products)?.let(backStack::add) },
             modifier = Modifier
         )
     }
@@ -98,6 +101,7 @@ fun productEntryProvider(
             onNavigateToCategories = { backStack.add(ProductRoute.Categories) },
             onNavigateToSubCategories = { backStack.add(ProductRoute.SubCategories) },
             onNavigateToGroups = { backStack.add(ProductRoute.Group()) },
+            onAutoMatchImages = { products -> bulkImageMatchRoute(products)?.let(backStack::add) },
             modifier = Modifier
         )
     }
@@ -232,6 +236,28 @@ fun productEntryProvider(
     }
 
     else -> null
+}
+
+/**
+ * Build a bulk web image-match route for the products that are missing an image. Keywords per product
+ * are name + brand + category. Capped so the sequential scrape stays bounded. Null when none qualify.
+ */
+private fun bulkImageMatchRoute(products: List<ProductListItem>): ImageSearchRoute.BulkMatch? {
+    val targets = products
+        .filter { it.imageUrl.isNullOrBlank() && it.name.isNotBlank() }
+        .take(40)
+        .map { product ->
+            BulkTarget(
+                entityUid = product.id,
+                name = product.name,
+                keywords = listOfNotNull(
+                    product.name.takeIf { it.isNotBlank() },
+                    product.brandName?.takeIf { it.isNotBlank() },
+                    product.categoryName?.takeIf { it.isNotBlank() },
+                ),
+            )
+        }
+    return if (targets.isEmpty()) null else ImageSearchRoute.BulkMatch(entityType = "PRODUCT", targets = targets)
 }
 
 /**

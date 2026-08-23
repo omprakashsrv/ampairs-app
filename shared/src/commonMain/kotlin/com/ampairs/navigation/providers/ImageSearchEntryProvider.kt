@@ -3,6 +3,7 @@ package com.ampairs.navigation.providers
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.imagesearch.ImageSearchRoute
+import com.ampairs.imagesearch.ui.BulkImageMatchScreen
 import com.ampairs.imagesearch.ui.ImageSearchScreen
 
 /**
@@ -18,6 +19,14 @@ fun imageSearchEntryProvider(
             entityType = key.entityType,
             entityUid = key.entityUid,
             keywords = key.keywords,
+            onNavigateBack = { backStack.removeLastOrNull() },
+        )
+    }
+
+    is ImageSearchRoute.BulkMatch -> NavEntry(key) {
+        BulkImageMatchScreen(
+            entityType = key.entityType,
+            targets = key.targets,
             onNavigateBack = { backStack.removeLastOrNull() },
         )
     }

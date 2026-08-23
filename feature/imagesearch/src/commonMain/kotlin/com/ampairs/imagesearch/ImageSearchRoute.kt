@@ -21,4 +21,22 @@ sealed interface ImageSearchRoute : NavKey {
         val entityUid: String = "",
         val keywords: List<String> = emptyList(),
     ) : ImageSearchRoute
+
+    /**
+     * Bulk auto-match: scrape candidate images for many entities at once (e.g. every product missing
+     * an image) and let the user pick/confirm per row, then save all in one go.
+     */
+    @Serializable
+    data class BulkMatch(
+        val entityType: String = "",
+        val targets: List<BulkTarget> = emptyList(),
+    ) : ImageSearchRoute
 }
+
+/** One entity to auto-match in a [ImageSearchRoute.BulkMatch] run. */
+@Serializable
+data class BulkTarget(
+    val entityUid: String,
+    val name: String,
+    val keywords: List<String> = emptyList(),
+)

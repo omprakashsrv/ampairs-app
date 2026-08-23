@@ -111,6 +111,8 @@ fun ProductsListScreen(
     onNavigateToCategories: () -> Unit = {},
     onNavigateToSubCategories: () -> Unit = {},
     onNavigateToGroups: () -> Unit = {},
+    /** Launch bulk web image auto-match for the given products (those missing images). */
+    onAutoMatchImages: (List<ProductListItem>) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProductsListViewModel = metroViewModel()
 ) {
@@ -242,6 +244,10 @@ fun ProductsListScreen(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(Res.string.prod_catalog_groups)) },
                                     onClick = { masterMenuOpen = false; onNavigateToGroups() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_auto_match_images)) },
+                                    onClick = { masterMenuOpen = false; onAutoMatchImages(uiState.products) }
                                 )
                             }
                         }

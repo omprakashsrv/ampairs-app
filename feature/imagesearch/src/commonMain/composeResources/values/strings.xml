@@ -17,4 +17,12 @@
     <string name="img_search_cancel">Cancel</string>
     <string name="img_search_downloading">Downloading…</string>
     <string name="img_search_preview_title">Add this image?</string>
+    <string name="img_bulk_title">Auto-match images</string>
+    <string name="img_bulk_matching">Matching %1$d of %2$d…</string>
+    <string name="img_bulk_save">Save %1$d</string>
+    <string name="img_bulk_no_results">No results</string>
+    <string name="img_bulk_searching">Searching…</string>
+    <string name="img_bulk_pending">Pending</string>
+    <string name="img_bulk_saving">Saving images…</string>
+    <string name="img_bulk_empty">No products need images.</string>
 </resources>
