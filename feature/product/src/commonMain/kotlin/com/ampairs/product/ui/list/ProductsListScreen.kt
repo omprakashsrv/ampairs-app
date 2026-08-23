@@ -67,6 +67,7 @@ import com.ampairs.product.domain.ProductListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.product.generated.resources.Res
+import ampairsapp.feature.product.generated.resources.prod_auto_match_images
 import ampairsapp.feature.product.generated.resources.prod_list_title
 import ampairsapp.feature.product.generated.resources.prod_list_count
 import ampairsapp.feature.product.generated.resources.prod_list_new_product
