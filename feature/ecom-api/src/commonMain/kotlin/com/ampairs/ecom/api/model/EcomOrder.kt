@@ -54,6 +54,8 @@ data class EcomOrderResponse(
     @SerialName("notes") val notes: String? = null,
     @SerialName("placed_at") val placedAt: String = "",
     @SerialName("confirmed_at") val confirmedAt: String? = null,
+    /** Spec 029 — finalized invoices raised for this order (order↔invoice link); empty if none yet. */
+    @SerialName("invoices") val invoices: List<BuyerInvoiceSummary> = emptyList(),
 )
 
 /**

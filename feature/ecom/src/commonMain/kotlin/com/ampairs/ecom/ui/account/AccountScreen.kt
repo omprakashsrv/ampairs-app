@@ -14,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
@@ -37,7 +39,9 @@ import ampairsapp.feature.ecom.generated.resources.Res
 import ampairsapp.feature.ecom.generated.resources.ecom_account_addresses
 import ampairsapp.feature.ecom.generated.resources.ecom_account_cross_store
 import ampairsapp.feature.ecom.generated.resources.ecom_account_help
+import ampairsapp.feature.ecom.generated.resources.ecom_account_invoices
 import ampairsapp.feature.ecom.generated.resources.ecom_account_orders
+import ampairsapp.feature.ecom.generated.resources.ecom_account_statement
 import ampairsapp.feature.ecom.generated.resources.ecom_account_title
 import ampairsapp.feature.ecom.generated.resources.ecom_login
 import ampairsapp.feature.ecom.generated.resources.ecom_logout
@@ -53,6 +57,8 @@ fun AccountScreen(
     onOpenAddresses: () -> Unit,
     onLogin: () -> Unit,
     onLoggedOut: () -> Unit,
+    onOpenInvoices: () -> Unit = {},
+    onOpenStatement: () -> Unit = {},
     viewModel: AccountViewModel = metroViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -104,6 +110,8 @@ fun AccountScreen(
         }
 
         AccountRow(Icons.Filled.Receipt, stringResource(Res.string.ecom_account_orders), onOpenOrders)
+        AccountRow(Icons.Filled.Description, stringResource(Res.string.ecom_account_invoices), onOpenInvoices)
+        AccountRow(Icons.Filled.AccountBalanceWallet, stringResource(Res.string.ecom_account_statement), onOpenStatement)
         AccountRow(Icons.Filled.LocationOn, stringResource(Res.string.ecom_account_addresses), onOpenAddresses)
         AccountRow(Icons.AutoMirrored.Filled.HelpOutline, stringResource(Res.string.ecom_account_help), {})
         AccountRow(Icons.AutoMirrored.Filled.Logout, stringResource(Res.string.ecom_logout), viewModel::logout, danger = true)
