@@ -113,9 +113,9 @@ fun AccountStatementScreen(
 @Composable
 private fun BalanceHeroCard(out: BuyerOutstanding) {
     val settled = out.currentBalance == 0.0
-    // DR = the buyer owes the seller (amount due); CR = the buyer is in credit. Mirror the payment
-    // statement's colour rule: the "you owe" state uses the primary container, credit the tertiary.
-    val due = out.balanceDirection.equals("DR", ignoreCase = true)
+    // From the buyer's perspective: CR = the buyer owes the seller (amount due); DR = the buyer is
+    // in credit. The "amount due" state uses the primary container, credit the tertiary.
+    val due = out.balanceDirection.equals("CR", ignoreCase = true)
     val container = when {
         settled -> MaterialTheme.colorScheme.surfaceContainer
         due -> MaterialTheme.colorScheme.primaryContainer
