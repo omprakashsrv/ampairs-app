@@ -48,6 +48,7 @@ fun EcomShell(
     onOpenOrder: (String) -> Unit,
     onOpenAddresses: () -> Unit,
     onOpenInvoices: () -> Unit,
+    onOpenInvoice: ((String) -> Unit)? = null,
     onOpenStatement: () -> Unit,
     onLogin: () -> Unit,
     onLoggedOut: () -> Unit,
@@ -102,7 +103,7 @@ fun EcomShell(
                     onOpenBrand = { onOpenDrillDown(DrillDownArgs(brand = it)) },
                     onOpenProduct = onOpenProduct,
                 )
-                EcomTab.Orders -> OrdersListScreen(onOpenOrder = onOpenOrder)
+                EcomTab.Orders -> OrdersListScreen(onOpenOrder = onOpenOrder, onOpenInvoice = onOpenInvoice)
                 EcomTab.Account -> AccountScreen(
                     onOpenOrders = { tabIndex = 1 },
                     onOpenAddresses = onOpenAddresses,

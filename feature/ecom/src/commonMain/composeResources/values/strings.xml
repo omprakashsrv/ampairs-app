@@ -193,6 +193,7 @@
     <string name="ecom_invoice_total">Total</string>
     <string name="ecom_invoice_qty">Qty %1$s</string>
     <string name="ecom_order_invoices_section">Invoices</string>
+    <string name="ecom_view_invoice">View invoice</string>
     <string name="ecom_statement_title">Account statement</string>
     <string name="ecom_outstanding_balance">Outstanding balance</string>
     <string name="ecom_amount_due">Amount due</string>

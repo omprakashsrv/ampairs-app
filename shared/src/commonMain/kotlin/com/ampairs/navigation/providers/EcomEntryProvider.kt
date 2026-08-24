@@ -50,6 +50,7 @@ fun ecomEntryProvider(
             onOpenOrder = { backStack.add(EcomRoute.OrderTracking(it)) },
             onOpenAddresses = { backStack.add(EcomRoute.Addresses) },
             onOpenInvoices = { backStack.add(EcomRoute.Invoices) },
+            onOpenInvoice = { backStack.add(EcomRoute.InvoiceDetail(it)) },
             onOpenStatement = { backStack.add(EcomRoute.Statement) },
         )
     }
