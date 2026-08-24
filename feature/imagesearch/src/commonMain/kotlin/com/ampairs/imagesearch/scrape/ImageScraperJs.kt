@@ -32,10 +32,21 @@ object ImageScraperJs {
     }
 
     /**
-     * The scraper. Runs on the results page: scans `/imgres?imgurl=…` anchors (full-res) + their
-     * nested `<img>` (thumbnail), dedupes, auto-scrolls a few times to pull in lazy results, and
-     * posts batches to `window.__ampairsPost`. Fully wrapped in try/catch — a DOM shift degrades to
-     * "no results", never a thrown error.
+     * The scraper. Runs on the results page and harvests full-resolution source URLs two ways,
+     * because Google's current markup rarely exposes the classic `/imgres?imgurl=` anchors anymore:
+     *
+     *  1. **`/imgres?imgurl=` anchors** — the classic path (still seen on the older WebKit that
+     *     JavaFX uses on Desktop): `imgurl` = full-res, nested `<img>` = thumbnail.
+     *  2. **inline page/script data** — the modern path. Google embeds the real source images as
+     *     `["https://host/photo.jpg",height,width]` triples inside `<script>`/AF_initDataCallback
+     *     blobs. We regex those out (unescaping `\/`, `\u0026`, `\u003d`) and skip Google's own
+     *     thumbnail/asset hosts (gstatic/googleusercontent proxy/ggpht). **This is what makes saved
+     *     images full quality** — the visible `<img>` tags are only ~90px gstatic/data-URI previews.
+     *
+     * Both feed the same `{t,f,h,w,e}` shape; the host de-dupes. Auto-scrolls to pull in lazy
+     * results, posts batches to `window.__ampairsPost`. Fully wrapped in try/catch — a DOM/markup
+     * shift degrades to "no results", never a thrown error. This is the single fragile point: when
+     * Google changes markup, patch here (or swap for a backend proxy) without touching UI/VM.
      */
     val SCRIPT: String = """
         (function () {
@@ -52,8 +63,19 @@ object ImageScraperJs {
           function host(url) {
             try { return new URL(url).hostname; } catch (e) { return ''; }
           }
+          // A Google-owned thumbnail/asset host — never a real full-res source.
+          function isGoogleHost(h) {
+            return !h || /(^|\.)(gstatic|google|googleusercontent|ggpht|googleapis)\.com${'$'}/.test(h)
+              || h.indexOf('google') === 0;
+          }
+          function unescapeUrl(u) {
+            return u.replace(/\\u003d/gi, '=').replace(/\\u0026/gi, '&')
+                    .replace(/\\u003c/gi, '<').replace(/\\u003e/gi, '>')
+                    .replace(/\\\//g, '/').replace(/\\"/g, '"');
+          }
 
-          function collect() {
+          // 1. Classic `/imgres?imgurl=` anchors (full-res in the query param).
+          function collectAnchors() {
             var out = [];
             try {
               var anchors = document.querySelectorAll('a[href*="/imgres?"]');
@@ -68,32 +90,71 @@ object ImageScraperJs {
                 seen[key] = true;
                 out.push({ t: thumb, f: full, h: host(full), w: img ? img.naturalWidth : 0, e: img ? img.naturalHeight : 0 });
               }
-              if (out.length === 0) {
-                // Fallback: bare <img> tags (markup with no imgres anchor). Skip tiny icons/sprites.
-                var imgs = document.querySelectorAll('img');
-                for (var j = 0; j < imgs.length; j++) {
-                  var s = imgs[j].src || '';
-                  if (!s || s.length < 24) continue;
-                  var w = imgs[j].naturalWidth, hgt = imgs[j].naturalHeight;
-                  if (w && hgt && (w < 100 || hgt < 100)) continue;
-                  if (seen[s]) continue;
-                  seen[s] = true;
-                  out.push({ t: s, f: '', h: '', w: w, e: hgt });
+            } catch (e) {}
+            return out;
+          }
+
+          // 2. Modern path: mine `["url",height,width]` triples embedded in inline scripts. These are
+          //    the actual source images (full quality). Heavier — run only in the scroll timer.
+          function collectScripts() {
+            var out = [];
+            try {
+              var scripts = document.getElementsByTagName('script');
+              // Match ["<image url>",height,width] — allow escaped slashes (\/) inside the url; the
+              // extension is anchored so ".pngfoo" won't match. unescapeUrl() normalizes it after.
+              var re = /\["(https?:[^"]*?\.(?:jpe?g|png|webp|gif|bmp)(?![a-z0-9])[^"]*?)",(\d+),(\d+)\]/gi;
+              for (var s = 0; s < scripts.length; s++) {
+                var text = scripts[s].textContent || '';
+                if (text.indexOf('http') < 0) continue;
+                var m;
+                while ((m = re.exec(text)) !== null) {
+                  var url = unescapeUrl(m[1]);
+                  if (url.indexOf('http') !== 0) continue;
+                  var h = host(url);
+                  if (isGoogleHost(h)) continue;          // skip Google's own thumbnails/proxies
+                  if (seen[url]) continue;
+                  seen[url] = true;
+                  // Google emits [url, height, width]. Use the URL as its own grid thumbnail.
+                  out.push({ t: url, f: url, h: h, w: parseInt(m[3], 10) || 0, e: parseInt(m[2], 10) || 0 });
                 }
               }
             } catch (e) {}
             return out;
           }
 
-          function flush() {
-            var batch = collect();
+          // Last resort: bare <img> tags (only when nothing else matched). Skip tiny icons/sprites.
+          function collectImgs() {
+            var out = [];
+            try {
+              var imgs = document.querySelectorAll('img');
+              for (var j = 0; j < imgs.length; j++) {
+                var src = imgs[j].src || '';
+                if (!src || src.length < 24) continue;
+                var w = imgs[j].naturalWidth, hgt = imgs[j].naturalHeight;
+                if (w && hgt && (w < 100 || hgt < 100)) continue;
+                if (seen[src]) continue;
+                seen[src] = true;
+                out.push({ t: src, f: '', h: '', w: w, e: hgt });
+              }
+            } catch (e) {}
+            return out;
+          }
+
+          function post(batch) {
             if (batch.length > 0 && window.__ampairsPost) {
               try { window.__ampairsPost(JSON.stringify(batch)); } catch (e) {}
             }
           }
+          // Cheap pass (observer): anchors only.
+          function flush() { post(collectAnchors()); }
+          // Deep pass (timer): anchors + inline-script full-res, with a bare-<img> fallback.
+          function flushDeep() {
+            var batch = collectAnchors().concat(collectScripts());
+            if (batch.length === 0) batch = collectImgs();
+            post(batch);
+          }
 
-          // Initial pass, then observe + auto-scroll to trigger lazy loading.
-          flush();
+          flushDeep();
           try {
             var obs = new MutationObserver(function () { flush(); });
             obs.observe(document.body, { childList: true, subtree: true });
@@ -102,7 +163,7 @@ object ImageScraperJs {
           var scrolls = 0;
           var timer = setInterval(function () {
             try { window.scrollTo(0, document.body.scrollHeight); } catch (e) {}
-            flush();
+            flushDeep();
             if (++scrolls >= 8) { clearInterval(timer); }
           }, 700);
         })();
