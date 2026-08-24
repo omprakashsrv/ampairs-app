@@ -26,10 +26,12 @@ import io.ktor.http.isSuccess
  * `X-Workspace-ID`/JWT default headers. This client talks to arbitrary third-party image hosts, so it
  * must never carry Ampairs credentials. Do NOT swap this for `com.ampairs.common.httpClient(...)`.
  *
- * Robustness ladder (per /offline-sync Rule 3 — Ktor's blanket timeout is overridden per request):
- *  1. `data:` URI thumbnail already decoded → use those bytes (zero network).
- *  2. full-res URL.
- *  3. thumbnail URL (hotlink/403 fallback).
+ * Quality ladder — always prefer the highest-resolution source (per /offline-sync Rule 3, Ktor's
+ * blanket timeout is overridden per request):
+ *  1. full-res URL (the real source image `imgurl` from the scraper).
+ *  2. thumbnail URL, only if it's a real `http(s)` image (not Google's inline preview).
+ *  3. the decoded `data:` URI thumbnail bytes — LAST resort only (this is Google's tiny inline
+ *     preview, ~90px; using it earlier is what made saved images look poor).
  */
 @Inject
 class ImageDownloader(engine: HttpClientEngine) {
@@ -45,20 +47,21 @@ class ImageDownloader(engine: HttpClientEngine) {
 
     /** Download [result] to a [FilePickerResult], or [Result.failure] if nothing usable came back. */
     suspend fun download(result: ImageResult): Result<FilePickerResult> {
-        // 1. Inline data-URI thumbnail — no network needed.
-        result.thumbnailBytes?.let { bytes ->
-            val ct = ImageResultParser.dataUriContentType(result.thumbnailUrl) ?: "image/jpeg"
-            return finalize(bytes, ct)
-        }
-
-        // 2/3. Try full-res, then the thumbnail URL.
-        val candidates = listOf(result.fullResUrl, result.thumbnailUrl)
+        // 1/2. Prefer the real full-resolution source, then a genuine http thumbnail URL.
+        val urlCandidates = listOf(result.fullResUrl, result.thumbnailUrl)
             .filter { it.isNotBlank() && it.startsWith("http") }
             .distinct()
 
-        for (url in candidates) {
-            val fetched = fetch(url)
-            if (fetched != null) return finalize(fetched.first, fetched.second)
+        for (url in urlCandidates) {
+            val fetched = fetch(url) ?: continue
+            val finalized = finalize(fetched.first, fetched.second, sourceUrl = url)
+            if (finalized.isSuccess) return finalized // else fall through to the next candidate
+        }
+
+        // 3. Last resort only: Google's inline data-URI preview (low-res). Better than nothing.
+        result.thumbnailBytes?.let { bytes ->
+            val ct = ImageResultParser.dataUriContentType(result.thumbnailUrl) ?: "image/jpeg"
+            return finalize(bytes, ct, sourceUrl = null)
         }
         return Result.failure(IllegalStateException("Could not download the selected image"))
     }
@@ -80,11 +83,11 @@ class ImageDownloader(engine: HttpClientEngine) {
         null
     }
 
-    private fun finalize(bytes: ByteArray, rawContentType: String?): Result<FilePickerResult> {
+    private fun finalize(bytes: ByteArray, rawContentType: String?, sourceUrl: String?): Result<FilePickerResult> {
         if (bytes.size > MAX_FILE_SIZE) {
             return Result.failure(IllegalStateException("Image is larger than 10 MB"))
         }
-        val contentType = normalizeContentType(rawContentType)
+        val contentType = resolveContentType(rawContentType, sourceUrl)
             ?: return Result.failure(IllegalStateException("Unsupported image type"))
         val ext = extensionFor(contentType)
         val fileName = "web_${UidGenerator.generateUid(UID_PREFIX)}.$ext"
@@ -108,6 +111,33 @@ class ImageDownloader(engine: HttpClientEngine) {
             "image/gif" -> "image/gif"
             "image/bmp" -> "image/bmp"
             else -> null
+        }
+    }
+
+    /**
+     * Resolve a real image content-type. Prefer the server's header; if it's missing or generic
+     * (`application/octet-stream`), infer from the URL extension so a genuine full-res image from a
+     * host that doesn't send a clean `Content-Type` isn't dropped (which would fall back to the tiny
+     * thumbnail). Reject clearly non-image responses (HTML/JSON error pages).
+     */
+    private fun resolveContentType(raw: String?, sourceUrl: String?): String? {
+        normalizeContentType(raw)?.let { return it }
+        val rawLc = raw?.substringBefore(';')?.trim()?.lowercase()
+        // A definite non-image payload (e.g. an HTML/JSON error page) → reject.
+        if (rawLc != null && rawLc.isNotBlank() && rawLc != "application/octet-stream" &&
+            (rawLc.startsWith("text/") || rawLc.startsWith("application/"))
+        ) {
+            return null
+        }
+        val ext = sourceUrl?.substringBefore('?')?.substringBefore('#')?.substringAfterLast('.', "")?.lowercase()
+        return when (ext) {
+            "jpg", "jpeg" -> "image/jpeg"
+            "png" -> "image/png"
+            "webp" -> "image/webp"
+            "gif" -> "image/gif"
+            "bmp" -> "image/bmp"
+            // Header absent/generic and no telltale extension → assume JPEG (the common web case).
+            else -> "image/jpeg"
         }
     }
 
