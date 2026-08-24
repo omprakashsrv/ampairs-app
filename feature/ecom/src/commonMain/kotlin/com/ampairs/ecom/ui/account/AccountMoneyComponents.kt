@@ -39,11 +39,11 @@ import com.ampairs.common.locale.formatMoney
 object StatementColors {
     /** A ledger debit — a raised bill increasing what the buyer owes. */
     val debit: Color
-        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.primary
+        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.tertiary
 
     /** A ledger credit — a payment reducing what the buyer owes. */
     val credit: Color
-        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.tertiary
+        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.primary
 
     /** Increasing-severity palette for aging segments (current → most overdue). */
     val agingBuckets: List<Color>

@@ -196,7 +196,7 @@ private fun StatementRow(line: BuyerStatementLine, locale: AppLocale) {
     val delta = if (isDebit) line.debit else line.credit
     val deltaColor = if (isDebit) StatementColors.debit else StatementColors.credit
     val icon: ImageVector = if (isDebit) Icons.Filled.NorthEast else Icons.Filled.SouthWest
-    val iconBg = if (isDebit) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+    val iconBg = if (isDebit) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer
     val title = line.reference?.takeIf { it.isNotBlank() } ?: line.narration?.takeIf { it.isNotBlank() } ?: line.kind
     val ref = listOfNotNull(
         line.kind.takeIf { it.isNotBlank() },
