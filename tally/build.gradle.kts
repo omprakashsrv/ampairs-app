@@ -19,7 +19,7 @@ dependencies {
     api(libs.ktor.serialization.kotlinx.xml)
     implementation(libs.kermit)
 
-    testImplementation("org.junit.jupiter:junit-jupiter:6.1.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.1")
 }
 
