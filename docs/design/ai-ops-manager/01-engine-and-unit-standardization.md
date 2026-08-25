@@ -144,5 +144,6 @@ the backend endpoint); add a `SyncEntity.AIOPS_*` + delegate then, not now.
 ## 10. Open points (resolve in review)
 1. Executor field-update on the product repo flags `synced=false`? (else add a thin method).
 2. Home for the `Reasoner`-over-`LlmEngine` adapter (`feature/agent` vs `shared`) without an impl-dep cycle.
-3. `aiops_*` in a dedicated workspace DB (this doc) vs the consolidated `AmpairsAppDatabase` — pick one.
+3. ✅ **Decided:** `aiops_*` live in a **dedicated `feature/aiops` workspace Room DB** (own module DB
+   per the `/metro-di` workspace-DB checklist) — not the consolidated `AmpairsAppDatabase`.
 4. Autonomy-level storage key + default surface in settings UI.
