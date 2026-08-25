@@ -47,7 +47,7 @@ filekit = "0.14.2"
 play-services-location = "21.4.0"
 maps-compose = "8.3.0"
 accompanist-permissions = "0.37.3"
-litertlm = "0.14.0"
+litertlm = "0.15.0"
 whisper-jni = "1.7.1"
 whisper-cpp-xcframework = "1.9.1"
 # 0.3.38, not the newer 0.3.45: the 0.3.45 jar bundles a stale 2022 libvosk native that lacks
