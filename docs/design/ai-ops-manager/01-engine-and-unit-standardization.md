@@ -18,11 +18,12 @@ New KMP module **`feature/aiops`** (add to `settings.gradle.kts`), engine in `co
 
 ```
 feature/aiops/src/commonMain/kotlin/com/ampairs/aiops/
-├── engine/            # SPI: Finding, Candidate, stages, ports, the runner
-├── gate/              # ConfidenceScorer contract + RiskPolicy + autonomy gate
-├── data/db/           # Room: aiops_finding, aiops_decision, aiops_feedback (+ DAOs)
-├── di/                # Metro WorkspaceScope wiring (DB, runner, maps)
+├── engine/            # AiOpsRunnerImpl (the fixed pipeline); SPI itself is in data/common (landed)
+├── gate/              # ConfidenceRiskGate + autonomy read
+├── di/                # Metro WorkspaceScope wiring (runner, gate, maps)
 └── ui/                # suggestion chip + "AI fixed … · Undo" surface (composable)
+# NOTE: the aiops_* Room tables + AiOpsDao live in data/database (consolidated DB, §6),
+# NOT here — feature/aiops depends on projects.data.database to inject AiOpsDao.
 ```
 
 **Reuse, don't reinvent** — this mirrors the existing agent extension pattern
@@ -102,13 +103,25 @@ low-sensitivity/reversible → eligible at L2.
 
 ---
 
-## 6. Data model & audit (local now, sync later)
+## 6. Data model & audit (local now, sync later) — CORRECTED to the consolidated DB
 
-`feature/aiops` owns a **workspace-aware Room DB** (metro-di workspace-DB pattern:
-`@SingleIn(WorkspaceScope::class)`, registered with `WorkspaceClosableRegistry`, path
-`workspace_{slug}_aiops.db` / dir variant):
-- `aiops_finding`, `aiops_decision` (before/after/confidence/reversible/source), `aiops_feedback`.
-- `Clock.System.now()` timestamps (no `java.time` in commonMain).
+**Correction (grounding, 2026-08):** the app **consolidated every workspace table into one Room DB**,
+`data/database/AmpairsWorkspaceDatabase` (currently **version 5**). Feature modules no longer own a
+`@Database` — their entities/DAOs physically live in `data/database` (e.g.
+`com.ampairs.unit.data.db.entity.UnitEntity`, `com.ampairs.product.db.dao.ProductDao`) and features
+depend on `projects.data.database` to inject them. A *dedicated* `feature/aiops` DB is therefore **not
+viable** (a DAO may have only one Room-generated impl per classpath; the per-feature DB classes were
+deleted). This supersedes the earlier "dedicated aiops workspace DB" decision.
+
+So the `aiops_*` tables are **added to the consolidated DB** (mirror `UnitEntity`/`UnitDao`):
+- New `AiOpsFindingEntity`, `AiOpsDecisionEntity` (before/after/confidence/reversible/source),
+  `AiOpsFeedbackEntity` + `AiOpsDao` under `data/database/.../com/ampairs/aiops/db/{entity,dao}`.
+- Register the three entities in `AmpairsWorkspaceDatabase.entities`, add `abstract fun aiOpsDao()`,
+  bump `version = 5 → 6`, add `WorkspaceMigration5To6` (`CREATE TABLE aiops_*`, additive) and wire it
+  into the DB builder's migration list; provide `AiOpsDao` from `WorkspaceDatabaseDaoModule`.
+- `Clock.System.now()` epoch-millis timestamps; `@ColumnInfo` snake_case; `exportSchema` JSON regen.
+- `feature/aiops` (and the runner) `implementation(projects.data.database)` to inject `AiOpsDao` — the
+  same way every feature gets its DAOs.
 
 **Undo** reads the `aiops_decision`, re-applies `before` through the same Executor, records
 `aiops_feedback(REJECT)`. **Audit is local-only this slice** — syncing it to the server is Epic-2 (needs
