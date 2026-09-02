@@ -20,9 +20,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.cbemployee.domain.model.MaintenanceRoles
+import com.ampairs.cbstore.domain.model.ZonalOffice
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 @Composable
@@ -67,12 +69,10 @@ fun CbEmployeeFormScreen(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
-            value = uiState.zonalOfficeId,
-            onValueChange = viewModel::onZone,
-            label = { Text("Zonal office ID (optional)") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+        ZonalOfficeDropdown(
+            selectedId = uiState.zonalOfficeId,
+            options = uiState.zonalOfficeOptions,
+            onSelected = viewModel::onZone,
         )
         uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Button(
@@ -120,3 +120,75 @@ private fun RoleDropdown(selected: String, onSelected: (String) -> Unit) {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ZonalOfficeDropdown(
+    selectedId: String,
+    options: List<ZonalOffice>,
+    onSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = options.firstOrNull { it.uid == selectedId }?.let(::zonalOfficeLabel) ?: ""
+    // Query starts as the current selection's name; typing filters the list and re-shows the
+    // menu. Selecting an option (or losing the typed text) snaps back to the selected name.
+    var query by remember(selectedName) { mutableStateOf(selectedName) }
+    val filtered = remember(query, options, selectedName) {
+        if (query.isBlank() || query == selectedName) {
+            options
+        } else {
+            options.filter { it.name.contains(query, ignoreCase = true) || it.city.contains(query, ignoreCase = true) }
+        }
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = {
+                query = it
+                expanded = true
+            },
+            label = { Text("Zonal office (optional)") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            singleLine = true,
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryEditable)
+                .fillMaxWidth()
+                .onFocusChanged { if (it.isFocused) expanded = true },
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (selectedId.isNotBlank()) {
+                DropdownMenuItem(
+                    text = { Text("None") },
+                    onClick = {
+                        onSelected("")
+                        query = ""
+                        expanded = false
+                    },
+                )
+            }
+            if (filtered.isEmpty()) {
+                DropdownMenuItem(text = { Text("No matching zonal office") }, onClick = {}, enabled = false)
+            }
+            filtered.forEach { office ->
+                DropdownMenuItem(
+                    text = { Text(zonalOfficeLabel(office)) },
+                    onClick = {
+                        onSelected(office.uid)
+                        query = zonalOfficeLabel(office)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+// The zone's own name often already embeds the city (e.g. "Zonal Office - Delhi/NCR") —
+// appending it again would read as a redundant "X · X".
+private fun zonalOfficeLabel(office: ZonalOffice): String =
+    if (office.name.contains(office.city, ignoreCase = true)) office.name else "${office.name} · ${office.city}"

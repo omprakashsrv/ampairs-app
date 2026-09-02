@@ -25,6 +25,7 @@ kotlin {
         commonMain {
             dependencies {
                 api(projects.feature.cbEmployeeApi)
+                implementation(projects.feature.cbStoreApi)
                 implementation(projects.data.common)
                 implementation(projects.data.database)
                 implementation(projects.data.sync)

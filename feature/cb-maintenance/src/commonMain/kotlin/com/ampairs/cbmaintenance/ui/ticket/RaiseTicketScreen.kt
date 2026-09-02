@@ -1,19 +1,16 @@
 package com.ampairs.cbmaintenance.ui.ticket
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -80,6 +78,7 @@ fun RaiseTicketScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StoreDropdown(
     selectedId: String,
@@ -87,23 +86,47 @@ private fun StoreDropdown(
     onSelected: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val source = remember { MutableInteractionSource() }
     val selectedName = options.firstOrNull { it.first == selectedId }?.second ?: ""
-    Box(modifier = Modifier.fillMaxWidth()) {
+    // Query starts as the current selection's name; typing filters the list and re-shows the
+    // menu. Selecting an option (or losing the typed text) snaps back to the selected name.
+    var query by remember(selectedName) { mutableStateOf(selectedName) }
+    val filtered = remember(query, options, selectedName) {
+        if (query.isBlank() || query == selectedName) {
+            options
+        } else {
+            options.filter { it.second.contains(query, ignoreCase = true) }
+        }
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         OutlinedTextField(
-            value = selectedName,
-            onValueChange = {},
-            readOnly = true,
+            value = query,
+            onValueChange = {
+                query = it
+                expanded = true
+            },
             label = { Text("Outlet") },
-            trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = "Pick outlet") },
-            modifier = Modifier.fillMaxWidth().clickable(interactionSource = source, indication = null) { expanded = true },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            singleLine = true,
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryEditable)
+                .fillMaxWidth()
+                .onFocusChanged { if (it.isFocused) expanded = true },
         )
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { (id, name) ->
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (filtered.isEmpty()) {
+                DropdownMenuItem(text = { Text("No matching outlet") }, onClick = {}, enabled = false)
+            }
+            filtered.forEach { (id, name) ->
                 DropdownMenuItem(
                     text = { Text(name) },
                     onClick = {
                         onSelected(id)
+                        query = name
                         expanded = false
                     },
                 )

@@ -119,7 +119,13 @@ private fun StoreCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text("${store.code} · ${store.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "$zoneName · ${store.city}",
+                    // The zone's own name often already embeds the city (e.g. "Zonal Office -
+                    // Delhi/NCR") — appending it again reads as a redundant "X · X".
+                    if (zoneName.isBlank() || zoneName.contains(store.city, ignoreCase = true)) {
+                        zoneName.ifBlank { store.city }
+                    } else {
+                        "$zoneName · ${store.city}"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

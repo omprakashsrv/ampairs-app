@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.cbemployee.data.repository.EmployeeRepository
 import com.ampairs.cbemployee.domain.model.Employee
 import com.ampairs.cbemployee.domain.model.MaintenanceRoles
+import com.ampairs.cbstore.data.repository.StoreLookup
+import com.ampairs.cbstore.domain.model.ZonalOffice
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import dev.zacsweers.metro.Assisted
@@ -27,6 +29,7 @@ data class CbEmployeeFormUiState(
     val role: String = MaintenanceRoles.EXECUTIVE,
     val mobile: String = "",
     val zonalOfficeId: String = "",
+    val zonalOfficeOptions: List<ZonalOffice> = emptyList(),
     val isEdit: Boolean = false,
     val isSaving: Boolean = false,
     val saved: Boolean = false,
@@ -39,12 +42,16 @@ data class CbEmployeeFormUiState(
 class CbEmployeeFormViewModel(
     @Assisted private val employeeId: String?,
     private val repository: EmployeeRepository,
+    private val storeLookup: StoreLookup,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CbEmployeeFormUiState(isEdit = employeeId != null))
     val uiState: StateFlow<CbEmployeeFormUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            _uiState.update { it.copy(zonalOfficeOptions = storeLookup.activeZonalOffices()) }
+        }
         if (employeeId != null) {
             viewModelScope.launch {
                 repository.getEmployee(employeeId)?.let { e ->
