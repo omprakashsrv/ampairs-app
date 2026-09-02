@@ -150,6 +150,20 @@ import com.ampairs.unit.data.db.dao.UnitConversionDao
 import com.ampairs.unit.data.db.dao.UnitDao
 import com.ampairs.unit.data.db.entity.UnitConversionEntity
 import com.ampairs.unit.data.db.entity.UnitEntity
+import com.ampairs.cbemployee.data.db.dao.EmployeeDao
+import com.ampairs.cbemployee.data.db.entity.EmployeeEntity
+import com.ampairs.cbstore.data.db.dao.StoreDao as CbStoreDao
+import com.ampairs.cbstore.data.db.dao.ZonalOfficeDao
+import com.ampairs.cbstore.data.db.entity.StoreEntity as CbStoreEntity
+import com.ampairs.cbstore.data.db.entity.ZonalOfficeEntity
+import com.ampairs.cbmaintenance.data.db.dao.AssetCategoryAliasDao
+import com.ampairs.cbmaintenance.data.db.dao.PmEntryDao
+import com.ampairs.cbmaintenance.data.db.dao.PmScheduleDao
+import com.ampairs.cbmaintenance.data.db.dao.TicketDao
+import com.ampairs.cbmaintenance.data.db.entity.AssetCategoryAliasEntity
+import com.ampairs.cbmaintenance.data.db.entity.PmEntryEntity
+import com.ampairs.cbmaintenance.data.db.entity.PmScheduleEntity
+import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
 
 /**
  * Consolidated WorkspaceScope database — one file per workspace
@@ -256,10 +270,18 @@ import com.ampairs.unit.data.db.entity.UnitEntity
         ChatMessageEntity::class,
         // analytics (feature 022) — pull-only forecast mirror
         DemandForecastEntity::class,
+        // cb_* — California Burrito maintenance build (customer-specific)
+        EmployeeEntity::class,
+        ZonalOfficeEntity::class,
+        CbStoreEntity::class,
+        PmScheduleEntity::class,
+        PmEntryEntity::class,
+        TicketEntity::class,
+        AssetCategoryAliasEntity::class,
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
@@ -381,6 +403,15 @@ abstract class AmpairsWorkspaceDatabase : RoomDatabase() {
 
     // analytics (feature 022)
     abstract fun demandForecastDao(): DemandForecastDao
+
+    // cb_* (California Burrito maintenance build)
+    abstract fun cbEmployeeDao(): EmployeeDao
+    abstract fun cbZonalOfficeDao(): ZonalOfficeDao
+    abstract fun cbStoreDao(): CbStoreDao
+    abstract fun cbPmScheduleDao(): PmScheduleDao
+    abstract fun cbPmEntryDao(): PmEntryDao
+    abstract fun cbTicketDao(): TicketDao
+    abstract fun cbAssetCategoryAliasDao(): AssetCategoryAliasDao
 
     // sync state
     abstract fun syncStateDao(): SyncStateDao

@@ -37,7 +37,15 @@ enum class SyncEntity(val entityType: String) {
     ADJUSTMENT("adjustment"),
     DEMAND_FORECAST("demand_forecast"),
     MODULE("module"),
-    NOTIFICATION("notification_log");
+    NOTIFICATION("notification_log"),
+    // cb_* — California Burrito maintenance build (customer-specific)
+    CB_EMPLOYEE("cb_employee"),
+    CB_ZONAL_OFFICE("cb_zonal_office"),
+    CB_STORE("cb_store"),
+    CB_PM_SCHEDULE("cb_pm_schedule"),
+    CB_PM_ENTRY("cb_pm_entry"),
+    CB_TICKET("cb_ticket"),
+    CB_ASSET_ALIAS("cb_asset_alias");
 
     companion object {
         fun fromEntityType(type: String): SyncEntity? =
