@@ -55,9 +55,21 @@ fun PmDueListScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onOpenTickets) { Text("Tickets") }
                         OutlinedButton(onClick = onOpenSchedules) { Text("PM Schedules") }
+                        OutlinedButton(onClick = viewModel::generate, enabled = !uiState.isGenerating) {
+                            Text(if (uiState.isGenerating) "Generating…" else "Generate PM")
+                        }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.query,
+                        onValueChange = viewModel::onSearch,
+                        label = { Text("Search due PM") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
+            uiState.message?.let { Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) }
             uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
             if (uiState.entries.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

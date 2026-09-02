@@ -21,6 +21,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,13 +58,14 @@ fun CbStoreListScreen(
             Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Text("Outlets", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    if (uiState.stores.isNotEmpty()) {
-                        Text(
-                            "${uiState.stores.size} outlets",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.query,
+                        onValueChange = viewModel::onSearch,
+                        label = { Text("Search outlets") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
             uiState.error?.let {

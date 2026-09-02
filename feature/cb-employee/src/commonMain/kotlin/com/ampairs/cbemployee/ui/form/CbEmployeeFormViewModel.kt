@@ -18,6 +18,8 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -29,6 +31,8 @@ data class CbEmployeeFormUiState(
     val role: String = MaintenanceRoles.EXECUTIVE,
     val mobile: String = "",
     val zonalOfficeId: String = "",
+    val reportsToEmployeeId: String = "",
+    val managerOptions: List<Employee> = emptyList(),
     val zonalOfficeOptions: List<ZonalOffice> = emptyList(),
     val isEdit: Boolean = false,
     val isSaving: Boolean = false,
@@ -49,6 +53,13 @@ class CbEmployeeFormViewModel(
     val uiState: StateFlow<CbEmployeeFormUiState> = _uiState.asStateFlow()
 
     init {
+        // Reporting-manager options — every active member except the one being edited (no self-report).
+        repository.observeEmployees()
+            .onEach { list ->
+                _uiState.update { it.copy(managerOptions = list.filter { e -> e.uid != employeeId }) }
+            }
+            .launchIn(viewModelScope)
+
         viewModelScope.launch {
             _uiState.update { it.copy(zonalOfficeOptions = storeLookup.activeZonalOffices()) }
         }
@@ -62,6 +73,7 @@ class CbEmployeeFormViewModel(
                             role = e.role,
                             mobile = e.mobile ?: "",
                             zonalOfficeId = e.zonalOfficeId ?: "",
+                            reportsToEmployeeId = e.reportsToEmployeeId ?: "",
                         )
                     }
                 }
@@ -74,6 +86,7 @@ class CbEmployeeFormViewModel(
     fun onRole(v: String) = _uiState.update { it.copy(role = v) }
     fun onMobile(v: String) = _uiState.update { it.copy(mobile = v) }
     fun onZone(v: String) = _uiState.update { it.copy(zonalOfficeId = v) }
+    fun onManager(v: String) = _uiState.update { it.copy(reportsToEmployeeId = v) }
 
     fun save() {
         val state = _uiState.value
@@ -92,6 +105,7 @@ class CbEmployeeFormViewModel(
                     role = state.role,
                     mobile = state.mobile.trim().ifBlank { null },
                     zonalOfficeId = state.zonalOfficeId.trim().ifBlank { null },
+                    reportsToEmployeeId = state.reportsToEmployeeId.ifBlank { null },
                     active = true,
                 ),
             )

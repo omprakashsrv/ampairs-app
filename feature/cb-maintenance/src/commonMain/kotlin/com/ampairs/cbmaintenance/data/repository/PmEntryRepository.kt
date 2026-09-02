@@ -1,5 +1,6 @@
 package com.ampairs.cbmaintenance.data.repository
 
+import com.ampairs.cbmaintenance.data.api.CbMaintenanceApi
 import com.ampairs.cbmaintenance.data.db.dao.PmEntryDao
 import com.ampairs.cbmaintenance.data.db.entity.toEntity
 import com.ampairs.cbmaintenance.data.db.entity.toPmEntry
@@ -24,6 +25,8 @@ import kotlin.time.ExperimentalTime
 class PmEntryRepository(
     private val dao: PmEntryDao,
     private val syncStateDao: SyncStateDao,
+    // Non-sync, UI-invoked ops call only (allowed exception) — completion/reassign stay local + delegate.
+    private val api: CbMaintenanceApi,
 ) {
     fun observeOpenEntries(): Flow<List<PmEntry>> =
         dao.getOpenEntries().map { list -> list.map { it.toPmEntry() } }
@@ -59,6 +62,14 @@ class PmEntryRepository(
         }
         Unit
     }.onFailure { CbMaintenanceLogger.e("PmEntryRepository", "reassignEntry failed", it) }
+
+    /**
+     * Ask the server to generate due PM entries now (same work as the nightly job). The new entries
+     * arrive on the next pull; the ViewModel triggers one. Returns the count generated.
+     */
+    suspend fun generateNow(): Result<Int> =
+        runCatching { api.generatePmEntries() }
+            .onFailure { CbMaintenanceLogger.e("PmEntryRepository", "generateNow failed", it) }
 
     private fun nowIso(): String = Clock.System.now().toString()
 

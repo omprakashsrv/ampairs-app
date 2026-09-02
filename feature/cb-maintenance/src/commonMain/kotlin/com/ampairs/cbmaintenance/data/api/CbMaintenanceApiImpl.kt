@@ -108,4 +108,12 @@ class CbMaintenanceApiImpl(
             post(client, ApiUrlBuilder.cbMaintenanceUrl("v1/asset-category-aliases/sync"), items)
         return response.data ?: throw Exception("Failed to bulk update aliases")
     }
+
+    // --- Ops (non-sync, UI-invoked) -------------------------------------------------------------
+    override suspend fun generatePmEntries(): Int {
+        // No body; the server defaults the generation window from workspace settings.
+        val response: Response<Int> = post(client, ApiUrlBuilder.cbMaintenanceUrl("v1/ops/generate-pm"), emptyMap<String, String>())
+        if (response.error != null) throw Exception(response.error?.message ?: "Failed to generate PM entries")
+        return response.data ?: 0
+    }
 }

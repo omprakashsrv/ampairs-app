@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ampairs.cbemployee.domain.model.Employee
 import com.ampairs.cbemployee.domain.model.MaintenanceRoles
 import com.ampairs.cbstore.domain.model.ZonalOffice
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
@@ -62,6 +63,11 @@ fun CbEmployeeFormScreen(
             modifier = Modifier.fillMaxWidth(),
         )
         RoleDropdown(selected = uiState.role, onSelected = viewModel::onRole)
+        ManagerDropdown(
+            selectedId = uiState.reportsToEmployeeId,
+            options = uiState.managerOptions,
+            onSelected = viewModel::onManager,
+        )
         OutlinedTextField(
             value = uiState.mobile,
             onValueChange = viewModel::onMobile,
@@ -113,6 +119,51 @@ private fun RoleDropdown(selected: String, onSelected: (String) -> Unit) {
                     text = { Text(role.replace('_', ' ')) },
                     onClick = {
                         onSelected(role)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ManagerDropdown(
+    selectedId: String,
+    options: List<Employee>,
+    onSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = options.firstOrNull { it.uid == selectedId }?.name ?: ""
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = selectedName,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Reports to (optional)") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("— None —") },
+                onClick = {
+                    onSelected("")
+                    expanded = false
+                },
+            )
+            options.forEach { manager ->
+                DropdownMenuItem(
+                    text = { Text("${manager.name} · ${manager.role.replace('_', ' ')}") },
+                    onClick = {
+                        onSelected(manager.uid)
                         expanded = false
                     },
                 )
