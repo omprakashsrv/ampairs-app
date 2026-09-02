@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 
 data class CbEmployeeListUiState(
     val employees: List<Employee> = emptyList(),
+    val query: String = "",
     val isRefreshing: Boolean = false,
     val error: String? = null,
 )
@@ -38,9 +39,11 @@ class CbEmployeeListViewModel(
     private val _uiState = MutableStateFlow(CbEmployeeListUiState())
     val uiState: StateFlow<CbEmployeeListUiState> = _uiState.asStateFlow()
 
+    private var all: List<Employee> = emptyList()
+
     init {
         repository.observeEmployees()
-            .onEach { employees -> _uiState.update { it.copy(employees = employees, error = null) } }
+            .onEach { employees -> all = employees; applyFilter() }
             .catch { e -> _uiState.update { it.copy(error = e.message) } }
             .launchIn(viewModelScope)
 
@@ -49,6 +52,20 @@ class CbEmployeeListViewModel(
             .launchIn(viewModelScope)
 
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_EMPLOYEE))
+    }
+
+    fun onSearch(q: String) {
+        _uiState.update { it.copy(query = q) }
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        val q = _uiState.value.query.trim()
+        val filtered = if (q.isBlank()) all else all.filter {
+            it.name.contains(q, true) || it.employeeNo.contains(q, true) ||
+                it.role.contains(q, true) || (it.mobile?.contains(q, true) == true)
+        }
+        _uiState.update { it.copy(employees = filtered, error = null) }
     }
 
     fun refresh() {

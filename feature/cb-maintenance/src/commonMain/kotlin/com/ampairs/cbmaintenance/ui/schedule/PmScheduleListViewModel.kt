@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.update
 
 data class PmScheduleListUiState(
     val schedules: List<PmSchedule> = emptyList(),
+    val query: String = "",
     val isRefreshing: Boolean = false,
     val error: String? = null,
 )
@@ -37,9 +38,11 @@ class PmScheduleListViewModel(
     private val _uiState = MutableStateFlow(PmScheduleListUiState())
     val uiState: StateFlow<PmScheduleListUiState> = _uiState.asStateFlow()
 
+    private var all: List<PmSchedule> = emptyList()
+
     init {
         repository.observeSchedules()
-            .onEach { schedules -> _uiState.update { it.copy(schedules = schedules, error = null) } }
+            .onEach { schedules -> all = schedules; applyFilter() }
             .catch { e -> _uiState.update { it.copy(error = e.message) } }
             .launchIn(viewModelScope)
 
@@ -48,6 +51,19 @@ class PmScheduleListViewModel(
             .launchIn(viewModelScope)
 
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_SCHEDULE))
+    }
+
+    fun onSearch(q: String) {
+        _uiState.update { it.copy(query = q) }
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        val q = _uiState.value.query.trim()
+        val filtered = if (q.isBlank()) all else all.filter {
+            it.assetCategory.contains(q, true) || it.taskName.contains(q, true)
+        }
+        _uiState.update { it.copy(schedules = filtered, error = null) }
     }
 
     fun refresh() = syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CB_PM_SCHEDULE))

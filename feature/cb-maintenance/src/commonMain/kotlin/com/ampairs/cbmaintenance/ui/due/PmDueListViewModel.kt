@@ -24,7 +24,10 @@ import kotlinx.coroutines.launch
 
 data class PmDueListUiState(
     val entries: List<PmEntry> = emptyList(),
+    val query: String = "",
     val isRefreshing: Boolean = false,
+    val isGenerating: Boolean = false,
+    val message: String? = null,
     val error: String? = null,
 )
 
@@ -39,9 +42,11 @@ class PmDueListViewModel(
     private val _uiState = MutableStateFlow(PmDueListUiState())
     val uiState: StateFlow<PmDueListUiState> = _uiState.asStateFlow()
 
+    private var all: List<PmEntry> = emptyList()
+
     init {
         repository.observeOpenEntries()
-            .onEach { entries -> _uiState.update { it.copy(entries = entries, error = null) } }
+            .onEach { entries -> all = entries; applyFilter() }
             .catch { e -> _uiState.update { it.copy(error = e.message) } }
             .launchIn(viewModelScope)
 
@@ -52,7 +57,34 @@ class PmDueListViewModel(
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_ENTRY))
     }
 
+    fun onSearch(q: String) {
+        _uiState.update { it.copy(query = q) }
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        val q = _uiState.value.query.trim()
+        val filtered = if (q.isBlank()) all else all.filter {
+            it.assetCategory.contains(q, true) || it.status.contains(q, true) || it.storeId.contains(q, true)
+        }
+        _uiState.update { it.copy(entries = filtered, error = null) }
+    }
+
     fun refresh() = syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CB_PM_ENTRY))
+
+    /** Ask the server to roll due PM entries forward now, then pull them in. */
+    fun generate() {
+        if (_uiState.value.isGenerating) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGenerating = true, message = null, error = null) }
+            val result = repository.generateNow()
+            _uiState.update {
+                if (result.isSuccess) it.copy(isGenerating = false, message = "Generated ${result.getOrNull() ?: 0} PM entries")
+                else it.copy(isGenerating = false, error = result.exceptionOrNull()?.message ?: "Failed to generate PM")
+            }
+            if (result.isSuccess) syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_ENTRY))
+        }
+    }
 
     /** Complete with everything passing — no ticket spawned. */
     fun markAllOk(entryId: String) {

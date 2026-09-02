@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 data class CbStoreListUiState(
     val stores: List<Store> = emptyList(),
     val zonalOfficeNames: Map<String, String> = emptyMap(),
+    val query: String = "",
     val isRefreshing: Boolean = false,
     val error: String? = null,
 )
@@ -40,9 +41,11 @@ class CbStoreListViewModel(
     private val _uiState = MutableStateFlow(CbStoreListUiState())
     val uiState: StateFlow<CbStoreListUiState> = _uiState.asStateFlow()
 
+    private var all: List<Store> = emptyList()
+
     init {
         repository.observeStores()
-            .onEach { stores -> _uiState.update { it.copy(stores = stores, error = null) } }
+            .onEach { stores -> all = stores; applyFilter() }
             .catch { e -> _uiState.update { it.copy(error = e.message) } }
             .launchIn(viewModelScope)
 
@@ -58,6 +61,19 @@ class CbStoreListViewModel(
 
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_ZONAL_OFFICE))
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_STORE))
+    }
+
+    fun onSearch(q: String) {
+        _uiState.update { it.copy(query = q) }
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        val q = _uiState.value.query.trim()
+        val filtered = if (q.isBlank()) all else all.filter {
+            it.code.contains(q, true) || it.name.contains(q, true) || it.city.contains(q, true)
+        }
+        _uiState.update { it.copy(stores = filtered, error = null) }
     }
 
     fun refresh() {

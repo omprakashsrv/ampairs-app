@@ -16,3 +16,6 @@ data object CbRaiseTicketRoute : NavKey
 
 @Serializable
 data object CbPmScheduleListRoute : NavKey
+
+@Serializable
+data class CbPmScheduleFormRoute(val scheduleId: String? = null) : NavKey

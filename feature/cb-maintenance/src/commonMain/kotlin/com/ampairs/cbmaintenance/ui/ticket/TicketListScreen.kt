@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,12 +50,21 @@ fun TicketListScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "Tickets",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(16.dp),
-                )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Tickets",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.query,
+                        onValueChange = viewModel::onSearch,
+                        label = { Text("Search tickets") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
             uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
             if (uiState.tickets.isEmpty()) {
@@ -67,7 +77,9 @@ fun TicketListScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    items(uiState.tickets, key = { it.uid }) { ticket -> TicketCard(ticket) }
+                    items(uiState.tickets, key = { it.uid }) { ticket ->
+                        TicketCard(ticket, uiState.storeNames[ticket.storeId] ?: ticket.storeId)
+                    }
                     item { Spacer(Modifier.height(80.dp)) }
                 }
             }
@@ -76,12 +88,12 @@ fun TicketListScreen(
 }
 
 @Composable
-private fun TicketCard(ticket: Ticket) {
+private fun TicketCard(ticket: Ticket, storeLabel: String) {
     Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
             Text("${ticket.assetCategory} · ${ticket.subCategory}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                "Store ${ticket.storeId} · ${ticket.status}${if (ticket.originPmEntryId != null) " · from PM" else ""}",
+                "$storeLabel · ${ticket.status}${if (ticket.originPmEntryId != null) " · from PM" else ""}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
