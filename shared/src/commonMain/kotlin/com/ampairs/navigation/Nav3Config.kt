@@ -33,6 +33,14 @@ import com.ampairs.tax.ui.navigation.TaxConfigurationRoute
 import com.ampairs.tax.ui.navigation.TaxListRoute
 import com.ampairs.unit.ui.UnitFormRoute
 import com.ampairs.unit.ui.UnitListRoute
+import com.ampairs.cbemployee.ui.CbEmployeeFormRoute
+import com.ampairs.cbemployee.ui.CbEmployeeListRoute
+import com.ampairs.cbstore.ui.CbStoreFormRoute
+import com.ampairs.cbstore.ui.CbStoreListRoute
+import com.ampairs.cbmaintenance.ui.CbPmDueListRoute
+import com.ampairs.cbmaintenance.ui.CbPmScheduleListRoute
+import com.ampairs.cbmaintenance.ui.CbRaiseTicketRoute
+import com.ampairs.cbmaintenance.ui.CbTicketListRoute
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.printing.ui.PrintQueueRoute
 import com.ampairs.printing.ui.TemplateEditRoute
@@ -63,6 +71,9 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(Route.Business::class)
                 subclass(Route.Subscription::class)
                 subclass(Route.Unit::class)
+                subclass(Route.CbEmployee::class)
+                subclass(Route.CbStore::class)
+                subclass(Route.CbMaintenance::class)
                 subclass(Route.Storefront::class)
                 subclass(Route.EcomUsers::class)
                 subclass(Route.FormConfig::class)
@@ -190,6 +201,16 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 // Unit Navigation Routes (standalone)
                 subclass(UnitListRoute::class)
                 subclass(UnitFormRoute::class)
+
+                // California Burrito maintenance build routes (standalone)
+                subclass(CbEmployeeListRoute::class)
+                subclass(CbEmployeeFormRoute::class)
+                subclass(CbStoreListRoute::class)
+                subclass(CbStoreFormRoute::class)
+                subclass(CbPmDueListRoute::class)
+                subclass(CbTicketListRoute::class)
+                subclass(CbRaiseTicketRoute::class)
+                subclass(CbPmScheduleListRoute::class)
 
                 // Printing Routes
                 subclass(PrinterListRoute::class)

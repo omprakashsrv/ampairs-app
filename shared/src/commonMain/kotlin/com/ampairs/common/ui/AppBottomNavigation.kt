@@ -105,6 +105,9 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> Route.Tax
     ModuleCodes.BUSINESS_PROFILE -> Route.Business
     ModuleCodes.UNIT_MANAGEMENT -> Route.Unit
+    ModuleCodes.CB_EMPLOYEE -> Route.CbEmployee
+    ModuleCodes.CB_STORE -> Route.CbStore
+    ModuleCodes.CB_MAINTENANCE -> Route.CbMaintenance
     ModuleCodes.PRINTING -> Route.Printing
     ModuleCodes.PAYMENT_COLLECTION -> Route.Payment
     ModuleCodes.STOREFRONT_MANAGEMENT -> Route.Storefront
@@ -146,6 +149,17 @@ fun resolveActiveModuleCode(currentRoute: NavKey?): String? = when {
     currentRoute is Route.Unit
         || currentRoute is UnitListRoute
         || currentRoute is UnitFormRoute -> ModuleCodes.UNIT_MANAGEMENT
+    currentRoute is Route.CbEmployee
+        || currentRoute is com.ampairs.cbemployee.ui.CbEmployeeListRoute
+        || currentRoute is com.ampairs.cbemployee.ui.CbEmployeeFormRoute -> ModuleCodes.CB_EMPLOYEE
+    currentRoute is Route.CbStore
+        || currentRoute is com.ampairs.cbstore.ui.CbStoreListRoute
+        || currentRoute is com.ampairs.cbstore.ui.CbStoreFormRoute -> ModuleCodes.CB_STORE
+    currentRoute is Route.CbMaintenance
+        || currentRoute is com.ampairs.cbmaintenance.ui.CbPmDueListRoute
+        || currentRoute is com.ampairs.cbmaintenance.ui.CbTicketListRoute
+        || currentRoute is com.ampairs.cbmaintenance.ui.CbRaiseTicketRoute
+        || currentRoute is com.ampairs.cbmaintenance.ui.CbPmScheduleListRoute -> ModuleCodes.CB_MAINTENANCE
     currentRoute is Route.Printing
         || currentRoute is PrinterListRoute
         || currentRoute is TemplateListRoute

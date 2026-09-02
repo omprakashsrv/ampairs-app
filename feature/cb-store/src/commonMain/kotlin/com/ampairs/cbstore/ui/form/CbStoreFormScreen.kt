@@ -1,5 +1,7 @@
 package com.ampairs.cbstore.ui.form
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -97,6 +99,7 @@ private fun ZoneDropdown(
     onSelected: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val source = remember { MutableInteractionSource() }
     val selectedName = options.firstOrNull { it.first == selectedId }?.second ?: ""
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
@@ -104,14 +107,8 @@ private fun ZoneDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text("Zonal office") },
-            trailingIcon = {
-                Icon(
-                    Icons.Default.ArrowDropDown,
-                    contentDescription = "Pick zone",
-                    modifier = Modifier.clickableNoIndication { expanded = true },
-                )
-            },
-            modifier = Modifier.fillMaxWidth().clickableNoIndication { expanded = true },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = "Pick zone") },
+            modifier = Modifier.fillMaxWidth().clickable(interactionSource = source, indication = null) { expanded = true },
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { (id, name) ->
@@ -126,10 +123,3 @@ private fun ZoneDropdown(
         }
     }
 }
-
-private fun Modifier.clickableNoIndication(onClick: () -> Unit): Modifier =
-    this.then(androidx.compose.foundation.clickable(
-        interactionSource = androidx.compose.foundation.interaction.MutableInteractionSource(),
-        indication = null,
-        onClick = onClick,
-    ))
