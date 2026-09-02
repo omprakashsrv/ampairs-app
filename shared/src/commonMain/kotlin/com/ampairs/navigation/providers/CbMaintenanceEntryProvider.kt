@@ -12,7 +12,7 @@ import com.ampairs.cbmaintenance.ui.schedule.PmScheduleListScreen
 import com.ampairs.cbmaintenance.ui.ticket.RaiseTicketScreen
 import com.ampairs.cbmaintenance.ui.ticket.TicketListScreen
 
-/** Entry provider for cb-maintenance routes (California Burrito PM + tickets). */
+/** Entry provider for cb-maintenance routes (PM + tickets). */
 fun cbMaintenanceEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>,

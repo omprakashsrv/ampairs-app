@@ -3,7 +3,7 @@ package com.ampairs.cbstore.domain.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** A California Burrito zonal office. Matches the backend `cb_store` ZonalOfficeResponse. */
+/** A zonal office. Matches the backend `cb_store` ZonalOfficeResponse. */
 @Serializable
 data class ZonalOffice(
     val uid: String = "",
@@ -15,7 +15,7 @@ data class ZonalOffice(
     @SerialName("updated_at") val updatedAt: String? = null,
 )
 
-/** A California Burrito outlet. Matches the backend `cb_store` StoreResponse. */
+/** An outlet. Matches the backend `cb_store` StoreResponse. */
 @Serializable
 data class Store(
     val uid: String = "",

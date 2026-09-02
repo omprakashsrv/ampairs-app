@@ -6,7 +6,7 @@ import androidx.sqlite.execSQL
 
 /**
  * v5 -> v6 for the consolidated [com.ampairs.database.AmpairsWorkspaceDatabase]: creates the
- * California Burrito maintenance-build tables (customer-specific `cb_*` feature). All tables are
+ * maintenance-build tables (customer-specific `cb_*` feature). All tables are
  * server-authoritative and re-sync from the backend `/sync` feeds, so this is a pure create — no
  * data mapping. Column shapes + index names mirror Room's generated schema for the new entities.
  */

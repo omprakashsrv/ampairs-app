@@ -216,7 +216,7 @@ private fun mainRouteEntryProvider(
         }
     }
 
-    // California Burrito maintenance build redirects
+    // maintenance build redirects
     is Route.CbEmployee -> NavEntry(key) {
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()

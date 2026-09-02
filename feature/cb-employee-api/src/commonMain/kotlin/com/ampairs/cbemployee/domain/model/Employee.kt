@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * A California Burrito maintenance-org roster row. Matches the backend `cb_employee`
+ * A maintenance-org roster row. Matches the backend `cb_employee`
  * EmployeeResponse. `role` is the backend enum name (EXECUTIVE / SENIOR_EXECUTIVE /
  * ASSISTANT_MANAGER / MAINTENANCE_INCHARGE / MAINTENANCE_LEADER).
  */

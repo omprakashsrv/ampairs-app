@@ -38,7 +38,7 @@ enum class SyncEntity(val entityType: String) {
     DEMAND_FORECAST("demand_forecast"),
     MODULE("module"),
     NOTIFICATION("notification_log"),
-    // cb_* — California Burrito maintenance build (customer-specific)
+    // cb_* — maintenance build (customer-specific)
     CB_EMPLOYEE("cb_employee"),
     CB_ZONAL_OFFICE("cb_zonal_office"),
     CB_STORE("cb_store"),

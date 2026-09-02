@@ -18,7 +18,7 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 /**
- * Local-only data access for California Burrito outlets + zonal offices. The [CbStoreApi] is owned
+ * Local-only data access for outlets + zonal offices. The [CbStoreApi] is owned
  * by the sync delegates; writes here persist to Room as unsynced and mark the entity PENDING_PUSH.
  */
 @OptIn(ExperimentalTime::class)

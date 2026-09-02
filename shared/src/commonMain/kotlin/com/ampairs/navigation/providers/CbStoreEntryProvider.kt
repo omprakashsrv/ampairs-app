@@ -8,7 +8,7 @@ import com.ampairs.cbstore.ui.CbStoreListRoute
 import com.ampairs.cbstore.ui.form.CbStoreFormScreen
 import com.ampairs.cbstore.ui.list.CbStoreListScreen
 
-/** Entry provider for cb-store routes (California Burrito outlets). */
+/** Entry provider for cb-store routes (outlets). */
 fun cbStoreEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>,

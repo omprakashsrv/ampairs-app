@@ -8,7 +8,7 @@ import com.ampairs.cbemployee.ui.CbEmployeeListRoute
 import com.ampairs.cbemployee.ui.form.CbEmployeeFormScreen
 import com.ampairs.cbemployee.ui.list.CbEmployeeListScreen
 
-/** Entry provider for cb-employee routes (California Burrito maintenance team). */
+/** Entry provider for cb-employee routes (maintenance team). */
 fun cbEmployeeEntryProvider(
     key: NavKey,
     backStack: MutableList<NavKey>,

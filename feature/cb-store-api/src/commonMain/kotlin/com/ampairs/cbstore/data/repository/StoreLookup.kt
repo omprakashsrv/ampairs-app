@@ -4,7 +4,7 @@ import com.ampairs.cbstore.domain.model.Store
 import com.ampairs.cbstore.domain.model.ZonalOffice
 
 /**
- * Cross-feature read surface for California Burrito outlets. `cb-maintenance` depends on this
+ * Cross-feature read surface for outlets. `cb-maintenance` depends on this
  * (`-api`) interface only — never on the impl module (api/impl split).
  */
 interface StoreLookup {

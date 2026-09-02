@@ -270,7 +270,7 @@ import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
         ChatMessageEntity::class,
         // analytics (feature 022) — pull-only forecast mirror
         DemandForecastEntity::class,
-        // cb_* — California Burrito maintenance build (customer-specific)
+        // cb_* — maintenance build (customer-specific)
         EmployeeEntity::class,
         ZonalOfficeEntity::class,
         CbStoreEntity::class,
@@ -404,7 +404,7 @@ abstract class AmpairsWorkspaceDatabase : RoomDatabase() {
     // analytics (feature 022)
     abstract fun demandForecastDao(): DemandForecastDao
 
-    // cb_* (California Burrito maintenance build)
+    // cb_* (maintenance build)
     abstract fun cbEmployeeDao(): EmployeeDao
     abstract fun cbZonalOfficeDao(): ZonalOfficeDao
     abstract fun cbStoreDao(): CbStoreDao

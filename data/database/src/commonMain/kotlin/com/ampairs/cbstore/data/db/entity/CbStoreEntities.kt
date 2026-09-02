@@ -5,7 +5,7 @@ import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
 
-/** Room entity for a California Burrito zonal office. `id` is the backend `uid`. */
+/** Room entity for a zonal office. `id` is the backend `uid`. */
 @Entity(
     tableName = "cb_zonal_offices",
     indices = [
@@ -23,7 +23,7 @@ data class ZonalOfficeEntity(
     @ColumnInfo(name = "ref_id") val refId: String? = null,
 )
 
-/** Room entity for a California Burrito outlet. `id` is the backend `uid`. */
+/** Room entity for an outlet. `id` is the backend `uid`. */
 @Entity(
     tableName = "cb_stores",
     indices = [

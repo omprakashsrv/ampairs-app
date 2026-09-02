@@ -202,7 +202,7 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(UnitListRoute::class)
                 subclass(UnitFormRoute::class)
 
-                // California Burrito maintenance build routes (standalone)
+                // maintenance build routes (standalone)
                 subclass(CbEmployeeListRoute::class)
                 subclass(CbEmployeeFormRoute::class)
                 subclass(CbStoreListRoute::class)

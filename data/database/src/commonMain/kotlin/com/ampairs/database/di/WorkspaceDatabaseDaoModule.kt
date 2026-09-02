@@ -294,7 +294,7 @@ interface WorkspaceDatabaseDaoModule {
         @Provides
         fun provideDemandForecastDao(db: AmpairsWorkspaceDatabase): DemandForecastDao = db.demandForecastDao()
 
-        // cb_* (California Burrito maintenance build)
+        // cb_* (maintenance build)
         @Provides
         fun provideCbEmployeeDao(db: AmpairsWorkspaceDatabase): com.ampairs.cbemployee.data.db.dao.EmployeeDao =
             db.cbEmployeeDao()

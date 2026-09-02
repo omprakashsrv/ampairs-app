@@ -76,7 +76,7 @@ include(
     ":feature:workspace",
     ":feature:analytics",
     ":feature:imagesearch",
-    // cb_* — California Burrito maintenance build (customer-specific)
+    // cb_* — maintenance build (customer-specific, gated per workspace)
     ":feature:cb-employee-api",
     ":feature:cb-employee",
     ":feature:cb-store-api",

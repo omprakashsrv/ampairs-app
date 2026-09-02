@@ -12,7 +12,7 @@ object ModuleCodes {
     const val BUSINESS_PROFILE = "business-profile"
     const val UNIT_MANAGEMENT = "unit-management"
 
-    // California Burrito maintenance build (customer-specific cb_* modules)
+    // maintenance build (customer-specific cb_* modules)
     const val CB_EMPLOYEE = "cb-employee"
     const val CB_STORE = "cb-store"
     const val CB_MAINTENANCE = "cb-maintenance"

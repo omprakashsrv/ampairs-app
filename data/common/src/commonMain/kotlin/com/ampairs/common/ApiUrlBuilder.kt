@@ -220,7 +220,7 @@ object ApiUrlBuilder {
         return if (cleanPath.isBlank()) base else "$base/$cleanPath"
     }
 
-    // California Burrito maintenance build (customer-specific cb_* backend modules)
+    // maintenance build (customer-specific cb_* backend modules)
     fun cbEmployeeUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/cb_employee/$cleanPath"

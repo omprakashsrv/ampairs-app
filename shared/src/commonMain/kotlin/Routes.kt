@@ -44,7 +44,7 @@ sealed interface Route : NavKey {
     @Serializable
     data object Unit : Route
 
-    // California Burrito maintenance build (customer-specific cb_* modules)
+    // maintenance build (customer-specific cb_* modules)
     @Serializable
     data object CbEmployee : Route
 

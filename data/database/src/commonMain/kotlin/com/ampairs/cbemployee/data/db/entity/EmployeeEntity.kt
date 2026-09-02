@@ -6,7 +6,7 @@ import androidx.room3.Index
 import androidx.room3.PrimaryKey
 
 /**
- * Room entity for a California Burrito maintenance-org roster row.
+ * Room entity for a maintenance-org roster row.
  *
  * `mapped_store_ids` is stored as a JSON string (the feature mapper encodes/decodes it) so no Room
  * type converter is needed. `id` is the backend `uid`.
