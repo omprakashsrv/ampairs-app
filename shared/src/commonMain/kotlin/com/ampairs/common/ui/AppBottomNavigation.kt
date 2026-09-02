@@ -12,6 +12,7 @@ import WorkspaceRoute
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Dashboard
@@ -43,6 +44,9 @@ import androidx.navigation3.runtime.NavKey
 import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.nav_alerts
 import ampairsapp.shared.generated.resources.nav_assistant
+import ampairsapp.shared.generated.resources.nav_cb_employees
+import ampairsapp.shared.generated.resources.nav_cb_maintenance
+import ampairsapp.shared.generated.resources.nav_cb_stores
 import ampairsapp.shared.generated.resources.nav_dashboard
 import ampairsapp.shared.generated.resources.nav_home
 import ampairsapp.shared.generated.resources.nav_inventory
@@ -204,6 +208,9 @@ fun moduleCodeToDisplayName(code: String): String = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> stringResource(Res.string.nav_tax)
     ModuleCodes.BUSINESS_PROFILE -> stringResource(Res.string.nav_more_business)
     ModuleCodes.UNIT_MANAGEMENT -> stringResource(Res.string.nav_units)
+    ModuleCodes.CB_EMPLOYEE -> stringResource(Res.string.nav_cb_employees)
+    ModuleCodes.CB_STORE -> stringResource(Res.string.nav_cb_stores)
+    ModuleCodes.CB_MAINTENANCE -> stringResource(Res.string.nav_cb_maintenance)
     ModuleCodes.PRINTING -> stringResource(Res.string.nav_printing)
     ModuleCodes.PAYMENT_COLLECTION -> stringResource(Res.string.nav_payments)
     ModuleCodes.STOREFRONT_MANAGEMENT -> stringResource(Res.string.nav_storefront)
@@ -227,6 +234,9 @@ fun moduleCodeToIcon(code: String): ImageVector = when (code) {
     ModuleCodes.TAX_CODE_MANAGEMENT -> Icons.Default.Calculate
     ModuleCodes.BUSINESS_PROFILE -> Icons.Default.Business
     ModuleCodes.UNIT_MANAGEMENT -> Icons.Default.Straighten
+    ModuleCodes.CB_EMPLOYEE -> Icons.Default.Group
+    ModuleCodes.CB_STORE -> Icons.Default.Storefront
+    ModuleCodes.CB_MAINTENANCE -> Icons.Default.Build
     ModuleCodes.PRINTING -> Icons.Default.Print
     ModuleCodes.PAYMENT_COLLECTION -> Icons.Default.Payments
     ModuleCodes.STOREFRONT_MANAGEMENT -> Icons.Default.Storefront
