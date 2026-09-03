@@ -6,6 +6,7 @@ import com.ampairs.cbmaintenance.data.repository.PmEntryRepository
 import com.ampairs.cbmaintenance.data.repository.TicketRepository
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import com.ampairs.cbmaintenance.domain.model.Ticket
+import com.ampairs.cbstore.data.repository.StoreLookup
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import dev.zacsweers.metro.Assisted
@@ -28,6 +29,7 @@ private const val PM_ENTRY_UID_PREFIX = "PME"
 
 data class TicketDetailUiState(
     val ticket: Ticket? = null,
+    val storeLabel: String = "",   // outlet "CODE · Name" resolved from the ticket's storeId
     val pmEntries: List<PmEntry> = emptyList(),
     val isCreating: Boolean = false,
     val isClosing: Boolean = false,
@@ -51,6 +53,7 @@ class TicketDetailViewModel(
     @Assisted private val ticketId: String,
     private val ticketRepository: TicketRepository,
     private val pmEntryRepository: PmEntryRepository,
+    private val storeLookup: StoreLookup,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TicketDetailUiState())
@@ -65,7 +68,12 @@ class TicketDetailViewModel(
 
     private fun loadTicket() {
         viewModelScope.launch {
-            _uiState.update { it.copy(ticket = ticketRepository.getTicket(ticketId)) }
+            val ticket = ticketRepository.getTicket(ticketId)
+            val label = ticket?.storeId?.let { storeId ->
+                runCatching { storeLookup.activeStores().firstOrNull { it.uid == storeId } }.getOrNull()
+                    ?.let { listOf(it.code, it.name).filter { p -> p.isNotBlank() }.joinToString(" · ") }
+            } ?: ""
+            _uiState.update { it.copy(ticket = ticket, storeLabel = label) }
         }
     }
 

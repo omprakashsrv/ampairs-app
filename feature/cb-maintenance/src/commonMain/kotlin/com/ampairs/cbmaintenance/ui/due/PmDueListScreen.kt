@@ -116,6 +116,8 @@ fun PmDueListScreen(
                     items(uiState.entries, key = { it.uid }) { entry ->
                         PmEntryCard(
                             entry = entry,
+                            storeLabel = uiState.storeLabels[entry.storeId] ?: entry.storeId,
+                            ticketLabel = entry.ticketId?.let { uiState.ticketLabels[it] ?: it },
                             onOk = { completeFor = entry.uid; issueMode = false },
                             onIssue = { completeFor = entry.uid; issueMode = true },
                         )
@@ -242,18 +244,24 @@ private fun DoneByDropdown(employees: List<Employee>, selectedId: String, onSele
 }
 
 @Composable
-private fun PmEntryCard(entry: PmEntry, onOk: () -> Unit, onIssue: () -> Unit) {
+private fun PmEntryCard(
+    entry: PmEntry,
+    storeLabel: String,
+    ticketLabel: String?,
+    onOk: () -> Unit,
+    onIssue: () -> Unit,
+) {
     Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
             Text(entry.assetCategory, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                "Store ${entry.storeId} · ${entry.status}${entry.dueDate?.let { " · due ${it.take(10)}" } ?: ""}",
+                "$storeLabel · ${entry.status}${entry.dueDate?.let { " · due ${it.take(10)}" } ?: ""}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (!entry.ticketId.isNullOrBlank()) {
+            if (ticketLabel != null) {
                 Text(
-                    "For ticket ${entry.ticketId}",
+                    "For ticket: $ticketLabel",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

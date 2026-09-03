@@ -79,6 +79,12 @@ fun TicketDetailScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
+                        if (uiState.storeLabel.isNotBlank()) {
+                            Text(
+                                "Outlet: ${uiState.storeLabel}",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
                         Text(
                             "Status: ${ticket.status}",
                             style = MaterialTheme.typography.bodyMedium,
