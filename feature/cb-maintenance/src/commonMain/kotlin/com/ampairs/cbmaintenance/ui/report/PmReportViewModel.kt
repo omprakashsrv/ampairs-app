@@ -16,6 +16,7 @@ import com.ampairs.sync.SyncEvent
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import dev.zacsweers.metro.ContributesIntoMap
+import com.ampairs.sync.SyncStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -75,22 +76,49 @@ class PmReportViewModel(
 
     private val currentYear: String = Clock.System.now().toString().take(4)
 
+    // Store/employee lookups are one-shot suspend calls; hold them as flows so the report rebuilds
+    // when they finish syncing (otherwise a snapshot taken before the pull lands stays empty).
+    private val storesById = MutableStateFlow<Map<String, Store>>(emptyMap())
+    private val nameById = MutableStateFlow<Map<String, String>>(emptyMap())
+
     init {
         _uiState.update { it.copy(year = currentYear) }
-        // Refresh the underlying data.
+        // Refresh every feed the report joins on. Without CB_PM_SCHEDULE, entries can't resolve
+        // their schedule → task shows "Ad-hoc" and Freq is blank.
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_ENTRY))
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_SCHEDULE))
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_STORE))
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_EMPLOYEE))
+
+        loadStores(); loadNames()
+        syncService.observeEntity(SyncEntity.CB_STORE)
+            .onEach { if (it?.status is SyncStatus.Success) loadStores() }.launchIn(viewModelScope)
+        syncService.observeEntity(SyncEntity.CB_EMPLOYEE)
+            .onEach { if (it?.status is SyncStatus.Success) loadNames() }.launchIn(viewModelScope)
+
+        combine(
+            pmEntryRepository.observeAllEntries(),
+            pmScheduleRepository.observeSchedules(),
+            storesById,
+            nameById,
+        ) { entries, schedules, stores, names ->
+            buildRows(entries, schedules.associateBy { it.uid }, stores, names)
+        }
+            .onEach { rows -> _uiState.update { it.copy(rows = rows, loading = false) } }
+            .launchIn(viewModelScope)
+    }
+
+    private fun loadStores() {
         viewModelScope.launch {
-            val storesById = storeLookup.activeStores().associateBy { it.uid }
-            val nameById = runCatching { employeeLookup.activeEmployees() }.getOrDefault(emptyList())
-                .associate { it.uid to it.name.ifBlank { it.employeeNo } }
-            combine(
-                pmEntryRepository.observeAllEntries(),
-                pmScheduleRepository.observeSchedules(),
-            ) { entries, schedules ->
-                buildRows(entries, schedules.associateBy { it.uid }, storesById, nameById)
-            }
-                .onEach { rows -> _uiState.update { it.copy(rows = rows, loading = false) } }
-                .launchIn(viewModelScope)
+            runCatching { storeLookup.activeStores() }
+                .onSuccess { list -> storesById.value = list.associateBy { it.uid } }
+        }
+    }
+
+    private fun loadNames() {
+        viewModelScope.launch {
+            runCatching { employeeLookup.activeEmployees() }
+                .onSuccess { list -> nameById.value = list.associate { it.uid to it.name.ifBlank { it.employeeNo } } }
         }
     }
 

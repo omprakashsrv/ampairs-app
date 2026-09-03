@@ -83,6 +83,7 @@ fun TicketListScreen(
                         TicketCard(
                             ticket = ticket,
                             storeLabel = uiState.storeNames[ticket.storeId] ?: ticket.storeId,
+                            doneBy = uiState.doneByLabels[ticket.uid],
                             onClick = { onTicketClick(ticket.uid) },
                         )
                     }
@@ -94,7 +95,7 @@ fun TicketListScreen(
 }
 
 @Composable
-private fun TicketCard(ticket: Ticket, storeLabel: String, onClick: () -> Unit) {
+private fun TicketCard(ticket: Ticket, storeLabel: String, doneBy: String?, onClick: () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.medium,
         tonalElevation = 1.dp,
@@ -107,6 +108,13 @@ private fun TicketCard(ticket: Ticket, storeLabel: String, onClick: () -> Unit) 
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (!doneBy.isNullOrBlank()) {
+                Text(
+                    "Done by: $doneBy",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             ticket.description?.let {
                 Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
             }
