@@ -17,6 +17,7 @@ data class PmSchedule(
     val uid: String = "",
     val department: String = "",
     @SerialName("asset_category") val assetCategory: String = "",
+    @SerialName("ticket_bucket_id") val ticketBucketId: String? = null,
     @SerialName("task_name") val taskName: String = "",
     val checklist: List<String>? = null,
     @SerialName("frequency_unit") val frequencyUnit: String = "MONTH",

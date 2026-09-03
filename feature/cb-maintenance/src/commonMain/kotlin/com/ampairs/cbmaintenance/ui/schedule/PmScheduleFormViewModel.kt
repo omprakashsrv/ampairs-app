@@ -33,9 +33,12 @@ object FrequencyUnits {
 }
 
 data class PmScheduleFormUiState(
-    // Category-level taxonomy link: department + category (the PM's asset_category).
+    // Full taxonomy cascade (Department › Category › Issue [› Issue-detail]) from the ticket-bucket
+    // catalog. The chosen leaf resolves to a ticket_bucket uid, stored on the schedule.
     val department: String = "",
-    val assetCategory: String = "",
+    val assetCategory: String = "",     // = the taxonomy "category" level
+    val subCategory1: String = "",      // = the taxonomy "issue" level
+    val subCategory2: String = "",      // = the taxonomy "issue-detail" level (only some leaves)
     val taskName: String = "",
     val frequencyUnit: String = "MONTH",
     val frequencyInterval: String = "1",
@@ -45,6 +48,7 @@ data class PmScheduleFormUiState(
     val saved: Boolean = false,
     val error: String? = null,
 ) {
+    // Derived cascade options (distinct, sorted), each narrowed by the selection above it.
     val departmentOptions: List<String>
         get() = buckets.map { it.department }.filter { it.isNotBlank() }.distinct().sorted()
 
@@ -52,9 +56,27 @@ data class PmScheduleFormUiState(
         get() = buckets.filter { it.department == department }
             .map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
 
+    val subCategory1Options: List<String>
+        get() = buckets.filter { it.department == department && it.category == assetCategory }
+            .map { it.subCategory1 }.filter { it.isNotBlank() }.distinct().sorted()
+
+    val subCategory2Options: List<String>
+        get() = buckets.filter {
+            it.department == department && it.category == assetCategory && it.subCategory1 == subCategory1
+        }.map { it.subCategory2 }.filter { it.isNotBlank() }.distinct().sorted()
+
     val isValid: Boolean
         get() = assetCategory.isNotBlank() && taskName.isNotBlank() &&
-            (frequencyInterval.toIntOrNull()?.let { it > 0 } == true)
+            (frequencyInterval.toIntOrNull()?.let { it > 0 } == true) &&
+            // When the catalog has an Issue level for this category, require it (full-leaf link);
+            // categories with no deeper level stay valid at category granularity.
+            (subCategory1Options.isEmpty() || subCategory1.isNotBlank())
+
+    /** The exact ticket_bucket leaf the current cascade selection maps to, if any. */
+    fun resolveBucketId(): String? = buckets.firstOrNull {
+        it.department == department && it.category == assetCategory &&
+            it.subCategory1 == subCategory1 && it.subCategory2 == subCategory2
+    }?.uid
 }
 
 @AssistedInject
@@ -68,9 +90,31 @@ class PmScheduleFormViewModel(
     private val _uiState = MutableStateFlow(PmScheduleFormUiState(isEdit = scheduleId != null))
     val uiState: StateFlow<PmScheduleFormUiState> = _uiState.asStateFlow()
 
+    // When editing, the schedule's stored leaf id — used to back-fill the cascade once the
+    // catalog has loaded (the schedule only stores the leaf uid, not the level strings).
+    private var pendingBucketId: String? = null
+
     init {
         ticketBucketRepository.observeBuckets()
-            .onEach { list -> _uiState.update { it.copy(buckets = list) } }
+            .onEach { list ->
+                _uiState.update { state ->
+                    val backfilled = pendingBucketId
+                        ?.let { id -> list.firstOrNull { it.uid == id } }
+                        ?.takeIf { state.subCategory1.isBlank() }
+                    if (backfilled != null) {
+                        pendingBucketId = null
+                        state.copy(
+                            buckets = list,
+                            department = backfilled.department,
+                            assetCategory = backfilled.category,
+                            subCategory1 = backfilled.subCategory1,
+                            subCategory2 = backfilled.subCategory2,
+                        )
+                    } else {
+                        state.copy(buckets = list)
+                    }
+                }
+            }
             .launchIn(viewModelScope)
         // Make sure the classification catalog is present (pull-only reference data).
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_TICKET_BUCKET))
@@ -78,6 +122,7 @@ class PmScheduleFormViewModel(
         if (scheduleId != null) {
             viewModelScope.launch {
                 repository.getSchedule(scheduleId)?.let { s ->
+                    pendingBucketId = s.ticketBucketId
                     _uiState.update {
                         it.copy(
                             department = s.department,
@@ -92,8 +137,15 @@ class PmScheduleFormViewModel(
         }
     }
 
-    fun onDepartment(v: String) = _uiState.update { it.copy(department = v, assetCategory = "") }
-    fun onCategory(v: String) = _uiState.update { it.copy(assetCategory = v) }
+    // Selecting a higher cascade level clears every lower level so the selection stays consistent.
+    fun onDepartment(v: String) =
+        _uiState.update { it.copy(department = v, assetCategory = "", subCategory1 = "", subCategory2 = "") }
+
+    fun onCategory(v: String) =
+        _uiState.update { it.copy(assetCategory = v, subCategory1 = "", subCategory2 = "") }
+
+    fun onSubCategory1(v: String) = _uiState.update { it.copy(subCategory1 = v, subCategory2 = "") }
+    fun onSubCategory2(v: String) = _uiState.update { it.copy(subCategory2 = v) }
     fun onTaskName(v: String) = _uiState.update { it.copy(taskName = v) }
     fun onFrequencyUnit(v: String) = _uiState.update { it.copy(frequencyUnit = v) }
     fun onFrequencyInterval(v: String) = _uiState.update { it.copy(frequencyInterval = v.filter { c -> c.isDigit() }) }
@@ -101,7 +153,7 @@ class PmScheduleFormViewModel(
     fun save() {
         val state = _uiState.value
         if (!state.isValid) {
-            _uiState.update { it.copy(error = "Category, task and a positive frequency are required") }
+            _uiState.update { it.copy(error = "Equipment, issue, task and a positive frequency are required") }
             return
         }
         viewModelScope.launch {
@@ -112,6 +164,7 @@ class PmScheduleFormViewModel(
                     uid = uid,
                     department = state.department.trim(),
                     assetCategory = state.assetCategory.trim(),
+                    ticketBucketId = state.resolveBucketId(),
                     taskName = state.taskName.trim(),
                     frequencyUnit = state.frequencyUnit,
                     frequencyInterval = state.frequencyInterval.toIntOrNull() ?: 1,
