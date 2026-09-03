@@ -28,7 +28,10 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-/** One line of the PM compliance matrix: an (outlet, asset, task) with a done-mark per month. */
+/** Compliance state of one month cell for a report row. */
+enum class MonthStatus { NONE, DONE, DUE, OVERDUE }
+
+/** One line of the PM compliance matrix: an (outlet, asset, task) with a status-mark per month. */
 data class PmReportRow(
     val outlet: String,
     val city: String,
@@ -37,7 +40,9 @@ data class PmReportRow(
     val freq: String,
     val doneBy: String,      // distinct people who completed this row's PM work this year
     val assistedBy: String,  // distinct people who assisted on it this year
-    val months: List<Boolean>, // 12 entries, Jan..Dec — true = a PM was completed that month
+    // 12 entries, Jan..Dec. DONE = completed that month; DUE/OVERDUE = a PM scheduled that month is
+    // still open (OVERDUE once its due month is in the past); NONE = nothing scheduled/done.
+    val months: List<MonthStatus>,
 )
 
 data class PmReportUiState(
@@ -75,6 +80,10 @@ class PmReportViewModel(
     val uiState: StateFlow<PmReportUiState> = _uiState.asStateFlow()
 
     private val currentYear: String = Clock.System.now().toString().take(4)
+    // 0-based current month (UTC), matching the report's UTC month bucketing — used to split a still
+    // open PM into DUE (this month / upcoming) vs OVERDUE (its due month already passed).
+    private val currentMonthIdx: Int =
+        Clock.System.now().toString().substring(5, 7).toIntOrNull()?.minus(1)?.coerceIn(0, 11) ?: 0
 
     // Store/employee lookups are one-shot suspend calls; hold them as flows so the report rebuilds
     // when they finish syncing (otherwise a snapshot taken before the pull lands stays empty).
@@ -133,24 +142,38 @@ class PmReportViewModel(
         nameById: Map<String, String>,
     ): List<PmReportRow> {
         data class Key(val storeId: String, val asset: String, val scheduleId: String)
-        // Per group: 12-month done flags, plus the distinct people who did / assisted the work.
+        // Per group: 12-month status cells, plus the distinct people who did / assisted the work.
         class Agg {
-            val months = BooleanArray(12)
+            val months = Array(12) { MonthStatus.NONE }
             val doneBy = LinkedHashSet<String>()
             val assistedBy = LinkedHashSet<String>()
         }
         val grid = LinkedHashMap<Key, Agg>()
-        for (e in entries) {
-            if (e.status != "DONE") continue
-            val done = e.completedAt ?: continue
-            if (done.take(4) != currentYear) continue
-            val monthIdx = done.substringAfter('-', "").take(2).toIntOrNull()?.minus(1) ?: continue
-            if (monthIdx !in 0..11) continue
-            val agg = grid.getOrPut(Key(e.storeId, e.assetCategory, e.pmScheduleId ?: "")) { Agg() }
-            agg.months[monthIdx] = true
-            e.completedByEmployeeId?.takeIf { it.isNotBlank() }?.let { agg.doneBy += it }
-            e.assistedByEmployeeIds?.forEach { id -> id.takeIf { it.isNotBlank() }?.let { agg.assistedBy += it } }
+        fun monthOf(iso: String?): Int? {
+            val s = iso ?: return null
+            if (s.take(4) != currentYear) return null
+            return s.substringAfter('-', "").take(2).toIntOrNull()?.minus(1)?.takeIf { it in 0..11 }
         }
+        for (e in entries) {
+            val agg = grid.getOrPut(Key(e.storeId, e.assetCategory, e.pmScheduleId ?: "")) { Agg() }
+            if (e.status == "DONE") {
+                val monthIdx = monthOf(e.completedAt) ?: continue
+                agg.months[monthIdx] = MonthStatus.DONE   // completion always wins over a pending mark
+                e.completedByEmployeeId?.takeIf { it.isNotBlank() }?.let { agg.doneBy += it }
+                e.assistedByEmployeeIds?.forEach { id -> id.takeIf { it.isNotBlank() }?.let { agg.assistedBy += it } }
+            } else {
+                // Still-open PM (DUE / OVERDUE / ASSIGNED / IN_PROGRESS) — mark its scheduled month as
+                // pending, unless that month is already completed. Past due month → OVERDUE.
+                val monthIdx = monthOf(e.dueDate) ?: continue
+                if (agg.months[monthIdx] == MonthStatus.NONE) {
+                    agg.months[monthIdx] =
+                        if (monthIdx < currentMonthIdx) MonthStatus.OVERDUE else MonthStatus.DUE
+                }
+            }
+        }
+        // A group created only to look up a pending entry that fell outside the current year would be
+        // all-NONE — drop those so the report shows only rows with real activity this year.
+        grid.entries.retainAll { (_, agg) -> agg.months.any { it != MonthStatus.NONE } }
         fun names(ids: Set<String>): String =
             ids.map { nameById[it] ?: it }.filter { it.isNotBlank() }.joinToString(", ")
         return grid.map { (key, agg) ->

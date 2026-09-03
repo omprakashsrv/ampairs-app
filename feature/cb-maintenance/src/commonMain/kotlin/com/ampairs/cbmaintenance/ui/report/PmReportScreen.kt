@@ -63,6 +63,12 @@ fun PmReportScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    LegendItem(MonthStatus.DONE, "Done")
+                    LegendItem(MonthStatus.DUE, "Due")
+                    LegendItem(MonthStatus.OVERDUE, "Overdue")
+                }
             }
         }
 
@@ -84,7 +90,7 @@ fun PmReportScreen(
                 Text("Loading…", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             uiState.filteredRows.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                Text("No completed PM work this year", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("No PM work this year", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -100,11 +106,11 @@ fun PmReportScreen(
                         BodyCell(row.freq, FREQ_W)
                         BodyCell(row.doneBy, PERSON_W)
                         BodyCell(row.assistedBy, PERSON_W)
-                        row.months.forEach { done ->
+                        row.months.forEach { status ->
                             Text(
-                                if (done) "✓" else "",
+                                monthGlyph(status),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = monthColor(status),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.width(MONTH_W),
                             )
@@ -136,4 +142,27 @@ private fun BodyCell(text: String, width: androidx.compose.ui.unit.Dp) {
         maxLines = 2,
         modifier = Modifier.width(width),
     )
+}
+
+private fun monthGlyph(status: MonthStatus): String = when (status) {
+    MonthStatus.DONE -> "✓"
+    MonthStatus.DUE -> "•"
+    MonthStatus.OVERDUE -> "✗"
+    MonthStatus.NONE -> ""
+}
+
+@Composable
+private fun monthColor(status: MonthStatus) = when (status) {
+    MonthStatus.DONE -> MaterialTheme.colorScheme.primary
+    MonthStatus.DUE -> MaterialTheme.colorScheme.tertiary
+    MonthStatus.OVERDUE -> MaterialTheme.colorScheme.error
+    MonthStatus.NONE -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+@Composable
+private fun LegendItem(status: MonthStatus, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(monthGlyph(status), style = MaterialTheme.typography.bodyMedium, color = monthColor(status))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
