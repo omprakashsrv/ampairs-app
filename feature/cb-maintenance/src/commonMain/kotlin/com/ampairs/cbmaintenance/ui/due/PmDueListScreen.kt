@@ -1,5 +1,6 @@
 package com.ampairs.cbmaintenance.ui.due
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +64,8 @@ fun PmDueListScreen(
     // The PM entry being completed, and whether that completion reports an issue.
     var completeFor by remember { mutableStateOf<String?>(null) }
     var issueMode by remember { mutableStateOf(false) }
+    // The PM entry being (re)assigned.
+    var assignFor by remember { mutableStateOf<String?>(null) }
 
     Scaffold(modifier = modifier.fillMaxSize()) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -111,10 +114,15 @@ fun PmDueListScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     items(uiState.entries, key = { it.uid }) { entry ->
+                        val assignee = entry.assignedToEmployeeId?.let { id ->
+                            uiState.employees.firstOrNull { it.uid == id }?.let { it.name.ifBlank { it.employeeNo } } ?: id
+                        }
                         PmEntryCard(
                             entry = entry,
                             storeLabel = uiState.storeLabels[entry.storeId] ?: entry.storeId,
                             ticketLabel = entry.ticketId?.let { uiState.ticketLabels[it] ?: it },
+                            assigneeLabel = assignee,
+                            onAssign = { assignFor = entry.uid },
                             onOk = { completeFor = entry.uid; issueMode = false },
                             onIssue = { completeFor = entry.uid; issueMode = true },
                         )
@@ -138,6 +146,54 @@ fun PmDueListScreen(
             },
         )
     }
+
+    val assignEntryId = assignFor
+    if (assignEntryId != null) {
+        val entry = uiState.entries.firstOrNull { it.uid == assignEntryId }
+        // Same-zone pool: employees whose zone matches the entry's (all, if the entry has no zone).
+        val zone = entry?.zonalOfficeId.orEmpty()
+        val inZone = uiState.employees.filter { zone.isBlank() || it.zonalOfficeId == zone }
+        AssignPmDialog(
+            employees = inZone,
+            onDismiss = { assignFor = null },
+            onPick = { employeeId ->
+                viewModel.assign(assignEntryId, employeeId)
+                assignFor = null
+            },
+        )
+    }
+}
+
+/** Assign a due PM to an employee in the same zone (self-assign = pick yourself). */
+@Composable
+private fun AssignPmDialog(
+    employees: List<Employee>,
+    onDismiss: () -> Unit,
+    onPick: (employeeId: String) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Assign to") },
+        text = {
+            if (employees.isEmpty()) {
+                Text("No employees in this zone yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                Column(
+                    modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
+                ) {
+                    employees.forEach { emp ->
+                        Text(
+                            emp.name.ifBlank { emp.employeeNo },
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.fillMaxWidth().clickable { onPick(emp.uid) }.padding(vertical = 12.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 /**
@@ -240,11 +296,14 @@ private fun DoneByDropdown(employees: List<Employee>, selectedId: String, onSele
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PmEntryCard(
     entry: PmEntry,
     storeLabel: String,
     ticketLabel: String?,
+    assigneeLabel: String?,
+    onAssign: () -> Unit,
     onOk: () -> Unit,
     onIssue: () -> Unit,
 ) {
@@ -256,6 +315,11 @@ private fun PmEntryCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text(
+                if (assigneeLabel.isNullOrBlank()) "Unassigned" else "Assigned: $assigneeLabel",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (assigneeLabel.isNullOrBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (ticketLabel != null) {
                 Text(
                     "For ticket: $ticketLabel",
@@ -264,9 +328,10 @@ private fun PmEntryCard(
                 )
             }
             Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onOk) { Text("Mark OK") }
                 OutlinedButton(onClick = onIssue) { Text("Report issue") }
+                OutlinedButton(onClick = onAssign) { Text(if (assigneeLabel.isNullOrBlank()) "Assign" else "Reassign") }
             }
         }
     }

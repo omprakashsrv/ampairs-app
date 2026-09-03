@@ -127,6 +127,19 @@ class PmDueListViewModel(
 
     fun refresh() = syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CB_PM_ENTRY))
 
+    /**
+     * Assign (or self-assign) a due PM to an employee. Offline-first: writes assignedToEmployeeId
+     * locally + marks pending; the server accepts it on upsert. Any employee in the same zone can
+     * do this — the picker is scoped to the entry's zone in the UI.
+     */
+    fun assign(entryId: String, employeeId: String) {
+        if (employeeId.isBlank()) return
+        viewModelScope.launch {
+            val result = repository.reassignEntry(entryId, employeeId)
+            if (result.isFailure) reportError(result.exceptionOrNull())
+        }
+    }
+
     /** Complete with everything passing — no ticket spawned. Records who did it and who helped. */
     fun markAllOk(entryId: String, doneById: String?, assistedByIds: List<String>) {
         viewModelScope.launch {
