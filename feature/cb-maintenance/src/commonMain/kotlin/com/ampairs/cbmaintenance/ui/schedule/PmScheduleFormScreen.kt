@@ -96,7 +96,7 @@ fun PmScheduleFormScreen(
         OutlinedTextField(
             value = uiState.taskName,
             onValueChange = viewModel::onTaskName,
-            label = { Text("Task") },
+            label = { Text("Task (auto — edit to override)") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )

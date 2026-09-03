@@ -40,6 +40,8 @@ data class PmScheduleFormUiState(
     val subCategory1: String = "",      // = the taxonomy "issue" level
     val subCategory2: String = "",      // = the taxonomy "issue-detail" level (only some leaves)
     val taskName: String = "",
+    // true once the user types their own task name — auto-generation then stops overriding it.
+    val taskNameEdited: Boolean = false,
     val frequencyUnit: String = "MONTH",
     val frequencyInterval: String = "1",
     val buckets: List<TicketBucket> = emptyList(),
@@ -128,6 +130,8 @@ class PmScheduleFormViewModel(
                             department = s.department,
                             assetCategory = s.assetCategory,
                             taskName = s.taskName,
+                            // Keep the saved name; don't let cascade back-fill overwrite it.
+                            taskNameEdited = s.taskName.isNotBlank(),
                             frequencyUnit = s.frequencyUnit,
                             frequencyInterval = s.frequencyInterval.toString(),
                         )
@@ -137,16 +141,35 @@ class PmScheduleFormViewModel(
         }
     }
 
-    // Selecting a higher cascade level clears every lower level so the selection stays consistent.
-    fun onDepartment(v: String) =
-        _uiState.update { it.copy(department = v, assetCategory = "", subCategory1 = "", subCategory2 = "") }
+    // Auto-generate a readable task name from the cascade selection (Equipment · Issue · detail),
+    // unless the user has typed their own.
+    private fun autoTask(category: String, sub1: String, sub2: String): String =
+        listOf(category, sub1, sub2).map { it.trim() }.filter { it.isNotBlank() }.joinToString(" · ")
 
-    fun onCategory(v: String) =
-        _uiState.update { it.copy(assetCategory = v, subCategory1 = "", subCategory2 = "") }
+    // Selecting a higher cascade level clears every lower level so the selection stays consistent;
+    // the task name re-derives from the new selection while it hasn't been hand-edited.
+    fun onDepartment(v: String) = _uiState.update {
+        val s = it.copy(department = v, assetCategory = "", subCategory1 = "", subCategory2 = "")
+        if (s.taskNameEdited) s else s.copy(taskName = autoTask("", "", ""))
+    }
 
-    fun onSubCategory1(v: String) = _uiState.update { it.copy(subCategory1 = v, subCategory2 = "") }
-    fun onSubCategory2(v: String) = _uiState.update { it.copy(subCategory2 = v) }
-    fun onTaskName(v: String) = _uiState.update { it.copy(taskName = v) }
+    fun onCategory(v: String) = _uiState.update {
+        val s = it.copy(assetCategory = v, subCategory1 = "", subCategory2 = "")
+        if (s.taskNameEdited) s else s.copy(taskName = autoTask(v, "", ""))
+    }
+
+    fun onSubCategory1(v: String) = _uiState.update {
+        val s = it.copy(subCategory1 = v, subCategory2 = "")
+        if (s.taskNameEdited) s else s.copy(taskName = autoTask(s.assetCategory, v, ""))
+    }
+
+    fun onSubCategory2(v: String) = _uiState.update {
+        val s = it.copy(subCategory2 = v)
+        if (s.taskNameEdited) s else s.copy(taskName = autoTask(s.assetCategory, s.subCategory1, v))
+    }
+
+    // Typing marks the field hand-edited; clearing it hands control back to auto-generation.
+    fun onTaskName(v: String) = _uiState.update { it.copy(taskName = v, taskNameEdited = v.isNotBlank()) }
     fun onFrequencyUnit(v: String) = _uiState.update { it.copy(frequencyUnit = v) }
     fun onFrequencyInterval(v: String) = _uiState.update { it.copy(frequencyInterval = v.filter { c -> c.isDigit() }) }
 
