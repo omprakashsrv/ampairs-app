@@ -45,7 +45,8 @@ enum class SyncEntity(val entityType: String) {
     CB_PM_SCHEDULE("cb_pm_schedule"),
     CB_PM_ENTRY("cb_pm_entry"),
     CB_TICKET("cb_ticket"),
-    CB_ASSET_ALIAS("cb_asset_alias");
+    CB_ASSET_ALIAS("cb_asset_alias"),
+    CB_TICKET_BUCKET("cb_ticket_bucket");
 
     companion object {
         fun fromEntityType(type: String): SyncEntity? =

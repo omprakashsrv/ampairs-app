@@ -72,6 +72,24 @@ data class Ticket(
     @SerialName("updated_at") val updatedAt: String? = null,
 )
 
+/**
+ * One leaf of the ticket-classification taxonomy: Department › Category › Sub category 1
+ * [› Sub category 2]. Global reference data (backend `cb_maintenance`) — drives the cascading
+ * pickers on the raise-ticket form. `subCategory2` is "" when the leaf has only three levels.
+ */
+@Serializable
+data class TicketBucket(
+    val uid: String = "",
+    val department: String = "",
+    val category: String = "",
+    @SerialName("sub_category_1") val subCategory1: String = "",
+    @SerialName("sub_category_2") val subCategory2: String = "",
+    val active: Boolean = true,
+    @SerialName("ref_id") val refId: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+)
+
 /** Normalizes messy asset-category source names to a canonical value (backend `cb_maintenance`). */
 @Serializable
 data class AssetCategoryAlias(

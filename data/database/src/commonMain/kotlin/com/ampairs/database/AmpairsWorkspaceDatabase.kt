@@ -159,10 +159,12 @@ import com.ampairs.cbstore.data.db.entity.ZonalOfficeEntity
 import com.ampairs.cbmaintenance.data.db.dao.AssetCategoryAliasDao
 import com.ampairs.cbmaintenance.data.db.dao.PmEntryDao
 import com.ampairs.cbmaintenance.data.db.dao.PmScheduleDao
+import com.ampairs.cbmaintenance.data.db.dao.TicketBucketDao
 import com.ampairs.cbmaintenance.data.db.dao.TicketDao
 import com.ampairs.cbmaintenance.data.db.entity.AssetCategoryAliasEntity
 import com.ampairs.cbmaintenance.data.db.entity.PmEntryEntity
 import com.ampairs.cbmaintenance.data.db.entity.PmScheduleEntity
+import com.ampairs.cbmaintenance.data.db.entity.TicketBucketEntity
 import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
 
 /**
@@ -278,10 +280,11 @@ import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
         PmEntryEntity::class,
         TicketEntity::class,
         AssetCategoryAliasEntity::class,
+        TicketBucketEntity::class,
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
@@ -412,6 +415,7 @@ abstract class AmpairsWorkspaceDatabase : RoomDatabase() {
     abstract fun cbPmEntryDao(): PmEntryDao
     abstract fun cbTicketDao(): TicketDao
     abstract fun cbAssetCategoryAliasDao(): AssetCategoryAliasDao
+    abstract fun cbTicketBucketDao(): TicketBucketDao
 
     // sync state
     abstract fun syncStateDao(): SyncStateDao

@@ -323,5 +323,10 @@ interface WorkspaceDatabaseDaoModule {
         fun provideCbAssetCategoryAliasDao(
             db: AmpairsWorkspaceDatabase,
         ): com.ampairs.cbmaintenance.data.db.dao.AssetCategoryAliasDao = db.cbAssetCategoryAliasDao()
+
+        @Provides
+        fun provideCbTicketBucketDao(
+            db: AmpairsWorkspaceDatabase,
+        ): com.ampairs.cbmaintenance.data.db.dao.TicketBucketDao = db.cbTicketBucketDao()
     }
 }

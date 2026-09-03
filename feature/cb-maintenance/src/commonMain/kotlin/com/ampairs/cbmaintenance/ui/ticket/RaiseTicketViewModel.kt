@@ -2,18 +2,25 @@ package com.ampairs.cbmaintenance.ui.ticket
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.cbmaintenance.data.repository.TicketBucketRepository
 import com.ampairs.cbmaintenance.data.repository.TicketRepository
 import com.ampairs.cbmaintenance.domain.model.Ticket
+import com.ampairs.cbmaintenance.domain.model.TicketBucket
 import com.ampairs.cbstore.data.repository.StoreLookup
 import com.ampairs.cbstore.domain.model.Store
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -21,15 +28,36 @@ private const val TICKET_UID_PREFIX = "TKT"
 
 data class RaiseTicketUiState(
     val storeId: String = "",
-    val assetCategory: String = "",
-    val subCategory: String = "",
+    // Cascading classification selections (from the ticket-bucket catalog).
+    val department: String = "",
+    val category: String = "",
+    val subCategory1: String = "",
+    val subCategory2: String = "",
     val description: String = "",
     val storeOptions: List<Store> = emptyList(),
+    val buckets: List<TicketBucket> = emptyList(),
     val isSaving: Boolean = false,
     val saved: Boolean = false,
     val error: String? = null,
 ) {
-    val isValid: Boolean get() = storeId.isNotBlank() && assetCategory.isNotBlank() && subCategory.isNotBlank()
+    // Derived cascade options (distinct, sorted), narrowed by the selection above each level.
+    val departmentOptions: List<String>
+        get() = buckets.map { it.department }.filter { it.isNotBlank() }.distinct().sorted()
+
+    val categoryOptions: List<String>
+        get() = buckets.filter { it.department == department }
+            .map { it.category }.filter { it.isNotBlank() }.distinct().sorted()
+
+    val subCategory1Options: List<String>
+        get() = buckets.filter { it.department == department && it.category == category }
+            .map { it.subCategory1 }.filter { it.isNotBlank() }.distinct().sorted()
+
+    val subCategory2Options: List<String>
+        get() = buckets.filter {
+            it.department == department && it.category == category && it.subCategory1 == subCategory1
+        }.map { it.subCategory2 }.filter { it.isNotBlank() }.distinct().sorted()
+
+    val isValid: Boolean get() = storeId.isNotBlank() && category.isNotBlank() && subCategory1.isNotBlank()
 }
 
 @ContributesIntoMap(WorkspaceScope::class)
@@ -37,7 +65,9 @@ data class RaiseTicketUiState(
 @Inject
 class RaiseTicketViewModel(
     private val ticketRepository: TicketRepository,
+    private val ticketBucketRepository: TicketBucketRepository,
     private val storeLookup: StoreLookup,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RaiseTicketUiState())
@@ -47,27 +77,44 @@ class RaiseTicketViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(storeOptions = storeLookup.activeStores()) }
         }
+        ticketBucketRepository.observeBuckets()
+            .onEach { list -> _uiState.update { it.copy(buckets = list) } }
+            .launchIn(viewModelScope)
+        // Make sure the classification catalog is present (pull-only reference data).
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_TICKET_BUCKET))
     }
 
     fun onStore(v: String) = _uiState.update { it.copy(storeId = v) }
-    fun onAssetCategory(v: String) = _uiState.update { it.copy(assetCategory = v) }
-    fun onSubCategory(v: String) = _uiState.update { it.copy(subCategory = v) }
+
+    // Selecting a higher level clears the lower levels so the cascade stays consistent.
+    fun onDepartment(v: String) =
+        _uiState.update { it.copy(department = v, category = "", subCategory1 = "", subCategory2 = "") }
+
+    fun onCategory(v: String) =
+        _uiState.update { it.copy(category = v, subCategory1 = "", subCategory2 = "") }
+
+    fun onSubCategory1(v: String) = _uiState.update { it.copy(subCategory1 = v, subCategory2 = "") }
+    fun onSubCategory2(v: String) = _uiState.update { it.copy(subCategory2 = v) }
     fun onDescription(v: String) = _uiState.update { it.copy(description = v) }
 
     fun save() {
         val state = _uiState.value
         if (!state.isValid) {
-            _uiState.update { it.copy(error = "Store, asset and issue are required") }
+            _uiState.update { it.copy(error = "Outlet, equipment and issue are required") }
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
+            // The issue combines the two sub-category levels when a second level was picked.
+            val issue = listOf(state.subCategory1.trim(), state.subCategory2.trim())
+                .filter { it.isNotBlank() }
+                .joinToString(" · ")
             // zonalOfficeId left blank — the server denormalizes it from the store on upsert.
             val ticket = Ticket(
                 uid = UidGenerator.generateUid(TICKET_UID_PREFIX),
                 storeId = state.storeId,
-                assetCategory = state.assetCategory.trim(),
-                subCategory = state.subCategory.trim(),
+                assetCategory = state.category.trim(),
+                subCategory = issue,
                 description = state.description.trim().ifBlank { null },
                 status = "OPEN",
                 active = true,

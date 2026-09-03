@@ -4,6 +4,7 @@ import com.ampairs.cbmaintenance.data.api.CbMaintenanceApi
 import com.ampairs.cbmaintenance.data.db.dao.AssetCategoryAliasDao
 import com.ampairs.cbmaintenance.data.db.dao.PmEntryDao
 import com.ampairs.cbmaintenance.data.db.dao.PmScheduleDao
+import com.ampairs.cbmaintenance.data.db.dao.TicketBucketDao
 import com.ampairs.cbmaintenance.data.db.dao.TicketDao
 import com.ampairs.cbmaintenance.data.db.entity.toAlias
 import com.ampairs.cbmaintenance.data.db.entity.toEntity
@@ -131,6 +132,43 @@ class AssetCategoryAliasSyncDelegate(
             page++
         } while (resp.hasNext && total < CAP)
         if (maxTime.isNotBlank()) syncStateDao.setLastSyncedAtIso(SyncEntity.CB_ASSET_ALIAS, maxTime)
+        total
+    }
+}
+
+// --- Ticket buckets (global classification catalog — pull-only) ---------------------------------
+@Inject
+@ContributesIntoMap(WorkspaceScope::class)
+@SyncEntityKey(SyncEntity.CB_TICKET_BUCKET)
+class TicketBucketSyncDelegate(
+    private val api: CbMaintenanceApi,
+    private val dao: TicketBucketDao,
+    private val syncStateDao: SyncStateDao,
+) : SyncDelegate {
+    override val entity = SyncEntity.CB_TICKET_BUCKET
+
+    override suspend fun pullFromServer() = pull().fold({ SyncResult.Success(it) }, { SyncResult.Failure(it) })
+    // Reference data — the app never edits it, so there is nothing to push.
+    override suspend fun pushPendingToServer() = SyncResult.Success(0)
+    override suspend fun handleBackendEvent(entityId: String, eventType: String) = pullFromServer()
+
+    private suspend fun pull(): Result<Int> = runCatching {
+        val lastSync = syncStateDao.getLastSyncedAtIso(SyncEntity.CB_TICKET_BUCKET) ?: ""
+        var total = 0; var page = 0; var maxTime = ""
+        do {
+            val resp = api.getTicketBucketsSync(lastSync, page, 100, "updatedAt", "ASC")
+            val rows = resp.content
+            if (rows.isNotEmpty()) {
+                val toInsert = rows.mapNotNull { b ->
+                    if (!b.active) { dao.hardDeleteBucket(b.uid); null } else b.toEntity()
+                }
+                if (toInsert.isNotEmpty()) dao.insertBuckets(toInsert)
+                val bm = maxTs(rows.map { it.updatedAt }); if (bm > maxTime) maxTime = bm
+                total += rows.size
+            }
+            page++
+        } while (resp.hasNext && total < CAP)
+        if (maxTime.isNotBlank()) syncStateDao.setLastSyncedAtIso(SyncEntity.CB_TICKET_BUCKET, maxTime)
         total
     }
 }

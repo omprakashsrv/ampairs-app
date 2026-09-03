@@ -20,7 +20,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -47,20 +46,37 @@ fun RaiseTicketScreen(
             options = uiState.storeOptions.map { it.uid to "${it.code} · ${it.name}" },
             onSelected = viewModel::onStore,
         )
-        OutlinedTextField(
-            value = uiState.assetCategory,
-            onValueChange = viewModel::onAssetCategory,
-            label = { Text("Asset category (e.g. ChestFreezer)") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+        // Cascading classification pickers, sourced from the ticket-bucket catalog.
+        PickerDropdown(
+            label = "Department",
+            selected = uiState.department,
+            options = uiState.departmentOptions,
+            enabled = uiState.departmentOptions.isNotEmpty(),
+            onSelected = viewModel::onDepartment,
         )
-        OutlinedTextField(
-            value = uiState.subCategory,
-            onValueChange = viewModel::onSubCategory,
-            label = { Text("Issue (e.g. Gasket broken)") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+        PickerDropdown(
+            label = "Equipment / category",
+            selected = uiState.category,
+            options = uiState.categoryOptions,
+            enabled = uiState.department.isNotBlank(),
+            onSelected = viewModel::onCategory,
         )
+        PickerDropdown(
+            label = "Issue",
+            selected = uiState.subCategory1,
+            options = uiState.subCategory1Options,
+            enabled = uiState.category.isNotBlank(),
+            onSelected = viewModel::onSubCategory1,
+        )
+        if (uiState.subCategory2Options.isNotEmpty()) {
+            PickerDropdown(
+                label = "Issue detail (optional)",
+                selected = uiState.subCategory2,
+                options = uiState.subCategory2Options,
+                enabled = true,
+                onSelected = viewModel::onSubCategory2,
+            )
+        }
         OutlinedTextField(
             value = uiState.description,
             onValueChange = viewModel::onDescription,
@@ -87,46 +103,68 @@ private fun StoreDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedName = options.firstOrNull { it.first == selectedId }?.second ?: ""
-    // Query starts as the current selection's name; typing filters the list and re-shows the
-    // menu. Selecting an option (or losing the typed text) snaps back to the selected name.
-    var query by remember(selectedName) { mutableStateOf(selectedName) }
-    val filtered = remember(query, options, selectedName) {
-        if (query.isBlank() || query == selectedName) {
-            options
-        } else {
-            options.filter { it.second.contains(query, ignoreCase = true) }
-        }
-    }
-
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
         modifier = Modifier.fillMaxWidth(),
     ) {
         OutlinedTextField(
-            value = query,
-            onValueChange = {
-                query = it
-                expanded = true
-            },
+            value = selectedName,
+            onValueChange = {},
+            readOnly = true,
             label = { Text("Outlet") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            singleLine = true,
             modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryEditable)
-                .fillMaxWidth()
-                .onFocusChanged { if (it.isFocused) expanded = true },
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            if (filtered.isEmpty()) {
-                DropdownMenuItem(text = { Text("No matching outlet") }, onClick = {}, enabled = false)
-            }
-            filtered.forEach { (id, name) ->
+            options.forEach { (id, name) ->
                 DropdownMenuItem(
                     text = { Text(name) },
                     onClick = {
                         onSelected(id)
-                        query = name
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** Generic read-only picker for a list of string options (one cascade level). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PickerDropdown(
+    label: String,
+    selected: String,
+    options: List<String>,
+    enabled: Boolean,
+    onSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded && enabled,
+        onExpandedChange = { if (enabled) expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            enabled = enabled,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && enabled) },
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onSelected(option)
                         expanded = false
                     },
                 )

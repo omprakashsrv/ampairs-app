@@ -7,6 +7,7 @@ import androidx.room3.Query
 import com.ampairs.cbmaintenance.data.db.entity.AssetCategoryAliasEntity
 import com.ampairs.cbmaintenance.data.db.entity.PmEntryEntity
 import com.ampairs.cbmaintenance.data.db.entity.PmScheduleEntity
+import com.ampairs.cbmaintenance.data.db.entity.TicketBucketEntity
 import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -84,6 +85,23 @@ interface TicketDao {
 
     @Query("DELETE FROM cb_tickets WHERE id = :id")
     suspend fun hardDeleteTicket(id: String)
+}
+
+@Dao
+interface TicketBucketDao {
+
+    /** Full active taxonomy — the cascade (dept → category → sub-cat) is derived in the ViewModel. */
+    @Query("SELECT * FROM cb_ticket_buckets WHERE active = 1 ORDER BY department ASC, category ASC, sub_category_1 ASC")
+    fun getAllBuckets(): Flow<List<TicketBucketEntity>>
+
+    @Query("SELECT * FROM cb_ticket_buckets WHERE synced = 0")
+    suspend fun getUnsyncedBuckets(): List<TicketBucketEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBuckets(buckets: List<TicketBucketEntity>)
+
+    @Query("DELETE FROM cb_ticket_buckets WHERE id = :id")
+    suspend fun hardDeleteBucket(id: String)
 }
 
 @Dao

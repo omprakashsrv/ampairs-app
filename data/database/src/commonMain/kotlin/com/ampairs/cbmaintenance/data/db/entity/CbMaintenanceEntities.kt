@@ -93,6 +93,32 @@ data class TicketEntity(
     @ColumnInfo(name = "ref_id") val refId: String? = null,
 )
 
+/**
+ * A leaf of the ticket-classification taxonomy (Department › Category › Sub category 1
+ * [› Sub category 2]). Global reference data pulled from the server — the same catalog for every
+ * workspace — used to drive the cascading pickers on the raise-ticket form. `sub_category_2` is ""
+ * when the leaf has only three levels.
+ */
+@Entity(
+    tableName = "cb_ticket_buckets",
+    indices = [
+        Index(value = ["id"], unique = true, name = "cb_ticket_bucket_id_idx"),
+        Index(value = ["department"], name = "cb_ticket_bucket_dept_idx"),
+    ],
+)
+data class TicketBucketEntity(
+    @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "department") val department: String,
+    @ColumnInfo(name = "category") val category: String,
+    @ColumnInfo(name = "sub_category_1") val subCategory1: String,
+    @ColumnInfo(name = "sub_category_2") val subCategory2: String = "",
+    @ColumnInfo(name = "active") val active: Boolean = true,
+    @ColumnInfo(name = "synced") val synced: Boolean = true,
+    @ColumnInfo(name = "created_at") val createdAt: String? = null,
+    @ColumnInfo(name = "updated_at") val updatedAt: String? = null,
+    @ColumnInfo(name = "ref_id") val refId: String? = null,
+)
+
 @Entity(
     tableName = "cb_asset_category_aliases",
     indices = [

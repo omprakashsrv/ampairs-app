@@ -4,6 +4,7 @@ import com.ampairs.cbmaintenance.domain.model.AssetCategoryAlias
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import com.ampairs.cbmaintenance.domain.model.PmSchedule
 import com.ampairs.cbmaintenance.domain.model.Ticket
+import com.ampairs.cbmaintenance.domain.model.TicketBucket
 import com.ampairs.common.model.PageResponse
 import com.ampairs.common.model.Response
 
@@ -28,6 +29,9 @@ interface CbMaintenanceApi {
 
     suspend fun getAliasesSync(lastSync: String, page: Int = 0, size: Int = 100, sortBy: String = "updatedAt", sortDir: String = "ASC"): PageResponse<AssetCategoryAlias>
     suspend fun bulkUpdateAliases(items: List<AssetCategoryAlias>): List<AssetCategoryAlias>
+
+    /** Ticket-classification catalog — global reference data, pull-only. */
+    suspend fun getTicketBucketsSync(lastSync: String, page: Int = 0, size: Int = 100, sortBy: String = "updatedAt", sortDir: String = "ASC"): PageResponse<TicketBucket>
 
     /**
      * On-demand server-side PM generation (the same work the nightly job does): rolls due PM entries

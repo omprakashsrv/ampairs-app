@@ -5,6 +5,7 @@ import com.ampairs.cbmaintenance.domain.model.ChecklistItemResult
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import com.ampairs.cbmaintenance.domain.model.PmSchedule
 import com.ampairs.cbmaintenance.domain.model.Ticket
+import com.ampairs.cbmaintenance.domain.model.TicketBucket
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -157,6 +158,32 @@ fun AssetCategoryAlias.toEntity(): AssetCategoryAliasEntity = AssetCategoryAlias
     canonical = canonical,
     alias = alias,
     active = active,
+    refId = refId,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)
+
+// --- TicketBucket -------------------------------------------------------------------------------
+fun TicketBucketEntity.toTicketBucket(): TicketBucket = TicketBucket(
+    uid = id,
+    department = department,
+    category = category,
+    subCategory1 = subCategory1,
+    subCategory2 = subCategory2,
+    active = active,
+    refId = refId,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)
+
+fun TicketBucket.toEntity(): TicketBucketEntity = TicketBucketEntity(
+    id = uid,
+    department = department,
+    category = category,
+    subCategory1 = subCategory1,
+    subCategory2 = subCategory2,
+    active = active,
+    synced = true,
     refId = refId,
     createdAt = createdAt,
     updatedAt = updatedAt,

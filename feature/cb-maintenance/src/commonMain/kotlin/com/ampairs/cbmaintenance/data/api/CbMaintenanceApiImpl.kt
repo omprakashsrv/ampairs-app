@@ -5,6 +5,7 @@ import com.ampairs.cbmaintenance.domain.model.AssetCategoryAlias
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import com.ampairs.cbmaintenance.domain.model.PmSchedule
 import com.ampairs.cbmaintenance.domain.model.Ticket
+import com.ampairs.cbmaintenance.domain.model.TicketBucket
 import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.di.AppScope
 import com.ampairs.common.get
@@ -107,6 +108,14 @@ class CbMaintenanceApiImpl(
         val response: Response<List<AssetCategoryAlias>> =
             post(client, ApiUrlBuilder.cbMaintenanceUrl("v1/asset-category-aliases/sync"), items)
         return response.data ?: throw Exception("Failed to bulk update aliases")
+    }
+
+    // --- Ticket buckets (global reference catalog, pull-only) -----------------------------------
+    override suspend fun getTicketBucketsSync(lastSync: String, page: Int, size: Int, sortBy: String, sortDir: String): PageResponse<TicketBucket> {
+        val response: Response<PageResponse<TicketBucket>> =
+            get(client, ApiUrlBuilder.cbMaintenanceUrl("v1/ticket-buckets/sync"), params(lastSync, page, size, sortBy, sortDir))
+        if (response.error != null) throw Exception(response.error?.message ?: "Network error")
+        return response.data ?: emptyPage(page, size)
     }
 
     // --- Ops (non-sync, UI-invoked) -------------------------------------------------------------
