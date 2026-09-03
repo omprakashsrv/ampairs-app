@@ -4,12 +4,14 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.cbmaintenance.ui.CbPmDueListRoute
+import com.ampairs.cbmaintenance.ui.CbPmReportRoute
 import com.ampairs.cbmaintenance.ui.CbPmScheduleFormRoute
 import com.ampairs.cbmaintenance.ui.CbPmScheduleListRoute
 import com.ampairs.cbmaintenance.ui.CbRaiseTicketRoute
 import com.ampairs.cbmaintenance.ui.CbTicketDetailRoute
 import com.ampairs.cbmaintenance.ui.CbTicketListRoute
 import com.ampairs.cbmaintenance.ui.due.PmDueListScreen
+import com.ampairs.cbmaintenance.ui.report.PmReportScreen
 import com.ampairs.cbmaintenance.ui.schedule.PmScheduleFormScreen
 import com.ampairs.cbmaintenance.ui.schedule.PmScheduleListScreen
 import com.ampairs.cbmaintenance.ui.ticket.RaiseTicketScreen
@@ -25,8 +27,13 @@ fun cbMaintenanceEntryProvider(
         PmDueListScreen(
             onOpenTickets = { backStack.add(CbTicketListRoute) },
             onOpenSchedules = { backStack.add(CbPmScheduleListRoute) },
+            onOpenReport = { backStack.add(CbPmReportRoute) },
             modifier = Modifier,
         )
+    }
+
+    is CbPmReportRoute -> NavEntry(key) {
+        PmReportScreen(modifier = Modifier)
     }
 
     is CbTicketListRoute -> NavEntry(key) {

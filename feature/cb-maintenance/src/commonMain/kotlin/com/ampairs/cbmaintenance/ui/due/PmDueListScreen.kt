@@ -13,8 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -39,6 +43,7 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 fun PmDueListScreen(
     onOpenTickets: () -> Unit,
     onOpenSchedules: () -> Unit,
+    onOpenReport: () -> Unit,
     viewModel: PmDueListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -50,7 +55,21 @@ fun PmDueListScreen(
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Maintenance — Due & Overdue", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Maintenance — Due & Overdue",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = onOpenReport) {
+                            Icon(Icons.Default.Assessment, contentDescription = "PM compliance report")
+                        }
+                    }
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onOpenTickets) { Text("Tickets") }
