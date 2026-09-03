@@ -33,10 +33,23 @@ data class PmDueListUiState(
     val storeLabels: Map<String, String> = emptyMap(),
     val ticketLabels: Map<String, String> = emptyMap(),
     val query: String = "",
+    // Combinable filters (all AND-ed together with the search query).
+    val statusFilters: Set<String> = emptySet(),   // DUE / OVERDUE / ASSIGNED / IN_PROGRESS
+    val showUnassigned: Boolean = false,
+    val showAssigned: Boolean = false,
+    val storeFilter: String? = null,                // storeId
+    val assetFilter: String? = null,                // assetCategory
+    // Facet options derived from the current open entries (for the outlet/asset dropdowns).
+    val availableStores: List<Pair<String, String>> = emptyList(),  // (storeId, label)
+    val availableAssets: List<String> = emptyList(),
     val isRefreshing: Boolean = false,
     val message: String? = null,
     val error: String? = null,
-)
+) {
+    val activeFilterCount: Int
+        get() = statusFilters.size + (if (showUnassigned) 1 else 0) + (if (showAssigned) 1 else 0) +
+            (if (storeFilter != null) 1 else 0) + (if (assetFilter != null) 1 else 0)
+}
 
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
@@ -106,6 +119,7 @@ class PmDueListViewModel(
                         s.uid to listOf(s.code, s.name).filter { it.isNotBlank() }.joinToString(" · ")
                     }
                     _uiState.update { it.copy(storeLabels = labels) }
+                    applyFilter()   // refresh outlet-facet labels now that store names are known
                 }
         }
     }
@@ -115,15 +129,83 @@ class PmDueListViewModel(
         applyFilter()
     }
 
-    private fun applyFilter() {
-        val q = _uiState.value.query.trim()
-        val labels = _uiState.value.storeLabels
-        val filtered = if (q.isBlank()) all else all.filter {
-            it.assetCategory.contains(q, true) || it.status.contains(q, true) ||
-                (labels[it.storeId] ?: it.storeId).contains(q, true)
+    fun onToggleStatus(status: String) {
+        _uiState.update {
+            val next = if (status in it.statusFilters) it.statusFilters - status else it.statusFilters + status
+            it.copy(statusFilters = next)
         }
-        _uiState.update { it.copy(entries = filtered, error = null) }
+        applyFilter()
     }
+
+    fun onToggleUnassigned() {
+        _uiState.update { it.copy(showUnassigned = !it.showUnassigned) }
+        applyFilter()
+    }
+
+    fun onToggleAssigned() {
+        _uiState.update { it.copy(showAssigned = !it.showAssigned) }
+        applyFilter()
+    }
+
+    fun onStoreFilter(storeId: String?) {
+        _uiState.update { it.copy(storeFilter = storeId) }
+        applyFilter()
+    }
+
+    fun onAssetFilter(asset: String?) {
+        _uiState.update { it.copy(assetFilter = asset) }
+        applyFilter()
+    }
+
+    fun clearFilters() {
+        _uiState.update {
+            it.copy(
+                statusFilters = emptySet(),
+                showUnassigned = false,
+                showAssigned = false,
+                storeFilter = null,
+                assetFilter = null,
+            )
+        }
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        val s = _uiState.value
+        val labels = s.storeLabels
+        val q = s.query.trim()
+
+        // Refresh the facet lists from the current open entries (kept in sync with the outlet/asset pickers).
+        val availableAssets = all.map { it.assetCategory }.filter { it.isNotBlank() }.distinct().sorted()
+        val availableStores = all.map { it.storeId }.filter { it.isNotBlank() }.distinct()
+            .map { id -> id to (labels[id] ?: id) }.sortedBy { it.second }
+
+        val filtered = all.filter { e ->
+            (s.statusFilters.isEmpty() || e.status in s.statusFilters) &&
+                assignmentMatches(e, s.showUnassigned, s.showAssigned) &&
+                (s.storeFilter == null || e.storeId == s.storeFilter) &&
+                (s.assetFilter == null || e.assetCategory == s.assetFilter) &&
+                (q.isBlank() || matchesQuery(e, q, labels))
+        }
+        _uiState.update {
+            it.copy(
+                entries = filtered,
+                availableStores = availableStores,
+                availableAssets = availableAssets,
+                error = null,
+            )
+        }
+    }
+
+    private fun assignmentMatches(e: PmEntry, wantUnassigned: Boolean, wantAssigned: Boolean): Boolean {
+        if (!wantUnassigned && !wantAssigned) return true   // neither toggle = no assignment constraint
+        val assigned = !e.assignedToEmployeeId.isNullOrBlank()
+        return (wantUnassigned && !assigned) || (wantAssigned && assigned)
+    }
+
+    private fun matchesQuery(e: PmEntry, q: String, labels: Map<String, String>): Boolean =
+        e.assetCategory.contains(q, true) || e.status.contains(q, true) ||
+            (labels[e.storeId] ?: e.storeId).contains(q, true)
 
     fun refresh() = syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CB_PM_ENTRY))
 

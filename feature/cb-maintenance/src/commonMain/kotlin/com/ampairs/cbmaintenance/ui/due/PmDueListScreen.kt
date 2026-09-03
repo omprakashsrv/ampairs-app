@@ -21,6 +21,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
@@ -52,6 +55,15 @@ import com.ampairs.cbemployee.domain.model.Employee
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
+/** Open PM statuses shown as multi-select filter chips (value -> display label). */
+private val PM_STATUSES = listOf(
+    "DUE" to "Due",
+    "OVERDUE" to "Overdue",
+    "ASSIGNED" to "Assigned",
+    "IN_PROGRESS" to "In progress",
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PmDueListScreen(
     onOpenTickets: () -> Unit,
@@ -66,6 +78,7 @@ fun PmDueListScreen(
     var issueMode by remember { mutableStateOf(false) }
     // The PM entry being (re)assigned.
     var assignFor by remember { mutableStateOf<String?>(null) }
+    var filtersExpanded by remember { mutableStateOf(false) }
 
     Scaffold(modifier = modifier.fillMaxSize()) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -99,13 +112,92 @@ fun PmDueListScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    Spacer(Modifier.height(8.dp))
+                    // Collapsible multi-filter panel (status / assignment / outlet / asset). All active
+                    // filters combine (AND) with the search box above.
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { filtersExpanded = !filtersExpanded },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Default.FilterList, contentDescription = null)
+                            Text(
+                                if (uiState.activeFilterCount > 0) "Filters (${uiState.activeFilterCount})" else "Filters",
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (uiState.activeFilterCount > 0) {
+                                TextButton(onClick = viewModel::clearFilters) { Text("Clear") }
+                            }
+                            Icon(
+                                if (filtersExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (filtersExpanded) "Collapse filters" else "Expand filters",
+                            )
+                        }
+                    }
+                    if (filtersExpanded) {
+                        Text(
+                            "Status",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PM_STATUSES.forEach { (value, label) ->
+                                FilterChip(
+                                    selected = value in uiState.statusFilters,
+                                    onClick = { viewModel.onToggleStatus(value) },
+                                    label = { Text(label) },
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Assignment",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = uiState.showUnassigned,
+                                onClick = viewModel::onToggleUnassigned,
+                                label = { Text("Unassigned") },
+                            )
+                            FilterChip(
+                                selected = uiState.showAssigned,
+                                onClick = viewModel::onToggleAssigned,
+                                label = { Text("Assigned") },
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        FilterDropdown(
+                            label = "Outlet",
+                            allLabel = "All outlets",
+                            options = uiState.availableStores,
+                            selectedValue = uiState.storeFilter,
+                            onSelect = viewModel::onStoreFilter,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        FilterDropdown(
+                            label = "Asset",
+                            allLabel = "All assets",
+                            options = uiState.availableAssets.map { it to it },
+                            selectedValue = uiState.assetFilter,
+                            onSelect = viewModel::onAssetFilter,
+                        )
+                    }
                 }
             }
             uiState.message?.let { Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) }
             uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
             if (uiState.entries.isEmpty()) {
+                val filtering = uiState.activeFilterCount > 0 || uiState.query.isNotBlank()
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Nothing due right now", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        if (filtering) "No PM tasks match your filters" else "Nothing due right now",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             } else {
                 LazyColumn(
@@ -260,6 +352,46 @@ private fun CompletePmDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+/** Single-select filter dropdown with an "all" reset option (value -> display label). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterDropdown(
+    label: String,
+    allLabel: String,
+    options: List<Pair<String, String>>,
+    selectedValue: String?,
+    onSelect: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == selectedValue }?.second ?: allLabel
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = selectedLabel,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(allLabel) },
+                onClick = { onSelect(null); expanded = false },
+            )
+            options.forEach { (value, display) ->
+                DropdownMenuItem(
+                    text = { Text(display) },
+                    onClick = { onSelect(value); expanded = false },
+                )
+            }
+        }
+    }
 }
 
 /** Single-select "Done by" employee dropdown (with a clear "—" option). */
