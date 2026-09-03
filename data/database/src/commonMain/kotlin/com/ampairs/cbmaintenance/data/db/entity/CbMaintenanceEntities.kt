@@ -19,6 +19,7 @@ import androidx.room3.PrimaryKey
 )
 data class PmScheduleEntity(
     @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "department") val department: String = "",
     @ColumnInfo(name = "asset_category") val assetCategory: String,
     @ColumnInfo(name = "task_name") val taskName: String,
     @ColumnInfo(name = "checklist") val checklist: String? = null,
@@ -77,6 +78,7 @@ data class TicketEntity(
     @ColumnInfo(name = "zonal_office_id") val zonalOfficeId: String,
     @ColumnInfo(name = "asset_category") val assetCategory: String,
     @ColumnInfo(name = "sub_category") val subCategory: String,
+    @ColumnInfo(name = "ticket_bucket_id") val ticketBucketId: String? = null,
     @ColumnInfo(name = "description") val description: String? = null,
     @ColumnInfo(name = "status") val status: String,
     @ColumnInfo(name = "assigned_to_employee_id") val assignedToEmployeeId: String? = null,

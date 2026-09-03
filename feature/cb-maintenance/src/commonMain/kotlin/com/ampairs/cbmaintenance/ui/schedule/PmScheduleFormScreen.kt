@@ -49,13 +49,32 @@ fun PmScheduleFormScreen(
             if (uiState.isEdit) "Edit PM schedule" else "New PM schedule",
             style = MaterialTheme.typography.headlineSmall,
         )
-        OutlinedTextField(
-            value = uiState.assetCategory,
-            onValueChange = viewModel::onAssetCategory,
-            label = { Text("Asset category (e.g. WIC, DG Set)") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // Category-level taxonomy link: Department, then Category (the PM's asset category).
+        // Falls back to free text if the ticket-bucket catalog hasn't synced/seeded yet.
+        if (uiState.departmentOptions.isNotEmpty()) {
+            PickerDropdown(
+                label = "Department",
+                selected = uiState.department,
+                options = uiState.departmentOptions,
+                onSelected = viewModel::onDepartment,
+            )
+            if (uiState.department.isNotBlank() && uiState.categoryOptions.isNotEmpty()) {
+                PickerDropdown(
+                    label = "Equipment / category",
+                    selected = uiState.assetCategory,
+                    options = uiState.categoryOptions,
+                    onSelected = viewModel::onCategory,
+                )
+            }
+        } else {
+            OutlinedTextField(
+                value = uiState.assetCategory,
+                onValueChange = viewModel::onCategory,
+                label = { Text("Asset category (e.g. WIC, DG Set)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         OutlinedTextField(
             value = uiState.taskName,
             onValueChange = viewModel::onTaskName,
@@ -79,6 +98,45 @@ fun PmScheduleFormScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(if (uiState.isSaving) "Saving…" else "Save")
+        }
+    }
+}
+
+/** Generic read-only picker for a list of string options (one cascade level). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PickerDropdown(
+    label: String,
+    selected: String,
+    options: List<String>,
+    onSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onSelected(option)
+                        expanded = false
+                    },
+                )
+            }
         }
     }
 }

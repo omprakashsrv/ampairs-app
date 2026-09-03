@@ -15,6 +15,7 @@ data class ChecklistItemResult(
 @Serializable
 data class PmSchedule(
     val uid: String = "",
+    val department: String = "",
     @SerialName("asset_category") val assetCategory: String = "",
     @SerialName("task_name") val taskName: String = "",
     val checklist: List<String>? = null,
@@ -57,6 +58,7 @@ data class Ticket(
     @SerialName("zonal_office_id") val zonalOfficeId: String = "",
     @SerialName("asset_category") val assetCategory: String = "",
     @SerialName("sub_category") val subCategory: String = "",
+    @SerialName("ticket_bucket_id") val ticketBucketId: String? = null,
     val description: String? = null,
     val status: String = "OPEN",
     @SerialName("assigned_to_employee_id") val assignedToEmployeeId: String? = null,

@@ -109,12 +109,19 @@ class RaiseTicketViewModel(
             val issue = listOf(state.subCategory1.trim(), state.subCategory2.trim())
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")
+            // Resolve the exact taxonomy leaf the cascade selection maps to, so reports can join
+            // ticket -> ticket_bucket for the full classification.
+            val bucketId = state.buckets.firstOrNull {
+                it.department == state.department && it.category == state.category &&
+                    it.subCategory1 == state.subCategory1 && it.subCategory2 == state.subCategory2
+            }?.uid
             // zonalOfficeId left blank — the server denormalizes it from the store on upsert.
             val ticket = Ticket(
                 uid = UidGenerator.generateUid(TICKET_UID_PREFIX),
                 storeId = state.storeId,
                 assetCategory = state.category.trim(),
                 subCategory = issue,
+                ticketBucketId = bucketId,
                 description = state.description.trim().ifBlank { null },
                 status = "OPEN",
                 active = true,

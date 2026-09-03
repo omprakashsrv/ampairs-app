@@ -284,7 +284,7 @@ import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
