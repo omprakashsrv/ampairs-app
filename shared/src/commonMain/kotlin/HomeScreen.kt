@@ -1,7 +1,9 @@
 import ampairsapp.shared.generated.resources.Res
 import ampairsapp.shared.generated.resources.home_action_add_customer
 import ampairsapp.shared.generated.resources.home_action_add_product
+import ampairsapp.shared.generated.resources.home_action_create_ticket
 import ampairsapp.shared.generated.resources.home_action_new_invoice
+import ampairsapp.shared.generated.resources.home_action_pending_pm
 import ampairsapp.shared.generated.resources.home_cd_notifications
 import ampairsapp.shared.generated.resources.home_greeting
 import ampairsapp.shared.generated.resources.home_placeholder_value
@@ -21,9 +23,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Notifications
@@ -55,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.analytics.ui.home.AnalyticsHomeSummary
 import com.ampairs.analytics.ui.home.RecentActivityCard
+import com.ampairs.cbmaintenance.ui.CbRaiseTicketRoute
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.common.ui.navigateToModule
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
@@ -82,6 +89,13 @@ fun HomeScreen(
     val unreadCount by badgeViewModel.unreadCount.collectAsStateWithLifecycle()
     val activeModules by viewModel.activeModules.collectAsStateWithLifecycle()
     val analyticsActive = activeModules.any { it.moduleCode == ModuleCodes.BUSINESS_DASHBOARD }
+    // Quick actions must reflect only the modules this workspace actually has installed — otherwise
+    // e.g. a maintenance-only workspace would still show "New invoice" / "Add customer".
+    val installedCodes = remember(activeModules) { activeModules.map { it.moduleCode }.toSet() }
+    val hasQuickActions = backStack != null && installedCodes.any {
+        it == ModuleCodes.INVOICE_BILLING || it == ModuleCodes.CUSTOMER_MANAGEMENT ||
+            it == ModuleCodes.PRODUCT_MANAGEMENT || it == ModuleCodes.CB_MAINTENANCE
+    }
 
     val userName = headerState.currentUser?.firstName ?: ""
     val workspaceName = headerState.currentWorkspace?.name ?: ""
@@ -196,39 +210,61 @@ fun HomeScreen(
             }
         }
 
-        // Quick actions section
-        item {
-            Text(
-                text = stringResource(Res.string.home_section_quick_actions),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 8.dp)
-            )
-        }
+        // Quick actions section — shown only when at least one action's module is installed.
+        if (hasQuickActions && backStack != null) {
+            item {
+                Text(
+                    text = stringResource(Res.string.home_section_quick_actions),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 8.dp)
+                )
+            }
 
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (backStack != null) {
-                    QuickActionChip(
-                        label = stringResource(Res.string.home_action_new_invoice),
-                        icon = Icons.Default.Receipt,
-                        onClick = { navigateToModule(backStack, ModuleCodes.INVOICE_BILLING) }
-                    )
-                    QuickActionChip(
-                        label = stringResource(Res.string.home_action_add_customer),
-                        icon = Icons.Default.Group,
-                        onClick = { navigateToModule(backStack, ModuleCodes.CUSTOMER_MANAGEMENT) }
-                    )
-                    QuickActionChip(
-                        label = stringResource(Res.string.home_action_add_product),
-                        icon = Icons.Default.Inventory,
-                        onClick = { navigateToModule(backStack, ModuleCodes.PRODUCT_MANAGEMENT) }
-                    )
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (ModuleCodes.CB_MAINTENANCE in installedCodes) {
+                        QuickActionChip(
+                            label = stringResource(Res.string.home_action_create_ticket),
+                            icon = Icons.Default.Add,
+                            onClick = {
+                                navigateToModule(backStack, ModuleCodes.CB_MAINTENANCE)
+                                backStack.add(CbRaiseTicketRoute)
+                            }
+                        )
+                        QuickActionChip(
+                            label = stringResource(Res.string.home_action_pending_pm),
+                            icon = Icons.Default.Build,
+                            onClick = { navigateToModule(backStack, ModuleCodes.CB_MAINTENANCE) }
+                        )
+                    }
+                    if (ModuleCodes.INVOICE_BILLING in installedCodes) {
+                        QuickActionChip(
+                            label = stringResource(Res.string.home_action_new_invoice),
+                            icon = Icons.Default.Receipt,
+                            onClick = { navigateToModule(backStack, ModuleCodes.INVOICE_BILLING) }
+                        )
+                    }
+                    if (ModuleCodes.CUSTOMER_MANAGEMENT in installedCodes) {
+                        QuickActionChip(
+                            label = stringResource(Res.string.home_action_add_customer),
+                            icon = Icons.Default.Group,
+                            onClick = { navigateToModule(backStack, ModuleCodes.CUSTOMER_MANAGEMENT) }
+                        )
+                    }
+                    if (ModuleCodes.PRODUCT_MANAGEMENT in installedCodes) {
+                        QuickActionChip(
+                            label = stringResource(Res.string.home_action_add_product),
+                            icon = Icons.Default.Inventory,
+                            onClick = { navigateToModule(backStack, ModuleCodes.PRODUCT_MANAGEMENT) }
+                        )
+                    }
                 }
             }
         }

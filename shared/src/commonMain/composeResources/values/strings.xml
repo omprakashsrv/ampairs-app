@@ -73,6 +73,8 @@
     <string name="home_action_new_invoice">New invoice</string>
     <string name="home_action_add_customer">Add customer</string>
     <string name="home_action_add_product">Add product</string>
+    <string name="home_action_create_ticket">Create ticket</string>
+    <string name="home_action_pending_pm">Pending PM</string>
     <string name="home_placeholder_value">—</string>
     <string name="home_recent_activity_empty">No recent activity</string>
 
