@@ -6,6 +6,7 @@ import com.ampairs.cbmaintenance.data.repository.PmEntryRepository
 import com.ampairs.cbmaintenance.data.repository.PmScheduleRepository
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import com.ampairs.cbmaintenance.domain.model.PmSchedule
+import com.ampairs.cbemployee.data.repository.EmployeeLookup
 import com.ampairs.cbstore.data.repository.StoreLookup
 import com.ampairs.cbstore.domain.model.Store
 import com.ampairs.common.di.WorkspaceScope
@@ -33,6 +34,8 @@ data class PmReportRow(
     val asset: String,
     val task: String,
     val freq: String,
+    val doneBy: String,      // distinct people who completed this row's PM work this year
+    val assistedBy: String,  // distinct people who assisted on it this year
     val months: List<Boolean>, // 12 entries, Jan..Dec — true = a PM was completed that month
 )
 
@@ -45,7 +48,8 @@ data class PmReportUiState(
     val filteredRows: List<PmReportRow>
         get() = if (query.isBlank()) rows else rows.filter {
             it.outlet.contains(query, true) || it.city.contains(query, true) ||
-                it.asset.contains(query, true) || it.task.contains(query, true)
+                it.asset.contains(query, true) || it.task.contains(query, true) ||
+                it.doneBy.contains(query, true) || it.assistedBy.contains(query, true)
         }
 }
 
@@ -62,6 +66,7 @@ class PmReportViewModel(
     private val pmEntryRepository: PmEntryRepository,
     private val pmScheduleRepository: PmScheduleRepository,
     private val storeLookup: StoreLookup,
+    private val employeeLookup: EmployeeLookup,
     private val syncService: CentralSyncService,
 ) : ViewModel() {
 
@@ -76,11 +81,13 @@ class PmReportViewModel(
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_ENTRY))
         viewModelScope.launch {
             val storesById = storeLookup.activeStores().associateBy { it.uid }
+            val nameById = runCatching { employeeLookup.activeEmployees() }.getOrDefault(emptyList())
+                .associate { it.uid to it.name.ifBlank { it.employeeNo } }
             combine(
                 pmEntryRepository.observeAllEntries(),
                 pmScheduleRepository.observeSchedules(),
             ) { entries, schedules ->
-                buildRows(entries, schedules.associateBy { it.uid }, storesById)
+                buildRows(entries, schedules.associateBy { it.uid }, storesById, nameById)
             }
                 .onEach { rows -> _uiState.update { it.copy(rows = rows, loading = false) } }
                 .launchIn(viewModelScope)
@@ -95,20 +102,30 @@ class PmReportViewModel(
         entries: List<PmEntry>,
         schedulesById: Map<String, PmSchedule>,
         storesById: Map<String, Store>,
+        nameById: Map<String, String>,
     ): List<PmReportRow> {
-        // group key -> 12-month done flags
         data class Key(val storeId: String, val asset: String, val scheduleId: String)
-        val grid = LinkedHashMap<Key, BooleanArray>()
+        // Per group: 12-month done flags, plus the distinct people who did / assisted the work.
+        class Agg {
+            val months = BooleanArray(12)
+            val doneBy = LinkedHashSet<String>()
+            val assistedBy = LinkedHashSet<String>()
+        }
+        val grid = LinkedHashMap<Key, Agg>()
         for (e in entries) {
             if (e.status != "DONE") continue
             val done = e.completedAt ?: continue
             if (done.take(4) != currentYear) continue
             val monthIdx = done.substringAfter('-', "").take(2).toIntOrNull()?.minus(1) ?: continue
             if (monthIdx !in 0..11) continue
-            val key = Key(e.storeId, e.assetCategory, e.pmScheduleId ?: "")
-            grid.getOrPut(key) { BooleanArray(12) }[monthIdx] = true
+            val agg = grid.getOrPut(Key(e.storeId, e.assetCategory, e.pmScheduleId ?: "")) { Agg() }
+            agg.months[monthIdx] = true
+            e.completedByEmployeeId?.takeIf { it.isNotBlank() }?.let { agg.doneBy += it }
+            e.assistedByEmployeeIds?.forEach { id -> id.takeIf { it.isNotBlank() }?.let { agg.assistedBy += it } }
         }
-        return grid.map { (key, flags) ->
+        fun names(ids: Set<String>): String =
+            ids.map { nameById[it] ?: it }.filter { it.isNotBlank() }.joinToString(", ")
+        return grid.map { (key, agg) ->
             val store = storesById[key.storeId]
             val schedule = key.scheduleId.takeIf { it.isNotBlank() }?.let { schedulesById[it] }
             PmReportRow(
@@ -117,7 +134,9 @@ class PmReportViewModel(
                 asset = key.asset,
                 task = schedule?.taskName ?: "Ad-hoc",
                 freq = schedule?.let { "${it.frequencyInterval} ${it.frequencyUnit.lowercase()}" } ?: "",
-                months = flags.toList(),
+                doneBy = names(agg.doneBy),
+                assistedBy = names(agg.assistedBy),
+                months = agg.months.toList(),
             )
         }.sortedWith(compareBy({ it.outlet }, { it.asset }, { it.task }))
     }

@@ -3,23 +3,34 @@ package com.ampairs.cbmaintenance.ui.due
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -36,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ampairs.cbemployee.domain.model.Employee
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
@@ -48,8 +60,9 @@ fun PmDueListScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var issueFor by remember { mutableStateOf<String?>(null) }
-    var issueText by remember { mutableStateOf("") }
+    // The PM entry being completed, and whether that completion reports an issue.
+    var completeFor by remember { mutableStateOf<String?>(null) }
+    var issueMode by remember { mutableStateOf(false) }
 
     Scaffold(modifier = modifier.fillMaxSize()) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -103,8 +116,8 @@ fun PmDueListScreen(
                     items(uiState.entries, key = { it.uid }) { entry ->
                         PmEntryCard(
                             entry = entry,
-                            onOk = { viewModel.markAllOk(entry.uid) },
-                            onIssue = { issueFor = entry.uid; issueText = "" },
+                            onOk = { completeFor = entry.uid; issueMode = false },
+                            onIssue = { completeFor = entry.uid; issueMode = true },
                         )
                     }
                     item { Spacer(Modifier.height(40.dp)) }
@@ -113,31 +126,118 @@ fun PmDueListScreen(
         }
     }
 
-    val currentIssueFor = issueFor
-    if (currentIssueFor != null) {
-        AlertDialog(
-            onDismissRequest = { issueFor = null },
-            title = { Text("Report an issue") },
-            text = {
-                OutlinedTextField(
-                    value = issueText,
-                    onValueChange = { issueText = it },
-                    label = { Text("What failed? (e.g. Gasket broken)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+    val entryId = completeFor
+    if (entryId != null) {
+        CompletePmDialog(
+            issueMode = issueMode,
+            employees = uiState.employees,
+            onDismiss = { completeFor = null },
+            onConfirm = { issue, doneBy, assisted ->
+                if (issueMode) viewModel.reportIssue(entryId, issue, doneBy, assisted)
+                else viewModel.markAllOk(entryId, doneBy, assisted)
+                completeFor = null
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.reportIssue(currentIssueFor, issueText)
-                        issueFor = null
-                    },
-                    enabled = issueText.isNotBlank(),
-                ) { Text("Complete & raise ticket") }
-            },
-            dismissButton = { TextButton(onClick = { issueFor = null }) { Text("Cancel") } },
         )
+    }
+}
+
+/**
+ * Completion sheet for a PM task. In OK mode it just records who did it and who helped; in issue
+ * mode it also captures the failed check (which spawns a ticket server-side). "Done by" and
+ * "Assisted by" both feed the PM compliance report.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CompletePmDialog(
+    issueMode: Boolean,
+    employees: List<Employee>,
+    onDismiss: () -> Unit,
+    onConfirm: (issue: String, doneBy: String?, assisted: List<String>) -> Unit,
+) {
+    var issueText by remember { mutableStateOf("") }
+    var doneBy by remember { mutableStateOf("") }
+    var assisted by remember { mutableStateOf(setOf<String>()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (issueMode) "Report an issue" else "Complete PM") },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (issueMode) {
+                    OutlinedTextField(
+                        value = issueText,
+                        onValueChange = { issueText = it },
+                        label = { Text("What failed? (e.g. Gasket broken)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (employees.isNotEmpty()) {
+                    DoneByDropdown(
+                        employees = employees,
+                        selectedId = doneBy,
+                        onSelected = { doneBy = it },
+                    )
+                    Text("Assisted by (optional)", style = MaterialTheme.typography.labelLarge)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        employees.forEach { emp ->
+                            val on = emp.uid in assisted
+                            FilterChip(
+                                selected = on,
+                                onClick = {
+                                    assisted = if (on) assisted - emp.uid else assisted + emp.uid
+                                },
+                                label = { Text(emp.name.ifBlank { emp.employeeNo }) },
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(issueText, doneBy.ifBlank { null }, assisted.toList()) },
+                enabled = !issueMode || issueText.isNotBlank(),
+            ) { Text(if (issueMode) "Complete & raise ticket" else "Mark done") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+/** Single-select "Done by" employee dropdown (with a clear "—" option). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DoneByDropdown(employees: List<Employee>, selectedId: String, onSelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = employees.firstOrNull { it.uid == selectedId }?.let { it.name.ifBlank { it.employeeNo } } ?: ""
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = selectedName,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Done by") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("—") },
+                onClick = { onSelected(""); expanded = false },
+            )
+            employees.forEach { emp ->
+                DropdownMenuItem(
+                    text = { Text(emp.name.ifBlank { emp.employeeNo }) },
+                    onClick = { onSelected(emp.uid); expanded = false },
+                )
+            }
+        }
     }
 }
 

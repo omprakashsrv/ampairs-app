@@ -57,13 +57,15 @@ class PmEntryRepository(
         id: String,
         checklistResult: List<ChecklistItemResult>,
         completedByEmployeeId: String? = null,
+        assistedByEmployeeIds: List<String>? = null,
     ): Result<Unit> = runCatching {
-        val existing = dao.getEntryById(id) ?: return@runCatching Unit
-        val updated = existing.toPmEntry().copy(
+        val existing = dao.getEntryById(id)?.toPmEntry() ?: return@runCatching Unit
+        val updated = existing.copy(
             status = "DONE",
             completedAt = nowIso(),
             completedByEmployeeId = completedByEmployeeId ?: existing.completedByEmployeeId,
             assignedToEmployeeId = existing.assignedToEmployeeId ?: completedByEmployeeId,
+            assistedByEmployeeIds = assistedByEmployeeIds?.takeIf { it.isNotEmpty() } ?: existing.assistedByEmployeeIds,
             checklistResult = checklistResult,
         )
         dao.insertEntry(updated.toEntity().copy(synced = false))

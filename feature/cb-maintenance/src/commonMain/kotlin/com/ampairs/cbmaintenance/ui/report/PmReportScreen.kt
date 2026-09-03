@@ -36,6 +36,7 @@ private val CITY_W = 56.dp
 private val ASSET_W = 130.dp
 private val TASK_W = 190.dp
 private val FREQ_W = 76.dp
+private val PERSON_W = 130.dp
 private val MONTH_W = 26.dp
 
 @Composable
@@ -72,6 +73,8 @@ fun PmReportScreen(
             HeaderCell("Asset", ASSET_W)
             HeaderCell("Task", TASK_W)
             HeaderCell("Freq", FREQ_W)
+            HeaderCell("Done by", PERSON_W)
+            HeaderCell("Assisted by", PERSON_W)
             MONTHS.forEach { HeaderCell(it, MONTH_W, TextAlign.Center) }
         }
         HorizontalDivider()
@@ -95,6 +98,8 @@ fun PmReportScreen(
                         BodyCell(row.asset, ASSET_W)
                         BodyCell(row.task, TASK_W)
                         BodyCell(row.freq, FREQ_W)
+                        BodyCell(row.doneBy, PERSON_W)
+                        BodyCell(row.assistedBy, PERSON_W)
                         row.months.forEach { done ->
                             Text(
                                 if (done) "✓" else "",
