@@ -48,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -428,6 +429,36 @@ private fun DoneByDropdown(employees: List<Employee>, selectedId: String, onSele
     }
 }
 
+/** Small color-coded pill for a PM entry's status (due amber, overdue red, done green, …). */
+@Composable
+private fun StatusBadge(status: String) {
+    val (bg, fg) = statusColors(status)
+    Surface(color = bg, contentColor = fg, shape = MaterialTheme.shapes.small) {
+        Text(
+            statusLabel(status),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        )
+    }
+}
+
+@Composable
+private fun statusColors(status: String): Pair<Color, Color> = when (status.uppercase()) {
+    "OVERDUE" -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
+    "DUE" -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+    "ASSIGNED", "IN_PROGRESS" ->
+        MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+    // Completed — a fixed green (no green token in the M3 scheme); translucent bg reads in both themes.
+    "DONE", "COMPLETED" -> Color(0xFF2E7D32).copy(alpha = 0.18f) to Color(0xFF2E7D32)
+    else -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+private fun statusLabel(status: String): String = when (status.uppercase()) {
+    "IN_PROGRESS" -> "In progress"
+    else -> status.lowercase().replaceFirstChar { it.uppercase() }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PmEntryCard(
@@ -441,9 +472,21 @@ private fun PmEntryCard(
 ) {
     Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-            Text(entry.assetCategory, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    entry.assetCategory,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                StatusBadge(entry.status)
+            }
             Text(
-                "$storeLabel · ${entry.status}${entry.dueDate?.let { " · due ${it.take(10)}" } ?: ""}",
+                "$storeLabel${entry.dueDate?.let { " · due ${it.take(10)}" } ?: ""}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
