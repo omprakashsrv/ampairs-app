@@ -117,12 +117,4 @@ class CbMaintenanceApiImpl(
         if (response.error != null) throw Exception(response.error?.message ?: "Network error")
         return response.data ?: emptyPage(page, size)
     }
-
-    // --- Ops (non-sync, UI-invoked) -------------------------------------------------------------
-    override suspend fun generatePmEntries(): Int {
-        // No body; the server defaults the generation window from workspace settings.
-        val response: Response<Int> = post(client, ApiUrlBuilder.cbMaintenanceUrl("v1/ops/generate-pm"), emptyMap<String, String>())
-        if (response.error != null) throw Exception(response.error?.message ?: "Failed to generate PM entries")
-        return response.data ?: 0
-    }
 }

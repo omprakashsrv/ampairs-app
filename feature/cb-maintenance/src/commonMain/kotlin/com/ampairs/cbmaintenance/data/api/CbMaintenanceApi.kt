@@ -32,10 +32,4 @@ interface CbMaintenanceApi {
 
     /** Ticket-classification catalog — global reference data, pull-only. */
     suspend fun getTicketBucketsSync(lastSync: String, page: Int = 0, size: Int = 100, sortBy: String = "updatedAt", sortDir: String = "ASC"): PageResponse<TicketBucket>
-
-    /**
-     * On-demand server-side PM generation (the same work the nightly job does): rolls due PM entries
-     * forward from active schedules × stores. Returns the number generated. Non-sync, UI-invoked.
-     */
-    suspend fun generatePmEntries(): Int
 }

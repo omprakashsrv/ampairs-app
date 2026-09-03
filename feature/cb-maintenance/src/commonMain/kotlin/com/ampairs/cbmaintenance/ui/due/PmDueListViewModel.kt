@@ -34,7 +34,6 @@ data class PmDueListUiState(
     val ticketLabels: Map<String, String> = emptyMap(),
     val query: String = "",
     val isRefreshing: Boolean = false,
-    val isGenerating: Boolean = false,
     val message: String? = null,
     val error: String? = null,
 )
@@ -127,20 +126,6 @@ class PmDueListViewModel(
     }
 
     fun refresh() = syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CB_PM_ENTRY))
-
-    /** Ask the server to roll due PM entries forward now, then pull them in. */
-    fun generate() {
-        if (_uiState.value.isGenerating) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isGenerating = true, message = null, error = null) }
-            val result = repository.generateNow()
-            _uiState.update {
-                if (result.isSuccess) it.copy(isGenerating = false, message = "Generated ${result.getOrNull() ?: 0} PM entries")
-                else it.copy(isGenerating = false, error = result.exceptionOrNull()?.message ?: "Failed to generate PM")
-            }
-            if (result.isSuccess) syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_ENTRY))
-        }
-    }
 
     /** Complete with everything passing — no ticket spawned. Records who did it and who helped. */
     fun markAllOk(entryId: String, doneById: String?, assistedByIds: List<String>) {

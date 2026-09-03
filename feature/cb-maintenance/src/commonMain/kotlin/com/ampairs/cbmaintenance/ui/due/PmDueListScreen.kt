@@ -87,9 +87,6 @@ fun PmDueListScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onOpenTickets) { Text("Tickets") }
                         OutlinedButton(onClick = onOpenSchedules) { Text("PM Schedules") }
-                        OutlinedButton(onClick = viewModel::generate, enabled = !uiState.isGenerating) {
-                            Text(if (uiState.isGenerating) "Generating…" else "Generate PM")
-                        }
                     }
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
