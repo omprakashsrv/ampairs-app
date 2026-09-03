@@ -48,6 +48,20 @@ class TicketRepository(
         Unit
     }.onFailure { CbMaintenanceLogger.e("TicketRepository", "deleteTicket failed", it) }
 
+    /**
+     * Close a ticket. Offline-first status update (`status = CLOSED, synced = false`) pushed by
+     * TicketSyncDelegate; stamps `resolvedAt` if the ticket was closed without a prior resolve.
+     * Distinct from the auto-RESOLVE that a completed PM task triggers — this is the explicit,
+     * final close by a person.
+     */
+    suspend fun closeTicket(id: String): Result<Unit> = runCatching {
+        dao.getTicketById(id)?.let {
+            dao.insertTicket(it.copy(status = "CLOSED", resolvedAt = it.resolvedAt ?: nowIso(), synced = false))
+            markPending()
+        }
+        Unit
+    }.onFailure { CbMaintenanceLogger.e("TicketRepository", "closeTicket failed", it) }
+
     suspend fun reassignTicket(id: String, newAssigneeId: String): Result<Unit> = runCatching {
         dao.getTicketById(id)?.let {
             dao.insertTicket(it.copy(assignedToEmployeeId = newAssigneeId, synced = false))
