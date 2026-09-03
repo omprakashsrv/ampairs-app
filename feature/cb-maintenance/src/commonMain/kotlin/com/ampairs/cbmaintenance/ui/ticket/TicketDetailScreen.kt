@@ -93,10 +93,21 @@ fun TicketDetailScreen(
             item {
                 Button(
                     onClick = viewModel::createPmTask,
-                    enabled = !uiState.isCreating,
+                    enabled = !uiState.isCreating && !uiState.isClosed,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(if (uiState.isCreating) "Creating…" else "Create PM task for this ticket")
+                }
+            }
+            if (!uiState.isClosed) {
+                item {
+                    Button(
+                        onClick = viewModel::closeTicket,
+                        enabled = !uiState.isClosing,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (uiState.isClosing) "Closing…" else "Close ticket")
+                    }
                 }
             }
             item {

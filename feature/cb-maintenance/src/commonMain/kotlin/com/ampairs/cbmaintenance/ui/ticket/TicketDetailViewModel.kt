@@ -30,11 +30,14 @@ data class TicketDetailUiState(
     val ticket: Ticket? = null,
     val pmEntries: List<PmEntry> = emptyList(),
     val isCreating: Boolean = false,
+    val isClosing: Boolean = false,
     val isDeleting: Boolean = false,
     val deleted: Boolean = false,
     val message: String? = null,
     val error: String? = null,
-)
+) {
+    val isClosed: Boolean get() = ticket?.status == "CLOSED"
+}
 
 /**
  * Shows a ticket, the PM tasks raised against it, and lets the user raise a new one. Creating a PM
@@ -89,6 +92,22 @@ class TicketDetailViewModel(
                 } else {
                     it.copy(isCreating = false, error = result.exceptionOrNull()?.message ?: "Failed to create PM task")
                 }
+            }
+        }
+    }
+
+    /** Explicitly close this ticket (final state). Reloads it so the screen reflects CLOSED. */
+    fun closeTicket() {
+        val ticket = _uiState.value.ticket ?: return
+        if (ticket.status == "CLOSED") return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isClosing = true, error = null, message = null) }
+            val result = ticketRepository.closeTicket(ticketId)
+            if (result.isSuccess) {
+                val updated = ticketRepository.getTicket(ticketId)
+                _uiState.update { it.copy(isClosing = false, ticket = updated, message = "Ticket closed") }
+            } else {
+                _uiState.update { it.copy(isClosing = false, error = result.exceptionOrNull()?.message ?: "Failed to close ticket") }
             }
         }
     }

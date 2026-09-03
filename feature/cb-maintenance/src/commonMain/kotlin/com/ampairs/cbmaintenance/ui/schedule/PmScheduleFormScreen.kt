@@ -49,8 +49,10 @@ fun PmScheduleFormScreen(
             if (uiState.isEdit) "Edit PM schedule" else "New PM schedule",
             style = MaterialTheme.typography.headlineSmall,
         )
-        // Category-level taxonomy link: Department, then Category (the PM's asset category).
-        // Falls back to free text if the ticket-bucket catalog hasn't synced/seeded yet.
+        // Full taxonomy cascade (Department › Equipment › Issue [› Issue-detail]) — each level
+        // appears once its parent is chosen AND that level has options. The chosen leaf is stored
+        // as the schedule's ticket_bucket_id. Falls back to free text if the catalog hasn't
+        // synced/seeded yet.
         if (uiState.departmentOptions.isNotEmpty()) {
             PickerDropdown(
                 label = "Department",
@@ -64,6 +66,22 @@ fun PmScheduleFormScreen(
                     selected = uiState.assetCategory,
                     options = uiState.categoryOptions,
                     onSelected = viewModel::onCategory,
+                )
+            }
+            if (uiState.assetCategory.isNotBlank() && uiState.subCategory1Options.isNotEmpty()) {
+                PickerDropdown(
+                    label = "Issue",
+                    selected = uiState.subCategory1,
+                    options = uiState.subCategory1Options,
+                    onSelected = viewModel::onSubCategory1,
+                )
+            }
+            if (uiState.subCategory1.isNotBlank() && uiState.subCategory2Options.isNotEmpty()) {
+                PickerDropdown(
+                    label = "Issue detail",
+                    selected = uiState.subCategory2,
+                    options = uiState.subCategory2Options,
+                    onSelected = viewModel::onSubCategory2,
                 )
             }
         } else {
