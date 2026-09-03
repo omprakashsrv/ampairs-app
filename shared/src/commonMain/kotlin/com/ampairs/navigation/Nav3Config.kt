@@ -41,6 +41,7 @@ import com.ampairs.cbmaintenance.ui.CbPmDueListRoute
 import com.ampairs.cbmaintenance.ui.CbPmScheduleFormRoute
 import com.ampairs.cbmaintenance.ui.CbPmScheduleListRoute
 import com.ampairs.cbmaintenance.ui.CbRaiseTicketRoute
+import com.ampairs.cbmaintenance.ui.CbTicketDetailRoute
 import com.ampairs.cbmaintenance.ui.CbTicketListRoute
 import com.ampairs.printing.ui.PrinterListRoute
 import com.ampairs.printing.ui.PrintQueueRoute
@@ -211,6 +212,7 @@ fun createNav3SavedStateConfig(): SavedStateConfiguration {
                 subclass(CbPmDueListRoute::class)
                 subclass(CbTicketListRoute::class)
                 subclass(CbRaiseTicketRoute::class)
+                subclass(CbTicketDetailRoute::class)
                 subclass(CbPmScheduleListRoute::class)
                 subclass(CbPmScheduleFormRoute::class)
 

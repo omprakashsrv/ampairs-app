@@ -7,11 +7,13 @@ import com.ampairs.cbmaintenance.ui.CbPmDueListRoute
 import com.ampairs.cbmaintenance.ui.CbPmScheduleFormRoute
 import com.ampairs.cbmaintenance.ui.CbPmScheduleListRoute
 import com.ampairs.cbmaintenance.ui.CbRaiseTicketRoute
+import com.ampairs.cbmaintenance.ui.CbTicketDetailRoute
 import com.ampairs.cbmaintenance.ui.CbTicketListRoute
 import com.ampairs.cbmaintenance.ui.due.PmDueListScreen
 import com.ampairs.cbmaintenance.ui.schedule.PmScheduleFormScreen
 import com.ampairs.cbmaintenance.ui.schedule.PmScheduleListScreen
 import com.ampairs.cbmaintenance.ui.ticket.RaiseTicketScreen
+import com.ampairs.cbmaintenance.ui.ticket.TicketDetailScreen
 import com.ampairs.cbmaintenance.ui.ticket.TicketListScreen
 
 /** Entry provider for cb-maintenance routes (PM + tickets). */
@@ -30,6 +32,7 @@ fun cbMaintenanceEntryProvider(
     is CbTicketListRoute -> NavEntry(key) {
         TicketListScreen(
             onRaiseTicket = { backStack.add(CbRaiseTicketRoute) },
+            onTicketClick = { id -> backStack.add(CbTicketDetailRoute(id)) },
             modifier = Modifier,
         )
     }
@@ -37,6 +40,13 @@ fun cbMaintenanceEntryProvider(
     is CbRaiseTicketRoute -> NavEntry(key) {
         RaiseTicketScreen(
             onDone = { backStack.removeLastOrNull() },
+            modifier = Modifier,
+        )
+    }
+
+    is CbTicketDetailRoute -> NavEntry(key) {
+        TicketDetailScreen(
+            ticketId = key.ticketId,
             modifier = Modifier,
         )
     }

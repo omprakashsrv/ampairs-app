@@ -34,7 +34,23 @@ class PmEntryRepository(
     fun observeAllEntries(): Flow<List<PmEntry>> =
         dao.getAllEntries().map { list -> list.map { it.toPmEntry() } }
 
+    /** PM entries created to address a given ticket. */
+    fun observeEntriesForTicket(ticketId: String): Flow<List<PmEntry>> =
+        dao.getEntriesForTicket(ticketId).map { list -> list.map { it.toPmEntry() } }
+
     suspend fun getEntry(id: String): PmEntry? = dao.getEntryById(id)?.toPmEntry()
+
+    /**
+     * Create an ad-hoc PM task (offline-first). Used to raise maintenance work against a ticket:
+     * the entry carries `ticketId`, and when it is completed the server auto-resolves that ticket.
+     * The zone is left blank — the server denormalizes it from the store on upsert.
+     */
+    suspend fun createEntry(entry: PmEntry): Result<PmEntry> = runCatching {
+        require(entry.uid.isNotBlank()) { "UID must be set by ViewModel" }
+        dao.insertEntry(entry.toEntity().copy(synced = false))
+        markPending()
+        entry
+    }.onFailure { CbMaintenanceLogger.e("PmEntryRepository", "createEntry failed", it) }
 
     /** Mark a PM done with its checklist results. Failed items spawn tickets server-side on push. */
     suspend fun completeEntry(

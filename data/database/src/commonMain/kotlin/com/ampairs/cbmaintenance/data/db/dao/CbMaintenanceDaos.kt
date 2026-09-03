@@ -52,6 +52,10 @@ interface PmEntryDao {
     @Query("SELECT * FROM cb_pm_entries WHERE id = :id")
     suspend fun getEntryById(id: String): PmEntryEntity?
 
+    /** PM entries created to address a given ticket (newest first). */
+    @Query("SELECT * FROM cb_pm_entries WHERE active = 1 AND ticket_id = :ticketId ORDER BY due_date DESC")
+    fun getEntriesForTicket(ticketId: String): Flow<List<PmEntryEntity>>
+
     @Query("SELECT * FROM cb_pm_entries WHERE synced = 0")
     suspend fun getUnsyncedEntries(): List<PmEntryEntity>
 

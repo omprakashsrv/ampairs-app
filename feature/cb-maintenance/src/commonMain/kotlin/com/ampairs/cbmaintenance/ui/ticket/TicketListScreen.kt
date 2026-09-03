@@ -1,5 +1,6 @@
 package com.ampairs.cbmaintenance.ui.ticket
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 @Composable
 fun TicketListScreen(
     onRaiseTicket: () -> Unit,
+    onTicketClick: (String) -> Unit,
     viewModel: TicketListViewModel = metroViewModel(),
     modifier: Modifier = Modifier,
 ) {
@@ -78,7 +80,11 @@ fun TicketListScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     items(uiState.tickets, key = { it.uid }) { ticket ->
-                        TicketCard(ticket, uiState.storeNames[ticket.storeId] ?: ticket.storeId)
+                        TicketCard(
+                            ticket = ticket,
+                            storeLabel = uiState.storeNames[ticket.storeId] ?: ticket.storeId,
+                            onClick = { onTicketClick(ticket.uid) },
+                        )
                     }
                     item { Spacer(Modifier.height(80.dp)) }
                 }
@@ -88,8 +94,12 @@ fun TicketListScreen(
 }
 
 @Composable
-private fun TicketCard(ticket: Ticket, storeLabel: String) {
-    Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+private fun TicketCard(ticket: Ticket, storeLabel: String, onClick: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        tonalElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+    ) {
         Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
             Text("${ticket.assetCategory} · ${ticket.subCategory}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(

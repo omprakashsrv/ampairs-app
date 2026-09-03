@@ -132,6 +132,13 @@ private fun PmEntryCard(entry: PmEntry, onOk: () -> Unit, onIssue: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (!entry.ticketId.isNullOrBlank()) {
+                Text(
+                    "For ticket ${entry.ticketId}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onOk) { Text("Mark OK") }
