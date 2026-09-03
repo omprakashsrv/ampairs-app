@@ -47,33 +47,37 @@ fun RaiseTicketScreen(
             onSelected = viewModel::onStore,
         )
         // Cascading classification pickers, sourced from the ticket-bucket catalog.
-        PickerDropdown(
-            label = "Department",
-            selected = uiState.department,
-            options = uiState.departmentOptions,
-            enabled = uiState.departmentOptions.isNotEmpty(),
-            onSelected = viewModel::onDepartment,
-        )
-        PickerDropdown(
-            label = "Equipment / category",
-            selected = uiState.category,
-            options = uiState.categoryOptions,
-            enabled = uiState.department.isNotBlank(),
-            onSelected = viewModel::onCategory,
-        )
-        PickerDropdown(
-            label = "Issue",
-            selected = uiState.subCategory1,
-            options = uiState.subCategory1Options,
-            enabled = uiState.category.isNotBlank(),
-            onSelected = viewModel::onSubCategory1,
-        )
-        if (uiState.subCategory2Options.isNotEmpty()) {
+        // Progressive disclosure: each level appears only after its parent is chosen AND only when
+        // that level actually has options — so empty levels (e.g. no second issue detail) never show.
+        if (uiState.departmentOptions.isNotEmpty()) {
+            PickerDropdown(
+                label = "Department",
+                selected = uiState.department,
+                options = uiState.departmentOptions,
+                onSelected = viewModel::onDepartment,
+            )
+        }
+        if (uiState.department.isNotBlank() && uiState.categoryOptions.isNotEmpty()) {
+            PickerDropdown(
+                label = "Equipment / category",
+                selected = uiState.category,
+                options = uiState.categoryOptions,
+                onSelected = viewModel::onCategory,
+            )
+        }
+        if (uiState.category.isNotBlank() && uiState.subCategory1Options.isNotEmpty()) {
+            PickerDropdown(
+                label = "Issue",
+                selected = uiState.subCategory1,
+                options = uiState.subCategory1Options,
+                onSelected = viewModel::onSubCategory1,
+            )
+        }
+        if (uiState.subCategory1.isNotBlank() && uiState.subCategory2Options.isNotEmpty()) {
             PickerDropdown(
                 label = "Issue detail (optional)",
                 selected = uiState.subCategory2,
                 options = uiState.subCategory2Options,
-                enabled = true,
                 onSelected = viewModel::onSubCategory2,
             )
         }
@@ -139,27 +143,25 @@ private fun PickerDropdown(
     label: String,
     selected: String,
     options: List<String>,
-    enabled: Boolean,
     onSelected: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
-        expanded = expanded && enabled,
-        onExpandedChange = { if (enabled) expanded = it },
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
         modifier = Modifier.fillMaxWidth(),
     ) {
         OutlinedTextField(
             value = selected,
             onValueChange = {},
             readOnly = true,
-            enabled = enabled,
             label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && enabled) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth(),
         )
-        ExposedDropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false }) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option) },
