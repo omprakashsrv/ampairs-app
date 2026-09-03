@@ -9,12 +9,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,6 +32,7 @@ import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 @Composable
 fun TicketDetailScreen(
     ticketId: String,
+    onDeleted: () -> Unit,
     viewModel: TicketDetailViewModel = assistedMetroViewModel<TicketDetailViewModel, TicketDetailViewModel.Factory>(
         key = ticketId,
     ) { create(ticketId) },
@@ -32,6 +40,26 @@ fun TicketDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val ticket = uiState.ticket
+    var confirmDelete by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.deleted) {
+        if (uiState.deleted) onDeleted()
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete ticket?") },
+            text = { Text("This removes the ticket for everyone. Use this only for a ticket raised by mistake.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    viewModel.deleteTicket()
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+        )
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(16.dp),
@@ -69,6 +97,18 @@ fun TicketDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(if (uiState.isCreating) "Creating…" else "Create PM task for this ticket")
+                }
+            }
+            item {
+                OutlinedButton(
+                    onClick = { confirmDelete = true },
+                    enabled = !uiState.isDeleting,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        if (uiState.isDeleting) "Deleting…" else "Delete ticket (raised by mistake)",
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
             uiState.message?.let { item { Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall) } }

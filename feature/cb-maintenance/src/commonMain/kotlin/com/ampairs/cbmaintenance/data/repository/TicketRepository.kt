@@ -36,6 +36,18 @@ class TicketRepository(
         ticket
     }.onFailure { CbMaintenanceLogger.e("TicketRepository", "raiseTicket failed", it) }
 
+    /**
+     * Soft-delete a ticket raised by mistake. Offline-first: `active = false, synced = false` so
+     * TicketSyncDelegate pushes the deletion and hard-deletes the row locally once the server confirms.
+     */
+    suspend fun deleteTicket(id: String): Result<Unit> = runCatching {
+        dao.getTicketById(id)?.let {
+            dao.insertTicket(it.copy(active = false, synced = false))
+            markPending()
+        }
+        Unit
+    }.onFailure { CbMaintenanceLogger.e("TicketRepository", "deleteTicket failed", it) }
+
     suspend fun reassignTicket(id: String, newAssigneeId: String): Result<Unit> = runCatching {
         dao.getTicketById(id)?.let {
             dao.insertTicket(it.copy(assignedToEmployeeId = newAssigneeId, synced = false))

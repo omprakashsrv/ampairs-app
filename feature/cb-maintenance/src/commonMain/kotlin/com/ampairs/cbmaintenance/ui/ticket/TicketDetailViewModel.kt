@@ -30,6 +30,8 @@ data class TicketDetailUiState(
     val ticket: Ticket? = null,
     val pmEntries: List<PmEntry> = emptyList(),
     val isCreating: Boolean = false,
+    val isDeleting: Boolean = false,
+    val deleted: Boolean = false,
     val message: String? = null,
     val error: String? = null,
 )
@@ -87,6 +89,18 @@ class TicketDetailViewModel(
                 } else {
                     it.copy(isCreating = false, error = result.exceptionOrNull()?.message ?: "Failed to create PM task")
                 }
+            }
+        }
+    }
+
+    /** Soft-delete this ticket (raised by mistake). Sets `deleted` so the screen navigates back. */
+    fun deleteTicket() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true, error = null) }
+            val result = ticketRepository.deleteTicket(ticketId)
+            _uiState.update {
+                if (result.isSuccess) it.copy(isDeleting = false, deleted = true)
+                else it.copy(isDeleting = false, error = result.exceptionOrNull()?.message ?: "Failed to delete ticket")
             }
         }
     }

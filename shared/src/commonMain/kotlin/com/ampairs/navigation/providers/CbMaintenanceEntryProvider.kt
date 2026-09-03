@@ -47,6 +47,7 @@ fun cbMaintenanceEntryProvider(
     is CbTicketDetailRoute -> NavEntry(key) {
         TicketDetailScreen(
             ticketId = key.ticketId,
+            onDeleted = { backStack.removeLastOrNull() },
             modifier = Modifier,
         )
     }
