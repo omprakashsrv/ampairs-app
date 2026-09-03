@@ -28,6 +28,11 @@ kotlin {
         compileSdk { version = release(libs.versions.android.compileSdk.get().toInt()) }
         minSdk = libs.versions.android.minSdk.get().toInt()
         androidResources.enable = true
+        // See feature/auth/build.gradle.kts — avoids Kotlin deriving "$group:$archivesName" as
+        // the module name, which breaks androidApp:bundleRelease.
+        compilerOptions {
+            moduleName.set("data-common")
+        }
     }
     jvm("desktop")   // must match shared — named target
     iosArm64()

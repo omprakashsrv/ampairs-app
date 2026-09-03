@@ -26,6 +26,13 @@ kotlin {
         compileSdk { version = release(libs.versions.android.compileSdk.get().toInt()) }
         minSdk = libs.versions.android.minSdk.get().toInt()
         androidResources.enable = true
+        // Without this, Kotlin derives the module name as "$group:$name" ("com.ampairs:auth")
+        // since group is set for publishing above. R8's release/minify pass re-embeds that
+        // literal (colon-containing) name as a META-INF/*.kotlin_module entry, which then fails
+        // androidApp:bundleRelease with "Entry name contains invalid characters".
+        compilerOptions {
+            moduleName.set("auth")
+        }
     }
     jvm("desktop")
     iosArm64()
