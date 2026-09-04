@@ -98,6 +98,11 @@ fun RaiseTicketScreen(
     }
 }
 
+/**
+ * Searchable outlet picker. The outlet list is large (130+ stores), so the field is editable while
+ * open: typing filters the options case-insensitively on the display label. Collapsed it shows the
+ * selected outlet; opening it clears the field for search.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StoreDropdown(
@@ -107,23 +112,29 @@ private fun StoreDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedName = options.firstOrNull { it.first == selectedId }?.second ?: ""
+    // Reset the search text whenever the menu opens/closes or the selection changes.
+    var searchText by remember(selectedName, expanded) {
+        mutableStateOf(if (expanded) "" else selectedName)
+    }
+    val filtered = if (!expanded || searchText.isBlank()) options
+        else options.filter { it.second.contains(searchText, ignoreCase = true) }
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
         modifier = Modifier.fillMaxWidth(),
     ) {
         OutlinedTextField(
-            value = selectedName,
-            onValueChange = {},
-            readOnly = true,
+            value = if (expanded) searchText else selectedName,
+            onValueChange = { searchText = it; expanded = true },
+            singleLine = true,
             label = { Text("Outlet") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                .menuAnchor(MenuAnchorType.PrimaryEditable)
                 .fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { (id, name) ->
+            filtered.forEach { (id, name) ->
                 DropdownMenuItem(
                     text = { Text(name) },
                     onClick = {
