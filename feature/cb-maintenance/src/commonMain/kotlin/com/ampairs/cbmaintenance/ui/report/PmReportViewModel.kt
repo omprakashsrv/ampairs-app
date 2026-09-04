@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.cbmaintenance.data.repository.PmEntryRepository
 import com.ampairs.cbmaintenance.data.repository.PmScheduleRepository
+import com.ampairs.cbmaintenance.data.repository.TicketRepository
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import com.ampairs.cbmaintenance.domain.model.PmSchedule
+import com.ampairs.cbmaintenance.domain.model.Ticket
 import com.ampairs.cbemployee.data.repository.EmployeeLookup
 import com.ampairs.cbstore.data.repository.StoreLookup
 import com.ampairs.cbstore.domain.model.Store
@@ -71,6 +73,7 @@ data class PmReportUiState(
 class PmReportViewModel(
     private val pmEntryRepository: PmEntryRepository,
     private val pmScheduleRepository: PmScheduleRepository,
+    private val ticketRepository: TicketRepository,
     private val storeLookup: StoreLookup,
     private val employeeLookup: EmployeeLookup,
     private val syncService: CentralSyncService,
@@ -92,10 +95,12 @@ class PmReportViewModel(
 
     init {
         _uiState.update { it.copy(year = currentYear) }
-        // Refresh every feed the report joins on. Without CB_PM_SCHEDULE, entries can't resolve
-        // their schedule → task shows "Ad-hoc" and Freq is blank.
+        // Refresh every feed the report joins on. Without CB_PM_SCHEDULE, scheduled entries can't
+        // resolve their schedule → task shows "Ad-hoc" and Freq is blank; without CB_TICKET,
+        // ad-hoc (ticket-raised) entries can't resolve their ticket description either.
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_ENTRY))
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_SCHEDULE))
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_TICKET))
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_STORE))
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_EMPLOYEE))
 
@@ -108,10 +113,11 @@ class PmReportViewModel(
         combine(
             pmEntryRepository.observeAllEntries(),
             pmScheduleRepository.observeSchedules(),
+            ticketRepository.observeTickets(),
             storesById,
             nameById,
-        ) { entries, schedules, stores, names ->
-            buildRows(entries, schedules.associateBy { it.uid }, stores, names)
+        ) { entries, schedules, tickets, stores, names ->
+            buildRows(entries, schedules.associateBy { it.uid }, tickets.associateBy { it.uid }, stores, names)
         }
             .onEach { rows -> _uiState.update { it.copy(rows = rows, loading = false) } }
             .launchIn(viewModelScope)
@@ -135,13 +141,24 @@ class PmReportViewModel(
 
     fun refresh() = syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CB_PM_ENTRY))
 
+    /** Readable label for an ad-hoc (ticket-raised) task — mirrors the ticket's own description. */
+    private fun ticketLabel(t: Ticket): String =
+        t.description?.takeIf { it.isNotBlank() }
+            ?: listOf(t.assetCategory, t.subCategory).map { it.trim() }.filter { it.isNotBlank() }.joinToString(" · ")
+                .ifBlank { "Ad-hoc" }
+
     private fun buildRows(
         entries: List<PmEntry>,
         schedulesById: Map<String, PmSchedule>,
+        ticketsById: Map<String, Ticket>,
         storesById: Map<String, Store>,
         nameById: Map<String, String>,
     ): List<PmReportRow> {
-        data class Key(val storeId: String, val asset: String, val scheduleId: String)
+        // Group id = the schedule uid for scheduled PMs, or "ticket:<uid>" for ad-hoc ticket-raised
+        // work (so two tickets on the same outlet+asset stay separate rows with their own labels).
+        data class Key(val storeId: String, val asset: String, val groupId: String)
+        fun groupIdOf(e: PmEntry): String =
+            e.pmScheduleId?.takeIf { it.isNotBlank() } ?: e.ticketId?.let { "ticket:$it" } ?: ""
         // Per group: 12-month status cells, plus the distinct people who did / assisted the work.
         class Agg {
             val months = Array(12) { MonthStatus.NONE }
@@ -155,7 +172,7 @@ class PmReportViewModel(
             return s.substringAfter('-', "").take(2).toIntOrNull()?.minus(1)?.takeIf { it in 0..11 }
         }
         for (e in entries) {
-            val agg = grid.getOrPut(Key(e.storeId, e.assetCategory, e.pmScheduleId ?: "")) { Agg() }
+            val agg = grid.getOrPut(Key(e.storeId, e.assetCategory, groupIdOf(e))) { Agg() }
             if (e.status == "DONE") {
                 val monthIdx = monthOf(e.completedAt) ?: continue
                 agg.months[monthIdx] = MonthStatus.DONE   // completion always wins over a pending mark
@@ -178,12 +195,16 @@ class PmReportViewModel(
             ids.map { nameById[it] ?: it }.filter { it.isNotBlank() }.joinToString(", ")
         return grid.map { (key, agg) ->
             val store = storesById[key.storeId]
-            val schedule = key.scheduleId.takeIf { it.isNotBlank() }?.let { schedulesById[it] }
+            val schedule = key.groupId.takeIf { it.isNotBlank() && !it.startsWith("ticket:") }
+                ?.let { schedulesById[it] }
+            // Ad-hoc rows carry a "ticket:<uid>" group id → label from that ticket's description.
+            val ticket = key.groupId.takeIf { it.startsWith("ticket:") }
+                ?.removePrefix("ticket:")?.let { ticketsById[it] }
             PmReportRow(
                 outlet = store?.let { "${it.code} · ${it.name}" } ?: key.storeId,
                 city = store?.city ?: "",
                 asset = key.asset,
-                task = schedule?.taskName ?: "Ad-hoc",
+                task = schedule?.taskName ?: ticket?.let { ticketLabel(it) } ?: "Ad-hoc",
                 freq = schedule?.let { "${it.frequencyInterval} ${it.frequencyUnit.lowercase()}" } ?: "",
                 doneBy = names(agg.doneBy),
                 assistedBy = names(agg.assistedBy),
