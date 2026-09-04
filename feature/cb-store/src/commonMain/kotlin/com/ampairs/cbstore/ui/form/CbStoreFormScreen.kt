@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
@@ -61,12 +62,10 @@ fun CbStoreFormScreen(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
+        CityAutocomplete(
             value = uiState.city,
             onValueChange = viewModel::onCity,
-            label = { Text("City") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            options = uiState.cityOptions,
         )
 
         ZoneDropdown(
@@ -85,6 +84,53 @@ fun CbStoreFormScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(if (uiState.isSaving) "Saving…" else "Save")
+        }
+    }
+}
+
+/**
+ * Free-text City field with autocomplete over existing distinct cities. The typed text is always the
+ * value (a brand-new city can be entered); the dropdown just offers matching known cities to pick.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CityAutocomplete(
+    value: String,
+    onValueChange: (String) -> Unit,
+    options: List<String>,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val matches = if (value.isBlank()) options
+        else options.filter { it.contains(value, ignoreCase = true) && !it.equals(value, ignoreCase = true) }
+    ExposedDropdownMenuBox(
+        expanded = expanded && matches.isNotEmpty(),
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { onValueChange(it); expanded = true },
+            label = { Text("City") },
+            singleLine = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryEditable)
+                .fillMaxWidth()
+                .onFocusChanged { if (it.isFocused) expanded = true },
+        )
+        ExposedDropdownMenu(
+            expanded = expanded && matches.isNotEmpty(),
+            onDismissRequest = { expanded = false },
+        ) {
+            matches.forEach { city ->
+                DropdownMenuItem(
+                    text = { Text(city) },
+                    onClick = {
+                        onValueChange(city)
+                        expanded = false
+                    },
+                )
+            }
         }
     }
 }

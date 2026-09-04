@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -33,6 +35,7 @@ data class CbStoreFormUiState(
     val city: String = "",
     val zonalOfficeId: String = "",
     val zoneOptions: List<ZonalOffice> = emptyList(),
+    val cityOptions: List<String> = emptyList(),   // distinct existing cities, for the City autocomplete
     val isEdit: Boolean = false,
     val isSaving: Boolean = false,
     val saved: Boolean = false,
@@ -62,6 +65,14 @@ class CbStoreFormViewModel(
                 }
             }
         }
+
+        // Distinct existing cities feed the City autocomplete suggestions (free text still allowed).
+        repository.observeStores()
+            .onEach { stores ->
+                val cities = stores.map { it.city }.filter { it.isNotBlank() }.distinct().sorted()
+                _uiState.update { it.copy(cityOptions = cities) }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun onCode(v: String) = _uiState.update { it.copy(code = v.take(CODE_MAX)) }
