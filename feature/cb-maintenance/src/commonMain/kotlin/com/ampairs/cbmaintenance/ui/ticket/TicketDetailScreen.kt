@@ -161,9 +161,13 @@ fun TicketDetailScreen(
             if (uiState.pmEntries.isEmpty()) {
                 item { Text("No PM tasks yet", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             } else {
+                // Every PM task here belongs to this ticket, so the ticket's description is the work.
+                val work = ticket.description?.takeIf { it.isNotBlank() }
+                    ?: listOf(ticket.assetCategory, ticket.subCategory).filter { it.isNotBlank() }.joinToString(" · ")
                 items(uiState.pmEntries, key = { it.uid }) { entry ->
                     PmEntryRow(
                         entry = entry,
+                        workLabel = work.ifBlank { entry.assetCategory },
                         onOk = { completeFor = entry.uid; issueMode = false },
                         onIssue = { completeFor = entry.uid; issueMode = true },
                     )
@@ -175,11 +179,12 @@ fun TicketDetailScreen(
 }
 
 @Composable
-private fun PmEntryRow(entry: PmEntry, onOk: () -> Unit, onIssue: () -> Unit) {
+private fun PmEntryRow(entry: PmEntry, workLabel: String, onOk: () -> Unit, onIssue: () -> Unit) {
     val isDone = entry.status == "DONE"
     Surface(shape = MaterialTheme.shapes.small, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-            Text(entry.assetCategory, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+            // Full description of the work to be done, not just the equipment category.
+            Text(workLabel, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
             Text(
                 "${entry.status} · ${entry.source.lowercase()}",
                 style = MaterialTheme.typography.bodySmall,

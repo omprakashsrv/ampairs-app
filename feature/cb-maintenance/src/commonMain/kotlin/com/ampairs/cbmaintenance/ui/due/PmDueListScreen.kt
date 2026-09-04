@@ -210,8 +210,12 @@ fun PmDueListScreen(
                         val assignee = entry.assignedToEmployeeId?.let { id ->
                             uiState.employees.firstOrNull { it.uid == id }?.let { it.name.ifBlank { it.employeeNo } } ?: id
                         }
+                        val workLabel = entry.pmScheduleId?.let { uiState.scheduleLabels[it] }?.takeIf { it.isNotBlank() }
+                            ?: entry.ticketId?.let { uiState.ticketLabels[it] }?.takeIf { it.isNotBlank() }
+                            ?: entry.assetCategory
                         PmEntryCard(
                             entry = entry,
+                            workLabel = workLabel,
                             storeLabel = uiState.storeLabels[entry.storeId] ?: entry.storeId,
                             ticketLabel = entry.ticketId?.let { uiState.ticketLabels[it] ?: it },
                             assigneeLabel = assignee,
@@ -513,6 +517,7 @@ private fun statusLabel(status: String): String = when (status.uppercase()) {
 @Composable
 private fun PmEntryCard(
     entry: PmEntry,
+    workLabel: String,
     storeLabel: String,
     ticketLabel: String?,
     assigneeLabel: String?,
@@ -527,13 +532,23 @@ private fun PmEntryCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // Full description of the work (schedule task name or ticket description), so the
+                // technician knows what to do — not just the equipment category.
                 Text(
-                    entry.assetCategory,
+                    workLabel,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                 )
                 StatusBadge(entry.status)
+            }
+            // Keep the equipment category visible when the description is something richer.
+            if (entry.assetCategory.isNotBlank() && !workLabel.equals(entry.assetCategory, ignoreCase = true)) {
+                Text(
+                    "Asset: ${entry.assetCategory}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Text(
                 "$storeLabel${entry.dueDate?.let { " · due ${it.take(10)}" } ?: ""}",
