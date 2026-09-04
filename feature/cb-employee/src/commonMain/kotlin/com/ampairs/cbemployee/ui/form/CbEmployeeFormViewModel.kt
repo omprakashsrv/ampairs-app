@@ -39,7 +39,7 @@ data class CbEmployeeFormUiState(
     val saved: Boolean = false,
     val error: String? = null,
 ) {
-    val isValid: Boolean get() = employeeNo.isNotBlank() && name.isNotBlank()
+    val isValid: Boolean get() = employeeNo.isNotBlank() && name.isNotBlank() && mobile.isNotBlank()
 }
 
 @AssistedInject
@@ -91,7 +91,7 @@ class CbEmployeeFormViewModel(
     fun save() {
         val state = _uiState.value
         if (!state.isValid) {
-            _uiState.update { it.copy(error = "Employee number and name are required") }
+            _uiState.update { it.copy(error = "Employee number, name and mobile are required") }
             return
         }
         viewModelScope.launch {
@@ -103,7 +103,7 @@ class CbEmployeeFormViewModel(
                     employeeNo = state.employeeNo.trim(),
                     name = state.name.trim(),
                     role = state.role,
-                    mobile = state.mobile.trim().ifBlank { null },
+                    mobile = state.mobile.trim(),   // required — validated non-blank above
                     zonalOfficeId = state.zonalOfficeId.trim().ifBlank { null },
                     reportsToEmployeeId = state.reportsToEmployeeId.ifBlank { null },
                     active = true,
