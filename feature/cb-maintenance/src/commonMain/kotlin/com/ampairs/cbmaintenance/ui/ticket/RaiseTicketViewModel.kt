@@ -34,6 +34,8 @@ data class RaiseTicketUiState(
     val subCategory1: String = "",
     val subCategory2: String = "",
     val description: String = "",
+    // true once the user types their own description — auto-generation then stops overriding it.
+    val descriptionEdited: Boolean = false,
     val storeOptions: List<Store> = emptyList(),
     val buckets: List<TicketBucket> = emptyList(),
     val isSaving: Boolean = false,
@@ -86,16 +88,35 @@ class RaiseTicketViewModel(
 
     fun onStore(v: String) = _uiState.update { it.copy(storeId = v) }
 
-    // Selecting a higher level clears the lower levels so the cascade stays consistent.
-    fun onDepartment(v: String) =
-        _uiState.update { it.copy(department = v, category = "", subCategory1 = "", subCategory2 = "") }
+    // Auto-generate a readable description from the cascade selection (Equipment · Issue · detail),
+    // unless the user has typed their own — mirrors the PM schedule form's task-name behaviour.
+    private fun autoDescription(category: String, sub1: String, sub2: String): String =
+        listOf(category, sub1, sub2).map { it.trim() }.filter { it.isNotBlank() }.joinToString(" · ")
 
-    fun onCategory(v: String) =
-        _uiState.update { it.copy(category = v, subCategory1 = "", subCategory2 = "") }
+    // Selecting a higher level clears the lower levels so the cascade stays consistent;
+    // the description re-derives from the new selection while it hasn't been hand-edited.
+    fun onDepartment(v: String) = _uiState.update {
+        val s = it.copy(department = v, category = "", subCategory1 = "", subCategory2 = "")
+        if (s.descriptionEdited) s else s.copy(description = autoDescription("", "", ""))
+    }
 
-    fun onSubCategory1(v: String) = _uiState.update { it.copy(subCategory1 = v, subCategory2 = "") }
-    fun onSubCategory2(v: String) = _uiState.update { it.copy(subCategory2 = v) }
-    fun onDescription(v: String) = _uiState.update { it.copy(description = v) }
+    fun onCategory(v: String) = _uiState.update {
+        val s = it.copy(category = v, subCategory1 = "", subCategory2 = "")
+        if (s.descriptionEdited) s else s.copy(description = autoDescription(v, "", ""))
+    }
+
+    fun onSubCategory1(v: String) = _uiState.update {
+        val s = it.copy(subCategory1 = v, subCategory2 = "")
+        if (s.descriptionEdited) s else s.copy(description = autoDescription(s.category, v, ""))
+    }
+
+    fun onSubCategory2(v: String) = _uiState.update {
+        val s = it.copy(subCategory2 = v)
+        if (s.descriptionEdited) s else s.copy(description = autoDescription(s.category, s.subCategory1, v))
+    }
+
+    // Typing marks the field hand-edited; clearing it hands control back to auto-generation.
+    fun onDescription(v: String) = _uiState.update { it.copy(description = v, descriptionEdited = v.isNotBlank()) }
 
     fun save() {
         val state = _uiState.value
