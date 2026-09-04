@@ -24,15 +24,28 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** Ticket statuses shown as multi-select filter chips (backend TicketStatus enum). */
+val TICKET_STATUSES = listOf("OPEN", "ASSIGNED", "IN_PROGRESS", "ON_HOLD", "RESOLVED", "CLOSED")
+
 data class TicketListUiState(
     val tickets: List<Ticket> = emptyList(),
     val storeNames: Map<String, String> = emptyMap(),
     // ticketId -> who did the work on it (from the completed PM tasks that address the ticket).
     val doneByLabels: Map<String, String> = emptyMap(),
     val query: String = "",
+    // Combinable filters (all AND-ed together with the search query).
+    val statusFilters: Set<String> = emptySet(),
+    val storeFilter: String? = null,                // storeId
+    val assetFilter: String? = null,                // assetCategory
+    // Facet options derived from the current tickets (for the outlet/asset dropdowns).
+    val availableStores: List<Pair<String, String>> = emptyList(),  // (storeId, label)
+    val availableAssets: List<String> = emptyList(),
     val isRefreshing: Boolean = false,
     val error: String? = null,
-)
+) {
+    val activeFilterCount: Int
+        get() = statusFilters.size + (if (storeFilter != null) 1 else 0) + (if (assetFilter != null) 1 else 0)
+}
 
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
@@ -62,6 +75,7 @@ class TicketListViewModel(
         viewModelScope.launch {
             val names = storeLookup.activeStores().associate { it.uid to "${it.code} · ${it.name}" }
             _uiState.update { it.copy(storeNames = names) }
+            applyFilter()   // refresh outlet-facet labels now that store names are known
         }
 
         // "Done by" per ticket = the completer(s) of the DONE PM tasks that address it.
@@ -114,17 +128,58 @@ class TicketListViewModel(
         applyFilter()
     }
 
-    private fun applyFilter() {
-        val q = _uiState.value.query.trim()
-        val storeNames = _uiState.value.storeNames
-        val filtered = if (q.isBlank()) all else all.filter { t ->
-            t.assetCategory.contains(q, true) ||
-                t.subCategory.contains(q, true) ||
-                t.status.contains(q, true) ||
-                (t.description?.contains(q, true) == true) ||
-                (storeNames[t.storeId]?.contains(q, true) == true)
+    fun onToggleStatus(status: String) {
+        _uiState.update {
+            val next = if (status in it.statusFilters) it.statusFilters - status else it.statusFilters + status
+            it.copy(statusFilters = next)
         }
-        _uiState.update { it.copy(tickets = filtered, error = null) }
+        applyFilter()
+    }
+
+    fun onStoreFilter(storeId: String?) {
+        _uiState.update { it.copy(storeFilter = storeId) }
+        applyFilter()
+    }
+
+    fun onAssetFilter(asset: String?) {
+        _uiState.update { it.copy(assetFilter = asset) }
+        applyFilter()
+    }
+
+    fun clearFilters() {
+        _uiState.update { it.copy(statusFilters = emptySet(), storeFilter = null, assetFilter = null) }
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        val s = _uiState.value
+        val q = s.query.trim()
+        val storeNames = s.storeNames
+
+        // Refresh the facet lists from the current tickets (kept in sync with the outlet/asset pickers).
+        val availableAssets = all.map { it.assetCategory }.filter { it.isNotBlank() }.distinct().sorted()
+        val availableStores = all.map { it.storeId }.filter { it.isNotBlank() }.distinct()
+            .map { id -> id to (storeNames[id] ?: id) }.sortedBy { it.second }
+
+        val filtered = all.filter { t ->
+            (s.statusFilters.isEmpty() || t.status in s.statusFilters) &&
+                (s.storeFilter == null || t.storeId == s.storeFilter) &&
+                (s.assetFilter == null || t.assetCategory == s.assetFilter) &&
+                (q.isBlank() ||
+                    t.assetCategory.contains(q, true) ||
+                    t.subCategory.contains(q, true) ||
+                    t.status.contains(q, true) ||
+                    (t.description?.contains(q, true) == true) ||
+                    (storeNames[t.storeId]?.contains(q, true) == true))
+        }
+        _uiState.update {
+            it.copy(
+                tickets = filtered,
+                availableStores = availableStores,
+                availableAssets = availableAssets,
+                error = null,
+            )
+        }
     }
 
     fun refresh() = syncService.emit(SyncEvent.TriggerFullSync(SyncEntity.CB_TICKET))

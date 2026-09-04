@@ -26,9 +26,18 @@ data class CbStoreListUiState(
     val stores: List<Store> = emptyList(),
     val zonalOfficeNames: Map<String, String> = emptyMap(),
     val query: String = "",
+    // Combinable filters (all AND-ed together with the search query).
+    val zoneFilter: String? = null,                 // zonalOfficeId
+    val cityFilter: String? = null,
+    // Facet options derived from the current outlets (for the zone/city dropdowns).
+    val availableZones: List<Pair<String, String>> = emptyList(),  // (zonalOfficeId, label)
+    val availableCities: List<String> = emptyList(),
     val isRefreshing: Boolean = false,
     val error: String? = null,
-)
+) {
+    val activeFilterCount: Int
+        get() = (if (zoneFilter != null) 1 else 0) + (if (cityFilter != null) 1 else 0)
+}
 
 @ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
@@ -52,6 +61,7 @@ class CbStoreListViewModel(
         repository.observeZonalOffices()
             .onEach { offices ->
                 _uiState.update { it.copy(zonalOfficeNames = offices.associate { z -> z.uid to z.name }) }
+                applyFilter()   // refresh zone-facet labels now that office names are known
             }
             .launchIn(viewModelScope)
 
@@ -68,12 +78,44 @@ class CbStoreListViewModel(
         applyFilter()
     }
 
+    fun onZoneFilter(zoneId: String?) {
+        _uiState.update { it.copy(zoneFilter = zoneId) }
+        applyFilter()
+    }
+
+    fun onCityFilter(city: String?) {
+        _uiState.update { it.copy(cityFilter = city) }
+        applyFilter()
+    }
+
+    fun clearFilters() {
+        _uiState.update { it.copy(zoneFilter = null, cityFilter = null) }
+        applyFilter()
+    }
+
     private fun applyFilter() {
-        val q = _uiState.value.query.trim()
-        val filtered = if (q.isBlank()) all else all.filter {
-            it.code.contains(q, true) || it.name.contains(q, true) || it.city.contains(q, true)
+        val s = _uiState.value
+        val q = s.query.trim()
+        val zoneNames = s.zonalOfficeNames
+
+        // Refresh the facet lists from the current outlets (kept in sync with the zone/city pickers).
+        val availableCities = all.map { it.city }.filter { it.isNotBlank() }.distinct().sorted()
+        val availableZones = all.map { it.zonalOfficeId }.filter { it.isNotBlank() }.distinct()
+            .map { id -> id to (zoneNames[id] ?: id) }.sortedBy { it.second }
+
+        val filtered = all.filter {
+            (s.zoneFilter == null || it.zonalOfficeId == s.zoneFilter) &&
+                (s.cityFilter == null || it.city == s.cityFilter) &&
+                (q.isBlank() || it.code.contains(q, true) || it.name.contains(q, true) || it.city.contains(q, true))
         }
-        _uiState.update { it.copy(stores = filtered, error = null) }
+        _uiState.update {
+            it.copy(
+                stores = filtered,
+                availableZones = availableZones,
+                availableCities = availableCities,
+                error = null,
+            )
+        }
     }
 
     fun refresh() {

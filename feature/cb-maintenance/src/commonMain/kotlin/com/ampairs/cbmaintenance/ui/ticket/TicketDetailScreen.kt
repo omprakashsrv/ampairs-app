@@ -2,6 +2,7 @@ package com.ampairs.cbmaintenance.ui.ticket
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ampairs.cbmaintenance.domain.model.PmEntry
+import com.ampairs.cbmaintenance.ui.due.CompletePmDialog
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 @Composable
@@ -41,9 +43,26 @@ fun TicketDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val ticket = uiState.ticket
     var confirmDelete by remember { mutableStateOf(false) }
+    // PM completion sheet target (a linked PM entry uid) + whether it's the "report issue" variant.
+    var completeFor by remember { mutableStateOf<String?>(null) }
+    var issueMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.deleted) {
         if (uiState.deleted) onDeleted()
+    }
+
+    val completeEntryId = completeFor
+    if (completeEntryId != null) {
+        CompletePmDialog(
+            issueMode = issueMode,
+            employees = uiState.employees,
+            onDismiss = { completeFor = null },
+            onConfirm = { issue, doneBy, assisted ->
+                if (issueMode) viewModel.reportPmIssue(completeEntryId, issue, doneBy, assisted)
+                else viewModel.markPmDone(completeEntryId, doneBy, assisted)
+                completeFor = null
+            },
+        )
     }
 
     if (confirmDelete) {
@@ -142,7 +161,13 @@ fun TicketDetailScreen(
             if (uiState.pmEntries.isEmpty()) {
                 item { Text("No PM tasks yet", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             } else {
-                items(uiState.pmEntries, key = { it.uid }) { entry -> PmEntryRow(entry) }
+                items(uiState.pmEntries, key = { it.uid }) { entry ->
+                    PmEntryRow(
+                        entry = entry,
+                        onOk = { completeFor = entry.uid; issueMode = false },
+                        onIssue = { completeFor = entry.uid; issueMode = true },
+                    )
+                }
             }
             item { Spacer(Modifier.height(40.dp)) }
         }
@@ -150,7 +175,8 @@ fun TicketDetailScreen(
 }
 
 @Composable
-private fun PmEntryRow(entry: PmEntry) {
+private fun PmEntryRow(entry: PmEntry, onOk: () -> Unit, onIssue: () -> Unit) {
+    val isDone = entry.status == "DONE"
     Surface(shape = MaterialTheme.shapes.small, tonalElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Text(entry.assetCategory, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
@@ -159,6 +185,14 @@ private fun PmEntryRow(entry: PmEntry) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            // Open PM tasks can be closed right here — same actions as the PM due list.
+            if (!isDone) {
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onOk, modifier = Modifier.weight(1f)) { Text("Mark done") }
+                    OutlinedButton(onClick = onIssue, modifier = Modifier.weight(1f)) { Text("Report issue") }
+                }
+            }
         }
     }
 }

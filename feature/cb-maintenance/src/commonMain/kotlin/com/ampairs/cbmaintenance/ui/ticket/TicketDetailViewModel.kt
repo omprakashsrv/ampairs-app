@@ -4,11 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.cbmaintenance.data.repository.PmEntryRepository
 import com.ampairs.cbmaintenance.data.repository.TicketRepository
+import com.ampairs.cbmaintenance.domain.model.ChecklistItemResult
 import com.ampairs.cbmaintenance.domain.model.PmEntry
 import com.ampairs.cbmaintenance.domain.model.Ticket
+import com.ampairs.cbemployee.data.repository.EmployeeLookup
+import com.ampairs.cbemployee.domain.model.Employee
 import com.ampairs.cbstore.data.repository.StoreLookup
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
+import com.ampairs.sync.CentralSyncService
+import com.ampairs.sync.SyncEntity
+import com.ampairs.sync.SyncEvent
+import com.ampairs.sync.SyncStatus
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -31,6 +38,7 @@ data class TicketDetailUiState(
     val ticket: Ticket? = null,
     val storeLabel: String = "",   // outlet "CODE · Name" resolved from the ticket's storeId
     val pmEntries: List<PmEntry> = emptyList(),
+    val employees: List<Employee> = emptyList(),   // roster for the "Done by" / "Assisted by" pickers
     val isCreating: Boolean = false,
     val isClosing: Boolean = false,
     val isDeleting: Boolean = false,
@@ -54,6 +62,8 @@ class TicketDetailViewModel(
     private val ticketRepository: TicketRepository,
     private val pmEntryRepository: PmEntryRepository,
     private val storeLookup: StoreLookup,
+    private val employeeLookup: EmployeeLookup,
+    private val syncService: CentralSyncService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TicketDetailUiState())
@@ -64,7 +74,51 @@ class TicketDetailViewModel(
         pmEntryRepository.observeEntriesForTicket(ticketId)
             .onEach { list -> _uiState.update { it.copy(pmEntries = list) } }
             .launchIn(viewModelScope)
+
+        // Roster feeds the "Done by" / "Assisted by" pickers when completing a linked PM task.
+        loadEmployees()
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_EMPLOYEE))
+        syncService.observeEntity(SyncEntity.CB_EMPLOYEE)
+            .onEach { state -> if (state?.status is SyncStatus.Success) loadEmployees() }
+            .launchIn(viewModelScope)
     }
+
+    private fun loadEmployees() {
+        viewModelScope.launch {
+            runCatching { employeeLookup.activeEmployees() }
+                .onSuccess { list -> _uiState.update { it.copy(employees = list) } }
+        }
+    }
+
+    /** Complete a linked PM task with everything passing — no ticket spawned. */
+    fun markPmDone(entryId: String, doneById: String?, assistedByIds: List<String>) {
+        viewModelScope.launch {
+            val result = pmEntryRepository.completeEntry(
+                entryId,
+                checklistResult = emptyList(),
+                completedByEmployeeId = doneById?.takeIf { it.isNotBlank() },
+                assistedByEmployeeIds = assistedByIds.filter { it.isNotBlank() },
+            )
+            if (result.isFailure) reportError(result.exceptionOrNull())
+        }
+    }
+
+    /** Complete a linked PM task with a failed check — the server spawns a follow-up ticket. */
+    fun reportPmIssue(entryId: String, issue: String, doneById: String?, assistedByIds: List<String>) {
+        if (issue.isBlank()) return
+        viewModelScope.launch {
+            val result = pmEntryRepository.completeEntry(
+                entryId,
+                checklistResult = listOf(ChecklistItemResult(item = issue.trim(), passed = false)),
+                completedByEmployeeId = doneById?.takeIf { it.isNotBlank() },
+                assistedByEmployeeIds = assistedByIds.filter { it.isNotBlank() },
+            )
+            if (result.isFailure) reportError(result.exceptionOrNull())
+        }
+    }
+
+    private fun reportError(t: Throwable?) =
+        _uiState.update { it.copy(error = t?.message ?: "Failed to complete PM task") }
 
     private fun loadTicket() {
         viewModelScope.launch {

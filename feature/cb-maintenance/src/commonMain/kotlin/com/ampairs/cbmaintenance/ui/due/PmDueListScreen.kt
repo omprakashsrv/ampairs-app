@@ -296,7 +296,7 @@ private fun AssignPmDialog(
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CompletePmDialog(
+internal fun CompletePmDialog(
     issueMode: Boolean,
     employees: List<Employee>,
     onDismiss: () -> Unit,
@@ -358,7 +358,7 @@ private fun CompletePmDialog(
 /** Single-select filter dropdown with an "all" reset option (value -> display label). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterDropdown(
+internal fun FilterDropdown(
     label: String,
     allLabel: String,
     options: List<Pair<String, String>>,
@@ -402,7 +402,7 @@ private fun FilterDropdown(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchableFilterDropdown(
+internal fun SearchableFilterDropdown(
     label: String,
     allLabel: String,
     options: List<Pair<String, String>>,
