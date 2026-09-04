@@ -172,7 +172,7 @@ fun PmDueListScreen(
                             )
                         }
                         Spacer(Modifier.height(6.dp))
-                        FilterDropdown(
+                        SearchableFilterDropdown(
                             label = "Outlet",
                             allLabel = "All outlets",
                             options = uiState.availableStores,
@@ -386,6 +386,56 @@ private fun FilterDropdown(
                 onClick = { onSelect(null); expanded = false },
             )
             options.forEach { (value, display) ->
+                DropdownMenuItem(
+                    text = { Text(display) },
+                    onClick = { onSelect(value); expanded = false },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Searchable single-select filter dropdown for long option lists (e.g. the 130+ outlet list).
+ * The text field is editable while open: typing filters the options case-insensitively on the
+ * display label. Collapsed, it shows the selected label; opening it clears the field for search.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchableFilterDropdown(
+    label: String,
+    allLabel: String,
+    options: List<Pair<String, String>>,
+    selectedValue: String?,
+    onSelect: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == selectedValue }?.second ?: allLabel
+    // Reset the search text whenever the menu opens/closes or the selection changes.
+    var searchText by remember(selectedLabel, expanded) {
+        mutableStateOf(if (expanded) "" else selectedLabel)
+    }
+    val filtered = if (!expanded || searchText.isBlank()) options
+        else options.filter { it.second.contains(searchText, ignoreCase = true) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = if (expanded) searchText else selectedLabel,
+            onValueChange = { searchText = it; expanded = true },
+            singleLine = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(allLabel) },
+                onClick = { onSelect(null); expanded = false },
+            )
+            filtered.forEach { (value, display) ->
                 DropdownMenuItem(
                     text = { Text(display) },
                     onClick = { onSelect(value); expanded = false },
