@@ -3,6 +3,7 @@ package com.ampairs.cbmaintenance.ui.due
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.cbmaintenance.data.repository.PmEntryRepository
+import com.ampairs.cbmaintenance.data.repository.PmScheduleRepository
 import com.ampairs.cbmaintenance.data.repository.TicketRepository
 import com.ampairs.cbmaintenance.domain.model.ChecklistItemResult
 import com.ampairs.cbmaintenance.domain.model.PmEntry
@@ -32,6 +33,8 @@ data class PmDueListUiState(
     // Resolve raw ids to human labels for display: storeId -> "CODE · Name", ticketId -> "asset · issue".
     val storeLabels: Map<String, String> = emptyMap(),
     val ticketLabels: Map<String, String> = emptyMap(),
+    // scheduleId -> task name (the full work description for a scheduled PM).
+    val scheduleLabels: Map<String, String> = emptyMap(),
     val query: String = "",
     // Combinable filters (all AND-ed together with the search query).
     val statusFilters: Set<String> = emptySet(),   // DUE / OVERDUE / ASSIGNED / IN_PROGRESS
@@ -59,6 +62,7 @@ class PmDueListViewModel(
     private val employeeLookup: EmployeeLookup,
     private val storeLookup: StoreLookup,
     private val ticketRepository: TicketRepository,
+    private val pmScheduleRepository: PmScheduleRepository,
     private val syncService: CentralSyncService,
 ) : ViewModel() {
 
@@ -100,6 +104,15 @@ class PmDueListViewModel(
                 _uiState.update { it.copy(ticketLabels = labels) }
             }
             .launchIn(viewModelScope)
+
+        // Schedule task names (the full work description for a scheduled PM), refreshed on sync.
+        pmScheduleRepository.observeSchedules()
+            .onEach { schedules ->
+                val labels = schedules.associate { s -> s.uid to s.taskName }
+                _uiState.update { it.copy(scheduleLabels = labels) }
+            }
+            .launchIn(viewModelScope)
+        syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_SCHEDULE))
 
         syncService.emit(SyncEvent.TriggerPull(SyncEntity.CB_PM_ENTRY))
     }
