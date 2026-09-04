@@ -22,6 +22,11 @@ import kotlinx.coroutines.launch
 
 private const val STORE_UID_PREFIX = "STR"
 
+// Max input lengths, matching the backend cb_store `store` column sizes (varchar).
+private const val CODE_MAX = 20
+private const val NAME_MAX = 200
+private const val CITY_MAX = 100
+
 data class CbStoreFormUiState(
     val code: String = "",
     val name: String = "",
@@ -59,9 +64,9 @@ class CbStoreFormViewModel(
         }
     }
 
-    fun onCode(v: String) = _uiState.update { it.copy(code = v) }
-    fun onName(v: String) = _uiState.update { it.copy(name = v) }
-    fun onCity(v: String) = _uiState.update { it.copy(city = v) }
+    fun onCode(v: String) = _uiState.update { it.copy(code = v.take(CODE_MAX)) }
+    fun onName(v: String) = _uiState.update { it.copy(name = v.take(NAME_MAX)) }
+    fun onCity(v: String) = _uiState.update { it.copy(city = v.take(CITY_MAX)) }
     fun onZone(v: String) = _uiState.update { it.copy(zonalOfficeId = v) }
 
     fun save() {

@@ -27,6 +27,10 @@ import kotlinx.coroutines.launch
 
 private const val PM_SCHEDULE_UID_PREFIX = "PMS"
 
+// Max input lengths, matching the backend cb_maintenance `pm_schedule` column sizes (varchar).
+private const val ASSET_CATEGORY_MAX = 100
+private const val TASK_NAME_MAX = 200
+
 /** Frequency units the backend `PmSchedule.frequencyUnit` accepts. */
 object FrequencyUnits {
     val ALL = listOf("DAY", "WEEK", "MONTH", "YEAR")
@@ -144,7 +148,8 @@ class PmScheduleFormViewModel(
     // Auto-generate a readable task name from the cascade selection (Equipment · Issue · detail),
     // unless the user has typed their own.
     private fun autoTask(category: String, sub1: String, sub2: String): String =
-        listOf(category, sub1, sub2).map { it.trim() }.filter { it.isNotBlank() }.joinToString(" · ")
+        listOf(category, sub1, sub2).map { it.trim() }.filter { it.isNotBlank() }
+            .joinToString(" · ").take(TASK_NAME_MAX)
 
     // Selecting a higher cascade level clears every lower level so the selection stays consistent;
     // the task name re-derives from the new selection while it hasn't been hand-edited.
@@ -154,8 +159,9 @@ class PmScheduleFormViewModel(
     }
 
     fun onCategory(v: String) = _uiState.update {
-        val s = it.copy(assetCategory = v, subCategory1 = "", subCategory2 = "")
-        if (s.taskNameEdited) s else s.copy(taskName = autoTask(v, "", ""))
+        val capped = v.take(ASSET_CATEGORY_MAX)
+        val s = it.copy(assetCategory = capped, subCategory1 = "", subCategory2 = "")
+        if (s.taskNameEdited) s else s.copy(taskName = autoTask(capped, "", ""))
     }
 
     fun onSubCategory1(v: String) = _uiState.update {
@@ -169,7 +175,7 @@ class PmScheduleFormViewModel(
     }
 
     // Typing marks the field hand-edited; clearing it hands control back to auto-generation.
-    fun onTaskName(v: String) = _uiState.update { it.copy(taskName = v, taskNameEdited = v.isNotBlank()) }
+    fun onTaskName(v: String) = _uiState.update { it.copy(taskName = v.take(TASK_NAME_MAX), taskNameEdited = v.isNotBlank()) }
     fun onFrequencyUnit(v: String) = _uiState.update { it.copy(frequencyUnit = v) }
     fun onFrequencyInterval(v: String) = _uiState.update { it.copy(frequencyInterval = v.filter { c -> c.isDigit() }) }
 

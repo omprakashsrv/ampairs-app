@@ -26,6 +26,10 @@ import kotlinx.coroutines.launch
 
 private const val TICKET_UID_PREFIX = "TKT"
 
+// The backend ticket `description` column is TEXT (unbounded); cap the free-text input at a sane
+// maximum so a runaway paste can't bloat the row.
+private const val DESCRIPTION_MAX = 1000
+
 data class RaiseTicketUiState(
     val storeId: String = "",
     // Cascading classification selections (from the ticket-bucket catalog).
@@ -116,7 +120,8 @@ class RaiseTicketViewModel(
     }
 
     // Typing marks the field hand-edited; clearing it hands control back to auto-generation.
-    fun onDescription(v: String) = _uiState.update { it.copy(description = v, descriptionEdited = v.isNotBlank()) }
+    fun onDescription(v: String) =
+        _uiState.update { it.copy(description = v.take(DESCRIPTION_MAX), descriptionEdited = v.isNotBlank()) }
 
     fun save() {
         val state = _uiState.value

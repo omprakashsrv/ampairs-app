@@ -25,6 +25,12 @@ import kotlinx.coroutines.launch
 
 private const val EMPLOYEE_UID_PREFIX = "EMP"
 
+// Max input lengths, matching the backend cb_employee column sizes (varchar) so the field can never
+// hold more than the server will store.
+private const val EMPLOYEE_NO_MAX = 50
+private const val NAME_MAX = 150
+private const val MOBILE_MAX = 30
+
 data class CbEmployeeFormUiState(
     val employeeNo: String = "",
     val name: String = "",
@@ -81,10 +87,10 @@ class CbEmployeeFormViewModel(
         }
     }
 
-    fun onEmployeeNo(v: String) = _uiState.update { it.copy(employeeNo = v) }
-    fun onName(v: String) = _uiState.update { it.copy(name = v) }
+    fun onEmployeeNo(v: String) = _uiState.update { it.copy(employeeNo = v.take(EMPLOYEE_NO_MAX)) }
+    fun onName(v: String) = _uiState.update { it.copy(name = v.take(NAME_MAX)) }
     fun onRole(v: String) = _uiState.update { it.copy(role = v) }
-    fun onMobile(v: String) = _uiState.update { it.copy(mobile = v) }
+    fun onMobile(v: String) = _uiState.update { it.copy(mobile = v.take(MOBILE_MAX)) }
     fun onZone(v: String) = _uiState.update { it.copy(zonalOfficeId = v) }
     fun onManager(v: String) = _uiState.update { it.copy(reportsToEmployeeId = v) }
 
