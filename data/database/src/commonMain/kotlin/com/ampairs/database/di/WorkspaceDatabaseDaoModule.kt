@@ -293,5 +293,40 @@ interface WorkspaceDatabaseDaoModule {
         // analytics (feature 022)
         @Provides
         fun provideDemandForecastDao(db: AmpairsWorkspaceDatabase): DemandForecastDao = db.demandForecastDao()
+
+        // cb_* (maintenance build)
+        @Provides
+        fun provideCbEmployeeDao(db: AmpairsWorkspaceDatabase): com.ampairs.cbemployee.data.db.dao.EmployeeDao =
+            db.cbEmployeeDao()
+
+        @Provides
+        fun provideCbZonalOfficeDao(db: AmpairsWorkspaceDatabase): com.ampairs.cbstore.data.db.dao.ZonalOfficeDao =
+            db.cbZonalOfficeDao()
+
+        @Provides
+        fun provideCbStoreDao(db: AmpairsWorkspaceDatabase): com.ampairs.cbstore.data.db.dao.StoreDao =
+            db.cbStoreDao()
+
+        @Provides
+        fun provideCbPmScheduleDao(db: AmpairsWorkspaceDatabase): com.ampairs.cbmaintenance.data.db.dao.PmScheduleDao =
+            db.cbPmScheduleDao()
+
+        @Provides
+        fun provideCbPmEntryDao(db: AmpairsWorkspaceDatabase): com.ampairs.cbmaintenance.data.db.dao.PmEntryDao =
+            db.cbPmEntryDao()
+
+        @Provides
+        fun provideCbTicketDao(db: AmpairsWorkspaceDatabase): com.ampairs.cbmaintenance.data.db.dao.TicketDao =
+            db.cbTicketDao()
+
+        @Provides
+        fun provideCbAssetCategoryAliasDao(
+            db: AmpairsWorkspaceDatabase,
+        ): com.ampairs.cbmaintenance.data.db.dao.AssetCategoryAliasDao = db.cbAssetCategoryAliasDao()
+
+        @Provides
+        fun provideCbTicketBucketDao(
+            db: AmpairsWorkspaceDatabase,
+        ): com.ampairs.cbmaintenance.data.db.dao.TicketBucketDao = db.cbTicketBucketDao()
     }
 }

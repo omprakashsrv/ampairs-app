@@ -50,6 +50,12 @@ import com.ampairs.navigation.providers.storefrontEntryProvider
 import com.ampairs.navigation.providers.subscriptionEntryProvider
 import com.ampairs.navigation.providers.taxEntryProvider
 import com.ampairs.navigation.providers.unitEntryProvider
+import com.ampairs.navigation.providers.cbEmployeeEntryProvider
+import com.ampairs.navigation.providers.cbStoreEntryProvider
+import com.ampairs.navigation.providers.cbMaintenanceEntryProvider
+import com.ampairs.cbemployee.ui.CbEmployeeListRoute
+import com.ampairs.cbstore.ui.CbStoreListRoute
+import com.ampairs.cbmaintenance.ui.CbPmDueListRoute
 import com.ampairs.navigation.providers.pricingEntryProvider
 import com.ampairs.navigation.providers.printingEntryProvider
 import com.ampairs.navigation.providers.workspaceEntryProvider
@@ -93,6 +99,9 @@ fun combinedEntryProvider(
         ?: businessEntryProvider(key, backStack)
         ?: subscriptionEntryProvider(key, backStack)
         ?: unitEntryProvider(key, backStack)
+        ?: cbEmployeeEntryProvider(key, backStack)
+        ?: cbStoreEntryProvider(key, backStack)
+        ?: cbMaintenanceEntryProvider(key, backStack)
         ?: pricingEntryProvider(key, backStack)
         ?: printingEntryProvider(key, backStack)
         ?: storeEntryProvider(key, backStack)
@@ -204,6 +213,28 @@ private fun mainRouteEntryProvider(
         LaunchedEffect(Unit) {
             backStack.removeLastOrNull()
             backStack.add(UnitListRoute)
+        }
+    }
+
+    // maintenance build redirects
+    is Route.CbEmployee -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(CbEmployeeListRoute)
+        }
+    }
+
+    is Route.CbStore -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(CbStoreListRoute)
+        }
+    }
+
+    is Route.CbMaintenance -> NavEntry(key) {
+        LaunchedEffect(Unit) {
+            backStack.removeLastOrNull()
+            backStack.add(CbPmDueListRoute)
         }
     }
 
