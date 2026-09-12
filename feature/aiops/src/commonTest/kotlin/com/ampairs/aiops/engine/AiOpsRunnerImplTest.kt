@@ -57,7 +57,7 @@ class AiOpsRunnerImplTest {
     fun `auto_correct applies the executor, marks finding AUTO_FIXED, and records an audit decision`() = runTest {
         val (runner, executor) = runner(AiOpsAutonomyLevel.AUTO_CORRECT)
 
-        runner.onEntitySaved("widget", "E1")
+        val outcome = runner.onEntitySaved("widget", "E1")
 
         assertEquals(1, executor.applied.size, "executor should have applied the fix")
         val finding = dao.findings.value.values.single()
@@ -67,17 +67,24 @@ class AiOpsRunnerImplTest {
         assertEquals("AUTO", decision.source)
         assertEquals("new", decision.afterValue)
         assertTrue(decision.reversible)
+        // Outcome surfaces the fix (with the decision id for Undo) to the caller/UI.
+        val fix = outcome.autoFixed.single()
+        assertEquals(decision.id, fix.decisionId)
+        assertEquals("new", fix.after)
+        assertTrue(outcome.suggestions.isEmpty())
     }
 
     @Test
     fun `recommend records a review finding and never touches the executor`() = runTest {
         val (runner, executor) = runner(AiOpsAutonomyLevel.RECOMMEND)
 
-        runner.onEntitySaved("widget", "E1")
+        val outcome = runner.onEntitySaved("widget", "E1")
 
         assertTrue(executor.applied.isEmpty())
         assertEquals("PENDING_REVIEW", dao.findings.value.values.single().status)
         assertTrue(dao.decisions.isEmpty(), "no audit decision without an action")
+        assertTrue(outcome.autoFixed.isEmpty())
+        assertEquals(1, outcome.suggestions.size, "a review finding is surfaced as a suggestion")
     }
 
     @Test

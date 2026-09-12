@@ -141,11 +141,15 @@ the backend endpoint); add a `SyncEntity.AIOPS_*` + delegate then, not now.
 ## 7. Trigger & UX (slice 01)
 
 - **Implicit on-save:** after a unit create/edit, `UnitFormViewModel` asks `AiOpsRunner` to run
-  `onEntitySaved("unit", uid)`. At L2 a high-confidence alias auto-fixes → a subtle snackbar **"AI set
-  short name → KG · Undo"** (UI surfaced in a follow-up); at L1 the finding is recorded PENDING_REVIEW.
-  The runner is best-effort (`runCatching`) and never blocks or fails the save.
-- **No new nav.** This slice adds only the on-save hook + audit; a full "review inbox" screen and the
-  inline chip/snackbar UI are a later increment.
+  `onEntitySaved("unit", uid)`, which **returns an `AiOpsOutcome`**. At L2 a high-confidence alias
+  auto-fixes → the VM emits a `UnitFormEvent.AiOpsShortNameFixed` and the screen shows a snackbar
+  **"AI standardized short name to KG"** with an **Undo** action (→ `AiOpsUndo.undo(decisionId)`); at
+  L1 a `PENDING_REVIEW` finding surfaces as a lighter suggestion snackbar. The runner is best-effort
+  (`runCatching`) and never blocks or fails the save.
+- **Undo port:** `AiOpsUndo` (data/common) is bound by `AiOpsUndoService` (`@ContributesBinding`
+  WorkspaceScope) so the unit UI can roll back without depending on the `feature/aiops` impl.
+- **No new nav.** This slice adds the on-save hook + audit + the inline snackbar/Undo; a full "review
+  inbox" screen and an always-visible suggestion chip are a later increment.
 
 ---
 
@@ -155,6 +159,8 @@ the backend endpoint); add a `SyncEntity.AIOPS_*` + delegate then, not now.
       `@Multibinds(allowEmpty=true)` capability + executor maps in `feature/aiops`.
 - [x] `feature/unit` contributes the `unit.shortname` capability **and** Executor (write via its repo).
 - [x] `AiOpsSettings` port (data/common) backed by `AppPreferencesDataStore` in `feature/aiops`.
+- [x] `AiOpsRunner.onEntitySaved` returns `AiOpsOutcome`; `AiOpsUndo` port bound by `AiOpsUndoService`;
+      unit form shows the auto-fix/Undo snackbar.
 - [ ] `Reasoner` adapter stub contributed (real wiring slice 2).
 
 ## 9. Tests (DoD)

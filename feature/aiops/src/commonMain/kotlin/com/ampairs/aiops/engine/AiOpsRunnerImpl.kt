@@ -5,11 +5,14 @@ import com.ampairs.aiops.db.entity.AiOpsDecisionEntity
 import com.ampairs.aiops.db.entity.AiOpsFindingEntity
 import com.ampairs.aiops.gate.ConfidenceRiskGate
 import com.ampairs.aiops.gate.GateDecision
+import com.ampairs.common.aiops.AiOpsAppliedFix
 import com.ampairs.common.aiops.AiOpsCapability
 import com.ampairs.common.aiops.AiOpsExecutor
+import com.ampairs.common.aiops.AiOpsOutcome
 import com.ampairs.common.aiops.AiOpsRunner
 import com.ampairs.common.aiops.AiOpsScope
 import com.ampairs.common.aiops.AiOpsSettings
+import com.ampairs.common.aiops.AiOpsSuggestion
 import com.ampairs.common.aiops.Candidate
 import com.ampairs.common.aiops.Confidence
 import com.ampairs.common.aiops.Finding
@@ -51,9 +54,11 @@ class AiOpsRunnerImpl(
     private val config: WorkspaceConfig,
 ) : AiOpsRunner {
 
-    override suspend fun onEntitySaved(entityType: String, entityId: String) {
+    override suspend fun onEntitySaved(entityType: String, entityId: String): AiOpsOutcome {
         val level = settings.autonomyLevel().first()
         val scope = AiOpsScope(workspaceId = config.workspaceId)
+        val fixes = mutableListOf<AiOpsAppliedFix>()
+        val suggestions = mutableListOf<AiOpsSuggestion>()
         capabilities.values
             .filter { it.entityType == entityType }
             .forEach { capability ->
@@ -61,12 +66,19 @@ class AiOpsRunnerImpl(
                     .getOrElse { emptyList() }
                     .filter { it.entityId == entityId }
                 findings.forEach { finding ->
-                    runCatching { process(capability, finding, level) }
+                    runCatching { process(capability, finding, level, fixes, suggestions) }
                 }
             }
+        return AiOpsOutcome(autoFixed = fixes, suggestions = suggestions)
     }
 
-    private suspend fun process(capability: AiOpsCapability, rawFinding: Finding, level: com.ampairs.common.aiops.AiOpsAutonomyLevel) {
+    private suspend fun process(
+        capability: AiOpsCapability,
+        rawFinding: Finding,
+        level: com.ampairs.common.aiops.AiOpsAutonomyLevel,
+        fixes: MutableList<AiOpsAppliedFix>,
+        suggestions: MutableList<AiOpsSuggestion>,
+    ) {
         // Resolve the finding id ONCE so the finding row, its audit decision, and undo all reference
         // the same id (a capability may leave it blank for the runner to mint).
         val finding = rawFinding.copy(
@@ -83,12 +95,24 @@ class AiOpsRunnerImpl(
                 val executor = executors[capability.key]
                 if (executor != null && executor.apply(candidate, finding).success) {
                     persist(finding, AiOpsFindingStatus.AUTO_FIXED, confidence, now)
-                    recordDecision(capability, finding, candidate, confidence, source = "AUTO", now = now)
+                    val decisionId = recordDecision(capability, finding, candidate, confidence, source = "AUTO", now = now)
+                    fixes += AiOpsAppliedFix(
+                        decisionId = decisionId,
+                        capability = capability.key,
+                        field = candidate.field,
+                        before = candidate.before,
+                        after = candidate.after,
+                        summary = finding.summary,
+                    )
                 } else {
                     persist(finding, AiOpsFindingStatus.PENDING_REVIEW, confidence, now)
+                    suggestions += AiOpsSuggestion(finding.id, capability.key, finding.summary)
                 }
             }
-            GateDecision.SUGGEST -> persist(finding, AiOpsFindingStatus.PENDING_REVIEW, confidence, now)
+            GateDecision.SUGGEST -> {
+                persist(finding, AiOpsFindingStatus.PENDING_REVIEW, confidence, now)
+                suggestions += AiOpsSuggestion(finding.id, capability.key, finding.summary)
+            }
             GateDecision.OBSERVE_ONLY -> persist(finding, AiOpsFindingStatus.OPEN, confidence, now)
         }
     }
@@ -111,6 +135,7 @@ class AiOpsRunnerImpl(
         )
     }
 
+    /** @return the generated decision id (needed so the UI can offer Undo). */
     private suspend fun recordDecision(
         capability: AiOpsCapability,
         finding: Finding,
@@ -118,10 +143,11 @@ class AiOpsRunnerImpl(
         confidence: Confidence,
         source: String,
         now: Long,
-    ) {
+    ): String {
+        val decisionId = UidGenerator.generateUid(DECISION_PREFIX)
         dao.insertDecision(
             AiOpsDecisionEntity(
-                id = UidGenerator.generateUid(DECISION_PREFIX),
+                id = decisionId,
                 findingId = finding.id,
                 capability = capability.key,
                 entityType = finding.entityType,
@@ -140,6 +166,7 @@ class AiOpsRunnerImpl(
                 createdAt = now,
             ),
         )
+        return decisionId
     }
 
     private fun encode(map: Map<String, String>): String? =

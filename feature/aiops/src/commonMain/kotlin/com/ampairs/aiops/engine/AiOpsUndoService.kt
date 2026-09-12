@@ -4,9 +4,12 @@ import com.ampairs.aiops.db.dao.AiOpsDao
 import com.ampairs.aiops.db.entity.AiOpsFeedbackEntity
 import com.ampairs.common.aiops.AiOpsActionType
 import com.ampairs.common.aiops.AiOpsExecutor
+import com.ampairs.common.aiops.AiOpsUndo
 import com.ampairs.common.aiops.Candidate
 import com.ampairs.common.aiops.Finding
+import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
+import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -18,12 +21,13 @@ import kotlin.time.ExperimentalTime
  */
 @OptIn(ExperimentalTime::class)
 @Inject
+@ContributesBinding(WorkspaceScope::class)
 class AiOpsUndoService(
     private val dao: AiOpsDao,
     private val executors: Map<String, AiOpsExecutor>,
-) {
+) : AiOpsUndo {
     /** @return true if the decision was found, reversible, un-reverted, and successfully rolled back. */
-    suspend fun undo(decisionId: String): Boolean {
+    override suspend fun undo(decisionId: String): Boolean {
         val decision = dao.getDecision(decisionId) ?: return false
         if (decision.revertedAt != null || !decision.reversible) return false
         val executor = executors[decision.capability] ?: return false
