@@ -9,10 +9,10 @@ import com.ampairs.common.aiops.AiOpsCapability
 import com.ampairs.common.aiops.AiOpsExecutor
 import com.ampairs.common.aiops.AiOpsRunner
 import com.ampairs.common.aiops.AiOpsScope
+import com.ampairs.common.aiops.AiOpsSettings
 import com.ampairs.common.aiops.Candidate
 import com.ampairs.common.aiops.Confidence
 import com.ampairs.common.aiops.Finding
-import com.ampairs.common.config.AppPreferencesDataStore
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.common.workspace.WorkspaceConfig
@@ -47,12 +47,12 @@ class AiOpsRunnerImpl(
     private val executors: Map<String, AiOpsExecutor>,
     private val dao: AiOpsDao,
     private val gate: ConfidenceRiskGate,
-    private val preferences: AppPreferencesDataStore,
+    private val settings: AiOpsSettings,
     private val config: WorkspaceConfig,
 ) : AiOpsRunner {
 
     override suspend fun onEntitySaved(entityType: String, entityId: String) {
-        val level = preferences.getAiOpsAutonomyLevel().first()
+        val level = settings.autonomyLevel().first()
         val scope = AiOpsScope(workspaceId = config.workspaceId)
         capabilities.values
             .filter { it.entityType == entityType }
@@ -66,7 +66,12 @@ class AiOpsRunnerImpl(
             }
     }
 
-    private suspend fun process(capability: AiOpsCapability, finding: Finding, level: com.ampairs.common.aiops.AiOpsAutonomyLevel) {
+    private suspend fun process(capability: AiOpsCapability, rawFinding: Finding, level: com.ampairs.common.aiops.AiOpsAutonomyLevel) {
+        // Resolve the finding id ONCE so the finding row, its audit decision, and undo all reference
+        // the same id (a capability may leave it blank for the runner to mint).
+        val finding = rawFinding.copy(
+            id = rawFinding.id.ifBlank { UidGenerator.generateUid(FINDING_PREFIX) },
+        )
         val context = capability.gather(finding)
         val candidate = capability.propose(finding, context).firstOrNull() ?: return
         if (!capability.validate(finding, candidate, context).valid) return
@@ -91,7 +96,7 @@ class AiOpsRunnerImpl(
     private suspend fun persist(finding: Finding, status: String, confidence: Confidence, now: Long) {
         dao.upsertFinding(
             AiOpsFindingEntity(
-                id = finding.id.ifBlank { UidGenerator.generateUid(FINDING_PREFIX) },
+                id = finding.id,
                 capability = finding.capability,
                 entityType = finding.entityType,
                 entityId = finding.entityId,

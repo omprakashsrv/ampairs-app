@@ -2,6 +2,7 @@ package com.ampairs.unit.ui.form
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.aiops.AiOpsRunner
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.unit.data.repository.UnitRepository
 import com.ampairs.common.di.WorkspaceScope
@@ -49,6 +50,7 @@ data class UnitFormState(
 class UnitFormViewModel(
     private val unitRepository: UnitRepository,
     private val syncService: CentralSyncService,
+    private val aiOpsRunner: AiOpsRunner,
     @Assisted private val unitId: String?
 ) : ViewModel() {
 
@@ -183,6 +185,9 @@ class UnitFormViewModel(
 
                 if (result.isSuccess) {
                     syncService.markPendingPush(SyncEntity.UNIT)
+                    // Best-effort AI Ops pass on the saved unit (standardize short name, etc.).
+                    // Never blocks or fails the save — the runner swallows its own errors.
+                    runCatching { aiOpsRunner.onEntitySaved("unit", unit.uid) }
                     _formState.update { it.copy(isLoading = false) }
                     onSuccess()
                 } else {
