@@ -138,6 +138,9 @@ class DynamicModuleNavigationService {
             ModuleCodes.PRICING_MANAGEMENT -> true
             ModuleCodes.BUSINESS_DASHBOARD,
             ModuleCodes.BUSINESS_REPORTING -> true
+            ModuleCodes.CB_EMPLOYEE,
+            ModuleCodes.CB_STORE,
+            ModuleCodes.CB_MAINTENANCE -> true
             else -> false
         }
     }

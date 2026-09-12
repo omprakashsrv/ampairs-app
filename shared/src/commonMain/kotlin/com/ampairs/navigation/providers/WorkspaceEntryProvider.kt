@@ -7,12 +7,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.sync.ui.SyncStatusScreen
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
+import com.ampairs.workspace.navigation.DynamicModuleRoute
+import com.ampairs.workspace.navigation.GlobalNavigationManager
+import kotlinx.coroutines.flow.MutableStateFlow
 import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.ModuleStoreScreen
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
@@ -150,8 +156,17 @@ fun workspaceEntryProvider(
     }
 
     is WorkspaceRoute.SyncStatus -> NavEntry(key) {
+        // Only surface sync rows for modules this workspace has installed. The active modules live on
+        // the GlobalNavigationManager's nav service (fed by WorkspaceModulesViewModel); core/infra
+        // entities are shown regardless (handled inside SyncStatusScreen).
+        val navService by GlobalNavigationManager.getInstance().navigationService
+            .collectAsStateWithLifecycle()
+        val routes by remember(navService) {
+            navService?.allActiveRoutes ?: MutableStateFlow(emptyList<DynamicModuleRoute>())
+        }.collectAsStateWithLifecycle()
         SyncStatusScreen(
-            onNavigateBack = { backStack.removeLastOrNull() }
+            onNavigateBack = { backStack.removeLastOrNull() },
+            installedModuleCodes = routes.map { it.moduleCode }.toSet(),
         )
     }
 

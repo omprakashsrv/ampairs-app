@@ -15,6 +15,11 @@ kotlin {
         namespace = "com.ampairs.auth.api"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        // See feature/auth/build.gradle.kts — avoids Kotlin deriving "$group:$name" as the
+        // module name, which breaks androidApp:bundleRelease.
+        compilerOptions {
+            moduleName.set("auth-api")
+        }
     }
     jvm("desktop")
     iosArm64()

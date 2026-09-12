@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,10 +62,24 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 @Composable
 fun SyncStatusScreen(
     onNavigateBack: () -> Unit,
+    // Module codes installed in the active workspace. When non-null, entity rows (and log lines)
+    // for feature modules NOT in this set are hidden; core/infra entities (moduleCode == null) always
+    // show. Pass null to show everything (e.g. a caller with no module context).
+    installedModuleCodes: Set<String>? = null,
     viewModel: SyncStatusViewModel = metroViewModel(),
 ) {
     val entityStates by viewModel.entityStates.collectAsStateWithLifecycle()
     val logs by viewModel.logs.collectAsStateWithLifecycle()
+
+    fun SyncEntity.isVisible(): Boolean =
+        installedModuleCodes == null || moduleCode == null || moduleCode in installedModuleCodes
+
+    val visibleStates = remember(entityStates, installedModuleCodes) {
+        entityStates.filter { it.entity.isVisible() }
+    }
+    val visibleLogs = remember(logs, installedModuleCodes) {
+        logs.filter { it.entity.isVisible() }
+    }
 
     Scaffold(
         topBar = {
@@ -106,11 +121,11 @@ fun SyncStatusScreen(
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    entityStates.forEachIndexed { index, state ->
+                    visibleStates.forEachIndexed { index, state ->
                         if (index > 0) HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                         EntitySyncRow(state = state, onTrigger = { viewModel.triggerEntitySync(state.entity) })
                     }
-                    if (entityStates.isEmpty()) {
+                    if (visibleStates.isEmpty()) {
                         Text(
                             text = "No sync data yet",
                             style = MaterialTheme.typography.bodyMedium,
@@ -130,14 +145,14 @@ fun SyncStatusScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Sync Log (last ${logs.size})",
+                        text = "Sync Log (last ${visibleLogs.size})",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
-            if (logs.isEmpty()) {
+            if (visibleLogs.isEmpty()) {
                 item {
                     Text(
                         text = "No sync activity yet",
@@ -147,7 +162,7 @@ fun SyncStatusScreen(
                     )
                 }
             } else {
-                items(logs.asReversed(), key = { it.id }) { entry ->
+                items(visibleLogs.asReversed(), key = { it.id }) { entry ->
                     SyncLogRow(entry)
                 }
             }

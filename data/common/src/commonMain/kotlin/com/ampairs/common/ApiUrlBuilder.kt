@@ -220,6 +220,22 @@ object ApiUrlBuilder {
         return if (cleanPath.isBlank()) base else "$base/$cleanPath"
     }
 
+    // maintenance build (customer-specific cb_* backend modules)
+    fun cbEmployeeUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/cb_employee/$cleanPath"
+    }
+
+    fun cbStoreUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/cb_store/$cleanPath"
+    }
+
+    fun cbMaintenanceUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/api/cb_maintenance/$cleanPath"
+    }
+
     fun fileUrl(path: String): String {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.apiBaseUrl}/api/file/$cleanPath"

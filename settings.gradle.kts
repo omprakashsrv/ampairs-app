@@ -75,5 +75,12 @@ include(
     ":feature:notification",
     ":feature:workspace",
     ":feature:analytics",
-    ":feature:imagesearch"
+    ":feature:imagesearch",
+    // cb_* — maintenance build (customer-specific, gated per workspace)
+    ":feature:cb-employee-api",
+    ":feature:cb-employee",
+    ":feature:cb-store-api",
+    ":feature:cb-store",
+    ":feature:cb-maintenance-api",
+    ":feature:cb-maintenance"
 )
