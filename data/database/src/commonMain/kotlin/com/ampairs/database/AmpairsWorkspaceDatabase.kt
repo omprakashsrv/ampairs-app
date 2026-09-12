@@ -147,6 +147,10 @@ import com.ampairs.tax.data.db.entity.TaxConfigurationEntity
 import com.ampairs.tax.data.db.entity.TaxRuleEntity
 import com.ampairs.unit.agent.UnitAgentDao
 import com.ampairs.unit.data.db.dao.UnitConversionDao
+import com.ampairs.aiops.db.dao.AiOpsDao
+import com.ampairs.aiops.db.entity.AiOpsDecisionEntity
+import com.ampairs.aiops.db.entity.AiOpsFeedbackEntity
+import com.ampairs.aiops.db.entity.AiOpsFindingEntity
 import com.ampairs.unit.data.db.dao.UnitDao
 import com.ampairs.unit.data.db.entity.UnitConversionEntity
 import com.ampairs.unit.data.db.entity.UnitEntity
@@ -258,8 +262,12 @@ import com.ampairs.unit.data.db.entity.UnitEntity
         DemandForecastEntity::class,
         // sync state (was sync.db v2)
         SyncStateEntity::class,
+        // aiops (AI Business Operations Manager — audit; local-only this slice)
+        AiOpsFindingEntity::class,
+        AiOpsDecisionEntity::class,
+        AiOpsFeedbackEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
@@ -324,6 +332,9 @@ abstract class AmpairsWorkspaceDatabase : RoomDatabase() {
     abstract fun unitDao(): UnitDao
     abstract fun unitConversionDao(): UnitConversionDao
     abstract fun unitAgentDao(): UnitAgentDao
+
+    // aiops (AI Business Operations Manager — audit)
+    abstract fun aiOpsDao(): AiOpsDao
 
     // form
     abstract fun formSchemaDao(): FormSchemaDao
