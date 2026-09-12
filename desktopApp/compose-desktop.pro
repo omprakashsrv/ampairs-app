@@ -35,3 +35,13 @@
 -keep public enum com.ampairs.** {
     *;
 }
+
+# Desktop image-search: JavaFX WebView (WebKit) reflectively invokes this bridge's method
+# by name from injected JS (window.ampairsBridge.onResults(json)) via JSObject/netscape.javascript.
+# R8 renaming/inlining this class or method breaks the JS -> Kotlin callback silently, leaving the
+# search "stuck" after consent with no error surfaced (results just never arrive).
+-keep class com.ampairs.imagesearch.ui.DesktopScrapeBridge {
+    public void onResults(java.lang.String);
+}
+-keep class netscape.javascript.** { *; }
+-dontwarn netscape.javascript.**
