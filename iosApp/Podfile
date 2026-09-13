@@ -4,6 +4,10 @@ target 'iosApp' do
   pod 'shared', :path => '../shared'
   pod 'FirebaseCore'
   pod 'FirebaseAuth'
+  # Vendored whisper.cpp xcframework (feature/agent/whisper.podspec) — the shared/ComposeApp
+  # framework is static, so its own build doesn't need to resolve whisper.cpp symbols; they only
+  # surface as undefined at the app's link step, which this pod supplies.
+  pod 'whisper', :path => '../feature/agent'
 end
 
 # Enforce minimum deployment target for all pods
