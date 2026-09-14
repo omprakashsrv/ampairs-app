@@ -32,7 +32,7 @@ kermit = "2.1.0"
 # Navigation 3 (new paradigm with user-owned back stack)
 navigation3-ui = "1.1.1"
 lifecycle-viewmodel = "2.11.0"
-lifecycle-viewmodel-navigation3 = "2.10.0"
+lifecycle-viewmodel-navigation3 = "2.11.0"
 savedstate = "1.4.0"
 firebase-crashlytics = "19.4.4"
 firebase-analytics = "22.5.0"
