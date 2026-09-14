@@ -9,6 +9,13 @@ plugins {
 group = "com.ampairs"
 version = "1.0.0"
 
+// group="com.ampairs" makes Kotlin derive the default module name as "com.ampairs:event"
+// (colon-separated), which androidApp:buildReleasePreBundle rejects with "Entry name contains
+// invalid characters: root/META-INF/com.ampairs:event.kotlin_module". Force a safe name.
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions.moduleName.set("ampairs-event")
+}
+
 kotlin {
     jvmToolchain(21)
 

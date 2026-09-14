@@ -14,6 +14,13 @@ version = "1.0.0"
 // Override artifact name so the published ID is "data-common" rather than just "common"
 base.archivesName.set("data-common")
 
+// group="com.ampairs" makes Kotlin derive the default module name as "com.ampairs:data-common"
+// (colon-separated), which androidApp:buildReleasePreBundle rejects with "Entry name contains
+// invalid characters: root/META-INF/com.ampairs:data-common.kotlin_module". Force a safe name.
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions.moduleName.set("ampairs-data-common")
+}
+
 // Pin resource accessor package so setting group="com.ampairs" for publishing
 // doesn't shift the auto-derived package away from the existing source imports.
 compose.resources {

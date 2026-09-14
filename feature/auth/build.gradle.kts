@@ -18,6 +18,13 @@ compose.resources {
     packageOfResClass = "ampairsapp.feature.auth.generated.resources"
 }
 
+// group="com.ampairs" makes Kotlin derive the default module name as "com.ampairs:auth"
+// (colon-separated), which androidApp:buildReleasePreBundle rejects with "Entry name contains
+// invalid characters: root/META-INF/com.ampairs:auth.kotlin_module". Force a safe name.
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions.moduleName.set("ampairs-auth")
+}
+
 kotlin {
     jvmToolchain(21)
 
