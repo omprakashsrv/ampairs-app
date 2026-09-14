@@ -1,0 +1,31 @@
+target 'iosApp' do
+  use_frameworks!
+  platform :ios, '16.0'
+
+  # The shared storefront framework (Compose Multiplatform), produced by :shared-ecom's cocoapods
+  # block (framework baseName = "SharedEcom"; import it in Swift as `import SharedEcom`).
+  pod 'shared-ecom', :path => '../../shared-ecom'
+
+  # Firebase — phone/OTP sign-in reused from :feature:auth. The :shared-ecom framework is static and
+  # references these symbols transitively; they are resolved here at the app link step (mirrors
+  # ../../iosApp/Podfile).
+  pod 'FirebaseCore'
+  pod 'FirebaseAuth'
+  # FirebaseAuth phone-number sign-in falls back to reCAPTCHA whenever silent-push/App Attest
+  # verification isn't available (always true on the Simulator, common on devices without full APNs
+  # setup). Since Firebase iOS SDK 10.7 that fallback needs the reCAPTCHA Enterprise SDK linked —
+  # RecaptchaInterop (pulled in transitively) is only the protocol shim. Missing this pod throws
+  # FIRAuthErrorCode 17208 ("The reCAPTCHA SDK is not linked to your app").
+  pod 'RecaptchaEnterprise', '~> 18.9'
+end
+
+# Enforce minimum deployment target for all pods
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 12.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      end
+    end
+  end
+end

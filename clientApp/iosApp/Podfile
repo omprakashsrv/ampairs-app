@@ -1,0 +1,28 @@
+target 'iosApp' do
+  use_frameworks!
+  platform :ios, '16.0'
+
+  # The shared storefront framework (Compose Multiplatform), produced by :shared-ecom's cocoapods
+  # block (framework baseName = "SharedEcom"; import it in Swift as `import SharedEcom`).
+  pod 'shared-ecom', :path => '../../shared-ecom'
+
+  # Firebase — phone/OTP sign-in reused from :feature:auth. The :shared-ecom framework is static and
+  # references these symbols transitively; they are resolved here at the app link step (mirrors
+  # ../../iosApp/Podfile).
+  pod 'FirebaseCore'
+  pod 'FirebaseAuth'
+  # reCAPTCHA Enterprise SDK — required by FirebaseAuth phone sign-in fallback (see the main
+  # ../../iosApp/Podfile for the full explanation of FIRAuthErrorCode 17208).
+  pod 'RecaptchaEnterprise', '~> 18.9'
+end
+
+# Enforce minimum deployment target for all pods
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 12.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      end
+    end
+  end
+end

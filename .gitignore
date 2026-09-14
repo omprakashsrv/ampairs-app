@@ -15,6 +15,18 @@ iosApp/iosApp.xcworkspace/*
 iosApp/iosApp.xcodeproj/*
 !iosApp/iosApp.xcodeproj/project.pbxproj
 shared/shared.podspec
+shared-ecom/shared-ecom.podspec
+
+# Storefront iOS apps (marketplace + client) — CocoaPods + Xcode user data
+marketplaceApp/iosApp/Podfile.lock
+marketplaceApp/iosApp/Pods/*
+marketplaceApp/iosApp/**/xcuserdata/*
+clientApp/iosApp/Podfile.lock
+clientApp/iosApp/Pods/*
+clientApp/iosApp/**/xcuserdata/*
+# Firebase config for the storefront iOS apps (contains sensitive API keys)
+marketplaceApp/iosApp/Firebase/GoogleService-Info-*.plist
+clientApp/iosApp/Firebase/GoogleService-Info-*.plist
 
 # Firebase configuration (contains sensitive API keys)
 google-services.json
