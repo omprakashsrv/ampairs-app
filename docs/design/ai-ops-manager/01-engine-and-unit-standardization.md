@@ -59,35 +59,44 @@ enum class Band { HIGH, MEDIUM, LOW }
 ```
 
 A **capability** = a keyed set of the five stage plug-ins. Contributed via Metro:
-`@ContributesIntoMap(WorkspaceScope::class) @CapabilityKey("product.unit")`. The **engine runner**
+`@ContributesIntoMap(WorkspaceScope::class) @CapabilityKey("unit.shortname")`. The **engine runner**
 (`AiOpsRunner`, `@Inject`, WorkspaceScope) wires the fixed flow and the gate.
 
 ---
 
-## 3. The `product.unit` capability (this slice)
+## 3. The `unit.shortname` capability (this slice)
 
-- **Detector** — read products via `WorkspaceDatabaseProvider` reader connection (the same handle the
-  agent SafeQuery path uses — do **not** depend on `:feature:product` impl); flag any product whose unit
-  string isn't a canonical unit for the workspace.
-- **ContextGatherer** — load canonical units (`UnitService` / unit tables) + the bundled alias table.
-- **CandidateGenerator** — deterministic alias map → `UPDATE_FIELD before="Kgs" after="KG"`. No LLM.
-- **CandidateValidator** — assert `after` is a real canonical unit in this workspace.
-- **ConfidenceScorer** — deterministic alias hit ⇒ `value≈0.999, band=HIGH, contributors={rule:1.0}`.
+**Correction (grounding, 2026-09):** the first-planned `product.unit` capability assumed a product's
+unit was a **free-text** field to rewrite. It isn't — `ProductEntity.base_unit` stores a **unit UID
+(foreign key)** into the `units` table (`ProductFormViewModel` sets it from the picked unit's `uid`;
+`ProductSyncDelegate` uses it as a map key). Rewriting `base_unit` to a text code like `"KG"` would
+**corrupt the FK** and never match anyway. The genuinely inconsistent free-text field is the **unit
+record's own `short_name`** (`Kgs` / `Kg` / `Kilo` for the same unit). So the slice-1 capability
+standardizes `units.short_name`, lives in **`feature/unit`**, and triggers on **unit save**.
+
+- **Detector** — read active units via `UnitRepository.getActiveUnits()` (the capability lives in
+  `feature/unit`, so it uses that module's own repository/DAO — no cross-feature reach); flag any unit
+  whose `short_name` is a known alias whose canonical spelling differs.
+- **ContextGatherer** — load the unit's current `short_name`/`name` (bundled alias table is static).
+- **CandidateGenerator** — deterministic `UnitAliasCatalog` → `UPDATE_FIELD before="Kgs" after="KG"`. No LLM.
+- **CandidateValidator** — assert `after` is a declared canonical and actually changes the value.
+- **ConfidenceScorer** — deterministic alias hit ⇒ `value≈0.999, band=HIGH, contributors={alias_catalog:1.0}`.
   (Ensemble contract still applies; this capability just happens to be rule-only.)
 
-Ambiguous case (`unit="L"` on "500 ML bottle") → `Reasoner` would parse it, but for slice 01 we simply
-emit **MEDIUM → suggestion chip**, deferring LLM wiring to slice 2+.
+An unknown spelling → no finding (no LLM this slice; ambiguous parsing defers to the `Reasoner` in
+slice 2+).
 
 ---
 
 ## 4. Ports — app adapters
 
-- **`Executor` (write path):** applies `UPDATE_FIELD` by calling the **product repository's** update so
-  the write is `synced=false` and `CentralSyncService` pushes via `ProductSyncDelegate` (`/offline-sync`).
-  Because `feature/aiops` must not depend on `feature/product` impl, the product-side Executor is
-  **contributed from `feature/product`** into the WorkspaceScope map (`@CapabilityKey("product.unit")`)
-  — exactly the QueryExecutor split the agent module already uses. *(Open: confirm the product repo
-  exposes a field-update that flags `synced=false`; if not, add a thin one.)*
+- **`Executor` (write path):** applies `UPDATE_FIELD` by calling `UnitRepository.updateUnit(...)` so the
+  write is `synced=false` and `CentralSyncService` pushes via `UnitSyncDelegate` (`/offline-sync`).
+  Because `feature/aiops` must not depend on other feature impls, both the capability and its Executor are
+  **contributed from `feature/unit`** into the WorkspaceScope maps (`@CapabilityKey`/`@AiOpsExecutorKey`
+  `"unit.shortname"`) depending only on the `com.ampairs.common.aiops` contracts — exactly the
+  QueryExecutor split the agent module already uses. The same Executor serves rollback (undo passes a
+  candidate whose `after` is the original value).
 - **`Reasoner`:** an adapter over `feature/agent`'s `LlmEngine` (`feature/agent/.../llm/LlmEngine.kt`),
   contributed where `LlmEngine` is visible (`feature/agent` or `shared`). **Not used in slice 01** —
   stub it and wire for real in slice 2.
@@ -131,26 +140,35 @@ the backend endpoint); add a `SyncEntity.AIOPS_*` + delegate then, not now.
 
 ## 7. Trigger & UX (slice 01)
 
-- **Implicit on-save:** after a product create/edit, the ViewModel asks `AiOpsRunner` to run
-  `product.unit` on that entity. On an L2 auto-fix → a subtle snackbar **"AI set unit → KG · Undo"**;
-  on MEDIUM → an inline **suggestion chip** (Approve / Ignore). Keep the runner call off the UI thread;
-  never block save on it.
-- **No new nav.** This slice adds only the inline surface; a full "review inbox" screen is a later slice.
+- **Implicit on-save:** after a unit create/edit, `UnitFormViewModel` asks `AiOpsRunner` to run
+  `onEntitySaved("unit", uid)`, which **returns an `AiOpsOutcome`**. At L2 a high-confidence alias
+  auto-fixes → the VM emits a `UnitFormEvent.AiOpsShortNameFixed` and the screen shows a snackbar
+  **"AI standardized short name to KG"** with an **Undo** action (→ `AiOpsUndo.undo(decisionId)`); at
+  L1 a `PENDING_REVIEW` finding surfaces as a lighter suggestion snackbar. The runner is best-effort
+  (`runCatching`) and never blocks or fails the save.
+- **Undo port:** `AiOpsUndo` (data/common) is bound by `AiOpsUndoService` (`@ContributesBinding`
+  WorkspaceScope) so the unit UI can roll back without depending on the `feature/aiops` impl.
+- **No new nav.** This slice adds the on-save hook + audit + the inline snackbar/Undo; a full "review
+  inbox" screen and an always-visible suggestion chip are a later increment.
 
 ---
 
 ## 8. DI wiring (Metro, WorkspaceScope) — checklist
-- [ ] `feature/aiops` DB `@Provides @SingleIn(WorkspaceScope::class)` + `closableRegistry.register`.
-- [ ] Engine runner, DAOs, capability stages: `@Inject`, unscoped; capability + executor into
-      `@ContributesIntoMap(WorkspaceScope::class)` maps with `@CapabilityKey`.
-- [ ] `feature/product` contributes the `product.unit` Executor (write via its repo).
+- [x] `aiops_*` tables in the consolidated DB + `AiOpsDao` via `WorkspaceDatabaseDaoModule` (see §6).
+- [x] Engine runner `@ContributesBinding(WorkspaceScope)` for `AiOpsRunner`; gate/undo `@Inject`;
+      `@Multibinds(allowEmpty=true)` capability + executor maps in `feature/aiops`.
+- [x] `feature/unit` contributes the `unit.shortname` capability **and** Executor (write via its repo).
+- [x] `AiOpsSettings` port (data/common) backed by `AppPreferencesDataStore` in `feature/aiops`.
+- [x] `AiOpsRunner.onEntitySaved` returns `AiOpsOutcome`; `AiOpsUndo` port bound by `AiOpsUndoService`;
+      unit form shows the auto-fix/Undo snackbar.
 - [ ] `Reasoner` adapter stub contributed (real wiring slice 2).
 
 ## 9. Tests (DoD)
-- Engine runner unit test with a fake capability (deterministic).
-- `product.unit` stage tests: alias detection, validator rejects unknown unit, scorer bands.
-- Gate tests: L1 never auto-fixes; L2 auto-fixes HIGH/low-risk, routes MEDIUM to suggestion.
-- Undo test: apply → revert restores prior unit + writes feedback.
+- Engine runner unit test with a fake capability (deterministic) — autonomy L0/L1/L2, filtering, audit link.
+- `unit.shortname` stage tests: alias detection, validator rejects unknown/unchanged, scorer band; plus
+  `UnitAliasCatalog` pure tests.
+- Gate tests: L1 never auto-fixes; L2 auto-fixes HIGH/low-risk/reversible, else suggestion.
+- Undo test: apply → revert restores prior value + writes REJECT feedback.
 - **Compile all 3 targets** (`androidApp:compileDebugKotlinAndroid`,
   `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`).
 

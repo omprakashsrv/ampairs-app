@@ -62,7 +62,19 @@ interface AiOpsExecutor {
  * `data/common`) so features depend only on the contract, not the aiops impl.
  */
 interface AiOpsRunner {
-    suspend fun onEntitySaved(entityType: String, entityId: String)
+    /** Runs the matching capabilities for the saved entity and returns what it did (for UI surfacing). */
+    suspend fun onEntitySaved(entityType: String, entityId: String): AiOpsOutcome
+}
+
+/**
+ * Rolls back an auto-applied decision by its id (re-applies the prior value through the same executor
+ * and records REJECT feedback). Exposed as a port so a feature's UI can offer "Undo" without depending
+ * on the `feature/aiops` impl. Bound in `WorkspaceScope`.
+ *
+ * @return true if the decision was found, reversible, un-reverted, and successfully rolled back.
+ */
+interface AiOpsUndo {
+    suspend fun undo(decisionId: String): Boolean
 }
 
 /** Metro map key — contributes an [AiOpsCapability] keyed by capability key (e.g. "product.unit"). */
