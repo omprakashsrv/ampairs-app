@@ -184,6 +184,9 @@ class TallySyncService(
         _logLines.value = emptyList()
     }
 
+    /** Appends a line to the shared Tally log panel (used by the invoice push service). */
+    fun appendLog(line: String) = emit(line)
+
     private fun emit(line: String) {
         log.i { line }
         _logLines.update { (it + "${timestamp()} $line").takeLast(MAX_LOG_LINES) }
@@ -826,12 +829,23 @@ class TallySyncService(
         val productTaxByName = products.associate { it.name.trim() to it.tax_code }
 
         // --- Invoices first (payments reference them by bill number) ---
+        // Vouchers WE pushed into Tally (order → invoice) carry REMOTEID = the local invoice id.
+        // Skip re-importing them: the local invoice is the authoritative copy (app-assigned number,
+        // full line detail) and re-mapping would either duplicate it as INVTLY<guid> or overwrite the
+        // richer local row with the Tally-derived one.
+        val pushedInvoiceIds = dataStore.getTallyPushedInvoiceIds(workspaceSlug).first()
         var invoicesSynced = 0
         var skippedInvoiceNoParty = 0
+        var skippedPushedBack = 0
         for (voucher in filtered) {
             val kind = voucher.classify()
             // PURCHASE is the buy-side and is handled separately (→ purchases + supplier payable).
             if (!kind.isInvoiceKind || kind == Kind.PURCHASE) continue
+            val remoteId = voucher.remoteId?.trim()
+            if (!remoteId.isNullOrBlank() && remoteId in pushedInvoiceIds) {
+                skippedPushedBack++
+                continue
+            }
             val partyName = voucher.resolvePartyName()
             // Unified party id (customer wins, else supplier). A party is either a customer or a supplier
             // record (never both), so a sale to a supplier-party nets onto that ONE record instead of
@@ -858,6 +872,7 @@ class TallySyncService(
             invoicesSynced++
         }
         if (skippedInvoiceNoParty > 0) emit("Invoices: skipped $skippedInvoiceNoParty (party not a known customer)")
+        if (skippedPushedBack > 0) emit("Invoices: skipped $skippedPushedBack (pushed from this app — kept local copy)")
 
         // --- Purchases (party = supplier; posts the buy-side PURCHASE_BILL payable → "To Pay") ---
         var purchasesSynced = 0
@@ -908,11 +923,23 @@ class TallySyncService(
         // payments like rent or salary — have no customer/supplier party and are skipped here.
         val invoiceIdByNumber = invoiceDao.selectAll().associate { it.invoice_number to it.id }
         val purchaseIdByNumber = purchaseDao.selectAll().associate { it.purchase_number to it.id }
+        // Vouchers WE pushed into Tally (collection → Receipt, see TallyPaymentPushService) carry
+        // REMOTEID = the local payment voucher uid. Skip re-importing them for the same reason
+        // invoices are skipped above: toMappedPayment derives a deterministic PVCHTLY<guid> id from
+        // the Tally GUID, which is NOT our local uid, so without this guard every push would come
+        // back as a duplicate payment voucher on the very next pull.
+        val pushedPaymentIds = dataStore.getTallyPushedPaymentIds(workspaceSlug).first()
         var paymentsSynced = 0
         var skippedPaymentNoParty = 0
+        var skippedPaymentPushedBack = 0
         for (voucher in filtered) {
             val kind = voucher.classify()
             if (!kind.isPaymentKind) continue
+            val remoteId = voucher.remoteId?.trim()
+            if (!remoteId.isNullOrBlank() && remoteId in pushedPaymentIds) {
+                skippedPaymentPushedBack++
+                continue
+            }
             val partyName = voucher.resolvePartyName()
             val customerId = partyName?.let { customerIdByName[it] }
             val supplierId = partyName?.let { supplierIdByName[it] }
@@ -942,6 +969,7 @@ class TallySyncService(
                 .onFailure { emit("  payment ${mapped.voucher.voucherNo} failed: ${it.message}") }
         }
         if (skippedPaymentNoParty > 0) emit("Payments: skipped $skippedPaymentNoParty (party not a known customer/supplier)")
+        if (skippedPaymentPushedBack > 0) emit("Payments: skipped $skippedPaymentPushedBack (pushed from this app — kept local copy)")
 
         // --- Journal entries against a known party (discount/write-off/other adjustments Tally
         // records via a plain Journal rather than a dedicated voucher type — see toMappedAdjustment).

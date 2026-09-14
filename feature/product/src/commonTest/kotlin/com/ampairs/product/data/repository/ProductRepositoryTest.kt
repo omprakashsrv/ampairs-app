@@ -458,6 +458,10 @@ private class FakeProductDao : ProductDao {
         }
     }
 
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = 0)) }
+    }
+
     override suspend fun deleteById(id: String) {
         rows.value = rows.value - id
     }
@@ -582,6 +586,9 @@ private class FakeCategoryDao : CategoryDao {
     override suspend fun updateActiveStatus(id: String, active: Int) {
         rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) }
     }
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = 0)) }
+    }
 }
 
 private class FakeBrandDao : BrandDao {
@@ -664,6 +671,9 @@ private class FakeGroupDao : GroupDao {
     }
     override suspend fun updateActiveStatus(id: String, active: Int) {
         rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) }
+    }
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = 0)) }
     }
 }
 

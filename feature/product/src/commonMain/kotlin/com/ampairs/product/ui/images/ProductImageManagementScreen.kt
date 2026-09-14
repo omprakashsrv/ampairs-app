@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +30,7 @@ import ampairsapp.feature.product.generated.resources.prod_images_loading
 import ampairsapp.feature.product.generated.resources.prod_images_readonly_desc
 import ampairsapp.feature.product.generated.resources.prod_images_retry
 import ampairsapp.feature.product.generated.resources.prod_images_retry_sync_cd
+import ampairsapp.feature.product.generated.resources.prod_images_search_web_cd
 import ampairsapp.feature.product.generated.resources.prod_images_title
 import ampairsapp.feature.product.generated.resources.prod_images_upload_first
 import org.jetbrains.compose.resources.stringResource
@@ -38,6 +40,7 @@ fun ProductImageManagementScreen(
     productId: String,
     modifier: Modifier = Modifier,
     readOnly: Boolean = false,
+    onSearchWeb: (() -> Unit)? = null,
     viewModel: ProductImageViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -51,6 +54,7 @@ fun ProductImageManagementScreen(
             onSync = viewModel::syncImages,
             isLoading = uiState.isLoading || uiState.isRefreshing,
             showSyncButton = uiState.syncError,
+            onSearchWeb = if (readOnly) null else onSearchWeb,
         )
 
         uiState.error?.let { errorMessage ->
@@ -113,6 +117,7 @@ private fun ProductImageHeader(
     isLoading: Boolean,
     showSyncButton: Boolean,
     modifier: Modifier = Modifier,
+    onSearchWeb: (() -> Unit)? = null,
 ) {
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
@@ -139,19 +144,31 @@ private fun ProductImageHeader(
                 )
             }
 
-            if (showSyncButton) {
-                IconButton(onClick = onSync, enabled = !isLoading) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onSearchWeb != null) {
+                    IconButton(onClick = onSearchWeb) {
                         Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = stringResource(Res.string.prod_images_retry_sync_cd),
+                            Icons.Default.Search,
+                            contentDescription = stringResource(Res.string.prod_images_search_web_cd),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
+                    }
+                }
+
+                if (showSyncButton) {
+                    IconButton(onClick = onSync, enabled = !isLoading) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = stringResource(Res.string.prod_images_retry_sync_cd),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
                     }
                 }
             }

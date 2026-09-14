@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.ampairs.common.theme.ThemePreference
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -26,6 +27,7 @@ class DataStoreAppPreferences(
         private val LAST_WORKSPACE_ID_KEY = stringPreferencesKey("last_workspace_id")
         private val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
         private val LLM_MODEL_DOWNLOAD_CONSENT_KEY = booleanPreferencesKey("llm_model_download_consent")
+        private val IMAGE_SEARCH_CONSENT_KEY = booleanPreferencesKey("image_search_consent")
         private val CHAT_TELEMETRY_ENABLED_KEY = booleanPreferencesKey("chat_telemetry_enabled")
         private val ASSISTANT_REASONING_ENABLED_KEY = booleanPreferencesKey("assistant_reasoning_enabled")
         private val SELECTED_LLM_MODEL_ID_KEY = stringPreferencesKey("selected_llm_model_id")
@@ -59,8 +61,29 @@ class DataStoreAppPreferences(
         // Tally ERP sync config
         private fun getTallyHostKey(ws: String) = stringPreferencesKey("tally_host_$ws")
         private fun getTallyPortKey(ws: String) = intPreferencesKey("tally_port_$ws")
+        private fun getTallySalesLedgerKey(ws: String) = stringPreferencesKey("tally_sales_ledger_$ws")
         private fun getTallyAlterIdKey(ws: String, entity: String) =
             longPreferencesKey("tally_alter_id_${entity}_$ws")
+        private fun getTallyPushedInvoicesKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_invoice_ids_$ws")
+        private fun getTallyPushedPaymentsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_payment_ids_$ws")
+        private fun getTallyPushedCustomersKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_customer_ids_$ws")
+        private fun getTallyPushedSuppliersKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_supplier_ids_$ws")
+        private fun getTallyPushedProductsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_product_ids_$ws")
+        private fun getTallyPushedGroupsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_group_ids_$ws")
+        private fun getTallyPushedCategoriesKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_category_ids_$ws")
+        private fun getTallyPushedUnitsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_unit_ids_$ws")
+        private fun getTallyPushedAccountGroupsKey(ws: String) =
+            stringSetPreferencesKey("tally_pushed_account_group_ids_$ws")
+        private fun getTallyCashLedgerKey(ws: String) = stringPreferencesKey("tally_cash_ledger_$ws")
+        private fun getTallyBankLedgerKey(ws: String) = stringPreferencesKey("tally_bank_ledger_$ws")
 
         // Notification preferences (device-local)
         private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
@@ -263,6 +286,18 @@ class DataStoreAppPreferences(
         }
     }
 
+    override fun getTallySalesLedger(workspaceSlug: String): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallySalesLedgerKey(workspaceSlug)]?.takeIf { it.isNotBlank() } ?: "GST Sales"
+        }
+    }
+
+    override suspend fun setTallySalesLedger(workspaceSlug: String, ledgerName: String) {
+        dataStore.edit { preferences ->
+            preferences[getTallySalesLedgerKey(workspaceSlug)] = ledgerName
+        }
+    }
+
     override fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long> {
         return dataStore.data.map { preferences ->
             preferences[getTallyAlterIdKey(workspaceSlug, entityType)] ?: 0L
@@ -275,6 +310,156 @@ class DataStoreAppPreferences(
         }
     }
 
+    override fun getTallyPushedInvoiceIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedInvoicesKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedInvoiceIds(workspaceSlug: String, invoiceIds: Set<String>) {
+        if (invoiceIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedInvoicesKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + invoiceIds
+        }
+    }
+
+    override fun getTallyPushedPaymentIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedPaymentsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedPaymentIds(workspaceSlug: String, paymentIds: Set<String>) {
+        if (paymentIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedPaymentsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + paymentIds
+        }
+    }
+
+    override fun getTallyPushedCustomerIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedCustomersKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedCustomerIds(workspaceSlug: String, customerIds: Set<String>) {
+        if (customerIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedCustomersKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + customerIds
+        }
+    }
+
+    override fun getTallyPushedSupplierIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedSuppliersKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedSupplierIds(workspaceSlug: String, supplierIds: Set<String>) {
+        if (supplierIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedSuppliersKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + supplierIds
+        }
+    }
+
+    override fun getTallyPushedProductIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedProductsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedProductIds(workspaceSlug: String, productIds: Set<String>) {
+        if (productIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedProductsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + productIds
+        }
+    }
+
+    override fun getTallyPushedGroupIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedGroupsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedGroupIds(workspaceSlug: String, groupIds: Set<String>) {
+        if (groupIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedGroupsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + groupIds
+        }
+    }
+
+    override fun getTallyPushedCategoryIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedCategoriesKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedCategoryIds(workspaceSlug: String, categoryIds: Set<String>) {
+        if (categoryIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedCategoriesKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + categoryIds
+        }
+    }
+
+    override fun getTallyPushedUnitIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedUnitsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedUnitIds(workspaceSlug: String, unitIds: Set<String>) {
+        if (unitIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedUnitsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + unitIds
+        }
+    }
+
+    override fun getTallyPushedAccountGroupIds(workspaceSlug: String): Flow<Set<String>> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyPushedAccountGroupsKey(workspaceSlug)] ?: emptySet()
+        }
+    }
+
+    override suspend fun addTallyPushedAccountGroupIds(workspaceSlug: String, accountGroupIds: Set<String>) {
+        if (accountGroupIds.isEmpty()) return
+        dataStore.edit { preferences ->
+            val key = getTallyPushedAccountGroupsKey(workspaceSlug)
+            preferences[key] = (preferences[key] ?: emptySet()) + accountGroupIds
+        }
+    }
+
+    override fun getTallyCashLedger(workspaceSlug: String): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyCashLedgerKey(workspaceSlug)]?.takeIf { it.isNotBlank() } ?: "Cash"
+        }
+    }
+
+    override suspend fun setTallyCashLedger(workspaceSlug: String, ledgerName: String) {
+        dataStore.edit { preferences ->
+            preferences[getTallyCashLedgerKey(workspaceSlug)] = ledgerName
+        }
+    }
+
+    override fun getTallyBankLedger(workspaceSlug: String): Flow<String> {
+        return dataStore.data.map { preferences ->
+            preferences[getTallyBankLedgerKey(workspaceSlug)]?.takeIf { it.isNotBlank() } ?: "Bank"
+        }
+    }
+
+    override suspend fun setTallyBankLedger(workspaceSlug: String, ledgerName: String) {
+        dataStore.edit { preferences ->
+            preferences[getTallyBankLedgerKey(workspaceSlug)] = ledgerName
+        }
+    }
+
     override fun getLlmModelDownloadConsent(): Flow<Boolean?> {
         return dataStore.data.map { preferences ->
             preferences[LLM_MODEL_DOWNLOAD_CONSENT_KEY]
@@ -284,6 +469,18 @@ class DataStoreAppPreferences(
     override suspend fun setLlmModelDownloadConsent(granted: Boolean) {
         dataStore.edit { preferences ->
             preferences[LLM_MODEL_DOWNLOAD_CONSENT_KEY] = granted
+        }
+    }
+
+    override fun getImageSearchConsent(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[IMAGE_SEARCH_CONSENT_KEY] ?: false
+        }
+    }
+
+    override suspend fun setImageSearchConsent(granted: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[IMAGE_SEARCH_CONSENT_KEY] = granted
         }
     }
 

@@ -5,8 +5,11 @@ import com.ampairs.customer.data.db.CustomerGroupEntity
 import com.ampairs.customer.domain.CustomerAddress
 import com.ampairs.supplier.data.db.SupplierEntity
 import com.ampairs.supplier.domain.SupplierAddress
+import com.ampairs.tally.model.master.Address
 import com.ampairs.tally.model.master.Group
 import com.ampairs.tally.model.master.Ledger
+import com.ampairs.tally.model.master.LedgerGstRegDetails
+import com.ampairs.tally.model.master.LedgerMailingDetails
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -241,4 +244,78 @@ internal object TallyCustomerMapper {
             ref_id = guid?.takeIf { it.isNotBlank() },
         )
     }
+
+    // --- Push direction (Room → Tally), mirrors the field choices above -------------------------
+
+    /**
+     * Maps a [CustomerEntity] to a Tally [Ledger] for the master push (the reverse of
+     * [toCustomerEntity]). [parentGroupName] is resolved by the caller — the custom
+     * [CustomerEntity.customer_group] name when set, else the reserved primary "Sundry Debtors" —
+     * since the group itself may need pushing first (see [TallyAccountGroupPushService]).
+     */
+    fun CustomerEntity.toTallyLedger(parentGroupName: String): Ledger = Ledger(
+        name = name,
+        parent = parentGroupName,
+        guid = ref_id,
+        ledgerMobile = phone,
+        ledgerPhone = landline,
+        partyGstin = gstNumber,
+        gstRegDetailList = gstNumber?.takeIf { it.isNotBlank() }?.let {
+            listOf(LedgerGstRegDetails(gstin = it))
+        },
+        mailingDetailList = listOf(
+            LedgerMailingDetails(
+                mailingName = name,
+                addressList = listOfNotNull(street, address).distinct()
+                    .filter { it.isNotBlank() }
+                    .map { Address(address = it) }
+                    .ifEmpty { null },
+                stateName = state,
+                countryName = country,
+                pinCode = pincode,
+            ),
+        ),
+    )
+
+    /**
+     * Maps a [SupplierEntity] to a Tally [Ledger] (the reverse of [toSupplierEntity]).
+     * [parentGroupName] is the supplier's own `supplier_group` free-text name when set, else the
+     * reserved primary "Sundry Creditors" — resolved by the caller (see [TallyLedgerPushService]).
+     */
+    fun SupplierEntity.toTallyLedger(parentGroupName: String): Ledger = Ledger(
+        name = name,
+        parent = parentGroupName,
+        guid = ref_id,
+        ledgerMobile = phone,
+        ledgerPhone = landline,
+        partyGstin = gstNumber,
+        gstRegDetailList = gstNumber?.takeIf { it.isNotBlank() }?.let {
+            listOf(LedgerGstRegDetails(gstin = it))
+        },
+        mailingDetailList = listOf(
+            LedgerMailingDetails(
+                mailingName = name,
+                addressList = listOfNotNull(street, address).distinct()
+                    .filter { it.isNotBlank() }
+                    .map { Address(address = it) }
+                    .ifEmpty { null },
+                stateName = state,
+                countryName = country,
+                pinCode = pincode,
+            ),
+        ),
+    )
+
+    /** Maps a custom customer sub-group to a Tally [Group] rooted under "Sundry Debtors". */
+    fun CustomerGroupEntity.toTallyGroup(): Group = Group(
+        name = name,
+        parent = SUNDRY_DEBTORS,
+        guid = ref_id,
+    )
+
+    /** Maps a supplier's free-text group name to a Tally [Group] rooted under "Sundry Creditors". */
+    fun toTallySupplierGroup(groupName: String): Group = Group(
+        name = groupName,
+        parent = SUNDRY_CREDITORS,
+    )
 }

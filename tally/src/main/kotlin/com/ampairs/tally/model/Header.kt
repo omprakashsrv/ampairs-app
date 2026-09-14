@@ -20,5 +20,5 @@ data class Header(
     var status: String? = null,
     @XmlElement(true)
     @XmlSerialName("ID")
-    var id: String = "",
+    var id: String? = "",
 )

@@ -283,6 +283,16 @@ sealed interface EcomRoute : NavKey {
 
     @Serializable
     data object Addresses : EcomRoute
+
+    // Spec 029 — buyer invoices, single-invoice detail, and account statement.
+    @Serializable
+    data object Invoices : EcomRoute
+
+    @Serializable
+    data class InvoiceDetail(val invoiceUid: String) : EcomRoute
+
+    @Serializable
+    data object Statement : EcomRoute
 }
 
 // Customer routes

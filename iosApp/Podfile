@@ -4,6 +4,17 @@ target 'iosApp' do
   pod 'shared', :path => '../shared'
   pod 'FirebaseCore'
   pod 'FirebaseAuth'
+  # FirebaseAuth phone-number sign-in falls back to reCAPTCHA verification whenever silent-push/
+  # App Attest verification isn't available (always true on the Simulator, common on real devices
+  # without full APNs setup). Since Firebase iOS SDK 10.7, that fallback needs the actual reCAPTCHA
+  # Enterprise SDK linked — RecaptchaInterop (pulled in transitively by FirebaseAuth) is only the
+  # protocol shim, not an implementation. Missing this pod throws FIRAuthErrorCode 17208
+  # ("The reCAPTCHA SDK is not linked to your app").
+  pod 'RecaptchaEnterprise', '~> 18.9'
+  # Vendored whisper.cpp xcframework (feature/agent/whisper.podspec) — the shared/ComposeApp
+  # framework is static, so its own build doesn't need to resolve whisper.cpp symbols; they only
+  # surface as undefined at the app's link step, which this pod supplies.
+  pod 'whisper', :path => '../feature/agent'
 end
 
 # Enforce minimum deployment target for all pods

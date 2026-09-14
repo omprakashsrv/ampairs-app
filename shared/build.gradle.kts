@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
@@ -39,6 +41,15 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
         }
+
+        // Xcode's "Release" archive config would otherwise map to Kotlin/Native's RELEASE
+        // build type, which runs whole-program DevirtualizationAnalysis across all feature
+        // modules for Objective-C export. That phase OOMs on 16GB dev machines even with a
+        // 13GB compiler heap (see gradle.properties kotlin.native.jvmArgs). Mapping Release to
+        // the DEBUG native build type skips that phase so archives can actually link; the
+        // trade-off is the shared Kotlin/Compose code ships unoptimized (no devirtualization/
+        // DCE) inside the archive — Swift and other pods (Firebase, Sentry) are unaffected.
+        xcodeConfigurationToNativeBuildType["Release"] = NativeBuildType.DEBUG
 
         pod("FirebaseCore") {
             version = "~> 11.13"
@@ -135,6 +146,7 @@ kotlin {
                 api(projects.feature.subscription)
                 api(projects.feature.business)
                 api(projects.feature.product)
+                api(projects.feature.imagesearch)
                 api(projects.feature.customer)
                 api(projects.feature.supplier)
                 api(projects.feature.inventory)

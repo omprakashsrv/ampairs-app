@@ -37,7 +37,7 @@ class Invoice {
     var basePrice: Double = 0.0
     var totalTax: Double = 0.0
     var active: Boolean = true
-    var softDeleted: Boolean = true
+    var softDeleted: Boolean = false
     var taxSpec: TaxSpec = TaxSpec.INTER
     var status: InvoiceStatus = InvoiceStatus.NEW
     var taxInfos: MutableList<TaxInfo>? = mutableListOf()

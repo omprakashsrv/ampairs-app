@@ -23,8 +23,20 @@ private val log = Logger.withTag("TallySyncScheduler")
 @SingleIn(WorkspaceScope::class)
 class TallySyncScheduler(
     val syncService: TallySyncService,
+    val pushService: TallyInvoicePushService,
+    val paymentPushService: TallyPaymentPushService,
+    val mastersPushService: TallyMastersPushService,
     val centralSyncService: CentralSyncService,
 ) {
+
+    var lastPushResult: TallyPushResult? = null
+        private set
+
+    var lastPaymentPushResult: TallyPaymentPushResult? = null
+        private set
+
+    var lastMastersPushResult: TallyMastersPushResult? = null
+        private set
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var job: Job? = null
@@ -99,6 +111,60 @@ class TallySyncScheduler(
             }
         }
 
+        return result
+    }
+
+    /**
+     * Pushes locally-created invoices (order → invoice) into Tally, then runs a normal Tally→local
+     * sync so the created vouchers are reconciled back (matched by REMOTEID, so no duplicates). Run
+     * from the "Push to Tally" button.
+     */
+    suspend fun pushInvoices(workspaceSlug: String): TallyPushResult = pushInvoices(workspaceSlug, null)
+
+    /**
+     * Pushes local invoices into Tally, then reconciles by pulling the created vouchers back (dedup by
+     * REMOTEID). [onlyInvoiceId] restricts the push to one invoice (the per-invoice "Push to Tally"
+     * button); null pushes all eligible (the bulk settings button).
+     */
+    suspend fun pushInvoices(workspaceSlug: String, onlyInvoiceId: String?): TallyPushResult {
+        log.d { "Tally invoice push triggered for workspace=$workspaceSlug invoice=${onlyInvoiceId ?: "ALL"}" }
+
+        // Masters (customer/supplier/product + the unit/stock-group/stock-category/account-group
+        // masters they reference) must exist in Tally before an invoice voucher can reference them
+        // by name — run this unconditionally first. Cheap to no-op (candidates filtered by blank
+        // ref_id), and doubles as the "auto push-if-missing" gate: any customer/product created since
+        // the last push gets its Tally counterpart created before this invoice push proceeds.
+        val mastersResult = runCatching { mastersPushService.push(workspaceSlug, syncService::appendLog) }
+            .onFailure { log.e(it) { "Tally masters push error" } }
+            .getOrElse { TallyMastersPushResult(error = it.message) }
+        lastMastersPushResult = mastersResult
+
+        val result = runCatching { pushService.push(workspaceSlug, syncService::appendLog, onlyInvoiceId) }
+            .onFailure { log.e(it) { "Tally invoice push error" } }
+            .getOrElse { TallyPushResult(error = it.message) }
+        lastPushResult = result
+        // Reconcile: pull the just-created vouchers back (dedup by REMOTEID) so the linked invoice
+        // reflects Tally's copy. Only worth a pull when something actually landed.
+        if (result.success && result.pushed > 0) runOnce(workspaceSlug)
+
+        // Payments settle invoice bills, so they can only be pushed once their target invoices carry
+        // a Tally ref_id — always attempt them right after (and after any reconcile pull above),
+        // since a previously-blocked payment may now be eligible.
+        pushPayments(workspaceSlug)
+
+        return result
+    }
+
+    /** Pushes locally-recorded, fully-allocated customer collections into Tally as Receipt vouchers. */
+    suspend fun pushPayments(workspaceSlug: String): TallyPaymentPushResult {
+        log.d { "Tally payment push triggered for workspace=$workspaceSlug" }
+        val result = runCatching { paymentPushService.push(workspaceSlug, syncService::appendLog) }
+            .onFailure { log.e(it) { "Tally payment push error" } }
+            .getOrElse { TallyPaymentPushResult(error = it.message) }
+        lastPaymentPushResult = result
+        // Reconcile so the reconciliation pull's pushedPaymentIds guard sees the freshly-pushed uids
+        // and doesn't re-import our own Receipt vouchers as duplicates.
+        if (result.success && result.pushed > 0) runOnce(workspaceSlug)
         return result
     }
 

@@ -54,6 +54,10 @@ interface UnitDao {
     @Query("SELECT * FROM units WHERE ref_id IN (:refs)")
     suspend fun getUnitsByTallyRefIds(refs: List<String>): List<UnitEntity>
 
+    /** Records the Tally unit GUID after an app→Tally master push (mirrors CustomerDao.setTallyRef). */
+    @Query("UPDATE units SET ref_id = :refId, synced = 0 WHERE id = :id")
+    suspend fun setTallyRef(id: String, refId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUnit(unit: UnitEntity)
 

@@ -125,9 +125,49 @@ interface AppPreferencesDataStore {
     fun getTallyPort(workspaceSlug: String): Flow<Int>
     suspend fun setTallyPort(workspaceSlug: String, port: Int)
 
+    // The exact ledger name Tally uses for sales (varies by company setup — e.g. "Sales Account").
+    // Must match the Tally ledger byte-for-byte or the voucher import fails with a LINEERROR.
+    fun getTallySalesLedger(workspaceSlug: String): Flow<String>
+    suspend fun setTallySalesLedger(workspaceSlug: String, ledgerName: String)
+
     // Incremental sync watermarks: last seen ALTERID per entity type per workspace
     fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
     suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
+
+    // Local invoice ids already pushed *into* Tally (per-workspace). Drives which invoices the Tally
+    // push considers new, and lets the pull skip re-importing our own pushed vouchers (by REMOTEID).
+    fun getTallyPushedInvoiceIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedInvoiceIds(workspaceSlug: String, invoiceIds: Set<String>)
+
+    // Local payment-voucher uids already pushed *into* Tally as Receipt/Payment vouchers
+    // (per-workspace) — the same self-authored-vouchers dedup guard as the invoice set above.
+    fun getTallyPushedPaymentIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedPaymentIds(workspaceSlug: String, paymentIds: Set<String>)
+
+    // Local customer/supplier/product/group/category/unit ids already pushed *into* Tally as masters
+    // (ledgers/stock items/groups) — same self-authored dedup guard as the invoice/payment sets above.
+    fun getTallyPushedCustomerIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedCustomerIds(workspaceSlug: String, customerIds: Set<String>)
+    fun getTallyPushedSupplierIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedSupplierIds(workspaceSlug: String, supplierIds: Set<String>)
+    fun getTallyPushedProductIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedProductIds(workspaceSlug: String, productIds: Set<String>)
+    fun getTallyPushedGroupIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedGroupIds(workspaceSlug: String, groupIds: Set<String>)
+    fun getTallyPushedCategoryIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedCategoryIds(workspaceSlug: String, categoryIds: Set<String>)
+    fun getTallyPushedUnitIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedUnitIds(workspaceSlug: String, unitIds: Set<String>)
+    fun getTallyPushedAccountGroupIds(workspaceSlug: String): Flow<Set<String>>
+    suspend fun addTallyPushedAccountGroupIds(workspaceSlug: String, accountGroupIds: Set<String>)
+
+    // The exact ledger names Tally uses for cash/bank (the Receipt/Payment counter-leg), varying by
+    // company setup. CASH-mode vouchers post to the cash ledger; every other payment mode posts to
+    // the bank ledger. Must match the Tally ledger byte-for-byte or the voucher import fails silently.
+    fun getTallyCashLedger(workspaceSlug: String): Flow<String>
+    suspend fun setTallyCashLedger(workspaceSlug: String, ledgerName: String)
+    fun getTallyBankLedger(workspaceSlug: String): Flow<String>
+    suspend fun setTallyBankLedger(workspaceSlug: String, ledgerName: String)
 
     /**
      * The user's decision on downloading the on-device AI assistant model.
@@ -136,6 +176,13 @@ interface AppPreferencesDataStore {
      */
     fun getLlmModelDownloadConsent(): Flow<Boolean?>
     suspend fun setLlmModelDownloadConsent(granted: Boolean)
+
+    /**
+     * Whether the user has acknowledged the internet image-search copyright disclaimer. Shown once;
+     * `true` after acknowledgement so the picker never re-prompts. Defaults false.
+     */
+    fun getImageSearchConsent(): Flow<Boolean>
+    suspend fun setImageSearchConsent(granted: Boolean)
 
     /**
      * Whether the user opted in to uploading assistant chat transcripts to the backend for quality

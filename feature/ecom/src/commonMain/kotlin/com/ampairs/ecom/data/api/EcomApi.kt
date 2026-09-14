@@ -3,6 +3,10 @@ package com.ampairs.ecom.data.api
 import com.ampairs.ecom.api.model.AddCartItemRequest
 import com.ampairs.ecom.api.model.AddressRequest
 import com.ampairs.ecom.api.model.AddressResponse
+import com.ampairs.ecom.api.model.BuyerInvoiceDetail
+import com.ampairs.ecom.api.model.BuyerInvoiceSummary
+import com.ampairs.ecom.api.model.BuyerOutstanding
+import com.ampairs.ecom.api.model.BuyerStatement
 import com.ampairs.ecom.api.model.CartResponse
 import com.ampairs.ecom.api.model.CatalogMeta
 import com.ampairs.ecom.api.model.CheckoutRequest
@@ -66,6 +70,13 @@ interface EcomApi {
     // ── Account: orders (auth) ──
     suspend fun getOrders(slug: String, page: Int = 0, size: Int = 20): Result<PageResponse<EcomOrderResponse>>
     suspend fun getOrder(slug: String, ecomOrderRef: String): Result<EcomOrderResponse>
+
+    // ── Account: invoices, statement & order↔invoice link (auth; spec 029) ──
+    suspend fun getInvoices(slug: String, customerId: String? = null, page: Int = 0, size: Int = 20): Result<PageResponse<BuyerInvoiceSummary>>
+    suspend fun getInvoice(slug: String, invoiceUid: String, customerId: String? = null): Result<BuyerInvoiceDetail>
+    suspend fun getOrderInvoices(slug: String, ecomOrderRef: String, customerId: String? = null): Result<List<BuyerInvoiceSummary>>
+    suspend fun getOutstanding(slug: String, customerId: String? = null): Result<BuyerOutstanding>
+    suspend fun getStatement(slug: String, customerId: String? = null, from: String? = null, to: String? = null): Result<BuyerStatement>
 
     // ── Distributor link (auth) ──
     /** A CRM account matching the buyer's own phone in this workspace, or `null` when there's no match. */

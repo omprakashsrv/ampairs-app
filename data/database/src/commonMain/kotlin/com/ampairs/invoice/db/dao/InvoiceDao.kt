@@ -88,8 +88,21 @@ interface InvoiceDao {
     @Query("UPDATE invoiceEntity SET synced = 1 WHERE id = :id")
     suspend fun markAsSynced(id: String)
 
+    /**
+     * Records the external reference (the Tally voucher master id) after an app→Tally push and marks
+     * the row unsynced so the captured `ref_id` round-trips to the backend on the next push. Presence
+     * of a non-blank `ref_id` is what makes the Tally push idempotent (the invoice is skipped next run).
+     */
+    @Query("UPDATE invoiceEntity SET ref_id = :refId, synced = 0 WHERE id = :id")
+    suspend fun setTallyRef(id: String, refId: String)
+
     @Query("UPDATE invoiceEntity SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: String, status: String)
+
+    /** Repairs a blank `customer_name` (e.g. an invoice whose Customer object was only a stub with
+     * `uid` set) by backfilling from the customer table. */
+    @Query("UPDATE invoiceEntity SET customer_name = :customerName WHERE id = :id")
+    suspend fun setCustomerName(id: String, customerName: String)
 
     @Query("UPDATE invoiceEntity SET soft_deleted = 1 WHERE id = :id")
     suspend fun softDelete(id: String)

@@ -273,6 +273,7 @@ internal object TallyVoucherMapper {
             active = 1,
             soft_deleted = 0,
             synced = 0,
+            ref_id = guid,   // Tally GUID — the invoice's link to its Tally voucher (parity with push)
         )
         return MappedInvoice(entity, items, kind.ledgerEntryType(), kind.ledgerSourceType())
     }

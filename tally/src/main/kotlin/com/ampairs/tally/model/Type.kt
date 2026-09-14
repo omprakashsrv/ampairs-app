@@ -48,7 +48,7 @@ enum class Type(var type: String, var id: String, var nativeMethods: List<String
     VOUCHER(
         "VOUCHER", "CUSTOMVOUCHERCOL",
         listOf(
-            "DATE", "GUID", "ALTERID",
+            "DATE", "GUID", "ALTERID", "REMOTEID",
             "VOUCHERTYPENAME", "VOUCHERNUMBER", "REFERENCE", "REFERENCEDATE",
             "PARTYLEDGERNAME", "PARTYNAME", "PARTYGSTIN",
             "PLACEOFSUPPLY", "STATENAME", "NARRATION", "ISINVOICE",

@@ -85,6 +85,11 @@ interface CustomerDao {
     @Query("SELECT * FROM customers WHERE ref_id IN (:refs)")
     suspend fun getCustomersByTallyRefIds(refs: List<String>): List<CustomerEntity>
 
+    /** Records the Tally ledger GUID after an app→Tally master push and marks the row unsynced so
+     * the captured `ref_id` round-trips to the backend on the next push (mirrors InvoiceDao.setTallyRef). */
+    @Query("UPDATE customers SET ref_id = :refId, synced = 0 WHERE id = :id")
+    suspend fun setTallyRef(id: String, refId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomer(customer: CustomerEntity)
 

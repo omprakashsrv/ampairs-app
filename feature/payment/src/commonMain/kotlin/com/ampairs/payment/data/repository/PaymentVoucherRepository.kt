@@ -2,6 +2,7 @@ package com.ampairs.payment.data.repository
 
 import com.ampairs.payment.data.db.dao.PaymentAllocationDao
 import com.ampairs.payment.data.db.dao.PaymentVoucherDao
+import com.ampairs.payment.data.db.entity.PaymentVoucherEntity
 import com.ampairs.payment.data.db.toDomain
 import com.ampairs.payment.data.db.toEntity
 import com.ampairs.payment.domain.ClearanceStatus
@@ -61,7 +62,7 @@ class PaymentVoucherRepository(
             unallocatedAmount = voucher.totalAmount - allocatedSum,
             active = true,
         )
-        voucherDao.insert(withRemainder.toEntity(synced = false))
+        voucherDao.insert(preserveTallyRef(withRemainder.toEntity(synced = false)))
 
         // Replace allocations: soft-delete any existing not in the new set, then upsert the new set.
         val existing = allocationDao.getByVoucher(voucher.uid)
@@ -104,7 +105,7 @@ class PaymentVoucherRepository(
         val existing = voucherDao.getByUid(uid)?.toDomain() ?: return Result.failure(Exception("Voucher not found"))
         if (existing.isTerminal) return Result.failure(Exception("Voucher already ${existing.clearanceStatus}"))
         val updated = existing.copy(clearanceStatus = ClearanceStatus.CLEARED)
-        voucherDao.insert(updated.toEntity(synced = false))
+        voucherDao.insert(preserveTallyRef(updated.toEntity(synced = false)))
         markVoucherPending()
         return Result.success(updated)
     }
@@ -117,7 +118,7 @@ class PaymentVoucherRepository(
         val existing = voucherDao.getByUid(uid)?.toDomain() ?: return Result.failure(Exception("Voucher not found"))
         if (existing.isTerminal) return Result.failure(Exception("Voucher already ${existing.clearanceStatus}"))
         val updated = existing.copy(clearanceStatus = ClearanceStatus.BOUNCED)
-        voucherDao.insert(updated.toEntity(synced = false))
+        voucherDao.insert(preserveTallyRef(updated.toEntity(synced = false)))
         poster.postReversalEntry(
             partyUid = existing.partyUid,
             sourceUid = existing.uid,
@@ -130,6 +131,21 @@ class PaymentVoucherRepository(
         )
         markVoucherPending()
         return Result.success(updated)
+    }
+
+    /** The Tally voucher reference captured by TallyPaymentPushService, if this voucher was pushed. */
+    suspend fun getTallyRef(uid: String): String? = voucherDao.getByUid(uid)?.ref_id
+
+    /**
+     * Preserve an already-captured Tally reference across local edits: [PaymentVoucher.toEntity]
+     * (domain → entity) doesn't carry ref_id, so a plain save/markCleared/markBounced would otherwise
+     * null it and let the Tally push re-send the voucher as a duplicate (mirrors
+     * InvoiceRepository.saveInvoice's identical guard).
+     */
+    private suspend fun preserveTallyRef(entity: PaymentVoucherEntity): PaymentVoucherEntity {
+        if (!entity.ref_id.isNullOrBlank()) return entity
+        val previousRef = voucherDao.getByUid(entity.uid)?.ref_id
+        return if (previousRef.isNullOrBlank()) entity else entity.copy(ref_id = previousRef)
     }
 
     private suspend fun markVoucherPending() =

@@ -107,11 +107,19 @@ interface PaymentVoucherDao {
     @Query("SELECT * FROM payment_voucher WHERE active = 1 ORDER BY voucher_date DESC")
     fun observeAll(): Flow<List<PaymentVoucherEntity>>
 
+    @Query("SELECT * FROM payment_voucher WHERE active = 1 ORDER BY voucher_date DESC")
+    suspend fun selectAll(): List<PaymentVoucherEntity>
+
     @Query("SELECT * FROM payment_voucher WHERE synced = 0")
     suspend fun getUnsynced(): List<PaymentVoucherEntity>
 
     @Query("UPDATE payment_voucher SET synced = 1 WHERE uid = :uid")
     suspend fun markSynced(uid: String)
+
+    /** Captures the Tally voucher reference after an app→Tally push (see TallyPaymentPushService).
+     * synced = 0 so the local ref_id write is re-persisted like any other local edit. */
+    @Query("UPDATE payment_voucher SET ref_id = :refId, synced = 0 WHERE uid = :uid")
+    suspend fun setTallyRef(uid: String, refId: String)
 
     @Query("DELETE FROM payment_voucher WHERE uid = :uid")
     suspend fun deleteByUid(uid: String)

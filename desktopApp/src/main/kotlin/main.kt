@@ -27,6 +27,7 @@ import androidx.compose.ui.window.rememberWindowState
 import com.ampairs.auth.deeplink.DeepLinkHandler
 import com.ampairs.common.desktop.DataDirectoryManager
 import com.ampairs.common.desktop.DataDirectoryPickerDialog
+import com.ampairs.common.filepicker.DesktopWindowRegistry
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.DynamicModulesMenu
 import coil3.compose.setSingletonImageLoaderFactory
@@ -207,8 +208,12 @@ private fun ApplicationScope.MainWindow(
         title = "Ampairs"
     ) {
 
-        // Expose the underlying AWT window so the tray "Open" action can raise it to front.
-        LaunchedEffect(window) { onWindowReady(window) }
+        // Expose the underlying AWT window so the tray "Open" action can raise it to front, and
+        // register it as the owner for native file dialogs (see DesktopWindowRegistry doc).
+        LaunchedEffect(window) {
+            onWindowReady(window)
+            DesktopWindowRegistry.activeWindow = window
+        }
 
         var loggedIn by remember { mutableStateOf(false) }
 

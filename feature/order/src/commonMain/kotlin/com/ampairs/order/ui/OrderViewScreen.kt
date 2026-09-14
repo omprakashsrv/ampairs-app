@@ -7,6 +7,7 @@ import ampairsapp.feature.order.generated.resources.ord_conv_line1
 import ampairsapp.feature.order.generated.resources.ord_conv_line2
 import ampairsapp.feature.order.generated.resources.ord_conv_line3
 import ampairsapp.feature.order.generated.resources.ord_conv_line4
+import ampairsapp.feature.order.generated.resources.ord_conv_missing_hsn_ok
 import ampairsapp.feature.order.generated.resources.ord_conv_note
 import ampairsapp.feature.order.generated.resources.ord_conv_title
 import ampairsapp.feature.order.generated.resources.ord_view_bill_to
@@ -141,6 +142,18 @@ fun OrderViewScreen(
             onDismissRequest = { viewModel.clearPrintMessage() },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearPrintMessage() }) { Text("OK") }
+            },
+            text = { Text(msg) },
+        )
+    }
+
+    viewModel.invoiceError?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearInvoiceError() },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearInvoiceError() }) {
+                    Text(stringResource(Res.string.ord_conv_missing_hsn_ok))
+                }
             },
             text = { Text(msg) },
         )

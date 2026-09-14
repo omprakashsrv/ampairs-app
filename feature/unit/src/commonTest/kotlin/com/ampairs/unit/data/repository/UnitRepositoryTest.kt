@@ -144,6 +144,10 @@ private class FakeUnitDao : UnitDao {
         rows.value = rows.value + (unit.id to unit)
     }
 
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(refId = refId, synced = false)) }
+    }
+
     override suspend fun deleteUnit(id: String) {
         rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = false)) }
     }
