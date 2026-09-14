@@ -20,12 +20,10 @@ import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.httpClient
 import com.ampairs.formwidgets.contact.ContactPickerService
 import com.ampairs.formwidgets.location.LocationService
-import com.ampairs.sync.CentralSyncService
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.Dispatchers
@@ -38,12 +36,7 @@ import okio.Path.Companion.toOkioPath
  * that :shared aggregates are simply absent — no customer/product/invoice DBs are ever created.
  */
 @DependencyGraph(AppScope::class)
-interface StorefrontAppGraph : ViewModelGraph {
-    val workspaceManager: StorefrontWorkspaceManager
-    val tokenRepository: TokenRepository
-    val imageLoader: ImageLoader
-    val centralSyncService: CentralSyncService
-
+interface StorefrontAppGraph : StorefrontGraph {
     @DependencyGraph.Factory
     fun interface Factory {
         fun create(@Provides context: Context): StorefrontAppGraph

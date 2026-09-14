@@ -1,0 +1,18 @@
+// White-label client iOS build config.
+//
+// One target serves every client; select a client by pointing this file's values at that client
+// (or, cleaner, keep a per-client xcconfig — e.g. Configuration/Client-ambika.xcconfig — and
+// `#include` it here / switch which one is included in CI). Values mirror clients/<id>/config.properties.
+//
+// Defaults below = the "ambika" client (clients/ambika/config.properties).
+#include? "Client-ambika.xcconfig"
+
+TEAM_ID=
+BUNDLE_ID=com.ampairs.app.ambika
+APP_NAME=Ambika Enterprise
+PRODUCT_NAME=iosApp
+GOOGLE_SERVICE=$(SRCROOT)/Firebase/GoogleService-Info-Development.plist
+
+// Consumed by iosApp/Info.plist → ContentView (StorefrontViewController args).
+AMPAIRS_WORKSPACE_SLUG=ambika-enterprise
+AMPAIRS_THEME_COLOR_ARGB=FF1B6C4A
