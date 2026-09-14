@@ -63,6 +63,72 @@ Onboard a new client:
 4. **CocoaPods.** `pod install`, then open `iosApp.xcworkspace`.
 5. **Run** the `iosApp` scheme.
 
+## Build & run a specific client
+
+There is no `-Pclient=<id>` flag on iOS — the client is selected by **which xcconfig values are
+active** (see the previous section). Once the target is set up and the client's
+`Configuration/Client-<id>.xcconfig` + `Firebase/GoogleService-Info-*.plist` are in place:
+
+### Prerequisites (once per machine)
+```bash
+# JDK 21+, Xcode 15+, CocoaPods installed (brew install cocoapods)
+cd clientApp/iosApp
+pod install            # regenerates Pods/ + iosApp.xcworkspace; re-run after Podfile changes
+```
+`pod install` invokes Gradle to build the `SharedEcom` framework from `:shared-ecom`, so the first
+run downloads the Kotlin/Native toolchain and can take a while.
+
+### Run in the simulator / on a device
+```bash
+open clientApp/iosApp/iosApp.xcworkspace   # ALWAYS the .xcworkspace, never the .xcodeproj
+```
+In Xcode: pick the `iosApp` scheme + a simulator or device → **Run** (⌘R). Debug builds use the
+`Debug.xcconfig` values (dev API base URL via `AMPAIRS_ENVIRONMENT`, dev GoogleService plist). On the
+Simulator, Phone Auth uses the reCAPTCHA fallback — that's expected.
+
+Command line equivalent (simulator):
+```bash
+cd clientApp/iosApp
+xcodebuild -workspace iosApp.xcworkspace -scheme iosApp \
+  -configuration Debug -sdk iphonesimulator build
+```
+
+### Switch clients
+Point `Debug.xcconfig` / `Release.xcconfig` at the target client's `Client-<id>.xcconfig`
+(`#include?` + matching `BUNDLE_ID` / `AMPAIRS_WORKSPACE_SLUG` / `AMPAIRS_THEME_COLOR_ARGB` defaults),
+swap in that client's `Firebase/GoogleService-Info-*.plist` and `REVERSED_CLIENT_ID`, then rebuild.
+Prefer a **separate Xcode scheme per client** (each wired to its own xcconfig) so switching is just a
+scheme change and CI can `-scheme <client>` — cleaner than editing shared files between builds.
+
+### Archive for TestFlight / App Store (Release)
+Release builds pull the prod API base URL + prod GoogleService plist from `Release.xcconfig`.
+```bash
+cd clientApp/iosApp
+xcodebuild -workspace iosApp.xcworkspace -scheme iosApp \
+  -configuration Release -sdk iphoneos \
+  -archivePath build/ambika.xcarchive archive
+
+xcodebuild -exportArchive -archivePath build/ambika.xcarchive \
+  -exportOptionsPlist ExportOptions.plist \
+  -exportPath build/ambika-ipa
+# then upload build/ambika-ipa/*.ipa with `xcrun altool`/Transporter, or Xcode → Organizer → Distribute
+```
+`ExportOptions.plist` (App Store distribution, your team id) is standard Xcode export config — not
+checked in. Set `TEAM_ID` / `CURRENT_PROJECT_VERSION` / `MARKETING_VERSION` in the client's xcconfig.
+
+### Build every client in CI
+Mirror the Android loop in `clients/README.md` — one archive + upload per client:
+```bash
+for dir in clients/*/; do
+  id=$(basename "$dir")
+  # ensure clientApp/iosApp/Configuration/Client-$id.xcconfig + Firebase plists exist and a
+  # per-client scheme "$id" is committed, then:
+  xcodebuild -workspace clientApp/iosApp/iosApp.xcworkspace -scheme "$id" \
+    -configuration Release -sdk iphoneos -archivePath "build/$id.xcarchive" archive
+  # export + upload the IPA to that client's App Store Connect app
+done
+```
+
 ## Entry point
 
 `ContentView.swift` calls the Kotlin entry (from `shared-ecom/src/iosMain/.../StorefrontViewController.kt`):
