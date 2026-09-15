@@ -2,6 +2,7 @@ package com.ampairs.customer.ui.create
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.aiops.AiOpsRunner
 import com.ampairs.common.validation.ValidationResult
 import com.ampairs.common.validation.gstin.GstinValidationError
 import com.ampairs.common.validation.gstin.GstinValidator
@@ -215,6 +216,7 @@ class CustomerFormViewModel(
     val contactPickerService: ContactPickerService,
     val locationService: LocationService,
     private val syncService: CentralSyncService,
+    private val aiOpsRunner: AiOpsRunner,
     val optionRegistry: DynamicOptionRegistry,
     val widgetRegistry: CustomFieldWidgetRegistry,
 ) : ViewModel() {
@@ -421,6 +423,11 @@ class CustomerFormViewModel(
 
                 if (result.isSuccess) {
                     syncService.markPendingPush(SyncEntity.CUSTOMER)
+                    // Best-effort AI Ops pass on the saved customer (e.g. email normalization).
+                    // Never blocks or fails the save — the runner swallows its own errors.
+                    result.getOrNull()?.uid?.let { savedUid ->
+                        runCatching { aiOpsRunner.onEntitySaved("customer", savedUid) }
+                    }
                     onSuccess()
                 } else {
                     _uiState.update {

@@ -257,6 +257,15 @@ interface AppPreferencesDataStore {
     /** Per-type: announcements (also toggles the FCM "announcements" topic subscription). Default true. */
     fun getNotifyAnnouncements(): Flow<Boolean>
     suspend fun setNotifyAnnouncements(enabled: Boolean)
+
+    // ---- AI Business Operations Manager ----
+
+    /**
+     * Autonomy level governing AI-Ops behavior (detect-only → auto-fix). Default L1 (Recommend):
+     * the engine proposes fixes but never changes data until the owner opts up. See ADR 0005.
+     */
+    fun getAiOpsAutonomyLevel(): Flow<com.ampairs.common.aiops.AiOpsAutonomyLevel>
+    suspend fun setAiOpsAutonomyLevel(level: com.ampairs.common.aiops.AiOpsAutonomyLevel)
 }
 
 /**
