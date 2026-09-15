@@ -72,7 +72,7 @@ class CustomerEmailCapabilityTest {
     }
 
     @Test
-    fun `validate rejects unchanged, non-email, and non-canonical targets; accepts a real rewrite`() = runTest {
+    fun `validate rejects unchanged, non-email, and non-canonical targets, accepts a real rewrite`() = runTest {
         val f = finding()
         val ctx = FindingContext()
 
