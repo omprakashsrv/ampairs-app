@@ -38,8 +38,15 @@ WorkspaceGraph classpath automatically. That's the extensibility claim, demonstr
 already-canonical, blank/null/non-email, idempotence). The engine pipeline itself (detect→gate→execute→
 audit→undo) is already covered generically by the `feature/aiops` runner/gate/undo tests.
 
-## Not included
+## UI surfacing (parity with the unit form)
 
-The customer form doesn't yet show the "AI normalized email · Undo" snackbar that the unit form has —
-the fix still applies and is audited/undoable, but surfacing it in the customer UI is a follow-up
-(mirror `UnitFormScreen`'s `UnitFormEvent` + `SnackbarHost` wiring).
+The customer form now shows the outcome as a snackbar, mirroring `UnitFormScreen`:
+`CustomerFormViewModel` exposes a `CustomerFormEvent` `SharedFlow` (`AiOpsEmailFixed` /
+`AiOpsSuggestion` / `AiOpsUndone`), emitted from the best-effort `onEntitySaved` pass after a
+successful save. `CustomerFormScreen` hosts a `SnackbarHost` and, on `AiOpsEmailFixed`, shows
+"AI normalized email to <value>" with an **Undo** action → `viewModel.undoFix(decisionId)` →
+`AiOpsUndo.undo(...)` (re-applies the recorded `before` through `CustomerRepository` +
+pending-push). Strings live in the module's `commonMain/composeResources` (`customer_aiops_*`).
+
+> Note: like the unit form, `onSuccess()` navigates away on save, so the snackbar is best-effort —
+> it displays only while the form remains composed. The fix + audit + undo are unaffected either way.

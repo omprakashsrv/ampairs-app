@@ -3,6 +3,7 @@ package com.ampairs.customer.ui.create
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.aiops.AiOpsRunner
+import com.ampairs.common.aiops.AiOpsUndo
 import com.ampairs.common.validation.ValidationResult
 import com.ampairs.common.validation.gstin.GstinValidationError
 import com.ampairs.common.validation.gstin.GstinValidator
@@ -36,8 +37,11 @@ import com.ampairs.customer.util.CustomerConstants.ERROR_VALIDATION_FIX
 import com.ampairs.customer.util.CustomerConstants.ERROR_INVALID_EMAIL
 import com.ampairs.customer.util.CustomerConstants.ERROR_INVALID_LANDLINE
 import com.ampairs.customer.util.CustomerLogger
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -205,6 +209,18 @@ data class CustomerFormUiState(
     val agentFillCount: Int = 0
 )
 
+/** One-off UI events surfacing what the AI Ops engine did for the just-saved customer. */
+sealed interface CustomerFormEvent {
+    /** A high-confidence field fix was auto-applied (e.g. email normalized); offers Undo. */
+    data class AiOpsEmailFixed(val newEmail: String, val decisionId: String) : CustomerFormEvent
+
+    /** A lower-confidence finding was recorded for review (no automatic change). */
+    data class AiOpsSuggestion(val message: String) : CustomerFormEvent
+
+    /** An auto-applied fix was reverted via the Undo action. */
+    data object AiOpsUndone : CustomerFormEvent
+}
+
 @AssistedInject
 class CustomerFormViewModel(
     @Assisted private val customerId: String?,
@@ -217,6 +233,7 @@ class CustomerFormViewModel(
     val locationService: LocationService,
     private val syncService: CentralSyncService,
     private val aiOpsRunner: AiOpsRunner,
+    private val aiOpsUndo: AiOpsUndo,
     val optionRegistry: DynamicOptionRegistry,
     val widgetRegistry: CustomFieldWidgetRegistry,
 ) : ViewModel() {
@@ -232,6 +249,9 @@ class CustomerFormViewModel(
 
     private val _uiState = MutableStateFlow(CustomerFormUiState())
     val uiState: StateFlow<CustomerFormUiState> = _uiState.asStateFlow()
+
+    private val _events = MutableSharedFlow<CustomerFormEvent>(extraBufferCapacity = 4)
+    val events: SharedFlow<CustomerFormEvent> = _events.asSharedFlow()
 
     /**
      * Live unified schema for the customer form (spec 011, US1). The schema-driven renderer consumes
@@ -426,7 +446,15 @@ class CustomerFormViewModel(
                     // Best-effort AI Ops pass on the saved customer (e.g. email normalization).
                     // Never blocks or fails the save — the runner swallows its own errors.
                     result.getOrNull()?.uid?.let { savedUid ->
-                        runCatching { aiOpsRunner.onEntitySaved("customer", savedUid) }
+                        val outcome = runCatching { aiOpsRunner.onEntitySaved("customer", savedUid) }.getOrNull()
+                        outcome?.autoFixed?.firstOrNull { !it.after.isNullOrBlank() }?.let { fix ->
+                            _events.tryEmit(CustomerFormEvent.AiOpsEmailFixed(fix.after!!, fix.decisionId))
+                        }
+                        if (outcome?.autoFixed.isNullOrEmpty()) {
+                            outcome?.suggestions?.firstOrNull()?.let { s ->
+                                _events.tryEmit(CustomerFormEvent.AiOpsSuggestion(s.summary))
+                            }
+                        }
                     }
                     onSuccess()
                 } else {
@@ -444,6 +472,17 @@ class CustomerFormViewModel(
                         error = e.message ?: "Failed to save customer"
                     )
                 }
+            }
+        }
+    }
+
+    /** Roll back an auto-applied AI Ops fix (from the "Undo" snackbar action). Best-effort. */
+    fun undoFix(decisionId: String) {
+        viewModelScope.launch {
+            val reverted = runCatching { aiOpsUndo.undo(decisionId) }.getOrDefault(false)
+            if (reverted) {
+                syncService.markPendingPush(SyncEntity.CUSTOMER)
+                _events.tryEmit(CustomerFormEvent.AiOpsUndone)
             }
         }
     }
