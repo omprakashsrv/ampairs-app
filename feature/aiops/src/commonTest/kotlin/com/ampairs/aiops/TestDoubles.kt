@@ -42,8 +42,11 @@ internal class FakeAiOpsDao : AiOpsDao {
         }
     }
 
+    private val decisionsFlow = MutableStateFlow<Map<String, AiOpsDecisionEntity>>(emptyMap())
+
     override suspend fun insertDecision(decision: AiOpsDecisionEntity) {
         decisions[decision.id] = decision
+        decisionsFlow.value = decisions.toMap()
     }
 
     override suspend fun getDecision(id: String): AiOpsDecisionEntity? = decisions[id]
@@ -52,8 +55,14 @@ internal class FakeAiOpsDao : AiOpsDao {
         decisions.values.filter { it.entityType == entityType && it.entityId == entityId }
             .sortedByDescending { it.createdAt }
 
+    override fun observeRecentDecisions(limit: Int): Flow<List<AiOpsDecisionEntity>> =
+        decisionsFlow.map { m -> m.values.sortedByDescending { it.createdAt }.take(limit) }
+
     override suspend fun markDecisionReverted(id: String, revertedAt: Long) {
-        decisions[id]?.let { decisions[id] = it.copy(revertedAt = revertedAt) }
+        decisions[id]?.let {
+            decisions[id] = it.copy(revertedAt = revertedAt)
+            decisionsFlow.value = decisions.toMap()
+        }
     }
 
     override suspend fun insertFeedback(feedback: AiOpsFeedbackEntity) {
