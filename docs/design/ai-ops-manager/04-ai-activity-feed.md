@@ -39,8 +39,22 @@ Flow re-emits, so the row flips to **Reverted** with no manual refresh.
 undoable; a reverted or non-reversible one is not. The undo mechanics themselves are covered by the
 existing `AiOpsUndoServiceTest`.
 
-## Not included
+## Acting on suggestions (added)
 
-Acting on a *suggestion* (apply/dismiss a `PENDING_REVIEW` finding) from this screen — that needs
-re-deriving the candidate through the capability, so it's a later slice. For now suggestions are
-surfaced as a count; applied fixes are the actionable rows.
+The activity screen now has a **Suggestions** section above the history: each `PENDING_REVIEW`
+finding shows its summary with **Accept** / **Dismiss**. This is served by a new `AiOpsReview` port
+(`data/common`) implemented by `AiOpsReviewService` (`feature/aiops`, `WorkspaceScope`):
+
+- **Accept** re-derives the candidate for the stored finding through the owning capability
+  (`gather` → `propose` → `validate`; `gather` re-reads the live entity, so the fix reflects the
+  current value), applies it via the capability's executor (user-approved, so the gate is bypassed),
+  and records a reversible **HUMAN** decision — so an accepted suggestion appears in the history with
+  Undo, exactly like an auto-fix. The finding becomes `ACCEPTED`.
+- **Dismiss** marks the finding `IGNORED` and records an `IGNORE` verdict; no data changes.
+
+Both are no-ops unless the finding is still `PENDING_REVIEW`, and both are reactive — the finding/
+decision flows re-emit, so the lists update with no manual refresh. `AiOpsReviewServiceTest` covers
+accept (apply + reversible decision + status), the validation/duplicate/missing guards, and dismiss.
+
+This makes **L1 Recommend** (the safe default) genuinely useful: the engine proposes, the user
+reviews and one-taps Accept/Dismiss, and every accepted change stays auditable and reversible.

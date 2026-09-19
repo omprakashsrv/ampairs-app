@@ -31,7 +31,9 @@ internal object AiOpsFindingStatus {
     const val OPEN = "OPEN"
     const val AUTO_FIXED = "AUTO_FIXED"
     const val PENDING_REVIEW = "PENDING_REVIEW"
+    const val ACCEPTED = "ACCEPTED"
     const val REJECTED = "REJECTED"
+    const val IGNORED = "IGNORED"
 }
 
 /**

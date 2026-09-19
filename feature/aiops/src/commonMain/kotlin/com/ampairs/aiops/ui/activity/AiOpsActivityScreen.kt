@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,15 +32,17 @@ import com.ampairs.common.locale.formatDateTime
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
-import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.aiops.generated.resources.Res
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_cd_back
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_empty
-import ampairsapp.feature.aiops.generated.resources.aiops_activity_pending
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_reverted
+import ampairsapp.feature.aiops.generated.resources.aiops_activity_section_history
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_title
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_undo
+import ampairsapp.feature.aiops.generated.resources.aiops_suggestion_accept
+import ampairsapp.feature.aiops.generated.resources.aiops_suggestion_dismiss
+import ampairsapp.feature.aiops.generated.resources.aiops_suggestions_header
 
 @Composable
 fun AiOpsActivityScreen(
@@ -74,20 +77,7 @@ fun AiOpsActivityScreen(
             }
         }
 
-        if (state.pendingSuggestions > 0) {
-            Text(
-                text = pluralStringResource(
-                    Res.plurals.aiops_activity_pending,
-                    state.pendingSuggestions,
-                    state.pendingSuggestions,
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-
-        if (state.items.isEmpty()) {
+        if (state.items.isEmpty() && state.suggestions.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(Res.string.aiops_activity_empty),
@@ -97,10 +87,68 @@ fun AiOpsActivityScreen(
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.items, key = { it.decisionId }) { item ->
-                    ActivityRow(item = item, onUndo = { viewModel.undo(item.decisionId) })
-                    HorizontalDivider()
+                if (state.suggestions.isNotEmpty()) {
+                    item(key = "header-suggestions") {
+                        SectionHeader(stringResource(Res.string.aiops_suggestions_header))
+                    }
+                    items(state.suggestions, key = { "s-${it.findingId}" }) { suggestion ->
+                        SuggestionRow(
+                            suggestion = suggestion,
+                            onAccept = { viewModel.acceptSuggestion(suggestion.findingId) },
+                            onDismiss = { viewModel.dismissSuggestion(suggestion.findingId) },
+                        )
+                        HorizontalDivider()
+                    }
                 }
+                if (state.items.isNotEmpty()) {
+                    item(key = "header-history") {
+                        SectionHeader(stringResource(Res.string.aiops_activity_section_history))
+                    }
+                    items(state.items, key = { "d-${it.decisionId}" }) { item ->
+                        ActivityRow(item = item, onUndo = { viewModel.undo(item.decisionId) })
+                        HorizontalDivider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+}
+
+@Composable
+private fun SuggestionRow(
+    suggestion: AiOpsSuggestionItem,
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text(
+            text = suggestion.summary,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Text(
+            text = suggestion.capability,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.padding(top = 4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = onAccept) {
+                Text(stringResource(Res.string.aiops_suggestion_accept))
+            }
+            Spacer(Modifier.width(8.dp))
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(Res.string.aiops_suggestion_dismiss))
             }
         }
     }

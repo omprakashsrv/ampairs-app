@@ -18,8 +18,8 @@
     <string name="aiops_activity_empty">No AI changes yet. Fixes the assistant applies will appear here.</string>
     <string name="aiops_activity_undo">Undo</string>
     <string name="aiops_activity_reverted">Reverted</string>
-    <plurals name="aiops_activity_pending">
-        <item quantity="one">%1$d suggestion pending review</item>
-        <item quantity="other">%1$d suggestions pending review</item>
-    </plurals>
+    <string name="aiops_activity_section_history">History</string>
+    <string name="aiops_suggestions_header">Suggestions</string>
+    <string name="aiops_suggestion_accept">Accept</string>
+    <string name="aiops_suggestion_dismiss">Dismiss</string>
 </resources>
