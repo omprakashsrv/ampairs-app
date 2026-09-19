@@ -58,3 +58,14 @@ accept (apply + reversible decision + status), the validation/duplicate/missing 
 
 This makes **L1 Recommend** (the safe default) genuinely useful: the engine proposes, the user
 reviews and one-taps Accept/Dismiss, and every accepted change stays auditable and reversible.
+
+## Scan workspace (proactive)
+
+Until now the engine only ran when you saved an individual entity (`onEntitySaved`), so pre-existing
+data-quality issues stayed invisible. The activity screen's toolbar now has a **Scan** action
+(`AiOpsRunner.scanWorkspace()`): it runs *every* capability's `detect → … → gate` across the whole
+workspace, not scoped to one entity. Same gate — at **RECOMMEND** it fills the Suggestions queue for
+every messy record; at **AUTO_CORRECT** it auto-fixes the safe ones (all audited/undoable). The button
+shows a spinner while scanning; the reactive lists fill in as rows are written. `AiOpsRunnerImpl`
+shares one private `run(caps, entityIdFilter)` between the on-save path (filtered to the saved entity)
+and the scan path (`entityIdFilter = null`); `AiOpsRunnerImplTest` covers both scan branches.

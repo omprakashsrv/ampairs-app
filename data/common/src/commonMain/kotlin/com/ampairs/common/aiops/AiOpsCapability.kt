@@ -64,6 +64,13 @@ interface AiOpsExecutor {
 interface AiOpsRunner {
     /** Runs the matching capabilities for the saved entity and returns what it did (for UI surfacing). */
     suspend fun onEntitySaved(entityType: String, entityId: String): AiOpsOutcome
+
+    /**
+     * Runs **every** capability across the whole workspace (not scoped to one entity) — a user-invoked
+     * "scan for issues now". Same gate as [onEntitySaved]: at RECOMMEND it fills the review queue, at
+     * AUTO_CORRECT it auto-fixes the safe ones. Potentially heavy; call off the UI path.
+     */
+    suspend fun scanWorkspace(): AiOpsOutcome
 }
 
 /**

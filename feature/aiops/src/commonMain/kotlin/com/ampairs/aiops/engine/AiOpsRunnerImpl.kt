@@ -56,21 +56,32 @@ class AiOpsRunnerImpl(
     private val config: WorkspaceConfig,
 ) : AiOpsRunner {
 
-    override suspend fun onEntitySaved(entityType: String, entityId: String): AiOpsOutcome {
+    override suspend fun onEntitySaved(entityType: String, entityId: String): AiOpsOutcome =
+        run(capabilities.values.filter { it.entityType == entityType }, entityIdFilter = entityId)
+
+    override suspend fun scanWorkspace(): AiOpsOutcome =
+        run(capabilities.values, entityIdFilter = null)
+
+    /**
+     * Runs the fixed pipeline for [caps]. When [entityIdFilter] is non-null only findings for that
+     * entity are processed (the on-save path); when null every detected finding is (the scan path).
+     */
+    private suspend fun run(
+        caps: Collection<AiOpsCapability>,
+        entityIdFilter: String?,
+    ): AiOpsOutcome {
         val level = settings.autonomyLevel().first()
         val scope = AiOpsScope(workspaceId = config.workspaceId)
         val fixes = mutableListOf<AiOpsAppliedFix>()
         val suggestions = mutableListOf<AiOpsSuggestion>()
-        capabilities.values
-            .filter { it.entityType == entityType }
-            .forEach { capability ->
-                val findings = runCatching { capability.detect(scope) }
-                    .getOrElse { emptyList() }
-                    .filter { it.entityId == entityId }
-                findings.forEach { finding ->
-                    runCatching { process(capability, finding, level, fixes, suggestions) }
-                }
+        caps.forEach { capability ->
+            val findings = runCatching { capability.detect(scope) }
+                .getOrElse { emptyList() }
+                .let { list -> if (entityIdFilter == null) list else list.filter { it.entityId == entityIdFilter } }
+            findings.forEach { finding ->
+                runCatching { process(capability, finding, level, fixes, suggestions) }
             }
+        }
         return AiOpsOutcome(autoFixed = fixes, suggestions = suggestions)
     }
 

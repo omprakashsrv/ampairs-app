@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +39,7 @@ import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.aiops.generated.resources.Res
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_cd_back
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_empty
+import ampairsapp.feature.aiops.generated.resources.aiops_activity_scan_cd
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_reverted
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_section_history
 import ampairsapp.feature.aiops.generated.resources.aiops_activity_title
@@ -74,6 +78,18 @@ fun AiOpsActivityScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                 )
+                Spacer(Modifier.weight(1f))
+                if (state.isScanning) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(12.dp))
+                } else {
+                    IconButton(onClick = { viewModel.scan() }) {
+                        Icon(
+                            Icons.Default.TravelExplore,
+                            contentDescription = stringResource(Res.string.aiops_activity_scan_cd),
+                        )
+                    }
+                }
             }
         }
 

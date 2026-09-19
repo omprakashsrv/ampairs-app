@@ -122,6 +122,34 @@ class AiOpsRunnerImplTest {
     }
 
     @Test
+    fun `scanWorkspace processes findings for every entity, not just one`() = runTest {
+        val (runner, executor) = runner(
+            AiOpsAutonomyLevel.AUTO_CORRECT,
+            findings = listOf(finding(id = "AIO-1", entityId = "E1"), finding(id = "AIO-2", entityId = "E2")),
+        )
+
+        val outcome = runner.scanWorkspace()
+
+        assertEquals(2, dao.findings.value.size, "both entities' findings persisted")
+        assertEquals(2, executor.applied.size, "both are auto-fixed")
+        assertEquals(2, outcome.autoFixed.size)
+    }
+
+    @Test
+    fun `scanWorkspace at recommend queues suggestions for every entity`() = runTest {
+        val (runner, executor) = runner(
+            AiOpsAutonomyLevel.RECOMMEND,
+            findings = listOf(finding(id = "AIO-1", entityId = "E1"), finding(id = "AIO-2", entityId = "E2")),
+        )
+
+        val outcome = runner.scanWorkspace()
+
+        assertTrue(executor.applied.isEmpty())
+        assertEquals(2, dao.findings.value.values.count { it.status == "PENDING_REVIEW" })
+        assertEquals(2, outcome.suggestions.size)
+    }
+
+    @Test
     fun `a capability for a different entity type is skipped`() = runTest {
         val (runner, executor) = runner(AiOpsAutonomyLevel.AUTO_CORRECT)
 
