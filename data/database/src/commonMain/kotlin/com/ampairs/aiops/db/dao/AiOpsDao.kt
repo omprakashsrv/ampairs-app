@@ -39,6 +39,10 @@ interface AiOpsDao {
     @Query("SELECT * FROM aiops_decision WHERE entity_type = :entityType AND entity_id = :entityId ORDER BY created_at DESC")
     suspend fun getDecisionsForEntity(entityType: String, entityId: String): List<AiOpsDecisionEntity>
 
+    /** Reactive audit feed for the activity screen — most recent decisions first. */
+    @Query("SELECT * FROM aiops_decision ORDER BY created_at DESC LIMIT :limit")
+    fun observeRecentDecisions(limit: Int): Flow<List<AiOpsDecisionEntity>>
+
     @Query("UPDATE aiops_decision SET reverted_at = :revertedAt WHERE id = :id")
     suspend fun markDecisionReverted(id: String, revertedAt: Long)
 

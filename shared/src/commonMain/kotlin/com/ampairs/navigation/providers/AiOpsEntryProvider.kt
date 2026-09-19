@@ -3,6 +3,8 @@ package com.ampairs.navigation.providers
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
+import com.ampairs.aiops.ui.activity.AiOpsActivityRoute
+import com.ampairs.aiops.ui.activity.AiOpsActivityScreen
 import com.ampairs.aiops.ui.settings.AiOpsSettingsRoute
 import com.ampairs.aiops.ui.settings.AiOpsSettingsScreen
 
@@ -16,6 +18,13 @@ fun aiOpsEntryProvider(
 ): NavEntry<NavKey>? = when (key) {
     is AiOpsSettingsRoute -> NavEntry(key) {
         AiOpsSettingsScreen(
+            onNavigateBack = { backStack.removeLastOrNull() },
+            modifier = Modifier,
+        )
+    }
+
+    is AiOpsActivityRoute -> NavEntry(key) {
+        AiOpsActivityScreen(
             onNavigateBack = { backStack.removeLastOrNull() },
             modifier = Modifier,
         )

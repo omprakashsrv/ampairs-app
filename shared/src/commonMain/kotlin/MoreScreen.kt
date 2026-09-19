@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Mail
@@ -58,6 +59,7 @@ import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.common.ui.moduleCodeToDisplayName
 import com.ampairs.common.ui.moduleCodeToIcon
 import com.ampairs.common.ui.navigateToModule
+import com.ampairs.aiops.ui.activity.AiOpsActivityRoute
 import com.ampairs.aiops.ui.settings.AiOpsSettingsRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -363,6 +365,12 @@ fun MoreScreen(
                         Icons.Default.AutoAwesome
                     ) {
                         backStack.add(AiOpsSettingsRoute)
+                    },
+                    Triple(
+                        "AI Activity",
+                        Icons.Default.History
+                    ) {
+                        backStack.add(AiOpsActivityRoute)
                     },
                     Triple(
                         "Settings",
