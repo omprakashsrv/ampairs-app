@@ -1,0 +1,14 @@
+<resources>
+    <!-- AI Ops (data-quality assistant) settings -->
+    <string name="aiops_settings_title">AI Automation</string>
+    <string name="aiops_settings_cd_back">Back</string>
+    <string name="aiops_settings_header">Choose how much the data-quality assistant can do on its own when you save a record.</string>
+    <string name="aiops_settings_footnote">Higher automation tiers are managed by your administrator.</string>
+
+    <string name="aiops_level_observe_title">Observe only</string>
+    <string name="aiops_level_observe_desc">Detect data-quality issues but never change anything.</string>
+    <string name="aiops_level_recommend_title">Recommend</string>
+    <string name="aiops_level_recommend_desc">Suggest fixes for you to review. Nothing changes automatically.</string>
+    <string name="aiops_level_autocorrect_title">Auto-correct</string>
+    <string name="aiops_level_autocorrect_desc">Automatically apply safe, high-confidence fixes. Every change is logged and can be undone.</string>
+</resources>

@@ -36,6 +36,9 @@ kotlin {
                 implementation(libs.compose.material.icons.extended)
                 implementation(libs.compose.components.resources)
                 implementation(libs.lifecycle.runtime.compose)
+                // Navigation 3 for NavKey (settings route)
+                implementation(libs.navigation3.ui)
+                implementation(libs.lifecycle.viewmodel.navigation3)
             }
         }
         commonTest {

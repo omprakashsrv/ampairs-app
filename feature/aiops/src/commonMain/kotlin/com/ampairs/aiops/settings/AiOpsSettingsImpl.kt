@@ -21,4 +21,7 @@ class AiOpsSettingsImpl(
     private val preferences: AppPreferencesDataStore,
 ) : AiOpsSettings {
     override fun autonomyLevel(): Flow<AiOpsAutonomyLevel> = preferences.getAiOpsAutonomyLevel()
+
+    override suspend fun setAutonomyLevel(level: AiOpsAutonomyLevel) =
+        preferences.setAiOpsAutonomyLevel(level)
 }

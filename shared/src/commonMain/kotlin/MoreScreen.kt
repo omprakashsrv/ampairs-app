@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.ChevronRight
@@ -57,6 +58,7 @@ import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.common.ui.moduleCodeToDisplayName
 import com.ampairs.common.ui.moduleCodeToIcon
 import com.ampairs.common.ui.navigateToModule
+import com.ampairs.aiops.ui.settings.AiOpsSettingsRoute
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
@@ -355,6 +357,12 @@ fun MoreScreen(
                         Icons.Default.Sync
                     ) {
                         backStack.add(WorkspaceRoute.SyncStatus)
+                    },
+                    Triple(
+                        "AI Automation",
+                        Icons.Default.AutoAwesome
+                    ) {
+                        backStack.add(AiOpsSettingsRoute)
                     },
                     Triple(
                         "Settings",

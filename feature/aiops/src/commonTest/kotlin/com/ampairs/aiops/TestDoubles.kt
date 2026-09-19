@@ -61,9 +61,10 @@ internal class FakeAiOpsDao : AiOpsDao {
     }
 }
 
-/** Fixed autonomy level. */
+/** Fixed autonomy level. Ignores writes — the runner only reads. */
 internal class FixedAiOpsSettings(private val level: AiOpsAutonomyLevel) : AiOpsSettings {
     override fun autonomyLevel(): Flow<AiOpsAutonomyLevel> = flowOf(level)
+    override suspend fun setAutonomyLevel(level: AiOpsAutonomyLevel) = Unit
 }
 
 /**
