@@ -2,6 +2,7 @@ package com.ampairs.product.ui.create
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.aiops.AiOpsRunner
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.repository.ProductRepository
@@ -49,6 +50,7 @@ class ProductFormViewModel(
     private val productRepository: ProductRepository,
     private val taxCodeRepository: TaxCodeLookup,
     private val syncService: CentralSyncService,
+    private val aiOpsRunner: AiOpsRunner,
     private val categoryDao: CategoryDao,
     private val brandDao: BrandDao,
     private val groupDao: GroupDao,
@@ -291,6 +293,12 @@ class ProductFormViewModel(
 
                 if (result.isSuccess) {
                     syncService.markPendingPush(SyncEntity.PRODUCT)
+                    // Best-effort AI Ops pass on the saved product (e.g. product-code normalization).
+                    // Never blocks or fails the save — the runner swallows its own errors. Outcomes
+                    // (auto-fixes + suggestions) surface in the AI Activity feed, which offers undo/review.
+                    result.getOrNull()?.id?.let { savedUid ->
+                        runCatching { aiOpsRunner.onEntitySaved("product", savedUid) }
+                    }
                     _uiState.value = _uiState.value.copy(isSaving = false)
                     onSuccess()
                 } else {

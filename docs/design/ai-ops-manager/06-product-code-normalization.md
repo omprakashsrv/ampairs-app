@@ -37,11 +37,14 @@ identical shape is the extensibility claim, demonstrated across module boundarie
 
 ## Triggering
 
-The activity-screen **Scan** (`AiOpsRunner.scanWorkspace()`) already runs every capability across the
-workspace, so `product.code` is live via Scan the moment it ships. The per-save hook — a best-effort
-`AiOpsRunner.onEntitySaved("product", uid)` from the product form ViewModel, mirroring
-`CustomerFormViewModel` — is the natural follow-up so a fix is offered right after an edit; the capability
-needs no change for it.
+Both paths are wired. The activity-screen **Scan** (`AiOpsRunner.scanWorkspace()`) runs every capability
+across the workspace. And `ProductFormViewModel.saveProduct` now fires a best-effort
+`AiOpsRunner.onEntitySaved("product", uid)` after a successful save (mirroring `CustomerFormViewModel`) —
+wrapped in `runCatching`, so it never blocks or fails the save. Unlike the customer form (which also pops
+an in-form snackbar with Undo), the product form surfaces the outcome through the **AI Activity feed**
+alone: auto-fixes appear in History with Undo, and suggestions in the Suggestions section with
+Accept/Dismiss. An in-form snackbar for the product form is possible later but not required — the
+capability and audit trail are unaffected.
 
 ## Tests
 
