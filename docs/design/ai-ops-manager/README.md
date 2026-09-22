@@ -26,7 +26,7 @@ A host-agnostic Kotlin SPI in a shared KMP module `feature/aiops` (`commonMain`,
 | # | Slice | Doc | Status |
 |---|---|---|---|
 | 1 | Shared engine SPI + **unit standardization** (the proof) | [01-engine-and-unit-standardization.md](01-engine-and-unit-standardization.md) | draft |
-| 2 | Capitalization/format + field validation — customer **email** + **phone**, product **code** | [02-customer-email-normalization.md](02-customer-email-normalization.md), [05-customer-phone-normalization.md](05-customer-phone-normalization.md), [06-product-code-normalization.md](06-product-code-normalization.md) | in progress |
+| 2 | Capitalization/format + field validation — customer **email** + **phone** + **GSTIN**, product **code** | [02](02-customer-email-normalization.md), [05](05-customer-phone-normalization.md), [06](06-product-code-normalization.md), [07](07-customer-gst-normalization.md) | in progress |
 | — | **Autonomy settings UI** (lets the user pick L0/L1/L2 — unlocks auto-fix) | [03-autonomy-settings-ui.md](03-autonomy-settings-ui.md) | done |
 | — | **AI Activity feed** (audit trail of applied fixes + one-tap undo; pending-suggestion count) | [04-ai-activity-feed.md](04-ai-activity-feed.md) | done |
 | 3 | Contact card → capture + extract + normalize | _tbd_ | — |
