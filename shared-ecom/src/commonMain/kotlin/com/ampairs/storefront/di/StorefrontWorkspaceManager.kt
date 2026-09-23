@@ -40,8 +40,10 @@ class StorefrontWorkspaceManager(
     val session: StateFlow<Session?> = _session.asStateFlow()
 
     // Main-dispatched so a deferred DB close is queued AFTER the recomposition that remounts the
-    // NavDisplay (on the same main looper) and disposes the old workspace's ViewModelStores.
-    private val cleanupScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
+    // NavDisplay (on the same main thread) and disposes the old workspace's ViewModelStores.
+    // Plain Dispatchers.Main (not .immediate) — `.immediate` is not supported on Kotlin/Native, and
+    // the WORKSPACE_CLOSE_DELAY_MS below re-dispatches to Main anyway, so the two are equivalent here.
+    private val cleanupScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     fun activate(workspaceId: String, workspaceSlug: String) {
         val old = _session.value

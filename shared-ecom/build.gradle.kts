@@ -4,15 +4,18 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.metro)
 }
 
-// Slim, Android-only shared layer for customer-facing ecom ordering apps. Two thin app modules build
-// on it: :clientApp (a per-client white-label build pinned to one storefront, selected with
-// -Pclient=<id>) and :marketplaceApp (the common multi-store app with a storefront picker). Reuses the
-// login (auth), data, sync, store and ecom feature modules with its own DI graph and navigation graph
-// — it deliberately does NOT depend on :shared (which aggregates all 25 business modules). Brand-neutral:
-// nothing here is tenant-specific. See CLAUDE.md and the /metro-di + /offline-sync skills.
+// Slim, cross-platform shared layer for customer-facing ecom ordering apps. Four thin app modules
+// build on it: :clientApp (Android, per-client white-label pinned to one storefront, -Pclient=<id>)
+// and :marketplaceApp (Android, multi-store picker), plus their iOS counterparts (clientApp/iosApp,
+// marketplaceApp/iosApp) which consume the `SharedEcom` framework produced by this module's
+// cocoapods block. Reuses the login (auth), data, sync, store and ecom feature modules with its own
+// DI graph and navigation graph — it deliberately does NOT depend on :shared (which aggregates all
+// 25 business modules). Brand-neutral: nothing here is tenant-specific.
+// See CLAUDE.md and the /metro-di + /offline-sync skills.
 kotlin {
     jvmToolchain(21)
 
@@ -23,8 +26,25 @@ kotlin {
         androidResources.enable = true
     }
 
+    iosArm64()
+    iosSimulatorArm64()
+
+    cocoapods {
+        summary = "Ampairs Storefront (ecom) shared layer"
+        version = "1.0.0"
+        homepage = "https://ampairs.in"
+        ios.deploymentTarget = "16.0"
+        // Static framework: Firebase (Core/Auth) and reCAPTCHA ObjC symbols referenced transitively
+        // by :feature:auth are left undefined here and resolved at the app link step by the storefront
+        // apps' own Podfiles (marketplaceApp/iosApp, clientApp/iosApp) — mirrors iosApp/Podfile.
+        framework {
+            baseName = "SharedEcom"
+            isStatic = true
+        }
+    }
+
     sourceSets {
-        androidMain {
+        val commonMain by getting {
             dependencies {
                 // Reused feature modules (login + ecom storefront/order + workspace settings)
                 api(projects.feature.auth)
@@ -52,7 +72,9 @@ kotlin {
 
                 // Ktor
                 implementation(libs.bundles.ktor.common)
-                implementation(libs.ktor.client.okHttp)
+
+                // Coroutines (StorefrontWorkspaceManager cleanup scope, sync)
+                implementation(libs.kotlinx.coroutines.core)
 
                 // Compose
                 implementation(libs.compose.runtime)
@@ -75,23 +97,38 @@ kotlin {
                 implementation(libs.coil.compose)
                 implementation(libs.coil.network)
 
-                // Firebase (analytics binding used by LoginViewModel; auth = phone sign-in)
-                implementation(libs.google.firebase.analytics)
-                implementation(libs.firebase.auth)
-
                 // Serialization (NavKey routes) + logging
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kermit)
 
-                // Consolidated storefront Room databases (app + workspace) live in this module
+                // Consolidated storefront Room databases (app + workspace) live in :data:database
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
             }
         }
+
+        val androidMain by getting {
+            dependencies {
+                // Ktor OkHttp engine (Android)
+                implementation(libs.ktor.client.okHttp)
+
+                // Firebase — native Android SDK (analytics binding used by LoginViewModel; auth =
+                // phone sign-in via :feature:auth)
+                implementation(libs.google.firebase.analytics)
+                implementation(libs.firebase.auth)
+            }
+        }
+
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        val iosMain by creating {
+            dependsOn(commonMain)
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
+            dependencies {
+                // Ktor Darwin engine (iOS)
+                implementation(libs.ktor.client.darwin)
+            }
+        }
     }
 }
-
-// The storefront @Database classes (StorefrontAppDatabase / StorefrontWorkspaceDatabase) moved into
-// :data:database/androidMain so Room's KSP runs single-module alongside the entities it references
-// (cross-module @Entity resolution is unsupported by KSP2 on JVM/Android). This module no longer
-// runs the Room processor; it depends on :data:database for those @Database classes + DAOs.
