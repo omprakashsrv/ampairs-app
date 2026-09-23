@@ -14,7 +14,7 @@ kotlin = "2.4.0"
 ksp = "2.3.10"
 androidx-room = "3.0.1"
 androidx-sqlite-bundled = "2.7.0"
-coil = "3.5.0"
+coil = "3.6.2"
 vico = "2.5.2"
 
 kotlinx-dateTime = "0.8.0"
