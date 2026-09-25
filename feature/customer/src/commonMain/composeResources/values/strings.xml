@@ -293,4 +293,9 @@
     <string name="customer_filter_state">State</string>
     <string name="customer_filter_type">Type</string>
     <string name="customer_filter_group">Group</string>
+
+    <!-- AI Ops (data-quality assistant) -->
+    <string name="customer_aiops_email_fixed">AI normalized email to %1$s</string>
+    <string name="customer_aiops_undo">Undo</string>
+    <string name="customer_aiops_undone">Change reverted</string>
 </resources>
