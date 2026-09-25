@@ -1,16 +1,11 @@
 package com.ampairs.customer.aiops
 
-import com.ampairs.common.aiops.AiOpsActionType
-import com.ampairs.common.aiops.AiOpsBand
-import com.ampairs.common.aiops.AiOpsCapability
 import com.ampairs.common.aiops.AiOpsRiskLevel
 import com.ampairs.common.aiops.AiOpsScope
-import com.ampairs.common.aiops.Candidate
 import com.ampairs.common.aiops.CapabilityKey
-import com.ampairs.common.aiops.Confidence
+import com.ampairs.common.aiops.FieldNormalizationCapability
 import com.ampairs.common.aiops.Finding
 import com.ampairs.common.aiops.FindingContext
-import com.ampairs.common.aiops.Validation
 import com.ampairs.common.di.WorkspaceScope
 import com.ampairs.customer.data.db.CustomerDao
 import dev.zacsweers.metro.ContributesIntoMap
@@ -18,80 +13,50 @@ import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.first
 
 /**
- * Third AI Ops capability (a second field on the same `customer` entity, proving capabilities compose
- * without touching the engine): **customer phone normalization**. Detects active customers whose `phone`
- * carries display formatting (spaces, dashes, dots, parentheses) and proposes the digits-only canonical
- * value via the deterministic [CustomerPhoneNormalizer] — no LLM, HIGH confidence, LOW risk, reversible.
- * Auto-fixes at autonomy ≥ AUTO_CORRECT through [CustomerPhoneExecutor] (which writes via the customer
- * repository + offline-sync).
+ * **Customer phone normalization** — strips display formatting (spaces/dashes/dots/parentheses) from
+ * `phone` to a digits-only canonical form, preserving a leading '+'. Built on the shared
+ * [FieldNormalizationCapability] base, so only the customer-specific bits remain: the deterministic
+ * [CustomerPhoneNormalizer], the field/tag/labels, the "must contain a digit" target guard, and the
+ * DAO-bound `detect`/`gather`. Auto-fixes at autonomy ≥ AUTO_CORRECT through [CustomerPhoneExecutor].
  *
- * Lives in `feature/customer` and depends only on the `com.ampairs.common.aiops` contracts (+ this
- * module's own `CustomerDao`) — never on `feature/aiops`.
+ * Depends only on the `com.ampairs.common.aiops` contracts (+ this module's `CustomerDao`) — never on
+ * `feature/aiops`.
  */
 @Inject
 @ContributesIntoMap(WorkspaceScope::class)
 @CapabilityKey("customer.phone")
 class CustomerPhoneCapability(
     private val customerDao: CustomerDao,
-) : AiOpsCapability {
+) : FieldNormalizationCapability() {
 
     override val key: String = KEY
     override val entityType: String = ENTITY_TYPE
     override val riskLevel: AiOpsRiskLevel = AiOpsRiskLevel.LOW
+    override val field: String = FIELD_PHONE
+    override val evidenceTag: String = "phone_normalize"
+
+    override fun normalize(value: String): String = CustomerPhoneNormalizer.normalize(value)
+    override fun needsNormalization(value: String?): Boolean = CustomerPhoneNormalizer.needsNormalization(value)
+
+    override fun rationale(current: String, canonical: String): String =
+        "Phone numbers are dialled by digits; \"$current\" normalizes to \"$canonical\"."
+
+    override fun summarize(current: String, canonical: String): String =
+        "Normalize customer phone \"$current\" → \"$canonical\""
+
+    /** Never rewrite a value with no digits (not a phone number) even if it's non-canonical text. */
+    override fun rejectTarget(after: String): String? =
+        if (after.none { it.isDigit() }) "target is not a phone number" else null
 
     override suspend fun detect(scope: AiOpsScope): List<Finding> =
         customerDao.getAllCustomers().first()
             .filter { it.active }
-            .mapNotNull { customer ->
-                val phone = customer.phone
-                if (!CustomerPhoneNormalizer.needsNormalization(phone)) return@mapNotNull null
-                val canonical = CustomerPhoneNormalizer.normalize(phone!!)
-                Finding(
-                    id = findingId(customer.id),
-                    capability = KEY,
-                    entityType = ENTITY_TYPE,
-                    entityId = customer.id,
-                    field = FIELD_PHONE,
-                    summary = "Normalize customer phone \"$phone\" → \"$canonical\"",
-                    signals = mapOf("current" to phone, "canonical" to canonical),
-                )
-            }
+            .mapNotNull { findingFor(it.id, it.phone) }
 
     override suspend fun gather(finding: Finding): FindingContext {
         val current = customerDao.getCustomerById(finding.entityId)?.phone
         return FindingContext(values = buildMap { current?.let { put("current", it) } })
     }
-
-    override suspend fun propose(finding: Finding, context: FindingContext): List<Candidate> {
-        val current = context.values["current"] ?: finding.signals["current"] ?: return emptyList()
-        if (!CustomerPhoneNormalizer.needsNormalization(current)) return emptyList()
-        val canonical = CustomerPhoneNormalizer.normalize(current)
-        return listOf(
-            Candidate(
-                field = FIELD_PHONE,
-                before = current,
-                after = canonical,
-                action = AiOpsActionType.UPDATE_FIELD,
-                rationale = "Phone numbers are dialled by digits; \"$current\" normalizes to \"$canonical\".",
-                evidence = listOf("phone_normalize:$current→$canonical"),
-            ),
-        )
-    }
-
-    override suspend fun validate(finding: Finding, candidate: Candidate, context: FindingContext): Validation {
-        val after = candidate.after
-        return when {
-            candidate.action != AiOpsActionType.UPDATE_FIELD -> Validation(false, "unexpected action")
-            after.isNullOrBlank() -> Validation(false, "no target value")
-            after == candidate.before -> Validation(false, "already normalized")
-            after.none { it.isDigit() } -> Validation(false, "target is not a phone number")
-            after != CustomerPhoneNormalizer.normalize(after) -> Validation(false, "target is not canonical")
-            else -> Validation(true)
-        }
-    }
-
-    override suspend fun score(finding: Finding, candidate: Candidate, context: FindingContext): Confidence =
-        Confidence(value = 0.999, band = AiOpsBand.HIGH, contributors = mapOf("phone_normalize" to 1.0))
 
     companion object {
         const val KEY = "customer.phone"

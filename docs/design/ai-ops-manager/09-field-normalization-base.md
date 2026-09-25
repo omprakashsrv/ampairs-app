@@ -1,6 +1,7 @@
 # 09 — Shared `FieldNormalizationCapability` base (framework consolidation)
 
-**Status:** in progress (base landed; `product.code` migrated; other normalizers to follow).
+**Status:** in progress (base landed; `product.code` + all four customer capabilities migrated; only
+`unit.shortname` remains).
 **Purpose:** the six normalization capabilities (customer email/phone/GSTIN/name, product code, unit
 short-name) had grown near-identical `propose → validate → score` bodies plus the same `detect`/`gather`
 shape, differing only in the normalizer, field name, and human text. This extracts that shared shape into
@@ -38,6 +39,13 @@ detect/propose/validate/score and stays green). The `rejectTarget` hook preserve
 that need an extra target guard — email (`must contain '@'`) and phone (`must contain a digit`) — checked
 before the generic canonical check, matching the order the hand-written versions used.
 
-The remaining five (customer email/phone/GSTIN/name, unit short-name) migrate onto the base in follow-up
-increments, one at a time, each validated by its existing stage test — no behavior change, just less
-boilerplate.
+The four customer capabilities (email, phone, GSTIN, name) are now migrated too. Email and phone exercise
+the `rejectTarget` hook — email keeps its "must contain '@'" guard, phone its "must contain a digit" guard,
+both checked before the generic canonical check exactly as the hand-written versions did. Their
+`detect` keeps the `.filter { it.active }` pass (customer's `getAllCustomers` isn't active-scoped like
+product's `observeAllProducts`), then maps rows through `findingFor`. All four stage tests stay green — no
+behavior change, just less boilerplate.
+
+Only `unit.shortname` remains unmigrated; it resolves a short-name via `UnitAliasCatalog` (an alias-table
+lookup) rather than a pure per-value normalizer, so it doesn't fit the base as cleanly and is left as-is
+for now.
