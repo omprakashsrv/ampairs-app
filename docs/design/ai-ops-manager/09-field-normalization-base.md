@@ -1,7 +1,7 @@
 # 09 — Shared `FieldNormalizationCapability` base (framework consolidation)
 
-**Status:** in progress (base landed; `product.code` + all four customer capabilities migrated; only
-`unit.shortname` remains).
+**Status:** done — base landed and **all seven** normalization capabilities (product code/name, customer
+email/phone/GSTIN/name, unit short-name) are on it.
 **Purpose:** the six normalization capabilities (customer email/phone/GSTIN/name, product code, unit
 short-name) had grown near-identical `propose → validate → score` bodies plus the same `detect`/`gather`
 shape, differing only in the normalizer, field name, and human text. This extracts that shared shape into
@@ -46,9 +46,14 @@ both checked before the generic canonical check exactly as the hand-written vers
 product's `observeAllProducts`), then maps rows through `findingFor`. All four stage tests stay green — no
 behavior change, just less boilerplate.
 
-Only `unit.shortname` remains unmigrated; it resolves a short-name via `UnitAliasCatalog` (an alias-table
-lookup) rather than a pure per-value normalizer, so it doesn't fit the base as cleanly and is left as-is
-for now.
+`unit.shortname` is now migrated too — it was the awkward one, since its "normalize" is an
+`UnitAliasCatalog` lookup rather than a pure transform. It fits the base by defining
+`normalize(v) = canonicalFor(v) ?: v` (unknown values normalize to themselves) and `needsNormalization`
+firing only for a known alias that isn't already canonical; a `rejectTarget` guard keeps the target
+constrained to the catalog's canonicals, which the generic canonical check can't enforce (an unknown value
+would pass it). Its stage test (which asserts only `.valid`, not reason strings) stays green, so the
+alias-catalog capability now shares the same pipeline base as the pure normalizers — the whole suite is
+consolidated.
 
 ## Tests
 
