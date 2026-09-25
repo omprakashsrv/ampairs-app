@@ -49,3 +49,15 @@ behavior change, just less boilerplate.
 Only `unit.shortname` remains unmigrated; it resolves a short-name via `UnitAliasCatalog` (an alias-table
 lookup) rather than a pure per-value normalizer, so it doesn't fit the base as cleanly and is left as-is
 for now.
+
+## Tests
+
+`FieldNormalizationCapabilityTest` pins the base contract directly (via a trivial trim+lowercase fake
+subclass), so the shared logic is covered once in its own right rather than only indirectly through each
+capability's stage test: `findingFor` builds a stable finding for a non-canonical value and returns null
+for canonical/blank; `propose` emits one reversible `UPDATE_FIELD` candidate (reading context then the
+finding signal, empty when canonical/absent); `validate` walks the guard chain; `score` is HIGH with the
+evidence tag as the sole contributor. It also locks the ordering that matters — a `rejectTarget` rejection
+wins over the canonical check — which is what keeps email's `@` / phone's digit guards behaving as before.
+(It lives in `feature/customer`'s test source set, which already depends on `data/common` and has the test
+deps, so the base gets a direct test with no new source set / build changes.)
