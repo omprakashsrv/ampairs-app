@@ -282,7 +282,7 @@ For physical device — update `iosApp/Configuration/Config.xcconfig` with your 
 ### Compilation Validation (all platforms)
 
 ```bash
-./gradlew androidApp:compileDebugKotlinAndroid
+./gradlew androidApp:compileDebugKotlin
 ./gradlew shared:compileKotlinIosSimulatorArm64
 ./gradlew desktopApp:compileKotlin
 ```

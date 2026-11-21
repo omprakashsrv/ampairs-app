@@ -166,7 +166,7 @@ SomeLogger.w("Tag", "message", exception)   // w/e/i/d — NOT warn/error/info/d
 
 - Always test all 3 targets before marking a shared-module task complete:
   ```bash
-  ./gradlew androidApp:compileDebugKotlinAndroid
+  ./gradlew androidApp:compileDebugKotlin
   ./gradlew shared:compileKotlinIosSimulatorArm64
   ./gradlew desktopApp:compileKotlin
   ```

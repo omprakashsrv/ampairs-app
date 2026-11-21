@@ -71,7 +71,7 @@ break compilation on other targets, defeating the cross-platform guarantee.
 - `Dispatchers.IO` is safe in `commonMain` (expect), but in `iosMain` actuals use
   `Dispatchers.Default` — the Native `Dispatchers.IO` backing value is internal.
 - Validate every commonMain change on all targets:
-  `./gradlew shared:compileKotlinIosSimulatorArm64 androidApp:compileDebugKotlinAndroid desktopApp:compileKotlin`.
+  `./gradlew shared:compileKotlinIosSimulatorArm64 androidApp:compileDebugKotlin desktopApp:compileKotlin`.
 
 ### II. Offline-First via CentralSyncService (NON-NEGOTIABLE)
 
@@ -304,7 +304,7 @@ business locale (currency, timezone, date/time format), while storage stays UTC.
 
 - Compile all three primary targets before marking a shared-module change complete:
   ```bash
-  ./gradlew androidApp:compileDebugKotlinAndroid
+  ./gradlew androidApp:compileDebugKotlin
   ./gradlew shared:compileKotlinIosSimulatorArm64
   ./gradlew desktopApp:compileKotlin
   ```
