@@ -338,7 +338,7 @@ private fun Product.asEntityWith(
 // ---- DAO fakes ----
 
 /** In-memory [ProductDao]; reactive queries derive from one state flow. Paging methods are unused. */
-private class FakeProductDao : ProductDao {
+internal class FakeProductDao : ProductDao {
     private val rows = MutableStateFlow<Map<String, ProductEntity>>(emptyMap())
 
     fun count(): Int = rows.value.size

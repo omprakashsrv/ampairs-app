@@ -10,6 +10,7 @@ import com.ampairs.customer.data.db.CustomerDao
 import com.ampairs.customer.data.db.CustomerGroupDao
 import com.ampairs.customer.data.db.CustomerTypeDao
 import com.ampairs.customer.data.db.StateDao
+import com.ampairs.aiops.db.dao.AiOpsDao
 import com.ampairs.database.AmpairsWorkspaceDatabase
 import com.ampairs.form.agent.FormAgentDao
 import com.ampairs.form.data.db.FormFieldDao
@@ -215,6 +216,9 @@ interface WorkspaceDatabaseDaoModule {
 
         @Provides
         fun provideUnitConversionDao(db: AmpairsWorkspaceDatabase): UnitConversionDao = db.unitConversionDao()
+
+        @Provides
+        fun provideAiOpsDao(db: AmpairsWorkspaceDatabase): AiOpsDao = db.aiOpsDao()
 
         @Provides
         fun provideUnitAgentDao(db: AmpairsWorkspaceDatabase): UnitAgentDao = db.unitAgentDao()

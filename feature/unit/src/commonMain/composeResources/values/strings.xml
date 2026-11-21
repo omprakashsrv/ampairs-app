@@ -26,4 +26,9 @@
     <string name="unit_cancel">Cancel</string>
     <string name="unit_retry">Retry</string>
     <string name="unit_error_title">Error</string>
+
+    <!-- AI Ops (unit standardization) -->
+    <string name="unit_aiops_shortname_fixed">AI standardized short name to %1$s</string>
+    <string name="unit_aiops_undo">Undo</string>
+    <string name="unit_aiops_undone">Change reverted</string>
 </resources>

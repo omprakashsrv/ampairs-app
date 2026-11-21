@@ -15,7 +15,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ampairsapp.feature.unit.generated.resources.Res
+import ampairsapp.feature.unit.generated.resources.unit_aiops_shortname_fixed
+import ampairsapp.feature.unit.generated.resources.unit_aiops_undo
+import ampairsapp.feature.unit.generated.resources.unit_aiops_undone
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
+import org.jetbrains.compose.resources.getString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,10 +32,38 @@ fun UnitFormScreen(
 ) {
     val formState by viewModel.formState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val isEditing = unitId != null
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // Surface AI Ops outcomes for the saved unit (auto-fix + Undo) as a snackbar.
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is UnitFormEvent.AiOpsShortNameFixed -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = getString(Res.string.unit_aiops_shortname_fixed, event.newShortName),
+                        actionLabel = getString(Res.string.unit_aiops_undo),
+                        withDismissAction = true,
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.undoFix(event.decisionId)
+                    }
+                }
+                is UnitFormEvent.AiOpsSuggestion ->
+                    snackbarHostState.showSnackbar(event.message, duration = SnackbarDuration.Short)
+                UnitFormEvent.AiOpsUndone ->
+                    snackbarHostState.showSnackbar(
+                        getString(Res.string.unit_aiops_undone),
+                        duration = SnackbarDuration.Short,
+                    )
+            }
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(if (isEditing) "Edit Unit" else "New Unit") },
             actions = {
@@ -241,6 +274,12 @@ fun UnitFormScreen(
 
             // Bottom padding
             Spacer(modifier = Modifier.height(32.dp))
+            }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }

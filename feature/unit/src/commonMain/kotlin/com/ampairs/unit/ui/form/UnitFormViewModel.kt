@@ -2,6 +2,8 @@ package com.ampairs.unit.ui.form
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.aiops.AiOpsRunner
+import com.ampairs.common.aiops.AiOpsUndo
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.unit.data.repository.UnitRepository
 import com.ampairs.common.di.WorkspaceScope
@@ -15,11 +17,26 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import com.ampairs.unit.domain.model.Unit
 import com.ampairs.unit.util.UnitConstants
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/** One-off UI events surfacing what the AI Ops engine did for the just-saved unit. */
+sealed interface UnitFormEvent {
+    /** A short name was auto-standardized; [decisionId] lets the UI offer Undo. */
+    data class AiOpsShortNameFixed(val newShortName: String, val decisionId: String) : UnitFormEvent
+
+    /** A standardization was suggested (not auto-applied) — informational. */
+    data class AiOpsSuggestion(val message: String) : UnitFormEvent
+
+    /** An applied fix was rolled back. */
+    data object AiOpsUndone : UnitFormEvent
+}
 
 /**
  * Form state for Unit create/edit screen
@@ -49,6 +66,8 @@ data class UnitFormState(
 class UnitFormViewModel(
     private val unitRepository: UnitRepository,
     private val syncService: CentralSyncService,
+    private val aiOpsRunner: AiOpsRunner,
+    private val aiOpsUndo: AiOpsUndo,
     @Assisted private val unitId: String?
 ) : ViewModel() {
 
@@ -61,6 +80,9 @@ class UnitFormViewModel(
 
     private val _formState = MutableStateFlow(UnitFormState())
     val formState: StateFlow<UnitFormState> = _formState.asStateFlow()
+
+    private val _events = MutableSharedFlow<UnitFormEvent>(extraBufferCapacity = 4)
+    val events: SharedFlow<UnitFormEvent> = _events.asSharedFlow()
 
     init {
         if (unitId != null) {
@@ -183,6 +205,17 @@ class UnitFormViewModel(
 
                 if (result.isSuccess) {
                     syncService.markPendingPush(SyncEntity.UNIT)
+                    // Best-effort AI Ops pass on the saved unit (standardize short name, etc.).
+                    // Never blocks or fails the save — the runner swallows its own errors.
+                    val outcome = runCatching { aiOpsRunner.onEntitySaved("unit", unit.uid) }.getOrNull()
+                    outcome?.autoFixed?.firstOrNull { !it.after.isNullOrBlank() }?.let { fix ->
+                        _events.tryEmit(UnitFormEvent.AiOpsShortNameFixed(fix.after!!, fix.decisionId))
+                    }
+                    if (outcome?.autoFixed.isNullOrEmpty()) {
+                        outcome?.suggestions?.firstOrNull()?.let { s ->
+                            _events.tryEmit(UnitFormEvent.AiOpsSuggestion(s.summary))
+                        }
+                    }
                     _formState.update { it.copy(isLoading = false) }
                     onSuccess()
                 } else {
@@ -200,6 +233,22 @@ class UnitFormViewModel(
                         error = e.message ?: "An error occurred"
                     )
                 }
+            }
+        }
+    }
+
+    /** Roll back an auto-applied AI Ops fix (from the "Undo" snackbar action). Best-effort. */
+    fun undoFix(decisionId: String) {
+        viewModelScope.launch {
+            val reverted = runCatching { aiOpsUndo.undo(decisionId) }.getOrDefault(false)
+            if (reverted) {
+                // Reflect the restored value in the open form, if we're editing that unit.
+                unitId?.let { id ->
+                    runCatching { unitRepository.getUnitById(id) }.getOrNull()?.let { unit ->
+                        _formState.update { it.copy(shortName = unit.shortName) }
+                    }
+                }
+                _events.tryEmit(UnitFormEvent.AiOpsUndone)
             }
         }
     }

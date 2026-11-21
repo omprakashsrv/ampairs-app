@@ -90,6 +90,9 @@ class DataStoreAppPreferences(
         private val NOTIFY_ORDER_UPDATES_KEY = booleanPreferencesKey("notif_order_updates")
         private val NOTIFY_INVOICE_UPDATES_KEY = booleanPreferencesKey("notif_invoice_updates")
         private val NOTIFY_ANNOUNCEMENTS_KEY = booleanPreferencesKey("notif_announcements")
+
+        // AI Business Operations Manager — autonomy level (stored as the enum name)
+        private val AIOPS_AUTONOMY_LEVEL_KEY = stringPreferencesKey("aiops_autonomy_level")
     }
 
     override fun getThemePreference(): Flow<ThemePreference> {
@@ -602,5 +605,16 @@ class DataStoreAppPreferences(
 
     override suspend fun setNotifyAnnouncements(enabled: Boolean) {
         dataStore.edit { it[NOTIFY_ANNOUNCEMENTS_KEY] = enabled }
+    }
+
+    // ---- AI Business Operations Manager ----
+
+    override fun getAiOpsAutonomyLevel(): Flow<com.ampairs.common.aiops.AiOpsAutonomyLevel> =
+        dataStore.data.map {
+            com.ampairs.common.aiops.AiOpsAutonomyLevel.fromStored(it[AIOPS_AUTONOMY_LEVEL_KEY])
+        }
+
+    override suspend fun setAiOpsAutonomyLevel(level: com.ampairs.common.aiops.AiOpsAutonomyLevel) {
+        dataStore.edit { it[AIOPS_AUTONOMY_LEVEL_KEY] = level.name }
     }
 }

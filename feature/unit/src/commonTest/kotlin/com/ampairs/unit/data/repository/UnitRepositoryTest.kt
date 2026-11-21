@@ -113,7 +113,7 @@ class UnitRepositoryTest {
 }
 
 /** In-memory [UnitDao] backed by a map; reactive queries derive from a single state flow. */
-private class FakeUnitDao : UnitDao {
+internal class FakeUnitDao : UnitDao {
     private val rows = MutableStateFlow<Map<String, UnitEntity>>(emptyMap())
 
     override fun getAllUnits(): Flow<List<UnitEntity>> =
@@ -164,7 +164,7 @@ private class FakeUnitDao : UnitDao {
 }
 
 /** Minimal [UnitConversionDao] — UnitRepository only reads conversions for product-scoped lookups. */
-private class FakeUnitConversionDao : UnitConversionDao {
+internal class FakeUnitConversionDao : UnitConversionDao {
     override fun getAllUnitConversions(): Flow<List<UnitConversionEntity>> = flowOf(emptyList())
     override fun getUnitConversionsByProductId(productId: String): Flow<List<UnitConversionEntity>> =
         flowOf(emptyList())
@@ -190,7 +190,7 @@ private class FakeUnitConversionDao : UnitConversionDao {
 }
 
 /** [SyncStateDao] that records markPendingPush calls so tests can assert the sync flag. */
-private class RecordingSyncStateDao : SyncStateDao {
+internal class RecordingSyncStateDao : SyncStateDao {
     val pendingPushes = mutableListOf<SyncEntity>()
 
     override fun observeAll(): Flow<List<SyncStateEntity>> = flowOf(emptyList())

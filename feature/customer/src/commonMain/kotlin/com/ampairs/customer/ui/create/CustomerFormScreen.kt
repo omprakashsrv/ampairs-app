@@ -41,6 +41,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,6 +59,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ampairsapp.feature.customer.generated.resources.Res
+import ampairsapp.feature.customer.generated.resources.customer_aiops_email_fixed
+import ampairsapp.feature.customer.generated.resources.customer_aiops_undo
+import ampairsapp.feature.customer.generated.resources.customer_aiops_undone
 import ampairsapp.feature.customer.generated.resources.customer_form_title_new
 import ampairsapp.feature.customer.generated.resources.customer_form_title_edit
 import ampairsapp.feature.customer.generated.resources.customer_ai_fill
@@ -109,6 +116,7 @@ import ampairsapp.feature.customer.generated.resources.customer_location_hint
 import ampairsapp.feature.customer.generated.resources.customer_same_as_main_address
 import ampairsapp.feature.customer.generated.resources.customer_location_lat_format
 import ampairsapp.feature.customer.generated.resources.customer_location_lon_format
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -152,6 +160,33 @@ fun CustomerFormScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val formSchema by viewModel.formSchema.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Surface AI Ops outcomes for the saved customer (auto-fix + Undo) as a snackbar.
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is CustomerFormEvent.AiOpsEmailFixed -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = getString(Res.string.customer_aiops_email_fixed, event.newEmail),
+                        actionLabel = getString(Res.string.customer_aiops_undo),
+                        withDismissAction = true,
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.undoFix(event.decisionId)
+                    }
+                }
+                is CustomerFormEvent.AiOpsSuggestion ->
+                    snackbarHostState.showSnackbar(event.message, duration = SnackbarDuration.Short)
+                CustomerFormEvent.AiOpsUndone ->
+                    snackbarHostState.showSnackbar(
+                        getString(Res.string.customer_aiops_undone),
+                        duration = SnackbarDuration.Short,
+                    )
+            }
+        }
+    }
 
     // AI form assistant: predicts field values from a plain-language description and applies them.
     val formAgent = assistedMetroViewModel<FormAgentViewModel, FormAgentViewModel.Factory>(key = "customer") { create("customer") }
@@ -166,7 +201,8 @@ fun CustomerFormScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(if (customerId == null) stringResource(Res.string.customer_form_title_new) else stringResource(Res.string.customer_form_title_edit)) },
             actions = {
@@ -271,6 +307,12 @@ fun CustomerFormScreen(
                 onDismiss = { showAssistant = false },
             )
         }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }
 

@@ -225,7 +225,7 @@ class CustomerRepositoryTest {
 }
 
 /** In-memory [CustomerDao] backed by a map; reactive queries derive from a single state flow. */
-private class FakeCustomerDao : CustomerDao {
+internal class FakeCustomerDao : CustomerDao {
     private val rows = MutableStateFlow<Map<String, CustomerEntity>>(emptyMap())
 
     override fun getAllCustomers(): Flow<List<CustomerEntity>> =
@@ -311,7 +311,7 @@ private class FakeCustomerDao : CustomerDao {
 }
 
 /** [SyncStateDao] that records markPendingPush calls so tests can assert the sync flag. */
-private class RecordingSyncStateDao : SyncStateDao {
+internal class RecordingSyncStateDao : SyncStateDao {
     val pendingPushes = mutableListOf<SyncEntity>()
 
     override fun observeAll(): Flow<List<SyncStateEntity>> = flowOf(emptyList())

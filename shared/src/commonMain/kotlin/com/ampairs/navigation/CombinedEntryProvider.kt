@@ -30,6 +30,7 @@ import com.ampairs.purchase.ui.PurchaseRoute
 import com.ampairs.form.ui.FormConfigScreen
 import com.ampairs.form.ui.FormConfigHubScreen
 import com.ampairs.navigation.providers.agentEntryProvider
+import com.ampairs.navigation.providers.aiOpsEntryProvider
 import com.ampairs.navigation.providers.analyticsEntryProvider
 import com.ampairs.navigation.providers.authEntryProvider
 import com.ampairs.navigation.providers.businessEntryProvider
@@ -101,6 +102,7 @@ fun combinedEntryProvider(
         ?: invoiceEntryProvider(key, backStack)
         ?: paymentEntryProvider(key, backStack)
         ?: notificationEntryProvider(key, backStack)
+        ?: aiOpsEntryProvider(key, backStack)
         ?: inventoryEntryProvider(key, backStack)
         ?: analyticsEntryProvider(key, backStack)
         ?: agentEntryProvider(key, backStack)
