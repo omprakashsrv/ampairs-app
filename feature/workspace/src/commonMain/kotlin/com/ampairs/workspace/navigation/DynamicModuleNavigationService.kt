@@ -140,7 +140,8 @@ class DynamicModuleNavigationService {
             ModuleCodes.BUSINESS_REPORTING -> true
             ModuleCodes.CB_EMPLOYEE,
             ModuleCodes.CB_STORE,
-            ModuleCodes.CB_MAINTENANCE -> true
+            ModuleCodes.CB_MAINTENANCE,
+            ModuleCodes.FIELD_SALES_MANAGEMENT -> true
             else -> false
         }
     }

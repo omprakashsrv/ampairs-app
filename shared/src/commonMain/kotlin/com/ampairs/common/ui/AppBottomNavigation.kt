@@ -119,6 +119,7 @@ fun moduleCodeToRoute(code: String): NavKey? = when (code) {
     ModuleCodes.AI_ASSISTANT -> Route.Agent
     ModuleCodes.BUSINESS_DASHBOARD -> Route.Analytics
     "business-reporting" -> Route.Analytics
+    ModuleCodes.FIELD_SALES_MANAGEMENT -> Route.Sfa
     else -> null
 }
 

@@ -54,6 +54,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object CbMaintenance : Route
 
+    /** Field-sales automation (beats, visits, attendance). */
+    @Serializable
+    data object Sfa : Route
+
     /** Pricing / price-list management (admin). */
     @Serializable
     data object Pricing : Route
