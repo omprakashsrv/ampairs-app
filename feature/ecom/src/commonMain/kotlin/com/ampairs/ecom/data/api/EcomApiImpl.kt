@@ -13,6 +13,10 @@ import com.ampairs.common.put
 import com.ampairs.ecom.api.model.AddCartItemRequest
 import com.ampairs.ecom.api.model.AddressRequest
 import com.ampairs.ecom.api.model.AddressResponse
+import com.ampairs.ecom.api.model.BuyerInvoiceDetail
+import com.ampairs.ecom.api.model.BuyerInvoiceSummary
+import com.ampairs.ecom.api.model.BuyerOutstanding
+import com.ampairs.ecom.api.model.BuyerStatement
 import com.ampairs.ecom.api.model.CartResponse
 import com.ampairs.ecom.api.model.CatalogMeta
 import com.ampairs.ecom.api.model.CheckoutRequest
@@ -170,6 +174,41 @@ class EcomApiImpl(
         val params = mapOf<String, Any>("storefront_slug" to slug)
         get<Response<EcomOrderResponse>>(client, ApiUrlBuilder.ecomUrl("account/orders/$ecomOrderRef"), params)
     }
+
+    // ── Account: invoices, statement & order↔invoice link (spec 029) ──
+
+    override suspend fun getInvoices(slug: String, customerId: String?, page: Int, size: Int): Result<PageResponse<BuyerInvoiceSummary>> = call {
+        val params = accountParams(slug, customerId) { put("page", page); put("size", size) }
+        get<Response<PageResponse<BuyerInvoiceSummary>>>(client, ApiUrlBuilder.ecomUrl("account/invoices"), params)
+    }
+
+    override suspend fun getInvoice(slug: String, invoiceUid: String, customerId: String?): Result<BuyerInvoiceDetail> = call {
+        get<Response<BuyerInvoiceDetail>>(client, ApiUrlBuilder.ecomUrl("account/invoices/$invoiceUid"), accountParams(slug, customerId))
+    }
+
+    override suspend fun getOrderInvoices(slug: String, ecomOrderRef: String, customerId: String?): Result<List<BuyerInvoiceSummary>> = call {
+        get<Response<List<BuyerInvoiceSummary>>>(client, ApiUrlBuilder.ecomUrl("account/orders/$ecomOrderRef/invoices"), accountParams(slug, customerId))
+    }
+
+    override suspend fun getOutstanding(slug: String, customerId: String?): Result<BuyerOutstanding> = call {
+        get<Response<BuyerOutstanding>>(client, ApiUrlBuilder.ecomUrl("account/outstanding"), accountParams(slug, customerId))
+    }
+
+    override suspend fun getStatement(slug: String, customerId: String?, from: String?, to: String?): Result<BuyerStatement> = call {
+        val params = accountParams(slug, customerId) {
+            from?.takeIf { it.isNotBlank() }?.let { put("from", it) }
+            to?.takeIf { it.isNotBlank() }?.let { put("to", it) }
+        }
+        get<Response<BuyerStatement>>(client, ApiUrlBuilder.ecomUrl("account/statement"), params)
+    }
+
+    /** Common buyer-account query params: the storefront slug scopes the tenant, optional customer_id picks the linked account. */
+    private inline fun accountParams(slug: String, customerId: String?, extra: MutableMap<String, Any>.() -> Unit = {}): Map<String, Any> =
+        buildMap {
+            put("storefront_slug", slug)
+            customerId?.takeIf { it.isNotBlank() }?.let { put("customer_id", it) }
+            extra()
+        }
 
     // ── Distributor link ──
 

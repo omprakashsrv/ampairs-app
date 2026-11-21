@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AMPAIRS_ENVIRONMENT</key>
+	<string>production</string>
+	<!-- Per-client white-label values (see clients/<id>/config.properties for the Android equivalents).
+	     Override these per client (xcconfig-driven Info.plist var or a per-client Info.plist). -->
+	<key>AMPAIRS_WORKSPACE_SLUG</key>
+	<string>$(AMPAIRS_WORKSPACE_SLUG)</string>
+	<key>AMPAIRS_THEME_COLOR_ARGB</key>
+	<string>$(AMPAIRS_THEME_COLOR_ARGB)</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>FirebaseAuth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- REPLACE with this client's REVERSED_CLIENT_ID from its GoogleService-Info.plist -->
+				<string>REPLACE_WITH_REVERSED_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+	<key>NSContactsUsageDescription</key>
+	<string>This app uses your contacts so you can quickly fill in a delivery address by picking a contact from your phone.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app uses your location to set a delivery address on the map.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

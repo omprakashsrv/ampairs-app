@@ -58,6 +58,10 @@ interface SupplierDao {
     @Query("SELECT * FROM suppliers WHERE ref_id IN (:refIds)")
     suspend fun getSuppliersByTallyRefIds(refIds: List<String>): List<SupplierEntity>
 
+    /** Records the Tally ledger GUID after an app→Tally master push (mirrors CustomerDao.setTallyRef). */
+    @Query("UPDATE suppliers SET ref_id = :refId, synced = 0 WHERE id = :id")
+    suspend fun setTallyRef(id: String, refId: String)
+
     @Query("SELECT COUNT(*) FROM suppliers WHERE synced = 0")
     fun observeUnsyncedCount(): Flow<Int>
 

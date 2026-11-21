@@ -39,6 +39,10 @@ interface CategoryDao {
     @Query("SELECT * FROM categoryEntity WHERE ref_id IN (:refs)")
     suspend fun getCategoriesByTallyRefIds(refs: List<String>): List<CategoryEntity>
 
+    /** Records the Tally stock-category GUID after an app→Tally master push (mirrors CustomerDao.setTallyRef). */
+    @Query("UPDATE categoryEntity SET ref_id = :refId, synced = 0 WHERE id = :id")
+    suspend fun setTallyRef(id: String, refId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(category: CategoryEntity)
 

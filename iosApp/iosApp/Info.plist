@@ -2,8 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>AMPAIRS_ENVIRONMENT</key>
+	<string>production</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -22,6 +26,8 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+	<key>NSContactsUsageDescription</key>
+	<string>Ampairs uses your contacts so you can quickly fill in a customer or supplier's name, phone, email, and address by picking them from your phone contacts.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Ampairs uses your local network to send print jobs to nearby network and AirPrint printers.</string>
 	<key>NSMicrophoneUsageDescription</key>

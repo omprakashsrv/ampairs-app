@@ -3,7 +3,9 @@ package com.ampairs.product.ui.create
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.product.db.Constants
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
@@ -281,7 +283,8 @@ class ProductFormViewModel(
                 val product = formState.toProduct()
 
                 val result = if (productId == null) {
-                    productRepository.createProduct(product)
+                    val uid = UidGenerator.generateUid(Constants.PRODUCT_PREFIX)
+                    productRepository.createProduct(product.copy(id = uid))
                 } else {
                     productRepository.updateProduct(product.copy(id = productId))
                 }

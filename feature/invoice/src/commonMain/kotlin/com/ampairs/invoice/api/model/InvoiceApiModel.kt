@@ -19,6 +19,7 @@ data class InvoiceApiModel(
     @SerialName("invoice_date") val invoiceDate: String = "",
     @SerialName("invoice_number") val invoiceNumber: String = "",
     @SerialName("order_ref_id") val order_ref_id: String? = null,
+    @SerialName("ref_id") val ref_id: String? = null,
     @SerialName("customer_id") var customerId: String = "",
     @SerialName("customer_name") var customerName: String = "",
     @SerialName("customer_phone") var customerPhone: String? = null,
@@ -108,6 +109,7 @@ fun InvoiceApiModel.toInvoiceDatabaseModel(): InvoiceEntity {
         created_by = this.created_by,
         updated_by = this.updated_by,
         order_ref_id = this.order_ref_id,
+        ref_id = this.ref_id,
         discount = this.discount?.let { Json.encodeToString(this.discount) }
     )
 }
@@ -163,6 +165,7 @@ fun InvoiceEntity.toApiModel(items: List<InvoiceItemEntity>): InvoiceApiModel = 
     invoiceDate = invoice_date.toIsoInstantOrSelf(),
     invoiceNumber = invoice_number,
     order_ref_id = order_ref_id,
+    ref_id = ref_id,
     customerId = customer_id,
     customerName = customer_name,
     customerPhone = customer_phone,

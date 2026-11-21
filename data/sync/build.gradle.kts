@@ -11,6 +11,13 @@ plugins {
 group = "com.ampairs"
 version = "1.0.3"
 
+// group="com.ampairs" makes Kotlin derive the default module name as "com.ampairs:sync"
+// (colon-separated), which androidApp:buildReleasePreBundle rejects with "Entry name contains
+// invalid characters: root/META-INF/com.ampairs:sync.kotlin_module". Force a safe name.
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions.moduleName.set("ampairs-sync")
+}
+
 kotlin {
     jvmToolchain(21)
 

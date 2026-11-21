@@ -6,7 +6,10 @@ import androidx.room3.PrimaryKey
 
 @Entity(
     tableName = "invoiceEntity",
-    indices = [Index(value = ["id"], unique = true, name = "invoice_id_idx")]
+    indices = [
+        Index(value = ["id"], unique = true, name = "invoice_id_idx"),
+        Index(value = ["ref_id"], name = "invoice_ref_idx"),
+    ]
 )
 data class InvoiceEntity(
     @PrimaryKey(autoGenerate = true)
@@ -51,5 +54,10 @@ data class InvoiceEntity(
     val price_mode: String = "TAX_EXCLUSIVE",
     val overall_discount_mode: String = "POST_TAX_REDUCTION",
     val series: String = "DEFAULT",
-    val sequence_number: Long = 0
+    val sequence_number: Long = 0,
+    // External-system reference: the Tally voucher master id captured after an app→Tally push
+    // (TallyInvoicePushService), or the Tally GUID for a voucher pulled in from Tally. Non-blank =
+    // this invoice is linked to a Tally voucher → the push skips it (idempotency). Round-trips
+    // through /sync (InvoiceApiModel.ref_id ↔ backend Invoice.refId) so the marker is durable.
+    val ref_id: String? = null
 )

@@ -281,6 +281,10 @@ private class FakeCustomerDao : CustomerDao {
         rows.value = rows.value + (customer.id to customer)
     }
 
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = false)) }
+    }
+
     override suspend fun deleteCustomer(customerId: String) {
         rows.value = rows.value - customerId
     }

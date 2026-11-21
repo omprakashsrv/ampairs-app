@@ -5,6 +5,7 @@ import ampairsapp.feature.invoice.generated.resources.inv_view_cd_back
 import ampairsapp.feature.invoice.generated.resources.inv_view_cd_edit
 import ampairsapp.feature.invoice.generated.resources.inv_view_draft
 import ampairsapp.feature.invoice.generated.resources.inv_view_print_cd
+import ampairsapp.feature.invoice.generated.resources.inv_view_push_tally_cd
 import ampairsapp.feature.invoice.generated.resources.inv_view_qty_caption
 import ampairsapp.feature.invoice.generated.resources.inv_view_save
 import ampairsapp.feature.invoice.generated.resources.inv_view_title
@@ -24,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -99,6 +101,16 @@ fun InvoiceViewScreen(
         )
     }
 
+    viewModel.tallyMessage?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearTallyMessage() },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearTallyMessage() }) { Text("OK") }
+            },
+            text = { Text(msg) },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -122,6 +134,26 @@ fun InvoiceViewScreen(
                 },
                 actions = {
                     DocSyncChip(viewModel.syncUi, onRetry = viewModel::retrySync)
+                    // Desktop-only, manual, per-invoice Tally push — hidden once the invoice is linked
+                    // to a Tally voucher (and absent entirely on platforms without Tally).
+                    if (viewModel.canPushToTally || viewModel.pushingToTally) {
+                        IconButton(
+                            onClick = { viewModel.pushToTally() },
+                            enabled = !viewModel.pushingToTally,
+                        ) {
+                            if (viewModel.pushingToTally) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.progressSemantics().size(18.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.CloudUpload,
+                                    contentDescription = stringResource(Res.string.inv_view_push_tally_cd),
+                                )
+                            }
+                        }
+                    }
                     IconButton(
                         onClick = {
                             scope.launch {

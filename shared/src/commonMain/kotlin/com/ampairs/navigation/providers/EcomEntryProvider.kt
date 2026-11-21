@@ -15,7 +15,10 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import com.ampairs.ecom.ui.EcomStorefrontScreen
 import com.ampairs.ecom.ui.account.AccountScreen
+import com.ampairs.ecom.ui.account.AccountStatementScreen
 import com.ampairs.ecom.ui.account.AddressesScreen
+import com.ampairs.ecom.ui.account.InvoiceDetailScreen
+import com.ampairs.ecom.ui.account.InvoiceListScreen
 import com.ampairs.ecom.ui.cart.CartScreen
 import com.ampairs.ecom.ui.catalog.DrillDownArgs
 import com.ampairs.ecom.ui.catalog.DrillDownScreen
@@ -46,6 +49,9 @@ fun ecomEntryProvider(
             },
             onOpenOrder = { backStack.add(EcomRoute.OrderTracking(it)) },
             onOpenAddresses = { backStack.add(EcomRoute.Addresses) },
+            onOpenInvoices = { backStack.add(EcomRoute.Invoices) },
+            onOpenInvoice = { backStack.add(EcomRoute.InvoiceDetail(it)) },
+            onOpenStatement = { backStack.add(EcomRoute.Statement) },
         )
     }
 
@@ -107,7 +113,29 @@ fun ecomEntryProvider(
     }
 
     is EcomRoute.OrderTracking -> NavEntry(key) {
-        OrderTrackingScreen(orderRef = key.orderRef, onBack = { backStack.removeLastOrNull() })
+        OrderTrackingScreen(
+            orderRef = key.orderRef,
+            onBack = { backStack.removeLastOrNull() },
+            onOpenInvoice = { backStack.add(EcomRoute.InvoiceDetail(it)) },
+        )
+    }
+
+    is EcomRoute.Invoices -> NavEntry(key) {
+        EcomRouteScaffold {
+            InvoiceListScreen(onOpenInvoice = { backStack.add(EcomRoute.InvoiceDetail(it)) })
+        }
+    }
+
+    is EcomRoute.InvoiceDetail -> NavEntry(key) {
+        EcomRouteScaffold {
+            InvoiceDetailScreen(invoiceUid = key.invoiceUid)
+        }
+    }
+
+    is EcomRoute.Statement -> NavEntry(key) {
+        EcomRouteScaffold {
+            AccountStatementScreen()
+        }
     }
 
     is EcomRoute.Orders -> NavEntry(key) {
@@ -118,6 +146,8 @@ fun ecomEntryProvider(
         AccountScreen(
             onOpenOrders = { backStack.add(EcomRoute.Orders) },
             onOpenAddresses = { backStack.add(EcomRoute.Addresses) },
+            onOpenInvoices = { backStack.add(EcomRoute.Invoices) },
+            onOpenStatement = { backStack.add(EcomRoute.Statement) },
             onLogin = { backStack.add(AuthRoute.Phone) },
             onLoggedOut = { backStack.removeLastOrNull() },
         )

@@ -39,6 +39,9 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
+import ampairsapp.feature.order.generated.resources.Res
+import ampairsapp.feature.order.generated.resources.ord_conv_missing_hsn
+import org.jetbrains.compose.resources.getString
 
 @AssistedInject
 class OrderViewViewModel(
@@ -67,6 +70,14 @@ class OrderViewViewModel(
     var printMessage by mutableStateOf<String?>(null)
     var printing by mutableStateOf(false)
         private set
+
+    /** Blocking validation message from [createInvoice] (shown then dismissed by the screen). */
+    var invoiceError by mutableStateOf<String?>(null)
+        private set
+
+    fun clearInvoiceError() {
+        invoiceError = null
+    }
 
     /** Live document sync chip: this row's synced flag + the ORDER entity's sync activity. */
     var syncUi by mutableStateOf(DocSyncUi.NONE)
@@ -173,11 +184,25 @@ class OrderViewViewModel(
      * build an invoice from the order's lines/tax/discounts, let InvoiceRepository assign the
      * sequential number, cross-link orderRefId ↔ invoiceRefId, and flag both PENDING_PUSH.
      * Idempotent: if the order is already converted, it's left untouched.
+     *
+     * Blocked when any line's product has no HSN/tax code: an unassigned tax code silently
+     * resolves to EXEMPT (0% tax) in DocumentTotalsCalculator, producing a zero-tax invoice that
+     * looks correct locally but gets rejected by GST-enabled downstream systems (e.g. Tally) —
+     * better to force the fix at the source than push a bad invoice.
      */
     fun createInvoice() {
         savingOrder = true
         viewModelScope.launch(DispatcherProvider.io) {
             val current = order
+            val missingTaxCode = current.items
+                .filter { it.taxCode.isBlank() }
+                .map { it.description.ifBlank { it.productId } }
+                .distinct()
+            if (missingTaxCode.isNotEmpty()) {
+                invoiceError = getString(Res.string.ord_conv_missing_hsn, missingTaxCode.joinToString(", "))
+                viewModelScope.launch(Dispatchers.Main) { savingOrder = false }
+                return@launch
+            }
             if (current.invoiceRefId.isNullOrBlank()) {
                 val invoice = current.toInvoice()
                 invoiceRepository.saveInvoice(invoice)        // saves + numbers + marks INVOICE pending

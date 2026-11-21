@@ -24,6 +24,10 @@ interface CustomerGroupDao {
     @Query("SELECT * FROM customer_groups WHERE ref_id IN (:refs)")
     suspend fun getCustomerGroupsByTallyRefIds(refs: List<String>): List<CustomerGroupEntity>
 
+    /** Records the Tally account-group GUID/name after an app→Tally master push (mirrors CustomerDao.setTallyRef). */
+    @Query("UPDATE customer_groups SET ref_id = :refId, synced = 0 WHERE id = :id")
+    suspend fun setTallyRef(id: String, refId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomerGroup(customerGroup: CustomerGroupEntity)
 

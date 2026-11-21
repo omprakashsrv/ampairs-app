@@ -2,7 +2,9 @@ package com.ampairs.common.ui
 
 import Route
 import WorkspaceRoute
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -53,20 +55,21 @@ fun AppNavigationRail(
             label = { Text(stringResource(Res.string.nav_home)) }
         )
 
-        // All installed modules
-        navigationRoutes.forEach { module ->
-            NavigationRailItem(
-                selected = activeModuleCode == module.moduleCode,
-                onClick = { navigateToModule(backStack, module.moduleCode) },
-                icon = { Icon(moduleCodeToIcon(module.moduleCode), contentDescription = null) },
-                label = { Text(moduleCodeToDisplayName(module.moduleCode), maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            )
+        // All installed modules — scrollable, takes remaining space so More stays pinned to bottom
+        Column(
+            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+        ) {
+            navigationRoutes.forEach { module ->
+                NavigationRailItem(
+                    selected = activeModuleCode == module.moduleCode,
+                    onClick = { navigateToModule(backStack, module.moduleCode) },
+                    icon = { Icon(moduleCodeToIcon(module.moduleCode), contentDescription = null) },
+                    label = { Text(moduleCodeToDisplayName(module.moduleCode), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                )
+            }
         }
 
-        // Push More to bottom
-        Spacer(Modifier.weight(1f))
-
-        // More — always last
+        // More — always last, pinned to bottom
         NavigationRailItem(
             selected = activeModuleCode == "more",
             onClick = {

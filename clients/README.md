@@ -46,6 +46,27 @@ clients/<id>/
 
 No Kotlin/Gradle module changes are needed to add a client.
 
+## iOS builds
+
+The same white-label model works on iOS via `clientApp/iosApp/` (a Swift/CocoaPods shell over the
+`SharedEcom` framework from `:shared-ecom`). There is **no `-Pclient=<id>` flag** — the client is
+selected by the active Xcode build config instead of a Gradle property:
+
+| Android (`clients/<id>/config.properties`) | iOS (`clientApp/iosApp/Configuration/Client-<id>.xcconfig`) |
+|---|---|
+| `applicationId` | `BUNDLE_ID` |
+| `appName`       | `APP_NAME` |
+| `workspaceSlug` | `AMPAIRS_WORKSPACE_SLUG` |
+| `themeColorArgb` (`0xFF1B6C4A`) | `AMPAIRS_THEME_COLOR_ARGB` (`FF1B6C4A`) |
+| `google-services.json` (one file, per-client block) | per-client `GoogleService-Info-*.plist` (one Firebase iOS app per client) |
+| launcher icons in `res/mipmap-*` | app icon set in the Xcode asset catalog |
+
+Build/run/archive commands and the per-client CI loop live in **`clientApp/iosApp/README.md`**. In
+short: `pod install` (builds the shared framework), open `iosApp.xcworkspace`, pick the client's
+scheme, Run for dev or `xcodebuild ... archive` + export for TestFlight/App Store. Onboarding a new
+client on iOS = copy `Configuration/Client-ambika.xcconfig`, drop in that client's Firebase plists +
+`REVERSED_CLIENT_ID` and icon set, and add a scheme — no Kotlin/Gradle changes, same as Android.
+
 ## CI
 
 Loop over `clients/*/` and build + publish each:

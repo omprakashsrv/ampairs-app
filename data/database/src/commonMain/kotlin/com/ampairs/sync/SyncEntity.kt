@@ -37,6 +37,7 @@ enum class SyncEntity(val entityType: String) {
     PAYMENT_ALLOCATION("payment_allocation"),
     ADJUSTMENT("adjustment"),
     DEMAND_FORECAST("demand_forecast"),
+    MODULE("module"),
     NOTIFICATION("notification_log");
 
     companion object {

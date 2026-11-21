@@ -224,7 +224,7 @@ Each feature uses Metro DI with `@ContributesTo` platform modules and `@Inject` 
 ```bash
 # Validate all targets compile
 ./gradlew shared:compileKotlinIosSimulatorArm64
-./gradlew androidApp:compileDebugKotlinAndroid
+./gradlew androidApp:compileDebugKotlin
 ./gradlew desktopApp:compileKotlin
 ```
 

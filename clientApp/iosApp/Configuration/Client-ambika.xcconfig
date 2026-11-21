@@ -1,0 +1,13 @@
+// Per-client overrides for the "ambika" white-label build (mirrors clients/ambika/config.properties).
+// Debug.xcconfig / Release.xcconfig `#include?` this file. To onboard a new client, copy this to
+// Configuration/Client-<id>.xcconfig, edit the values, point Debug/Release's `#include?` at it, drop
+// the client's GoogleService-Info plists under Firebase/, and add its app icon set.
+//
+// NOTE: values here override the defaults that follow the `#include?` line in Debug/Release only if
+// this file is present AND its keys are read after the include. Keep the two in sync, or move the
+// per-client keys entirely into these Client-<id>.xcconfig files.
+
+BUNDLE_ID=com.ampairs.app.ambika
+APP_NAME=Ambika Enterprise
+AMPAIRS_WORKSPACE_SLUG=ambika-enterprise
+AMPAIRS_THEME_COLOR_ARGB=FF1B6C4A

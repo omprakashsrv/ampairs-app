@@ -196,6 +196,7 @@ private class CatalogFakeGroupDao : GroupDao {
     override suspend fun markAsSynced(id: String) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(synced = 1)) } }
     override suspend fun softDelete(id: String) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(soft_deleted = 1)) } }
     override suspend fun updateActiveStatus(id: String, active: Int) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) } }
+    override suspend fun setTallyRef(id: String, refId: String) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = 0)) } }
 }
 
 private class CatalogFakeCategoryDao : CategoryDao {
@@ -217,6 +218,7 @@ private class CatalogFakeCategoryDao : CategoryDao {
     override suspend fun markAsSynced(id: String) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(synced = 1)) } }
     override suspend fun softDelete(id: String) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(soft_deleted = 1)) } }
     override suspend fun updateActiveStatus(id: String, active: Int) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) } }
+    override suspend fun setTallyRef(id: String, refId: String) { rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = 0)) } }
 }
 
 private class CatalogFakeBrandDao : BrandDao {

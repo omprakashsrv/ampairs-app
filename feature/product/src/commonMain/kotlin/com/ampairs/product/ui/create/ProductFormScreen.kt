@@ -48,6 +48,8 @@ fun ProductFormScreen(
     productId: String? = null,
     onSaveSuccess: () -> Unit,
     onManageVariants: ((String, String) -> Unit)? = null,
+    /** Navigate to the internet image-search picker with the product's keyword parts. */
+    onSearchWebImages: ((entityUid: String, keywords: List<String>) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: ProductFormViewModel = assistedMetroViewModel<ProductFormViewModel, ProductFormViewModel.Factory> { create(productId) }
 ) {
@@ -115,6 +117,7 @@ fun ProductFormScreen(
                     canSave = uiState.canSave && !uiState.isSaving,
                     isSaving = uiState.isSaving,
                     onManageVariants = onManageVariants,
+                    onSearchWebImages = onSearchWebImages,
                     viewModel = viewModel,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -139,6 +142,7 @@ private fun ProductFormLayout(
     canSave: Boolean,
     isSaving: Boolean,
     onManageVariants: ((String, String) -> Unit)?,
+    onSearchWebImages: ((entityUid: String, keywords: List<String>) -> Unit)?,
     viewModel: ProductFormViewModel,
     modifier: Modifier = Modifier,
 ) {
@@ -156,6 +160,7 @@ private fun ProductFormLayout(
                 canSave = canSave,
                 isSaving = isSaving,
                 onManageVariants = onManageVariants,
+                onSearchWebImages = onSearchWebImages,
                 viewModel = viewModel,
                 modifier = modifier,
             )
@@ -170,6 +175,7 @@ private fun ProductFormLayout(
                 canSave = canSave,
                 isSaving = isSaving,
                 onManageVariants = onManageVariants,
+                onSearchWebImages = onSearchWebImages,
                 viewModel = viewModel,
                 modifier = modifier,
             )
@@ -201,6 +207,7 @@ private fun ProductFormTabLayout(
     canSave: Boolean,
     isSaving: Boolean,
     onManageVariants: ((String, String) -> Unit)?,
+    onSearchWebImages: ((entityUid: String, keywords: List<String>) -> Unit)?,
     viewModel: ProductFormViewModel,
     modifier: Modifier = Modifier,
 ) {
@@ -229,6 +236,7 @@ private fun ProductFormTabLayout(
             1 -> ProductImageManagementScreen(
                 productId = productId,
                 readOnly = false,
+                onSearchWeb = onSearchWebImages?.let { cb -> { cb(productId, productSearchKeywords(uiState.formState)) } },
                 viewModel = assistedMetroViewModel<ProductImageViewModel, ProductImageViewModel.Factory>(key = productId) { create(productId) },
                 modifier = Modifier
                     .fillMaxSize()
@@ -237,6 +245,15 @@ private fun ProductFormTabLayout(
         }
     }
 }
+
+/** Compose the product's searchable keyword parts (non-blank), used to seed the image-search chips. */
+private fun productSearchKeywords(formState: ProductFormState): List<String> = listOfNotNull(
+    formState.name.takeIf { it.isNotBlank() },
+    formState.brandName.takeIf { it.isNotBlank() },
+    formState.categoryName.takeIf { it.isNotBlank() },
+    formState.subCategoryName.takeIf { it.isNotBlank() },
+    formState.groupName.takeIf { it.isNotBlank() },
+)
 
 @Composable
 private fun ProductFormSideBySideLayout(
@@ -247,6 +264,7 @@ private fun ProductFormSideBySideLayout(
     canSave: Boolean,
     isSaving: Boolean,
     onManageVariants: ((String, String) -> Unit)?,
+    onSearchWebImages: ((entityUid: String, keywords: List<String>) -> Unit)?,
     viewModel: ProductFormViewModel,
     modifier: Modifier = Modifier,
 ) {
@@ -280,6 +298,7 @@ private fun ProductFormSideBySideLayout(
             ProductImageManagementScreen(
                 productId = productId,
                 readOnly = false,
+                onSearchWeb = onSearchWebImages?.let { cb -> { cb(productId, productSearchKeywords(uiState.formState)) } },
                 viewModel = assistedMetroViewModel<ProductImageViewModel, ProductImageViewModel.Factory>(key = productId) { create(productId) },
                 modifier = Modifier
                     .fillMaxSize()

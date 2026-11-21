@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test
 @Tag("live")
 class TallyApiLiveTest {
 
-    private val host = System.getProperty("tally.host") ?: System.getenv("TALLY_HOST")
+    private val host = (System.getProperty("tally.host") ?: System.getenv("TALLY_HOST"))?.takeIf { it.isNotBlank() }
     private val port = System.getProperty("tally.port")?.toIntOrNull()
         ?: System.getenv("TALLY_PORT")?.toIntOrNull()
         ?: 9008

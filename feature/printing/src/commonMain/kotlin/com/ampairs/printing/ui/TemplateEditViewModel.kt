@@ -3,6 +3,7 @@ package com.ampairs.printing.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.common.di.WorkspaceScope
+import com.ampairs.common.filepicker.defaultFileDialogSettings
 import com.ampairs.printing.core.engine.PrintEngine
 import com.ampairs.printing.core.model.Align
 import com.ampairs.printing.core.model.BindingScope
@@ -98,7 +99,10 @@ class TemplateEditViewModel(
         viewModelScope.launch {
             val template = _uiState.value.template ?: return@launch
             if (template.kind != TemplateKind.STATIC) return@launch
-            val file = FileKit.openFilePicker(type = FileKitType.File(setOf("html", "htm"))) ?: return@launch
+            val file = FileKit.openFilePicker(
+                type = FileKitType.File(setOf("html", "htm")),
+                dialogSettings = defaultFileDialogSettings(),
+            ) ?: return@launch
             val saved = fileRepository.saveLocally(
                 entityType = FileEntityType.PRINT_TEMPLATE,
                 entityUid = template.id,

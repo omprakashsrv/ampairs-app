@@ -54,7 +54,7 @@ However, `Dispatchers.IO` is **internal** in the Kotlin/Native runtime — it ca
 ```bash
 # Test all 3 major targets
 ./gradlew shared:compileKotlinIosSimulatorArm64    # iOS (Kotlin/Native)
-./gradlew androidApp:compileDebugKotlinAndroid      # Android (JVM)
+./gradlew androidApp:compileDebugKotlin            # Android (JVM)
 ./gradlew desktopApp:compileKotlin                  # Desktop (JVM)
 ```
 

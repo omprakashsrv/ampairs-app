@@ -10,4 +10,9 @@ data class Data(
     @XmlElement(true)
     @XmlSerialName("COLLECTION")
     var collection: Collection? = null,
+
+    // Present only on an IMPORTDATA response (voucher push); null for EXPORT/COLLECTION responses.
+    @XmlElement(true)
+    @XmlSerialName("IMPORTRESULT")
+    var importResult: ImportResult? = null,
 )

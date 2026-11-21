@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -80,13 +81,10 @@ class ProductRepositoryTest {
     }
 
     @Test
-    fun `createProduct generates a local id when blank`() = runTest {
-        val result = repository.createProduct(product(id = ""))
-
-        assertTrue(result.isSuccess)
-        val created = result.getOrThrow()
-        assertTrue(created.id.startsWith("local_"), "blank id is replaced with a generated local id")
-        assertEquals(1, productDao.count(), "exactly one row inserted under the generated id")
+    fun `createProduct rejects a blank id`() = runTest {
+        assertFailsWith<IllegalArgumentException> {
+            repository.createProduct(product(id = ""))
+        }
     }
 
     @Test
@@ -460,6 +458,10 @@ private class FakeProductDao : ProductDao {
         }
     }
 
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = 0)) }
+    }
+
     override suspend fun deleteById(id: String) {
         rows.value = rows.value - id
     }
@@ -584,6 +586,9 @@ private class FakeCategoryDao : CategoryDao {
     override suspend fun updateActiveStatus(id: String, active: Int) {
         rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) }
     }
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = 0)) }
+    }
 }
 
 private class FakeBrandDao : BrandDao {
@@ -666,6 +671,9 @@ private class FakeGroupDao : GroupDao {
     }
     override suspend fun updateActiveStatus(id: String, active: Int) {
         rows.value[id]?.let { rows.value = rows.value + (id to it.copy(active = active)) }
+    }
+    override suspend fun setTallyRef(id: String, refId: String) {
+        rows.value[id]?.let { rows.value = rows.value + (id to it.copy(ref_id = refId, synced = 0)) }
     }
 }
 

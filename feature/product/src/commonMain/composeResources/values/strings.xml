@@ -150,6 +150,7 @@
     <string name="prod_images_title">Product Images</string>
     <string name="prod_images_count">%1$d images</string>
     <string name="prod_images_retry_sync_cd">Retry sync</string>
+    <string name="prod_images_search_web_cd">Search web for image</string>
     <string name="prod_images_error">Image error</string>
     <string name="prod_images_dismiss">Dismiss</string>
     <string name="prod_images_retry">Retry</string>
@@ -190,6 +191,7 @@
     <string name="prod_catalog_sub_categories">Sub-categories</string>
     <string name="prod_catalog_groups">Groups</string>
     <string name="prod_master_data">Catalog</string>
+    <string name="prod_auto_match_images">Auto-match images from web</string>
     <string name="prod_filter_cd">Filter products</string>
     <string name="prod_filter_brand">Brand</string>
     <string name="prod_filter_category">Category</string>

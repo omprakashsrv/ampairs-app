@@ -67,6 +67,7 @@ import com.ampairs.product.domain.ProductListItem
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.feature.product.generated.resources.Res
+import ampairsapp.feature.product.generated.resources.prod_auto_match_images
 import ampairsapp.feature.product.generated.resources.prod_list_title
 import ampairsapp.feature.product.generated.resources.prod_list_count
 import ampairsapp.feature.product.generated.resources.prod_list_new_product
@@ -111,6 +112,8 @@ fun ProductsListScreen(
     onNavigateToCategories: () -> Unit = {},
     onNavigateToSubCategories: () -> Unit = {},
     onNavigateToGroups: () -> Unit = {},
+    /** Launch bulk web image auto-match for the given products (those missing images). */
+    onAutoMatchImages: (List<ProductListItem>) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProductsListViewModel = metroViewModel()
 ) {
@@ -242,6 +245,10 @@ fun ProductsListScreen(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(Res.string.prod_catalog_groups)) },
                                     onClick = { masterMenuOpen = false; onNavigateToGroups() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.prod_auto_match_images)) },
+                                    onClick = { masterMenuOpen = false; onAutoMatchImages(uiState.products) }
                                 )
                             }
                         }
