@@ -30,6 +30,9 @@ kotlin {
     iosSimulatorArm64()
 
     cocoapods {
+        // Pin the pod name: by default the plugin derives it from the project name with '-' → '_'
+        // ("shared_ecom"), which doesn't match `pod 'shared-ecom'` in the storefront Podfiles.
+        name = "shared-ecom"
         summary = "Ampairs Storefront (ecom) shared layer"
         version = "1.0.0"
         homepage = "https://ampairs.in"
