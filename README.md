@@ -133,7 +133,7 @@ ampairs-app/
 ├── .claude/
 │   ├── rules.md            # Claude Code project rules
 │   ├── memory/             # Claude Code project memory
-│   └── skills/             # cmp-practices, offline-sync, metro-di, android-official
+│   └── skills/             # project skills (cmp-practices, offline-sync, metro-di) + vendored android/Kotlin skills (see VENDORED.md)
 └── CLAUDE.md               # Development guidelines (imports .claude/)
 ```
 

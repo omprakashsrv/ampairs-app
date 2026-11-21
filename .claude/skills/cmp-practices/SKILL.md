@@ -37,10 +37,19 @@ Consult these files for deeper guidance. They are not auto-loaded — read them 
 | Material 3 theming, components, adaptive layout matrix | `references/material-design.md` | Theming, component choice, window-size layouts |
 | ViewModel testing — Turbine, fakes, Metro test graphs | `references/testing.md` | Writing ViewModel / pure-function tests |
 
-Official Google Android skills also live under `.claude/skills/android-official/`: **adaptive**
-(multi-pane / window-size UI), **navigation-3** (deep links, scenes, multiple back stacks),
-**r8-analyzer** (keep-rule / shrinker optimization), **camerax** (Android camera). Load these for
-deep Android-platform detail beyond the project references above.
+Official upstream skills are vendored verbatim at the top level of `.claude/skills/` (Google's
+`android/skills` + JetBrains' `Kotlin/kotlin-agent-skills` — provenance in `.claude/skills/VENDORED.md`).
+Most relevant here: **adaptive**, **navigation-3**, **navigation-event**, **edge-to-edge**,
+**jetpack-compose-performance**, **r8-analyzer**, **litert-lm** (agent), **play-billing-library-version-upgrade**,
+**testing-setup**, and for KMP builds **kotlin-tooling-agp9-migration** (use this, *not*
+`agp-9-upgrade`, which is Android-only), **kotlin-tooling-native-build-performance**,
+**kotlin-tooling-cocoapods-spm-migration**.
+
+**Precedence:** the upstream skills are generic Android/Kotlin guidance (many assume Hilt,
+Android-only modules, `R.string`, a single DB). Where they conflict with this project's rules —
+Metro DI + `WorkspaceScope`, `commonMain`-only APIs, Compose resources, the consolidated
+`AmpairsWorkspaceDatabase`, offline-first `SyncDelegate` — **this skill, `/metro-di` and
+`/offline-sync` win.**
 
 ---
 

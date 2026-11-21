@@ -135,7 +135,7 @@ Do not add a redundant `navigationIcon` when the global nav drawer already handl
 Compute `WindowSizeClass` once via `currentWindowAdaptiveInfo()` and pass layout decisions down as
 state. Canonical layouts: `ListDetailPaneScaffold` (list-detail), `SupportingPaneScaffold`
 (supporting pane), `LazyVerticalGrid` (feed). For deeper adaptive guidance see the official
-`android-official/adaptive` skill.
+`adaptive` skill (`.claude/skills/adaptive`).
 
 ## Anti-Patterns
 
