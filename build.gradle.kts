@@ -25,6 +25,35 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+// ── CocoaPods synthetic Podfile: raise the pod deployment-target floor ───────
+// The Kotlin CocoaPods plugin generates a synthetic Podfile whose post_install raises every pod
+// target's IPHONEOS_DEPLOYMENT_TARGET to at least a HARDCODED 12.0 (KT-57741, an Xcode 14.3
+// workaround; not configurable). Pods such as FirebaseCore/GoogleUtilities 11.x declare 12.0 in
+// their podspecs, and Xcode 26+/27 rejects anything below 15.0 ("supported deployment target
+// versions is 15.0 to …"), failing `podBuild*` and so every iOS compile. Rewrite the floor to the
+// project's iOS minimum — keep in sync with `ios.deploymentTarget` in the cocoapods {} blocks
+// (shared, shared-ecom, feature/auth) and `platform :ios` in the app Podfiles.
+val iosPodsMinDeploymentTarget = 16
+subprojects {
+    tasks.withType(org.jetbrains.kotlin.gradle.targets.native.tasks.PodGenTask::class.java).configureEach {
+        val podfile = this.podfile
+        val floor = iosPodsMinDeploymentTarget
+        doLast {
+            val file = podfile.get()
+            val original = file.readText()
+            val patched = original
+                .replace("deployment_target_major < 12 ||", "deployment_target_major < $floor ||")
+                .replace("deployment_target_major == 12 &&", "deployment_target_major == $floor &&")
+                .replace("version = \"#{12}.#{0}\"", "version = \"#{$floor}.#{0}\"")
+            if (patched == original) {
+                logger.warn("PodGen: KT-57741 deployment-target block not found in $file — floor not raised to $floor.0")
+            } else {
+                file.writeText(patched)
+            }
+        }
+    }
+}
+
 // ── Aggregated code coverage (Kover) ─────────────────────────────────────────
 // ./gradlew koverXmlReport koverHtmlReport
 //   → build/reports/kover/report.xml   (consumed by CI publishing)

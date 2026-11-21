@@ -17,12 +17,13 @@ target 'iosApp' do
   pod 'whisper', :path => '../feature/agent'
 end
 
-# Enforce minimum deployment target for all pods
+# Raise every pod to the app's minimum (16.0) — Xcode 26+ rejects pod targets below 15.0, and
+# Firebase/GoogleUtilities podspecs still declare 12.0.
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 12.0
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 16.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
       end
     end
   end
