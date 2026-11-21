@@ -117,3 +117,8 @@ jobs:
       - run: chmod +x ./gradlew
       - name: Compile iOS framework
         run: ./gradlew :shared:compileKotlinIosSimulatorArm64 --console=plain
+      - name: Compile iOS storefront framework (SharedEcom)
+        # :shared-ecom has its own Metro graph (StorefrontIosGraph) consumed by marketplaceApp/iosApp
+        # and clientApp/iosApp. Kotlin/Native sees transitive `implementation` deps that Android
+        # hides, so DI leaks (e.g. :feature:agent bindings) only fail here — not in the Android job.
+        run: ./gradlew :shared-ecom:compileKotlinIosSimulatorArm64 --console=plain
