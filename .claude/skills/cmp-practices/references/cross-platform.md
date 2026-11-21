@@ -90,11 +90,12 @@ withContext(Dispatchers.IO) { ... }   // safe
 
 // ✅ Foundation APIs require opt-in
 @OptIn(ExperimentalForeignApi::class)
-fun getIosDatabasePath(slug: String, module: String): String { ... }
+fun getIosDatabasePath(databaseName: String): String { ... }   // data/common iosMain
 
-// iOS database path: Documents/workspace_{slug}/{module}.db
-// Android database path: workspace_{slug}_{module}.db (flat file)
-// Desktop database path: ~/.ampairs/workspace_{slug}/{module}.db
+// Consolidated DB files (built in data/database DatabaseModule.*.kt — features never open a DB):
+// Android: ampairs_app.db, workspace_{slug}_main.db (flat, app databases dir)
+// iOS:     Documents/ampairs_app.db, Documents/workspace_{slug}/main.db
+// Desktop: {DataDirectoryManager.getDatabaseDir()}/ampairs_app.db, …/workspace_{slug}/main.db
 ```
 
 ## Validation Before Adding Dependencies to commonMain
@@ -130,28 +131,34 @@ LaunchedEffect(Unit) {
 
 ## Workspace-Scoped Database — Project-Critical Rule
 
-When users switch workspaces, **all databases must be replaced**. Using Metro `@SingleIn(AppScope::class)` caches stale database references.
+When users switch workspaces, the workspace database must be replaced. Ampairs has **one**
+workspace database, `AmpairsWorkspaceDatabase` (`:data:database`), provided per workspace child graph;
+features never provide their own.
 
 ```kotlin
-// ❌ WRONG — stale DB after workspace switch
+// ❌ WRONG — a feature module providing its own database (and in AppScope: stale after a switch)
 @ContributesTo(AppScope::class)
 interface CustomerPlatformModule {
     companion object {
         @Provides @SingleIn(AppScope::class)
-        fun provideDb(factory: WorkspaceAwareDatabaseFactory): CustomerDatabase =
-            factory.createDatabase(CustomerDatabase::class, "customer")
+        fun provideDb(...): CustomerDatabase = ...
     }
 }
 
-// ✅ CORRECT — new instance per injection, fresh after workspace switch
-@ContributesTo(AppScope::class)
-interface CustomerPlatformModule {
-    companion object {
-        @Provides   // no @SingleIn — unscoped = new instance per injection site
-        fun provideDb(factory: WorkspaceAwareDatabaseFactory): CustomerDatabase =
-            factory.createDatabase(CustomerDatabase::class, "customer")
-    }
-}
+// ✅ CORRECT — data/database DatabaseModule.*.kt, once per workspace graph
+@Provides @SingleIn(WorkspaceScope::class)
+fun provideAmpairsWorkspaceDatabase(
+    /* platform context/paths */,
+    config: WorkspaceConfig,
+    closableRegistry: WorkspaceClosableRegistry,
+): AmpairsWorkspaceDatabase = Room.databaseBuilder<AmpairsWorkspaceDatabase>(/* workspace_{slug} path */)
+    /* driver, dispatcher, migrations */
+    .build()
+    .also { closableRegistry.register { it.close() } }   // closed on workspace switch
+
+// ✅ Features get unscoped DAOs from WorkspaceDatabaseDaoModule
+@Provides fun provideCustomerDao(db: AmpairsWorkspaceDatabase): CustomerDao = db.customerDao()
 ```
 
-Exceptions that stay `@SingleIn`: `AuthRoomDatabase` and `WorkspaceRoomDatabase` (pre-workspace singletons).
+Pre-/cross-workspace data (auth, workspace registry, model catalog) lives in the AppScope
+`AmpairsAppDatabase`. Adding tables: CLAUDE.md → *Adding tables for a feature*.

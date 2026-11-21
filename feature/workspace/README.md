@@ -76,4 +76,4 @@ Platform database factory in `androidMain`, `iosMain`, `desktopMain`.
 
 ## Database
 
-`WorkspaceRoomDatabase` — `single` scope (exists before workspace selection, stores the workspace list itself).
+The workspace registry tables (workspaces, members, roles, installed/available modules, menu items) live in the consolidated `AmpairsAppDatabase` (`:data:database`, `ampairs_app.db`), provided `@SingleIn(AppScope::class)` — app-scoped because they hold the workspace list itself. Each workspace's own data is in its `AmpairsWorkspaceDatabase`. (Formerly the standalone `workspace.db`.)

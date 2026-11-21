@@ -1,6 +1,22 @@
 <!--
 Sync Impact Report
 ===================
+Version Change: 2.0.0 → 2.1.0
+Type: MINOR (materially corrected guidance; no principle added or removed)
+
+Modified Principles:
+  - III. Workspace-Scoped Isolation → rules now describe the consolidated data layer:
+    one WorkspaceScope AmpairsWorkspaceDatabase in :data:database (features never own a
+    @Database), shared append-only version + schema-JSON migrations, destructive fallback
+    banned, AmpairsAppDatabase for pre-workspace data, real file paths (workspace_{slug}_main.db).
+  - IV. Metro DI & MVI Boundary → workspace ViewModels default to WorkspaceScope (AppScope only
+    for pre-/outside-workspace screens), matching the code.
+
+Templates Requiring Updates:
+  ✅ plan/spec/tasks templates — no data-layer coupling (no edit needed)
+
+-------------------------------------------------------------------------------
+Previous amendment
 Version Change: 1.0.0 → 2.0.0
 Type: MAJOR (principle redefinitions — DI framework, data layer, and module
       topology changed; several principles rewritten or replaced)
@@ -107,16 +123,19 @@ are scoped to it and torn down on workspace switch.
 Koin `factory {}` approach, which was error-prone.
 
 **Rules**:
-- Workspace-aware databases: `@Provides @SingleIn(WorkspaceScope::class)` inside a per-platform
-  `@ContributesTo(WorkspaceScope::class)` module, registered via
-  `.also { closableRegistry.register { it.close() } }`, with an explicit reified type param
-  (`createDatabase<MyDatabase>(...)` / `createAndroidDatabase<MyDatabase>(...)`).
-- DAOs and repositories are **unscoped** `@Inject` classes (fresh instance per injection site).
+- All workspace data lives in ONE consolidated database, `AmpairsWorkspaceDatabase` (`:data:database`),
+  provided `@SingleIn(WorkspaceScope::class)` by `DatabaseModule.{android,desktop,ios}.kt` and
+  registered via `.also { closableRegistry.register { it.close() } }`. Feature modules MUST NOT
+  declare their own `@Database`, apply the Room/KSP plugins, or provide a database; their entities +
+  DAOs live in `:data:database` under the feature's package.
+- Schema changes MUST bump the shared, append-only `version` and ship a migration (built from the
+  exported schema JSON) registered on all three platforms; `fallbackToDestructiveMigration` is banned.
+- DAOs (unscoped `@Provides` in `WorkspaceDatabaseDaoModule`) and repositories (unscoped `@Inject`)
+  get a fresh instance per injection site.
 - ViewModels in the workspace scope use `@ContributesIntoMap(WorkspaceScope::class)`.
-- DB paths: Android flat `workspace_{slug}_{module}.db`; iOS/Desktop directory
-  `workspace_{slug}/{module}.db`.
-- Exceptions living in `AppScope`: `AuthRoomDatabase` and `WorkspaceRoomDatabase` (they predate
-  workspace selection).
+- DB files: Android `workspace_{slug}_main.db`; iOS/Desktop `workspace_{slug}/main.db`.
+- Pre-/cross-workspace data (auth, workspace registry, model catalog) lives in the AppScope
+  `AmpairsAppDatabase` (`ampairs_app.db`).
 - On workspace switch, refresh the Ktor `X-Workspace-ID` cache (`tokenRepository.getWorkspaceId()`)
   before `activateWorkspace()`, and remount Nav via `key(generation)`.
 
@@ -129,7 +148,8 @@ Dependencies flow only through Metro-injected ViewModels. The project has fully 
 preserving testability and the workspace-switch guarantees.
 
 **Rules**:
-- Plain ViewModel: `@ContributesIntoMap(AppScope::class)` + `@ViewModelKey` + `@Inject`. Runtime-param
+- Plain ViewModel: `@ContributesIntoMap(WorkspaceScope::class)` (`AppScope` only for pre-/outside-workspace
+  screens — auth, workspace picker, app update) + `@ViewModelKey` + `@Inject`. Runtime-param
   ViewModel: `@AssistedInject` + inner `fun interface Factory` (`@AssistedFactory` +
   `@ManualViewModelAssistedFactoryKey` + `@ContributesIntoMap`).
 - Screens declare the ViewModel as a trailing default param via `metroViewModel()` /
@@ -262,7 +282,8 @@ business locale (currency, timezone, date/time format), while storage stays UTC.
 
 - Layers: `@Inject` DAO → `@Inject` Repository (local-only) → `{Name}SyncDelegate` (holds `Api`) →
   `@ContributesIntoMap` ViewModel. App-scoped singletons use `@SingleIn(AppScope::class)` in
-  `@ContributesTo` platform modules; workspace-aware DBs use `@SingleIn(WorkspaceScope::class)`.
+  `@ContributesTo` platform modules; the consolidated `AmpairsWorkspaceDatabase` uses
+  `@SingleIn(WorkspaceScope::class)` (provided in `:data:database`, never by a feature).
 - New dependencies are added via the `gradle/libs.versions.toml` version catalog only — no hardcoded
   versions; verify KMP support before adding.
 
@@ -362,4 +383,4 @@ The constitution evolves with real-world lessons. Encode new patterns (Metro DI 
 CentralSyncService changes, KMP best practices) through the amendment procedure and mirror durable
 knowledge into `CLAUDE.md` and `.claude/memory/`.
 
-**Version**: 2.0.0 | **Ratified**: 2025-01-11 | **Last Amended**: 2026-06-15
+**Version**: 2.1.0 | **Ratified**: 2025-01-11 | **Last Amended**: 2026-11-21

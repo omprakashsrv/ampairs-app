@@ -102,12 +102,11 @@ SYNCING is never persisted — a crash during sync reverts to PENDING_* for retr
 |---|---|
 | `data/sync/src/commonMain/.../CentralSyncService.kt` | Orchestrator — event loop, state management, persistence |
 | `data/sync/src/commonMain/.../SyncDelegate.kt` | Interface every feature module implements |
-| `data/sync/src/commonMain/.../SyncEntity.kt` | Enum registry of all syncable entities |
+| `data/database/src/commonMain/.../sync/SyncEntity.kt` | Enum registry of all syncable entities — `SyncEntity(entityType, moduleCode)` |
 | `data/sync/src/commonMain/.../SyncEvent.kt` | Commands: TriggerPull, TriggerPush, BackendEventReceived, etc. |
 | `data/sync/src/commonMain/.../SyncStatus.kt` | Status sealed class + persistence name helpers |
-| `data/sync/src/commonMain/.../db/SyncStateDatabase.kt` | Room DB (workspace-scoped, `sync_state` module name) |
-| `data/sync/src/commonMain/.../db/SyncStateDao.kt` | Persistence queries for sync state rows |
-| `data/sync/src/commonMain/.../SyncDatabaseFactory.kt` | `fun interface` — platform modules implement this |
+| `data/database/src/commonMain/.../sync/db/SyncStateEntity.kt` | `entity_sync_state` table — lives **inside `AmpairsWorkspaceDatabase`** (no separate sync DB) |
+| `data/database/src/commonMain/.../sync/db/SyncStateDao.kt` | Persistence queries for sync state rows; exposed as `WorkspaceGraph.syncStateDao` and passed to `CentralSyncService.start(...)` |
 | `data/sync/src/commonMain/.../di/SyncModule.kt` | `@Multibinds` declaration for `Map<SyncEntity, SyncDelegate>` |
 | `feature/workspace/.../EventConnectionManager.kt` | Collects EventManager events → routes to `syncService.onBackendEvent()` |
 | `feature/customer/.../sync/CustomerSyncDelegate.kt` | Reference implementation — template for all other entities |
@@ -220,44 +219,40 @@ eventConnectionManager.disconnect()
 
 ## Adding a New Syncable Entity
 
-Checklist:
+The authoritative checklist is in **`/offline-sync` → "Adding a New Syncable Entity — Checklist"**;
+the database steps are in **CLAUDE.md → "Adding tables for a feature"**. In short:
 
-1. **Add entry to `SyncEntity` enum** in `data/sync/SyncEntity.kt`:
+1. **Entity + DAO in `:data:database`** (feature package), registered in `AmpairsWorkspaceDatabase`
+   with a version bump + migration. The entity carries `synced` (+ `active` for soft delete).
+2. **`SyncEntity` entry with its `moduleCode`** in `data/database/.../sync/SyncEntity.kt`:
    ```kotlin
-   PAYMENT("payment"),
+   PAYMENT("payment", "payment-collection"),
    ```
-
-2. **Add repository methods**:
-   - `suspend fun pullFromServer(): Result<Int>` — batch pull logic
-   - `suspend fun pushPendingToServer(): Result<Int>` — push unsynced rows
-   - `suspend fun handleExternalEvent(entityId: String, eventType: String)` — handles WebSocket event
-
-3. **Create `PaymentSyncDelegate`** in `feature/payment/src/commonMain/.../sync/`:
+3. **Repository is local-only** — injects the `Dao` + `SyncStateDao` (never the `Api`); every write
+   saves with `synced = false` and calls `syncStateDao.markPendingPush(SyncEntity.PAYMENT, now)`.
+4. **`PaymentSyncDelegate` owns all server traffic** — injects the `Api` + `Dao`:
    ```kotlin
-   @Inject @ContributesIntoMap(AppScope::class) @SyncEntityKey(SyncEntity.PAYMENT)
-   class PaymentSyncDelegate(private val repo: PaymentRepository) : SyncDelegate {
+   @Inject @ContributesIntoMap(WorkspaceScope::class) @SyncEntityKey(SyncEntity.PAYMENT)
+   class PaymentSyncDelegate(
+       private val api: PaymentApi,
+       private val dao: PaymentDao,
+       private val syncStateDao: SyncStateDao,   // only if the pull is timestamp-incremental
+   ) : SyncDelegate {
        override val entity = SyncEntity.PAYMENT
-       override suspend fun pullFromServer() = repo.pullFromServer().fold(...)
-       override suspend fun pushPendingToServer() = repo.pushPendingToServer().fold(...)
-       override suspend fun handleBackendEvent(entityId: String, eventType: String) =
-           runCatching { repo.handleExternalEvent(entityId, eventType) }.fold(...)
-       // observePendingCount() NOT overridden — inherits flowOf(0)
+       override suspend fun pullFromServer(): SyncResult = /* batched pull; hard-delete server-DELETED rows */
+       override suspend fun pushPendingToServer(): SyncResult = /* bulk push of synced = 0 rows */
+       override suspend fun handleBackendEvent(entityId: String, eventType: String) = pullFromServer()
    }
    ```
+5. **Wire the EventType mapping** — `WorkspaceEvent.entityType` must match `SyncEntity.PAYMENT.entityType`.
 
-4. **Add `:data:sync` dependency** to `feature/payment/build.gradle.kts` commonMain.
-
-5. **Wire EventType mapping** — ensure `WorkspaceEvent.entityType` matches `SyncEntity.PAYMENT.entityType` (`"payment"`).
-
-6. **Call `syncService.markPendingPush(SyncEntity.PAYMENT)`** from the ViewModel after any local write.
-
-That's it. No changes to `CentralSyncService`, `EventConnectionManager`, or any DI module file.
+No changes to `CentralSyncService`, `EventConnectionManager`, or any DI module file are needed.
 
 ---
 
 ## Persistence Model
 
-**Database:** `SyncStateDatabase` — workspace-scoped, module name `sync_state`  
+**Database:** the `entity_sync_state` table inside the workspace's `AmpairsWorkspaceDatabase`  
 **Table:** `entity_sync_state`
 
 | Column | Type | Notes |
@@ -265,6 +260,7 @@ That's it. No changes to `CentralSyncService`, `EventConnectionManager`, or any 
 | `entityName` | TEXT PK | `SyncEntity.name` — e.g. `"CUSTOMER"` |
 | `statusName` | TEXT | `"IDLE"`, `"PENDING_PUSH"`, `"PENDING_PULL"`, `"FAILED"` |
 | `lastSyncedAt` | INTEGER? | Epoch milliseconds of last successful sync |
+| `lastSyncedAtIso` | TEXT? | Server `updatedAt` checkpoint for incremental pulls (preserved by `markPendingPush`) |
 | `pendingCount` | INTEGER | Count of unsynced local rows (for `PENDING_PUSH`) |
 | `errorMessage` | TEXT? | Last error message (for `FAILED`) |
 | `updatedAt` | INTEGER | When this row was last written |

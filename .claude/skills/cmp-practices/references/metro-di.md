@@ -21,6 +21,7 @@ import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import com.ampairs.common.di.AppScope
+import com.ampairs.common.di.WorkspaceScope
 ```
 
 ---
@@ -30,8 +31,8 @@ import com.ampairs.common.di.AppScope
 When the ViewModel needs only injected dependencies (no ID or dynamic param from the UI):
 
 ```kotlin
-// ✅ Plain ViewModel
-@ContributesIntoMap(AppScope::class)
+// ✅ Plain ViewModel (workspace feature → WorkspaceScope)
+@ContributesIntoMap(WorkspaceScope::class)
 @ViewModelKey
 @Inject
 class OrdersViewModel(val orderRepository: OrderRepository) : ViewModel() {
@@ -76,7 +77,7 @@ class OrderViewViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(orderId: String): OrderViewViewModel
     }
@@ -98,7 +99,7 @@ class OrderViewModel(
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey
-    @ContributesIntoMap(AppScope::class)
+    @ContributesIntoMap(WorkspaceScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
         fun create(fromCustomerId: String?, toCustomerId: String?, id: String?): OrderViewModel
     }
@@ -132,7 +133,7 @@ fun OrderScreen(
 
 **Rules:**
 - The inner `Factory` interface must be `fun interface` with a single `fun create(...)` method
-- Annotation order on `Factory`: `@AssistedFactory` → `@ManualViewModelAssistedFactoryKey` → `@ContributesIntoMap(AppScope::class)`
+- Annotation order on `Factory`: `@AssistedFactory` → `@ManualViewModelAssistedFactoryKey` → `@ContributesIntoMap(WorkspaceScope::class)` (`AppScope` only for ViewModels that exist before/outside a workspace — auth, workspace picker, app update)
 - `@Assisted` marks only the runtime params; non-assisted params are injected automatically
 - `assistedMetroViewModel<VM, VM.Factory> { create(param) }` — the lambda calls your factory method
 - No `key =` param needed unless you need multiple instances of the same VM on one screen; the lambda is the disambiguation
@@ -141,16 +142,16 @@ fun OrderScreen(
 
 ## 3. Repository and API — Plain `@Inject` (unscoped)
 
-DAOs and Repositories are **unscoped** — Metro creates a new instance per injection site. This is intentional: after a workspace switch, the new instance picks up the new database.
+DAOs and Repositories are **unscoped** — Metro creates a new instance per injection site. This is intentional: after a workspace switch, the new instance picks up the new workspace's database.
 
 ```kotlin
-// ✅ Repository — unscoped @Inject
+// ✅ Repository — unscoped @Inject, local-only (DAO + SyncStateDao; the Api lives in the SyncDelegate)
 @Inject
 class InventoryRepository(
-    val inventoryDao: InventoryDao,
-    val inventoryApi: InventoryApi,
+    private val inventoryDao: InventoryDao,
+    private val syncStateDao: SyncStateDao,
 ) {
-    // business logic
+    // Room reads/writes + syncStateDao.markPendingPush(...) — no network (see /offline-sync)
 }
 
 // ✅ API impl — @Inject + @ContributesBinding binds the impl to the interface
@@ -159,93 +160,40 @@ class InventoryApiImpl(
     engine: HttpClientEngine,
     tokenRepository: TokenRepository,
 ) : InventoryApi {
-    // Ktor implementation
+    // Ktor implementation — injected only by InventorySyncDelegate
 }
 ```
 
-**Never** add `@SingleIn(AppScope::class)` to any workspace-aware class (Repository, DAO, Store, Database). See [[cross-platform]] workspace-scoped DB rule.
+**Never** add `@SingleIn(AppScope::class)` to any workspace-aware class (Repository, DAO, Store). See [[cross-platform]] workspace-scoped DB rule.
 
 ---
 
-## 4. Platform `@ContributesTo` Modules
+## 4. Database & DAO provision — consolidated, not per feature
 
-Database provision and other platform-specific bindings use `@ContributesTo` interface modules.
+A feature module **never declares or provides its own Room database**. All workspace tables live in
+`AmpairsWorkspaceDatabase` (`:data:database`), provided once per workspace graph — `@SingleIn(WorkspaceScope::class)`
++ registered with `WorkspaceClosableRegistry` — by `data/database/src/{android,desktop,ios}Main/.../di/DatabaseModule.*.kt`.
 
-### Common module — DAO provision
-
-```kotlin
-// feature/{name}/src/commonMain/.../FeatureModule.kt
-@ContributesTo(AppScope::class)
-interface FeatureDaoModule {
-    companion object {
-        @Provides
-        fun provideFeatureDao(db: FeatureRoomDatabase): FeatureDao = db.featureDao()
-    }
-}
-```
-
-### Android platform module
+For a feature's tables (full steps: CLAUDE.md → *Adding tables for a feature*):
 
 ```kotlin
-// feature/{name}/src/androidMain/.../FeatureModule.android.kt
-@ContributesTo(AppScope::class)
-interface FeatureAndroidModule {
-    companion object {
-        @Provides
-        fun provideFeatureDatabase(
-            factory: WorkspaceAwareDatabaseFactory,
-            context: Context,
-        ): FeatureRoomDatabase =
-            factory.createAndroidDatabase(
-                context = context,
-                queryDispatcher = Dispatchers.IO,
-                moduleName = "feature_name",   // matches DB filename slug
-                migrations = emptyList(),
-            )
-    }
-}
-```
+// data/database/src/commonMain/kotlin/com/ampairs/inventory/data/db/dao/InventoryDao.kt
+@Dao interface InventoryDao { /* androidx.room3 */ }
 
-### iOS platform module
+// data/database/.../AmpairsWorkspaceDatabase.kt — add the entity to entities = [...], bump version, and:
+abstract fun inventoryDao(): InventoryDao
 
-```kotlin
-// feature/{name}/src/iosMain/.../FeatureModule.ios.kt
-@ContributesTo(AppScope::class)
-interface FeatureIosModule {
-    companion object {
-        @Provides
-        fun provideFeatureDatabase(factory: WorkspaceAwareDatabaseFactory): FeatureRoomDatabase =
-            factory.createDatabase(
-                klass = FeatureRoomDatabase::class,
-                moduleName = "feature_name",
-                migrations = emptyList(),
-            )
-    }
-}
-```
-
-### Desktop platform module
-
-```kotlin
-// feature/{name}/src/desktopMain/.../FeatureModule.desktop.kt
-@ContributesTo(AppScope::class)
-interface FeatureDesktopModule {
-    companion object {
-        @Provides
-        fun provideFeatureDatabase(factory: WorkspaceAwareDatabaseFactory): FeatureRoomDatabase =
-            factory.createDatabase(
-                klass = FeatureRoomDatabase::class,
-                moduleName = "feature_name",
-                migrations = emptyList(),
-            )
-    }
-}
+// data/database/.../di/WorkspaceDatabaseDaoModule.kt — unscoped DAO provider
+@Provides
+fun provideInventoryDao(db: AmpairsWorkspaceDatabase): InventoryDao = db.inventoryDao()
 ```
 
 **Rules:**
-- Database provision has **no `@SingleIn`** — unscoped so the new workspace gets a fresh DB
-- Exception: `AuthRoomDatabase` and `WorkspaceRoomDatabase` use `@SingleIn(AppScope::class)` because they exist before workspace selection
-- `moduleName` must match the slug used in `WorkspaceAwareDatabaseFactory` path logic
+- No per-feature `@ContributesTo` DB modules, no `ksp`/`room` plugins in feature modules — the feature
+  just depends on `projects.data.database`
+- Every new table needs an `AmpairsWorkspaceDatabase` version bump + a migration (built from the
+  exported schema JSON) registered in all three `DatabaseModule.*.kt`; `fallbackToDestructiveMigration` is banned
+- Pre-/cross-workspace data (auth, workspace registry, model catalog) lives in the AppScope `AmpairsAppDatabase`
 
 ---
 
@@ -273,59 +221,28 @@ All feature dependencies reach screens via Metro-injected ViewModels.
 
 ## 6. New Feature Module Checklist
 
-- [ ] **Database** — `@Provides` (no `@SingleIn`) in each platform `@ContributesTo` module (android/ios/desktop)
-- [ ] **DAO** — `@Provides` in common `@ContributesTo` module, reads from the database
-- [ ] **Repository** — `@Inject` class, unscoped
-- [ ] **API impl** — `@Inject @ContributesBinding(AppScope::class)` class binding to the interface
-- [ ] **Plain ViewModel** — `@ContributesIntoMap(AppScope::class)` + `@ViewModelKey` + `@Inject`
-- [ ] **Assisted ViewModel** — `@AssistedInject` + inner `Factory` with `@AssistedFactory` + `@ManualViewModelAssistedFactoryKey` + `@ContributesIntoMap(AppScope::class)`
+- [ ] **Tables** — entity + DAO in `:data:database` (feature package), registered in `AmpairsWorkspaceDatabase` with a version bump + migration
+- [ ] **DAO** — unscoped `@Provides` in `WorkspaceDatabaseDaoModule`
+- [ ] **Repository** — `@Inject` class, unscoped, local-only (DAO + `SyncStateDao`)
+- [ ] **API impl** — `@Inject @ContributesBinding(AppScope::class)` class binding to the interface; injected by the `SyncDelegate`
+- [ ] **Plain ViewModel** — `@ContributesIntoMap(WorkspaceScope::class)` + `@ViewModelKey` + `@Inject`
+- [ ] **Assisted ViewModel** — `@AssistedInject` + inner `Factory` with `@AssistedFactory` + `@ManualViewModelAssistedFactoryKey` + `@ContributesIntoMap(WorkspaceScope::class)`
 - [ ] **Screen** — `viewModel: XxxViewModel = metroViewModel()` or `assistedMetroViewModel<VM, VM.Factory> { create(param) }` as trailing default param
-- [ ] **DB path** — Android: `workspace_{slug}_{module}.db` flat; iOS/Desktop: `workspace_{slug}/{module}.db` directory
 
 ---
 
-## 6. WorkspaceScope — Child Graph for Per-Workspace Isolation
+## 7. WorkspaceScope — Child Graph for Per-Workspace Isolation
 
-Each workspace gets its own isolated dependency graph. Workspace-aware modules contribute to `WorkspaceScope`, not `AppScope`.
+Each workspace gets its own isolated dependency graph. The graph owns that workspace's
+`AmpairsWorkspaceDatabase` (Android `workspace_{slug}_main.db`, iOS/Desktop `workspace_{slug}/main.db`);
+workspace-aware ViewModels and sync delegates contribute to `WorkspaceScope`, not `AppScope`.
 
 ```kotlin
-// ✅ Workspace-aware database module (android platform)
-@ContributesTo(WorkspaceScope::class)   // NOT AppScope!
-interface FeatureAndroidModule {
-    companion object {
-        @Provides
-        @SingleIn(WorkspaceScope::class)   // one per workspace graph lifetime
-        fun provideFeatureDatabase(
-            factory: WorkspaceAwareDatabaseFactory,
-            context: Context,
-            config: WorkspaceConfig,
-            closableRegistry: WorkspaceClosableRegistry,
-        ): FeatureDatabase {
-            return factory.createAndroidDatabase<FeatureDatabase>(   // explicit reified type!
-                context = context,
-                queryDispatcher = Dispatchers.IO,
-                moduleName = "feature_name",
-                workspaceSlug = config.workspaceSlug,
-            ).also { closableRegistry.register { it.close() } }
-        }
-    }
-}
-
 // ✅ Workspace-aware ViewModel
 @ContributesIntoMap(WorkspaceScope::class)   // NOT AppScope!
 @ViewModelKey
 @Inject
 class BusinessOverviewViewModel(private val repo: BusinessRepository) : ViewModel()
-```
-
-### Reified type inference gotcha
-
-```kotlin
-// ❌ WRONG — Kotlin cannot infer T through .also { }
-factory.createAndroidDatabase(...).also { closableRegistry.register { it.close() } }
-
-// ✅ CORRECT — always write the explicit type param
-factory.createAndroidDatabase<FeatureDatabase>(...).also { closableRegistry.register { it.close() } }
 ```
 
 ### Workspace switch — ensuring fresh ViewModels
@@ -373,17 +290,19 @@ Without this, the Ktor `defaultRequest` plugin sends the old workspace ID on eve
 ```kotlin
 // ❌ Old Koin — do not use
 val featureModule = module {
-    single<FeatureDatabase> { factory.createDatabase(...) }
+    single { /* ... */ }
     factory<FeatureRepository> { FeatureRepository(get(), get()) }
     viewModel { FeatureViewModel(get()) }
 }
 
-// ❌ AppScope for workspace-aware DB — causes stale data after workspace switch
-@Provides @SingleIn(AppScope::class)
-fun provideFeatureDatabase(...): FeatureDatabase = ...
+// ❌ A feature declaring/providing its own database — add tables to AmpairsWorkspaceDatabase instead
+@Database(entities = [...]) abstract class FeatureDatabase : RoomDatabase()
 
-// ❌ Missing reified type through .also chain
-factory.createAndroidDatabase(...).also { ... }   // T inference fails
+// ❌ AppScope for the workspace DB — stale data after workspace switch
+@Provides @SingleIn(AppScope::class) fun provideAmpairsWorkspaceDatabase(...)
+
+// ❌ Repository injecting the Api — network traffic belongs in the SyncDelegate
+@Inject class FeatureRepository(dao: FeatureDao, api: FeatureApi)
 
 // ❌ No key(generation) wrapper around NavDisplay — old VM instances survive workspace switch
 

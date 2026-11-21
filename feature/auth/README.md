@@ -54,6 +54,6 @@ authModule  // in com.ampairs.auth
 
 ## Database
 
-`AuthRoomDatabase` — uses `single` scope (not workspace-scoped, exists before workspace selection).
+Auth tables (user / token / session) live in the consolidated `AmpairsAppDatabase` (`:data:database`, `ampairs_app.db`), provided `@SingleIn(AppScope::class)` — app-scoped because they exist before workspace selection. (Formerly the standalone `auth.db`.)
 
 Contains: `UserEntity`, `UserSessionEntity`, `UserTokenEntity`
