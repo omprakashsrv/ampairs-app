@@ -30,7 +30,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.ampairs.storefront.di.StorefrontAppGraph
+import com.ampairs.storefront.di.StorefrontGraph
 import com.ampairs.storefront.nav.StorefrontRoute
 import com.ampairs.storefront.nav.storefrontEntryProvider
 import com.ampairs.common.locale.AppLocale
@@ -57,7 +57,7 @@ import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
  */
 @Composable
 fun StorefrontRoot(
-    graph: StorefrontAppGraph,
+    graph: StorefrontGraph,
     workspaceSlug: String? = null,
     seedColor: Color = DefaultSeedColor,
 ) {

@@ -453,7 +453,7 @@ LocalAppGraph.current.themeManager   // NEVER — use CompositionLocal or inject
 - [ ] If adding `maven-publish` to a module: check for `composeResources/` or `ampairsapp.*` imports — if present, add `compose.resources { packageOfResClass = "ampairsapp.{module.path}.generated.resources" }`
 - [ ] Compile all 3 targets after any commonMain change:
   ```bash
-  ./gradlew androidApp:compileDebugKotlinAndroid
+  ./gradlew androidApp:compileDebugKotlin
   ./gradlew shared:compileKotlinIosSimulatorArm64
   ./gradlew desktopApp:compileKotlin
   ```

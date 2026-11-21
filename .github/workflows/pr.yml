@@ -30,7 +30,7 @@ jobs:
       pull-requests: write   # required to post the coverage comment on the PR
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
@@ -97,7 +97,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
@@ -117,3 +117,8 @@ jobs:
       - run: chmod +x ./gradlew
       - name: Compile iOS framework
         run: ./gradlew :shared:compileKotlinIosSimulatorArm64 --console=plain
+      - name: Compile iOS storefront framework (SharedEcom)
+        # :shared-ecom has its own Metro graph (StorefrontIosGraph) consumed by marketplaceApp/iosApp
+        # and clientApp/iosApp. Kotlin/Native sees transitive `implementation` deps that Android
+        # hides, so DI leaks (e.g. :feature:agent bindings) only fail here — not in the Android job.
+        run: ./gradlew :shared-ecom:compileKotlinIosSimulatorArm64 --console=plain

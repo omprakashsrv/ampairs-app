@@ -1,7 +1,9 @@
 package com.ampairs.storefront.db
 
+import androidx.room3.ConstructedBy
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
 import com.ampairs.ecom.data.db.dao.StorefrontDirectoryDao
 import com.ampairs.ecom.data.db.entity.StorefrontDirectoryEntity
 
@@ -13,7 +15,8 @@ import com.ampairs.ecom.data.db.entity.StorefrontDirectoryEntity
  * v1 code with a Room downgrade error). This is a pure, re-pullable cache — it can be recreated
  * destructively on any schema change without data loss, and its version is independent of auth.
  *
- * Android-only module, so no `@ConstructedBy` — Room resolves the generated impl reflectively.
+ * KMP module (android + iOS), so `@ConstructedBy` + an `expect` [RoomDatabaseConstructor] wires the
+ * platform-generated impl (Room KSP runs per-target).
  */
 @Database(
     entities = [
@@ -22,6 +25,12 @@ import com.ampairs.ecom.data.db.entity.StorefrontDirectoryEntity
     version = 1,
     exportSchema = true,
 )
+@ConstructedBy(StorefrontDirectoryDatabaseConstructor::class)
 abstract class StorefrontDirectoryDatabase : RoomDatabase() {
     abstract fun storefrontDirectoryDao(): StorefrontDirectoryDao
+}
+
+@Suppress("NO_ACTUAL_FOR_EXPECT")
+expect object StorefrontDirectoryDatabaseConstructor : RoomDatabaseConstructor<StorefrontDirectoryDatabase> {
+    override fun initialize(): StorefrontDirectoryDatabase
 }

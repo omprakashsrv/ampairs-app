@@ -13,9 +13,9 @@ The project is a fully separated multi-module layout (see `settings.gradle.kts`)
 - `androidApp/` — Android entry point (main business app)
 - `desktopApp/` — Desktop JVM entry point
 - `iosApp/` — Xcode project wrapper
-- `clientApp/` — white-label customer storefront app, **pinned to one store** at build time via `-Pclient=<id>` (per-client config in `clients/<id>/`, e.g. `ambika`); no product flavors
-- `marketplaceApp/` — multi-store customer ecom app: storefront directory → pick a store → isolated per-store Room DB (mirrors workspace selection in the main app)
-- `shared-ecom/` — shared storefront UI/logic consumed by both `clientApp` and `marketplaceApp` (`StorefrontRoot(graph, workspaceSlug?)` — slug pinned vs directory picker)
+- `clientApp/` — white-label customer storefront app, **pinned to one store** at build time via `-Pclient=<id>` (per-client config in `clients/<id>/`, e.g. `ambika`); no product flavors. iOS counterpart lives in `clientApp/iosApp/` (Swift/CocoaPods shell over the `SharedEcom` framework; pinned slug + brand color injected via Info.plist/xcconfig — the iOS analogue of `-Pclient`)
+- `marketplaceApp/` — multi-store customer ecom app: storefront directory → pick a store → isolated per-store Room DB (mirrors workspace selection in the main app). iOS counterpart in `marketplaceApp/iosApp/` (directory mode; `StorefrontViewController(workspaceSlug=nil)`)
+- `shared-ecom/` — shared storefront UI/logic consumed by `clientApp` + `marketplaceApp` **and their iOS apps**. Now a full KMP module (android + iosArm64 + iosSimulatorArm64) with a `cocoapods { framework { baseName = "SharedEcom" } }` block. `StorefrontRoot(graph, workspaceSlug?)` (slug pinned vs directory picker) + `StorefrontGraph` common interface; platform `@DependencyGraph` impls are `StorefrontAppGraph` (androidMain, `Context` factory) and `StorefrontIosGraph` (iosMain, no-arg). iOS entry point: `StorefrontViewController(workspaceSlug, seedColorArgb)`. The storefront `@Database` classes (`StorefrontAppDatabase`/`StorefrontWorkspaceDatabase`/`StorefrontDirectoryDatabase`) live in `:data:database/commonMain` (`@ConstructedBy` + expect constructor; Room KSP per-target); DAO providers are commonMain, DB builders per-platform. iOS Firebase Analytics is a no-op (phone-auth login still works via `:feature:auth` + the app Podfiles' Firebase pods)
 
 **Data layer**
 - `data/common/` — WorkspaceAwareDatabaseFactory, DatabasePathProvider, DataStore, ApiUrlBuilder, `Response<T>`, UidGenerator, Ktor client base, `WorkspaceDatabaseProvider`

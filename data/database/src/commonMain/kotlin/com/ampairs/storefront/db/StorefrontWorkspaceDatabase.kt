@@ -1,7 +1,9 @@
 package com.ampairs.storefront.db
 
+import androidx.room3.ConstructedBy
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
 import com.ampairs.ecom.data.db.dao.AddressDao
 import com.ampairs.ecom.data.db.dao.CartDao
 import com.ampairs.ecom.data.db.dao.EcomOrderDao
@@ -33,7 +35,8 @@ import com.ampairs.sync.db.SyncStateEntity
  * previously lived in four per-module files
  * ([com.ampairs.storefront.di.StorefrontDatabaseModule] imports the legacy files once on upgrade).
  *
- * Android-only module, so no `@ConstructedBy` — Room resolves the generated impl reflectively.
+ * KMP module (android + iOS), so `@ConstructedBy` + an `expect` [RoomDatabaseConstructor] wires the
+ * platform-generated impl (Room KSP runs per-target).
  */
 @Database(
     entities = [
@@ -58,6 +61,7 @@ import com.ampairs.sync.db.SyncStateEntity
     version = 2,
     exportSchema = true,
 )
+@ConstructedBy(StorefrontWorkspaceDatabaseConstructor::class)
 abstract class StorefrontWorkspaceDatabase : RoomDatabase() {
     abstract fun storefrontDao(): StorefrontDao
     abstract fun taxonomyImageDao(): TaxonomyImageDao
@@ -70,4 +74,9 @@ abstract class StorefrontWorkspaceDatabase : RoomDatabase() {
     abstract fun storeSettingDefinitionDao(): StoreSettingDefinitionDao
     abstract fun fileDao(): FileDao
     abstract fun syncStateDao(): SyncStateDao
+}
+
+@Suppress("NO_ACTUAL_FOR_EXPECT")
+expect object StorefrontWorkspaceDatabaseConstructor : RoomDatabaseConstructor<StorefrontWorkspaceDatabase> {
+    override fun initialize(): StorefrontWorkspaceDatabase
 }
