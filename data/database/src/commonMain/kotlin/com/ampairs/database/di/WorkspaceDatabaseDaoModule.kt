@@ -328,5 +328,42 @@ interface WorkspaceDatabaseDaoModule {
         fun provideCbTicketBucketDao(
             db: AmpairsWorkspaceDatabase,
         ): com.ampairs.cbmaintenance.data.db.dao.TicketBucketDao = db.cbTicketBucketDao()
+
+        // sfa (field-sales automation)
+        @Provides
+        fun provideSfaBeatDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.BeatDao =
+            db.sfaBeatDao()
+
+        @Provides
+        fun provideSfaBeatOutletDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.BeatOutletDao =
+            db.sfaBeatOutletDao()
+
+        @Provides
+        fun provideSfaJourneyPlanDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.JourneyPlanDao =
+            db.sfaJourneyPlanDao()
+
+        @Provides
+        fun provideSfaPlannedVisitDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.PlannedVisitDao =
+            db.sfaPlannedVisitDao()
+
+        @Provides
+        fun provideSfaVisitDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.VisitDao =
+            db.sfaVisitDao()
+
+        @Provides
+        fun provideSfaAttendanceDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.AttendanceDao =
+            db.sfaAttendanceDao()
+
+        @Provides
+        fun provideSfaFieldOrderDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.FieldOrderDao =
+            db.sfaFieldOrderDao()
+
+        @Provides
+        fun provideSfaLeaveDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.LeaveDao =
+            db.sfaLeaveDao()
+
+        @Provides
+        fun provideSfaVisitSurveyResponseDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.VisitSurveyResponseDao =
+            db.sfaVisitSurveyResponseDao()
     }
 }

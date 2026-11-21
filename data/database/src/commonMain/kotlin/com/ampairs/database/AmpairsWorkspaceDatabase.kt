@@ -166,6 +166,24 @@ import com.ampairs.cbmaintenance.data.db.entity.PmEntryEntity
 import com.ampairs.cbmaintenance.data.db.entity.PmScheduleEntity
 import com.ampairs.cbmaintenance.data.db.entity.TicketBucketEntity
 import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
+import com.ampairs.sfa.data.db.dao.BeatDao
+import com.ampairs.sfa.data.db.dao.BeatOutletDao
+import com.ampairs.sfa.data.db.dao.JourneyPlanDao
+import com.ampairs.sfa.data.db.dao.PlannedVisitDao
+import com.ampairs.sfa.data.db.dao.VisitDao
+import com.ampairs.sfa.data.db.dao.AttendanceDao
+import com.ampairs.sfa.data.db.dao.FieldOrderDao
+import com.ampairs.sfa.data.db.dao.LeaveDao
+import com.ampairs.sfa.data.db.dao.VisitSurveyResponseDao
+import com.ampairs.sfa.data.db.entity.BeatEntity
+import com.ampairs.sfa.data.db.entity.BeatOutletEntity
+import com.ampairs.sfa.data.db.entity.JourneyPlanEntity
+import com.ampairs.sfa.data.db.entity.PlannedVisitEntity
+import com.ampairs.sfa.data.db.entity.VisitEntity
+import com.ampairs.sfa.data.db.entity.AttendanceEntity
+import com.ampairs.sfa.data.db.entity.FieldOrderEntity
+import com.ampairs.sfa.data.db.entity.LeaveEntity
+import com.ampairs.sfa.data.db.entity.VisitSurveyResponseEntity
 
 /**
  * Consolidated WorkspaceScope database — one file per workspace
@@ -281,10 +299,20 @@ import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
         TicketEntity::class,
         AssetCategoryAliasEntity::class,
         TicketBucketEntity::class,
+        // sfa — field-sales automation (was sfa.db v1)
+        BeatEntity::class,
+        BeatOutletEntity::class,
+        JourneyPlanEntity::class,
+        PlannedVisitEntity::class,
+        VisitEntity::class,
+        AttendanceEntity::class,
+        FieldOrderEntity::class,
+        LeaveEntity::class,
+        VisitSurveyResponseEntity::class,
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
@@ -416,6 +444,17 @@ abstract class AmpairsWorkspaceDatabase : RoomDatabase() {
     abstract fun cbTicketDao(): TicketDao
     abstract fun cbAssetCategoryAliasDao(): AssetCategoryAliasDao
     abstract fun cbTicketBucketDao(): TicketBucketDao
+
+    // sfa (field-sales automation)
+    abstract fun sfaBeatDao(): BeatDao
+    abstract fun sfaBeatOutletDao(): BeatOutletDao
+    abstract fun sfaJourneyPlanDao(): JourneyPlanDao
+    abstract fun sfaPlannedVisitDao(): PlannedVisitDao
+    abstract fun sfaVisitDao(): VisitDao
+    abstract fun sfaAttendanceDao(): AttendanceDao
+    abstract fun sfaFieldOrderDao(): FieldOrderDao
+    abstract fun sfaLeaveDao(): LeaveDao
+    abstract fun sfaVisitSurveyResponseDao(): VisitSurveyResponseDao
 
     // sync state
     abstract fun syncStateDao(): SyncStateDao
