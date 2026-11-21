@@ -18,8 +18,8 @@ The project is a fully separated multi-module layout (see `settings.gradle.kts`)
 - `shared-ecom/` — shared storefront UI/logic consumed by `clientApp` + `marketplaceApp` **and their iOS apps**. Now a full KMP module (android + iosArm64 + iosSimulatorArm64) with a `cocoapods { framework { baseName = "SharedEcom" } }` block. `StorefrontRoot(graph, workspaceSlug?)` (slug pinned vs directory picker) + `StorefrontGraph` common interface; platform `@DependencyGraph` impls are `StorefrontAppGraph` (androidMain, `Context` factory) and `StorefrontIosGraph` (iosMain, no-arg). iOS entry point: `StorefrontViewController(workspaceSlug, seedColorArgb)`. The storefront `@Database` classes (`StorefrontAppDatabase`/`StorefrontWorkspaceDatabase`/`StorefrontDirectoryDatabase`) live in `:data:database/commonMain` (`@ConstructedBy` + expect constructor; Room KSP per-target); DAO providers are commonMain, DB builders per-platform. iOS Firebase Analytics is a no-op (phone-auth login still works via `:feature:auth` + the app Podfiles' Firebase pods)
 
 **Data layer**
-- `data/common/` — WorkspaceAwareDatabaseFactory, DatabasePathProvider, DataStore, ApiUrlBuilder, `Response<T>`, UidGenerator, Ktor client base, `WorkspaceDatabaseProvider`
-- `data/database/` — consolidated `AmpairsAppDatabase` (durable app-scoped data; `fallbackToDestructiveMigration` banned). Features must NOT depend on this module directly — use `WorkspaceDatabaseProvider` from `data/common`
+- `data/common/` — WorkspaceAwareDatabaseFactory (internal to the DB providers), DatabasePathProvider, DataStore, ApiUrlBuilder, `Response<T>`, UidGenerator, Ktor client base, `WorkspaceDatabaseProvider`
+- `data/database/` — the two consolidated Room databases and **every** entity/DAO/migration: `AmpairsAppDatabase` (AppScope: auth, workspace registry, model catalog) and `AmpairsWorkspaceDatabase` (WorkspaceScope: all feature tables + sync state; one shared, append-only version line). Also `SyncEntity` + `SyncStateDao`, and the storefront DBs. `fallbackToDestructiveMigration` banned. Every feature depends on it; features never own a `@Database`. `WorkspaceDatabaseProvider` (data/common) is only a raw-connection handle for the agent query executors
 - `data/sync/` — `CentralSyncService`, `SyncDelegate`, `SyncEntity`, offline push/pull coordination
 - `data/event/` — WebSocket/STOMP real-time event infrastructure (Krossbow)
 
@@ -54,7 +54,7 @@ Uses **Navigation3** (androidx.navigation3, version 1.1.1). Routes implement `Na
 ```
 feature/{name}/src/commonMain/kotlin/com/ampairs/{name}/
 ├── data/api/          # API interface + Ktor implementation
-├── data/db/           # Room DAOs, entities (workspace DB via WorkspaceDatabaseProvider)
+├── data/db/           # Entity↔domain mappers (entities + DAOs live in :data:database under this package)
 ├── data/repository/   # Repository implementations (local-only; API lives in SyncDelegate)
 ├── domain/            # Domain models and business logic
 ├── sync/              # {Name}SyncDelegate (bulk push / batched pull)
@@ -64,7 +64,7 @@ feature/{name}/src/commonMain/kotlin/com/ampairs/{name}/
 
 ## Key Infrastructure Files
 
-- `data/common/.../WorkspaceAwareDatabaseFactory.kt` — expect/actual DB creation
+- `data/database/.../AmpairsWorkspaceDatabase.kt` + `di/DatabaseModule.*.kt` + `di/WorkspaceDatabaseDaoModule.kt` + `migrations/` — the workspace DB, its per-platform providers, DAO providers and migrations
 - `data/common/.../DatabasePathProvider.kt` — expect/actual path resolution
 - `data/common/.../DataStoreManager.kt` / `createAppDataStore.kt` — shared preferences
 - `data/sync/.../CentralSyncService.kt` — sync coordinator (see `/offline-sync`)

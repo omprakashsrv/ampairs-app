@@ -4,15 +4,15 @@ description: Project-specific conventions that cause bugs when violated — Metr
 type: feedback
 originSessionId: 35585732-55ed-4e7b-8cf2-fb305112b179
 ---
-## Rule 1: WorkspaceScope for workspace-aware databases (Metro DI)
+## Rule 1: One workspace database, WorkspaceScope (Metro DI)
 
-All workspace-aware databases must use `@SingleIn(WorkspaceScope::class)` in a `@ContributesTo(WorkspaceScope::class)` platform module, and must be registered with `WorkspaceClosableRegistry`. DAOs and Repositories are unscoped `@Inject` classes (new instance per injection site — safe across workspace switches).
+All workspace data lives in the consolidated `AmpairsWorkspaceDatabase` (`:data:database`), provided `@SingleIn(WorkspaceScope::class)` by `DatabaseModule.*.kt` and registered with `WorkspaceClosableRegistry`. Features never declare or provide their own database. DAOs (`@Provides` in `WorkspaceDatabaseDaoModule`) and Repositories are unscoped (new instance per injection site — safe across workspace switches).
 
-`@SingleIn(WorkspaceScope::class) DB → unscoped @Inject DAOs → unscoped @Inject Repositories → @ContributesIntoMap(WorkspaceScope::class) ViewModels`
+`@SingleIn(WorkspaceScope::class) AmpairsWorkspaceDatabase → unscoped DAO @Provides → unscoped @Inject Repositories → @ContributesIntoMap(WorkspaceScope::class) ViewModels`
 
 **Why:** Each workspace gets its own Metro child graph (`WorkspaceScope`). When a workspace switch occurs, the old child graph is torn down (all registered DB closables are closed) and a new one is created. Unscoped DAOs/Repos therefore always receive the current workspace's DB. This replaced the old Koin `factory {}` pattern, which was error-prone and had stale-data bugs.
 
-**How to apply:** When adding a new feature module, use `@SingleIn(WorkspaceScope::class)` on the DB provider and `.also { closableRegistry.register { it.close() } }`. Always pass an explicit reified type param: `createAndroidDatabase<MyDatabase>(...)`. Exceptions: `AuthRoomDatabase` and `WorkspaceRoomDatabase` live in `AppScope` because they predate workspace selection.
+**How to apply:** For a new feature's tables, put the entity + DAO in `:data:database` (feature package), register them in `AmpairsWorkspaceDatabase`, bump its version and add a migration built from the exported schema JSON (CLAUDE.md → *Adding tables for a feature*). Data that exists before/across workspaces (auth, workspace registry, model catalog) goes in the AppScope `AmpairsAppDatabase` instead.
 
 ---
 

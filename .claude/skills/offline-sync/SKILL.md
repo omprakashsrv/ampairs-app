@@ -83,14 +83,13 @@ DELETE in-band: the push body carries soft-deleted rows (active=false / status=D
 
 | File | Role |
 |---|---|
-| `data/sync/.../CentralSyncService.kt` | Singleton coordinator — holds delegates map, processes events, serializes pushes per entity via Mutex |
+| `data/sync/.../CentralSyncService.kt` | Singleton coordinator — holds delegates map, processes events, serializes pushes per entity via Mutex. `start(syncDao: SyncStateDao)` |
 | `data/sync/.../SyncDelegate.kt` | Interface each feature implements |
-| `data/sync/.../SyncEntity.kt` | Enum of all syncable entity types |
 | `data/sync/.../SyncEvent.kt` | Events: TriggerPush, TriggerPull, TriggerFullSync, BackendEventReceived |
 | `data/sync/.../SyncStatus.kt` | Sealed class: Idle, PendingPush, PendingPull, Syncing, Success, Failed |
-| `data/sync/.../db/SyncPersistStatus.kt` | Enum for DB storage: IDLE, PENDING_PUSH, PENDING_PULL, SYNCING, FAILED |
-| `data/sync/.../db/SyncStateEntity.kt` | Room entity — `entityName: SyncEntity`, `statusName: SyncPersistStatus` |
-| `data/sync/.../db/SyncStateConverters.kt` | Room TypeConverters for enum ↔ String (keeps TEXT storage, no migration needed) |
+| `data/database/.../sync/SyncEntity.kt` | Enum of all syncable entity types — `SyncEntity(entityType, moduleCode)` |
+| `data/database/.../sync/db/SyncPersistStatus.kt` | Enum for DB storage: IDLE, PENDING_PUSH, PENDING_PULL, SYNCING, FAILED |
+| `data/database/.../sync/db/SyncStateEntity.kt` + `SyncStateDao.kt` | Sync-state table — a table **inside `AmpairsWorkspaceDatabase`** (no separate sync DB) |
 | `feature/{name}/sync/{Name}SyncDelegate.kt` | Feature-level delegate: pull, push, handle backend event |
 
 ---
@@ -355,7 +354,12 @@ withTimeout(130_000L) {
 
 ## Adding a New Syncable Entity — Checklist
 
-- [ ] Add entry to `SyncEntity` enum
+- [ ] **Entity + DAO in `:data:database`** (feature package, `androidx.room3`), registered in
+      `AmpairsWorkspaceDatabase` with a version bump + migration — see CLAUDE.md → *Adding tables for a
+      feature*. The entity needs `synced` (and `active` if it soft-deletes). Mappers stay in the feature
+- [ ] Add an entry to `SyncEntity` (`data/database/.../sync/SyncEntity.kt`) **with its `moduleCode`**
+      — the backend module code that owns it (e.g. `"customer-management"`), so sync rows hide for
+      workspaces that haven't installed the module. `null` only for core entities (settings, form, file…)
 - [ ] **Repository (local-only):** inject `Dao` + `SyncStateDao` — **not** the `Api`. `create/update/delete`
       write to Room (`synced = false`) and call `syncStateDao.markPendingPush(SyncEntity.X, now)`
 - [ ] Delete soft-deletes (`active = false, synced = false`) so the push picks it up
@@ -419,7 +423,8 @@ This means:
 
 ## Process Death Safety
 
-Before starting each push/pull, `CentralSyncService` persists `PENDING_PUSH` / `PENDING_PULL` to `SyncStateDatabase`. On restart, the DAO observation in `start()` immediately picks up any persisted pending states and re-triggers the sync.
+Before starting each push/pull, `CentralSyncService` persists `PENDING_PUSH` / `PENDING_PULL` to the sync-state table (`SyncStateEntity` in the
+workspace's `AmpairsWorkspaceDatabase`). On restart, the DAO observation in `start()` immediately picks up any persisted pending states and re-triggers the sync.
 
 ---
 

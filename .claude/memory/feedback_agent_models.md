@@ -109,8 +109,9 @@ constrained `OutputSchema` + system prompt are the gate, not just the executor m
 
 **To make a NEW module queryable (mechanical, ~2 files, no central wiring):**
 1. `feature/{m}/.../agent/{M}QueryExecutor.kt` — `@Inject @ContributesIntoMap(WorkspaceScope::class)
-   @QueryExecutorKey("{m}")`, inject `WorkspaceDatabaseProvider` (the consolidated workspace DB handle
-   from data/common — features must not depend on :data:database), copy the
+   @QueryExecutorKey("{m}")`, inject `WorkspaceDatabaseProvider` (the raw workspace-DB handle from
+   data/common — bound to `AmpairsWorkspaceDatabase` in the main app and to the storefront DB in
+   shared-ecom, so the executor works in both), copy the
    `databaseProvider.get().useReaderConnection { usePrepared }` body verbatim from `CustomerQueryExecutor`.
 2. `feature/{m}/.../agent/{M}QuerySchemaModule.kt` — `@ContributesTo(WorkspaceScope::class)` +
    `@Provides @IntoMap @QuerySchemaKey("{m}")` returning a `ModuleQuerySchema` of curated tables/columns.

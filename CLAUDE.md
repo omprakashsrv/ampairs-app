@@ -45,8 +45,8 @@ ampairs-app/
 ├── clients/                   # Per-client white-label config (e.g. clients/ambika/)
 ├── data/
 │   ├── common/                # DB factories, paths, DataStore, ApiUrlBuilder, Response<T>
-│   ├── database/              # Consolidated AmpairsAppDatabase (features use WorkspaceDatabaseProvider)
-│   ├── sync/                  # CentralSyncService, SyncDelegate, SyncEntity
+│   ├── database/              # AmpairsAppDatabase + AmpairsWorkspaceDatabase: all entities/DAOs/migrations
+│   ├── sync/                  # CentralSyncService, SyncDelegate (SyncEntity + sync state live in data/database)
 │   └── event/                 # WebSocket/STOMP real-time events (Krossbow)
 ├── tally/                     # Tally ERP integration (JVM-only, XML)
 ├── whispercpp/                # whisper.cpp bindings for on-device STT (agent voice)
@@ -89,7 +89,7 @@ sync, event) are published to GitHub Packages — see `docs/published-modules.md
 feature/{name}/src/
 ├── commonMain/kotlin/com/ampairs/{name}/
 │   ├── data/api/              # API interface + implementation
-│   ├── data/db/               # Room database, DAOs, entities
+│   ├── data/db/               # Entity↔domain mappers only (entities/DAOs live in :data:database)
 │   ├── data/repository/       # Repository implementations
 │   ├── domain/                # Business logic, domain models
 │   ├── di/                    # Metro DI module definitions
@@ -314,7 +314,8 @@ import kotlinx.coroutines.flow.Flow
 ### Platform-Specific Implementations
 
 - `data/common/src/` contains `DatabasePathProvider.kt` (expect) + android/ios/desktop actuals
-- `WorkspaceAwareDatabaseFactory.kt` (expect) + platform actuals
+- `WorkspaceAwareDatabaseFactory.kt` (expect) + platform actuals — internal to the database
+  providers in `:data:database` / storefront; feature modules never call it
 - `BackNavigationHandler.kt` (expect) + platform actuals
 - Firebase modules use expect/actual per platform (no Firebase on Desktop — stub)
 
@@ -322,58 +323,61 @@ import kotlinx.coroutines.flow.Flow
 
 ## Workspace-Scoped Database Management
 
-### The Problem
+### Two consolidated databases — features never own one
 
-When users switch workspaces all databases must be replaced. Each workspace gets its own Metro child graph (`WorkspaceScope`) so stale DB instances are impossible when the pattern is followed correctly.
+All Room data lives in **two** databases defined in `:data:database`. A feature module never
+declares its own `@Database`, never applies the Room/KSP Gradle plugins, and never provides a DB.
 
-### The Rule: WorkspaceScope for Every Workspace-Aware DB
+| Database | Scope | Holds | File |
+|---|---|---|---|
+| `AmpairsAppDatabase` | `@SingleIn(AppScope)` | auth (user/token/session), workspace registry + modules, agent model catalog — anything that exists before/across workspaces | `ampairs_app.db` |
+| `AmpairsWorkspaceDatabase` | `@SingleIn(WorkspaceScope)` | every feature's workspace tables **plus** the sync state (`SyncStateEntity`) | Android `workspace_{slug}_main.db`; iOS/Desktop `workspace_{slug}/main.db` |
+
+Both are provided by `DatabaseModule.{android,desktop,ios}.kt` in `:data:database`; the workspace DB
+registers itself with `WorkspaceClosableRegistry`, so a workspace switch closes it and the new
+`WorkspaceScope` child graph opens the next workspace's file — stale DB instances are impossible:
 
 ```
-@SingleIn(WorkspaceScope::class) DB → unscoped @Inject DAOs → unscoped @Inject Repositories
-→ @ContributesIntoMap(WorkspaceScope::class) ViewModels
+@SingleIn(WorkspaceScope) AmpairsWorkspaceDatabase → unscoped DAO @Provides → unscoped @Inject
+Repositories → @ContributesIntoMap(WorkspaceScope::class) ViewModels
 ```
 
-**Exceptions** — these live in `AppScope`:
-- `AuthRoomDatabase` — exists before workspace selection
-- `WorkspaceRoomDatabase` — stores the workspace list itself
+The storefront apps (`shared-ecom`) have their own `Storefront{App,Workspace,Directory}Database`
+(also in `:data:database`) — same rules.
 
-### Implementation
+### Adding tables for a feature
 
-```kotlin
-// ✅ CORRECT — platform @ContributesTo module
-@ContributesTo(WorkspaceScope::class)
-interface MyFeatureAndroidModule {
-    companion object {
-        @Provides @SingleIn(WorkspaceScope::class)
-        fun provideDatabase(
-            factory: WorkspaceAwareDatabaseFactory,
-            context: Context,
-            config: WorkspaceConfig,
-            closableRegistry: WorkspaceClosableRegistry,
-        ): MyDatabase = factory.createAndroidDatabase<MyDatabase>(
-            context = context,
-            moduleName = "my_feature",
-            workspaceSlug = config.workspaceSlug,
-        ).also { closableRegistry.register { it.close() } }
-    }
-}
-```
+1. **Entity + DAO** go in `data/database/src/commonMain/kotlin/com/ampairs/{feature}/data/db/{entity,dao}/`
+   — keep the feature's own package, use `androidx.room3.*`. Entities must not import feature domain
+   types (`:data:database` can't see them).
+2. **Mappers** (`Entity ↔ domain`) stay in the feature module, same package (e.g. `XMappers.kt`).
+3. **Register** in `AmpairsWorkspaceDatabase`: add to `entities = [...]` and an
+   `abstract fun xDao(): XDao`; bump `version`.
+4. **DAO provider**: `@Provides fun provideXDao(db: AmpairsWorkspaceDatabase): XDao = db.xDao()` in
+   `data/database/.../di/WorkspaceDatabaseDaoModule.kt` (unscoped).
+5. **Migration**: `migrations/WorkspaceMigrationNToM.kt`, added to `.addMigrations(...)` in all three
+   `DatabaseModule.*.kt`. Copy each `CREATE TABLE`/`CREATE INDEX` verbatim from Room's exported
+   `schemas/.../AmpairsWorkspaceDatabase/M.json` (`createSql`) so it passes Room's validation, and
+   commit that `M.json`. `fallbackToDestructiveMigration` is **banned** on both databases.
+6. **Feature `build.gradle.kts`**: `implementation(projects.data.database)` + `libs.room.runtime` —
+   no `ksp`/`room` plugins, no `room {}` block, no platform DB modules.
 
-See `/metro-di` for the complete Metro DI workspace pattern.
+The workspace version line is **shared and append-only** across every feature. Before bumping it,
+check open branches/PRs that also bump it and take the next free number.
 
-### Database Path Structures
+`WorkspaceDatabaseProvider` (`data/common`) is only a raw-`RoomDatabase` handle for code that needs a
+connection rather than a DAO — today the agent's read-only `ModuleQueryExecutor`s. Use DAOs for
+everything else.
 
-- **Android**: `workspace_{slug}_{module}.db` (flat file)
-- **iOS/Desktop**: `workspace_{slug}/{module}.db` (directory + file)
+See `/metro-di` for the WorkspaceScope child-graph lifecycle and `/offline-sync` for the sync layer.
 
-### Verification Checklist for New Modules
+### Verification Checklist for New Tables
 
-- [ ] Database: `@Provides @SingleIn(WorkspaceScope::class)` in platform `@ContributesTo(WorkspaceScope::class)` module
-- [ ] DB registered: `.also { closableRegistry.register { it.close() } }`
-- [ ] DAOs and Repositories: `@Inject` class, unscoped
-- [ ] ViewModels: `@ContributesIntoMap(WorkspaceScope::class)` + `@ViewModelKey` + `@Inject`
-- [ ] Path handles Android flat vs iOS/Desktop directory format
-- [ ] Explicit reified type param `createDatabase<MyDatabase>(...)` — never omit
+- [ ] Entity + DAO in `:data:database` under the feature package; mappers in the feature
+- [ ] Registered in `AmpairsWorkspaceDatabase` (`entities` + abstract DAO fun), `version` bumped
+- [ ] Migration written from the exported schema JSON, registered on android/desktop/ios, `N.json` committed
+- [ ] DAO `@Provides` added to `WorkspaceDatabaseDaoModule`
+- [ ] Repositories: unscoped `@Inject`; ViewModels: `@ContributesIntoMap(WorkspaceScope::class)` + `@ViewModelKey` + `@Inject`
 
 ---
 
@@ -534,7 +538,7 @@ Files in `shared/src/`:
 | iOS database path wrong | Use `getIosDatabasePath()`, not hardcoded paths |
 | `Dispatchers.IO` crash in `iosMain` | Use `Dispatchers.Default` — the Native actual is internal; `Dispatchers.IO` only works in `commonMain` |
 | `java.*` compile error in commonMain | Use KMP equivalent (kotlinx.datetime, etc.) |
-| Room migration error | Add migration script, check schema version increment |
+| Room migration error | Bump `AmpairsWorkspaceDatabase.version`, add `WorkspaceMigrationNToM` built from the exported `M.json` `createSql`, register it in all 3 `DatabaseModule.*.kt` |
 | `String.format()` compile error | Use string interpolation `"$value"` |
 | `Response<T>.data` NPE | Always null-check; no `.success` property exists |
 | Logger compile error | Use `w/e/i/d` not `warn/error`; 3-param signature |

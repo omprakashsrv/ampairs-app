@@ -7,9 +7,8 @@ import androidx.room3.RoomDatabase
  * a DAO — today that's the [ModuleQueryExecutor]s, which run validated read-only SELECTs on a
  * reader connection.
  *
- * Feature modules must not depend on the consolidated database module (`:data:database`), so they
- * inject this interface instead of a concrete database type. The composition root binds it in
- * `WorkspaceScope`:
+ * Executors inject this interface rather than a concrete database type so the same code runs against
+ * whichever workspace database the host app uses. The composition root binds it in `WorkspaceScope`:
  * - the main app binds the consolidated `AmpairsWorkspaceDatabase` (all module tables in one file);
  * - the storefront apps (shared-ecom) bind their `EcomRoomDatabase`.
  */

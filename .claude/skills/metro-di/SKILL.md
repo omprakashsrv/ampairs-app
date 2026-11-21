@@ -133,7 +133,7 @@ AppGraph (@DependencyGraph, AppScope)
 @GraphExtension(WorkspaceScope::class)
 interface WorkspaceGraph : WorkspaceResources {
     val syncDelegates: Map<SyncEntity, SyncDelegate>
-    val syncStateDatabase: SyncStateDatabase
+    val syncStateDao: SyncStateDao          // sync-state table inside AmpairsWorkspaceDatabase
     val metroViewModelFactory: ViewModelProvider.Factory
 
     @DependencyGraph.Factory
@@ -162,7 +162,7 @@ override fun activateWorkspace(workspaceId: String, workspaceSlug: String, userI
 
     // Delegates resolved lazily on first sync event — avoids force-creating all DBs upfront
     centralSyncService.setDelegates { graph.syncDelegates }
-    centralSyncService.start(graph.syncStateDatabase)
+    centralSyncService.start(graph.syncStateDao)
     // ...
 }
 ```
@@ -171,58 +171,48 @@ override fun activateWorkspace(workspaceId: String, workspaceSlug: String, userI
 
 ## 5. WorkspaceScope Database Pattern
 
-Every workspace-aware database module uses `@SingleIn(WorkspaceScope::class)` and registers itself with `WorkspaceClosableRegistry`:
+There is **one** workspace database — `AmpairsWorkspaceDatabase` in `:data:database` — holding every
+feature's tables plus the sync state. It is provided once per workspace graph by
+`DatabaseModule.{android,desktop,ios}.kt` in `:data:database`; feature modules never declare or
+provide a database (see CLAUDE.md → *Adding tables for a feature*).
 
 ```kotlin
-// feature/{name}/src/androidMain/.../FeatureModule.android.kt
-@ContributesTo(WorkspaceScope::class)
-interface FeatureAndroidModule {
-    companion object {
-        @Provides
-        @SingleIn(WorkspaceScope::class)
-        fun provideFeatureDatabase(
-            factory: WorkspaceAwareDatabaseFactory,
-            context: Context,
-            config: WorkspaceConfig,
-            closableRegistry: WorkspaceClosableRegistry,
-        ): FeatureDatabase {
-            return factory.createAndroidDatabase<FeatureDatabase>(
-                context = context,
-                queryDispatcher = Dispatchers.IO,
-                moduleName = "feature_name",
-                workspaceSlug = config.workspaceSlug,
-            ).also { closableRegistry.register { it.close() } }
-        }
-    }
-}
+// data/database/src/androidMain/.../di/DatabaseModule.android.kt (abridged)
+@Provides
+@SingleIn(WorkspaceScope::class)
+fun provideAmpairsWorkspaceDatabase(
+    context: Context,
+    config: WorkspaceConfig,
+    closableRegistry: WorkspaceClosableRegistry,
+): AmpairsWorkspaceDatabase =
+    Room.databaseBuilder<AmpairsWorkspaceDatabase>(
+        context = context,
+        name = context.getDatabasePath("workspace_${config.workspaceSlug}_main.db").absolutePath,
+    )
+        .setDriver(BundledSQLiteDriver())
+        .setQueryCoroutineContext(Dispatchers.IO)
+        .addMigrations(/* WORKSPACE_MIGRATION_1_2, … every step, in order */)
+        .build()
+        .also { closableRegistry.register { it.close() } }   // closed on workspace switch
 ```
 
-Same pattern for iOS and Desktop (use `factory.createDatabase<FeatureDatabase>(...)`).
+DAOs are exposed unscoped from `data/database/.../di/WorkspaceDatabaseDaoModule.kt`:
+
+```kotlin
+@Provides
+fun provideCustomerDao(db: AmpairsWorkspaceDatabase): CustomerDao = db.customerDao()
+```
 
 **Critical rules:**
-- Scope is `WorkspaceScope`, NOT `AppScope` — this is what isolates the DB per workspace
-- `@SingleIn(WorkspaceScope::class)` ensures one DB instance per workspace graph lifetime
-- `.also { closableRegistry.register { it.close() } }` ensures DB is closed on workspace switch
-- **Always use explicit reified type param**: `createAndroidDatabase<FeatureDatabase>(...)` not `createAndroidDatabase(...)` — Kotlin cannot infer `T` through `.also {}` chains
-
-### ❌ Reified type inference gotcha
-
-```kotlin
-// ❌ WRONG — Kotlin cannot infer T through .also { ... }
-factory.createAndroidDatabase(
-    context = context,
-    moduleName = "customer",
-    workspaceSlug = config.workspaceSlug,
-).also { closableRegistry.register { it.close() } }
-// Type inference fails: unresolved T
-
-// ✅ CORRECT — explicit type param
-factory.createAndroidDatabase<CustomerDatabase>(
-    context = context,
-    moduleName = "customer",
-    workspaceSlug = config.workspaceSlug,
-).also { closableRegistry.register { it.close() } }
-```
+- Scope is `WorkspaceScope`, NOT `AppScope` — the child graph is what isolates each workspace's file
+  (Android `workspace_{slug}_main.db`, iOS/Desktop `workspace_{slug}/main.db`)
+- `@SingleIn(WorkspaceScope::class)` → one DB instance per workspace graph lifetime
+- `.also { closableRegistry.register { it.close() } }` → closed when the workspace switches
+- DAOs / repositories stay **unscoped**, so they always resolve against the current workspace's DB
+- Pre-/cross-workspace data (auth, workspace registry, model catalog) lives in the AppScope
+  `AmpairsAppDatabase` (`ampairs_app.db`) instead
+- New tables = version bump + migration built from the exported schema JSON, registered on all three
+  platforms; `fallbackToDestructiveMigration` is banned
 
 ---
 
@@ -345,15 +335,14 @@ centralSyncService.setDelegates(graph.syncDelegates)       // ❌ eager — forc
 
 ## 8. New Workspace-Aware Module Checklist
 
-- [ ] Database `@ContributesTo(WorkspaceScope::class)` module (per platform)
-- [ ] `@Provides @SingleIn(WorkspaceScope::class)` on the DB provider function
-- [ ] Explicit reified type param `createDatabase<MyDatabase>(...)` — never omit it
-- [ ] `.also { closableRegistry.register { it.close() } }` on DB creation
-- [ ] `config: WorkspaceConfig` injected for `workspaceSlug` (and `workspaceId` if needed)
-- [ ] DAOs: `@Provides` in common `@ContributesTo(WorkspaceScope::class)` module (unscoped)
+- [ ] Entity + DAO in `:data:database` under the feature's package (`androidx.room3`); mappers in the feature
+- [ ] Registered in `AmpairsWorkspaceDatabase` (`entities` + abstract DAO fun) with a `version` bump
+- [ ] Migration from the exported schema JSON, added to `.addMigrations(...)` in all 3 `DatabaseModule.*.kt`
+- [ ] DAO `@Provides` (unscoped) in `WorkspaceDatabaseDaoModule`
+- [ ] Feature depends on `projects.data.database`; no `ksp`/`room` plugin, no own `@Database`
 - [ ] Repositories: `@Inject` class, unscoped
 - [ ] ViewModels: `@ContributesIntoMap(WorkspaceScope::class)` + `@ViewModelKey` + `@Inject`
-- [ ] DB path: Android flat `workspace_{slug}_{module}.db`, iOS/Desktop directory `workspace_{slug}/{module}.db`
+- [ ] Sync delegates: `@ContributesIntoMap(WorkspaceScope::class)` + `@SyncEntityKey(...)` (see `/offline-sync`)
 
 ---
 
@@ -380,12 +369,15 @@ interface AppGraph {
 // ❌ Koin — do not use
 val featureModule = module { single { ... } }
 
-// ❌ AppScope for workspace-aware DB
-@Provides @SingleIn(AppScope::class)
-fun provideFeatureDatabase(...): FeatureDb = ...   // stale after workspace switch!
+// ❌ A feature module declaring / providing its own database
+@Database(entities = [...]) abstract class FeatureDatabase : RoomDatabase()   // put tables in AmpairsWorkspaceDatabase
+@Provides @SingleIn(WorkspaceScope::class)
+fun provideFeatureDatabase(...): FeatureDatabase = ...
 
-// ❌ Missing reified type param through .also
-factory.createAndroidDatabase(...).also { ... }    // T inference fails
+// ❌ Scoping a workspace DB to AppScope — stale after workspace switch
+@Provides @SingleIn(AppScope::class) fun provideAmpairsWorkspaceDatabase(...)
+
+// ❌ fallbackToDestructiveMigration() on either consolidated database — wipes user data
 
 // ❌ Eager delegate resolution — forces all DBs on workspace switch
 centralSyncService.setDelegates(graph.syncDelegates)
