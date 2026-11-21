@@ -25,7 +25,6 @@ kotlin {
             dependencies {
                 // Form contracts (FormField) + render SPI (CustomFieldWidget, registries)
                 api(projects.feature.formApi)
-                implementation(projects.feature.form)
                 implementation(projects.data.common)
                 implementation(libs.kermit)
                 implementation(libs.kotlinx.serialization.json)

@@ -60,9 +60,9 @@ android {
             excludes += "/META-INF/versions/9/previous-compilation-data.bin"
         }
         jniLibs {
-            // feature:form transitively drags in feature:agent (on-device LLM/STT). The customer
-            // ecom app never opens the agent, so R8 strips its code — but native .so libs aren't
-            // code-shrunk. Drop the ~120 MB of AI runtimes that are never loaded here.
+            // Safety net: feature:agent (on-device LLM/STT) is no longer on this app's classpath (formwidgets
+            // depends on form-api, not form), but if it ever leaks back in transitively, keep its
+            // ~120 MB of native AI runtimes out of the APK.
             excludes += listOf(
                 "**/liblitertlm_jni.so",
                 "**/libLiteRt.so",
