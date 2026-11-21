@@ -60,6 +60,7 @@ fun TallySettingsScreen(
     var isPushing by remember { mutableStateOf(false) }
     var isPushingMasters by remember { mutableStateOf(false) }
     var isImporting by remember { mutableStateOf(false) }
+    var connectorStatus by remember { mutableStateOf<ConnectorStatus?>(null) }
     var masterCounts by remember { mutableStateOf(TallyMasterCounts()) }
     var masterResults by remember { mutableStateOf<Map<String, TallyMasterPushResult>>(emptyMap()) }
     val scope = rememberCoroutineScope()
@@ -80,6 +81,7 @@ fun TallySettingsScreen(
         cashLedger = dataStore.getTallyCashLedger(workspaceSlug).first()
         bankLedger = dataStore.getTallyBankLedger(workspaceSlug).first()
         scheduler.lastResult?.let { statusText = formatResult(it) }
+        connectorStatus = runCatching { scheduler.connectorStatus() }.getOrNull()
         refreshMasterCounts()
     }
 
@@ -89,6 +91,28 @@ fun TallySettingsScreen(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
         ) {
             Text("Tally ERP Sync Settings", style = MaterialTheme.typography.titleMedium)
+
+            ConnectorStatusCard(connectorStatus)
+
+            connectorStatus?.takeIf { it.installed }?.let { cs ->
+                val isPaused = cs.status.equals("PAUSED", ignoreCase = true)
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            statusText = if (isPaused) "Resuming connector…" else "Pausing connector…"
+                            val ok = if (isPaused) scheduler.resumeConnector() else scheduler.pauseConnector()
+                            connectorStatus = runCatching { scheduler.connectorStatus() }.getOrNull()
+                            statusText = if (ok) {
+                                if (isPaused) "Connector resumed" else "Connector paused — scheduled syncs will skip"
+                            } else {
+                                "Pause/resume failed"
+                            }
+                        }
+                    }
+                ) {
+                    Text(if (isPaused) "Resume Connector" else "Pause Connector")
+                }
+            }
 
             // ===== Connection & Ledger Mapping =====
             Text("Connection & Ledger Mapping", style = MaterialTheme.typography.titleSmall)
@@ -174,6 +198,24 @@ fun TallySettingsScreen(
                     }
                 ) {
                     Text(if (isSyncing) "Syncing…" else "Sync Now")
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                OutlinedButton(
+                    enabled = !isSyncing && !isPushing && !isPushingMasters && host.isNotBlank(),
+                    onClick = {
+                        scope.launch {
+                            statusText = "Testing connection…"
+                            val result = scheduler.syncService.testConnection(workspaceSlug)
+                            statusText = if (result.ok)
+                                "Connection OK — ${result.message}"
+                            else
+                                "Connection failed — ${result.message}"
+                        }
+                    }
+                ) {
+                    Text("Test Connection")
                 }
 
                 Spacer(Modifier.width(8.dp))
@@ -537,6 +579,66 @@ fun TallySettingsScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConnectorStatusCard(status: ConnectorStatus?) {
+    Surface(
+        tonalElevation = 2.dp,
+        shape = MaterialTheme.shapes.small,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Connector", style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.weight(1f))
+                val (label, color) = when {
+                    status == null -> "Checking…" to MaterialTheme.colorScheme.onSurfaceVariant
+                    !status.installed -> "Not installed" to MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> (status.status ?: "Installed") to MaterialTheme.colorScheme.primary
+                }
+                Text(label, style = MaterialTheme.typography.labelMedium, color = color)
+            }
+            when {
+                status == null -> {}
+                !status.installed -> Text(
+                    text = "Tally is not installed on the backend connector platform. " +
+                        "Sync uses the host/port saved below and the legacy push path.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                else -> {
+                    val connectionLine = if (status.host != null) {
+                        "Connection: ${status.host}:${status.port ?: ""} (from backend config)"
+                    } else {
+                        "Connection: using the host/port saved below (backend has none)"
+                    }
+                    Text(
+                        text = connectionLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    status.lastValidatedAt?.let {
+                        Text(
+                            text = "Last validated: $it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    status.lastErrorMessage?.let {
+                        Text(
+                            text = "Last error: $it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }

@@ -85,6 +85,11 @@ class DataStoreAppPreferences(
         private fun getTallyCashLedgerKey(ws: String) = stringPreferencesKey("tally_cash_ledger_$ws")
         private fun getTallyBankLedgerKey(ws: String) = stringPreferencesKey("tally_bank_ledger_$ws")
 
+        // Connector mirror cache (offline-first): raw JSON blobs of the backend connector metadata
+        private fun getConnectorInstallationsKey(ws: String) =
+            stringPreferencesKey("connector_installations_$ws")
+        private fun getConnectorConfigKey(uid: String) =
+            stringPreferencesKey("connector_config_$uid")
         // Notification preferences (device-local)
         private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
         private val NOTIFY_ORDER_UPDATES_KEY = booleanPreferencesKey("notif_order_updates")
@@ -307,6 +312,30 @@ class DataStoreAppPreferences(
     override suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long) {
         dataStore.edit { preferences ->
             preferences[getTallyAlterIdKey(workspaceSlug, entityType)] = alterId
+        }
+    }
+
+    override fun getConnectorInstallationsJson(workspaceSlug: String): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[getConnectorInstallationsKey(workspaceSlug)]
+        }
+    }
+
+    override suspend fun setConnectorInstallationsJson(workspaceSlug: String, json: String) {
+        dataStore.edit { preferences ->
+            preferences[getConnectorInstallationsKey(workspaceSlug)] = json
+        }
+    }
+
+    override fun getConnectorConfigJson(installationUid: String): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[getConnectorConfigKey(installationUid)]
+        }
+    }
+
+    override suspend fun setConnectorConfigJson(installationUid: String, json: String) {
+        dataStore.edit { preferences ->
+            preferences[getConnectorConfigKey(installationUid)] = json
         }
     }
 

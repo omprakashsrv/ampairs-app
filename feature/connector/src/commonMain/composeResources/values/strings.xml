@@ -1,0 +1,22 @@
+<resources>
+    <string name="connector_config_title">Connection settings</string>
+    <string name="connector_mapping_title">Field mapping</string>
+    <string name="connector_save">Save</string>
+    <string name="connector_saved">Saved</string>
+    <string name="connector_test_connection">Test connection</string>
+    <string name="connector_testing">Testing…</string>
+    <string name="connector_test_ok">Connection OK</string>
+    <string name="connector_test_failed">Connection failed</string>
+    <string name="connector_loading">Loading…</string>
+    <string name="connector_secret_set">Saved — leave blank to keep</string>
+    <string name="connector_secret_hint">Enter to set a new value</string>
+    <string name="connector_required">Required</string>
+    <string name="connector_no_config_fields">This connector has no configurable fields.</string>
+    <string name="connector_mapping_add_rule">Add rule</string>
+    <string name="connector_mapping_external">External field</string>
+    <string name="connector_mapping_ampairs">Ampairs field</string>
+    <string name="connector_mapping_transform">Transform (optional)</string>
+    <string name="connector_mapping_delete_rule">Remove rule</string>
+    <string name="connector_mapping_none">No mappings for this connector.</string>
+    <string name="connector_mapping_reset">Reset to default</string>
+</resources>

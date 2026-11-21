@@ -134,6 +134,13 @@ interface AppPreferencesDataStore {
     fun getTallyLastAlterId(workspaceSlug: String, entityType: String): Flow<Long>
     suspend fun setTallyLastAlterId(workspaceSlug: String, entityType: String, alterId: Long)
 
+    // Connector mirror cache (offline-first): raw JSON blobs of backend connector metadata so the
+    // client's connector config/installation list survives offline and across restarts.
+    fun getConnectorInstallationsJson(workspaceSlug: String): Flow<String?>
+    suspend fun setConnectorInstallationsJson(workspaceSlug: String, json: String)
+    fun getConnectorConfigJson(installationUid: String): Flow<String?>
+    suspend fun setConnectorConfigJson(installationUid: String, json: String)
+
     // Local invoice ids already pushed *into* Tally (per-workspace). Drives which invoices the Tally
     // push considers new, and lets the pull skip re-importing our own pushed vouchers (by REMOTEID).
     fun getTallyPushedInvoiceIds(workspaceSlug: String): Flow<Set<String>>
