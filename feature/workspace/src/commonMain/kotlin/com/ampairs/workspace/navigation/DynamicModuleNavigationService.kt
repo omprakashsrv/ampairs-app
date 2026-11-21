@@ -142,6 +142,7 @@ class DynamicModuleNavigationService {
             ModuleCodes.CB_STORE,
             ModuleCodes.CB_MAINTENANCE,
             ModuleCodes.FIELD_SALES_MANAGEMENT -> true
+            ModuleCodes.COMMUNICATION -> true
             else -> false
         }
     }

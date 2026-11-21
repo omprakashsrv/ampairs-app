@@ -22,6 +22,7 @@ object ModuleCodes {
     const val AI_ASSISTANT = "ai-assistant"
     const val PRICING_MANAGEMENT = "pricing-management"
     const val FIELD_SALES_MANAGEMENT = "field-sales-management"
+    const val COMMUNICATION = "communication-management"
 
     // Not yet implemented locally
     const val NOTIFICATION_SYSTEM = "notification-system"
