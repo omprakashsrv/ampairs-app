@@ -1,15 +1,8 @@
 package com.ampairs.communication.data.db
 
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-import kotlinx.serialization.json.Json
-
-/** Shared JSON for (de)serializing embedded lists (template variants, channel lists). */
-internal val communicationJson: Json = Json {
-    ignoreUnknownKeys = true
-    encodeDefaults = true
-}
+import androidx.room3.ColumnInfo
+import androidx.room3.Entity
+import androidx.room3.PrimaryKey
 
 // --- Message template (aggregate: header + variants bundled in one row) ---------------------------
 

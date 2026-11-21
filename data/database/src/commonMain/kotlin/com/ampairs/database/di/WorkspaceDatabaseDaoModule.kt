@@ -365,5 +365,30 @@ interface WorkspaceDatabaseDaoModule {
         @Provides
         fun provideSfaVisitSurveyResponseDao(db: AmpairsWorkspaceDatabase): com.ampairs.sfa.data.db.dao.VisitSurveyResponseDao =
             db.sfaVisitSurveyResponseDao()
+
+        // communication
+        @Provides
+        fun provideCommTemplateDao(db: AmpairsWorkspaceDatabase): com.ampairs.communication.data.db.CommTemplateDao =
+            db.commTemplateDao()
+
+        @Provides
+        fun provideCommBindingDao(db: AmpairsWorkspaceDatabase): com.ampairs.communication.data.db.CommBindingDao =
+            db.commBindingDao()
+
+        @Provides
+        fun provideCommScheduleDao(db: AmpairsWorkspaceDatabase): com.ampairs.communication.data.db.CommScheduleDao =
+            db.commScheduleDao()
+
+        @Provides
+        fun provideCommCampaignDao(db: AmpairsWorkspaceDatabase): com.ampairs.communication.data.db.CommCampaignDao =
+            db.commCampaignDao()
+
+        @Provides
+        fun provideCommPreferenceDao(db: AmpairsWorkspaceDatabase): com.ampairs.communication.data.db.CommPreferenceDao =
+            db.commPreferenceDao()
+
+        @Provides
+        fun provideCommLogDao(db: AmpairsWorkspaceDatabase): com.ampairs.communication.data.db.CommLogDao =
+            db.commLogDao()
     }
 }

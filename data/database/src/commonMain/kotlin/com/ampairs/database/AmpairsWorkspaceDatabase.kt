@@ -166,6 +166,18 @@ import com.ampairs.cbmaintenance.data.db.entity.PmEntryEntity
 import com.ampairs.cbmaintenance.data.db.entity.PmScheduleEntity
 import com.ampairs.cbmaintenance.data.db.entity.TicketBucketEntity
 import com.ampairs.cbmaintenance.data.db.entity.TicketEntity
+import com.ampairs.communication.data.db.CommTemplateDao
+import com.ampairs.communication.data.db.CommBindingDao
+import com.ampairs.communication.data.db.CommScheduleDao
+import com.ampairs.communication.data.db.CommCampaignDao
+import com.ampairs.communication.data.db.CommPreferenceDao
+import com.ampairs.communication.data.db.CommLogDao
+import com.ampairs.communication.data.db.CommTemplateEntity
+import com.ampairs.communication.data.db.CommBindingEntity
+import com.ampairs.communication.data.db.CommScheduleEntity
+import com.ampairs.communication.data.db.CommCampaignEntity
+import com.ampairs.communication.data.db.CommPreferenceEntity
+import com.ampairs.communication.data.db.CommLogEntity
 import com.ampairs.sfa.data.db.dao.BeatDao
 import com.ampairs.sfa.data.db.dao.BeatOutletDao
 import com.ampairs.sfa.data.db.dao.JourneyPlanDao
@@ -309,10 +321,17 @@ import com.ampairs.sfa.data.db.entity.VisitSurveyResponseEntity
         FieldOrderEntity::class,
         LeaveEntity::class,
         VisitSurveyResponseEntity::class,
+        // communication — templates/bindings/schedules/campaigns/preferences + delivery-log cache
+        CommTemplateEntity::class,
+        CommBindingEntity::class,
+        CommScheduleEntity::class,
+        CommCampaignEntity::class,
+        CommPreferenceEntity::class,
+        CommLogEntity::class,
         // sync state (was sync.db v2)
         SyncStateEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
@@ -455,6 +474,14 @@ abstract class AmpairsWorkspaceDatabase : RoomDatabase() {
     abstract fun sfaFieldOrderDao(): FieldOrderDao
     abstract fun sfaLeaveDao(): LeaveDao
     abstract fun sfaVisitSurveyResponseDao(): VisitSurveyResponseDao
+
+    // communication
+    abstract fun commTemplateDao(): CommTemplateDao
+    abstract fun commBindingDao(): CommBindingDao
+    abstract fun commScheduleDao(): CommScheduleDao
+    abstract fun commCampaignDao(): CommCampaignDao
+    abstract fun commPreferenceDao(): CommPreferenceDao
+    abstract fun commLogDao(): CommLogDao
 
     // sync state
     abstract fun syncStateDao(): SyncStateDao
